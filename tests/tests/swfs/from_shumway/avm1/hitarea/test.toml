@@ -1,0 +1,5 @@
+# Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/avm1/hitarea
+
+num_frames = 7
+
+known_failure = true

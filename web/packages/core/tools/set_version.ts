@@ -18,12 +18,8 @@ try {
 }
 
 let versionName;
-if (versionChannel === "stable") {
+if (versionChannel === "stable" || versionNumber?.includes(versionChannel)) {
     versionName = versionNumber;
-} else if (versionChannel === "nightly") {
-    // TODO Try to include the build date in
-    //      the version and drop this branch.
-    versionName = `${versionNumber} nightly ${buildDate.substring(0, 10)}`;
 } else {
     versionName = `${versionChannel} ${versionNumber}`;
 }
@@ -34,7 +30,7 @@ interface VersionInformation {
     version_channel: string;
     build_date: string;
     commitHash: string;
-    build_id: string;
+    version4: string;
     firefox_extension_id: string;
 }
 
@@ -62,7 +58,7 @@ if (process.env["ENABLE_VERSION_SEAL"] === "true") {
             version_channel: versionChannel,
             build_date: buildDate,
             commitHash: commitHash,
-            build_id: process.env["BUILD_ID"] ?? "",
+            version4: process.env["VERSION4"] ?? "",
             firefox_extension_id: firefoxExtensionId,
         };
 

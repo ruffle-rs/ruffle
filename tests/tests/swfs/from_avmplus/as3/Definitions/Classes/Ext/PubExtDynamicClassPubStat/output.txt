@@ -1,0 +1,29 @@
+*** Public Static Methods and Public Static properites *** PASSED!
+*** Access public static method from default method of sub class *** PASSED!
+EXTDCLASS.testSubGetSetArray(arr) PASSED!
+*** Access public static method from public method of sub class *** PASSED!
+EXTDCLASS.pubSubSetArray(arr), EXTDCLASS.pubSubGetArray() PASSED!
+*** Access public static method from private method of sub class *** PASSED!
+EXTDCLASS.testPrivSubArray(arr) PASSED!
+*** Access public static method from final method of sub class *** PASSED!
+EXTDCLASS.testFinSubArray(arr) PASSED!
+*** Access public static method from static method of sub class *** PASSED!
+PubExtDynamicClassPubStat.testStatSubArray(arr) PASSED!
+*** Access public static method from public static method of sub class *** PASSED!
+PubExtDynamicClassPubStat.pubStatSubSetArray(arr), PubExtDynamicClassPubStat.pubStatSubGetArray() PASSED!
+*** Access public static method from private static method of sub class *** PASSED!
+EXTDEFAULTCLASS.testPrivStatSubArray(arr) PASSED!
+*** Access public static property from default method in sub class *** PASSED!
+EXTDCLASS.testSubGetSetDPArray(arr) PASSED!
+*** Access public static property from public method in sub class *** PASSED!
+EXTDCLASS.pubSubSetDPArray(arr), EXTDCLASS.pubSubGetDPArray() PASSED!
+*** Access public static property from private method in sub class *** PASSED!
+EXTDCLASS.testPrivSubDPArray(arr) PASSED!
+*** Access public static property from static method in sub class *** PASSED!
+PubExtDynamicClassPubStat.testStatSubPArray(arr) PASSED!
+*** Access public static property from public static method in sub class *** PASSED!
+PubExtDynamicClassPubStat.pubStatSubSetSPArray(arr), PubExtDynamicClassPubStat.pubStatSubGetSPArray() PASSED!
+*** Access public static property from private static method in sub class *** PASSED!
+EXTDCLASS.testPrivStatSubPArray(arr) PASSED!
+*** Access public static property from final method in sub class *** PASSED!
+EXTDCLASS.testFinSubDPArray(arr) PASSED!

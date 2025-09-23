@@ -4,10 +4,10 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::dynamic_map::{DynamicKey, DynamicMap};
 use crate::avm2::error;
-use crate::avm2::object::{ClassObject, FunctionObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
-use crate::avm2::{Error, Multiname};
+use crate::avm2::{Error, Multiname, QName};
 use crate::string::AvmString;
 use gc_arena::barrier::{unlock, Write};
 use gc_arena::{
@@ -67,10 +67,6 @@ pub struct ScriptObjectData<'gc> {
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         self.0
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
     }
 }
 
@@ -169,98 +165,67 @@ pub struct ScriptObjectWrapper<'gc>(pub Gc<'gc, ScriptObjectData<'gc>>);
 
 impl<'gc> ScriptObjectWrapper<'gc> {
     /// Retrieve the values stored directly on this ScriptObjectData.
-    pub fn values(&self) -> Ref<DynamicMap<DynamicKey<'gc>, Value<'gc>>> {
+    pub fn values(&self) -> Ref<'_, DynamicMap<DynamicKey<'gc>, Value<'gc>>> {
         self.0.values.borrow()
     }
 
     pub fn values_mut(
         &self,
         mc: &Mutation<'gc>,
-    ) -> RefMut<DynamicMap<DynamicKey<'gc>, Value<'gc>>> {
+    ) -> RefMut<'_, DynamicMap<DynamicKey<'gc>, Value<'gc>>> {
         unlock!(Gc::write(mc, self.0), ScriptObjectData, values).borrow_mut()
     }
 
-    fn bound_methods(&self) -> Ref<Vec<Option<FunctionObject<'gc>>>> {
+    fn bound_methods(&self) -> Ref<'_, Vec<Option<FunctionObject<'gc>>>> {
         self.0.bound_methods.borrow()
     }
 
-    fn bound_methods_mut(&self, mc: &Mutation<'gc>) -> RefMut<Vec<Option<FunctionObject<'gc>>>> {
+    fn bound_methods_mut(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> RefMut<'_, Vec<Option<FunctionObject<'gc>>>> {
         unlock!(Gc::write(mc, self.0), ScriptObjectData, bound_methods).borrow_mut()
     }
 
     pub fn get_property_local(
-        &self,
+        self,
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        if !multiname.contains_public_namespace() {
-            let error_code = if multiname.has_multiple_ns() {
-                error::ReferenceErrorCode::InvalidNsRead
-            } else {
-                error::ReferenceErrorCode::InvalidRead
-            };
+        let dynamic_lookup = get_dynamic_property(
+            activation,
+            multiname,
+            Some(&*self.values()),
+            self.proto(),
+            self.instance_class(),
+        )?;
 
-            return Err(error::make_reference_error(
-                activation,
-                error_code,
-                multiname,
-                self.instance_class(),
-            ));
-        }
-
-        let Some(local_name) = multiname.local_name() else {
-            // when can this happen?
-            return Err(error::make_reference_error(
-                activation,
-                error::ReferenceErrorCode::InvalidRead,
-                multiname,
-                self.instance_class(),
-            ));
-        };
-
-        // Unbelievably cursed special case in avmplus:
-        // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ScriptObject.cpp#L195-L199
-        let key = maybe_int_property(local_name);
-        let values = self.values();
-        let value = values.as_hashmap().get(&key);
-        if let Some(value) = value {
-            return Ok(value.value);
-        }
-
-        // follow the prototype chain
-        let mut proto = self.proto();
-        while let Some(obj) = proto {
-            let obj = obj.base();
-            let values = obj.values();
-            let value = values.as_hashmap().get(&key);
-            if let Some(value) = value {
-                return Ok(value.value);
-            }
-            proto = obj.proto();
-        }
-
-        // Special case: Unresolvable properties on dynamic classes are treated
-        // as dynamic properties that have not yet been set, and yield
-        // `undefined`
-        if self.is_sealed() {
-            Err(error::make_reference_error(
-                activation,
-                error::ReferenceErrorCode::InvalidRead,
-                multiname,
-                self.instance_class(),
-            ))
+        if let Some(value) = dynamic_lookup {
+            Ok(value)
         } else {
-            Ok(Value::Undefined)
+            // Special case: Unresolvable properties on dynamic classes are treated
+            // as dynamic properties that have not yet been set, and yield
+            // `undefined`
+            if self.is_sealed() {
+                Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::InvalidRead,
+                    multiname,
+                    self.instance_class(),
+                ))
+            } else {
+                Ok(Value::Undefined)
+            }
         }
     }
 
     pub fn set_property_local(
-        &self,
+        self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
-        if self.is_sealed() || !multiname.contains_public_namespace() {
+        if self.is_sealed() || !multiname.valid_dynamic_name() {
             return Err(error::make_reference_error(
                 activation,
                 error::ReferenceErrorCode::InvalidWrite,
@@ -287,7 +252,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn init_property_local(
-        &self,
+        self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
@@ -295,10 +260,12 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         self.set_property_local(multiname, value, activation)
     }
 
-    pub fn delete_property_local(&self, mc: &Mutation<'gc>, multiname: &Multiname<'gc>) -> bool {
-        if !multiname.contains_public_namespace() {
+    pub fn delete_property_local(self, mc: &Mutation<'gc>, multiname: &Multiname<'gc>) -> bool {
+        // TODO: FP behaves differently here in interpreter mode vs JIT mode
+        if !multiname.valid_dynamic_name() {
             return false;
         }
+
         if let Some(name) = multiname.local_name() {
             let key = maybe_int_property(name);
             self.values_mut(mc).remove(&key);
@@ -309,7 +276,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     #[inline(always)]
-    pub fn get_slot(&self, id: u32) -> Value<'gc> {
+    pub fn get_slot(self, id: u32) -> Value<'gc> {
         self.0
             .slots
             .get(id as usize)
@@ -319,7 +286,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     /// Set a slot by its index.
-    pub fn set_slot(&self, id: u32, value: Value<'gc>, mc: &Mutation<'gc>) {
+    pub fn set_slot(self, id: u32, value: Value<'gc>, mc: &Mutation<'gc>) {
         let slot = self
             .0
             .slots
@@ -333,12 +300,12 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     /// Retrieve a bound method from the method table.
-    pub fn get_bound_method(&self, id: u32) -> Option<FunctionObject<'gc>> {
+    pub fn get_bound_method(self, id: u32) -> Option<FunctionObject<'gc>> {
         self.bound_methods().get(id as usize).and_then(|v| *v)
     }
 
-    pub fn has_own_dynamic_property(&self, name: &Multiname<'gc>) -> bool {
-        if name.contains_public_namespace() {
+    pub fn has_own_dynamic_property(self, name: &Multiname<'gc>) -> bool {
+        if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 let key = maybe_int_property(name);
                 return self.values().as_hashmap().get(&key).is_some();
@@ -347,11 +314,11 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         false
     }
 
-    pub fn has_own_property(&self, name: &Multiname<'gc>) -> bool {
+    pub fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         self.vtable().has_trait(name) || self.has_own_dynamic_property(name)
     }
 
-    pub fn proto(&self) -> Option<Object<'gc>> {
+    pub fn proto(self) -> Option<Object<'gc>> {
         self.0.proto.get()
     }
 
@@ -359,14 +326,14 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         unlock!(Gc::write(mc, self.0), ScriptObjectData, proto).set(Some(proto));
     }
 
-    pub fn get_next_enumerant(&self, last_index: u32) -> u32 {
+    pub fn get_next_enumerant(self, last_index: u32) -> u32 {
         self.values()
             .next(last_index as usize)
             .map(|val| val as u32)
             .unwrap_or(0)
     }
 
-    pub fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
+    pub fn get_enumerant_name(self, index: u32) -> Option<Value<'gc>> {
         self.values().key_at(index as usize).map(|key| match key {
             DynamicKey::String(name) => Value::String(*name),
             DynamicKey::Object(obj) => Value::Object(*obj),
@@ -374,7 +341,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         })
     }
 
-    pub fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
+    pub fn property_is_enumerable(self, name: AvmString<'gc>) -> bool {
         let key = maybe_int_property(name);
         self.values()
             .as_hashmap()
@@ -383,7 +350,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn set_local_property_is_enumerable(
-        &self,
+        self,
         mc: &Mutation<'gc>,
         name: AvmString<'gc>,
         is_enumerable: bool,
@@ -396,7 +363,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
 
     /// Install a method into the object.
     pub fn install_bound_method(
-        &self,
+        self,
         mc: &Mutation<'gc>,
         disp_id: u32,
         function: FunctionObject<'gc>,
@@ -411,16 +378,16 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     /// Get the `Class` for this object.
-    pub fn instance_class(&self) -> Class<'gc> {
+    pub fn instance_class(self) -> Class<'gc> {
         self.0.instance_class
     }
 
     /// Get the vtable for this object, if it has one.
-    pub fn vtable(&self) -> VTable<'gc> {
+    pub fn vtable(self) -> VTable<'gc> {
         self.0.vtable.get()
     }
 
-    pub fn is_sealed(&self) -> bool {
+    pub fn is_sealed(self) -> bool {
         self.instance_class().is_sealed()
     }
 
@@ -434,16 +401,79 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         unlock!(Gc::write(mc, self.0), ScriptObjectData, vtable).set(vtable);
     }
 
-    pub fn debug_class_name(&self) -> Box<dyn std::fmt::Debug + 'gc> {
-        Box::new(self.instance_class().debug_name())
+    pub fn class_name(self) -> QName<'gc> {
+        self.instance_class().name()
     }
 }
 
 impl Debug for ScriptObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("ScriptObject")
-            .field("name", &ScriptObjectWrapper(self.0).debug_class_name())
+            .field("name", &ScriptObjectWrapper(self.0).class_name())
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
+}
+
+/// General-purpose function for looking up dynamic properties on an object. This
+/// is used in `ScriptObject::get_property_local`, `Value::get_property`,
+/// `Value::call_property`, and `VectorObject::get_property_local`. This method
+/// returns `None` when the property is found on neither the local values nor
+/// the prototype.
+pub fn get_dynamic_property<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    multiname: &Multiname<'gc>,
+    local_values: Option<&DynamicMap<DynamicKey<'gc>, Value<'gc>>>,
+    prototype: Option<Object<'gc>>,
+    instance_class: Class<'gc>,
+) -> Result<Option<Value<'gc>>, Error<'gc>> {
+    if !multiname.valid_dynamic_name() {
+        let error_code = if multiname.has_multiple_ns() {
+            error::ReferenceErrorCode::InvalidNsRead
+        } else {
+            error::ReferenceErrorCode::InvalidRead
+        };
+
+        return Err(error::make_reference_error(
+            activation,
+            error_code,
+            multiname,
+            instance_class,
+        ));
+    }
+
+    let Some(local_name) = multiname.local_name() else {
+        // when can this happen?
+        return Err(error::make_reference_error(
+            activation,
+            error::ReferenceErrorCode::InvalidRead,
+            multiname,
+            instance_class,
+        ));
+    };
+
+    // Unbelievably cursed special case in avmplus:
+    // https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ScriptObject.cpp#L195-L199
+    let key = maybe_int_property(local_name);
+
+    if let Some(values) = local_values {
+        let value = values.as_hashmap().get(&key);
+        if let Some(value) = value {
+            return Ok(Some(value.value));
+        }
+    }
+
+    // follow the prototype chain
+    let mut proto = prototype;
+    while let Some(obj) = proto {
+        let obj = obj.base();
+        let values = obj.values();
+        let value = values.as_hashmap().get(&key);
+        if let Some(value) = value {
+            return Ok(Some(value.value));
+        }
+        proto = obj.proto();
+    }
+
+    Ok(None)
 }

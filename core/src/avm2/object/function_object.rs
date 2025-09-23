@@ -2,10 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::function::BoundMethod;
+use crate::avm2::function::{BoundMethod, FunctionArgs};
 use crate::avm2::method::Method;
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -14,6 +14,7 @@ use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use ruffle_macros::istr;
 
 /// An Object which can be called to execute its function code.
 #[derive(Collect, Clone, Copy)]
@@ -75,31 +76,39 @@ impl<'gc> FunctionObject<'gc> {
 
         let es3_proto = ScriptObject::new_object(activation);
 
-        FunctionObject(Gc::new(
+        let function_object = FunctionObject(Gc::new(
             activation.gc(),
             FunctionObjectData {
                 base: ScriptObjectData::new(fn_class),
                 exec,
                 prototype: Lock::new(Some(es3_proto)),
             },
-        ))
+        ));
+
+        let constructor_prop = istr!("constructor");
+
+        // Set the constructor property on the prototype to point back to this function
+        es3_proto.set_dynamic_property(constructor_prop, function_object.into(), activation.gc());
+        es3_proto.set_local_property_is_enumerable(activation.gc(), constructor_prop, false);
+
+        function_object
     }
 
     pub fn call(
         self,
         activation: &mut Activation<'_, 'gc>,
         receiver: Value<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let exec = &self.0.exec;
 
-        exec.exec(receiver, arguments, activation, self.into())
+        exec.exec(receiver, arguments, activation, Some(self))
     }
 
     pub fn construct(
         self,
         activation: &mut Activation<'_, 'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
         let object_class = activation.avm2().classes().object;
 
@@ -118,12 +127,18 @@ impl<'gc> FunctionObject<'gc> {
             object_class.instance_vtable(),
         );
 
-        self.call(activation, instance.into(), arguments)?;
+        let result = self.call(activation, instance.into(), arguments)?;
 
-        Ok(instance)
+        // If the constructor returns an object, use that instead of the created instance
+        // TODO: avmplus returns null here if the constructor returns null
+        if let Value::Object(obj) = result {
+            Ok(obj)
+        } else {
+            Ok(instance)
+        }
     }
 
-    pub fn prototype(&self) -> Option<Object<'gc>> {
+    pub fn prototype(self) -> Option<Object<'gc>> {
         self.0.prototype.get()
     }
 
@@ -141,18 +156,10 @@ impl<'gc> TObject<'gc> for FunctionObject<'gc> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
     fn to_string(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {
         let method = self.0.exec.as_method();
         let method_index = method.abc_method_index();
 
         AvmString::new_utf8(mc, format!("[object Function-{method_index}]"))
-    }
-
-    fn as_function_object(&self) -> Option<FunctionObject<'gc>> {
-        Some(*self)
     }
 }

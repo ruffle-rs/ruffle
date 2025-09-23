@@ -1,0 +1,12 @@
+null as Array as Array PASSED!
+null as Boolean as Boolean PASSED!
+null as Date as Date PASSED!
+null as Function as Function PASSED!
+null as Math as Math PASSED!
+null as Number as Number PASSED!
+null as Object as Object PASSED!
+null as RegExp as RegExp PASSED!
+null as String as String PASSED!
+null as int as int PASSED!
+null as uint as uint PASSED!
+null as Array as Boolean as Date as Number as String  PASSED!

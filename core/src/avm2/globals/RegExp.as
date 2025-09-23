@@ -2,7 +2,13 @@ package {
     [Ruffle(InstanceAllocator)]
     [Ruffle(CallHandler)]
     public dynamic class RegExp {
-        public function RegExp(re:* = undefined, flags:* = undefined) {
+        // NOTE: FP doesn't do args checking for the RegExp constructor because
+        // they mark the class as `construct="override"` (the equivalent of
+        // `[Ruffle(CustomConstructor)]` in Ruffle). However, because RegExp
+        // isn't `final`, we can't mark it as `CustomConstructor`. Instead, to
+        // allow calling RegExp with more than two arguments, we mark the
+        // constructor function as variadic using `...rest`.
+        public function RegExp(re:* = undefined, flags:* = undefined, ...rest) {
             this.init(re, flags)
         }
 
@@ -14,18 +20,20 @@ package {
         public native function get ignoreCase():Boolean;
         public native function get multiline():Boolean;
         public native function get lastIndex():int;
-        public native function set lastIndex(value:int):void;
+        public native function set lastIndex(value:int):*;
         public native function get source():String;
 
-        AS3 native function exec(str:String = ""):Object;
+        AS3 native function exec(str:String = ""):*;
         AS3 native function test(str:String = ""):Boolean;
 
-        prototype.exec = function(str:String = ""):Object {
-            return this.AS3::exec(str);
+        prototype.exec = function(str:* = ""):* {
+            var self:RegExp = this;
+            return self.AS3::exec(str);
         }
 
-        prototype.test = function(str:String = ""):Boolean {
-            return this.AS3::test(str);
+        prototype.test = function(str:* = ""):Boolean {
+            var self:RegExp = this;
+            return self.AS3::test(str);
         }
 
         prototype.toString = function():String {

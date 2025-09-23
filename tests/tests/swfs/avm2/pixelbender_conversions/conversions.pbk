@@ -1,0 +1,63 @@
+<languageVersion : 1.0;>
+
+kernel conversions
+<   namespace : "Ruffle Tests";
+    vendor : "Kamil Jarosz";
+    version : 1;
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    parameter int selection;
+
+    parameter bool boolInput
+    <
+        defaultValue:false;
+    >;
+
+    parameter int intInput
+    <
+        defaultValue:0;
+    >;
+
+    parameter float floatInput
+    <
+        defaultValue:0.0;
+    >;
+
+    void
+    evaluatePixel()
+    {
+        if (selection == 0) {
+            // bool -> int
+            // doesn't work in Flash Player :(
+        } else if (selection == 1) {
+            // bool -> float
+            dst = pixel4(1, float(boolInput) / 128.0, 0, 1);
+        } else if (selection == 2) {
+            // float -> bool
+            if (bool(floatInput)) {
+                dst = pixel4(1, 1, 0, 1);
+            } else {
+                dst = pixel4(1, 0, 0, 1);
+            }
+        } else if (selection == 3) {
+            // int -> bool
+            float f = bool(intInput) ? 1.0 : 0.0;
+            if (bool(intInput)) {
+                dst = pixel4(1, 1, f, 1);
+            } else {
+                dst = pixel4(1, 0, f, 1);
+            }
+        } else if (selection == 4) {
+            // int -> float
+            dst = pixel4(1, float(intInput) / 128.0, 0, 1);
+        } else if (selection == 5) {
+            // float -> int
+            dst = pixel4(1, float(int(floatInput)) / 128.0, 0, 1);
+        } else {
+            dst = pixel4(1, 1, 1, 1);
+        }
+    }
+}

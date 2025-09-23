@@ -15,13 +15,11 @@ fn avm2_object_from_flv_variables<'gc>(
     for value in variables {
         let property_name = value.name;
 
-        info_object
-            .set_string_property_local(
-                AvmString::new_utf8_bytes(activation.gc(), property_name),
-                value.data.to_avm2_value(activation),
-                activation,
-            )
-            .expect("valid set");
+        info_object.set_dynamic_property(
+            AvmString::new_utf8_bytes(activation.gc(), property_name),
+            value.data.to_avm2_value(activation),
+            activation.gc(),
+        );
     }
 
     info_object.into()
@@ -48,9 +46,7 @@ fn avm2_date_from_flv_date<'gc>(
 ) -> Avm2Value<'gc> {
     let date_time = DateTime::from_timestamp(unix_time as i64, 0).expect("invalid timestamp");
 
-    DateObject::from_date_time(activation, date_time)
-        .unwrap()
-        .into()
+    DateObject::from_date_time(activation, date_time).into()
 }
 
 pub trait FlvValueAvm2Ext<'gc> {

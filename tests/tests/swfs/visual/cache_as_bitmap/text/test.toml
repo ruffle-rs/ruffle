@@ -1,7 +1,22 @@
 num_frames = 4
 
-[image_comparisons.output]
-tolerance = 0
+# Outliers are 1.3% and 0.17% respectively in checks.
+# The difference comes from the fact that we're rendering device fonts
+# differently. Especially wrt. pixel snapping.
+
+[[image_comparisons.output.checks]]
+max_outliers = 12000
+
+[[image_comparisons.output.checks]]
+tolerance = 128
+max_outliers = 1500
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, sample_count = 4 }
+
+[default_fonts]
+serif = ["Noto Sans"]
+
+[fonts.noto_sans]
+family = "Noto Sans"
+path = "NotoSans.ttf"

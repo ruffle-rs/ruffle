@@ -26,8 +26,8 @@ pub fn create_text_line<'gc>(
 
     avm2_stub_method!(activation, "flash.text.TextBlock", "createTextLine");
 
-    let previous_text_line = args.try_get_object(activation, 0);
-    let width = args.get_f64(activation, 1)?;
+    let previous_text_line = args.try_get_object(0);
+    let width = args.get_f64(1);
 
     let content = this.get_slot(block_slots::_CONTENT);
 
@@ -84,8 +84,7 @@ pub fn create_text_line<'gc>(
 
     apply_format(activation, display_object, text.as_wstr(), element_format)?;
 
-    let instance = initialize_for_allocator(activation, display_object.into(), class)?;
-    class.call_init(instance.into(), &[], activation)?;
+    let instance = initialize_for_allocator(activation.context, display_object.into(), class);
 
     instance.set_slot(line_slots::_TEXT_BLOCK, this.into(), activation)?;
 

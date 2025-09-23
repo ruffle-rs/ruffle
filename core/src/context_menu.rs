@@ -7,7 +7,7 @@
 use crate::avm1;
 use crate::avm2;
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, InteractiveObject, TDisplayObject};
+use crate::display_object::{DisplayObject, InteractiveObject};
 use crate::display_object::{EditText, Stage};
 use crate::events::TextControlCode;
 use crate::i18n::core_text;
@@ -60,7 +60,7 @@ impl<'gc> ContextMenuState<'gc> {
         // When a text field is focused and the mouse is hovering it,
         // show the copy/paste menu.
         if let Some(text) = context.focus_tracker.get_as_edit_text() {
-            if InteractiveObject::option_ptr_eq(context.mouse_data.hovered, text.as_interactive()) {
+            if InteractiveObject::option_ptr_eq(context.mouse_data.hovered, Some(text.into())) {
                 self.build_text_items(text, context);
                 return;
             }
@@ -262,7 +262,7 @@ pub struct BuiltInItemFlags {
 impl BuiltInItemFlags {
     pub fn for_stage(stage: Stage<'_>) -> Self {
         let root_mc = stage.root_clip().and_then(|c| c.as_movie_clip());
-        let is_multiframe_movie = root_mc.map(|mc| mc.total_frames() > 1).unwrap_or(false);
+        let is_multiframe_movie = root_mc.map(|mc| mc.header_frames() > 1).unwrap_or(false);
         if is_multiframe_movie {
             Self {
                 forward_and_back: true,

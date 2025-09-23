@@ -1,5 +1,4 @@
 #![deny(clippy::unwrap_used)]
-#![allow(clippy::empty_docs)] //False positive in rustc 1.78 beta
 
 //! Ruffle web frontend.
 mod audio;
@@ -166,7 +165,11 @@ extern "C" {
     fn panic(this: &JavascriptPlayer, error: &JsError);
 
     #[wasm_bindgen(method, js_name = "displayRootMovieDownloadFailedMessage")]
-    fn display_root_movie_download_failed_message(this: &JavascriptPlayer, invalid_swf: bool);
+    fn display_root_movie_download_failed_message(
+        this: &JavascriptPlayer,
+        invalid_swf: bool,
+        fetch_error: String,
+    );
 
     #[wasm_bindgen(method, js_name = "displayRestoredFromBfcacheMessage")]
     fn display_restored_from_bfcache_message(this: &JavascriptPlayer);
@@ -228,6 +231,13 @@ struct MovieMetadata {
     uncompressed_len: i32,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum ScrollingBehavior {
+    Always,
+    Never,
+    Smart,
+}
+
 #[wasm_bindgen]
 impl RuffleHandle {
     /// Stream an arbitrary movie file from (presumably) the Internet.
@@ -273,7 +283,7 @@ impl RuffleHandle {
             SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None).map_err(|e| {
                 let _ = self.with_core_mut(|core| {
                     core.ui_mut()
-                        .display_root_movie_download_failed_message(true);
+                        .display_root_movie_download_failed_message(true, e.to_string());
                 });
                 format!("Error loading movie: {e}")
             })?;
@@ -418,9 +428,13 @@ impl RuffleHandle {
         // Instance is dropped at this point.
     }
 
-    #[allow(clippy::boxed_local)] // for js_bind
-    pub fn call_exposed_callback(&self, name: &str, args: Box<[JsValue]>) -> JsValue {
-        let args: Vec<_> = args.iter().map(js_to_external_value).collect();
+    pub fn call_exposed_callback(
+        &self,
+        name: &str,
+        #[expect(clippy::boxed_local)] // for js_bind
+        args: Box<[JsValue]>,
+    ) -> JsValue {
+        let args = args.iter().map(js_to_external_value);
 
         // Re-entrant callbacks need to return through the hole that was punched through for them
         // We record the context of external functions, and then if we get an internal callback
@@ -529,7 +543,7 @@ impl RuffleHandle {
             .warn_on_error();
 
         // Register the instance and create the animation frame closure.
-        let mut ruffle = Self::add_instance(instance)?;
+        let ruffle = Self::add_instance(instance)?;
 
         // For backward compatibility.
         parent.set_tab_index(-1);
@@ -684,9 +698,26 @@ impl RuffleHandle {
                             _ => return,
                         };
                         let _ = instance.with_core_mut(|core| {
-                            core.handle_event(PlayerEvent::MouseWheel { delta });
-                            if core.should_prevent_scrolling() {
-                                js_event.prevent_default();
+                            let scroll_handled =
+                                core.handle_event(PlayerEvent::MouseWheel { delta });
+                            match config.scrolling_behavior {
+                                ScrollingBehavior::Always => {
+                                    // Do not prevent scrolling
+                                }
+                                ScrollingBehavior::Never => {
+                                    // Always prevent scrolling
+                                    js_event.prevent_default();
+                                }
+                                ScrollingBehavior::Smart => {
+                                    if scroll_handled {
+                                        // AVM2 logic
+                                        js_event.prevent_default();
+                                    }
+                                    if core.should_prevent_scrolling() {
+                                        // AVM1 logic
+                                        js_event.prevent_default();
+                                    }
+                                }
                             }
                         });
                     });
@@ -922,10 +953,10 @@ impl RuffleHandle {
     }
 
     /// Unregisters a Ruffle instance, and returns the removed instance.
-    fn remove_instance(&self) -> Result<RuffleInstance, RuffleInstanceError> {
+    fn remove_instance(self) -> Result<RuffleInstance, RuffleInstanceError> {
         INSTANCES.try_with(|instances| {
             let mut instances = instances.try_borrow_mut()?;
-            if let Some(instance) = instances.remove(*self) {
+            if let Some(instance) = instances.remove(self) {
                 Ok(instance.into_inner())
             } else {
                 Err(RuffleInstanceError::InstanceNotFound)
@@ -934,14 +965,14 @@ impl RuffleHandle {
     }
 
     /// Runs the given function on this Ruffle instance.
-    fn with_instance<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
+    fn with_instance<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&RuffleInstance) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(*self) {
+                if let Some(instance) = instances.get(self) {
                     let instance = instance.try_borrow()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -959,14 +990,14 @@ impl RuffleHandle {
     }
 
     /// Runs the given function on this Ruffle instance.
-    fn with_instance_mut<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
+    fn with_instance_mut<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&mut RuffleInstance) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(*self) {
+                if let Some(instance) = instances.get(self) {
                     let mut instance = instance.try_borrow_mut()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -984,14 +1015,14 @@ impl RuffleHandle {
     }
 
     /// Runs the given function on this instance's `Player`.
-    fn with_core<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
+    fn with_core<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&ruffle_core::Player) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(*self) {
+                if let Some(instance) = instances.get(self) {
                     let instance = instance.try_borrow()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -1016,14 +1047,14 @@ impl RuffleHandle {
     }
 
     /// Runs the given function on this instance's `Player`.
-    fn with_core_mut<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
+    fn with_core_mut<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&mut ruffle_core::Player) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(*self) {
+                if let Some(instance) = instances.get(self) {
                     let instance = instance.try_borrow()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -1047,7 +1078,7 @@ impl RuffleHandle {
         ret
     }
 
-    fn tick(&mut self, timestamp: f64) {
+    fn tick(self, timestamp: f64) {
         let mut dt = 0.0;
         let mut new_dimensions = None;
         let mut gamepad_button_events = Vec::new();
@@ -1181,7 +1212,7 @@ impl RuffleHandle {
         });
     }
 
-    fn on_metadata(&self, swf_header: &ruffle_core::swf::HeaderExt) {
+    fn on_metadata(self, swf_header: &ruffle_core::swf::HeaderExt) {
         let _ = self.with_instance(|instance| {
             // Convert the background color to an HTML hex color ("#FFFFFF").
             let background_color = swf_header
@@ -1206,7 +1237,7 @@ impl RuffleHandle {
 }
 
 impl RuffleInstance {
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     fn with_core<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&ruffle_core::Player) -> O,

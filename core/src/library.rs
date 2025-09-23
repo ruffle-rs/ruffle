@@ -2,10 +2,9 @@ use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
 use crate::avm2::{Class as Avm2Class, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
-use std::borrow::Cow;
 
 use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
-use crate::font::{Font, FontDescriptor, FontQuery, FontType};
+use crate::font::{Font, FontDescriptor, FontLike, FontQuery, FontType};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
@@ -176,12 +175,10 @@ impl<'gc> MovieLibrary<'gc> {
         self.export_characters.insert(export_name, id, false);
     }
 
-    #[allow(dead_code)]
     pub fn characters(&self) -> &HashMap<CharacterId, Character<'gc>> {
         &self.characters
     }
 
-    #[allow(dead_code)]
     pub fn export_characters(&self) -> &PropertyMap<'gc, CharacterId> {
         &self.export_characters
     }
@@ -190,17 +187,17 @@ impl<'gc> MovieLibrary<'gc> {
         self.characters.contains_key(&id)
     }
 
-    pub fn character_by_id(&self, id: CharacterId) -> Option<&Character<'gc>> {
-        self.characters.get(&id)
+    pub fn character_by_id(&self, id: CharacterId) -> Option<Character<'gc>> {
+        self.characters.get(&id).copied()
     }
 
     pub fn character_by_export_name(
         &self,
         name: AvmString<'gc>,
-    ) -> Option<(CharacterId, &Character<'gc>)> {
+    ) -> Option<(CharacterId, Character<'gc>)> {
         if let Some(id) = self.export_characters.get(name, false) {
             if let Some(character) = self.characters.get(id) {
-                return Some((*id, character));
+                return Some((*id, *character));
             }
         }
         None
@@ -221,7 +218,7 @@ impl<'gc> MovieLibrary<'gc> {
         id: CharacterId,
         mc: &Mutation<'gc>,
     ) -> Option<DisplayObject<'gc>> {
-        if let Some(character) = self.characters.get(&id) {
+        if let Some(&character) = self.characters.get(&id) {
             self.instantiate_display_object(id, character, mc)
         } else {
             tracing::error!("Tried to instantiate non-registered character ID {}", id);
@@ -252,18 +249,15 @@ impl<'gc> MovieLibrary<'gc> {
     fn instantiate_display_object(
         &self,
         id: CharacterId,
-        character: &Character<'gc>,
+        character: Character<'gc>,
         mc: &Mutation<'gc>,
     ) -> Option<DisplayObject<'gc>> {
         match character {
-            Character::Bitmap {
-                compressed,
-                avm2_bitmapdata_class,
-                handle: _,
-            } => {
-                let bitmap = compressed.decode().unwrap();
+            Character::Bitmap(bitmap) => {
+                let avm2_class = bitmap.avm2_class();
+                let bitmap = bitmap.compressed().decode().unwrap();
                 let bitmap = Bitmap::new(mc, id, bitmap, self.swf.clone());
-                bitmap.set_avm2_bitmapdata_class(mc, *avm2_bitmapdata_class.read());
+                bitmap.set_avm2_bitmapdata_class(mc, avm2_class);
                 Some(bitmap.instantiate(mc))
             }
             Character::EditText(edit_text) => Some(edit_text.instantiate(mc)),
@@ -376,50 +370,66 @@ pub struct MovieLibrarySource<'a, 'gc> {
 
 impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
     fn bitmap_size(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapSize> {
-        if let Some(Character::Bitmap { compressed, .. }) = self.library.characters.get(&id) {
-            Some(compressed.size())
+        if let Some(Character::Bitmap(bitmap)) = self.library.characters.get(&id) {
+            Some(bitmap.compressed().size())
         } else {
             None
         }
     }
 
     fn bitmap_handle(&self, id: u16, backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
-        let Some(Character::Bitmap {
-            compressed,
-            handle,
-            avm2_bitmapdata_class: _,
-        }) = self.library.characters.get(&id)
-        else {
+        let Some(Character::Bitmap(bitmap)) = self.library.characters.get(&id) else {
             return None;
         };
-        let mut handle = handle.borrow_mut();
-        if let Some(handle) = &*handle {
-            return Some(handle.clone());
+
+        match bitmap.bitmap_handle(backend) {
+            Ok(handle) => Some(handle),
+            Err(e) => {
+                tracing::error!("Failed to register bitmap character {id}: {e}");
+                None
+            }
         }
-        let decoded = match compressed.decode() {
-            Ok(decoded) => decoded,
-            Err(e) => {
-                tracing::error!("Failed to decode bitmap character {id:?}: {e:?}");
-                return None;
-            }
-        };
-        let new_handle = match backend.register_bitmap(decoded) {
-            Ok(handle) => handle,
-            Err(e) => {
-                tracing::error!("Failed to register bitmap character {id:?}: {e:?}");
-                return None;
-            }
-        };
-        // FIXME - do we ever want to release this handle, to avoid taking up GPU memory?
-        *handle = Some(new_handle.clone());
-        Some(new_handle)
+    }
+}
+
+struct MovieLibraries<'gc>(PtrWeakKeyHashMap<Weak<SwfMovie>, MovieLibrary<'gc>>);
+
+unsafe impl<'gc> Collect<'gc> for MovieLibraries<'gc> {
+    #[inline]
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
+        for (_, val) in self.0.iter() {
+            cc.trace(val);
+        }
+    }
+}
+
+impl<'gc> MovieLibraries<'gc> {
+    fn new() -> Self {
+        Self(PtrWeakKeyHashMap::new())
+    }
+
+    fn get(&self, key: &Arc<SwfMovie>) -> Option<&MovieLibrary<'gc>> {
+        self.0.get(key)
+    }
+
+    fn get_or_insert_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
+        // NOTE(Clippy): Cannot use or_default() here as PtrWeakKeyHashMap does not have such a method on its Entry API
+        self.0
+            .entry(movie.clone())
+            .or_insert_with(|| MovieLibrary::new(movie))
+    }
+
+    fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
+        self.0.keys().collect()
     }
 }
 
 /// Symbol library for multiple movies.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct Library<'gc> {
     /// All the movie libraries.
-    movie_libraries: PtrWeakKeyHashMap<Weak<SwfMovie>, MovieLibrary<'gc>>,
+    movie_libraries: MovieLibraries<'gc>,
 
     /// A cache of seen device fonts.
     // TODO: Descriptors shouldn't be stored in fonts. Fonts should be a list that we iterate and ask "do you match". A font can have zero or many names.
@@ -447,26 +457,10 @@ pub struct Library<'gc> {
     avm2_class_registry: Avm2ClassRegistry<'gc>,
 }
 
-// TODO(moulins): use gc_arena::Static to avoid unsafe impl?
-unsafe impl<'gc> Collect<'gc> for Library<'gc> {
-    #[inline]
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (_, val) in self.movie_libraries.iter() {
-            cc.trace(val);
-        }
-        for (_, val) in self.default_font_cache.iter() {
-            cc.trace(val);
-        }
-        cc.trace(&self.device_fonts);
-        cc.trace(&self.global_fonts);
-        cc.trace(&self.avm2_class_registry);
-    }
-}
-
 impl<'gc> Library<'gc> {
     pub fn empty() -> Self {
         Self {
-            movie_libraries: PtrWeakKeyHashMap::new(),
+            movie_libraries: MovieLibraries::new(),
             device_fonts: Default::default(),
             global_fonts: Default::default(),
             font_lookup_cache: Default::default(),
@@ -482,15 +476,11 @@ impl<'gc> Library<'gc> {
     }
 
     pub fn library_for_movie_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
-        // NOTE(Clippy): Cannot use or_default() here as PtrWeakKeyHashMap does not have such a method on its Entry API
-        #[allow(clippy::unwrap_or_default)]
-        self.movie_libraries
-            .entry(movie.clone())
-            .or_insert_with(|| MovieLibrary::new(movie))
+        self.movie_libraries.get_or_insert_mut(movie)
     }
 
     pub fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
-        self.movie_libraries.keys().collect()
+        self.movie_libraries.known_movies()
     }
 
     /// Returns the default Font implementations behind the built in names (ie `_sans`)
@@ -681,13 +671,9 @@ impl<'gc> Library<'gc> {
                 index,
             } => {
                 let descriptor = FontDescriptor::from_parts(&name, is_bold, is_italic);
-                if let Ok(font) = Font::from_font_file(
-                    gc_context,
-                    descriptor,
-                    Cow::Owned(data),
-                    index,
-                    FontType::Device,
-                ) {
+                if let Ok(font) =
+                    Font::from_font_file(gc_context, descriptor, data, index, FontType::Device)
+                {
                     let name = font.descriptor().name().to_owned();
                     info!("Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from file");
                     self.device_fonts.register(font);

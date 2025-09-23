@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "Informatie"
     },
+    "settings_log_level_debug": {
+        "message": "Foutopsporing"
+    },
+    "settings_log_level_trace": {
+        "message": "Traceren"
+    },
     "settings_max_execution_duration": {
         "message": "Maximum toegestane ActionScript uitvoeringsduur (in seconden)"
     },

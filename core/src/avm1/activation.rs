@@ -16,14 +16,15 @@ use crate::string::{AvmString, HasStringContext, StringContext, SwfStrExt as _, 
 use crate::tag_utils::SwfSlice;
 use crate::vminterface::Instantiator;
 use crate::{avm_error, avm_warn};
-use gc_arena::{Gc, GcCell, Mutation};
+use gc_arena::{Gc, Mutation};
 use indexmap::IndexMap;
 use rand::Rng;
 use ruffle_macros::istr;
-use smallvec::SmallVec;
 use std::borrow::Cow;
+use std::cell::Cell;
 use std::cmp::min;
 use std::fmt;
+use std::rc::Rc;
 use swf::avm1::read::Reader;
 use swf::avm1::types::*;
 use url::form_urlencoded;
@@ -37,44 +38,6 @@ macro_rules! avm_debug {
             tracing::debug!($($arg)*)
         }
     )
-}
-
-/// Represents a particular register set.
-///
-/// This type exists primarily because SmallVec isn't garbage-collectable.
-#[derive(Clone)]
-pub struct RegisterSet<'gc>(SmallVec<[Value<'gc>; 8]>);
-
-unsafe impl<'gc> gc_arena::Collect<'gc> for RegisterSet<'gc> {
-    #[inline]
-    fn trace<C: gc_arena::collect::Trace<'gc>>(&self, cc: &mut C) {
-        for register in &self.0 {
-            cc.trace(register);
-        }
-    }
-}
-
-impl<'gc> RegisterSet<'gc> {
-    /// Create a new register set with a given number of specified registers.
-    ///
-    /// The given registers will be set to `undefined`.
-    pub fn new(num: u8) -> Self {
-        Self(smallvec![Value::Undefined; num as usize])
-    }
-
-    /// Return a reference to a given register, if it exists.
-    pub fn get(&self, num: u8) -> Option<&Value<'gc>> {
-        self.0.get(num as usize)
-    }
-
-    /// Return a mutable reference to a given register, if it exists.
-    pub fn get_mut(&mut self, num: u8) -> Option<&mut Value<'gc>> {
-        self.0.get_mut(num as usize)
-    }
-
-    pub fn len(&self) -> u8 {
-        self.0.len() as u8
-    }
 }
 
 #[derive(Clone)]
@@ -206,9 +169,9 @@ pub struct Activation<'a, 'gc: 'a> {
     /// Registers are numbered from 1; r0 does not exist. Therefore this vec,
     /// while nominally starting from zero, actually starts from r1.
     ///
-    /// Registers are stored in a `GcCell` so that rescopes (e.g. with) use the
+    /// Registers are stored in a `Rc` so that rescopes (e.g. with) use the
     /// same register set.
-    local_registers: Option<GcCell<'gc, RegisterSet<'gc>>>,
+    local_registers: Option<Rc<[Cell<Value<'gc>>]>>,
 
     /// The base clip of this stack frame.
     /// This will be the MovieClip that contains the bytecode.
@@ -255,7 +218,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self.context.strings
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn from_action(
         context: &'a mut UpdateContext<'gc>,
         id: ActivationIdentifier<'a>,
@@ -301,7 +264,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             base_clip_unloaded: self.base_clip_unloaded,
             this: self.this,
             callee: self.callee,
-            local_registers: self.local_registers,
+            local_registers: self.local_registers.clone(),
         }
     }
 
@@ -766,7 +729,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         if let Some((clip, frame)) = call_frame {
             if frame <= u16::MAX as u32 {
-                for action in clip.actions_on_frame(self.context, frame as u16) {
+                for action in clip.actions_on_frame(frame as u16) {
                     let _ = self.run_child_frame_for_action("[Frame Call]", clip.into(), action)?;
                 }
             }
@@ -774,7 +737,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             avm_warn!(self, "Call: Invalid call");
         }
 
-        Ok(FrameControl::Continue)
+        self.continue_if_base_clip_exists()
     }
 
     fn action_call_function(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
@@ -907,6 +870,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let swf_version = self.swf_version();
         let func_data = parent_data.to_unbounded_subslice(action.actions);
         let constant_pool = self.constant_pool();
+        let bc = self.base_clip.object().coerce_to_object(self);
         let func = Avm1Function::from_swf_function(
             self.gc(),
             swf_version,
@@ -914,7 +878,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             action,
             self.scope(),
             constant_pool,
-            self.base_clip(),
+            // `base_clip` should always be a living `MovieClip` so this can't fail
+            MovieClipReference::try_from_stage_object(self, bc).unwrap(),
         );
         let name = func.name();
         let prototype = Object::new(
@@ -1074,7 +1039,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    #[allow(clippy::float_cmp)]
+    #[expect(clippy::float_cmp)]
     fn action_equals(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // AS1 equality
         // If both of the values to compare coerce to `NaN`, the result will always be false.
@@ -1176,7 +1141,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_get_time(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         self.context.times_get_time_called += 1;
         // heuristic to detect busy loops used for delays and slowly progress fake time
-        if self.context.times_get_time_called >= 20 && self.context.times_get_time_called % 5 == 0 {
+        if self.context.times_get_time_called >= 20
+            && self.context.times_get_time_called.is_multiple_of(5)
+        {
             *self.context.time_offset += 1;
         }
 
@@ -1873,6 +1840,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         if let Some(target_clip) = target_clip {
             crate::avm1::globals::remove_display_object(target_clip, self);
+            if self.target_clip().is_some_and(|clip| clip.avm1_removed()) {
+                // Revert the target to the base clip, or `None` if the base was also removed
+                self.set_target_clip(Some(self.base_clip()));
+
+                let clip_obj = self.target_clip_or_root().object().coerce_to_object(self);
+
+                self.set_scope(Scope::new_target_scope(self.scope(), clip_obj, self.gc()));
+            }
         } else {
             avm_warn!(self, "RemoveSprite: Source is not a display object");
         }
@@ -1952,7 +1927,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(FrameControl::Continue)
     }
 
-    #[allow(clippy::float_cmp)]
     fn action_strict_equals(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         // The same as normal equality but types must match
         let a = self.context.avm1.pop();
@@ -2268,7 +2242,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     self.callee,
                 );
 
-                activation.local_registers = self.local_registers;
+                activation.local_registers = self.local_registers.clone();
 
                 match catch_vars {
                     CatchVar::Var(name) => {
@@ -2317,7 +2291,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             self.target_clip()
                 .and_then(|dobj| dobj.as_movie_clip())
-                .map(|mc| mc.frames_loaded() >= min(frame_num, mc.total_frames()) as i32)
+                .map(|mc| mc.frames_loaded() >= min(frame_num, mc.header_frames()) as i32)
                 .unwrap_or(true)
         };
 
@@ -2360,7 +2334,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // `ifFrameLoaded(_framesloaded + 1)` always evaluates to true (off-by-one).
             self.target_clip()
                 .and_then(|dobj| dobj.as_movie_clip())
-                .map(|mc| mc.frames_loaded() + 1 >= min(frame_num as u16, mc.total_frames()) as i32)
+                .map(|mc| {
+                    mc.frames_loaded() + 1 >= min(frame_num as u16, mc.header_frames()) as i32
+                })
                 .unwrap_or(true)
         };
 
@@ -2417,26 +2393,42 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// If a given register does not exist, this function yields
     /// Value::Undefined, which is also a valid register value.
     pub fn current_register(&self, id: u8) -> Value<'gc> {
-        if self.has_local_register(id) {
-            self.local_register(id).unwrap_or(Value::Undefined)
-        } else {
-            self.context
-                .avm1
-                .get_register(id as usize)
-                .cloned()
-                .unwrap_or(Value::Undefined)
+        let id = id as usize;
+        if let Some(local_registers) = &self.local_registers {
+            if let Some(reg) = local_registers.get(id) {
+                return reg.get();
+            }
         }
+
+        self.context
+            .avm1
+            .get_register(id)
+            .copied()
+            .unwrap_or(Value::Undefined)
     }
 
     /// Set a register to a given value.
     ///
     /// If a given register does not exist, this function does nothing.
     pub fn set_current_register(&mut self, id: u8, value: Value<'gc>) {
-        if self.has_local_register(id) {
-            self.set_local_register(id, value);
-        } else if let Some(v) = self.context.avm1.get_register_mut(id as usize) {
-            *v = value;
+        if !self.set_local_register(id, value) {
+            if let Some(reg) = self.context.avm1.get_register_mut(id as usize) {
+                *reg = value;
+            }
         }
+    }
+
+    /// Set a local register to a given value, and returns `true` if successful.
+    ///
+    /// If a given local register does not exist, this function does nothing.
+    pub fn set_local_register(&mut self, id: u8, value: Value<'gc>) -> bool {
+        if let Some(local_registers) = &self.local_registers {
+            if let Some(reg) = local_registers.get(id as usize) {
+                reg.set(value);
+                return true;
+            }
+        }
+        false
     }
 
     /// Convert the enumerable properties of an object into a set of form values.
@@ -2711,9 +2703,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // We resolve it directly on the targeted object.
             let (path, var_name) = (&path[..separator], &path[separator + 1..]);
 
-            let mut current_scope = Some(self.scope());
-            while let Some(scope) = current_scope {
+            for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
+
                 if let Some(object) = self.resolve_target_path(
                     avm1_root,
                     *scope.locals(),
@@ -2723,7 +2715,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 )? {
                     return Ok(Some((object, var_name)));
                 }
-                current_scope = scope.parent();
             }
 
             return Ok(None);
@@ -2772,9 +2763,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // We resolve it directly on the targeted object.
             let (path, var_name) = (&path[..separator], &path[separator + 1..]);
 
-            let mut current_scope = Some(self.scope());
-            while let Some(scope) = current_scope {
+            for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
+
                 if let Some(object) = self.resolve_target_path(
                     avm1_root,
                     *scope.locals(),
@@ -2787,7 +2778,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         return Ok(CallableValue::Callable(object, object.get(var_name, self)?));
                     }
                 }
-                current_scope = scope.parent();
             }
 
             return Ok(CallableValue::UnCallable(Value::Undefined));
@@ -2795,15 +2785,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // If it doesn't have a trailing variable, it can still be a slash path.
         if path.contains(b'/') {
-            let mut current_scope = Some(self.scope());
-            while let Some(scope) = current_scope {
+            for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
+
                 if let Some(object) =
                     self.resolve_target_path(avm1_root, *scope.locals(), &path, false, true)?
                 {
                     return Ok(CallableValue::UnCallable(object.into()));
                 }
-                current_scope = scope.parent();
             }
         }
 
@@ -2848,7 +2837,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // Special case, mutating `this`
-        if path.as_wstr() == WStr::from_units(b"this") {
+        if path.as_wstr() == b"this" {
             self.this = value;
             return Ok(());
         }
@@ -2862,9 +2851,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // We resolve it directly on the targeted object.
             let (path, var_name) = (&path[..sep], &path[sep + 1..]);
 
-            let mut current_scope = Some(self.scope());
-            while let Some(scope) = current_scope {
+            for scope in Scope::ancestors(self.scope()) {
                 let avm1_root = start.avm1_root();
+
                 if let Some(object) =
                     self.resolve_target_path(avm1_root, *scope.locals(), path, true, true)?
                 {
@@ -2872,7 +2861,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     object.set(var_name, value, self)?;
                     return Ok(());
                 }
-                current_scope = scope.parent();
             }
 
             return Ok(());
@@ -2991,8 +2979,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Whether this activation operates in a local scope.
     pub fn in_local_scope(&self) -> bool {
-        let mut current_scope = Some(self.scope);
-        while let Some(scope) = current_scope {
+        for scope in Scope::ancestors(self.scope) {
             match scope.class() {
                 scope::ScopeClass::Local => {
                     return true;
@@ -3002,8 +2989,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 }
                 _ => (),
             };
-            current_scope = scope.parent();
         }
+
         false
     }
 
@@ -3058,36 +3045,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.this
     }
 
-    /// Returns true if this activation has a given local register ID.
-    pub fn has_local_register(&self, id: u8) -> bool {
-        self.local_registers
-            .map(|rs| id < rs.read().len())
-            .unwrap_or(false)
-    }
-
-    pub fn allocate_local_registers(&mut self, num: u8, mc: &Mutation<'gc>) {
+    pub fn allocate_local_registers(&mut self, num: u8) {
         self.local_registers = match num {
             0 => None,
-            num => Some(GcCell::new(mc, RegisterSet::new(num))),
+            num => Some((0..num).map(|_| Cell::new(Value::Undefined)).collect()),
         };
-    }
-
-    /// Retrieve a local register.
-    pub fn local_register(&self, id: u8) -> Option<Value<'gc>> {
-        if let Some(local_registers) = self.local_registers {
-            local_registers.read().get(id).cloned()
-        } else {
-            None
-        }
-    }
-
-    /// Set a local register.
-    pub fn set_local_register(&mut self, id: u8, value: Value<'gc>) {
-        if let Some(ref mut local_registers) = self.local_registers {
-            if let Some(r) = local_registers.write(self.context.gc()).get_mut(id) {
-                *r = value;
-            }
-        }
     }
 
     pub fn constant_pool(&self) -> Gc<'gc, Vec<Value<'gc>>> {

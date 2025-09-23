@@ -1,6 +1,7 @@
 message-cant-embed =
     Ruffle không thể chạy nội dung Flash được nhúng trong trang này.
     Bạn có thể thử mở tệp ở một tab riêng biệt để tránh sự cố này.
+message-restored-from-bfcache = Trình duyệt đã khôi phục lại nội dung Flash từ phiên gần nhất. Tải lại trang nếu muốn bắt đầu lại từ đầu.
 panic-title = Có lỗi xảy ra :(
 more-info = Thông tin thêm
 run-anyway = Vẫn khởi chạy

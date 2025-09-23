@@ -1,7 +1,6 @@
 //! `flash.media.SoundTransform` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -21,7 +20,7 @@ pub fn get_left_to_left<'gc>(
 }
 
 pub fn set_left_to_left<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -29,7 +28,7 @@ pub fn set_left_to_left<'gc>(
 
     let this = this.as_sound_transform().unwrap();
 
-    let value = args.get_f64(activation, 0)?;
+    let value = args.get_f64(0);
     this.set_left_to_left(value);
 
     Ok(Value::Undefined)
@@ -48,7 +47,7 @@ pub fn get_left_to_right<'gc>(
 }
 
 pub fn set_left_to_right<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -56,7 +55,7 @@ pub fn set_left_to_right<'gc>(
 
     let this = this.as_sound_transform().unwrap();
 
-    let value = args.get_f64(activation, 0)?;
+    let value = args.get_f64(0);
     this.set_left_to_right(value);
 
     Ok(Value::Undefined)
@@ -75,7 +74,7 @@ pub fn get_right_to_left<'gc>(
 }
 
 pub fn set_right_to_left<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -83,7 +82,7 @@ pub fn set_right_to_left<'gc>(
 
     let this = this.as_sound_transform().unwrap();
 
-    let value = args.get_f64(activation, 0)?;
+    let value = args.get_f64(0);
     this.set_right_to_left(value);
 
     Ok(Value::Undefined)
@@ -102,7 +101,7 @@ pub fn get_right_to_right<'gc>(
 }
 
 pub fn set_right_to_right<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -110,7 +109,7 @@ pub fn set_right_to_right<'gc>(
 
     let this = this.as_sound_transform().unwrap();
 
-    let value = args.get_f64(activation, 0)?;
+    let value = args.get_f64(0);
     this.set_right_to_right(value);
 
     Ok(Value::Undefined)
@@ -129,7 +128,7 @@ pub fn get_volume<'gc>(
 }
 
 pub fn set_volume<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -137,7 +136,7 @@ pub fn set_volume<'gc>(
 
     let this = this.as_sound_transform().unwrap();
 
-    let value = args.get_f64(activation, 0)?;
+    let value = args.get_f64(0);
     this.set_volume(value);
 
     Ok(Value::Undefined)
@@ -167,7 +166,7 @@ pub fn get_pan<'gc>(
 
 /// Implements `SoundTransform.pan`'s setter.
 pub fn set_pan<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -175,7 +174,7 @@ pub fn set_pan<'gc>(
 
     let this = this.as_sound_transform().unwrap();
 
-    let pan = args.get_f64(activation, 0)?;
+    let pan = args.get_f64(0);
 
     this.set_left_to_left((1.0 - pan).sqrt());
     this.set_right_to_right((1.0 + pan).sqrt());

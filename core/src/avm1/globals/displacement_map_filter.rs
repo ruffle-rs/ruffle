@@ -1,13 +1,11 @@
 //! flash.filters.DisplacementMapFilter object
 
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::UpdateContext;
-use crate::string::StringContext;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
@@ -20,7 +18,7 @@ use swf::{Color, Point};
 #[derive(Clone, Collect, Debug, Default)]
 #[collect(no_drop)]
 struct DisplacementMapFilterData<'gc> {
-    map_bitmap: Lock<Option<BitmapDataWrapper<'gc>>>,
+    map_bitmap: Lock<Option<BitmapData<'gc>>>,
     map_point: Cell<Point<i32>>,
     component_x: Cell<i32>,
     component_y: Cell<i32>,
@@ -304,6 +302,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "alpha" => property(displacement_map_filter_method!(17), displacement_map_filter_method!(18));
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(displacement_map_filter_method!(0), None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
+
 fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -403,33 +410,4 @@ fn method<'gc>(
         }
         _ => Value::Undefined,
     })
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let displacement_map_filter_proto = Object::new(context, Some(proto));
-    define_properties_on(
-        PROTO_DECLS,
-        context,
-        displacement_map_filter_proto,
-        fn_proto,
-    );
-    displacement_map_filter_proto
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        displacement_map_filter_method!(0),
-        None,
-        fn_proto,
-        proto,
-    )
 }

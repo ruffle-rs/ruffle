@@ -1,5 +1,4 @@
 pub use crate::avm2::object::responder_allocator;
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 
@@ -13,7 +12,7 @@ pub fn init<'gc>(
     let responder = this.as_responder().expect("Must be Responder object");
 
     let result = args.get_object(activation, 0, "result")?;
-    let status = args.try_get_object(activation, 1);
+    let status = args.try_get_object(1);
 
     responder.set_callbacks(
         activation.gc(),

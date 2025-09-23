@@ -55,7 +55,7 @@ fn parse_data<'gc>(
         .urlvariables
         .inner_class_definition();
 
-    if data.is_of_type(activation, urlvariables) {
+    if data.is_of_type(urlvariables) {
         let obj = data
             .as_object()
             .expect("URLVariables object should be Value::Object");
@@ -79,7 +79,7 @@ pub fn navigate_to_url<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let request = args.get_object(activation, 0, "request")?;
 
-    let target = args.get_string(activation, 1)?;
+    let target = args.get_string(activation, 1);
 
     match request.get_slot(url_request_slots::_URL) {
         Value::Null => Err(make_error_2007(activation, "url")),

@@ -10,7 +10,7 @@ pub fn get_domain<'gc>(
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let movie = &activation.context.swf;
+    let movie = &activation.context.root_swf;
 
     let domain = if let Ok(url) = url::Url::parse(movie.url()) {
         if url.scheme() == "file" {

@@ -14,4 +14,3 @@ workspace = true
 ruffle_render = { path = "../" }
 naga = { workspace = true }
 anyhow = { workspace = true }
-

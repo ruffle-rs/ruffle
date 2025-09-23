@@ -1,20 +1,24 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
-use std::rc::Rc;
-
+use crate::avm2::bytearray::ObjectEncoding;
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
 use crate::avm2::e4x::XmlSettings;
-use crate::avm2::error::{make_error_1014, make_error_1107, type_error, Error1014Type};
+use crate::avm2::error::{
+    make_error_1014, make_error_1107, type_error, verify_error, Error1014Type,
+};
+use crate::avm2::function::exec;
 use crate::avm2::globals::{
     init_builtin_system_class_defs, init_builtin_system_classes, init_native_system_classes,
     SystemClassDefs, SystemClasses,
 };
 use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::object::FunctionObject;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::script::{Script, TranslationUnit};
+use crate::avm2::stack::Stack;
 use crate::character::Character;
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, DisplayObjectWeak, MovieClip, TDisplayObject};
+use crate::display_object::{MovieClip, TDisplayObject};
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
@@ -67,6 +71,7 @@ mod scope;
 pub mod script;
 #[cfg(feature = "known_stubs")]
 pub mod specification;
+mod stack;
 mod string;
 mod stubs;
 mod traits;
@@ -83,12 +88,13 @@ pub use crate::avm2::class::Class;
 pub use crate::avm2::domain::{Domain, DomainPtr};
 pub use crate::avm2::error::Error;
 pub use crate::avm2::flv::FlvValueAvm2Ext;
+pub use crate::avm2::function::FunctionArgs;
 pub use crate::avm2::globals::flash::ui::context_menu::make_context_menu_state;
 pub use crate::avm2::multiname::Multiname;
 pub use crate::avm2::namespace::{CommonNamespaces, Namespace};
 pub use crate::avm2::object::{
-    ArrayObject, BitmapDataObject, ClassObject, EventObject, Object, SoundChannelObject,
-    StageObject, TObject,
+    ArrayObject, BitmapDataObject, ClassObject, EventObject, LoaderInfoObject, Object,
+    SoundChannelObject, StageObject, TObject,
 };
 pub use crate::avm2::qname::QName;
 pub use crate::avm2::value::Value;
@@ -99,8 +105,6 @@ use self::scope::Scope;
 
 const BROADCAST_WHITELIST: [&[u8]; 4] =
     [b"enterFrame", b"exitFrame", b"frameConstructed", b"render"];
-
-const PREALLOCATED_STACK_SIZE: usize = 120000;
 
 /// The state of an AVM2 interpreter.
 #[derive(Collect)]
@@ -114,7 +118,7 @@ pub struct Avm2<'gc> {
     pub player_runtime: PlayerRuntime,
 
     /// Values currently present on the operand stack.
-    stack: Vec<Value<'gc>>,
+    stack: Stack<'gc>,
 
     /// Scopes currently present of the scope stack.
     scope_stack: Vec<Scope<'gc>>,
@@ -164,22 +168,13 @@ pub struct Avm2<'gc> {
     /// currently present on the display list. This list keeps track of that.
     broadcast_list: FnvHashMap<AvmString<'gc>, Vec<WeakObject<'gc>>>,
 
-    /// The list of 'orphan' objects - these objects have no parent,
-    /// so we need to manually run their frames in `run_all_phases_avm2` to match
-    /// Flash's behavior. Clips are added to this list with `add_orphan_movie`.
-    /// and are removed automatically by `cleanup_dead_orphans`.
-    ///
-    /// We store `DisplayObjectWeak`, since we don't want to keep these objects
-    /// alive if they would otherwise be garbage-collected. The movie will
-    /// stop ticking whenever garbage collection runs if there are no more
-    /// strong references around (this matches Flash's behavior).
-    orphan_objects: Rc<Vec<DisplayObjectWeak<'gc>>>,
-
     alias_to_class_map: FnvHashMap<AvmString<'gc>, ClassObject<'gc>>,
     class_to_alias_map: FnvHashMap<Class<'gc>, AvmString<'gc>>,
 
     #[collect(require_static)]
     pub xml_settings: XmlSettings,
+
+    pub default_bytearray_encoding: ObjectEncoding,
 
     /// The api version of our root movie clip. Note - this is used as the
     /// api version for swfs loaded via `Loader`, overriding the api version
@@ -212,7 +207,7 @@ impl<'gc> Avm2<'gc> {
         Self {
             player_version,
             player_runtime,
-            stack: Vec::with_capacity(PREALLOCATED_STACK_SIZE),
+            stack: Stack::new(mc),
             scope_stack: Vec::new(),
             call_stack: GcRefLock::new(mc, CallStack::new().into()),
             playerglobals_domain,
@@ -230,12 +225,11 @@ impl<'gc> Avm2<'gc> {
             native_fast_call_list: Default::default(),
             broadcast_list: Default::default(),
 
-            orphan_objects: Default::default(),
-
             alias_to_class_map: Default::default(),
             class_to_alias_map: Default::default(),
 
             xml_settings: XmlSettings::new_default(),
+            default_bytearray_encoding: ObjectEncoding::Amf3,
 
             // Set the lowest version for now - this will be overridden when we set our movie
             root_api_version: ApiVersion::AllVersions,
@@ -247,10 +241,10 @@ impl<'gc> Avm2<'gc> {
         }
     }
 
-    pub fn load_player_globals(context: &mut UpdateContext<'gc>) -> Result<(), Error<'gc>> {
+    pub fn load_player_globals(context: &mut UpdateContext<'gc>) {
         let globals = context.avm2.playerglobals_domain;
         let mut activation = Activation::from_domain(context, globals);
-        globals::load_playerglobal(&mut activation, globals)
+        globals::load_playerglobal(&mut activation, globals);
     }
 
     pub fn playerglobals_domain(&self) -> Domain<'gc> {
@@ -295,89 +289,42 @@ impl<'gc> Avm2<'gc> {
         script: Script<'gc>,
         context: &mut UpdateContext<'gc>,
     ) -> Result<(), Error<'gc>> {
-        let mut init_activation = Activation::from_script(context, script)?;
+        // TODO can we skip creating this temporary Activation?
+        let mut activation = Activation::from_nothing(context);
 
-        let mc = init_activation.gc();
+        let (method, global_object, domain) = script.init();
 
-        let (method, _globals, _domain) = script.init();
-        init_activation.avm2().push_global_init(mc, script);
-        let result = init_activation.run_actions(method);
-        init_activation.avm2().pop_call(mc);
+        let scope = ScopeChain::new(domain);
+        // Script `global` classes extend Object
+        let bound_superclass = Some(activation.avm2().classes().object);
+        let bound_class = Some(script.global_class());
 
-        init_activation.cleanup();
+        // Provide a callee object if necessary
+        let callee = if method.needs_arguments_object() {
+            Some(FunctionObject::from_method(
+                &mut activation,
+                method,
+                scope,
+                Some(global_object.into()),
+                bound_superclass,
+                bound_class,
+            ))
+        } else {
+            None
+        };
 
-        result.map(|_| {})
-    }
+        exec(
+            method,
+            scope,
+            global_object.into(),
+            bound_superclass,
+            bound_class,
+            FunctionArgs::empty(),
+            &mut activation,
+            callee,
+        )?;
 
-    fn orphan_objects_mut(&mut self) -> &mut Vec<DisplayObjectWeak<'gc>> {
-        Rc::make_mut(&mut self.orphan_objects)
-    }
-
-    /// Adds a `MovieClip` to the orphan list. In AVM2, movies advance their
-    /// frames even when they are not on a display list. Unfortunately,
-    /// multiple SWFS rely on this behavior, so we need to match Flash's
-    /// behavior. This should not be called manually - `movie_clip` will
-    /// call it when necessary.
-    pub fn add_orphan_obj(&mut self, dobj: DisplayObject<'gc>) {
-        // Note: comparing pointers is correct because GcWeak keeps its allocation alive,
-        // so the pointers can't overlap by accident.
-        if self
-            .orphan_objects
-            .iter()
-            .all(|d| !std::ptr::eq(d.as_ptr(), dobj.as_ptr()))
-        {
-            self.orphan_objects_mut().push(dobj.downgrade());
-        }
-    }
-
-    pub fn each_orphan_obj(
-        context: &mut UpdateContext<'gc>,
-        mut f: impl FnMut(DisplayObject<'gc>, &mut UpdateContext<'gc>),
-    ) {
-        // Clone the Rc before iterating over it. Any modifications must go through
-        // `Rc::make_mut` in `orphan_objects_mut`, which will leave this `Rc` unmodified.
-        // This ensures that any orphan additions/removals done by `f` will not affect
-        // the iteration in this method.
-        let orphan_objs: Rc<_> = context.avm2.orphan_objects.clone();
-
-        for orphan in orphan_objs.iter() {
-            if let Some(dobj) = valid_orphan(*orphan, context.gc()) {
-                f(dobj, context);
-            }
-        }
-    }
-
-    /// Called at the end of `run_all_phases_avm2` - removes any movies
-    /// that have been garbage collected, or are no longer orphans
-    /// (they've since acquired a parent).
-    pub fn cleanup_dead_orphans(context: &mut UpdateContext<'gc>) {
-        context.avm2.orphan_objects_mut().retain(|d| {
-            if let Some(dobj) = valid_orphan(*d, context.gc_context) {
-                // All clips that become orphaned (have their parent removed, or start out with no parent)
-                // get added to the orphan list. However, there's a distinction between clips
-                // that are removed from a RemoveObject tag, and clips that are removed from ActionScript.
-                //
-                // Clips removed from a RemoveObject tag only stay on the orphan list until the end
-                // of the frame - this lets them run a framescript (with 'this.parent == null')
-                // before they're removed. After that, they're removed from the orphan list,
-                // and will not be run in any way.
-                //
-                // Clips removed from ActionScript stay on the orphan list, and will be run
-                // indefinitely (if there are no remaining strong references, they will eventually
-                // be garbage collected).
-                //
-                // To detect this, we check 'placed_by_script'. This flag get set to 'true'
-                // for objects constructed from ActionScript, and for objects moved around
-                // in the timeline (add/remove child, swap depths) by ActionScript. A
-                // RemoveObject tag will only affect objects instantiated by the timeline,
-                // which have not been moved in the displaylist by ActionScript. Therefore,
-                // any orphan we see that has 'placed_by_script()' should stay on the orphan
-                // list, because it was not removed by a RemoveObject tag.
-                dobj.placed_by_script()
-            } else {
-                false
-            }
-        });
+        Ok(())
     }
 
     /// Dispatch an event on an object.
@@ -506,8 +453,7 @@ impl<'gc> Avm2<'gc> {
                 let mut activation = Activation::from_nothing(context);
 
                 if object.is_of_type(on_type.inner_class_definition()) {
-                    if let Err(err) = events::dispatch_event(&mut activation, object, event, false)
-                    {
+                    if let Err(err) = events::broadcast_event(&mut activation, object, event) {
                         tracing::error!(
                             "Encountered AVM2 error when broadcasting `{}` event: {:?}",
                             event_name,
@@ -530,13 +476,12 @@ impl<'gc> Avm2<'gc> {
     pub fn run_stack_frame_for_callable(
         callable: Object<'gc>,
         receiver: Value<'gc>,
-        args: &[Value<'gc>],
         domain: Domain<'gc>,
         context: &mut UpdateContext<'gc>,
     ) -> Result<(), String> {
         let mut evt_activation = Activation::from_domain(context, domain);
         Value::from(callable)
-            .call(&mut evt_activation, receiver, args)
+            .call(&mut evt_activation, receiver, FunctionArgs::empty())
             .map_err(|e| format!("{e:?}"))?;
 
         Ok(())
@@ -579,7 +524,7 @@ impl<'gc> Avm2<'gc> {
                 // The class must extend DisplayObject to ensure that events
                 // can properly be dispatched to them
                 if !class.has_class_in_chain(activation.avm2().class_defs().display_object) {
-                    return Err(Error::AvmError(type_error(
+                    return Err(Error::avm_error(type_error(
                         activation,
                         &format!("Error #2022: Class {}$ must inherit from DisplayObject to link to a symbol.", name.to_qualified_name(activation.gc())),
                         2022,
@@ -592,7 +537,7 @@ impl<'gc> Avm2<'gc> {
             // ClassObject is going to be the class of the MC. Ensure it
             // subclasses Sprite.
             if !class.has_class_in_chain(activation.avm2().class_defs().sprite) {
-                return Err(Error::AvmError(type_error(
+                return Err(Error::avm_error(type_error(
                     activation,
                     &format!(
                         "Error #2023: Class {}$ must inherit from Sprite to link to the root.",
@@ -628,6 +573,14 @@ impl<'gc> Avm2<'gc> {
         // Make sure we have the correct domain for code that tries to access it
         // using `activation.domain()`
         activation.set_outer(ScopeChain::new(domain));
+
+        if abc.scripts.is_empty() {
+            return Err(Error::avm_error(verify_error(
+                &mut activation,
+                "Error #1047: No entry point was found.",
+                1047,
+            )?));
+        }
 
         let num_scripts = abc.scripts.len();
         let tunit = TranslationUnit::from_abc(abc, domain, name, movie, activation.gc());
@@ -720,11 +673,6 @@ impl<'gc> Avm2<'gc> {
         self.call_stack.borrow_mut(mc).push(method, class)
     }
 
-    /// Pushes script initializer (global init) on the call stack
-    pub fn push_global_init(&self, mc: &Mutation<'gc>, script: Script<'gc>) {
-        self.call_stack.borrow_mut(mc).push_global_init(script)
-    }
-
     /// Pops an executable off the call stack
     pub fn pop_call(&self, mc: &Mutation<'gc>) -> Option<CallNode<'gc>> {
         self.call_stack.borrow_mut(mc).pop()
@@ -732,82 +680,6 @@ impl<'gc> Avm2<'gc> {
 
     pub fn call_stack(&self) -> GcRefLock<'gc, CallStack<'gc>> {
         self.call_stack
-    }
-
-    // See: https://doc.rust-lang.org/std/vec/struct.Vec.html#method.push_within_capacity
-    #[inline(always)]
-    fn push_internal(&mut self, value: Value<'gc>) {
-        let stack = &mut self.stack;
-
-        if stack.len() == stack.capacity() {
-            panic!("Native stack underflow");
-        }
-
-        unsafe {
-            let end = stack.as_mut_ptr().add(stack.len());
-            std::ptr::write(end, value);
-            stack.set_len(stack.len() + 1);
-        }
-    }
-
-    /// Push a value onto the operand stack.
-    #[inline(always)]
-    fn push(&mut self, value: Value<'gc>) {
-        avm_debug!(self, "Stack push {}: {value:?}", self.stack.len());
-
-        self.push_internal(value);
-    }
-
-    /// Retrieve the top-most value on the operand stack.
-    #[inline(always)]
-    fn pop(&mut self) -> Value<'gc> {
-        let value = self.stack.pop().expect("Native stack underflow");
-
-        avm_debug!(self, "Stack pop {}: {value:?}", self.stack.len());
-
-        value
-    }
-
-    /// Peek the n-th value from the end of the operand stack.
-    #[inline(always)]
-    fn peek(&self, index: usize) -> Value<'gc> {
-        let value = self.stack[self.stack.len() - index - 1];
-
-        avm_debug!(self, "Stack peek {}: {value:?}", self.stack.len());
-
-        value
-    }
-
-    #[inline(always)]
-    fn stack_at(&self, index: usize) -> Value<'gc> {
-        let value = self.stack[index];
-
-        avm_debug!(self, "Stack peek {}: {value:?}", index);
-
-        value
-    }
-
-    #[inline(always)]
-    fn set_stack_at(&mut self, index: usize, value: Value<'gc>) {
-        avm_debug!(self, "Stack poke {}: {value:?}", index);
-
-        self.stack[index] = value;
-    }
-
-    fn pop_args(&mut self, arg_count: u32) -> Vec<Value<'gc>> {
-        let mut args = vec![Value::Undefined; arg_count as usize];
-        for arg in args.iter_mut().rev() {
-            *arg = self.pop();
-        }
-        args
-    }
-
-    fn stack_slice(&mut self, start: usize, len: usize) -> &[Value<'gc>] {
-        &self.stack[start..start + len]
-    }
-
-    fn truncate_stack(&mut self, size: usize) {
-        self.stack.truncate(size);
     }
 
     fn push_scope(&mut self, scope: Scope<'gc>) {
@@ -851,19 +723,4 @@ impl<'gc> Avm2<'gc> {
     pub fn set_optimizer_enabled(&mut self, value: bool) {
         self.optimizer_enabled = value;
     }
-}
-
-/// If the provided `DisplayObjectWeak` should have frames run, returns
-/// Some(clip) with an upgraded `MovieClip`.
-/// If this returns `None`, the entry should be removed from the orphan list.
-fn valid_orphan<'gc>(
-    dobj: DisplayObjectWeak<'gc>,
-    mc: &Mutation<'gc>,
-) -> Option<DisplayObject<'gc>> {
-    if let Some(dobj) = dobj.upgrade(mc) {
-        if dobj.parent().is_none() {
-            return Some(dobj);
-        }
-    }
-    None
 }

@@ -15,10 +15,11 @@ jobs:
       max-parallel: 1 # Should be 1 to avoid parallel builds
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install dependencies
         run: |
+          sudo apt-get update
           sudo apt-get install -y itstool gettext appstream
 
       - name: Generate desktop & metainfo sources

@@ -1,0 +1,4 @@
+num_ticks = 1
+
+# TODO We don't implement the 32/64bit distinction yet
+known_failure = true

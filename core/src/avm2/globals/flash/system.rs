@@ -4,7 +4,10 @@
 pub mod application_domain;
 pub mod capabilities;
 pub mod security;
+pub mod security_domain;
 pub mod system;
+pub mod worker;
+pub mod worker_domain;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::parameters::ParametersExt;
@@ -17,8 +20,8 @@ pub fn fscommand<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let command = args.get_string(activation, 0)?;
-    let args = args.get_string(activation, 1)?;
+    let command = args.get_string(activation, 0);
+    let args = args.get_string(activation, 1);
 
     if !activation
         .context

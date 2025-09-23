@@ -1,13 +1,15 @@
 //! `flash.media.SoundMixer` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2_stub_getter;
 use crate::display_object::SoundTransform;
-use std::sync::{Arc, OnceLock};
+use std::{
+    ops::Deref,
+    sync::{Arc, LazyLock},
+};
 
 /// Implements `soundTransform`'s getter
 ///
@@ -18,7 +20,7 @@ pub fn get_sound_transform<'gc>(
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let dobj_st = activation.context.global_sound_transform().clone();
+    let dobj_st = activation.context.global_sound_transform();
 
     Ok(dobj_st.into_avm2_object(activation)?.into())
 }
@@ -66,7 +68,7 @@ pub fn set_buffer_time<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let buffer_time = args.get_i32(activation, 0)?;
+    let buffer_time = args.get_i32(0);
 
     activation
         .context
@@ -100,19 +102,15 @@ pub fn compute_spectrum<'gc>(
     let mut bytearray = arg0.as_bytearray_mut().unwrap();
     let mut hist = activation.context.audio.get_sample_history();
 
-    let fft = args.len() > 1 && args[1].coerce_to_boolean();
-    let stretch = if args.len() > 2 {
-        args[2].coerce_to_i32(activation)?
-    } else {
-        0
-    };
+    let fft = args.get_bool(1);
+    let stretch = args.get_i32(2);
 
     if fft {
-        // TODO: Use `std::sync::LazyLock` once it's stabilized?
-        static FFT: OnceLock<Arc<dyn realfft::RealToComplex<f32>>> = OnceLock::new();
-
         // Flash Player appears to do a 2048-long FFT with only the first 512 samples filled in...
-        let fft = FFT.get_or_init(|| realfft::RealFftPlanner::new().plan_fft_forward(2048));
+        static FFT: LazyLock<Arc<dyn realfft::RealToComplex<f32>>> =
+            LazyLock::new(|| realfft::RealFftPlanner::new().plan_fft_forward(2048));
+
+        let fft = FFT.deref();
 
         let mut in_left = fft.make_input_vec();
         let mut in_right = fft.make_input_vec();

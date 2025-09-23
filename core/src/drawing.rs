@@ -5,15 +5,14 @@ use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{
     cubic_curve_bounds, quadratic_curve_bounds, DistilledShape, DrawCommand, DrawPath, FillRule,
 };
-use std::cell::{Cell, RefCell};
+use std::cell::OnceCell;
 use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};
 
 #[derive(Clone, Debug)]
 pub struct Drawing {
-    render_handle: RefCell<Option<ShapeHandle>>,
+    render_handle: OnceCell<ShapeHandle>,
     shape_bounds: Rectangle<Twips>,
     edge_bounds: Rectangle<Twips>,
-    dirty: Cell<bool>,
     paths: Vec<DrawingPath>,
     bitmaps: Vec<BitmapInfo>,
     current_fill: Option<DrawingFill>,
@@ -22,6 +21,8 @@ pub struct Drawing {
     cursor: Point<Twips>,
     fill_start: Point<Twips>,
     default_winding_rule: FillRule,
+    /// Cached for fast emptiness check.
+    is_empty: bool,
 }
 
 impl Default for Drawing {
@@ -33,10 +34,9 @@ impl Default for Drawing {
 impl Drawing {
     pub fn new() -> Self {
         Self {
-            render_handle: RefCell::new(None),
+            render_handle: OnceCell::new(),
             shape_bounds: Default::default(),
             edge_bounds: Default::default(),
-            dirty: Cell::new(false),
             paths: Vec::new(),
             bitmaps: Vec::new(),
             current_fill: None,
@@ -45,15 +45,15 @@ impl Drawing {
             cursor: Point::ZERO,
             fill_start: Point::ZERO,
             default_winding_rule: FillRule::EvenOdd,
+            is_empty: true,
         }
     }
 
     pub fn from_swf_shape(shape: &swf::Shape) -> Self {
         let mut this = Self {
-            render_handle: RefCell::new(None),
+            render_handle: OnceCell::new(),
             shape_bounds: shape.shape_bounds,
             edge_bounds: shape.edge_bounds,
-            dirty: Cell::new(true),
             paths: Vec::new(),
             bitmaps: Vec::new(),
             current_fill: None,
@@ -66,6 +66,7 @@ impl Drawing {
             } else {
                 FillRule::EvenOdd
             },
+            is_empty: true,
         };
 
         let shape: DistilledShape = shape.into();
@@ -103,21 +104,9 @@ impl Drawing {
         this
     }
 
-    pub fn copy_from(&mut self, other: &Drawing) {
-        *self = Drawing {
-            render_handle: RefCell::new(None),
-            dirty: Cell::new(true),
-            shape_bounds: other.shape_bounds,
-            edge_bounds: other.edge_bounds,
-            paths: other.paths.clone(),
-            bitmaps: other.bitmaps.clone(),
-            current_fill: other.current_fill.clone(),
-            current_line: other.current_line.clone(),
-            pending_lines: other.pending_lines.clone(),
-            cursor: other.cursor,
-            fill_start: other.fill_start,
-            default_winding_rule: other.default_winding_rule,
-        }
+    fn mark_dirty(&mut self) {
+        self.is_empty = false;
+        self.render_handle.take();
     }
 
     /// Set fill style and reset fill rule to default.
@@ -157,7 +146,7 @@ impl Drawing {
             });
         }
         self.fill_start = self.cursor;
-        self.dirty.set(true);
+        self.mark_dirty();
     }
 
     pub fn clear(&mut self) {
@@ -170,10 +159,10 @@ impl Drawing {
         self.shape_bounds = Default::default();
         self.cursor = Point::ZERO;
         self.fill_start = Point::ZERO;
+        self.is_empty = true;
 
         // An empty drawing doesn't need to hold onto a `ShapeHandle`.
         self.render_handle.take();
-        self.dirty.set(false);
     }
 
     pub fn set_line_style(&mut self, style: Option<LineStyle>) {
@@ -193,7 +182,7 @@ impl Drawing {
             });
         }
 
-        self.dirty.set(true);
+        self.mark_dirty();
     }
 
     pub fn set_line_fill_style(&mut self, fill_style: FillStyle) {
@@ -241,7 +230,7 @@ impl Drawing {
         }
 
         self.cursor = command.end_point();
-        self.dirty.set(true);
+        self.mark_dirty()
     }
 
     pub fn add_bitmap(&mut self, bitmap: BitmapInfo) -> u16 {
@@ -252,7 +241,11 @@ impl Drawing {
 
     /// Obtain a `ShapeHandle` that represents this `Drawing`, or `None` if it is empty.
     pub fn register_or_replace(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
-        if self.dirty.get() {
+        if self.is_empty {
+            return None;
+        }
+
+        let handle = self.render_handle.get_or_init(|| {
             let mut paths = Vec::with_capacity(self.paths.len());
 
             for path in &self.paths {
@@ -312,24 +305,16 @@ impl Drawing {
                 })
             }
 
-            let handle = if paths.is_empty() {
-                None
-            } else {
-                let shape = DistilledShape {
-                    paths,
-                    shape_bounds: self.shape_bounds,
-                    edge_bounds: self.edge_bounds,
-                    id: 0,
-                };
-                Some(renderer.register_shape(shape, self))
+            let shape = DistilledShape {
+                paths,
+                shape_bounds: self.shape_bounds,
+                edge_bounds: self.edge_bounds,
+                id: 0,
             };
+            renderer.register_shape(shape, self)
+        });
 
-            self.dirty.set(false);
-            self.render_handle.replace(handle.clone());
-            handle
-        } else {
-            self.render_handle.borrow().to_owned()
-        }
+        Some(handle.clone())
     }
 
     pub fn render(&self, context: &mut RenderContext) {
@@ -353,7 +338,7 @@ impl Drawing {
         for path in &self.paths {
             match path {
                 DrawingPath::Fill(fill) => {
-                    if shape_utils::draw_command_fill_hit_test(&fill.commands, point) {
+                    if shape_utils::draw_command_fill_hit_test(&fill.commands, fill.rule, point) {
                         return true;
                     }
                 }
@@ -372,7 +357,7 @@ impl Drawing {
 
         // The pending fill will auto-close.
         if let Some(fill) = &self.current_fill {
-            if shape_utils::draw_command_fill_hit_test(&fill.commands, point) {
+            if shape_utils::draw_command_fill_hit_test(&fill.commands, fill.rule, point) {
                 return true;
             }
         }
@@ -426,7 +411,7 @@ impl Drawing {
                 if let Some(line) = &mut self.current_line {
                     line.commands.push(DrawCommand::LineTo(self.fill_start));
                 }
-                self.dirty.set(true);
+                self.mark_dirty();
             }
         }
     }

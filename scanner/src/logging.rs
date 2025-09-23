@@ -16,6 +16,7 @@ impl ScanLogBackend {
 
 impl LogBackend for ScanLogBackend {
     fn avm_trace(&self, _message: &str) {}
+    fn avm_warning(&self, _message: &str) {}
 }
 
 thread_local! {

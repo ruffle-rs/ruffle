@@ -1,0 +1,6 @@
+Access private method from a default method of a sub class PASSED!
+Access private method from a public method of a sub class PASSED!
+Access private method from a private method of a sub class PASSED!
+Access private method from a public method of a sub class PASSED!
+Access private method from a public method of a sub class PASSED!
+access private property from public static method of sub class PASSED!

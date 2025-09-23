@@ -1,7 +1,7 @@
 use crate::avm2::object::StyleSheetObject;
 use crate::avm2::property::Property;
 use crate::avm2::{
-    Activation, ArrayStorage, ClassObject, Error, Namespace, Object, TObject, Value,
+    Activation, ArrayStorage, ClassObject, Error, Namespace, Object, TObject as _, Value,
 };
 use crate::context::UpdateContext;
 use crate::debug_ui::display_object::open_display_object_button;
@@ -147,7 +147,9 @@ impl Avm2ObjectWindow {
                                 encoder.set_depth(png::BitDepth::Eight);
                                 if let Err(e) = encoder.write_header().and_then(|mut w| {
                                     w.write_image_data(
-                                        &bmd.sync(activation.context.renderer).read().pixels_rgba(),
+                                        bmd.sync(activation.context.renderer)
+                                            .borrow()
+                                            .pixels_rgba(),
                                     )
                                 }) {
                                     tracing::error!("Couldn't create png: {e}");
@@ -196,7 +198,7 @@ impl Avm2ObjectWindow {
 
     fn show_elements<'gc>(
         &mut self,
-        array: std::cell::Ref<ArrayStorage<'gc>>,
+        array: std::cell::Ref<'_, ArrayStorage<'gc>>,
         messages: &mut Vec<Message>,
         context: &mut UpdateContext<'gc>,
         ui: &mut Ui,
@@ -277,7 +279,7 @@ impl Avm2ObjectWindow {
 
                 ui.label("Interfaces");
                 ui.vertical(|ui| {
-                    for interface in &*class.inner_class_definition().all_interfaces() {
+                    for interface in class.inner_class_definition().all_interfaces() {
                         ui.text_edit_singleline(
                             &mut interface
                                 .name()
@@ -302,13 +304,12 @@ impl Avm2ObjectWindow {
         activation: &mut Activation<'_, 'gc>,
         ui: &mut Ui,
     ) {
-        let mut entries = Vec::<(String, Namespace<'gc>, Property)>::new();
-        // We can't access things whilst we iterate the vtable, so clone and sort it all here
-        let vtable = object.vtable();
-
-        for (name, ns, prop) in vtable.resolved_traits().iter() {
-            entries.push((name.to_string(), ns, *prop));
-        }
+        let mut entries: Vec<(Cow<'gc, str>, Namespace<'gc>, Property)> = object
+            .vtable()
+            .resolved_traits()
+            .iter()
+            .map(|(name, ns, prop)| (name.as_wstr().to_utf8_lossy(), ns, *prop))
+            .collect();
         entries.sort_by(|a, b| a.0.cmp(&b.0));
 
         ui.horizontal(|ui| {
@@ -356,7 +357,7 @@ impl Avm2ObjectWindow {
             });
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     fn show_property<'gc>(
         &mut self,
         object: Object<'gc>,

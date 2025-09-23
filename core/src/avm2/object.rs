@@ -5,8 +5,9 @@ use crate::avm2::array::ArrayStorage;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::error;
+use crate::avm2::error::{self, make_error_2012};
 use crate::avm2::events::{DispatchList, Event};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::property::Property;
 use crate::avm2::regexp::RegExp;
 use crate::avm2::value::{Hint, Value};
@@ -15,7 +16,7 @@ use crate::avm2::vtable::VTable;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
 use crate::streams::NetStream;
@@ -43,6 +44,7 @@ mod function_object;
 mod index_buffer_3d_object;
 mod loaderinfo_object;
 mod local_connection_object;
+mod message_channel_object;
 mod namespace_object;
 mod net_connection_object;
 mod netstream_object;
@@ -52,6 +54,7 @@ mod qname_object;
 mod regexp_object;
 mod responder_object;
 mod script_object;
+mod security_domain_object;
 mod shader_data_object;
 mod shared_object_object;
 mod socket_object;
@@ -65,6 +68,8 @@ mod textformat_object;
 mod texture_object;
 mod vector_object;
 mod vertex_buffer_3d_object;
+mod worker_domain_object;
+mod worker_object;
 mod xml_list_object;
 mod xml_object;
 
@@ -101,6 +106,9 @@ pub use crate::avm2::object::loaderinfo_object::{
 pub use crate::avm2::object::local_connection_object::{
     local_connection_allocator, LocalConnectionObject, LocalConnectionObjectWeak,
 };
+pub use crate::avm2::object::message_channel_object::{
+    MessageChannelObject, MessageChannelObjectWeak,
+};
 pub use crate::avm2::object::namespace_object::{NamespaceObject, NamespaceObjectWeak};
 pub use crate::avm2::object::net_connection_object::{
     net_connection_allocator, NetConnectionObject, NetConnectionObjectWeak,
@@ -116,15 +124,16 @@ pub use crate::avm2::object::responder_object::{
     responder_allocator, ResponderObject, ResponderObjectWeak,
 };
 pub use crate::avm2::object::script_object::{
-    maybe_int_property, scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak,
+    get_dynamic_property, scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak,
     ScriptObjectWrapper,
+};
+pub use crate::avm2::object::security_domain_object::{
+    SecurityDomainObject, SecurityDomainObjectWeak,
 };
 pub use crate::avm2::object::shader_data_object::{
     shader_data_allocator, ShaderDataObject, ShaderDataObjectWeak,
 };
-pub use crate::avm2::object::shared_object_object::{
-    shared_object_allocator, SharedObjectObject, SharedObjectObjectWeak,
-};
+pub use crate::avm2::object::shared_object_object::{SharedObjectObject, SharedObjectObjectWeak};
 pub use crate::avm2::object::socket_object::{socket_allocator, SocketObject, SocketObjectWeak};
 pub use crate::avm2::object::sound_object::{
     sound_allocator, QueuedPlay, SoundLoadingState, SoundObject, SoundObjectWeak,
@@ -135,9 +144,7 @@ pub use crate::avm2::object::soundchannel_object::{
 pub use crate::avm2::object::soundtransform_object::{
     sound_transform_allocator, SoundTransformObject, SoundTransformObjectWeak,
 };
-pub use crate::avm2::object::stage3d_object::{
-    stage_3d_allocator, Stage3DObject, Stage3DObjectWeak,
-};
+pub use crate::avm2::object::stage3d_object::{Stage3DObject, Stage3DObjectWeak};
 pub use crate::avm2::object::stage_object::{StageObject, StageObjectWeak};
 pub use crate::avm2::object::stylesheet_object::{
     style_sheet_allocator, StyleSheetObject, StyleSheetObjectWeak,
@@ -150,6 +157,8 @@ pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject, Vec
 pub use crate::avm2::object::vertex_buffer_3d_object::{
     VertexBuffer3DObject, VertexBuffer3DObjectWeak,
 };
+pub use crate::avm2::object::worker_domain_object::{WorkerDomainObject, WorkerDomainObjectWeak};
+pub use crate::avm2::object::worker_object::{WorkerObject, WorkerObjectWeak};
 pub use crate::avm2::object::xml_list_object::{
     xml_list_allocator, E4XOrXml, XmlListObject, XmlListObjectWeak,
 };
@@ -159,7 +168,7 @@ use crate::font::Font;
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
 #[enum_trait_object(
-    #[allow(clippy::enum_variant_names)]
+    #[expect(clippy::enum_variant_names)]
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
     pub enum Object<'gc> {
@@ -204,6 +213,10 @@ use crate::font::Font;
         SharedObjectObject(SharedObjectObject<'gc>),
         SoundTransformObject(SoundTransformObject<'gc>),
         StyleSheetObject(StyleSheetObject<'gc>),
+        WorkerObject(WorkerObject<'gc>),
+        WorkerDomainObject(WorkerDomainObject<'gc>),
+        MessageChannelObject(MessageChannelObject<'gc>),
+        SecurityDomainObject(SecurityDomainObject<'gc>),
     }
 )]
 pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone + Copy {
@@ -232,15 +245,22 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         self.base().get_property_local(name, activation)
     }
 
-    /// Same as get_property_local, but constructs a public Multiname for you.
+    /// Get a dynamic property on this Object by name. This is like
+    /// `get_property_local`, but it skips dynamic-dispatch TObject logic
+    /// and always gets a dynamic property on the base ScriptObject. If the
+    /// object is sealed, or the dynamic property does not exist on the
+    /// ScriptObject, this returns `None`.
     #[no_dynamic]
-    fn get_string_property_local(
-        self,
-        name: AvmString<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        let name = Multiname::new(activation.avm2().namespaces.public_vm_internal(), name);
-        self.get_property_local(&name, activation)
+    fn get_dynamic_property(self, local_name: AvmString<'gc>) -> Option<Value<'gc>> {
+        use crate::avm2::object::script_object::maybe_int_property;
+
+        // See the comment in script_object::get_dynamic_property
+        let key = maybe_int_property(local_name);
+
+        let base = self.base();
+        let values = base.values();
+        let value = values.as_hashmap().get(&key);
+        value.map(|v| v.value)
     }
 
     /// Purely an optimization for "array-like" access. This should return
@@ -264,19 +284,44 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         base.set_property_local(name, value, activation)
     }
 
-    /// Same as set_property_local, but constructs a public Multiname for you.
-    /// TODO: this feels upside down, as in: we shouldn't need multinames/namespaces
-    /// by the time we reach dynamic properties.
-    /// But for now, this function is a smaller change to the core than a full refactor.
+    /// Set a dynamic property on this Object by name. This is like
+    /// `set_property_local`, but it skips dynamic-dispatch TObject logic
+    /// and always sets a dynamic property on the base ScriptObject.
+    ///
+    /// Note that calling this method on a non-dynamic (sealed) object will
+    /// panic, as sealed objects cannot have dynamic properties set on them.
+    ///
+    /// Additionally, if the vtable of the object has the property `local_name`
+    /// in it, this method will still declare a dynamic property on the object
+    /// with the same name, so take care to only call this method on objects
+    /// that are known to not have the property `local_name` in their vtable.
     #[no_dynamic]
-    fn set_string_property_local(
+    fn set_dynamic_property(
         self,
-        name: impl Into<AvmString<'gc>>,
+        local_name: AvmString<'gc>,
         value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let name = Multiname::new(activation.avm2().namespaces.public_vm_internal(), name);
-        self.set_property_local(&name, value, activation)
+        mc: &Mutation<'gc>,
+    ) {
+        use crate::avm2::object::script_object::maybe_int_property;
+
+        let base = self.base();
+        assert!(!base.is_sealed());
+
+        // See the comment in ScriptObjectWrapper::set_property_local
+        let key = maybe_int_property(local_name);
+
+        base.values_mut(mc).insert(key, value);
+    }
+
+    /// Purely an optimization for "array-like" access. This should return
+    /// `None` when the lookup needs to be forwarded to the base.
+    fn set_index_property(
+        self,
+        _activation: &mut Activation<'_, 'gc>,
+        _index: usize,
+        _value: Value<'gc>,
+    ) -> Option<Result<(), Error<'gc>>> {
+        None
     }
 
     /// Init a local property of the object. The Multiname should always be public.
@@ -306,7 +351,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     fn call_property_local(
         self,
         multiname: &Multiname<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Note: normally this would just call into ScriptObjectData::call_property_local
@@ -316,6 +361,38 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         let result = self.base().get_property_local(multiname, activation)?;
 
         result.call(activation, self_val, arguments)
+    }
+
+    /// Delete a property by QName, after multiname resolution and all other
+    /// considerations have been taken.
+    ///
+    /// This required method is only intended to be called by other TObject
+    /// methods.
+    fn delete_property_local(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: &Multiname<'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        let base = self.base();
+
+        Ok(base.delete_property_local(activation.gc(), name))
+    }
+
+    /// Delete a dynamic property on this Object by name. This is like
+    /// `delete_property_local`, but it skips dynamic-dispatch TObject logic
+    /// and always tries to delete a dynamic property on the base ScriptObject.
+    ///
+    /// This method will panic when called on a non-dynamic (sealed) object, as
+    /// sealed objects don't have dynamic properties to delete anyway.
+    #[no_dynamic]
+    fn delete_dynamic_property(self, name: AvmString<'gc>, mc: &Mutation<'gc>) {
+        use crate::avm2::object::script_object::maybe_int_property;
+
+        let base = self.base();
+        assert!(!base.is_sealed());
+
+        let key = maybe_int_property(name);
+        base.values_mut(mc).remove(&key);
     }
 
     /// Retrieve a slot by its index.
@@ -396,32 +473,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     #[no_dynamic]
     fn has_trait(self, name: &Multiname<'gc>) -> bool {
         self.vtable().has_trait(name)
-    }
-
-    /// Delete a property by QName, after multiname resolution and all other
-    /// considerations have been taken.
-    ///
-    /// This required method is only intended to be called by other TObject
-    /// methods.
-    fn delete_property_local(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-        name: &Multiname<'gc>,
-    ) -> Result<bool, Error<'gc>> {
-        let base = self.base();
-
-        Ok(base.delete_property_local(activation.gc(), name))
-    }
-
-    /// Same as delete_property_local, but constructs a public Multiname for you.
-    #[no_dynamic]
-    fn delete_string_property_local(
-        self,
-        name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<bool, Error<'gc>> {
-        let name = Multiname::new(activation.avm2().namespaces.public_vm_internal(), name);
-        self.delete_property_local(activation, &name)
     }
 
     /// Retrieve the `__proto__` of a given object.
@@ -600,10 +651,9 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
                 Property::Slot { slot_id } | Property::ConstSlot { slot_id } => {
                     values.push((name, self.base().get_slot(slot_id)));
                 }
-                Property::Virtual { get: Some(get), .. } => values.push((
-                    name,
-                    Value::from((*self).into()).call_method(get, &[], activation)?,
-                )),
+                Property::Virtual { get: Some(get), .. } => {
+                    values.push((name, Value::from(*self).call_method(get, &[], activation)?))
+                }
                 _ => {}
             }
         }
@@ -624,8 +674,12 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         self.instance_class().has_class_in_chain(test_class)
     }
 
+    #[inline(always)]
+    #[no_dynamic]
     /// Get a raw pointer value for this object.
-    fn as_ptr(&self) -> *const ObjectPtr;
+    fn as_ptr(&self) -> *const ObjectPtr {
+        Gc::as_ptr(self.gc_base()).cast()
+    }
 
     /// Get this object's vtable, if it has one.
     /// Every object with class should have a vtable
@@ -661,188 +715,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         base.set_vtable(mc, vtable);
     }
 
-    /// Try to corece this object into a `ClassObject`.
-    fn as_class_object(&self) -> Option<ClassObject<'gc>> {
-        None
-    }
-
-    fn as_function_object(&self) -> Option<FunctionObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
-    fn as_namespace(&self) -> Option<Namespace<'gc>> {
-        None
-    }
-
-    fn as_namespace_object(&self) -> Option<NamespaceObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as a `QNameObject`
-    fn as_qname_object(self) -> Option<QNameObject<'gc>> {
-        None
-    }
-
-    fn as_loader_info_object(&self) -> Option<&LoaderInfoObject<'gc>> {
-        None
-    }
-
-    fn as_array_object(&self) -> Option<ArrayObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as array storage.
-    fn as_array_storage(&self) -> Option<Ref<ArrayStorage<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as bytearray.
-    fn as_bytearray(&self) -> Option<Ref<ByteArrayStorage>> {
-        None
-    }
-
-    fn as_bytearray_mut(&self) -> Option<RefMut<ByteArrayStorage>> {
-        None
-    }
-
-    fn as_bytearray_object(&self) -> Option<ByteArrayObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as mutable array storage.
-    fn as_array_storage_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<ArrayStorage<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as vector storage.
-    fn as_vector_storage(&self) -> Option<Ref<VectorStorage<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as mutable vector storage.
-    fn as_vector_storage_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<VectorStorage<'gc>>> {
-        None
-    }
-
-    /// Get this object's `DisplayObject`, if it has one.
-    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
-        None
-    }
-
-    fn init_application_domain(&self, _mc: &Mutation<'gc>, _domain: Domain<'gc>) {
-        panic!("Tried to init an application domain on a non-ApplicationDomain object!")
-    }
-
-    /// Unwrap this object as an ApplicationDomain.
-    fn as_application_domain(&self) -> Option<Domain<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as an event.
-    fn as_event_object(self) -> Option<EventObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as an event.
-    fn as_event(&self) -> Option<Ref<Event<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as a mutable event.
-    fn as_event_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<Event<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as a list of event handlers.
-    fn as_dispatch(&self) -> Option<Ref<DispatchList<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as a mutable list of event handlers.
-    fn as_dispatch_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<DispatchList<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as a regexp.
-    fn as_regexp_object(&self) -> Option<RegExpObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as a regexp.
-    fn as_regexp(&self) -> Option<Ref<RegExp<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object as a font.
-    fn as_font(&self) -> Option<Font<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as a mutable regexp.
-    fn as_regexp_mut(&self, _mc: &Mutation<'gc>) -> Option<RefMut<RegExp<'gc>>> {
-        None
-    }
-
-    /// Unwrap this object's sound handle.
-    fn as_sound_object(self) -> Option<SoundObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object's sound instance handle.
-    fn as_sound_channel(self) -> Option<SoundChannelObject<'gc>> {
-        None
-    }
-
-    fn as_bitmap_data(&self) -> Option<BitmapDataWrapper<'gc>> {
-        None
-    }
-
-    fn as_shader_data(&self) -> Option<ShaderDataObject<'gc>> {
-        None
-    }
-
-    /// Initialize the bitmap data in this object, if it's capable of
-    /// supporting said data.
-    ///
-    /// This should only be called to initialize the association between an AVM
-    /// object and it's associated bitmap data. This association should not be
-    /// reinitialized later.
-    fn init_bitmap_data(&self, _mc: &Mutation<'gc>, _new_bitmap: BitmapDataWrapper<'gc>) {}
-
-    /// Get this objects `DateObject`, if it has one.
-    fn as_date_object(&self) -> Option<DateObject<'gc>> {
-        None
-    }
-
-    /// Get this object as a `DictionaryObject`, if it is one.
-    fn as_dictionary_object(self) -> Option<DictionaryObject<'gc>> {
-        None
-    }
-
-    /// Unwrap this object as a text format.
-    fn as_text_format(&self) -> Option<Ref<TextFormat>> {
-        None
-    }
-
-    /// Unwrap this object as a mutable text format.
-    fn as_text_format_mut(&self) -> Option<RefMut<TextFormat>> {
-        None
-    }
-
-    /// Unwrap this object as an Error.
-    fn as_error_object(&self) -> Option<ErrorObject<'gc>> {
-        None
-    }
-
-    fn as_xml_object(&self) -> Option<XmlObject<'gc>> {
-        None
-    }
-
-    fn as_xml_list_object(&self) -> Option<XmlListObject<'gc>> {
-        None
-    }
-
     fn xml_descendants(
         &self,
         _activation: &mut Activation<'_, 'gc>,
@@ -850,120 +722,171 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     ) -> Option<XmlListObject<'gc>> {
         None
     }
-
-    fn as_context_3d(&self) -> Option<Context3DObject<'gc>> {
-        None
-    }
-
-    fn as_index_buffer(&self) -> Option<IndexBuffer3DObject<'gc>> {
-        None
-    }
-
-    fn as_vertex_buffer(&self) -> Option<VertexBuffer3DObject<'gc>> {
-        None
-    }
-
-    fn as_program_3d(&self) -> Option<Program3DObject<'gc>> {
-        None
-    }
-
-    fn as_stage_3d(&self) -> Option<Stage3DObject<'gc>> {
-        None
-    }
-
-    fn as_texture(&self) -> Option<TextureObject<'gc>> {
-        None
-    }
-
-    fn as_netstream(self) -> Option<NetStream<'gc>> {
-        None
-    }
-
-    fn as_responder(self) -> Option<ResponderObject<'gc>> {
-        None
-    }
-
-    fn as_net_connection(self) -> Option<NetConnectionObject<'gc>> {
-        None
-    }
-
-    fn as_socket(&self) -> Option<SocketObject<'gc>> {
-        None
-    }
-
-    fn as_local_connection_object(&self) -> Option<LocalConnectionObject<'gc>> {
-        None
-    }
-
-    fn as_file_reference(&self) -> Option<FileReferenceObject<'gc>> {
-        None
-    }
-
-    fn as_shared_object(&self) -> Option<SharedObjectObject<'gc>> {
-        None
-    }
-
-    fn as_sound_transform(&self) -> Option<SoundTransformObject<'gc>> {
-        None
-    }
-
-    fn as_style_sheet(&self) -> Option<StyleSheetObject<'gc>> {
-        None
-    }
 }
 
 pub enum ObjectPtr {}
+
+macro_rules! impl_downcast_methods {
+    ($(
+        $vis:vis fn $fn_name:ident for $variant:ident;
+    )*) => { $(
+        #[doc = concat!("Downcast this object as a `", stringify!($variant), "`.")]
+        #[inline(always)]
+        $vis fn $fn_name(self) -> Option<$variant<'gc>> {
+            if let Self::$variant(obj) = self {
+                Some(obj)
+            } else {
+                None
+            }
+        }
+    )* }
+}
 
 impl<'gc> Object<'gc> {
     pub fn ptr_eq<T: TObject<'gc>>(a: T, b: T) -> bool {
         std::ptr::eq(a.as_ptr(), b.as_ptr())
     }
 
-    #[rustfmt::skip]
-    pub fn downgrade(&self) -> WeakObject<'gc> {
-        match self {
-            Self::ScriptObject(o) => WeakObject::ScriptObject(ScriptObjectWeak(Gc::downgrade(o.0))),
-            Self::FunctionObject(o) => WeakObject::FunctionObject(FunctionObjectWeak(Gc::downgrade(o.0))),
-            Self::NamespaceObject(o) => WeakObject::NamespaceObject(NamespaceObjectWeak(Gc::downgrade(o.0))),
-            Self::ArrayObject(o) => WeakObject::ArrayObject(ArrayObjectWeak(Gc::downgrade(o.0))),
-            Self::StageObject(o) => WeakObject::StageObject(StageObjectWeak(Gc::downgrade(o.0))),
-            Self::DomainObject(o) => WeakObject::DomainObject(DomainObjectWeak(Gc::downgrade(o.0))),
-            Self::EventObject(o) => WeakObject::EventObject(EventObjectWeak(Gc::downgrade(o.0))),
-            Self::DispatchObject(o) => WeakObject::DispatchObject(DispatchObjectWeak(Gc::downgrade(o.0))),
-            Self::XmlObject(o) => WeakObject::XmlObject(XmlObjectWeak(Gc::downgrade(o.0))),
-            Self::XmlListObject(o) => WeakObject::XmlListObject(XmlListObjectWeak(Gc::downgrade(o.0))),
-            Self::RegExpObject(o) => WeakObject::RegExpObject(RegExpObjectWeak(Gc::downgrade(o.0))),
-            Self::ByteArrayObject(o) => WeakObject::ByteArrayObject(ByteArrayObjectWeak(Gc::downgrade(o.0))),
-            Self::LoaderInfoObject(o) => WeakObject::LoaderInfoObject(LoaderInfoObjectWeak(Gc::downgrade(o.0))),
-            Self::ClassObject(o) => WeakObject::ClassObject(ClassObjectWeak(Gc::downgrade(o.0))),
-            Self::VectorObject(o) => WeakObject::VectorObject(VectorObjectWeak(Gc::downgrade(o.0))),
-            Self::SoundObject(o) => WeakObject::SoundObject(SoundObjectWeak(Gc::downgrade(o.0))),
-            Self::SoundChannelObject(o) => WeakObject::SoundChannelObject(SoundChannelObjectWeak(Gc::downgrade(o.0))),
-            Self::BitmapDataObject(o) => WeakObject::BitmapDataObject(BitmapDataObjectWeak(Gc::downgrade(o.0))),
-            Self::DateObject(o) => WeakObject::DateObject(DateObjectWeak(Gc::downgrade(o.0))),
-            Self::DictionaryObject(o) => WeakObject::DictionaryObject(DictionaryObjectWeak(Gc::downgrade(o.0))),
-            Self::QNameObject(o) => WeakObject::QNameObject(QNameObjectWeak(Gc::downgrade(o.0))),
-            Self::TextFormatObject(o) => WeakObject::TextFormatObject(TextFormatObjectWeak(Gc::downgrade(o.0))),
-            Self::ProxyObject(o) => WeakObject::ProxyObject(ProxyObjectWeak(Gc::downgrade(o.0))),
-            Self::ErrorObject(o) => WeakObject::ErrorObject(ErrorObjectWeak(Gc::downgrade(o.0))),
-            Self::Stage3DObject(o) => WeakObject::Stage3DObject(Stage3DObjectWeak(Gc::downgrade(o.0))),
-            Self::Context3DObject(o) => WeakObject::Context3DObject(Context3DObjectWeak(Gc::downgrade(o.0))),
-            Self::IndexBuffer3DObject(o) => WeakObject::IndexBuffer3DObject(IndexBuffer3DObjectWeak(Gc::downgrade(o.0))),
-            Self::VertexBuffer3DObject(o) => WeakObject::VertexBuffer3DObject(VertexBuffer3DObjectWeak(Gc::downgrade(o.0))),
-            Self::TextureObject(o) => WeakObject::TextureObject(TextureObjectWeak(Gc::downgrade(o.0))),
-            Self::Program3DObject(o) => WeakObject::Program3DObject(Program3DObjectWeak(Gc::downgrade(o.0))),
-            Self::NetStreamObject(o) => WeakObject::NetStreamObject(NetStreamObjectWeak(Gc::downgrade(o.0))),
-            Self::NetConnectionObject(o) => WeakObject::NetConnectionObject(NetConnectionObjectWeak(Gc::downgrade(o.0))),
-            Self::ResponderObject(o) => WeakObject::ResponderObject(ResponderObjectWeak(Gc::downgrade(o.0))),
-            Self::ShaderDataObject(o) => WeakObject::ShaderDataObject(ShaderDataObjectWeak(Gc::downgrade(o.0))),
-            Self::SocketObject(o) => WeakObject::SocketObject(SocketObjectWeak(Gc::downgrade(o.0))),
-            Self::FileReferenceObject(o) => WeakObject::FileReferenceObject(FileReferenceObjectWeak(Gc::downgrade(o.0))),
-            Self::FontObject(o) => WeakObject::FontObject(FontObjectWeak(Gc::downgrade(o.0))),
-            Self::LocalConnectionObject(o) => WeakObject::LocalConnectionObject(LocalConnectionObjectWeak(Gc::downgrade(o.0))),
-            Self::SharedObjectObject(o) => WeakObject::SharedObjectObject(SharedObjectObjectWeak(Gc::downgrade(o.0))),
-            Self::SoundTransformObject(o) => WeakObject::SoundTransformObject(SoundTransformObjectWeak(Gc::downgrade(o.0))),
-            Self::StyleSheetObject(o) => WeakObject::StyleSheetObject(StyleSheetObjectWeak(Gc::downgrade(o.0))),
-        }
+    impl_downcast_methods! {
+        pub fn as_class_object for ClassObject;
+        pub fn as_function_object for FunctionObject;
+        pub fn as_namespace_object for NamespaceObject;
+        pub fn as_qname_object for QNameObject;
+        pub fn as_loader_info_object for LoaderInfoObject;
+        pub fn as_array_object for ArrayObject;
+        pub fn as_bytearray_object for ByteArrayObject;
+        pub fn as_vector_object for VectorObject;
+        pub fn as_stage_object for StageObject;
+        pub fn as_domain_object for DomainObject;
+        pub fn as_event_object for EventObject;
+        pub fn as_dispatch_object for DispatchObject;
+        pub fn as_font_object for FontObject;
+        pub fn as_regexp_object for RegExpObject;
+        pub fn as_sound_object for SoundObject;
+        pub fn as_sound_channel for SoundChannelObject;
+        pub fn as_bitmap_data_object for BitmapDataObject;
+        pub fn as_shader_data for ShaderDataObject;
+        pub fn as_date_object for DateObject;
+        pub fn as_dictionary_object for DictionaryObject;
+        pub fn as_text_format_object for TextFormatObject;
+        pub fn as_error_object for ErrorObject;
+        pub fn as_xml_object for XmlObject;
+        pub fn as_xml_list_object for XmlListObject;
+        pub fn as_context_3d for Context3DObject;
+        pub fn as_index_buffer for IndexBuffer3DObject;
+        pub fn as_vertex_buffer for VertexBuffer3DObject;
+        pub fn as_program_3d for Program3DObject;
+        pub fn as_stage_3d for Stage3DObject;
+        pub fn as_texture for TextureObject;
+        pub fn as_netstream_object for NetStreamObject;
+        pub fn as_responder for ResponderObject;
+        pub fn as_net_connection for NetConnectionObject;
+        pub fn as_socket for SocketObject;
+        pub fn as_local_connection_object for LocalConnectionObject;
+        pub fn as_file_reference for FileReferenceObject;
+        pub fn as_shared_object for SharedObjectObject;
+        pub fn as_sound_transform for SoundTransformObject;
+        pub fn as_style_sheet for StyleSheetObject;
+    }
+
+    /// Unwrap this object's `Namespace`, if the object is a boxed namespace.
+    pub fn as_namespace(self) -> Option<Namespace<'gc>> {
+        self.as_namespace_object().map(|o| o.namespace())
+    }
+
+    /// Unwrap this object as array storage.
+    pub fn as_array_storage(&self) -> Option<Ref<'_, ArrayStorage<'gc>>> {
+        self.as_array_object().map(|o| o.storage())
+    }
+
+    /// Unwrap this object as mutable array storage.
+    pub fn as_array_storage_mut(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> Option<RefMut<'_, ArrayStorage<'gc>>> {
+        self.as_array_object().map(|o| o.storage_mut(mc))
+    }
+
+    /// Unwrap this object as byte array storage.
+    pub fn as_bytearray(&self) -> Option<Ref<'_, ByteArrayStorage>> {
+        self.as_bytearray_object().map(|o| o.storage())
+    }
+
+    /// Unwrap this object as mutable byte array storage.
+    pub fn as_bytearray_mut(&self) -> Option<RefMut<'_, ByteArrayStorage>> {
+        self.as_bytearray_object().map(|o| o.storage_mut())
+    }
+
+    /// Unwrap this object as vector storage.
+    pub fn as_vector_storage(&self) -> Option<Ref<'_, VectorStorage<'gc>>> {
+        self.as_vector_object().map(|o| o.storage())
+    }
+
+    /// Unwrap this object as mutable vector storage.
+    pub fn as_vector_storage_mut(
+        &self,
+        mc: &Mutation<'gc>,
+    ) -> Option<RefMut<'_, VectorStorage<'gc>>> {
+        self.as_vector_object().map(|o| o.storage_mut(mc))
+    }
+
+    /// Get this object's `DisplayObject`, if it has one.
+    pub fn as_display_object(self) -> Option<DisplayObject<'gc>> {
+        self.as_stage_object().map(|o| o.display_object())
+    }
+
+    /// Unwrap this object as an application domain.
+    pub fn as_application_domain(self) -> Option<Domain<'gc>> {
+        self.as_domain_object().map(|o| o.domain())
+    }
+
+    /// Unwrap this object as an event.
+    pub fn as_event(&self) -> Option<Ref<'_, Event<'gc>>> {
+        self.as_event_object().map(|o| o.event())
+    }
+
+    /// Unwrap this object as a mutable event.
+    pub fn as_event_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, Event<'gc>>> {
+        self.as_event_object().map(|o| o.event_mut(mc))
+    }
+
+    /// Unwrap this object as a mutable list of event handlers.
+    pub fn as_dispatch_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, DispatchList<'gc>>> {
+        self.as_dispatch_object().map(|o| o.dispatch_mut(mc))
+    }
+
+    /// Unwrap this object as a font.
+    pub fn as_font(&self) -> Option<Font<'gc>> {
+        self.as_font_object().and_then(|o| o.font())
+    }
+
+    /// Unwrap this object as a regexp.
+    pub fn as_regexp(&self) -> Option<Ref<'_, RegExp<'gc>>> {
+        self.as_regexp_object().map(|o| o.regexp())
+    }
+
+    /// Unwrap this object as a mutable regexp.
+    pub fn as_regexp_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<'_, RegExp<'gc>>> {
+        self.as_regexp_object().map(|o| o.regexp_mut(mc))
+    }
+
+    /// Unwrap this object as a bitmap data.
+    pub fn as_bitmap_data(&self) -> Option<BitmapData<'gc>> {
+        self.as_bitmap_data_object().map(|o| o.get_bitmap_data())
+    }
+
+    /// Unwrap this object as a text format.
+    pub fn as_text_format(&self) -> Option<Ref<'_, TextFormat>> {
+        self.as_text_format_object().map(|o| o.text_format())
+    }
+
+    /// Unwrap this object as a mutable text format.
+    pub fn as_text_format_mut(&self) -> Option<RefMut<'_, TextFormat>> {
+        self.as_text_format_object().map(|o| o.text_format_mut())
+    }
+
+    pub fn as_netstream(self) -> Option<NetStream<'gc>> {
+        self.as_netstream_object().map(|o| o.netstream())
     }
 }
 
@@ -981,144 +904,92 @@ impl Hash for Object<'_> {
     }
 }
 
-#[allow(clippy::enum_variant_names)]
-#[derive(Clone, Collect, Debug, Copy)]
-#[collect(no_drop)]
-pub enum WeakObject<'gc> {
-    ScriptObject(ScriptObjectWeak<'gc>),
-    FunctionObject(FunctionObjectWeak<'gc>),
-    NamespaceObject(NamespaceObjectWeak<'gc>),
-    ArrayObject(ArrayObjectWeak<'gc>),
-    StageObject(StageObjectWeak<'gc>),
-    DomainObject(DomainObjectWeak<'gc>),
-    EventObject(EventObjectWeak<'gc>),
-    DispatchObject(DispatchObjectWeak<'gc>),
-    XmlObject(XmlObjectWeak<'gc>),
-    XmlListObject(XmlListObjectWeak<'gc>),
-    RegExpObject(RegExpObjectWeak<'gc>),
-    ByteArrayObject(ByteArrayObjectWeak<'gc>),
-    LoaderInfoObject(LoaderInfoObjectWeak<'gc>),
-    ClassObject(ClassObjectWeak<'gc>),
-    VectorObject(VectorObjectWeak<'gc>),
-    SoundObject(SoundObjectWeak<'gc>),
-    SoundChannelObject(SoundChannelObjectWeak<'gc>),
-    BitmapDataObject(BitmapDataObjectWeak<'gc>),
-    DateObject(DateObjectWeak<'gc>),
-    DictionaryObject(DictionaryObjectWeak<'gc>),
-    QNameObject(QNameObjectWeak<'gc>),
-    TextFormatObject(TextFormatObjectWeak<'gc>),
-    ProxyObject(ProxyObjectWeak<'gc>),
-    ErrorObject(ErrorObjectWeak<'gc>),
-    Stage3DObject(Stage3DObjectWeak<'gc>),
-    Context3DObject(Context3DObjectWeak<'gc>),
-    IndexBuffer3DObject(IndexBuffer3DObjectWeak<'gc>),
-    VertexBuffer3DObject(VertexBuffer3DObjectWeak<'gc>),
-    TextureObject(TextureObjectWeak<'gc>),
-    Program3DObject(Program3DObjectWeak<'gc>),
-    NetStreamObject(NetStreamObjectWeak<'gc>),
-    NetConnectionObject(NetConnectionObjectWeak<'gc>),
-    ResponderObject(ResponderObjectWeak<'gc>),
-    ShaderDataObject(ShaderDataObjectWeak<'gc>),
-    SocketObject(SocketObjectWeak<'gc>),
-    FileReferenceObject(FileReferenceObjectWeak<'gc>),
-    FontObject(FontObjectWeak<'gc>),
-    LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
-    SharedObjectObject(SharedObjectObjectWeak<'gc>),
-    SoundTransformObject(SoundTransformObjectWeak<'gc>),
-    StyleSheetObject(StyleSheetObjectWeak<'gc>),
-}
+macro_rules! define_weak_enum {
+    (
+        $(#[$attrs:meta])*
+        $vis:ident enum $weak_enum:ident<'gc> for $strong_enum:ident<'gc> {
+            $( $variant:ident($weak_ty:ident<'gc>) ),* $(,)?
+        }
+    ) => {
+        $(#[$attrs])*
+        $vis enum $weak_enum<'gc> {
+            $( $variant($weak_ty<'gc>), )*
+        }
 
-impl<'gc> WeakObject<'gc> {
-    pub fn as_ptr(self) -> *const ObjectPtr {
-        match self {
-            Self::ScriptObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::FunctionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::NamespaceObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ArrayObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::StageObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::DomainObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::EventObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::DispatchObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::XmlObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::XmlListObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::RegExpObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ByteArrayObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::LoaderInfoObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ClassObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::VectorObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::SoundObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::SoundChannelObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::BitmapDataObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::DateObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::DictionaryObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::QNameObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::TextFormatObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ProxyObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ErrorObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::Stage3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::Context3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::IndexBuffer3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::VertexBuffer3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::TextureObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::Program3DObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::NetStreamObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::NetConnectionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ResponderObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::ShaderDataObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::SocketObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::FileReferenceObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::FontObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::LocalConnectionObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::SharedObjectObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::SoundTransformObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
-            Self::StyleSheetObject(o) => GcWeak::as_ptr(o.0) as *const ObjectPtr,
+        impl<'gc> $weak_enum<'gc> {
+            $vis fn as_ptr(self) -> *const ObjectPtr {
+                match self {
+                    $( Self::$variant(o) => GcWeak::as_ptr(o.0).cast(), )*
+                }
+            }
+
+            $vis fn upgrade(self, mc: &Mutation<'gc>) -> Option<$strong_enum<'gc>> {
+                match self {
+                    $( Self::$variant(o) => $strong_enum::$variant($variant(o.0.upgrade(mc)?)).into(), )*
+                }
+            }
+        }
+
+        impl<'gc> $strong_enum<'gc> {
+            $vis fn downgrade(self) -> $weak_enum<'gc> {
+                match self {
+                    $( Self::$variant(o) => $weak_enum::$variant($weak_ty(Gc::downgrade(o.0))), )*
+                }
+            }
         }
     }
+}
 
-    pub fn upgrade(self, mc: &Mutation<'gc>) -> Option<Object<'gc>> {
-        Some(match self {
-            Self::ScriptObject(o) => ScriptObject(o.0.upgrade(mc)?).into(),
-            Self::FunctionObject(o) => FunctionObject(o.0.upgrade(mc)?).into(),
-            Self::NamespaceObject(o) => NamespaceObject(o.0.upgrade(mc)?).into(),
-            Self::ArrayObject(o) => ArrayObject(o.0.upgrade(mc)?).into(),
-            Self::StageObject(o) => StageObject(o.0.upgrade(mc)?).into(),
-            Self::DomainObject(o) => DomainObject(o.0.upgrade(mc)?).into(),
-            Self::EventObject(o) => EventObject(o.0.upgrade(mc)?).into(),
-            Self::DispatchObject(o) => DispatchObject(o.0.upgrade(mc)?).into(),
-            Self::XmlObject(o) => XmlObject(o.0.upgrade(mc)?).into(),
-            Self::XmlListObject(o) => XmlListObject(o.0.upgrade(mc)?).into(),
-            Self::RegExpObject(o) => RegExpObject(o.0.upgrade(mc)?).into(),
-            Self::ByteArrayObject(o) => ByteArrayObject(o.0.upgrade(mc)?).into(),
-            Self::LoaderInfoObject(o) => LoaderInfoObject(o.0.upgrade(mc)?).into(),
-            Self::ClassObject(o) => ClassObject(o.0.upgrade(mc)?).into(),
-            Self::VectorObject(o) => VectorObject(o.0.upgrade(mc)?).into(),
-            Self::SoundObject(o) => SoundObject(o.0.upgrade(mc)?).into(),
-            Self::SoundChannelObject(o) => SoundChannelObject(o.0.upgrade(mc)?).into(),
-            Self::BitmapDataObject(o) => BitmapDataObject(o.0.upgrade(mc)?).into(),
-            Self::DateObject(o) => DateObject(o.0.upgrade(mc)?).into(),
-            Self::DictionaryObject(o) => DictionaryObject(o.0.upgrade(mc)?).into(),
-            Self::QNameObject(o) => QNameObject(o.0.upgrade(mc)?).into(),
-            Self::TextFormatObject(o) => TextFormatObject(o.0.upgrade(mc)?).into(),
-            Self::ProxyObject(o) => ProxyObject(o.0.upgrade(mc)?).into(),
-            Self::ErrorObject(o) => ErrorObject(o.0.upgrade(mc)?).into(),
-            Self::Stage3DObject(o) => Stage3DObject(o.0.upgrade(mc)?).into(),
-            Self::Context3DObject(o) => Context3DObject(o.0.upgrade(mc)?).into(),
-            Self::IndexBuffer3DObject(o) => IndexBuffer3DObject(o.0.upgrade(mc)?).into(),
-            Self::VertexBuffer3DObject(o) => VertexBuffer3DObject(o.0.upgrade(mc)?).into(),
-            Self::TextureObject(o) => TextureObject(o.0.upgrade(mc)?).into(),
-            Self::Program3DObject(o) => Program3DObject(o.0.upgrade(mc)?).into(),
-            Self::NetStreamObject(o) => NetStreamObject(o.0.upgrade(mc)?).into(),
-            Self::NetConnectionObject(o) => NetConnectionObject(o.0.upgrade(mc)?).into(),
-            Self::ResponderObject(o) => ResponderObject(o.0.upgrade(mc)?).into(),
-            Self::ShaderDataObject(o) => ShaderDataObject(o.0.upgrade(mc)?).into(),
-            Self::SocketObject(o) => SocketObject(o.0.upgrade(mc)?).into(),
-            Self::FileReferenceObject(o) => FileReferenceObject(o.0.upgrade(mc)?).into(),
-            Self::FontObject(o) => FontObject(o.0.upgrade(mc)?).into(),
-            Self::LocalConnectionObject(o) => LocalConnectionObject(o.0.upgrade(mc)?).into(),
-            Self::SharedObjectObject(o) => SharedObjectObject(o.0.upgrade(mc)?).into(),
-            Self::SoundTransformObject(o) => SoundTransformObject(o.0.upgrade(mc)?).into(),
-            Self::StyleSheetObject(o) => StyleSheetObject(o.0.upgrade(mc)?).into(),
-        })
+define_weak_enum! {
+    #[expect(clippy::enum_variant_names)]
+    #[derive(Clone, Collect, Debug, Copy)]
+    #[collect(no_drop)]
+    pub enum WeakObject<'gc> for Object<'gc> {
+        ScriptObject(ScriptObjectWeak<'gc>),
+        FunctionObject(FunctionObjectWeak<'gc>),
+        NamespaceObject(NamespaceObjectWeak<'gc>),
+        ArrayObject(ArrayObjectWeak<'gc>),
+        StageObject(StageObjectWeak<'gc>),
+        DomainObject(DomainObjectWeak<'gc>),
+        EventObject(EventObjectWeak<'gc>),
+        DispatchObject(DispatchObjectWeak<'gc>),
+        XmlObject(XmlObjectWeak<'gc>),
+        XmlListObject(XmlListObjectWeak<'gc>),
+        RegExpObject(RegExpObjectWeak<'gc>),
+        ByteArrayObject(ByteArrayObjectWeak<'gc>),
+        LoaderInfoObject(LoaderInfoObjectWeak<'gc>),
+        ClassObject(ClassObjectWeak<'gc>),
+        VectorObject(VectorObjectWeak<'gc>),
+        SoundObject(SoundObjectWeak<'gc>),
+        SoundChannelObject(SoundChannelObjectWeak<'gc>),
+        BitmapDataObject(BitmapDataObjectWeak<'gc>),
+        DateObject(DateObjectWeak<'gc>),
+        DictionaryObject(DictionaryObjectWeak<'gc>),
+        QNameObject(QNameObjectWeak<'gc>),
+        TextFormatObject(TextFormatObjectWeak<'gc>),
+        ProxyObject(ProxyObjectWeak<'gc>),
+        ErrorObject(ErrorObjectWeak<'gc>),
+        Stage3DObject(Stage3DObjectWeak<'gc>),
+        Context3DObject(Context3DObjectWeak<'gc>),
+        IndexBuffer3DObject(IndexBuffer3DObjectWeak<'gc>),
+        VertexBuffer3DObject(VertexBuffer3DObjectWeak<'gc>),
+        TextureObject(TextureObjectWeak<'gc>),
+        Program3DObject(Program3DObjectWeak<'gc>),
+        NetStreamObject(NetStreamObjectWeak<'gc>),
+        NetConnectionObject(NetConnectionObjectWeak<'gc>),
+        ResponderObject(ResponderObjectWeak<'gc>),
+        ShaderDataObject(ShaderDataObjectWeak<'gc>),
+        SocketObject(SocketObjectWeak<'gc>),
+        FileReferenceObject(FileReferenceObjectWeak<'gc>),
+        FontObject(FontObjectWeak<'gc>),
+        LocalConnectionObject(LocalConnectionObjectWeak<'gc>),
+        SharedObjectObject(SharedObjectObjectWeak<'gc>),
+        SoundTransformObject(SoundTransformObjectWeak<'gc>),
+        StyleSheetObject(StyleSheetObjectWeak<'gc>),
+        WorkerObject(WorkerObjectWeak<'gc>),
+        WorkerDomainObject(WorkerDomainObjectWeak<'gc>),
+        MessageChannelObject(MessageChannelObjectWeak<'gc>),
+        SecurityDomainObject(SecurityDomainObjectWeak<'gc>),
     }
 }
 
@@ -1129,10 +1000,19 @@ pub fn abstract_class_allocator<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
     let class_name = class.instance_class().name().local_name();
+    Err(make_error_2012(activation, class_name))
+}
 
-    return Err(Error::AvmError(error::argument_error(
-        activation,
-        &format!("Error #2012: {class_name} class cannot be instantiated."),
-        2012,
-    )?));
+/// Implements a custom call handler for classes that are constructed when
+/// called.
+pub fn construct_call_handler<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    this.as_object()
+        .unwrap()
+        .as_class_object()
+        .unwrap()
+        .construct(activation, args)
 }

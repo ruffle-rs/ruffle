@@ -1,17 +1,13 @@
-use gc_arena::GcCell;
-
 use ruffle_render::backend::Context3DTextureFormat;
 
 use super::atf_jpegxr::do_compressed_upload;
 use crate::avm2::object::TextureObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
-use crate::avm2::TObject;
 use crate::avm2::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapData;
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
 use crate::bitmap::bitmap_data::Color;
 
 pub fn do_copy<'gc>(
@@ -32,7 +28,7 @@ pub fn do_copy<'gc>(
         return Ok(());
     }
 
-    // FIXME - see if we can avoid this intermediate BitmapDataWrapper, and copy
+    // FIXME - see if we can avoid this intermediate BitmapData, and copy
     // directly from a buffer to the target GPU texture
     let bitmap_data = match texture.original_format() {
         Context3DTextureFormat::Bgra => {
@@ -47,12 +43,11 @@ pub fn do_copy<'gc>(
                 .chunks_exact(4)
                 .map(|chunk| {
                     // The ByteArray is in BGRA format. FIXME - should this be premultiplied?
-                    Color::argb(chunk[3], chunk[2], chunk[1], chunk[0])
+                    Color::rgba(chunk[2], chunk[1], chunk[0], chunk[3])
                 })
                 .collect();
 
-            let bitmap_data = BitmapData::new_with_pixels(width, height, true, colors);
-            BitmapDataWrapper::new(GcCell::new(activation.gc(), bitmap_data))
+            BitmapData::new_with_pixels(activation.context.gc_context, width, height, true, colors)
         }
         _ => {
             tracing::warn!(
@@ -63,7 +58,7 @@ pub fn do_copy<'gc>(
         }
     };
     texture.context3d().copy_bitmapdata_to_texture(
-        bitmap_data.sync(activation.context.renderer),
+        &bitmap_data.sync(activation.context.renderer).borrow(),
         texture.handle(),
         side,
     );
@@ -79,7 +74,7 @@ pub fn upload_compressed_texture_from_byte_array_internal<'gc>(
 
     let texture = this.as_texture().unwrap();
     let data = args.get_object(activation, 0, "data")?;
-    let byte_array_offset = args.get_u32(activation, 1)? as usize;
+    let byte_array_offset = args.get_u32(1) as usize;
 
     if !matches!(
         texture.original_format(),
@@ -108,8 +103,8 @@ pub fn upload_from_byte_array<'gc>(
 
     let texture = this.as_texture().unwrap();
     let data = args.get_object(activation, 0, "data")?;
-    let byte_array_offset = args.get_u32(activation, 1)?;
-    let mip_level = args.get_u32(activation, 2)?;
+    let byte_array_offset = args.get_u32(1);
+    let mip_level = args.get_u32(2);
 
     do_copy(activation, data, texture, byte_array_offset, 0, mip_level)?;
     Ok(Value::Undefined)
@@ -126,10 +121,10 @@ pub fn upload_from_bitmap_data<'gc>(
         let source_obj = args.get_object(activation, 0, "source")?;
 
         if let Some(source) = source_obj.as_bitmap_data() {
-            let mip_level = args[1].coerce_to_u32(activation)?;
+            let mip_level = args.get_u32(1);
             if mip_level == 0 {
                 texture.context3d().copy_bitmapdata_to_texture(
-                    source.sync(activation.context.renderer),
+                    &source.sync(activation.context.renderer).borrow(),
                     texture.handle(),
                     0,
                 );
@@ -142,7 +137,7 @@ pub fn upload_from_bitmap_data<'gc>(
                 );
             }
         } else {
-            panic!("Invalid source: {:?}", args[0]);
+            unreachable!("Argument is BitmapData-typed");
         }
     }
     Ok(Value::Undefined)

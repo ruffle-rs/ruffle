@@ -51,9 +51,9 @@ impl OpenH264Codec {
         const ARCH: &str = std::env::consts::ARCH;
 
         let local_filenames = match OS {
-            "linux" => vec!["libopenh264.so.7", "libopenh264.so.2.4.1", "libopenh264.so"],
+            "linux" => ["libopenh264.so.7", "libopenh264.so.2.4.1", "libopenh264.so"].as_slice(),
             // TODO: investigate other OSes
-            _ => vec![],
+            _ => [].as_slice(),
         };
 
         // Source: https://github.com/cisco/openh264/releases/tag/v2.4.1
@@ -173,7 +173,7 @@ impl OpenH264Codec {
     pub fn load(directory: &Path) -> Result<Self, Box<dyn std::error::Error>> {
         let openh264_data = Self::get_data()?;
 
-        for filename in &openh264_data.local_filenames {
+        for filename in openh264_data.local_filenames {
             match OpenH264Codec::load_existing(filename) {
                 Ok(codec) => return Ok(codec),
                 Err(err) => {
@@ -202,7 +202,7 @@ pub struct H264Decoder {
 }
 
 struct OpenH264Data {
-    local_filenames: Vec<&'static str>,
+    local_filenames: &'static [&'static str],
     download_filename: &'static str,
     download_sha256: &'static str,
 }

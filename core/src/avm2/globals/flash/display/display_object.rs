@@ -9,12 +9,13 @@ use crate::avm2::globals::flash::geom::transform::matrix_from_transform_object;
 use crate::avm2::globals::slots::flash_display_shader as shader_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{Object, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::StageObject;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
+use crate::context::UpdateContext;
 use crate::ecma_conversions::round_to_even;
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -30,27 +31,27 @@ use std::str::FromStr;
 /// This should be called from the AVM2 class's native allocator
 /// (e.g. `sprite_allocator`)
 pub fn initialize_for_allocator<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     dobj: DisplayObject<'gc>,
     class: ClassObject<'gc>,
-) -> Result<Object<'gc>, Error<'gc>> {
-    let obj: StageObject = StageObject::for_display_object(activation, dobj, class)?;
+) -> Object<'gc> {
+    let obj = StageObject::for_display_object(context.gc(), dobj, class);
     dobj.set_placed_by_script(true);
-    dobj.set_object2(activation.context, obj.into());
+    dobj.set_object2(context, obj);
 
     // [NA] Should these run for everything?
-    dobj.post_instantiation(activation.context, None, Instantiator::Avm2, false);
-    dobj.enter_frame(activation.context);
-    dobj.construct_frame(activation.context);
+    dobj.post_instantiation(context, None, Instantiator::Avm2, false);
+    dobj.enter_frame(context);
+    dobj.construct_frame(context);
 
     // Movie clips created from ActionScript skip the next enterFrame,
     // and consequently are observed to have their currentFrame lag one
     // frame behind objects placed by the timeline (even if they were
     // both placed in the same frame to begin with).
     dobj.base().set_skip_next_enter_frame(true);
-    dobj.on_construction_complete(activation.context);
+    dobj.on_construction_complete(context);
 
-    Ok(obj.into())
+    obj.into()
 }
 
 /// Implements `flash.display.DisplayObject`'s native instance constructor.
@@ -59,7 +60,7 @@ pub fn display_object_initializer<'gc>(
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    activation.super_init(this, &[])?;
+    // No need to call `super()`, it wouldn't do anything
 
     let this = this.as_object().unwrap();
 
@@ -99,15 +100,15 @@ pub fn get_alpha<'gc>(
 
 /// Implements `alpha`'s setter.
 pub fn set_alpha<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let new_alpha = args.get_f64(activation, 0)?;
-        dobj.set_alpha(activation.gc(), new_alpha);
+        let new_alpha = args.get_f64(0);
+        dobj.set_alpha(new_alpha);
     }
 
     Ok(Value::Undefined)
@@ -137,7 +138,7 @@ pub fn set_height<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let new_height = args.get_f64(activation, 0)?;
+        let new_height = args.get_f64(0);
         if new_height >= 0.0 {
             dobj.set_height(activation.context, new_height);
         }
@@ -177,7 +178,7 @@ pub fn set_scale9grid<'gc>(
 
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "scale9Grid");
     if let Some(dobj) = this.as_display_object() {
-        let rect = match args.try_get_object(activation, 0) {
+        let rect = match args.try_get_object(0) {
             None => Rectangle::default(),
             Some(rect) => object_to_rectangle(activation, rect)?,
         };
@@ -204,15 +205,15 @@ pub fn get_scale_y<'gc>(
 
 /// Implements `scaleY`'s setter.
 pub fn set_scale_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let new_scale = args.get_f64(activation, 0)?;
-        dobj.set_scale_y(activation.gc(), Percent::from_unit(new_scale));
+        let new_scale = args.get_f64(0);
+        dobj.set_scale_y(Percent::from_unit(new_scale));
     }
 
     Ok(Value::Undefined)
@@ -242,7 +243,7 @@ pub fn set_width<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let new_width = args.get_f64(activation, 0)?;
+        let new_width = args.get_f64(0);
         if new_width >= 0.0 {
             dobj.set_width(activation.context, new_width);
         }
@@ -268,15 +269,15 @@ pub fn get_scale_x<'gc>(
 
 /// Implements `scaleX`'s setter.
 pub fn set_scale_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let new_scale = args.get_f64(activation, 0)?;
-        dobj.set_scale_x(activation.gc(), Percent::from_unit(new_scale));
+        let new_scale = args.get_f64(0);
+        dobj.set_scale_x(Percent::from_unit(new_scale));
     }
 
     Ok(Value::Undefined)
@@ -292,7 +293,7 @@ pub fn get_filters<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let array = dobj
             .filters()
-            .into_iter()
+            .iter()
             .map(|f| f.as_avm2_object(activation))
             .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
         return Ok(ArrayObject::from_storage(activation, array).into());
@@ -303,7 +304,7 @@ pub fn get_filters<'gc>(
 fn build_argument_type_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err(Error::AvmError(crate::avm2::error::argument_error(
+    Err(Error::avm_error(crate::avm2::error::argument_error(
         activation,
         "Error #2005: Parameter 0 is of the incorrect type. Should be type Filter.",
         2005,
@@ -318,31 +319,29 @@ pub fn set_filters<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let new_filters = args.try_get_object(activation, 0);
+        let new_filters = args.try_get_object(0);
 
         if let Some(new_filters) = new_filters {
-            if let Some(filters_array) = new_filters.as_array_object() {
-                if let Some(filters_storage) = filters_array.as_array_storage() {
-                    let filter_class_object = activation.avm2().classes().bitmapfilter;
-                    let filter_class = filter_class_object.inner_class_definition();
-                    let mut filter_vec = Vec::with_capacity(filters_storage.length());
+            if let Some(filters_storage) = new_filters.as_array_storage() {
+                let filter_class_object = activation.avm2().classes().bitmapfilter;
+                let filter_class = filter_class_object.inner_class_definition();
+                let mut filter_vec = Vec::with_capacity(filters_storage.length());
 
-                    for filter in filters_storage.iter().flatten() {
-                        if !filter.is_of_type(activation, filter_class) {
-                            return build_argument_type_error(activation);
-                        }
-
-                        let filter_object = filter
-                            .as_object()
-                            .expect("BitmapFilter value should be Object");
-                        filter_vec.push(Filter::from_avm2_object(activation, filter_object)?);
+                for filter in filters_storage.iter().flatten() {
+                    if !filter.is_of_type(filter_class) {
+                        return build_argument_type_error(activation);
                     }
 
-                    dobj.set_filters(activation.gc(), filter_vec);
+                    let filter_object = filter
+                        .as_object()
+                        .expect("BitmapFilter value should be Object");
+                    filter_vec.push(Filter::from_avm2_object(activation, filter_object)?);
                 }
+
+                dobj.set_filters(filter_vec.into_boxed_slice());
             }
         } else {
-            dobj.set_filters(activation.gc(), vec![]);
+            dobj.set_filters(Default::default());
         }
     }
 
@@ -366,15 +365,15 @@ pub fn get_x<'gc>(
 
 /// Implements `x`'s setter.
 pub fn set_x<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let x = args.get_f64(activation, 0)?;
-        dobj.set_x(activation.gc(), Twips::from_pixels(x));
+        let x = args.get_f64(0);
+        dobj.set_x(Twips::from_pixels(x));
     }
 
     Ok(Value::Undefined)
@@ -397,15 +396,15 @@ pub fn get_y<'gc>(
 
 /// Implements `y`'s setter.
 pub fn set_y<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let y = args.get_f64(activation, 0)?;
-        dobj.set_y(activation.gc(), Twips::from_pixels(y));
+        let y = args.get_f64(0);
+        dobj.set_y(Twips::from_pixels(y));
     }
 
     Ok(Value::Undefined)
@@ -525,16 +524,16 @@ pub fn get_rotation<'gc>(
 
 /// Implements `rotation`'s setter.
 pub fn set_rotation<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let new_rotation = args.get_f64(activation, 0)?;
+        let new_rotation = args.get_f64(0);
 
-        dobj.set_rotation(activation.gc(), Degrees::from(new_rotation));
+        dobj.set_rotation(Degrees::from(new_rotation));
     }
 
     Ok(Value::Undefined)
@@ -564,10 +563,10 @@ pub fn set_name<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let new_name = args.get_string(activation, 0)?;
+        let new_name = args.get_string(activation, 0);
 
         if dobj.instantiated_by_timeline() {
-            return Err(Error::AvmError(illegal_operation_error(
+            return Err(Error::avm_error(illegal_operation_error(
                 activation,
                 "Error #2078: The name property of a Timeline-placed object cannot be modified.",
                 2078,
@@ -591,7 +590,7 @@ pub fn get_parent<'gc>(
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj
             .avm2_parent()
-            .map(|parent| parent.object2())
+            .map(|parent| parent.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -609,7 +608,7 @@ pub fn get_root<'gc>(
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj
             .avm2_root()
-            .map(|root| root.object2())
+            .map(|root| root.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -627,7 +626,7 @@ pub fn get_stage<'gc>(
     if let Some(dobj) = this.as_display_object() {
         return Ok(dobj
             .avm2_stage(activation.context)
-            .map(|stage| stage.object2())
+            .map(|stage| stage.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -739,8 +738,8 @@ pub fn hit_test_point<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let x = args.get_f64(activation, 0)?;
-        let y = args.get_f64(activation, 1)?;
+        let x = args.get_f64(0);
+        let y = args.get_f64(1);
         let shape_flag = args.get_bool(2);
 
         let avm_root = dobj.avm2_root();
@@ -748,8 +747,6 @@ pub fn hit_test_point<'gc>(
             // We can detect the root of the player by the fact that it doesn't have a loader.
             Some(root) => root
                 .loader_info()
-                .as_ref()
-                .and_then(|loader_info| loader_info.as_loader_info_object())
                 .and_then(|loader_info_obj| loader_info_obj.loader())
                 .is_none(),
             None => false,
@@ -851,15 +848,14 @@ pub fn set_transform<'gc>(
     let color_transform = color_transform_from_transform_object(transform);
 
     let dobj = this.as_display_object().unwrap();
-    let mut write = dobj.base_mut(activation.gc());
-    write.set_matrix(matrix);
-    write.set_has_matrix3d_stub(has_matrix3d);
-    write.set_color_transform(color_transform);
-    drop(write);
+    let base = dobj.base();
+    base.set_matrix(matrix);
+    base.set_has_matrix3d_stub(has_matrix3d);
+    base.set_color_transform(color_transform);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-        parent.invalidate_cached_bitmap(activation.gc());
+        parent.invalidate_cached_bitmap();
     }
 
     Ok(Value::Undefined)
@@ -889,10 +885,10 @@ pub fn set_blend_mode<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let mode = args.get_string(activation, 0)?;
+        let mode = args.get_string_non_null(activation, 0, "blendMode")?;
 
         if let Ok(mode) = ExtendedBlendMode::from_str(&mode.to_string()) {
-            dobj.set_blend_mode(activation.gc(), mode);
+            dobj.set_blend_mode(mode);
         } else {
             tracing::error!("Unknown blend mode {}", mode);
             return Err(make_error_2008(activation, "blendMode"));
@@ -967,7 +963,7 @@ pub fn set_scroll_rect<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        if let Some(rectangle) = args.try_get_object(activation, 0) {
+        if let Some(rectangle) = args.try_get_object(0) {
             // Flash only updates the "internal" scrollRect used by `localToLocal` when the next
             // frame is rendered. However, accessing `DisplayObject.scrollRect` from ActionScript
             // will immediately return the updated value.
@@ -976,7 +972,7 @@ pub fn set_scroll_rect<'gc>(
             // operate on a `next_scroll_rect` field. Just before we render a DisplayObject, we copy
             // its `next_scroll_rect` to the `scroll_rect` field used for both rendering and
             // `localToGlobal`.
-            dobj.set_next_scroll_rect(activation.gc(), object_to_rectangle(activation, rectangle)?);
+            dobj.set_next_scroll_rect(object_to_rectangle(activation, rectangle)?);
 
             dobj.set_has_scroll_rect(true);
         } else {
@@ -1049,7 +1045,7 @@ pub fn get_bounds<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let target = args
-            .try_get_object(activation, 0)
+            .try_get_object(0)
             .and_then(|o| o.as_display_object())
             .unwrap_or(dobj);
         let bounds = dobj.bounds();
@@ -1092,7 +1088,12 @@ pub fn get_mask<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        return Ok(this.masker().map_or(Value::Null, |m| m.object2()));
+        let masker = this
+            .masker()
+            .map(|m| m.object2_or_null())
+            .unwrap_or(Value::Null);
+
+        return Ok(masker);
     }
     Ok(Value::Undefined)
 }
@@ -1105,18 +1106,8 @@ pub fn set_mask<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let mask = args.try_get_object(activation, 0);
-
-        if let Some(mask) = mask {
-            let mask = mask.as_display_object().ok_or_else(|| -> Error {
-                format!("Mask is not a DisplayObject: {mask:?}").into()
-            })?;
-
-            this.set_masker(activation.gc(), Some(mask), true);
-            mask.set_maskee(activation.gc(), Some(this), true);
-        } else {
-            this.set_masker(activation.gc(), None, true);
-        }
+        let mask = args.try_get_object(0).and_then(|o| o.as_display_object());
+        this.set_mask(mask, activation.gc());
     }
     Ok(Value::Undefined)
 }
@@ -1135,15 +1126,15 @@ pub fn get_cache_as_bitmap<'gc>(
 }
 
 pub fn set_cache_as_bitmap<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_display_object() {
-        let cache = args.get(0).unwrap_or(&Value::Undefined).coerce_to_boolean();
-        this.set_bitmap_cached_preference(activation.gc(), cache);
+        let cache = args.get_bool(0);
+        this.set_bitmap_cached_preference(cache);
     }
     Ok(Value::Undefined)
 }
@@ -1175,12 +1166,13 @@ pub fn set_opaque_background<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let value = args.get(0).unwrap_or(&Value::Undefined);
+        let value = args.get_value(0);
         let color = match value {
-            Value::Null | Value::Undefined => None,
+            Value::Undefined => unreachable!("Object parameter is never Undefined"),
+            Value::Null => None,
             value => Some(Color::from_rgb(value.coerce_to_u32(activation)?, 255)),
         };
-        dobj.set_opaque_background(activation.gc(), color);
+        dobj.set_opaque_background(color);
     }
 
     Ok(Value::Undefined)
@@ -1208,7 +1200,7 @@ pub fn set_blend_shader<'gc>(
             .pixel_bender_shader()
             .expect("Missing compiled PixelBender shader");
 
-        dobj.set_blend_shader(activation.gc(), Some(shader_handle));
+        dobj.set_blend_shader(Some(shader_handle));
     }
     Ok(Value::Undefined)
 }

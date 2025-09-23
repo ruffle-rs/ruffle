@@ -1,4 +1,10 @@
 # TODO: Figure out why these specific tests are flaky on CI, fix them, then delete this file.
+# Note: All Pixel Bender tests are flaky :( probably some unsoundness in naga, lavapipe?
 [[profile.ci.overrides]]
-filter = "test(avm2/pixelbender_shaderdata) or test(avm2/graphics_round_rects)"
+filter = """
+test(pixelbender) or \
+test(avm2/graphics_round_rects) or \
+test(avm2/stage3d_errors_atf) or \
+test(avm1/netstream_play_flv) or \
+test(avm1/netstream_play_flv_screen)"""
 retries = 4

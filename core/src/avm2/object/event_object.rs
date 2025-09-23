@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::events::Event;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, ScriptObject, TObject};
+use crate::avm2::object::{ClassObject, Object, ScriptObject, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
@@ -137,7 +137,7 @@ impl<'gc> EventObject<'gc> {
                 local.y.to_pixels().into(),
                 // relatedObject
                 related_object
-                    .map(|o| o.as_displayobject().object2())
+                    .map(|o| o.as_displayobject().object2_or_null())
                     .unwrap_or(Value::Null),
                 // ctrlKey
                 activation
@@ -227,18 +227,16 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
-    pub fn net_status_event(
+    pub fn net_status_event<'a>(
         activation: &mut Activation<'_, 'gc>,
-        info: Vec<(&str, &str)>,
+        info: impl IntoIterator<Item = (&'a str, &'a str)>,
     ) -> EventObject<'gc> {
         let info_object = ScriptObject::new_object(activation);
         for (key, value) in info {
             let key = AvmString::new_utf8(activation.gc(), key);
             let value = AvmString::new_utf8(activation.gc(), value);
 
-            info_object
-                .set_string_property_local(key, Value::String(value), activation)
-                .unwrap();
+            info_object.set_dynamic_property(key, Value::String(value), activation.gc());
         }
 
         let event_name = istr!("netStatus");
@@ -304,7 +302,7 @@ impl<'gc> EventObject<'gc> {
                 true.into(),
                 cancelable.into(),
                 related_object
-                    .map(|o| o.as_displayobject().object2())
+                    .map(|o| o.as_displayobject().object2_or_null())
                     .unwrap_or(Value::Null),
                 shift_key.into(),
                 key_code.into(),
@@ -354,11 +352,11 @@ impl<'gc> EventObject<'gc> {
         )
     }
 
-    pub fn event(&self) -> Ref<Event<'gc>> {
-        self.0.event.borrow()
+    pub fn event(self) -> Ref<'gc, Event<'gc>> {
+        Gc::as_ref(self.0).event.borrow()
     }
 
-    pub fn event_mut(&self, mc: &Mutation<'gc>) -> RefMut<Event<'gc>> {
+    pub fn event_mut(self, mc: &Mutation<'gc>) -> RefMut<'gc, Event<'gc>> {
         unlock!(Gc::write(mc, self.0), EventObjectData, event).borrow_mut()
     }
 }
@@ -367,29 +365,13 @@ impl<'gc> TObject<'gc> for EventObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_event_object(self) -> Option<EventObject<'gc>> {
-        Some(self)
-    }
-
-    fn as_event(&self) -> Option<Ref<Event<'gc>>> {
-        Some(self.0.event.borrow())
-    }
-
-    fn as_event_mut(&self, mc: &Mutation<'gc>) -> Option<RefMut<Event<'gc>>> {
-        Some(unlock!(Gc::write(mc, self.0), EventObjectData, event).borrow_mut())
-    }
 }
 
 impl Debug for EventObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("EventObject")
             .field("type", &self.0.event.borrow().event_type())
-            .field("class", &self.base().debug_class_name())
+            .field("class", &self.base().class_name())
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }

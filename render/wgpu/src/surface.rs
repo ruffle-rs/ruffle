@@ -12,7 +12,7 @@ use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
 use crate::utils::{remove_srgb, supported_sample_count};
 use crate::{Descriptors, MaskState, Pipelines};
 use ruffle_render::commands::CommandList;
-use ruffle_render::pixel_bender::{ImageInputTexture, PixelBenderShaderArgument};
+use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
 use ruffle_render::quality::StageQuality;
 use std::sync::Arc;
 use target::CommandTarget;
@@ -65,7 +65,7 @@ impl Surface {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
     pub fn draw_commands_and_copy_to<'frame, 'global: 'frame>(
         &mut self,
@@ -105,7 +105,7 @@ impl Surface {
         );
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
     pub fn draw_commands<'frame, 'global: 'frame>(
         &mut self,

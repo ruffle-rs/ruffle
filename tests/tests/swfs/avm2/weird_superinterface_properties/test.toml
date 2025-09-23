@@ -1,4 +1,4 @@
 num_frames = 1
 # FIXME - match Flash's verification behavior, and fix interface property copying
-# See `ClassObject::link_interfaces` for more details
+# See `VTable::copy_interface_properties` for more details
 known_failure = true

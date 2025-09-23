@@ -5,8 +5,8 @@ use crate::avm1::{
     NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value,
 };
 use crate::avm2::object::{
-    ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, Object as Avm2Object,
-    StageObject as Avm2StageObject, StyleSheetObject as Avm2StyleSheetObject,
+    ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, StageObject as Avm2StageObject,
+    StyleSheetObject as Avm2StyleSheetObject,
 };
 use crate::avm2::{Activation as Avm2Activation, Avm2};
 use crate::backend::ui::MouseCursor;
@@ -14,12 +14,12 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase, DisplayObjectPtr};
+use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase};
 use crate::events::{
     ClipEvent, ClipEventResult, ImeCursorArea, ImeEvent, ImeNotification, ImePurpose,
     PlayerNotification, TextControlCode,
 };
-use crate::font::{FontType, Glyph, TextRenderSettings};
+use crate::font::{FontLike, FontType, Glyph, TextRenderSettings};
 use crate::html;
 use crate::html::StyleSheet;
 use crate::html::{
@@ -28,13 +28,16 @@ use crate::html::{
 use crate::prelude::*;
 use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
 use crate::tag_utils::SwfMovie;
+use crate::utils::HasPrefixField;
 use crate::vminterface::{AvmObject, Instantiator};
 use chrono::DateTime;
 use chrono::Utc;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
+use gc_arena::lock::{Lock, RefLock};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
+use ruffle_render::commands::Command as RenderCommand;
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
@@ -78,48 +81,15 @@ impl fmt::Debug for EditText<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct EditTextData<'gc> {
     /// DisplayObject and InteractiveObject common properties.
-    base: RefLock<InteractiveObjectBase<'gc>>,
+    base: InteractiveObjectBase<'gc>,
 
     /// Data shared among all instances of this `EditText`.
     shared: Gc<'gc, EditTextShared>,
-
-    /// The underlying text format spans of the `EditText`.
-    ///
-    /// This is generated from HTML (with optional CSS) or set directly, and
-    /// can be directly manipulated by ActionScript. It can also be raised to
-    /// an equivalent HTML representation, as long as no stylesheet is present.
-    ///
-    /// It is lowered further into layout boxes, which are used for actual
-    /// rendering.
-    text_spans: RefCell<FormatSpans>,
-
-    /// The color of the background fill. Only applied when has_border and has_background.
-    background_color: Cell<Color>,
-
-    /// The color of the border.
-    border_color: Cell<Color>,
-
-    /// Whether the width of the field should change in response to text
-    /// changes, and in what direction the added or removed width should
-    /// apply.
-    autosize: Cell<AutoSizeMode>,
-
-    /// The calculated layout.
-    layout: RefLock<Layout<'gc>>,
-
-    /// The current intrinsic bounds of the text field.
-    bounds: Cell<Rectangle<Twips>>,
-
-    /// Lazily calculated autosize bounds.
-    ///
-    /// When `None`, no new bounds should be applied.
-    /// When `Some`, new bounds resulting from autosize are
-    /// waiting to be applied, see [`EditText::apply_autosize_bounds`].
-    autosize_lazy_bounds: Cell<Option<Rectangle<Twips>>>,
 
     /// The AVM1 object handle
     object: Lock<Option<AvmObject<'gc>>>,
@@ -136,6 +106,42 @@ pub struct EditTextData<'gc> {
     /// The AVM2 class of this button. If None, it is flash.text.TextField.
     class: Lock<Option<Avm2ClassObject<'gc>>>,
 
+    /// The underlying text format spans of the `EditText`.
+    ///
+    /// This is generated from HTML (with optional CSS) or set directly, and
+    /// can be directly manipulated by ActionScript. It can also be raised to
+    /// an equivalent HTML representation, as long as no stylesheet is present.
+    ///
+    /// It is lowered further into layout boxes, which are used for actual
+    /// rendering.
+    text_spans: RefCell<FormatSpans>,
+
+    /// The calculated layout.
+    layout: RefLock<Layout<'gc>>,
+
+    /// Style sheet used when parsing HTML.
+    style_sheet: Lock<EditTextStyleSheet<'gc>>,
+
+    /// Restrict what characters the user may input.
+    restrict: RefCell<EditTextRestrict>,
+
+    /// Information related to the last click event inside this text field.
+    last_click: Cell<Option<ClickEventData>>,
+
+    /// Original HTML text before parsing.
+    ///
+    /// It is used only when a style sheet is available
+    /// in order to preserve styles.
+    original_html_text: RefCell<Option<WString>>,
+
+    ime_data: RefCell<Option<ImeData>>,
+
+    /// The color of the background fill. Only applied when has_border and has_background.
+    background_color: Cell<Color>,
+
+    /// The color of the border.
+    border_color: Cell<Color>,
+
     /// The selected portion of the text, or None if the text is not selected.
     /// Note: Selections work differently in AVM1, AVM2, and Ruffle.
     ///
@@ -144,6 +150,9 @@ pub struct EditTextData<'gc> {
     /// In Ruffle, every text field has its own optional selection. This hybrid approach means manually maintaining
     /// the invariants that selection is always None for an unfocused AVM1 field, and never None for an AVM2 field.
     selection: Cell<Option<TextSelection>>,
+
+    /// The current intrinsic bounds of the text field.
+    bounds: Cell<Rectangle<Twips>>,
 
     /// Which rendering engine this text field will use.
     render_settings: Cell<TextRenderSettings>,
@@ -157,6 +166,18 @@ pub struct EditTextData<'gc> {
     /// The limit of characters that can be manually input by the user.
     /// Doesn't affect script-triggered modifications.
     max_chars: Cell<i32>,
+
+    /// Lazily calculated autosize bounds.
+    ///
+    /// When `None`, no new bounds should be applied.
+    /// When `Some`, new bounds resulting from autosize are
+    /// waiting to be applied, see [`EditText::apply_autosize_bounds`].
+    autosize_lazy_bounds: Cell<Option<Rectangle<Twips>>>,
+
+    /// Whether the width of the field should change in response to text
+    /// changes, and in what direction the added or removed width should
+    /// apply.
+    autosize: Cell<AutoSizeMode>,
 
     /// Indicates if the text is scrollable using the mouse wheel.
     mouse_wheel_enabled: Cell<bool>,
@@ -175,23 +196,6 @@ pub struct EditTextData<'gc> {
     /// See <https://docs.ruffle.rs/en_US/FlashPlatform/reference/actionscript/3/flash/text/engine/package-detail.html>
     /// See <https://docs.ruffle.rs/en_US/as3/dev/WS9dd7ed846a005b294b857bfa122bd808ea6-8000.html>
     is_fte: Cell<bool>,
-
-    /// Restrict what characters the user may input.
-    restrict: RefCell<EditTextRestrict>,
-
-    /// Information related to the last click event inside this text field.
-    last_click: Cell<Option<ClickEventData>>,
-
-    /// Style sheet used when parsing HTML.
-    style_sheet: Lock<EditTextStyleSheet<'gc>>,
-
-    /// Original HTML text before parsing.
-    ///
-    /// It is used only when a style sheet is available
-    /// in order to preserve styles.
-    original_html_text: RefCell<Option<WString>>,
-
-    ime_data: RefCell<Option<ImeData>>,
 }
 
 impl EditTextData<'_> {
@@ -334,7 +338,7 @@ impl<'gc> EditText<'gc> {
         let et = EditText(Gc::new(
             context.gc(),
             EditTextData {
-                base: RefLock::new(InteractiveObjectBase::default()),
+                base: Default::default(),
                 text_spans: RefCell::new(text_spans),
                 shared: Gc::new(
                     context.gc(),
@@ -406,10 +410,11 @@ impl<'gc> EditText<'gc> {
 
         // Set position.
         {
-            let mut base = text_field.base_mut(context.gc());
-            let matrix = base.matrix_mut();
+            let base = text_field.base();
+            let mut matrix = base.matrix();
             matrix.tx = Twips::from_pixels(x);
             matrix.ty = Twips::from_pixels(y);
+            base.set_matrix(matrix);
         }
 
         text_field
@@ -618,36 +623,36 @@ impl<'gc> EditText<'gc> {
         self.contains_flag(EditTextFlag::HAS_BACKGROUND)
     }
 
-    pub fn set_has_background(self, gc_context: &Mutation<'gc>, has_background: bool) {
+    pub fn set_has_background(self, has_background: bool) {
         self.set_flag(EditTextFlag::HAS_BACKGROUND, has_background);
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 
     pub fn background_color(self) -> Color {
         self.0.background_color.get()
     }
 
-    pub fn set_background_color(self, gc_context: &Mutation<'gc>, background_color: Color) {
+    pub fn set_background_color(self, background_color: Color) {
         self.0.background_color.set(background_color);
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 
     pub fn has_border(self) -> bool {
         self.contains_flag(EditTextFlag::BORDER)
     }
 
-    pub fn set_has_border(self, gc_context: &Mutation<'gc>, has_border: bool) {
+    pub fn set_has_border(self, has_border: bool) {
         self.set_flag(EditTextFlag::BORDER, has_border);
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 
     pub fn border_color(self) -> Color {
         self.0.border_color.get()
     }
 
-    pub fn set_border_color(self, gc_context: &Mutation<'gc>, border_color: Color) {
+    pub fn set_border_color(self, border_color: Color) {
         self.0.border_color.set(border_color);
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 
     pub fn condense_white(self) -> bool {
@@ -933,7 +938,7 @@ impl<'gc> EditText<'gc> {
             autosize_bounds.set_height(height);
         }
         self.0.autosize_lazy_bounds.set(Some(autosize_bounds));
-        self.invalidate_cached_bitmap(context.gc());
+        self.invalidate_cached_bitmap();
     }
 
     /// Apply lazily calculated autosize bounds.
@@ -1053,7 +1058,7 @@ impl<'gc> EditText<'gc> {
     /// Returns the selection, but takes into account whether the selection should be rendered.
     fn visible_selection(self) -> Option<TextSelection> {
         let selection = self.0.selection.get()?;
-        #[allow(clippy::collapsible_else_if)]
+        #[expect(clippy::collapsible_else_if)]
         if selection.is_caret() {
             if self.has_focus() && !self.0.flags.get().contains(EditTextFlag::READ_ONLY) {
                 Some(selection)
@@ -1100,9 +1105,9 @@ impl<'gc> EditText<'gc> {
     /// Render lines according to the given procedure.
     ///
     /// This skips invisible lines.
-    fn render_lines<F>(self, context: &mut RenderContext<'_, 'gc>, f: F)
+    fn render_lines<F>(self, context: &mut RenderContext<'_, 'gc>, mut f: F)
     where
-        F: Fn(&mut RenderContext<'_, 'gc>, &LayoutLine<'gc>),
+        F: FnMut(&mut RenderContext<'_, 'gc>, &LayoutLine<'gc>),
     {
         // Skip lines that are off-screen.
         let lines_to_skip = self.scroll().saturating_sub(1);
@@ -1112,10 +1117,14 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Render the visible text along with selection and the caret.
-    fn render_text(self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_text(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        render_state: &mut EditTextRenderState,
+    ) {
         self.render_selection_background(context);
         self.render_lines(context, |context, line| {
-            self.render_layout_line(context, line);
+            self.render_layout_line(context, line, render_state);
         });
     }
 
@@ -1187,14 +1196,26 @@ impl<'gc> EditText<'gc> {
         context.commands.draw_rect(color, selection_box);
     }
 
-    fn render_layout_line(self, context: &mut RenderContext<'_, 'gc>, line: &LayoutLine<'gc>) {
+    fn render_layout_line(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        line: &LayoutLine<'gc>,
+        render_state: &mut EditTextRenderState,
+    ) {
+        let max_descent = line.descent();
         for layout_box in line.boxes_iter() {
-            self.render_layout_box(context, layout_box);
+            self.render_layout_box(context, layout_box, render_state, max_descent);
         }
     }
 
     /// Render a layout box, plus its children.
-    fn render_layout_box(self, context: &mut RenderContext<'_, 'gc>, lbox: &LayoutBox<'gc>) {
+    fn render_layout_box(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        lbox: &LayoutBox<'gc>,
+        render_state: &mut EditTextRenderState,
+        max_descent: Twips,
+    ) {
         let origin = lbox.bounds().origin();
 
         // If text's top is under the textbox's bottom, skip drawing.
@@ -1293,7 +1314,17 @@ impl<'gc> EditText<'gc> {
             );
 
             if caret.is_some() {
-                self.render_caret(context, caret_x, caret_height, color);
+                self.render_caret(context, caret_x, caret_height, color, render_state);
+            }
+
+            if let LayoutContent::Text {
+                underline: true, ..
+            } = lbox.content()
+            {
+                // Draw underline
+                let underline_y = baseline + (max_descent / 2);
+                let underline_width = lbox.bounds().width();
+                self.render_underline(context, underline_width, underline_y, color);
             }
         }
 
@@ -1310,6 +1341,7 @@ impl<'gc> EditText<'gc> {
         x: Twips,
         height: Twips,
         color: Color,
+        render_state: &mut EditTextRenderState,
     ) {
         let mut caret = context.transform_stack.transform().matrix
             * Matrix::create_box_with_rotation(
@@ -1321,7 +1353,28 @@ impl<'gc> EditText<'gc> {
             );
         let pixel_snapping = EditTextPixelSnapping::new(context.stage.quality());
         pixel_snapping.apply(&mut caret);
-        context.commands.draw_line(color, caret);
+
+        // We have to draw the caret outside of the text mask.
+        render_state.draw_caret_command = Some(RenderCommand::DrawLine {
+            color,
+            matrix: caret,
+        });
+    }
+
+    fn render_underline(
+        self,
+        context: &mut RenderContext<'_, 'gc>,
+        width: Twips,
+        y: Twips,
+        color: Color,
+    ) {
+        let mut underline = context.transform_stack.transform().matrix
+            * Matrix::create_box_with_rotation(width.to_pixels() as f32, 1.0, 0.0, Twips::ZERO, y);
+
+        let pixel_snapping = EditTextPixelSnapping::new(context.stage.quality());
+        pixel_snapping.apply(&mut underline);
+
+        context.commands.draw_line(color, underline);
     }
 
     /// Attempts to bind this text field to a property of a display object.
@@ -1445,7 +1498,7 @@ impl<'gc> EditText<'gc> {
         self.0.selection.get()
     }
 
-    pub fn set_selection(self, selection: Option<TextSelection>, gc_context: &Mutation<'gc>) {
+    pub fn set_selection(self, selection: Option<TextSelection>) {
         let old_selection = self.0.selection.get();
         if let Some(mut selection) = selection {
             selection.clamp(self.0.text_spans.borrow().text().len());
@@ -1455,7 +1508,7 @@ impl<'gc> EditText<'gc> {
         }
 
         if old_selection != self.0.selection.get() {
-            self.invalidate_cached_bitmap(gc_context);
+            self.invalidate_cached_bitmap();
         }
     }
 
@@ -1488,6 +1541,10 @@ impl<'gc> EditText<'gc> {
         self.0.text_spans.borrow()
     }
 
+    pub fn layout(&self) -> Ref<'_, Layout<'gc>> {
+        self.0.layout.borrow()
+    }
+
     pub fn render_settings(self) -> TextRenderSettings {
         self.0.render_settings.get()
     }
@@ -1500,16 +1557,17 @@ impl<'gc> EditText<'gc> {
         self.0.hscroll.get()
     }
 
-    pub fn set_hscroll(self, hscroll: f64, context: &mut UpdateContext<'gc>) {
+    pub fn set_hscroll(self, hscroll: f64) {
         self.0.hscroll.set(hscroll);
-        self.invalidate_cached_bitmap(context.gc());
+        self.invalidate_cached_bitmap();
     }
 
     pub fn scroll(self) -> usize {
         self.0.scroll.get()
     }
 
-    pub fn set_scroll(self, scroll: f64, context: &mut UpdateContext<'gc>) {
+    /// Returns `true` when scroll has been modified.
+    pub fn set_scroll(self, scroll: f64) -> bool {
         // derived experimentally. Not exact: overflows somewhere above 767100486418432.9
         // Checked in SWF 6, AVM1. Same in AVM2.
         const SCROLL_OVERFLOW_LIMIT: f64 = 767100486418433.0;
@@ -1519,8 +1577,12 @@ impl<'gc> EditText<'gc> {
             scroll as usize
         };
         let clamped = scroll_lines.clamp(1, self.maxscroll());
-        self.0.scroll.set(clamped);
-        self.invalidate_cached_bitmap(context.gc());
+        if self.0.scroll.replace(clamped) == clamped {
+            false
+        } else {
+            self.invalidate_cached_bitmap();
+            true
+        }
     }
 
     pub fn max_chars(self) -> i32 {
@@ -1673,7 +1735,7 @@ impl<'gc> EditText<'gc> {
                 } else {
                     selection.start()
                 };
-                self.set_selection(Some(TextSelection::for_position(new_pos)), context.gc());
+                self.set_selection(Some(TextSelection::for_position(new_pos)));
             }
             TextControlCode::MoveRight
             | TextControlCode::MoveRightWord
@@ -1684,7 +1746,7 @@ impl<'gc> EditText<'gc> {
                 } else {
                     selection.end()
                 };
-                self.set_selection(Some(TextSelection::for_position(new_pos)), context.gc());
+                self.set_selection(Some(TextSelection::for_position(new_pos)));
             }
             TextControlCode::SelectLeft
             | TextControlCode::SelectLeftWord
@@ -1692,10 +1754,7 @@ impl<'gc> EditText<'gc> {
             | TextControlCode::SelectLeftDocument => {
                 if selection.to > 0 {
                     let new_pos = self.find_new_position(control_code, selection.to);
-                    self.set_selection(
-                        Some(TextSelection::for_range(selection.from, new_pos)),
-                        context.gc(),
-                    );
+                    self.set_selection(Some(TextSelection::for_range(selection.from, new_pos)));
                 }
             }
             TextControlCode::SelectRight
@@ -1704,17 +1763,11 @@ impl<'gc> EditText<'gc> {
             | TextControlCode::SelectRightDocument => {
                 if selection.to < self.text().len() {
                     let new_pos = self.find_new_position(control_code, selection.to);
-                    self.set_selection(
-                        Some(TextSelection::for_range(selection.from, new_pos)),
-                        context.gc(),
-                    )
+                    self.set_selection(Some(TextSelection::for_range(selection.from, new_pos)))
                 }
             }
             TextControlCode::SelectAll => {
-                self.set_selection(
-                    Some(TextSelection::for_range(0, self.text().len())),
-                    context.gc(),
-                );
+                self.set_selection(Some(TextSelection::for_range(0, self.text().len())));
             }
             TextControlCode::Copy => {
                 let text = &self.text()[selection.start()..selection.end()];
@@ -1738,15 +1791,9 @@ impl<'gc> EditText<'gc> {
 
                 self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
                 if is_selectable {
-                    self.set_selection(
-                        Some(TextSelection::for_position(selection.start())),
-                        context.gc(),
-                    );
+                    self.set_selection(Some(TextSelection::for_position(selection.start())));
                 } else {
-                    self.set_selection(
-                        Some(TextSelection::for_position(self.text().len())),
-                        context.gc(),
-                    );
+                    self.set_selection(Some(TextSelection::for_position(self.text().len())));
                 }
                 changed = true;
             }
@@ -1758,10 +1805,7 @@ impl<'gc> EditText<'gc> {
             {
                 // Backspace or delete with multiple characters selected
                 self.replace_text(selection.start(), selection.end(), WStr::empty(), context);
-                self.set_selection(
-                    Some(TextSelection::for_position(selection.start())),
-                    context.gc(),
-                );
+                self.set_selection(Some(TextSelection::for_position(selection.start())));
                 changed = true;
             }
             TextControlCode::Backspace | TextControlCode::BackspaceWord => {
@@ -1770,7 +1814,7 @@ impl<'gc> EditText<'gc> {
                     // Delete previous character(s)
                     let start = self.find_new_position(control_code, selection.start());
                     self.replace_text(start, selection.start(), WStr::empty(), context);
-                    self.set_selection(Some(TextSelection::for_position(start)), context.gc());
+                    self.set_selection(Some(TextSelection::for_position(start)));
                     changed = true;
                 }
             }
@@ -1830,7 +1874,7 @@ impl<'gc> EditText<'gc> {
                 let new_selection = cursor.map(|(from, to)| {
                     TextSelection::for_range(old_ime_start + from, old_ime_start + to)
                 });
-                self.set_selection(new_selection, context.gc());
+                self.set_selection(new_selection);
             }
             ImeEvent::Commit(text) => self.text_input(text, context),
         };
@@ -1864,7 +1908,7 @@ impl<'gc> EditText<'gc> {
         };
 
         self.replace_text(ime_start, ime_end, WStr::empty(), context);
-        self.set_selection(Some(TextSelection::for_position(ime_start)), context.gc());
+        self.set_selection(Some(TextSelection::for_position(ime_start)));
         self.0.ime_data.take();
     }
 
@@ -2018,7 +2062,7 @@ impl<'gc> EditText<'gc> {
 
         let filtered_text = self.0.restrict.borrow().filter_allowed(&text);
 
-        if let Avm2Value::Object(target) = self.object2() {
+        if let Some(target) = self.object2() {
             let character_string =
                 AvmString::new(context.gc(), text.replace(b'\r', WStr::from_units(b"\n")));
 
@@ -2030,7 +2074,7 @@ impl<'gc> EditText<'gc> {
                 true,
                 true,
             );
-            Avm2::dispatch_event(activation.context, text_evt, target);
+            Avm2::dispatch_event(activation.context, text_evt, target.into());
 
             if text_evt.event().is_cancelled() {
                 return;
@@ -2044,7 +2088,7 @@ impl<'gc> EditText<'gc> {
 
         self.replace_text(selection.start(), selection.end(), text, context);
         let new_pos = selection.start() + text.len();
-        self.set_selection(Some(TextSelection::for_position(new_pos)), context.gc());
+        self.set_selection(Some(TextSelection::for_position(new_pos)));
 
         let mut activation = Avm1Activation::from_nothing(
             context,
@@ -2084,14 +2128,14 @@ impl<'gc> EditText<'gc> {
                 activation,
                 ExecutionReason::Special,
             );
-        } else if let Avm2Value::Object(object) = self.object2() {
+        } else if let Some(object) = self.object2() {
             let change_evt = Avm2EventObject::bare_event(
                 activation.context,
                 "change",
                 true,  /* bubbles */
                 false, /* cancelable */
             );
-            Avm2::dispatch_event(activation.context, change_evt, object);
+            Avm2::dispatch_event(activation.context, change_evt, object.into());
         }
     }
 
@@ -2108,7 +2152,7 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Construct the text field's AVM1 representation.
-    fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>, run_frame: bool) {
+    fn construct_as_avm1_object(self, context: &mut UpdateContext<'gc>) {
         if self.0.object.get().is_none() {
             let object = Avm1Object::new_with_native(
                 &context.strings,
@@ -2129,10 +2173,6 @@ impl<'gc> EditText<'gc> {
 
             self.initialize_as_broadcaster(activation);
         });
-
-        if run_frame {
-            self.run_frame_avm1(context);
-        }
     }
 
     /// Construct the text field's AVM2 representation.
@@ -2155,7 +2195,6 @@ impl<'gc> EditText<'gc> {
             class_object,
         ) {
             Ok(object) => {
-                let object: Avm2Object<'gc> = object.into();
                 self.set_object(Some(object.into()), context.gc());
             }
             Err(e) => tracing::error!(
@@ -2180,17 +2219,21 @@ impl<'gc> EditText<'gc> {
         let boxes = layout.boxes_iter();
         let union_bounds = layout.bounds();
 
-        let mut first_font = None;
+        let mut first_font_set = None;
         let mut first_format = None;
         for layout_box in boxes {
             match layout_box.content() {
                 LayoutContent::Text {
-                    font, text_format, ..
+                    font_set,
+                    text_format,
+                    ..
                 }
                 | LayoutContent::Bullet {
-                    font, text_format, ..
+                    font_set,
+                    text_format,
+                    ..
                 } => {
-                    first_font = Some(font);
+                    first_font_set = Some(font_set);
                     first_format = Some(text_format);
                     break;
                 }
@@ -2198,11 +2241,11 @@ impl<'gc> EditText<'gc> {
             }
         }
 
-        let font = first_font?;
+        let font_set = first_font_set?;
         let text_format = first_format?;
         let size = Twips::from_pixels(text_format.size?);
-        let ascent = font.get_baseline_for_height(size);
-        let descent = font.get_descent_for_height(size);
+        let ascent = font_set.get_baseline_for_height(size);
+        let descent = font_set.get_descent_for_height(size);
         let leading = Twips::from_pixels(text_format.leading?);
 
         Some(LayoutMetrics {
@@ -2402,12 +2445,12 @@ impl<'gc> EditText<'gc> {
                 error!("Couldn't execute URL \"{url:?}\": {e:?}");
             }
         } else if let Some(address) = url.strip_prefix(WStr::from_units(b"event:")) {
-            if let Avm2Value::Object(object) = self.object2() {
+            if let Some(object) = self.object2() {
                 let mut activation = Avm2Activation::from_nothing(context);
                 let text = AvmString::new(activation.gc(), address);
                 let event = Avm2EventObject::text_event(&mut activation, "link", text, true, false);
 
-                Avm2::dispatch_event(activation.context, event, object);
+                Avm2::dispatch_event(activation.context, event, object.into());
             }
         } else {
             context
@@ -2431,7 +2474,7 @@ impl<'gc> EditText<'gc> {
         })
     }
 
-    fn handle_click(self, click_index: usize, position: usize, context: &mut UpdateContext<'gc>) {
+    fn handle_click(self, click_index: usize, position: usize) {
         if !self.is_selectable() {
             return;
         }
@@ -2445,10 +2488,10 @@ impl<'gc> EditText<'gc> {
 
         // Update selection
         let selection = self.calculate_selection_at(position, selection_mode);
-        self.set_selection(Some(selection), context.gc());
+        self.set_selection(Some(selection));
     }
 
-    fn handle_drag(self, position: usize, context: &mut UpdateContext<'gc>) {
+    fn handle_drag(self, position: usize) {
         if !self.is_selectable() {
             return;
         }
@@ -2468,7 +2511,7 @@ impl<'gc> EditText<'gc> {
         let first_selection = self.calculate_selection_at(last_position, selection_mode);
         let current_selection = self.calculate_selection_at(position, selection_mode);
         let new_selection = TextSelection::span_across(first_selection, current_selection);
-        self.set_selection(Some(new_selection), context.gc());
+        self.set_selection(Some(new_selection));
     }
 
     pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
@@ -2477,67 +2520,45 @@ impl<'gc> EditText<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
-    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
-        Ref::map(self.0.base.borrow(), |r| &r.base)
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
+        HasPrefixField::as_prefix_gc(self.raw_interactive())
     }
 
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        let base_mut = unlock!(Gc::write(mc, self.0), EditTextData, base).borrow_mut();
-        RefMut::map(base_mut, |w| &mut w.base)
-    }
-
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
-        Gc::as_ptr(self.0) as *const DisplayObjectPtr
-    }
-
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         self.0.shared.id
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.shared.swf.clone()
     }
 
     /// Construct objects placed on this frame.
-    fn construct_frame(&self, context: &mut UpdateContext<'gc>) {
-        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
-            self.construct_as_avm2_object(context, (*self).into());
+    fn construct_frame(self, context: &mut UpdateContext<'gc>) {
+        if self.movie().is_action_script_3() && self.object2().is_none() {
+            self.construct_as_avm2_object(context, self.into());
             self.on_construction_complete(context);
         }
     }
 
-    fn run_frame_avm1(&self, _context: &mut UpdateContext) {
-        // Noop
-    }
-
-    fn as_edit_text(&self) -> Option<EditText<'gc>> {
-        Some(*self)
-    }
-
-    fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
-        Some(self.into())
-    }
-
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
-        run_frame: bool,
+        _run_frame: bool,
     ) {
         self.set_default_instance_name(context);
 
         if !self.movie().is_action_script_3() {
-            context.avm1.add_to_exec_list(context.gc(), (*self).into());
-            self.construct_as_avm1_object(context, run_frame);
+            self.construct_as_avm1_object(context);
         }
     }
 
-    fn object(&self) -> Avm1Value<'gc> {
+    fn object(self) -> Avm1Value<'gc> {
         self.0
             .object
             .get()
@@ -2546,26 +2567,21 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .unwrap_or(Avm1Value::Undefined)
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
-        self.0
-            .object
-            .get()
-            .and_then(|o| o.as_avm2_object())
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.object.get().and_then(|o| o.as_avm2_object())
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         self.set_object(Some(to.into()), context.gc());
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         self.apply_autosize_bounds();
 
         self.0.bounds.get()
     }
 
-    fn pixel_bounds(&self) -> Rectangle<Twips> {
+    fn pixel_bounds(self) -> Rectangle<Twips> {
         // For pixel bounds we can't apply lazy autosize bounds.
         // It's a bit hacky, but it seems that pixelBounds are
         // an exception to the rule that lazy autosize bounds
@@ -2577,38 +2593,38 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     // The returned position x and y of a text field is offset by the text bounds.
-    fn x(&self) -> Twips {
+    fn x(self) -> Twips {
         self.apply_autosize_bounds();
         self.base().x() + self.bounds_x_offset()
     }
 
-    fn set_x(&self, gc_context: &Mutation<'gc>, x: Twips) {
+    fn set_x(self, x: Twips) {
         self.apply_autosize_bounds();
         let offset = self.bounds_x_offset();
-        self.base_mut(gc_context).set_x(x - offset);
-        self.invalidate_cached_bitmap(gc_context);
+        self.base().set_x(x - offset);
+        self.invalidate_cached_bitmap();
     }
 
-    fn y(&self) -> Twips {
+    fn y(self) -> Twips {
         self.apply_autosize_bounds();
         self.base().y() + self.bounds_y_offset()
     }
 
-    fn set_y(&self, gc_context: &Mutation<'gc>, y: Twips) {
+    fn set_y(self, y: Twips) {
         self.apply_autosize_bounds();
         let offset = self.bounds_y_offset();
-        self.base_mut(gc_context).set_y(y - offset);
-        self.invalidate_cached_bitmap(gc_context);
+        self.base().set_y(y - offset);
+        self.invalidate_cached_bitmap();
     }
 
-    fn width(&self) -> f64 {
+    fn width(self) -> f64 {
         self.apply_autosize_bounds();
 
         let bounds = self.0.bounds.get();
-        (self.base().transform.matrix * bounds).width().to_pixels()
+        (self.base().matrix() * bounds).width().to_pixels()
     }
 
-    fn set_width(&self, context: &mut UpdateContext<'gc>, value: f64) {
+    fn set_width(self, context: &mut UpdateContext<'gc>, value: f64) {
         self.apply_autosize_bounds();
 
         let bounds = &self.0.bounds;
@@ -2617,14 +2633,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.relayout(context);
     }
 
-    fn height(&self) -> f64 {
+    fn height(self) -> f64 {
         self.apply_autosize_bounds();
 
         let bounds = self.0.bounds.get();
-        (self.base().transform.matrix * bounds).height().to_pixels()
+        (self.base().matrix() * bounds).height().to_pixels()
     }
 
-    fn set_height(&self, context: &mut UpdateContext<'gc>, value: f64) {
+    fn set_height(self, context: &mut UpdateContext<'gc>, value: f64) {
         self.apply_autosize_bounds();
 
         let bounds = &self.0.bounds;
@@ -2633,12 +2649,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.relayout(context);
     }
 
-    fn set_matrix(&self, mc: &Mutation<'gc>, matrix: Matrix) {
-        self.base_mut(mc).set_matrix(matrix);
-        self.invalidate_cached_bitmap(mc);
+    fn set_matrix(self, matrix: Matrix) {
+        self.base().set_matrix(matrix);
+        self.invalidate_cached_bitmap();
     }
 
-    fn render_self(&self, context: &mut RenderContext<'_, 'gc>) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         self.apply_autosize_bounds();
 
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
@@ -2681,7 +2697,10 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
 
         context.commands.push_mask();
-        let mask = Matrix::create_box_from_rectangle(&self.0.bounds.get());
+
+        let mask_bounds = self.0.bounds.get().grow_x(-Self::GUTTER);
+        let mask = Matrix::create_box_from_rectangle(&mask_bounds);
+
         context.commands.draw_rect(
             Color::WHITE,
             context.transform_stack.transform().matrix * mask,
@@ -2693,7 +2712,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             ..Default::default()
         });
 
-        self.render_text(context);
+        let mut render_state = Default::default();
+        self.render_text(context, &mut render_state);
 
         self.render_debug_boxes(
             context,
@@ -2709,13 +2729,17 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             context.transform_stack.transform().matrix * mask,
         );
         context.commands.pop_mask();
+
+        if let Some(draw_caret_command) = render_state.draw_caret_command {
+            context.commands.commands.push(draw_caret_command);
+        }
     }
 
-    fn allow_as_mask(&self) -> bool {
+    fn allow_as_mask(self) -> bool {
         false
     }
 
-    fn avm1_unload(&self, context: &mut UpdateContext<'gc>) {
+    fn avm1_unload(self, context: &mut UpdateContext<'gc>) {
         self.drop_focus(context);
 
         if let Some(node) = self.maskee() {
@@ -2726,16 +2750,16 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         // Unbind any display objects bound to this text.
         if let Some(dobj) = self.0.bound_display_object.take() {
-            Avm1TextFieldBinding::clear_binding(dobj, *self, context.gc());
+            Avm1TextFieldBinding::clear_binding(dobj, self, context.gc());
         }
 
         // Unregister any text fields that may be bound to *this* text field.
-        Avm1TextFieldBinding::unregister_bindings((*self).into(), context);
+        Avm1TextFieldBinding::unregister_bindings(self.into(), context);
 
         if self.variable().is_some() {
             context
                 .unbound_text_fields
-                .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), (*self).into()));
+                .retain(|&text_field| !DisplayObject::ptr_eq(text_field.into(), self.into()));
         }
 
         self.set_avm1_removed(true);
@@ -2910,12 +2934,8 @@ impl<'gc> EditText<'gc> {
 }
 
 impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
-    fn raw_interactive(&self) -> Ref<InteractiveObjectBase<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn raw_interactive_mut(&self, mc: &Mutation<'gc>) -> RefMut<InteractiveObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), EditTextData, base).borrow_mut()
+    fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn as_displayobject(self) -> DisplayObject<'gc> {
@@ -2941,9 +2961,9 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         if let ClipEvent::MouseWheel { delta } = event {
-            if self.is_mouse_wheel_enabled() {
+            let scrolled = if self.is_mouse_wheel_enabled() {
                 let new_scroll = self.scroll() as f64 - delta.lines();
-                self.set_scroll(new_scroll, context);
+                let scrolled = self.set_scroll(new_scroll);
 
                 let mut activation = Avm1Activation::from_nothing(
                     context,
@@ -2951,8 +2971,16 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
                     self.into(),
                 );
                 self.on_scroller(&mut activation);
+                scrolled
+            } else {
+                false
+            };
+
+            if scrolled {
+                return ClipEventResult::Handled;
+            } else {
+                return ClipEventResult::NotHandled;
             }
-            return ClipEventResult::Handled;
         }
 
         if let ClipEvent::Press { index } = event {
@@ -2960,7 +2988,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             let mut link_to_open = None;
 
             if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
-                self.handle_click(index, position, context);
+                self.handle_click(index, position);
 
                 if let Some((span_index, _)) = self
                     .0
@@ -2976,10 +3004,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
                         .map(|s| (s.url.clone(), s.target.clone()));
                 }
             } else {
-                self.set_selection(
-                    Some(TextSelection::for_position(self.text_length())),
-                    context.gc(),
-                );
+                self.set_selection(Some(TextSelection::for_position(self.text_length())));
             }
 
             if let Some((url, target)) = link_to_open {
@@ -2998,9 +3023,9 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
 
         if let ClipEvent::MouseMove = event {
             // If a mouse has moved and this EditTest is pressed, we need to update the selection.
-            if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, self.as_interactive()) {
+            if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, Some(self.into())) {
                 if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
-                    self.handle_drag(position, context);
+                    self.handle_drag(position);
                 }
             }
         }
@@ -3009,7 +3034,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     }
 
     fn mouse_pick_avm1(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         _require_button_mode: bool,
@@ -3025,14 +3050,14 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             && (self.is_selectable() || self.is_link_at(point))
             && self.hit_test_shape(context, point, HitTestOptions::MOUSE_PICK)
         {
-            Some((*self).into())
+            Some(self.into())
         } else {
             None
         }
     }
 
     fn mouse_pick_avm2(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         point: Point<Twips>,
         _require_button_mode: bool,
@@ -3051,7 +3076,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             if self.mouse_enabled()
                 && (self.is_selectable() || self.is_link_at(point) || !self.was_static())
             {
-                Avm2MousePick::Hit((*self).into())
+                Avm2MousePick::Hit(self.into())
             } else {
                 Avm2MousePick::PropagateToParent
             }
@@ -3071,7 +3096,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
     }
 
     fn on_focus_changed(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         focused: bool,
         _other: Option<InteractiveObject<'gc>>,
@@ -3083,7 +3108,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
             let is_avm1 = !self.movie().is_action_script_3();
             if is_avm1 {
                 // Clear selection on focus lost in AVM1 only.
-                self.set_selection(None, context.gc());
+                self.set_selection(None);
             }
         }
 
@@ -3102,16 +3127,16 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         }));
     }
 
-    fn is_focusable_by_mouse(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn is_focusable_by_mouse(self, _context: &mut UpdateContext<'gc>) -> bool {
         self.movie().is_action_script_3() || self.is_editable() || self.is_selectable()
     }
 
-    fn is_highlightable(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn is_highlightable(self, _context: &mut UpdateContext<'gc>) -> bool {
         // TextField is incapable of rendering a highlight.
         false
     }
 
-    fn is_tabbable(&self, context: &mut UpdateContext<'gc>) -> bool {
+    fn is_tabbable(self, context: &mut UpdateContext<'gc>) -> bool {
         if !self.is_editable() {
             // Non-editable text fields are never tabbable.
             return false;
@@ -3119,7 +3144,7 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
         self.tab_enabled(context)
     }
 
-    fn tab_enabled_default(&self, _context: &mut UpdateContext<'gc>) -> bool {
+    fn tab_enabled_default(self, _context: &mut UpdateContext<'gc>) -> bool {
         self.is_editable()
     }
 }
@@ -3176,7 +3201,8 @@ struct ClickEventData {
 
 impl ClickEventData {
     /// Selection mode that results from this click index.
-    fn selection_mode(&self) -> TextSelectionMode {
+    #[inline]
+    fn selection_mode(self) -> TextSelectionMode {
         TextSelectionMode::from_click_index(self.click_index)
     }
 }
@@ -3571,24 +3597,25 @@ impl EditTextPixelSnapping {
     }
 }
 
-#[derive(Debug, Clone, Copy, Collect)]
+#[derive(Clone, Copy, Collect, Debug, Default)]
 #[collect(no_drop)]
 enum EditTextStyleSheet<'gc> {
+    #[default]
     None,
     Avm1(Avm1Object<'gc>),
     Avm2(Avm2StyleSheetObject<'gc>),
 }
 
 impl<'gc> EditTextStyleSheet<'gc> {
-    fn is_some(&self) -> bool {
+    fn is_some(self) -> bool {
         self.style_sheet().is_some()
     }
 
-    fn is_none(&self) -> bool {
+    fn is_none(self) -> bool {
         self.style_sheet().is_none()
     }
 
-    fn style_sheet(&self) -> Option<StyleSheet<'gc>> {
+    fn style_sheet(self) -> Option<StyleSheet<'gc>> {
         match self {
             EditTextStyleSheet::None => None,
             EditTextStyleSheet::Avm1(object) => {
@@ -3603,15 +3630,16 @@ impl<'gc> EditTextStyleSheet<'gc> {
     }
 }
 
-impl Default for EditTextStyleSheet<'_> {
-    fn default() -> Self {
-        Self::None
-    }
-}
-
 #[derive(Clone, Debug)]
 struct ImeData {
     ime_start: usize,
     ime_end: usize,
     text: String,
+}
+
+#[derive(Clone, Debug, Default)]
+struct EditTextRenderState {
+    /// Used for delaying rendering the caret, so that it's
+    /// rendered outside of the text mask.
+    draw_caret_command: Option<RenderCommand>,
 }

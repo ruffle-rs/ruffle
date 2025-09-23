@@ -1,12 +1,11 @@
 use std::fmt;
 
-use crate::avm1::object::Object;
-use crate::avm1::property_decl::define_properties_on;
-use crate::avm1::{property_decl::Declaration, ArrayBuilder, ExecutionReason, NativeObject};
-use crate::avm1::{Activation, Error, Value};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::{Activation, Error, Object, Value};
+use crate::avm1::{ArrayBuilder, ExecutionReason, NativeObject};
 use crate::backend::navigator::Request;
 use crate::html::{transform_dashes_to_camel_case, CssStream, StyleSheet, TextFormat};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use ruffle_wstr::{WStr, WString};
@@ -48,6 +47,26 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "parseCSS" => method(parse_css; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_7);
     "parse" => method(parse_css; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_7);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
+
+fn constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let style_sheet = StyleSheetObject::new(activation.gc());
+    this.set_native(activation.gc(), NativeObject::StyleSheet(style_sheet));
+
+    Ok(this.into())
+}
 
 fn shallow_copy<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -423,25 +442,4 @@ fn clear<'gc>(
         activation,
     )?;
     Ok(Value::Undefined)
-}
-
-pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let style_sheet = StyleSheetObject::new(activation.gc());
-    this.set_native(activation.gc(), NativeObject::StyleSheet(style_sheet));
-
-    Ok(this.into())
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let style_sheet_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, style_sheet_proto, fn_proto);
-    style_sheet_proto
 }

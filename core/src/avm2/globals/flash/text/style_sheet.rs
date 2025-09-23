@@ -1,4 +1,4 @@
-use crate::avm2::object::{ScriptObject, TObject};
+use crate::avm2::object::{ScriptObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use crate::html::{transform_dashes_to_camel_case, CssStream};
@@ -12,7 +12,7 @@ pub fn inner_parse_css<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let document = args.get_string(activation, 0)?;
+    let document = args.get_string(activation, 0);
     let result = ScriptObject::new_object(activation);
 
     if let Ok(css) = CssStream::new(&document).parse() {
@@ -20,18 +20,18 @@ pub fn inner_parse_css<'gc>(
             let object = ScriptObject::new_object(activation);
 
             for (key, value) in properties.into_iter() {
-                object.set_string_property_local(
+                object.set_dynamic_property(
                     AvmString::new(activation.gc(), transform_dashes_to_camel_case(key)),
                     Value::String(AvmString::new(activation.gc(), value)),
-                    activation,
-                )?;
+                    activation.gc(),
+                );
             }
 
-            result.set_string_property_local(
+            result.set_dynamic_property(
                 AvmString::new(activation.gc(), selector),
                 Value::Object(object),
-                activation,
-            )?;
+                activation.gc(),
+            );
         }
     }
 
@@ -43,9 +43,10 @@ pub fn inner_parse_color<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let input = args.get_string(activation, 0)?;
+    let input = args.get_string(activation, 0);
 
     if let Some(stripped) = input.strip_prefix(WStr::from_units(b"#")) {
+        let stripped = stripped.trim_end();
         if stripped.len() <= 6 {
             if let Ok(number) = u32::from_str_radix(&stripped.to_string(), 16) {
                 return Ok(number.into());
@@ -61,7 +62,7 @@ pub fn inner_parse_font_family<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let input = args.get_string(activation, 0)?;
+    let input = args.get_string(activation, 0);
     let parsed_font_list = crate::html::parse_font_list(input.as_wstr());
     Ok(Value::String(AvmString::new(
         activation.gc(),
@@ -86,7 +87,7 @@ pub fn clear_internal<'gc>(
 }
 
 pub fn set_style_internal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -96,11 +97,11 @@ pub fn set_style_internal<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let Some(selector) = args.try_get_string(activation, 0)? else {
+    let Some(selector) = args.try_get_string(0) else {
         return Ok(Value::Undefined);
     };
     let text_format = args
-        .try_get_object(activation, 1)
+        .try_get_object(1)
         .and_then(|tf| tf.as_text_format().map(|tf| tf.clone()));
 
     if let Some(text_format) = text_format {

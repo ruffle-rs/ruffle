@@ -1,0 +1,22 @@
+num_ticks = 4
+
+# FIXME We aren't rendering the button outline properly (it's a separate shape).
+
+[image_comparisons."output.1"]
+trigger = 1
+max_outliers = 3500
+
+[image_comparisons."output.2"]
+trigger = 2
+max_outliers = 3500
+
+[image_comparisons."output.3"]
+trigger = 3
+max_outliers = 3500
+
+[image_comparisons."output.4"]
+trigger = 4
+max_outliers = 3500
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

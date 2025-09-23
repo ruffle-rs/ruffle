@@ -1,5 +1,5 @@
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error};
 use crate::backend::ui::FileDialogResult;
 use crate::utils::HasPrefixField;
@@ -37,18 +37,10 @@ impl<'gc> TObject<'gc> for FileReferenceObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_file_reference(&self) -> Option<FileReferenceObject<'gc>> {
-        Some(*self)
-    }
 }
 
 impl FileReferenceObject<'_> {
-    pub fn init_from_dialog_result(&self, result: Box<dyn FileDialogResult>) -> FileReference {
+    pub fn init_from_dialog_result(self, result: Box<dyn FileDialogResult>) -> FileReference {
         self.0
             .reference
             .replace(FileReference::FileDialogResult(result))
@@ -58,11 +50,11 @@ impl FileReferenceObject<'_> {
         self.0.reference.borrow()
     }
 
-    pub fn set_loaded(&self, value: bool) {
+    pub fn set_loaded(self, value: bool) {
         self.0.loaded.set(value)
     }
 
-    pub fn loaded(&self) -> bool {
+    pub fn loaded(self) -> bool {
         self.0.loaded.get()
     }
 }

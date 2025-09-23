@@ -7,10 +7,10 @@ use crate::avm2::globals::slots::flash_geom_transform as transform_slots;
 use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::{Activation, Error, Object, TObject, Value};
+use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::display_object::TDisplayObject;
 use crate::prelude::{DisplayObject, Matrix, Twips};
-use crate::{avm2_stub_getter, avm2_stub_setter};
+use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use ruffle_render::matrix3d::Matrix3D;
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::quality::StageQuality;
@@ -47,9 +47,9 @@ pub fn set_color_transform<'gc>(
         activation,
     )?;
     let dobj = get_display_object(this);
-    dobj.set_color_transform(activation.gc(), ct);
+    dobj.set_color_transform(ct);
     if let Some(parent) = dobj.parent() {
-        parent.invalidate_cached_bitmap(activation.gc());
+        parent.invalidate_cached_bitmap();
     }
     Ok(Value::Undefined)
 }
@@ -77,17 +77,17 @@ pub fn set_matrix<'gc>(
     let this = this.as_object().unwrap();
 
     let dobj = get_display_object(this);
-    let Some(obj) = args.try_get_object(activation, 0) else {
+    let Some(obj) = args.try_get_object(0) else {
         dobj.base().set_has_matrix3d_stub(true);
         return Ok(Value::Undefined);
     };
 
     let matrix = object_to_matrix(obj, activation)?;
-    dobj.set_matrix(activation.gc(), matrix);
+    dobj.set_matrix(matrix);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-        parent.invalidate_cached_bitmap(activation.gc());
+        parent.invalidate_cached_bitmap();
     }
     dobj.base().set_has_matrix3d_stub(false);
     Ok(Value::Undefined)
@@ -125,7 +125,7 @@ pub fn get_concatenated_matrix<'gc>(
             StageQuality::High16x16 | StageQuality::High16x16Linear => 1.25,
         };
 
-        let mut mat = *dobj.base().matrix();
+        let mut mat = dobj.base().matrix();
         mat.a *= scale;
         mat.d *= scale;
 
@@ -140,11 +140,11 @@ pub fn has_matrix3d_from_transform_object(transform_object: Object<'_>) -> bool 
 }
 
 pub fn matrix_from_transform_object(transform_object: Object<'_>) -> Matrix {
-    *get_display_object(transform_object).base().matrix()
+    get_display_object(transform_object).base().matrix()
 }
 
 pub fn color_transform_from_transform_object(transform_object: Object<'_>) -> ColorTransform {
-    *get_display_object(transform_object)
+    get_display_object(transform_object)
         .base()
         .color_transform()
 }
@@ -211,12 +211,12 @@ pub fn color_transform_to_object<'gc>(
     Ok(object)
 }
 
-fn matrix3d_to_object<'gc>(
+pub fn matrix3d_to_object<'gc>(
     matrix: Matrix3D,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let number = activation.avm2().class_defs().number;
-    let mut raw_data_storage = VectorStorage::new(16, true, Some(number), activation);
+    let mut raw_data_storage = VectorStorage::new(16, true, Some(number));
     for (i, data) in matrix.raw_data.iter().enumerate() {
         raw_data_storage.set(i, Value::Number(*data), activation)?;
     }
@@ -260,7 +260,6 @@ pub fn object_to_perspective_projection<'gc>(
             .unwrap()
             .base()
             .perspective_projection()
-            .copied()
             .unwrap_or_default());
     }
 
@@ -367,8 +366,8 @@ pub fn get_matrix_3d<'gc>(
 
     let display_object = get_display_object(this);
     if display_object.base().has_matrix3d_stub() {
-        let matrix = *get_display_object(this).base().matrix();
-        let matrix3d = Matrix3D::from(matrix);
+        let matrix = get_display_object(this).base().matrix();
+        let matrix3d = Matrix3D::from_matrix(matrix);
         matrix3d_to_object(matrix3d, activation)
     } else {
         Ok(Value::Null)
@@ -389,21 +388,21 @@ pub fn set_matrix_3d<'gc>(
     let display_object = get_display_object(this);
 
     let (matrix, has_matrix3d) = {
-        match args.try_get_object(activation, 0) {
+        match args.try_get_object(0) {
             Some(obj) => {
                 let matrix3d = object_to_matrix3d(obj, activation)?;
-                let matrix = Matrix::from(matrix3d);
+                let matrix = matrix3d.to_matrix();
                 (matrix, true)
             }
             None => (Matrix::IDENTITY, false),
         }
     };
 
-    display_object.set_matrix(activation.gc(), matrix);
+    display_object.set_matrix(matrix);
     if let Some(parent) = display_object.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-        parent.invalidate_cached_bitmap(activation.gc());
+        parent.invalidate_cached_bitmap();
     }
     display_object.base().set_has_matrix3d_stub(has_matrix3d);
 
@@ -452,11 +451,30 @@ pub fn set_perspective_projection<'gc>(
     avm2_stub_setter!(activation, "flash.geom.Transform", "perspectiveProjection");
 
     let perspective_projection = args
-        .try_get_object(activation, 0)
+        .try_get_object(0)
         .map(|object| object_to_perspective_projection(object, activation))
         .transpose()?;
 
-    get_display_object(this).set_perspective_projection(activation.gc(), perspective_projection);
+    get_display_object(this).set_perspective_projection(perspective_projection);
 
     Ok(Value::Undefined)
+}
+
+pub fn get_relative_matrix_3d<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let _relative_to = args.get_object(activation, 0, "relativeTo")?;
+
+    avm2_stub_method!(activation, "flash.geom.Transform", "getRelativeMatrix3D");
+
+    let display_object = get_display_object(this);
+    if !display_object.base().has_matrix3d_stub() {
+        return Ok(Value::Null);
+    }
+
+    matrix3d_to_object(Matrix3D::from_matrix(Matrix::IDENTITY), activation)
 }

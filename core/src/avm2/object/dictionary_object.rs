@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::dynamic_map::DynamicKey;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::string::AvmString;
@@ -86,14 +86,6 @@ impl<'gc> DictionaryObject<'gc> {
 impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_dictionary_object(self) -> Option<DictionaryObject<'gc>> {
-        Some(self)
     }
 
     // Calling `setPropertyIsEnumerable` on a `Dictionary` has no effect -

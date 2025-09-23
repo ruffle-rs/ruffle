@@ -3,7 +3,7 @@ use crate::avm2::globals::slots::flash_display_native_menu_item as native_item_s
 use crate::avm2::globals::slots::flash_ui_context_menu as menu_slots;
 use crate::avm2::globals::slots::flash_ui_context_menu_built_in_items as builtins_slots;
 use crate::avm2::globals::slots::flash_ui_context_menu_item as item_slots;
-use crate::avm2::object::{Object, TObject};
+use crate::avm2::object::{Object, TObject as _};
 use crate::avm2::value::Value;
 use crate::context_menu;
 use crate::display_object::DisplayObject;

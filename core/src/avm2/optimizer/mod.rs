@@ -1,4 +1,5 @@
 mod blocks;
+mod nop_remover;
 mod optimize;
 mod peephole;
 

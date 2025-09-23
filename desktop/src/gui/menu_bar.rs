@@ -3,7 +3,7 @@ use crate::gui::dialogs::Dialogs;
 use crate::gui::{text, DebugMessage};
 use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
-use egui::{menu, Button, Key, KeyboardShortcut, Modifiers, Widget};
+use egui::{containers::menu, Button, Key, KeyboardShortcut, Modifiers, Widget};
 use ruffle_core::config::Letterbox;
 use ruffle_core::focus_tracker::DisplayObject;
 use ruffle_core::{Player, StageScaleMode};
@@ -98,13 +98,13 @@ impl MenuBar {
         mut player: Option<&mut Player>,
     ) {
         egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
-            menu::bar(ui, |ui| {
+             menu::Bar::new().ui(ui, |ui| {
                 self.file_menu(locale, ui, dialogs, player.is_some());
                 self.view_menu(locale, ui, &mut player);
                 self.controls_menu(locale, ui, dialogs, &mut player);
-                menu::menu_button(ui, text(locale, "bookmarks-menu"), |ui| {
+                ui.menu_button( text(locale, "bookmarks-menu"), |ui| {
                     if Button::new(text(locale, "bookmarks-menu-add")).ui(ui).clicked() {
-                        ui.close_menu();
+                        ui.close();
 
                         let initial_url = self.currently_opened.as_ref().map(|(url, _)| url.clone());
 
@@ -112,7 +112,7 @@ impl MenuBar {
                     }
 
                     if Button::new(text(locale, "bookmarks-menu-manage")).ui(ui).clicked() {
-                        ui.close_menu();
+                        ui.close();
                         dialogs.open_bookmarks();
                     }
 
@@ -121,17 +121,17 @@ impl MenuBar {
                         self.preferences.bookmarks(|bookmarks| {
                             for bookmark in bookmarks.iter().filter(|x| !x.is_invalid()) {
                                 if Button::new(&bookmark.name).ui(ui).clicked() {
-                                    ui.close_menu();
+                                    ui.close();
                                     let _ = self.event_loop.send_event(RuffleEvent::Open(bookmark.url.clone(), Box::new(self.default_launch_options.clone())));
                                 }
                             }
                         });
                     }
                 });
-                menu::menu_button(ui, text(locale, "debug-menu"), |ui| {
+                ui.menu_button(text(locale, "debug-menu"), |ui| {
                     ui.add_enabled_ui(player.is_some(), |ui| {
                         if Button::new(text(locale, "debug-menu-open-stage")).ui(ui).clicked() {
-                            ui.close_menu();
+                            ui.close();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::TrackStage);
                             }
@@ -143,39 +143,39 @@ impl MenuBar {
                             });
                             let button = Button::new(text(locale, "debug-menu-open-root-movie-clip"));
                             if ui.add_enabled(has_root_movie_clip, button).clicked() {
-                                ui.close_menu();
+                                ui.close();
                                 player.debug_ui().queue_message(DebugMessage::TrackRootMovieClip);
                             }
                         }
                         ui.separator();
                         if Button::new(text(locale, "debug-menu-open-movie")).ui(ui).clicked() {
-                            ui.close_menu();
+                            ui.close();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::TrackTopLevelMovie);
                             }
                         }
                         if Button::new(text(locale, "debug-menu-open-movie-list")).ui(ui).clicked() {
-                            ui.close_menu();
+                            ui.close();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::ShowKnownMovies);
                             }
                         }
                         if Button::new(text(locale, "debug-menu-open-domain-list")).ui(ui).clicked() {
-                            ui.close_menu();
+                            ui.close();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::ShowDomains);
                             }
                         }
                         ui.separator();
                         if Button::new(text(locale, "debug-menu-search-display-objects")).ui(ui).clicked() {
-                            ui.close_menu();
+                            ui.close();
                             if let Some(player) = &mut player {
                                 player.debug_ui().queue_message(DebugMessage::SearchForDisplayObject);
                             }
                         }
                     });
                 });
-                menu::menu_button(ui, text(locale, "help-menu"), |ui| {
+                ui.menu_button(text(locale, "help-menu"), |ui| {
                     if ui.button(text(locale, "help-menu-join-discord")).clicked() {
                         self.launch_website(ui, "https://discord.gg/ruffle");
                     }
@@ -191,7 +191,7 @@ impl MenuBar {
                     ui.separator();
                     if ui.button(text(locale, "help-menu-about")).clicked() {
                         dialogs.open_about_screen();
-                        ui.close_menu();
+                        ui.close();
                     }
                 });
             });
@@ -205,13 +205,13 @@ impl MenuBar {
         dialogs: &mut Dialogs,
         player_exists: bool,
     ) {
-        menu::menu_button(ui, text(locale, "file-menu"), |ui| {
+        ui.menu_button(text(locale, "file-menu"), |ui| {
             if Button::new(text(locale, "file-menu-open-quick"))
                 .shortcut_text(ui.ctx().format_shortcut(&Self::SHORTCUT_OPEN))
                 .ui(ui)
                 .clicked()
             {
-                ui.close_menu();
+                ui.close();
                 self.open_file();
             }
 
@@ -220,7 +220,7 @@ impl MenuBar {
                 .ui(ui)
                 .clicked()
             {
-                ui.close_menu();
+                ui.close();
                 dialogs.open_file_advanced();
             }
 
@@ -253,7 +253,7 @@ impl MenuBar {
                     if let Some(recents) = &self.cached_recents {
                         for recent in recents {
                             if ui.button(&recent.name).clicked() {
-                                ui.close_menu();
+                                ui.close();
                                 let _ = self.event_loop.send_event(RuffleEvent::Open(
                                     recent.url.clone(),
                                     Box::new(self.default_launch_options.clone()),
@@ -286,7 +286,7 @@ impl MenuBar {
                 .ui(ui)
                 .clicked()
             {
-                ui.close_menu();
+                ui.close();
                 dialogs.open_preferences();
             }
             ui.separator();
@@ -296,7 +296,7 @@ impl MenuBar {
                 .ui(ui)
                 .clicked()
             {
-                ui.close_menu();
+                ui.close();
                 self.request_exit();
             }
         });
@@ -308,7 +308,7 @@ impl MenuBar {
         ui: &mut egui::Ui,
         player: &mut Option<&mut Player>,
     ) {
-        menu::menu_button(ui, text(locale, "view-menu"), |ui| {
+        ui.menu_button(text(locale, "view-menu"), |ui| {
             ui.add_enabled_ui(player.is_some(), |ui| {
                 ui.menu_button(text(locale, "scale-mode"), |ui| {
                     let items = vec![
@@ -342,7 +342,7 @@ impl MenuBar {
                         }
                         .on_hover_text_at_pointer(text(locale, tooltip_id));
                         if response.clicked() {
-                            ui.close_menu();
+                            ui.close();
                             if let Some(player) = player {
                                 player.set_scale_mode(scale_mode);
                             }
@@ -387,7 +387,7 @@ impl MenuBar {
                     .ui(ui)
                     .clicked()
                 {
-                    ui.close_menu();
+                    ui.close();
                     if let Some(player) = player {
                         player.set_fullscreen(true);
                     }
@@ -413,7 +413,7 @@ impl MenuBar {
                             ui.button(text(locale, id)).clicked()
                         };
                         if clicked {
-                            ui.close_menu();
+                            ui.close();
                             if let Some(player) = player {
                                 player.set_quality(quality);
                             }
@@ -431,7 +431,7 @@ impl MenuBar {
         dialogs: &mut Dialogs,
         player: &mut Option<&mut Player>,
     ) {
-        menu::menu_button(ui, text(locale, "controls-menu"), |ui| {
+        ui.menu_button(text(locale, "controls-menu"), |ui| {
             ui.add_enabled_ui(player.is_some(), |ui| {
                 let playing = player.as_ref().map(|p| p.is_playing()).unwrap_or_default();
                 let btn_name = if playing {
@@ -444,7 +444,7 @@ impl MenuBar {
                     .ui(ui)
                     .clicked()
                 {
-                    ui.close_menu();
+                    ui.close();
                     if let Some(player) = player {
                         player.set_is_playing(!playing);
                     }
@@ -456,7 +456,7 @@ impl MenuBar {
                         .ui(ui)
                         .clicked()
                     {
-                        ui.close_menu();
+                        ui.close();
                         if let Some(player) = player {
                             player.suspend_after_next_frame();
                         }
@@ -468,7 +468,7 @@ impl MenuBar {
                 .clicked()
             {
                 dialogs.open_volume_controls();
-                ui.close_menu();
+                ui.close();
             }
         });
     }
@@ -484,7 +484,7 @@ impl MenuBar {
     fn close_movie(&mut self, ui: &mut egui::Ui) {
         let _ = self.event_loop.send_event(RuffleEvent::CloseFile);
         self.currently_opened = None;
-        ui.close_menu();
+        ui.close();
     }
 
     fn reload_movie(&mut self, ui: &mut egui::Ui) {
@@ -494,7 +494,7 @@ impl MenuBar {
                 .event_loop
                 .send_event(RuffleEvent::Open(movie_url, opts.into()));
         }
-        ui.close_menu();
+        ui.close();
     }
 
     fn request_exit(&mut self) {
@@ -503,6 +503,6 @@ impl MenuBar {
 
     fn launch_website(&mut self, ui: &mut egui::Ui, url: &str) {
         let _ = webbrowser::open(url);
-        ui.close_menu();
+        ui.close();
     }
 }

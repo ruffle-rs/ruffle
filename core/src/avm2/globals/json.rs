@@ -2,7 +2,8 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::error::{syntax_error, type_error};
+use crate::avm2::error::{make_error_1132, type_error};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
@@ -38,14 +39,19 @@ fn deserialize_json_inner<'gc>(
             for entry in js_obj.iter() {
                 let key = AvmString::new_utf8(activation.gc(), entry.0);
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;
+                let args = &[key.into(), val];
+
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(activation, Value::Null, &[key.into(), val])?,
+                    Some(reviver) => {
+                        reviver.call(activation, Value::Null, FunctionArgs::from_slice(args))?
+                    }
                 };
+
                 if matches!(mapped_val, Value::Undefined) {
-                    obj.delete_string_property_local(key, activation)?;
+                    obj.delete_dynamic_property(key, activation.gc());
                 } else {
-                    obj.set_string_property_local(key, mapped_val, activation)?;
+                    obj.set_dynamic_property(key, mapped_val, activation.gc());
                 }
             }
             obj.into()
@@ -54,10 +60,15 @@ fn deserialize_json_inner<'gc>(
             let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(js_arr.len());
             for (key, val) in js_arr.iter().enumerate() {
                 let val = deserialize_json_inner(activation, val.clone(), reviver)?;
+                let args = &[key.into(), val];
+
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(activation, Value::Null, &[key.into(), val])?,
+                    Some(reviver) => {
+                        reviver.call(activation, Value::Null, FunctionArgs::from_slice(args))?
+                    }
                 };
+
                 arr.push(Some(mapped_val));
             }
             let storage = ArrayStorage::from_storage(arr);
@@ -76,8 +87,8 @@ fn deserialize_json<'gc>(
     match reviver {
         None => Ok(val),
         Some(reviver) => {
-            let args = [istr!("").into(), val];
-            reviver.call(activation, Value::Null, &args)
+            let args = &[istr!("").into(), val];
+            reviver.call(activation, Value::Null, FunctionArgs::from_slice(args))
         }
     }
 }
@@ -121,9 +132,14 @@ impl<'gc> AvmSerializer<'gc> {
         let (eval_key, value) = if value.as_object().is_some() {
             if value.has_public_property(istr!("toJSON"), activation) {
                 let key = key();
+                let args = &[key.into()];
                 (
                     Some(key),
-                    value.call_public_property(istr!("toJSON"), &[key.into()], activation)?,
+                    value.call_public_property(
+                        istr!("toJSON"),
+                        FunctionArgs::from_slice(args),
+                        activation,
+                    )?,
                 )
             } else {
                 (None, value)
@@ -133,11 +149,8 @@ impl<'gc> AvmSerializer<'gc> {
         };
 
         if let Some(Replacer::Function(replacer)) = self.replacer {
-            replacer.call(
-                activation,
-                Value::Null,
-                &[eval_key.unwrap_or_else(key).into(), value],
-            )
+            let args = &[eval_key.unwrap_or_else(key).into(), value];
+            replacer.call(activation, Value::Null, FunctionArgs::from_slice(args))
         } else {
             Ok(value)
         }
@@ -225,7 +238,7 @@ impl<'gc> AvmSerializer<'gc> {
             Value::String(s) => JsonValue::from(s.to_utf8_lossy().deref()),
             Value::Object(obj) => {
                 if self.obj_stack.contains(&obj) {
-                    return Err(Error::AvmError(type_error(
+                    return Err(Error::avm_error(type_error(
                         activation,
                         "Error #1129: Cyclic structure cannot be converted to JSON string.",
                         1129,
@@ -264,20 +277,16 @@ pub fn parse<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let input = args.get_string(activation, 0)?;
-    let reviver = args
-        .get_value(1)
-        .as_object()
-        .map(|o| o.as_function_object().unwrap());
+    let Some(input) = args.try_get_string(0) else {
+        return Err(make_error_1132(activation));
+    };
+
+    let reviver = args.try_get_function(1);
 
     let parsed = if let Ok(parsed) = serde_json::from_str(&input.to_utf8_lossy()) {
         parsed
     } else {
-        return Err(Error::AvmError(syntax_error(
-            activation,
-            "Error #1132: Invalid JSON parse input.",
-            1132,
-        )?));
+        return Err(make_error_1132(activation));
     };
 
     deserialize_json(activation, parsed, reviver)
@@ -295,7 +304,7 @@ pub fn stringify<'gc>(
 
     // If the replacer is None, that means it was either undefined or null.
     if replacer.is_none() && !matches!(args.get_value(1), Value::Null) {
-        return Err(Error::AvmError(type_error(
+        return Err(Error::avm_error(type_error(
             activation,
             "Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.",
             1131,
@@ -308,7 +317,7 @@ pub fn stringify<'gc>(
         } else if let Some(arr) = replacer.as_array_object() {
             Ok(Replacer::PropList(arr))
         } else {
-            Err(Error::AvmError(type_error(
+            Err(Error::avm_error(type_error(
                 activation,
                 "Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.",
                 1131,
@@ -329,8 +338,8 @@ pub fn stringify<'gc>(
             };
             Some(indent_bytes)
         }
-    } else if spaces.is_number() {
-        let indent_size = spaces.as_f64().clamp(0.0, 10.0) as u16;
+    } else if let Some(spaces) = spaces.try_as_f64() {
+        let indent_size = spaces.clamp(0.0, 10.0) as u16;
         if indent_size == 0 {
             None
         } else {

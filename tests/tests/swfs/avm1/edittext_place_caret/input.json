@@ -1,11 +1,11 @@
 [
-    { "type": "KeyDown", "key": "Escape" },
-    { "type": "MouseMove", "pos": [400, 10] },
-    { "type": "MouseDown", "pos": [400, 10], "btn": "Left" },
-    { "type": "MouseUp", "pos": [400, 10], "btn": "Left" },
-    { "type": "TextInput", "codepoint": "a" },
-    { "type": "TextInput", "codepoint": "s" },
-    { "type": "TextInput", "codepoint": "d" },
-    { "type": "TextInput", "codepoint": "f" },
-    { "type": "KeyDown", "key": "Escape" }
+  { "type": "KeyDown", "key": "Escape" },
+  { "type": "MouseMove", "pos": [400, 10] },
+  { "type": "MouseDown", "pos": [400, 10], "btn": "Left" },
+  { "type": "MouseUp", "pos": [400, 10], "btn": "Left" },
+  { "type": "TextInput", "codepoint": "a" },
+  { "type": "TextInput", "codepoint": "s" },
+  { "type": "TextInput", "codepoint": "d" },
+  { "type": "TextInput", "codepoint": "f" },
+  { "type": "KeyDown", "key": "Escape" }
 ]

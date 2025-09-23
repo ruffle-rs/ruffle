@@ -10,17 +10,19 @@ members = [
     "web/packages/extension/safari",
     "wstr",
     "scanner",
+
     "exporter",
+    "exporter/integration_tests",
 
     "frontend-utils",
 
     "render",
     "render/canvas",
     "render/naga-agal",
+    "render/pixel_bender",
+    "render/pixel_bender/assembly_tests",
     "render/wgpu",
     "render/webgl",
-
-    "ruffle_gc_arena",
 
     "stub-report",
 
@@ -29,6 +31,7 @@ members = [
     "video/external",
 
     "tests",
+    "tests/fs-tests-runner",
     "tests/input-format",
     "tests/socket-format",
     "tests/mocket",
@@ -47,17 +50,18 @@ version = "0.1.0"
 
 [workspace.dependencies]
 tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-naga = { version = "24.0.0", features = ["wgsl-out"] }
-wgpu = "24.0.5"
-egui = "0.31.1"
-clap = { version = "4.5.40", features = ["derive"] }
+tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
+naga = { version = "25.0.1", features = ["wgsl-out"] }
+wgpu = "25.0.2"
+egui = { git = "https://github.com/emilk/egui.git", branch = "main" }
+clap = { version = "4.5.45", features = ["derive"] }
 cpal = "0.15.3"
 anyhow = "1.0"
+gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "08e08414249d5914dfc3b402d7eadc133e00ce56" }
 slotmap = "1.0.7"
-async-channel = "2.3.1"
-bitflags = "2.9.1"
-bytemuck = "1.23.1"
+async-channel = "2.5.0"
+bitflags = "2.9.3"
+bytemuck = "1.23.2"
 chrono = { version = "0.4.41", default-features = false }
 enum-map = "2.7.3"
 flate2 = "1.1.2"
@@ -69,14 +73,35 @@ log = "0.4"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
 serde = "1.0.219"
-thiserror = "2.0.12"
+thiserror = "2.0.16"
 url = "2.5.2"
 # Make sure to match wasm-bindgen-cli version to this everywhere.
 wasm-bindgen = "=0.2.100"
 walkdir = "2.5.0"
-tokio = "1.45.1"
+tokio = "1.47.1"
 # Switching from the `async-std` to the `tokio` runtime, which we depend on anyway.
-rfd = { version = "0.15.3", default-features = false, features = ["tokio", "xdg-portal"] }
+rfd = { version = "0.15.4", default-features = false, features = ["tokio", "xdg-portal"] }
+memmap2 = "0.9.8"
+libtest-mimic = "0.8.1"
+regex = "1.11.2"
+toml = "0.8.23"
+vfs = "0.12.2"
+smallvec = { version = "1.15.1", features = ["const_new", "union"] }
+serde_json = "1.0.143"
+percent-encoding = "2.3.2"
+approx = "0.5.1"
+encoding_rs = "0.8.35"
+byteorder = "1.5"
+bitstream-io = "4.5.0"
+indicatif = "0.17"
+rayon = "1.11.0"
+sha2 = "0.10.9"
+indexmap = "2.11.0"
+fnv = "1.0.7"
+fluent-templates = "0.13.1"
+lzma-rs = "0.3.0"
+tempfile = "3.21.0"
+tracing-wasm = "0.2.1"
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.

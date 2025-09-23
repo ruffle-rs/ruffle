@@ -36,7 +36,6 @@ pub fn available_languages() -> Vec<&'static LanguageIdentifier> {
     result
 }
 
-#[allow(dead_code)]
 pub fn text_with_args(
     locale: &LanguageIdentifier,
     id: &'static str,

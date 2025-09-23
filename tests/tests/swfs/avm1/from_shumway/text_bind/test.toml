@@ -1,9 +1,0 @@
-# Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/avm1/text_bind
-
-num_frames = 6
-
-[image_comparisons.output]
-tolerance = 0
-
-[player_options]
-with_renderer = { optional = false, sample_count = 1 }

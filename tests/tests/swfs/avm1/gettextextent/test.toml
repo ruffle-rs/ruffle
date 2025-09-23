@@ -3,3 +3,7 @@ num_frames = 1
 [approximations]
 # TODO: Flash Player breaks single words that are longer than the line, but we don't.
 epsilon = 30.0
+
+[player_options]
+# TODO Fix this test. It shouldn't depend on the default font.
+with_default_font = true

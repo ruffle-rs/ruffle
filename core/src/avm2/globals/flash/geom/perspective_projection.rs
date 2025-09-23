@@ -1,14 +1,14 @@
-use std::f64::consts::PI;
-
 use crate::avm2::error::argument_error;
-use crate::avm2::globals::flash::geom::transform::object_to_perspective_projection;
+use crate::avm2::globals::flash::geom::transform::{
+    matrix3d_to_object, object_to_perspective_projection,
+};
 use crate::avm2::globals::slots::flash_geom_perspective_projection as pp_slots;
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
-use crate::avm2::{Activation, Error, Object, TObject, Value};
+use crate::avm2::parameters::ParametersExt;
+use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::avm2_stub_setter;
 use crate::display_object::TDisplayObject;
-
-const DEG2RAD: f64 = PI / 180.0;
+use ruffle_render::perspective_projection::PerspectiveProjection;
 
 fn get_width<'gc>(activation: &mut Activation<'_, 'gc>, this: Object<'gc>) -> f64 {
     let dobj = this
@@ -33,10 +33,9 @@ pub fn get_focal_length<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let fov = object_to_perspective_projection(this, activation)?.field_of_view;
-
     let width = get_width(activation, this);
-    let focal_length = (width / 2.0) as f32 * f64::tan((PI - fov * DEG2RAD) / 2.0) as f32;
+    let focal_length =
+        object_to_perspective_projection(this, activation)?.focal_length(width as f32);
 
     Ok(focal_length.into())
 }
@@ -54,9 +53,9 @@ pub fn set_focal_length<'gc>(
     );
     let this = this.as_object().unwrap();
 
-    let focal_length = args.get(0).unwrap().coerce_to_number(activation)?;
+    let focal_length = args.get_f64(0);
     if focal_length <= 0.0 {
-        return Err(Error::AvmError(argument_error(
+        return Err(Error::avm_error(argument_error(
             activation,
             &format!("Error #2186: Invalid focalLength {focal_length}."),
             2186,
@@ -66,10 +65,10 @@ pub fn set_focal_length<'gc>(
     sync_from_display_object(activation, this)?;
 
     let width = get_width(activation, this);
-    let fov = f64::atan((width / 2.0) / focal_length) / DEG2RAD * 2.0;
+    let fov = PerspectiveProjection::from_focal_length(focal_length, width).field_of_view;
     this.set_slot(pp_slots::FOV, fov.into(), activation)?;
 
-    sync_to_display_object(activation, this)?;
+    sync_to_display_object(this)?;
 
     Ok(Value::Undefined)
 }
@@ -100,9 +99,9 @@ pub fn set_field_of_view<'gc>(
 
     let this = this.as_object().unwrap();
 
-    let fov = args.get(0).unwrap().coerce_to_number(activation)?;
+    let fov = args.get_f64(0);
     if fov <= 0.0 || 180.0 <= fov {
-        return Err(Error::AvmError(argument_error(
+        return Err(Error::avm_error(argument_error(
             activation,
             "Error #2182: Invalid fieldOfView value.  The value must be greater than 0 and less than 180.",
             2182,
@@ -113,7 +112,7 @@ pub fn set_field_of_view<'gc>(
 
     this.set_slot(pp_slots::FOV, fov.into(), activation)?;
 
-    sync_to_display_object(activation, this)?;
+    sync_to_display_object(this)?;
 
     Ok(Value::Undefined)
 }
@@ -151,12 +150,25 @@ pub fn set_projection_center<'gc>(
 
     sync_from_display_object(activation, this)?;
 
-    let point = args.get(0).unwrap();
-    this.set_slot(pp_slots::CENTER, *point, activation)?;
+    let point = args.get_value(0);
+    this.set_slot(pp_slots::CENTER, point, activation)?;
 
-    sync_to_display_object(activation, this)?;
+    sync_to_display_object(this)?;
 
     Ok(Value::Undefined)
+}
+
+pub fn to_matrix_3d<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let width = get_width(activation, this);
+    let matrix3d = object_to_perspective_projection(this, activation)?.to_matrix3d(width as f32);
+
+    matrix3d_to_object(matrix3d, activation)
 }
 
 fn sync_from_display_object<'gc>(
@@ -195,18 +207,14 @@ fn sync_from_display_object<'gc>(
     Ok(())
 }
 
-fn sync_to_display_object<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-) -> Result<(), Error<'gc>> {
+fn sync_to_display_object<'gc>(this: Object<'gc>) -> Result<(), Error<'gc>> {
     let Some(dobj) = this.get_slot(pp_slots::DISPLAY_OBJECT).as_object() else {
         // Not associated with DO. Unnecessary to sync.
         return Ok(());
     };
-    let dobj = dobj.as_display_object().unwrap();
+    let base = dobj.as_display_object().unwrap().base();
 
-    let mut write = dobj.base_mut(activation.gc());
-    let Some(write) = write.perspective_projection_mut() else {
+    let Some(mut proj) = base.perspective_projection() else {
         return Ok(());
     };
 
@@ -218,8 +226,9 @@ fn sync_to_display_object<'gc>(
         (x, y)
     };
 
-    write.field_of_view = fov;
-    write.center = (x, y);
+    proj.field_of_view = fov;
+    proj.center = (x, y);
+    base.set_perspective_projection(Some(proj));
 
     Ok(())
 }

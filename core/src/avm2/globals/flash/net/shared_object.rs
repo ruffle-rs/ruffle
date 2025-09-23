@@ -1,8 +1,8 @@
 //! `flash.net.SharedObject` builtin/prototype
 
 use crate::avm2::error::error;
-pub use crate::avm2::object::shared_object_allocator;
-use crate::avm2::object::{ScriptObject, SharedObjectObject, TObject};
+use crate::avm2::object::{ScriptObject, SharedObjectObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use flash_lso::types::{AMFVersion, Lso};
@@ -41,10 +41,7 @@ pub fn get_local<'gc>(
     // TODO: It appears that Flash does some kind of escaping here:
     // the name "foo\uD800" correspond to a file named "fooE#FB#FB#D.sol".
 
-    let name = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
+    let name = args.get_string_non_null(activation, 0, "name")?;
     let name = name.to_utf8_lossy();
 
     const INVALID_CHARS: &str = "~%&\\;:\"',<>?# ";
@@ -53,7 +50,7 @@ pub fn get_local<'gc>(
         return Ok(Value::Null);
     }
 
-    let mut movie_url = if let Ok(url) = url::Url::parse(activation.context.swf.url()) {
+    let mut movie_url = if let Ok(url) = url::Url::parse(activation.context.root_swf.url()) {
         url
     } else {
         tracing::error!("SharedObject::get_local: Unable to parse movie URL");
@@ -62,7 +59,7 @@ pub fn get_local<'gc>(
     movie_url.set_query(None);
     movie_url.set_fragment(None);
 
-    let secure = args.get(2).unwrap_or(&Value::Undefined).coerce_to_boolean();
+    let secure = args.get_bool(2);
 
     // Secure parameter disallows using the shared object from non-HTTPS.
     if secure && movie_url.scheme() != "https" {
@@ -89,7 +86,8 @@ pub fn get_local<'gc>(
         movie_url.host_str().unwrap_or_default()
     };
 
-    let local_path = if let Some(Value::String(local_path)) = args.get(1) {
+    let local_path = &args.try_get_string(1);
+    let local_path = if let Some(local_path) = local_path {
         // Empty local path always fails.
         if local_path.is_empty() {
             return Ok(Value::Null);
@@ -207,7 +205,7 @@ pub fn flush<'gc>(
         if activation.context.storage.put(name, &bytes) {
             Ok(istr!("flushed").into())
         } else {
-            Err(Error::AvmError(error(
+            Err(Error::avm_error(error(
                 activation,
                 "Error #2130: Unable to flush SharedObject.",
                 2130,

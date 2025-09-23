@@ -90,7 +90,7 @@ impl TestRunner {
             .with_navigator(navigator)
             .with_max_execution_duration(Duration::from_secs(300))
             .with_fs_commands(Box::new(fs_command_provider))
-            .with_ui(TestUiBackend::new(test.fonts()?))
+            .with_ui(TestUiBackend::new(test.fonts()?, test.font_sorts()))
             .with_viewport_dimensions(
                 viewport_dimensions.width,
                 viewport_dimensions.height,
@@ -112,6 +112,10 @@ impl TestRunner {
             .with_movie(movie)
             .with_autoplay(true) //.tick() requires playback
             .build();
+
+        test.options
+            .default_fonts
+            .apply(&mut player.lock().unwrap());
 
         let images = test.options.image_comparisons.clone();
 
@@ -301,7 +305,7 @@ impl TestRunner {
                 AutomatedEvent::Wait | AutomatedEvent::SetClipboardText { .. } => unreachable!(),
             });
 
-            #[allow(clippy::single_match)]
+            #[expect(clippy::single_match)]
             match evt {
                 AutomatedEvent::MouseDown {
                     assert_handled: Some(assert_handled),

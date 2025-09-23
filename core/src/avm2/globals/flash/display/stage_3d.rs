@@ -1,10 +1,8 @@
 use crate::avm2::globals::methods::flash_events_event_dispatcher as event_dispatcher_methods;
-use crate::avm2::object::{Context3DObject, EventObject, TObject};
+use crate::avm2::object::{Context3DObject, EventObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use ruffle_render::backend::Context3DProfile;
-
-pub use crate::avm2::object::stage_3d_allocator;
 
 const PROFILES_HIGH_TO_LOW: &[(&[u8], Context3DProfile)] = [
     (
@@ -57,7 +55,7 @@ pub fn request_context3d_internal<'gc>(
 
     if this_stage3d.context3d().is_none() {
         let context = activation.context.renderer.create_context3d(profile)?;
-        let context3d_obj = Context3DObject::from_context(activation, context, this_stage3d)?;
+        let context3d_obj = Context3DObject::from_context(activation, context, this_stage3d);
         this_stage3d.set_context3d(Some(context3d_obj), activation.gc());
 
         let event = EventObject::bare_default_event(activation.context, "context3DCreate");

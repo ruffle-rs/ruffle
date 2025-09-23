@@ -48,7 +48,7 @@
         "message": "Opcje zaawansowane"
     },
     "settings_reset": {
-        "message": "Resetuj ustawienia"
+        "message": "Zresetuj ustawienia"
     },
     "settings_reset_confirm": {
         "message": "Czy na pewno chcesz przywrócić ustawienia Ruffle do wartości domyślnych?"

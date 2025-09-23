@@ -16,16 +16,12 @@ use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
-use crate::bitmap::bitmap_data::{
-    BitmapData, BitmapDataWrapper, ChannelOptions, ThresholdOperation,
-};
+use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::{Character, CompressedBitmap};
-use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::round_to_even;
 use crate::swf::BlendMode;
-use gc_arena::GcCell;
 use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
@@ -72,21 +68,18 @@ fn get_rectangle_x_y_width_height<'gc>(
 pub fn fill_bitmap_data_from_symbol<'gc>(
     activation: &mut Activation<'_, 'gc>,
     bd: &CompressedBitmap,
-) -> BitmapDataWrapper<'gc> {
+) -> BitmapData<'gc> {
     let bitmap = bd.decode().expect("Failed to decode BitmapData");
-    let new_bitmap_data = GcCell::new(
-        activation.gc(),
-        BitmapData::new_with_pixels(
-            bitmap.width(),
-            bitmap.height(),
-            true,
-            bitmap
-                .as_colors()
-                .map(crate::bitmap::bitmap_data::Color::from)
-                .collect(),
-        ),
-    );
-    BitmapDataWrapper::new(new_bitmap_data)
+    BitmapData::new_with_pixels(
+        activation.context.gc_context,
+        bitmap.width(),
+        bitmap.height(),
+        true,
+        bitmap
+            .as_colors()
+            .map(crate::bitmap::bitmap_data::Color::from)
+            .collect(),
+    )
 }
 
 /// Implements `flash.display.BitmapData`'s 'init' method (invoked from the AS3 constructor)
@@ -96,8 +89,9 @@ pub fn init<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
+    let bitmap_data_obj = this.as_bitmap_data_object().unwrap();
 
-    // We set the underlying BitmapData instance - we start out with a dummy BitmapDataWrapper,
+    // We set the underlying BitmapData instance - we start out with a dummy BitmapData,
     // which makes custom classes see a disposed BitmapData before they call super()
     let name = this.instance_class().name();
     let character = activation
@@ -111,17 +105,11 @@ pub fn init<'gc>(
                 .library
                 .library_for_movie_mut(movie)
                 .character_by_id(chara_id)
-                .cloned()
         });
 
-    let new_bitmap_data = if let Some(Character::Bitmap {
-        compressed,
-        avm2_bitmapdata_class: _,
-        handle: _,
-    }) = character
-    {
+    let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
         // Instantiating BitmapData from an Animate-style bitmap asset
-        fill_bitmap_data_from_symbol(activation, &compressed)
+        fill_bitmap_data_from_symbol(activation, bitmap.compressed())
     } else {
         if character.is_some() {
             //TODO: Determine if mismatched symbols will still work as a
@@ -132,25 +120,30 @@ pub fn init<'gc>(
             );
         }
 
-        let width = args.get_u32(activation, 0)?;
-        let height = args.get_u32(activation, 1)?;
+        let width = args.get_u32(0);
+        let height = args.get_u32(1);
         let transparency = args.get_bool(2);
-        let fill_color = args.get_u32(activation, 3)?;
+        let fill_color = args.get_u32(3);
 
-        if !is_size_valid(activation.context.swf.version(), width, height) {
-            return Err(Error::AvmError(argument_error(
+        if !is_size_valid(activation.context.root_swf.version(), width, height) {
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2015: Invalid BitmapData.",
                 2015,
             )?));
         }
 
-        let new_bitmap_data = BitmapData::new(width, height, transparency, fill_color);
-        BitmapDataWrapper::new(GcCell::new(activation.gc(), new_bitmap_data))
+        BitmapData::new(
+            activation.context.gc_context,
+            width,
+            height,
+            transparency,
+            fill_color,
+        )
     };
 
-    new_bitmap_data.init_object2(activation.gc(), this);
-    this.init_bitmap_data(activation.gc(), new_bitmap_data);
+    new_bitmap_data.init_object2(activation.gc(), bitmap_data_obj);
+    bitmap_data_obj.init_bitmap_data(activation.gc(), new_bitmap_data);
 
     Ok(Value::Undefined)
 }
@@ -213,8 +206,8 @@ pub fn scroll<'gc>(
 
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
-        let x = args.get_i32(activation, 0)?;
-        let y = args.get_i32(activation, 1)?;
+        let x = args.get_i32(0);
+        let y = args.get_i32(1);
 
         operations::scroll(
             activation.gc(),
@@ -259,28 +252,22 @@ pub fn copy_pixels<'gc>(
 
             let mut alpha_source = None;
 
-            if args.len() >= 4 {
-                if let Some(alpha_bitmap) = args
-                    .get(3)
-                    .and_then(|o| o.as_object())
-                    .and_then(|o| o.as_bitmap_data())
-                {
-                    // Testing shows that a null/undefined 'alphaPoint' parameter is treated
-                    // as 'new Point(0, 0)'
-                    let mut x = 0;
-                    let mut y = 0;
+            if let Some(alpha_bitmap) = args.try_get_object(3).and_then(|o| o.as_bitmap_data()) {
+                // Testing shows that a null/undefined 'alphaPoint' parameter is treated
+                // as 'new Point(0, 0)'
+                let mut x = 0;
+                let mut y = 0;
 
-                    if let Some(alpha_point) = args.try_get_object(activation, 4) {
-                        x = alpha_point
-                            .get_slot(point_slots::X)
-                            .coerce_to_i32(activation)?;
-                        y = alpha_point
-                            .get_slot(point_slots::Y)
-                            .coerce_to_i32(activation)?;
-                    }
-
-                    alpha_source = Some((alpha_bitmap, (x, y)));
+                if let Some(alpha_point) = args.try_get_object(4) {
+                    x = alpha_point
+                        .get_slot(point_slots::X)
+                        .coerce_to_i32(activation)?;
+                    y = alpha_point
+                        .get_slot(point_slots::Y)
+                        .coerce_to_i32(activation)?;
                 }
+
+                alpha_source = Some((alpha_bitmap, (x, y)));
             }
 
             let merge_alpha = args.get_bool(5);
@@ -324,7 +311,7 @@ pub fn get_pixels<'gc>(
         bitmap_data.check_valid(activation)?;
         let rectangle = args.get_object(activation, 0, "rect")?;
         let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
-        let mut storage = ByteArrayStorage::new();
+        let mut storage = ByteArrayStorage::new(activation.context);
 
         operations::get_pixels_as_byte_array(
             activation,
@@ -336,7 +323,7 @@ pub fn get_pixels<'gc>(
             &mut storage,
         )?;
 
-        let bytearray = ByteArrayObject::from_storage(activation, storage)?;
+        let bytearray = ByteArrayObject::from_storage(activation, storage);
         return Ok(bytearray.into());
     }
 
@@ -411,8 +398,8 @@ pub fn get_pixel<'gc>(
 
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
-        let x = args.get_u32(activation, 0)?;
-        let y = args.get_u32(activation, 1)?;
+        let x = args.get_u32(0);
+        let y = args.get_u32(1);
         let col = operations::get_pixel(bitmap_data, activation.context.renderer, x, y);
         return Ok(col.into());
     }
@@ -430,8 +417,8 @@ pub fn get_pixel32<'gc>(
 
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
-        let x = args.get_u32(activation, 0)?;
-        let y = args.get_u32(activation, 1)?;
+        let x = args.get_u32(0);
+        let y = args.get_u32(1);
         let pixel = operations::get_pixel32(bitmap_data, activation.context.renderer, x, y);
         return Ok(pixel.into());
     }
@@ -448,9 +435,9 @@ pub fn set_pixel<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bitmap_data) = this.as_bitmap_data() {
-        let x = args.get_u32(activation, 0)?;
-        let y = args.get_u32(activation, 1)?;
-        let color = args.get_u32(activation, 2)?;
+        let x = args.get_u32(0);
+        let y = args.get_u32(1);
+        let color = args.get_u32(2);
         operations::set_pixel(
             activation.gc(),
             activation.context.renderer,
@@ -475,9 +462,9 @@ pub fn set_pixel32<'gc>(
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
 
-        let x = args.get_u32(activation, 0)?;
-        let y = args.get_u32(activation, 1)?;
-        let color = args.get_u32(activation, 2)?;
+        let x = args.get_u32(0);
+        let y = args.get_u32(1);
+        let color = args.get_u32(2);
 
         operations::set_pixel32(
             activation.gc(),
@@ -604,9 +591,9 @@ pub fn copy_channel<'gc>(
             .get_slot(point_slots::Y)
             .coerce_to_i32(activation)?;
 
-        let source_channel = args.get_i32(activation, 3)?;
+        let source_channel = args.get_i32(3);
 
-        let dest_channel = args.get_i32(activation, 4)?;
+        let dest_channel = args.get_i32(4);
 
         if let Some(source_bitmap) = source_bitmap.as_bitmap_data() {
             //TODO: what if source is disposed
@@ -638,9 +625,9 @@ pub fn flood_fill<'gc>(
 
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
-            let x = args.get_u32(activation, 0)?;
-            let y = args.get_u32(activation, 1)?;
-            let color = args.get_u32(activation, 2)?;
+            let x = args.get_u32(0);
+            let y = args.get_u32(1);
+            let color = args.get_u32(2);
 
             operations::flood_fill(
                 activation.gc(),
@@ -663,17 +650,17 @@ pub fn noise<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let low = args.get_u32(activation, 1)? as u8;
+    let low = args.get_u32(1) as u8;
 
-    let high = args.get_u32(activation, 2)? as u8;
+    let high = args.get_u32(2) as u8;
 
-    let channel_options = ChannelOptions::from_bits_truncate(args.get_u32(activation, 3)? as u8);
+    let channel_options = ChannelOptions::from_bits_truncate(args.get_u32(3) as u8);
 
     let gray_scale = args.get_bool(4);
 
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
-        let random_seed = args.get_i32(activation, 0)?;
+        let random_seed = args.get_i32(0);
         operations::noise(
             activation.gc(),
             bitmap_data,
@@ -739,8 +726,8 @@ pub fn get_color_bounds_rect<'gc>(
         if !bitmap_data.disposed() {
             let find_color = args.get_bool(2);
 
-            let mask = args.get_u32(activation, 0)?;
-            let color = args.get_u32(activation, 1)?;
+            let mask = args.get_u32(0);
+            let color = args.get_u32(1);
 
             let (x, y, w, h) = operations::color_bounds_rect(
                 activation.context.renderer,
@@ -809,7 +796,7 @@ pub fn hit_test<'gc>(
                     .get_slot(point_slots::Y)
                     .coerce_to_i32(activation)?,
             );
-            let source_threshold = args.get_u32(activation, 1)?.clamp(0, u8::MAX.into()) as u8;
+            let source_threshold = args.get_u32(1).clamp(0, u8::MAX.into()) as u8;
             let compare_object = args.get_object(activation, 2, "secondObject")?;
             let point_class = activation.avm2().classes().point.inner_class_definition();
             let rectangle_class = activation
@@ -872,7 +859,7 @@ pub fn hit_test<'gc>(
                         .get_slot(point_slots::Y)
                         .coerce_to_i32(activation)?,
                 );
-                let second_threshold = args.get_u32(activation, 4)?.clamp(0, u8::MAX.into()) as u8;
+                let second_threshold = args.get_u32(4).clamp(0, u8::MAX.into()) as u8;
 
                 let result = operations::hit_test_bitmapdata(
                     activation.context.renderer,
@@ -888,7 +875,7 @@ pub fn hit_test<'gc>(
                 .as_display_object()
                 .and_then(|dobj| dobj.as_bitmap())
             {
-                let other_bmd = bitmap.bitmap_data_wrapper();
+                let other_bmd = bitmap.bitmap_data();
                 other_bmd.check_valid(activation)?;
                 let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
                 let second_point = (
@@ -899,7 +886,7 @@ pub fn hit_test<'gc>(
                         .get_slot(point_slots::Y)
                         .coerce_to_i32(activation)?,
                 );
-                let second_threshold = args.get_u32(activation, 4)?.clamp(0, u8::MAX.into()) as u8;
+                let second_threshold = args.get_u32(4).clamp(0, u8::MAX.into()) as u8;
 
                 return Ok(Value::Bool(operations::hit_test_bitmapdata(
                     activation.context.renderer,
@@ -912,7 +899,7 @@ pub fn hit_test<'gc>(
                 )));
             } else {
                 // This is the error message Flash Player produces. Even though it's misleading.
-                return Err(Error::AvmError(argument_error(
+                return Err(Error::avm_error(argument_error(
                     activation,
                     "Parameter 0 is of the incorrect type. Should be type BitmapData.",
                     2005,
@@ -936,12 +923,12 @@ pub fn draw<'gc>(
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
 
-        if let Some(matrix) = args.try_get_object(activation, 1) {
+        if let Some(matrix) = args.try_get_object(1) {
             transform.matrix =
                 crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
         }
 
-        if let Some(color_transform) = args.try_get_object(activation, 2) {
+        if let Some(color_transform) = args.try_get_object(2) {
             transform.color_transform =
                 crate::avm2::globals::flash::geom::transform::object_to_color_transform(
                     color_transform,
@@ -949,7 +936,7 @@ pub fn draw<'gc>(
                 )?;
         }
 
-        if let Some(mode) = args.try_get_string(activation, 3)? {
+        if let Some(mode) = args.try_get_string(3) {
             if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
                 blend_mode = mode;
             } else {
@@ -960,7 +947,7 @@ pub fn draw<'gc>(
 
         let mut clip_rect = None;
 
-        if let Some(clip_rect_obj) = args.try_get_object(activation, 4) {
+        if let Some(clip_rect_obj) = args.try_get_object(4) {
             clip_rect = Some(super::display_object::object_to_rectangle(
                 activation,
                 clip_rect_obj,
@@ -1017,12 +1004,12 @@ pub fn draw_with_quality<'gc>(
         let mut transform = Transform::default();
         let mut blend_mode = BlendMode::Normal;
 
-        if let Some(matrix) = args.try_get_object(activation, 1) {
+        if let Some(matrix) = args.try_get_object(1) {
             transform.matrix =
                 crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
         }
 
-        if let Some(color_transform) = args.try_get_object(activation, 2) {
+        if let Some(color_transform) = args.try_get_object(2) {
             transform.color_transform =
                 crate::avm2::globals::flash::geom::transform::object_to_color_transform(
                     color_transform,
@@ -1030,7 +1017,7 @@ pub fn draw_with_quality<'gc>(
                 )?;
         }
 
-        if let Some(mode) = args.try_get_string(activation, 3)? {
+        if let Some(mode) = args.try_get_string(3) {
             if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
                 blend_mode = mode;
             } else {
@@ -1041,7 +1028,7 @@ pub fn draw_with_quality<'gc>(
 
         let mut clip_rect = None;
 
-        if let Some(clip_rect_obj) = args.try_get_object(activation, 4) {
+        if let Some(clip_rect_obj) = args.try_get_object(4) {
             clip_rect = Some(super::display_object::object_to_rectangle(
                 activation,
                 clip_rect_obj,
@@ -1061,7 +1048,7 @@ pub fn draw_with_quality<'gc>(
         };
 
         // Unknown quality defaults to stage's quality
-        let quality = if let Some(quality) = args.try_get_string(activation, 6)? {
+        let quality = if let Some(quality) = args.try_get_string(6) {
             match quality.parse() {
                 Ok(quality) => quality,
                 Err(_) => return Err(make_error_2004(activation, Error2004Type::ArgumentError)),
@@ -1099,7 +1086,7 @@ pub fn fill_rect<'gc>(
 
     let rectangle = args.get_object(activation, 0, "rect")?;
 
-    let color = args.get_u32(activation, 1)?;
+    let color = args.get_u32(1);
 
     if let Some(bitmap_data) = this.as_bitmap_data() {
         bitmap_data.check_valid(activation)?;
@@ -1246,14 +1233,11 @@ pub fn clone<'gc>(
 
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
-            let new_bitmap_data = bitmap_data.clone_data(activation.context.renderer);
+            let new_bitmap_data =
+                bitmap_data.clone_data(activation.context.gc_context, activation.context.renderer);
 
-            let class = activation.avm2().classes().bitmapdata;
-            let new_bitmap_data_object = BitmapDataObject::from_bitmap_data_internal(
-                activation,
-                BitmapDataWrapper::new(GcCell::new(activation.gc(), new_bitmap_data)),
-                class,
-            )?;
+            let new_bitmap_data_object =
+                BitmapDataObject::from_bitmap_data(activation.context, new_bitmap_data);
 
             return Ok(new_bitmap_data_object.into());
         }
@@ -1297,10 +1281,10 @@ pub fn palette_map<'gc>(
         );
 
         let mut get_channel = |index: usize, shift: usize| -> Result<[u32; 256], Error<'gc>> {
-            let arg = args.get(index).unwrap_or(&Value::Null);
+            let arg = args.try_get_object(index);
             let mut array = [0_u32; 256];
             for (i, item) in array.iter_mut().enumerate() {
-                *item = if let Value::Object(arg) = arg {
+                *item = if let Some(arg) = arg {
                     arg.get_enumerant_value(i as u32, activation)?
                         .coerce_to_u32(activation)?
                 } else {
@@ -1341,16 +1325,15 @@ pub fn perlin_noise<'gc>(
 
     if let Some(bitmap_data) = this.as_bitmap_data() {
         if !bitmap_data.disposed() {
-            let base_x = args.get_f64(activation, 0)?;
-            let base_y = args.get_f64(activation, 1)?;
-            let num_octaves = args.get_u32(activation, 2)? as usize;
-            let seed = args.get_i32(activation, 3)? as i64;
+            let base_x = args.get_f64(0);
+            let base_y = args.get_f64(1);
+            let num_octaves = args.get_u32(2) as usize;
+            let seed = args.get_i32(3) as i64;
             let stitch = args.get_bool(4);
             let fractal_noise = args.get_bool(5);
-            let channel_options =
-                ChannelOptions::from_bits_truncate(args.get_i32(activation, 6)? as u8);
+            let channel_options = ChannelOptions::from_bits_truncate(args.get_i32(6) as u8);
             let grayscale = args.get_bool(7);
-            let offsets = args.try_get_object(activation, 8);
+            let offsets = args.try_get_object(8);
 
             let point_class = activation.avm2().classes().point.inner_class_definition();
 
@@ -1423,10 +1406,10 @@ pub fn threshold<'gc>(
                     .get_slot(point_slots::Y)
                     .coerce_to_i32(activation)?,
             );
-            let operation = args.try_get_string(activation, 3)?;
-            let threshold = args.get_u32(activation, 4)?;
-            let color = args.get_u32(activation, 5)?;
-            let mask = args.get_u32(activation, 6)?;
+            let operation = args.try_get_string(3);
+            let threshold = args.get_u32(4);
+            let color = args.get_u32(5);
+            let mask = args.get_u32(6);
             let copy_source = args.get_bool(7);
 
             let operation = if let Some(operation) = operation {
@@ -1434,7 +1417,7 @@ pub fn threshold<'gc>(
                     operation
                 } else {
                     // It's wrong but this is what Flash says.
-                    return Err(Error::AvmError(argument_error(
+                    return Err(Error::avm_error(argument_error(
                         activation,
                         "Parameter 0 is of the incorrect type. Should be type Operation.",
                         2005,
@@ -1526,18 +1509,13 @@ pub fn compare<'gc>(
     }
 
     match operations::compare(
+        activation.context.gc_context,
         activation.context.renderer,
         this_bitmap_data,
         other_bitmap_data,
     ) {
         Some(bitmap_data) => {
-            let class = activation.avm2().classes().bitmapdata;
-            Ok(BitmapDataObject::from_bitmap_data_internal(
-                activation,
-                BitmapDataWrapper::new(GcCell::new(activation.gc(), bitmap_data)),
-                class,
-            )?
-            .into())
+            Ok(BitmapDataObject::from_bitmap_data(activation.context, bitmap_data).into())
         }
         None => Ok(EQUIVALENT.into()),
     }
@@ -1571,18 +1549,18 @@ pub fn pixel_dissolve<'gc>(
                 .coerce_to_i32(activation)?,
         );
 
-        let random_seed = args.get_i32(activation, 3)?;
+        let random_seed = args.get_i32(3);
 
-        let num_pixels = args.get_i32(activation, 4)?;
+        let num_pixels = args.get_i32(4);
         if num_pixels < 0 {
-            return Err(Error::AvmError(range_error(
+            return Err(Error::avm_error(range_error(
                 activation,
                 &format!("Error #2027: Parameter numPixels must be a non-negative number; got {num_pixels}."),
                 2027,
             )?));
         }
 
-        let fill_color = args.get_u32(activation, 5)?;
+        let fill_color = args.get_u32(5);
 
         // Apparently, if this check fails, a type error for `null` is given.
         if let Some(src_bitmap_data) = src_bitmap_data.as_bitmap_data() {
@@ -1637,10 +1615,10 @@ pub fn merge<'gc>(
                 (x, y)
             };
 
-            let red_mult = args.get_i32(activation, 3)?;
-            let green_mult = args.get_i32(activation, 4)?;
-            let blue_mult = args.get_i32(activation, 5)?;
-            let alpha_mult = args.get_i32(activation, 6)?;
+            let red_mult = args.get_i32(3);
+            let green_mult = args.get_i32(4);
+            let blue_mult = args.get_i32(5);
+            let alpha_mult = args.get_i32(6);
 
             if let Some(src_bitmap) = src_bitmap.as_bitmap_data() {
                 if !src_bitmap.disposed() {

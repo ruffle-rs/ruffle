@@ -1,7 +1,7 @@
 use crate::avm2::dynamic_map::DynamicKey;
 use crate::avm2::function::BoundMethod;
 use crate::avm2::method::{Method, ParamConfig};
-use crate::avm2::object::TObject;
+use crate::avm2::object::TObject as _;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::{Activation, Avm2, ClassObject, QName, Value};
 use crate::context::UpdateContext;
@@ -154,7 +154,7 @@ struct FunctionInfo {
 }
 
 impl FunctionInfo {
-    pub fn from_method(method: &Method, stubbed: bool) -> Self {
+    pub fn from_method(method: Method, stubbed: bool) -> Self {
         Self {
             returns: method
                 .return_type()
@@ -275,16 +275,10 @@ impl Definition {
             .expect("inner_class_definition should be an i_class");
 
         if i_class.is_final() {
-            definition
-                .classinfo
-                .get_or_insert_with(Default::default)
-                .is_final = true;
+            definition.classinfo.get_or_insert_default().is_final = true;
         }
         if !i_class.is_sealed() {
-            definition
-                .classinfo
-                .get_or_insert_with(Default::default)
-                .dynamic = true;
+            definition.classinfo.get_or_insert_default().dynamic = true;
         }
         if let Some(super_name) = i_class
             .super_class_name()
@@ -292,10 +286,7 @@ impl Definition {
             .and_then(|n| n.local_name())
         {
             if &super_name != b"Object" {
-                definition
-                    .classinfo
-                    .get_or_insert_with(Default::default)
-                    .extends = Some(super_name.to_string());
+                definition.classinfo.get_or_insert_default().extends = Some(super_name.to_string());
             }
         }
 
@@ -322,13 +313,13 @@ impl Definition {
 
         Self::fill_traits(
             activation.avm2(),
-            &c_class.traits(),
+            c_class.traits(),
             &mut definition.static_traits,
             stubs,
         );
         Self::fill_traits(
             activation.avm2(),
-            &i_class.traits(),
+            i_class.traits(),
             &mut definition.instance_traits,
             stubs,
         );
@@ -346,19 +337,16 @@ impl Definition {
             if let Some(function_object) = object.as_function_object() {
                 let executable = function_object.executable();
 
-                output.get_or_insert_with(Default::default).function.insert(
+                output.get_or_insert_default().function.insert(
                     name.to_string(),
                     FunctionInfo::from_bound_method(executable, false),
                 );
             }
         } else {
-            output
-                .get_or_insert_with(Default::default)
-                .variables
-                .insert(
-                    name.to_string(),
-                    VariableInfo::from_value(value, activation),
-                );
+            output.get_or_insert_default().variables.insert(
+                name.to_string(),
+                VariableInfo::from_value(value, activation),
+            );
         }
     }
 
@@ -384,30 +372,27 @@ impl Definition {
                     default_value,
                     ..
                 } => {
-                    output
-                        .get_or_insert_with(Default::default)
-                        .variables
-                        .insert(
-                            trait_name,
-                            VariableInfo {
-                                type_info: type_name
-                                    .and_then(|m| m.local_name())
-                                    .map(|n| n.to_string()),
-                                value: format_value(default_value),
-                                stubbed: false,
-                            },
-                        );
+                    output.get_or_insert_default().variables.insert(
+                        trait_name,
+                        VariableInfo {
+                            type_info: type_name
+                                .and_then(|m| m.local_name())
+                                .map(|n| n.to_string()),
+                            value: format_value(default_value),
+                            stubbed: false,
+                        },
+                    );
                 }
                 TraitKind::Method { method, .. } => {
                     let stubbed = stubs.has_method(&trait_name);
                     output
-                        .get_or_insert_with(Default::default)
+                        .get_or_insert_default()
                         .function
-                        .insert(trait_name, FunctionInfo::from_method(method, stubbed));
+                        .insert(trait_name, FunctionInfo::from_method(*method, stubbed));
                 }
                 TraitKind::Getter { method, .. } => {
                     let stubbed = stubs.has_getter(&trait_name);
-                    output.get_or_insert_with(Default::default).getter.insert(
+                    output.get_or_insert_default().getter.insert(
                         trait_name,
                         VariableInfo {
                             type_info: Some(
@@ -424,7 +409,7 @@ impl Definition {
                 }
                 TraitKind::Setter { method, .. } => {
                     let stubbed = stubs.has_setter(&trait_name);
-                    output.get_or_insert_with(Default::default).setter.insert(
+                    output.get_or_insert_default().setter.insert(
                         trait_name,
                         VariableInfo {
                             type_info: Some(
@@ -447,26 +432,22 @@ impl Definition {
                     default_value,
                     ..
                 } => {
-                    output
-                        .get_or_insert_with(Default::default)
-                        .constants
-                        .insert(
-                            trait_name,
-                            VariableInfo {
-                                type_info: type_name
-                                    .and_then(|m| m.local_name())
-                                    .map(|n| n.to_string()),
-                                value: format_value(default_value),
-                                stubbed: false,
-                            },
-                        );
+                    output.get_or_insert_default().constants.insert(
+                        trait_name,
+                        VariableInfo {
+                            type_info: type_name
+                                .and_then(|m| m.local_name())
+                                .map(|n| n.to_string()),
+                            value: format_value(default_value),
+                            stubbed: false,
+                        },
+                    );
                 }
             }
         }
     }
 }
 
-#[allow(unreachable_code, unused_variables, clippy::diverging_sub_expression)]
 pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
     let stubs = crate::stub::get_known_stubs();
 
@@ -503,18 +484,14 @@ pub fn capture_specification(context: &mut UpdateContext, output: &Path) {
 
                 let namespace_stubs = ClassStubs::for_class(&namespace_uri, &stubs);
                 let definition = definitions.entry(namespace_uri.into()).or_default();
-                let instance_traits = definition
-                    .instance_traits
-                    .get_or_insert_with(Default::default);
+                let instance_traits = definition.instance_traits.get_or_insert_default();
                 let fn_info =
                     FunctionInfo::from_bound_method(executable, namespace_stubs.has_method(&name));
                 instance_traits.function.insert(name.into(), fn_info);
             }
         } else {
             let definition = definitions.entry(namespace_uri.into()).or_default();
-            let instance_traits = definition
-                .instance_traits
-                .get_or_insert_with(Default::default);
+            let instance_traits = definition.instance_traits.get_or_insert_default();
             instance_traits.constants.insert(
                 name.into(),
                 VariableInfo::from_value(value, &mut activation),

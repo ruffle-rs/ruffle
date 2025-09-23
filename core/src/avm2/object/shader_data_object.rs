@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Error;
 use crate::utils::HasPrefixField;
 use core::fmt;
@@ -42,13 +42,13 @@ impl fmt::Debug for ShaderDataObject<'_> {
 }
 
 impl ShaderDataObject<'_> {
-    pub fn pixel_bender_shader(&self) -> Option<PixelBenderShaderHandle> {
+    pub fn pixel_bender_shader(self) -> Option<PixelBenderShaderHandle> {
         let shader = &self.0.shader;
         let guard = scopeguard::guard(shader.take(), |stolen| shader.set(stolen));
         guard.clone()
     }
 
-    pub fn set_pixel_bender_shader(&self, shader: PixelBenderShaderHandle) {
+    pub fn set_pixel_bender_shader(self, shader: PixelBenderShaderHandle) {
         self.0.shader.set(Some(shader));
     }
 }
@@ -66,13 +66,5 @@ pub struct ShaderDataObjectData<'gc> {
 impl<'gc> TObject<'gc> for ShaderDataObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_shader_data(&self) -> Option<ShaderDataObject<'gc>> {
-        Some(*self)
     }
 }

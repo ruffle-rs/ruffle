@@ -6,8 +6,8 @@ use crate::avm1::property_map::PropertyMap;
 use crate::avm1::scope::Scope;
 use crate::avm1::{scope, Activation, ActivationIdentifier, Error, Object, Value};
 use crate::context::UpdateContext;
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
 use crate::frame_lifecycle::FramePhase;
-use crate::prelude::*;
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
@@ -58,7 +58,7 @@ pub struct Avm1<'gc> {
     has_mouse_listener: bool,
 
     /// The list of all movie clips in execution order.
-    clip_exec_list: Option<DisplayObject<'gc>>,
+    clip_exec_list: Option<MovieClip<'gc>>,
 
     /// The mappings between symbol names and constructors registered
     /// with `Object.registerClass()`.
@@ -341,7 +341,6 @@ impl<'gc> Avm1<'gc> {
         self.stack.push(value);
     }
 
-    #[allow(clippy::let_and_return)]
     pub fn pop(&mut self) -> Value<'gc> {
         let value = self.stack.pop().unwrap_or_else(|| {
             tracing::warn!("Avm1::pop: Stack underflow");
@@ -472,7 +471,7 @@ impl<'gc> Avm1<'gc> {
         *context.frame_phase = FramePhase::Idle;
 
         // AVM1 execution order is determined by the global execution list, based on instantiation order.
-        let mut prev: Option<DisplayObject<'gc>> = None;
+        let mut prev: Option<MovieClip<'gc>> = None;
         let mut next = context.avm1.clip_exec_list;
         while let Some(clip) = next {
             next = clip.next_avm1_clip();
@@ -502,7 +501,7 @@ impl<'gc> Avm1<'gc> {
     ///
     /// This should be called whenever a movie clip is created, and controls the order of
     /// execution for AVM1 movies.
-    pub fn add_to_exec_list(&mut self, gc_context: &Mutation<'gc>, clip: DisplayObject<'gc>) {
+    pub fn add_to_exec_list(&mut self, gc_context: &Mutation<'gc>, clip: MovieClip<'gc>) {
         // Adding while iterating is safe, as this does not modify any active nodes.
         if clip.next_avm1_clip().is_none() {
             clip.set_next_avm1_clip(gc_context, self.clip_exec_list);

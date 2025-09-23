@@ -6,10 +6,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 
 use ruffle_macros::istr;
 use swf::Fixed8;
@@ -21,7 +21,16 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "setTransform" => method(set_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
-pub fn constructor<'gc>(
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
+
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -36,16 +45,6 @@ pub fn constructor<'gc>(
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
     Ok(Value::Undefined)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
 }
 
 /// Gets the target display object of this color transform.
@@ -133,7 +132,7 @@ fn set_rgb<'gc>(
     if let Some(target) = target(activation, this)? {
         target.set_transformed_by_script(true);
         if let Some(parent) = target.parent() {
-            parent.invalidate_cached_bitmap(activation.gc());
+            parent.invalidate_cached_bitmap();
         }
 
         let rgb = args
@@ -142,14 +141,15 @@ fn set_rgb<'gc>(
             .coerce_to_i32(activation)?;
         let [b, g, r, _] = rgb.to_le_bytes();
 
-        let mut base = target.base_mut(activation.gc());
-        let color_transform = base.color_transform_mut();
+        let base = target.base();
+        let mut color_transform = base.color_transform();
         color_transform.r_multiply = Fixed8::ZERO;
         color_transform.g_multiply = Fixed8::ZERO;
         color_transform.b_multiply = Fixed8::ZERO;
         color_transform.r_add = r.into();
         color_transform.g_add = g.into();
         color_transform.b_add = b.into();
+        base.set_color_transform(color_transform);
     }
     Ok(Value::Undefined)
 }
@@ -195,11 +195,11 @@ fn set_transform<'gc>(
     if let Some(target) = target(activation, this)? {
         target.set_transformed_by_script(true);
         if let Some(parent) = target.parent() {
-            parent.invalidate_cached_bitmap(activation.gc());
+            parent.invalidate_cached_bitmap();
         }
 
-        let mut base = target.base_mut(activation.gc());
-        let color_transform = base.color_transform_mut();
+        let base = target.base();
+        let mut color_transform = base.color_transform();
         let transform = args
             .get(0)
             .unwrap_or(&Value::Undefined)
@@ -252,6 +252,8 @@ fn set_transform<'gc>(
             istr!("ab"),
             &mut color_transform.a_add,
         )?;
+
+        base.set_color_transform(color_transform);
     }
 
     Ok(Value::Undefined)

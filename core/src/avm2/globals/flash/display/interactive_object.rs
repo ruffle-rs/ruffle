@@ -2,11 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2027;
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::display_object::{TDisplayObject, TInteractiveObject};
+use crate::display_object::TInteractiveObject;
 
 /// Implements `InteractiveObject.mouseEnabled`'s getter.
 pub fn get_mouse_enabled<'gc>(
@@ -28,7 +27,7 @@ pub fn get_mouse_enabled<'gc>(
 
 /// Implements `InteractiveObject.mouseEnabled`'s setter.
 pub fn set_mouse_enabled<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -39,7 +38,7 @@ pub fn set_mouse_enabled<'gc>(
         .and_then(|dobj| dobj.as_interactive())
     {
         let value = args.get_bool(0);
-        int.set_mouse_enabled(activation.gc(), value);
+        int.set_mouse_enabled(value);
     }
 
     Ok(Value::Undefined)
@@ -65,7 +64,7 @@ pub fn get_double_click_enabled<'gc>(
 
 /// Implements `InteractiveObject.doubleClickEnabled`'s setter.
 pub fn set_double_click_enabled<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -76,7 +75,7 @@ pub fn set_double_click_enabled<'gc>(
         .and_then(|dobj| dobj.as_interactive())
     {
         let value = args.get_bool(0);
-        int.set_double_click_enabled(activation.gc(), value);
+        int.set_double_click_enabled(value);
     }
 
     Ok(Value::Undefined)
@@ -176,13 +175,13 @@ pub fn set_tab_index<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(obj) = this.as_display_object().and_then(|o| o.as_interactive()) {
-        let value = args.get_i32(activation, 0)?;
+        let value = args.get_i32(0);
         // Despite throwing an error that tabIndex cannot be negative,
         // the value of -1 is allowed, and it means that tabIndex is unset.
         if value < -1 {
             return Err(make_error_2027(activation, value));
         }
-        obj.set_tab_index(activation.context, Some(value));
+        obj.set_tab_index(Some(value));
     }
 
     Ok(Value::Undefined)
@@ -203,7 +202,7 @@ pub fn get_focus_rect<'gc>(
 }
 
 pub fn set_focus_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -213,13 +212,13 @@ pub fn set_focus_rect<'gc>(
         .as_display_object()
         .and_then(|this| this.as_interactive())
     {
-        let value = match args.get(0) {
-            Some(Value::Bool(true)) => Some(true),
-            Some(Value::Null) => None,
+        let value = match args.get_value(0) {
+            Value::Bool(true) => Some(true),
+            Value::Null => None,
             // everything else sets focusRect to false
             _ => Some(false),
         };
-        obj.set_focus_rect(activation.gc(), value);
+        obj.set_focus_rect(value);
     }
 
     Ok(Value::Null)

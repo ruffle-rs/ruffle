@@ -1,0 +1,6 @@
+version 1i
+name "no_out"
+
+param.in "in", float, f1.r
+
+ld f0.a, 1f

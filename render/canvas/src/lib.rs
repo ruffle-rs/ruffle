@@ -144,9 +144,9 @@ struct CanvasBitmap {
     smoothed: bool,
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 struct BitmapData {
+    #[expect(dead_code)]
     image_data: ImageData,
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
@@ -198,7 +198,7 @@ impl BitmapData {
         })
     }
 
-    fn update_pixels(&self, bitmap: Bitmap) -> Result<(), JsValue> {
+    fn update_pixels(&self, bitmap: Bitmap<'_>) -> Result<(), JsValue> {
         let bitmap = bitmap.to_rgba();
         let image_data =
             ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
@@ -322,7 +322,6 @@ impl WebCanvasRenderBackend {
         Ok(renderer)
     }
 
-    #[allow(clippy::float_cmp)]
     #[inline]
     fn set_transform(&mut self, matrix: &Matrix) {
         self.context
@@ -337,7 +336,6 @@ impl WebCanvasRenderBackend {
             .warn_on_error();
     }
 
-    #[allow(clippy::float_cmp)]
     #[inline]
     fn set_color_filter(&self, transform: &Transform) {
         let color_transform = &transform.color_transform;
@@ -530,7 +528,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         commands.execute(self);
     }
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+    fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, Error> {
         let bitmap_data = BitmapData::with_bitmap(bitmap).map_err(Error::JavascriptError)?;
         Ok(BitmapHandle(Arc::new(bitmap_data)))
     }
@@ -538,7 +536,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        bitmap: Bitmap,
+        bitmap: Bitmap<'_>,
         _region: PixelRegion,
     ) -> Result<(), Error> {
         let data = as_bitmap_data(handle);
@@ -551,9 +549,6 @@ impl RenderBackend for WebCanvasRenderBackend {
         _profile: Context3DProfile,
     ) -> Result<Box<dyn Context3D>, Error> {
         Err(Error::Unimplemented("createContext3D".into()))
-    }
-    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), Error> {
-        Err(Error::Unimplemented("Context3D.present".into()))
     }
 
     fn debug_info(&self) -> Cow<'static, str> {
@@ -576,7 +571,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn run_pixelbender_shader(
         &mut self,
         _handle: ruffle_render::pixel_bender::PixelBenderShaderHandle,
-        _arguments: &[ruffle_render::pixel_bender::PixelBenderShaderArgument],
+        _arguments: &[ruffle_render::pixel_bender_support::PixelBenderShaderArgument],
         _target: &PixelBenderTarget,
     ) -> Result<PixelBenderOutput, Error> {
         Err(Error::Unimplemented("run_pixelbender_shader".into()))
@@ -884,6 +879,11 @@ impl CommandHandler for WebCanvasRenderBackend {
         self.push_blend_mode(blend);
         commands.execute(self);
         self.pop_blend_mode();
+    }
+
+    fn render_alpha_mask(&mut self, maskee_commands: CommandList, _mask_commands: CommandList) {
+        // TODO Add support for alpha masks
+        maskee_commands.execute(self);
     }
 }
 

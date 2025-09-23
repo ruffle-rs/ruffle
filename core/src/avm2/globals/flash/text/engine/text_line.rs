@@ -1,8 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
-use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
-use crate::display_object::TDisplayObject;
 
 pub fn get_text_width<'gc>(
     activation: &mut Activation<'_, 'gc>,

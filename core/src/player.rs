@@ -40,6 +40,7 @@ use crate::loader::{LoadBehavior, LoadManager};
 use crate::local_connection::LocalConnections;
 use crate::locale::get_current_date_time;
 use crate::net_connection::NetConnections;
+use crate::orphan_manager::OrphanManager;
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
@@ -75,7 +76,7 @@ use web_time::Instant;
 pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
 #[cfg(feature = "default_font")]
-pub const FALLBACK_DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans-regular.subset.ttf.gz");
+pub const FALLBACK_DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans.subset.ttf.gz");
 
 #[derive(Collect)]
 #[collect(no_drop)]
@@ -193,6 +194,8 @@ struct GcRootData<'gc> {
 
     local_connections: LocalConnections<'gc>,
 
+    orphan_manager: OrphanManager<'gc>,
+
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
     dynamic_root: DynamicRootSet<'gc>,
 
@@ -203,7 +206,7 @@ struct GcRootData<'gc> {
 #[collect(no_drop)]
 pub struct PostFrameCallback<'gc> {
     #[collect(require_static)]
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity)]
     pub callback: Box<dyn for<'b> FnOnce(&mut UpdateContext<'b>, DisplayObject<'b>) + 'static>,
     pub data: DisplayObject<'gc>,
 }
@@ -211,7 +214,7 @@ pub struct PostFrameCallback<'gc> {
 impl<'gc> GcRootData<'gc> {
     /// Splits out parameters for creating an `UpdateContext`
     /// (because we can borrow fields of `self` independently)
-    #[allow(clippy::type_complexity)]
+    #[expect(clippy::type_complexity)]
     fn update_context_params(
         &mut self,
     ) -> (
@@ -234,6 +237,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Sockets<'gc>,
         &mut NetConnections<'gc>,
         &mut LocalConnections<'gc>,
+        &mut OrphanManager<'gc>,
         &mut Vec<PostFrameCallback<'gc>>,
         &mut MouseData<'gc>,
         DynamicRootSet<'gc>,
@@ -258,6 +262,7 @@ impl<'gc> GcRootData<'gc> {
             &mut self.sockets,
             &mut self.net_connections,
             &mut self.local_connections,
+            &mut self.orphan_manager,
             &mut self.post_frame_callbacks,
             &mut self.mouse_data,
             self.dynamic_root,
@@ -289,7 +294,7 @@ pub struct Player {
 
     /// The runtime we're emulating (Flash Player or Adobe AIR).
     /// In Adobe AIR mode, additional classes are available
-    #[allow(unused)]
+    #[expect(unused)]
     player_runtime: PlayerRuntime,
 
     /// Whether we're emulating the release or the debug build.
@@ -652,7 +657,7 @@ impl Player {
                 };
 
                 crate::avm1::make_context_menu_state(menu_object, display_obj, &mut activation)
-            } else if let Some(Avm2Value::Object(hit_obj)) = display_obj.map(|obj| obj.object2()) {
+            } else if let Some(hit_obj) = display_obj.and_then(|obj| obj.object2()) {
                 let mut activation = Avm2Activation::from_nothing(context);
 
                 let menu_object = display_obj
@@ -735,8 +740,8 @@ impl Player {
                                         menu_item_select_string.into(),
                                         false.into(),
                                         false.into(),
-                                        display_obj.object2(),
-                                        display_obj.object2(),
+                                        display_obj.object2_or_null(),
+                                        display_obj.object2_or_null(),
                                     ],
                                 );
 
@@ -1190,10 +1195,9 @@ impl Player {
                 if target_object.movie().is_action_script_3() {
                     let target = target_object
                         .object2()
-                        .as_object()
-                        .expect("DisplayObject is not an object!");
+                        .expect("DisplayObject was not constructed!");
 
-                    Avm2::dispatch_event(activation.context, keyboard_event, target);
+                    Avm2::dispatch_event(activation.context, keyboard_event, target.into());
                 }
             }
 
@@ -1394,12 +1398,16 @@ impl Player {
                         None
                     }
                 } else {
-                    context.stage.as_interactive()
+                    Some(context.stage.into())
                 };
                 if let Some(target) = target {
                     let event = ClipEvent::MouseWheel { delta: *delta };
-                    target.event_dispatch_to_avm2(context, event);
-                    target.handle_clip_event(context, event);
+                    if target.event_dispatch_to_avm2(context, event) == ClipEventResult::Handled {
+                        player_event_handled = true;
+                    }
+                    if target.handle_clip_event(context, event) == ClipEventResult::Handled {
+                        player_event_handled = true;
+                    }
                 }
             });
         }
@@ -1484,8 +1492,8 @@ impl Player {
             };
 
             // TODO: Introduce `DisplayObject::set_position()`?
-            display_object.set_x(context.gc(), new_position.x);
-            display_object.set_y(context.gc(), new_position.y);
+            display_object.set_x(new_position.x);
+            display_object.set_y(new_position.y);
 
             // Update `_droptarget` property of dragged object.
             if let Some(movie_clip) = display_object.as_movie_clip() {
@@ -1620,7 +1628,7 @@ impl Player {
                 && !InteractiveObject::option_ptr_eq(cur_over_object, new_over_object)
             {
                 // If the mouse button is down, the object the user clicked on grabs the focus
-                // and fires "drag" events. Other objects are ignored.
+                // and fires "drag" events.
                 if context.input.is_mouse_down(MouseButton::Left) {
                     context.mouse_data.hovered = new_over_object;
                     if let Some(down_object) = context.mouse_data.pressed {
@@ -1628,7 +1636,7 @@ impl Player {
                             context.mouse_data.pressed,
                             cur_over_object,
                         ) {
-                            // Dragged from outside the clicked object to the inside.
+                            // Dragged from inside the clicked object to the outside.
                             events.push((
                                 down_object,
                                 ClipEvent::DragOut {
@@ -1639,10 +1647,40 @@ impl Player {
                             context.mouse_data.pressed,
                             new_over_object,
                         ) {
-                            // Dragged from inside the clicked object to the outside.
+                            // Dragged from outside the clicked object to the inside.
                             events.push((
                                 down_object,
                                 ClipEvent::DragOver {
+                                    from: cur_over_object,
+                                },
+                            ));
+                        }
+                    }
+
+                    // While dragging, dispatch hover roll events only for AVM2 targets.
+                    if let Some(cur_over_object) = cur_over_object {
+                        if cur_over_object
+                            .as_displayobject()
+                            .movie()
+                            .is_action_script_3()
+                        {
+                            events.push((
+                                cur_over_object,
+                                ClipEvent::RollOut {
+                                    to: new_over_object,
+                                },
+                            ));
+                        }
+                    }
+                    if let Some(new_over_object) = new_over_object {
+                        if new_over_object
+                            .as_displayobject()
+                            .movie()
+                            .is_action_script_3()
+                        {
+                            events.push((
+                                new_over_object,
+                                ClipEvent::RollOver {
                                     from: cur_over_object,
                                 },
                             ));
@@ -1831,7 +1869,7 @@ impl Player {
     ) {
         let tracker = context.focus_tracker;
         let mut pressed_object = pressed_object.as_interactive();
-        if InteractiveObject::option_ptr_eq(pressed_object, context.stage.as_interactive()) {
+        if InteractiveObject::option_ptr_eq(pressed_object, Some(context.stage.into())) {
             pressed_object = None;
         }
 
@@ -1913,7 +1951,7 @@ impl Player {
                         root.compressed_total_bytes() as usize,
                     );
 
-                    Avm2::dispatch_event(context, progress_evt, loader_info);
+                    Avm2::dispatch_event(context, progress_evt, loader_info.into());
                 }
             }
 
@@ -1994,7 +2032,7 @@ impl Player {
                 stage,
             };
 
-            stage.render(&mut render_context);
+            stage.render_viewport(&mut render_context);
 
             #[cfg(feature = "egui")]
             {
@@ -2188,6 +2226,7 @@ impl Player {
                 sockets,
                 net_connections,
                 local_connections,
+                orphan_manager,
                 post_frame_callbacks,
                 mouse_data,
                 dynamic_root,
@@ -2196,7 +2235,7 @@ impl Player {
             let mut update_context = UpdateContext {
                 player_version: this.player_version,
                 player_mode: this.player_mode,
-                swf: &mut this.swf,
+                root_swf: &mut this.swf,
                 library,
                 rng: &mut this.rng,
                 renderer: this.renderer.deref_mut(),
@@ -2244,6 +2283,7 @@ impl Player {
                 sockets,
                 net_connections,
                 local_connections,
+                orphan_manager,
                 dynamic_root,
                 post_frame_callbacks,
                 notification_sender: this.notification_sender.as_ref(),
@@ -2255,7 +2295,7 @@ impl Player {
             let ret = f(&mut update_context);
 
             // If we changed the framerate, let the audio handler now.
-            #[allow(clippy::float_cmp)]
+            #[expect(clippy::float_cmp)]
             if *update_context.frame_rate != prev_frame_rate {
                 update_context
                     .audio
@@ -2491,6 +2531,8 @@ pub struct PlayerBuilder {
     #[cfg(feature = "known_stubs")]
     stub_report_output: Option<std::path::PathBuf>,
     avm2_optimizer_enabled: bool,
+    #[cfg(feature = "default_font")]
+    default_font: bool,
 }
 
 impl PlayerBuilder {
@@ -2545,6 +2587,8 @@ impl PlayerBuilder {
             #[cfg(feature = "known_stubs")]
             stub_report_output: None,
             avm2_optimizer_enabled: true,
+            #[cfg(feature = "default_font")]
+            default_font: true,
         }
     }
 
@@ -2766,6 +2810,12 @@ impl PlayerBuilder {
         self
     }
 
+    #[cfg(feature = "default_font")]
+    pub fn with_default_font(mut self, value: bool) -> Self {
+        self.default_font = value;
+        self
+    }
+
     fn create_gc_root<'gc>(
         gc_context: &'gc Mutation<'gc>,
         player_version: u8,
@@ -2816,6 +2866,7 @@ impl PlayerBuilder {
             sockets: Sockets::empty(),
             net_connections: NetConnections::default(),
             local_connections: LocalConnections::empty(),
+            orphan_manager: OrphanManager::default(),
             dynamic_root: DynamicRootSet::new(gc_context),
             post_frame_callbacks: Vec::new(),
         };
@@ -2860,7 +2911,7 @@ impl PlayerBuilder {
         let language = ui.language();
 
         // Instantiate the player.
-        let fake_movie = Arc::new(SwfMovie::empty(player_version));
+        let fake_movie = Arc::new(SwfMovie::empty(player_version, None));
         let frame_rate = self.frame_rate.unwrap_or(12.0);
         let forced_frame_rate = self.frame_rate.is_some();
         let player = Arc::new_cyclic(|self_ref| {
@@ -2940,7 +2991,8 @@ impl PlayerBuilder {
         let mut player_lock = player.lock().unwrap();
 
         #[cfg(feature = "default_font")]
-        {
+        if self.default_font {
+            use crate::font::FontFileData;
             use flate2::read::DeflateDecoder;
             use std::io::Read;
 
@@ -2954,7 +3006,7 @@ impl PlayerBuilder {
                 name: "Noto Sans".into(),
                 is_bold: false,
                 is_italic: false,
-                data,
+                data: FontFileData::new(data),
                 index: 0,
             });
 
@@ -2981,7 +3033,7 @@ impl PlayerBuilder {
             context
                 .avm2
                 .set_optimizer_enabled(self.avm2_optimizer_enabled);
-            Avm2::load_player_globals(context).expect("Unable to load AVM2 globals");
+            Avm2::load_player_globals(context);
 
             let stage = context.stage;
             stage.set_align(context, self.align);

@@ -4,15 +4,22 @@ use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::FunctionObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{NativeObject, Object, Value};
-use crate::string::StringContext;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
     "valueOf" => method(value_of; DONT_ENUM | DONT_DELETE);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, Some(function), super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
 
 /// `Boolean` constructor
 pub fn constructor<'gc>(
@@ -30,7 +37,7 @@ pub fn constructor<'gc>(
 }
 
 /// `Boolean` function
-pub fn boolean_function<'gc>(
+fn function<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -41,31 +48,6 @@ pub fn boolean_function<'gc>(
         .get(0)
         .map(|value| value.as_bool(activation.swf_version()))
         .map_or(Value::Undefined, Value::Bool))
-}
-
-pub fn create_boolean_object<'gc>(
-    context: &mut StringContext<'gc>,
-    boolean_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        constructor,
-        Some(boolean_function),
-        fn_proto,
-        boolean_proto,
-    )
-}
-
-/// Creates `Boolean.prototype`.
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let boolean_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, boolean_proto, fn_proto);
-    boolean_proto
 }
 
 pub fn to_string<'gc>(

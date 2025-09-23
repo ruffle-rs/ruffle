@@ -1,19 +1,19 @@
-use crate::avm2::{
-    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
-};
+use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
-use crate::font::TextRenderSettings;
+use crate::display_object::DisplayObjectBase;
+use crate::font::{FontLike, TextRenderSettings};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
+use gc_arena::Lock;
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WString;
-use std::cell::{Ref, RefCell, RefMut};
+use std::cell::RefCell;
 use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
@@ -28,13 +28,14 @@ impl fmt::Debug for Text<'_> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct TextData<'gc> {
-    base: RefLock<DisplayObjectBase<'gc>>,
+    base: DisplayObjectBase<'gc>,
     shared: Lock<Gc<'gc, TextShared>>,
     render_settings: RefCell<TextRenderSettings>,
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+    avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
 }
 
 impl<'gc> Text<'gc> {
@@ -68,9 +69,9 @@ impl<'gc> Text<'gc> {
         unlock!(Gc::write(mc, self.0), TextData, shared).set(to);
     }
 
-    pub fn set_render_settings(self, gc_context: &Mutation<'gc>, settings: TextRenderSettings) {
+    pub fn set_render_settings(self, settings: TextRenderSettings) {
         *self.0.render_settings.borrow_mut() = settings;
-        self.invalidate_cached_bitmap(gc_context);
+        self.invalidate_cached_bitmap();
     }
 
     pub fn text(&self, context: &mut UpdateContext<'gc>) -> WString {
@@ -97,35 +98,23 @@ impl<'gc> Text<'gc> {
 }
 
 impl<'gc> TDisplayObject<'gc> for Text<'gc> {
-    fn base(&self) -> Ref<DisplayObjectBase<'gc>> {
-        self.0.base.borrow()
+    fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
-    fn base_mut<'a>(&'a self, mc: &Mutation<'gc>) -> RefMut<'a, DisplayObjectBase<'gc>> {
-        unlock!(Gc::write(mc, self.0), TextData, base).borrow_mut()
-    }
-
-    fn instantiate(&self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+    fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone())).into()
     }
 
-    fn as_text(&self) -> Option<Text<'gc>> {
-        Some(*self)
-    }
-
-    fn as_ptr(&self) -> *const DisplayObjectPtr {
-        Gc::as_ptr(self.0) as *const DisplayObjectPtr
-    }
-
-    fn id(&self) -> CharacterId {
+    fn id(self) -> CharacterId {
         self.0.shared.get().id
     }
 
-    fn movie(&self) -> Arc<SwfMovie> {
+    fn movie(self) -> Arc<SwfMovie> {
         self.0.shared.get().swf.clone()
     }
 
-    fn replace_with(&self, context: &mut UpdateContext<'gc>, id: CharacterId) {
+    fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         if let Some(new_text) = context
             .library
             .library_for_movie_mut(self.movie())
@@ -135,14 +124,10 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         } else {
             tracing::warn!("PlaceObject: expected text at character ID {}", id);
         }
-        self.invalidate_cached_bitmap(context.gc());
+        self.invalidate_cached_bitmap();
     }
 
-    fn run_frame_avm1(&self, _context: &mut UpdateContext) {
-        // Noop
-    }
-
-    fn render_self(&self, context: &mut RenderContext) {
+    fn render_self(self, context: &mut RenderContext) {
         let shared = self.0.shared.get();
         context.transform_stack.push(&Transform {
             matrix: shared.text_transform,
@@ -197,12 +182,12 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         context.transform_stack.pop();
     }
 
-    fn self_bounds(&self) -> Rectangle<Twips> {
+    fn self_bounds(self) -> Rectangle<Twips> {
         self.0.shared.get().bounds
     }
 
     fn hit_test_shape(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         mut point: Point<Twips>,
         options: HitTestOptions,
@@ -270,49 +255,35 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 
     fn post_instantiation(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         _init_object: Option<crate::avm1::Object<'gc>>,
         _instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
         if self.movie().is_action_script_3() {
-            let domain = context
-                .library
-                .library_for_movie(self.movie())
-                .unwrap()
-                .avm2_domain();
-            let mut activation = Avm2Activation::from_domain(context, domain);
-            let statictext = activation.avm2().classes().statictext;
-            match Avm2StageObject::for_display_object_childless(
-                &mut activation,
-                (*self).into(),
-                statictext,
-            ) {
-                Ok(object) => self.set_object2(context, object.into()),
-                Err(e) => tracing::error!("Got error when creating AVM2 side of Text: {}", e),
-            }
+            let statictext = context.avm2.classes().statictext;
+            let object = Avm2StageObject::for_display_object(context.gc(), self.into(), statictext);
+            // We don't need to call the initializer method, as AVM2 can't link
+            // a custom class to a StaticText, and the initializer method for
+            // StaticText itself is a no-op
+            self.set_object2(context, object);
 
             self.on_construction_complete(context);
         }
     }
 
-    fn object2(&self) -> Avm2Value<'gc> {
-        self.0
-            .avm2_object
-            .get()
-            .map(|o| o.into())
-            .unwrap_or(Avm2Value::Null)
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.avm2_object.get()
     }
 
-    fn set_object2(&self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), TextData, avm2_object).set(Some(to));
     }
 }
 
 /// Data shared between all instances of a text object.
-#[allow(dead_code)]
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
 struct TextShared {

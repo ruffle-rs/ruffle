@@ -1,11 +1,12 @@
 use crate::avm2::bytearray::Endian;
+use crate::avm2::error::make_error_2162;
 use crate::avm2::globals::slots::{
     flash_display_shader as shader_slots, flash_display_shader_input as shader_input_slots,
     flash_display_shader_job as shader_job_slots,
     flash_display_shader_parameter as shader_parameter_slots,
 };
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::{Activation, Error, Object, TObject, Value};
+use crate::avm2::{Activation, Error, Object, TObject as _, Value};
 use crate::pixel_bender::PixelBenderTypeExt;
 use crate::string::AvmString;
 
@@ -14,9 +15,10 @@ use crate::avm2_stub_method;
 use ruffle_render::backend::{PixelBenderOutput, PixelBenderTarget};
 use ruffle_render::bitmap::PixelRegion;
 use ruffle_render::pixel_bender::{
-    ImageInputTexture, PixelBenderParam, PixelBenderParamQualifier, PixelBenderShaderArgument,
-    PixelBenderShaderHandle, PixelBenderType, OUT_COORD_NAME,
+    PixelBenderParam, PixelBenderParamQualifier, PixelBenderShaderHandle, PixelBenderType,
+    OUT_COORD_NAME,
 };
+use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
 
 pub fn get_shader_args<'gc>(
     shader_obj: Object<'gc>,
@@ -47,30 +49,29 @@ pub fn get_shader_args<'gc>(
         .params
         .iter()
         .enumerate()
-        .flat_map(|(index, param)| {
+        .filter(|(_, param)| {
+            !matches!(
+                param,
+                PixelBenderParam::Normal {
+                    qualifier: PixelBenderParamQualifier::Output,
+                    ..
+                }
+            )
+        })
+        .map(|(index, param)| {
             match param {
                 PixelBenderParam::Normal {
-                    qualifier,
-                    param_type,
-                    name,
-                    ..
+                    param_type, name, ..
                 } => {
-                    if matches!(qualifier, PixelBenderParamQualifier::Output) {
-                        return None;
-                    }
-
                     if name == OUT_COORD_NAME {
                         // Pass in a dummy value - this will be ignored in favor of the actual pixel coordinate
-                        return Some(PixelBenderShaderArgument::ValueInput {
+                        return Ok(PixelBenderShaderArgument::ValueInput {
                             index: index as u8,
                             value: PixelBenderType::TFloat2(f32::NAN, f32::NAN),
                         });
                     }
                     let shader_param = shader_data
-                        .get_string_property_local(
-                            AvmString::new_utf8(activation.gc(), name),
-                            activation,
-                        )
+                        .get_dynamic_property(AvmString::new_utf8(activation.gc(), name))
                         .expect("Missing normal property");
 
                     let shader_param = shader_param
@@ -88,11 +89,9 @@ pub fn get_shader_args<'gc>(
                     }
 
                     let value = shader_param.get_slot(shader_parameter_slots::_VALUE);
+                    let pb_val = PixelBenderType::from_avm2_value(activation, value, param_type)?;
 
-                    let pb_val = PixelBenderType::from_avm2_value(activation, value, param_type)
-                        .expect("Failed to convert AVM2 value to PixelBenderType");
-
-                    Some(PixelBenderShaderArgument::ValueInput {
+                    Ok(PixelBenderShaderArgument::ValueInput {
                         index: index as u8,
                         value: pb_val,
                     })
@@ -103,10 +102,7 @@ pub fn get_shader_args<'gc>(
                     name,
                 } => {
                     let shader_input = shader_data
-                        .get_string_property_local(
-                            AvmString::new_utf8(activation.gc(), name),
-                            activation,
-                        )
+                        .get_dynamic_property(AvmString::new_utf8(activation.gc(), name))
                         .expect("Missing property")
                         .as_object()
                         .expect("Shader input is not an object");
@@ -169,7 +165,7 @@ pub fn get_shader_args<'gc>(
                         None
                     };
 
-                    Some(PixelBenderShaderArgument::ImageInput {
+                    Ok(PixelBenderShaderArgument::ImageInput {
                         index: *index,
                         channels: *channels,
                         name: name.clone(),
@@ -178,7 +174,7 @@ pub fn get_shader_args<'gc>(
                 }
             }
         })
-        .collect();
+        .collect::<Result<Vec<PixelBenderShaderArgument<'_>>, Error<'gc>>>()?;
     Ok((shader_handle.clone(), args))
 }
 
@@ -219,7 +215,7 @@ pub fn start<'gc>(
         let target_bitmap = bitmap.sync(activation.context.renderer);
         // Perform both a GPU->CPU and CPU->GPU sync before writing to it.
         // FIXME - are both necessary?
-        let mut target_bitmap_data = target_bitmap.write(activation.gc());
+        let mut target_bitmap_data = target_bitmap.borrow_mut(activation.gc());
         target_bitmap_data.update_dirty_texture(activation.context.renderer);
 
         PixelBenderTarget::Bitmap(
@@ -234,6 +230,16 @@ pub fn start<'gc>(
         }
     };
 
+    match shader_handle.0.parsed_shader().output_channels() {
+        Some(3) | Some(4) => {}
+        channels => {
+            tracing::warn!(
+                "Unsupported number of shader output channels: {channels:?}, expected 3 or 4"
+            );
+            return Err(make_error_2162(activation));
+        }
+    }
+
     let output = activation
         .context
         .renderer
@@ -246,7 +252,7 @@ pub fn start<'gc>(
                 .as_bitmap_data()
                 .unwrap()
                 .sync(activation.context.renderer);
-            let mut target_bitmap_data = target_bitmap.write(activation.gc());
+            let mut target_bitmap_data = target_bitmap.borrow_mut(activation.gc());
             let width = target_bitmap_data.width();
             let height = target_bitmap_data.height();
             target_bitmap_data.set_gpu_dirty(

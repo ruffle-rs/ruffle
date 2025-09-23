@@ -1,0 +1,86 @@
+typeof(void(0)) PASSED!
+typeof(null) PASSED!
+typeof(true) PASSED!
+typeof(false) PASSED!
+typeof(new Boolean()) PASSED!
+typeof(new Boolean(true)) PASSED!
+typeof(Boolean()) PASSED!
+typeof(Boolean(false)) PASSED!
+typeof(Boolean(true)) PASSED!
+typeof(NaN) PASSED!
+typeof(Infinity) PASSED!
+typeof(-Infinity) PASSED!
+typeof(Math.PI) PASSED!
+typeof(0) PASSED!
+typeof(1) PASSED!
+typeof(-1) PASSED!
+typeof('0') PASSED!
+typeof(Number()) PASSED!
+typeof(Number(0)) PASSED!
+typeof(Number(1)) PASSED!
+typeof(Nubmer(-1)) PASSED!
+typeof(new Number()) PASSED!
+typeof(new Number(0)) PASSED!
+typeof(new Number(1)) PASSED!
+typeof(Math) PASSED!
+typeof(Number.prototype.toString) PASSED!
+typeof('a string') PASSED!
+typeof('') PASSED!
+typeof(new Date()) PASSED!
+typeof(new Array(1,2,3)) PASSED!
+typeof(new String('string object')) PASSED!
+typeof(String('string primitive')) PASSED!
+typeof(['array', 'of', 'strings']) PASSED!
+typeof(new Function()) PASSED!
+typeof(parseInt) PASSED!
+typeof(test) PASSED!
+typeof(String.fromCharCode) PASSED!
+typeof var notype;  PASSED!
+typeof hnumber = 0x464d34;  PASSED!
+typeof var obj:Object;  PASSED!
+typeof obj = new Object() PASSED!
+typeof var dt:Date;  PASSED!
+typeof dt = new Date() PASSED!
+typeof localClass:LocalClass;  PASSED!
+Constructor of LocalClass
+typeof localClass = new LocalClass();  PASSED!
+typeof undefined PASSED!
+typeof void(0) PASSED!
+typeof null PASSED!
+typeof true PASSED!
+typeof false PASSED!
+typeof new Boolean() PASSED!
+typeof new Boolean(true) PASSED!
+typeof Boolean() PASSED!
+typeof Boolean(false) PASSED!
+typeof Boolean(true) PASSED!
+typeof Number.NaN PASSED!
+typeof Number.POSITIVE_INFINITY PASSED!
+typeof Number.NEGATIVE_INFINITY PASSED!
+typeof Math.PI PASSED!
+typeof 0 PASSED!
+typeof 1 PASSED!
+typeof -1 PASSED!
+typeof '' PASSED!
+typeof '0' PASSED!
+typeof Number() PASSED!
+typeof Number(0) PASSED!
+typeof Number(1) PASSED!
+typeof Nubmer(-1) PASSED!
+typeof new Number() PASSED!
+typeof new Number(0) PASSED!
+typeof new Number(1) PASSED!
+typeof Math PASSED!
+typeof Number.prototype.toString PASSED!
+typeof String("a string") PASSED!
+typeof String("") PASSED!
+typeof String("  ") PASSED!
+typeof new Date() PASSED!
+typeof new Array(1,2,3) PASSED!
+typeof new String('string object') PASSED!
+typeof String('string primitive') PASSED!
+typeof ['array', 'of', 'strings'] PASSED!
+typeof new Function() PASSED!
+typeof parseInt PASSED!
+typeof test PASSED!
+typeof String.fromCharCode PASSED!

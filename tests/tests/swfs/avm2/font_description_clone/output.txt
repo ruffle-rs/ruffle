@@ -1,0 +1,14 @@
+trace(fd.fontName == fd2.fontName);
+true
+trace(fd.fontWeight == fd2.fontWeight);
+true
+trace(fd.fontPosture == fd2.fontPosture);
+true
+trace(fd.fontLookup == fd2.fontLookup);
+true
+trace(fd.renderingMode == fd2.renderingMode);
+true
+trace(fd.cffHinting == fd2.cffHinting);
+true
+trace(fd.locked == fd2.locked);
+false

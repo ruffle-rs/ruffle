@@ -1,0 +1,40 @@
+var error = new CustError() PASSED!
+var ee = new CustEvalError() PASSED!
+var te = new CustTypeError() PASSED!
+var re = new CustReferenceError() PASSED!
+var ra = new CustRangeError() PASSED!
+typeof new CustError() PASSED!
+typeof new CustEvalError() PASSED!
+typeof new CustTypeError() PASSED!
+typeof new CustReferenceError() PASSED!
+typeof new CustRangeError() PASSED!
+var error = new CustError2() PASSED!
+var ee = new CustEvalError2() PASSED!
+var te = new CustTypeError2() PASSED!
+var re = new CustReferenceError2() PASSED!
+var ra = new CustRangeError2() PASSED!
+var error = new CustError2('test') PASSED!
+var ee = new CustEvalError2('eval error') PASSED!
+var te = new CustTypeError2('type error') PASSED!
+var re = new CustReferenceError2('reference error') PASSED!
+var ra = new CustRangeError2('range error') PASSED!
+typeof new CustError2() PASSED!
+typeof new CustEvalError2() PASSED!
+typeof new CustTypeError2() PASSED!
+typeof new CustReferenceError2() PASSED!
+typeof new CustRangeError2() PASSED!
+typeof new CustError2('test') PASSED!
+typeof new CustEvalError2('test') PASSED!
+typeof new CustTypeError2('test') PASSED!
+typeof new CustReferenceError2('test') PASSED!
+typeof new CustRangeError2('test') PASSED!
+(err = new CustError2(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new CustEvalError2(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new CustTypeError2(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new CustReferenceError2(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new CustRangeError2(), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new CustError2('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new CustEvalError2('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new CustTypeError2('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new CustReferenceError2('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!
+(err = new CustRangeError2('test'), err.getClass = Object.prototype.toString, err.getClass() ) PASSED!

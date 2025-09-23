@@ -8,6 +8,9 @@ on:
   # Allow for manual dispatch on GitHub
   workflow_dispatch:
 
+env:
+  RELEASE_SCRIPT: ./.github/scripts/release.py
+
 jobs:
   create-nightly-release:
     name: Create Nightly Release
@@ -16,14 +19,15 @@ jobs:
       is_active: ${{ steps.activity.outputs.is_active }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
-      package_prefix: ruffle-nightly-${{ steps.current_time_underscores.outputs.formattedTime }}
-      tag_name: nightly-${{ steps.current_time_dashes.outputs.formattedTime }}
+      package_prefix: ${{ steps.create_release.outputs.package_prefix }}
+      tag_name: ${{ steps.commit.outputs.tag_name }}
+      version4: ${{ steps.version.outputs.version4 }}
 
     # Only run the scheduled workflows on the main repo.
     if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Check for repo activity
         id: activity
@@ -38,11 +42,38 @@ jobs:
           fi
           echo "is_active=$is_active" >> $GITHUB_OUTPUT
 
-      - name: Get current time with dashes
-        uses: josStorer/get-current-time@v2.1.2
-        id: current_time_dashes
+      - name: Install cargo-edit
+        uses: baptiste0928/cargo-install@v3
         with:
-          format: YYYY-MM-DD
+          crate: cargo-edit
+          version: '^0.12'
+
+      - name: Install cargo-get
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: cargo-get
+          version: '^1.0'
+
+      - name: Bump version
+        if: steps.activity.outputs.is_active == 'true'
+        id: version
+        run: |
+          $RELEASE_SCRIPT bump
+          # Ensure newlines at the end of file
+          shopt -s globstar
+          sed -i -e '$a\' **/package.json
+
+      - name: Update metainfo
+        if: steps.activity.outputs.is_active == 'true'
+        run: |
+          $RELEASE_SCRIPT metainfo
+
+      - name: Create release commit
+        if: steps.activity.outputs.is_active == 'true'
+        id: commit
+        run: |
+          $RELEASE_SCRIPT commit
+          $RELEASE_SCRIPT tag-and-push
 
       - name: Get current time with underscores
         uses: josStorer/get-current-time@v2.1.2
@@ -53,12 +84,10 @@ jobs:
       - name: Create release
         if: steps.activity.outputs.is_active == 'true'
         id: create_release
-        run: |
-          tag_name="nightly-${{ steps.current_time_dashes.outputs.formattedTime }}"
-          release_name="Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}"
-          gh release create "$tag_name" --title "$release_name" --generate-notes --prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $RELEASE_SCRIPT release
 
   build:
     name: Build ${{ matrix.build_name }}
@@ -76,26 +105,26 @@ jobs:
 
           # Mac does two Rust builds to make a universal binary
           - build_name: macos-x86_64
-            os: macos-14
+            os: macos-15
             target: x86_64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 10.7
             DESKTOP_FEATURES: sandbox,jpegxr
 
           - build_name: macos-aarch64
-            os: macos-14
+            os: macos-15
             target: aarch64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 11.0
             DESKTOP_FEATURES: sandbox,jpegxr
 
           - build_name: windows-x86_32
-            os: windows-latest
+            os: windows-2025
             target: i686-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
             DESKTOP_FEATURES: jpegxr
             MSI_ARCH: x86
 
           - build_name: windows-x86_64
-            os: windows-latest
+            os: windows-2025
             target: x86_64-pc-windows-msvc
             RUSTFLAGS: -Ctarget-feature=+crt-static
             DESKTOP_FEATURES: jpegxr
@@ -108,7 +137,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -123,11 +154,11 @@ jobs:
           sudo apt install -y libasound2-dev libudev-dev
 
       - name: Install WiX
+        if: runner.os == 'Windows'
         run: |
           dotnet tool install --global wix --version 5.0.2
           wix extension add -g WixToolset.UI.wixext/5.0.2
           wix extension add -g WixToolset.Util.wixext/5.0.2
-        if: runner.os == 'Windows'
 
       - name: Cargo build
         run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
@@ -147,7 +178,7 @@ jobs:
           cd desktop/packages/windows/wix
           wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
         env:
-          RUFFLE_VERSION: "0.1.0"
+          RUFFLE_VERSION: ${{ needs.create-nightly-release.outputs.version4 }}
           CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
         if: runner.os == 'Windows'
 
@@ -199,25 +230,27 @@ jobs:
   build-mac-universal-binary:
     name: Build macOS universal binary
     needs: [create-nightly-release, build, build-browser-extensions]
-    runs-on: macos-14
+    runs-on: macos-15
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Download aarch64 binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: macos-aarch64
 
       - name: Download x86_64 binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: macos-x86_64
 
       - name: Download Safari extension
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: macos-safari
 
@@ -301,7 +334,9 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -334,7 +369,9 @@ jobs:
       statuses: write
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -344,7 +381,7 @@ jobs:
           components: rust-src
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "22"
           registry-url: https://registry.npmjs.org
@@ -374,7 +411,7 @@ jobs:
         working-directory: web
         env:
           CFG_RELEASE_CHANNEL: nightly
-          BUILD_ID: ${{ github.run_number }}
+          VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
           ENABLE_VERSION_SEAL: "true"
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
         run: npm run version-seal
@@ -382,7 +419,7 @@ jobs:
       - name: Build web
         env:
           CFG_RELEASE_CHANNEL: nightly
-          BUILD_ID: ${{ github.run_number }}
+          VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
           CARGO_FEATURES: jpegxr
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
           WASM_SOURCE: cargo_and_store
@@ -486,7 +523,9 @@ jobs:
       statuses: write
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -496,7 +535,7 @@ jobs:
           components: rust-src
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: "22"
           registry-url: https://registry.npmjs.org
@@ -526,7 +565,7 @@ jobs:
         working-directory: web
         env:
           CFG_RELEASE_CHANNEL: nightly
-          BUILD_ID: ${{ github.run_number }}
+          VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
           ENABLE_VERSION_SEAL: "true"
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
         run: npm run version-seal
@@ -534,7 +573,7 @@ jobs:
       - name: Build web
         env:
           CFG_RELEASE_CHANNEL: nightly
-          BUILD_ID: ${{ github.run_number }}
+          VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
           # NOTE: In the future, we might want to enable some features (like `webgpu`) only in
           # the demo build, for limited testing (like a Chrome origin trial) on ruffle.rs.
           CARGO_FEATURES: jpegxr
@@ -591,7 +630,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone JS docs
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ruffle-rs/js-docs
           path: js-docs
@@ -624,7 +663,7 @@ jobs:
           force: true
 
       - name: Clone web demo
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           repository: ruffle-rs/demo
           path: demo
@@ -665,7 +704,9 @@ jobs:
     runs-on: ubuntu-24.04
     if: github.repository == 'ruffle-rs/ruffle'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Get current time with dashes
         uses: josStorer/get-current-time@v2.1.2
@@ -677,10 +718,10 @@ jobs:
         uses: josStorer/get-current-time@v2.1.2
         id: current_time_dots
         with:
-          format: YYYY.MM.DD
+          format: YYYY.M.D
 
       - name: Download package
-        run: gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz"
+        run: gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-*.tar.gz"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -688,7 +729,10 @@ jobs:
         run: >
           sed -i desktop/packages/linux/aur/ruffle-nightly-bin/PKGBUILD
           -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/"
-          -e "s/@SHA512SUM@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
+          -e "s/@TAG_NAME@/${{ needs.create-nightly-release.outputs.tag_name }}/"
+          -e "s/@PACKAGE_PREFIX@/${{ needs.create-nightly-release.outputs.package_prefix }}/"
+          -e "s/@SHA512SUM_x86_64@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
+          -e "s/@SHA512SUM_aarch64@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-aarch64.tar.gz | cut -d' ' -f1)/"
 
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
@@ -698,4 +742,4 @@ jobs:
           commit_username: RuffleBuild
           commit_email: ruffle@ruffle.rs
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: Update to Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}
+          commit_message: Update to ${{ needs.create-nightly-release.outputs.tag_name }}

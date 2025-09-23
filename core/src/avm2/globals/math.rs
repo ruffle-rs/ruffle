@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::type_error;
 use crate::avm2::object::Object;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ClassObject, Error};
 use rand::Rng;
@@ -14,7 +15,7 @@ macro_rules! wrap_std {
             _this: Value<'gc>,
             args: &[Value<'gc>],
         ) -> Result<Value<'gc>, Error<'gc>> {
-            let input = args[0].as_f64();
+            let input = args.get_f64(0);
             Ok($std(input).into())
         }
     };
@@ -38,7 +39,7 @@ pub fn call_handler<'gc>(
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err(Error::AvmError(type_error(
+    Err(Error::avm_error(type_error(
         activation,
         "Error #1075: Math is not a function.",
         1075,
@@ -49,7 +50,7 @@ pub fn math_allocator<'gc>(
     _class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    Err(Error::AvmError(type_error(
+    Err(Error::avm_error(type_error(
         activation,
         "Error #1076: Math is not a constructor.",
         1076,
@@ -61,7 +62,7 @@ pub fn round<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = args[0].as_f64();
+    let x = args.get_f64(0);
 
     // Note that Flash Math.round always rounds toward infinity,
     // unlike Rust f32::round which rounds away from zero.
@@ -74,8 +75,8 @@ pub fn atan2<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let y = args[0].as_f64();
-    let x = args[1].as_f64();
+    let y = args.get_f64(0);
+    let x = args.get_f64(1);
 
     Ok(f64::atan2(y, x).into())
 }
@@ -90,7 +91,7 @@ pub fn max<'gc>(
         let val = arg.coerce_to_number(activation)?;
         if val.is_nan() {
             return Ok(f64::NAN.into());
-        } else if val > cur_max {
+        } else if val.total_cmp(&cur_max).is_gt() {
             cur_max = val;
         };
     }
@@ -107,7 +108,7 @@ pub fn min<'gc>(
         let val = arg.coerce_to_number(activation)?;
         if val.is_nan() {
             return Ok(f64::NAN.into());
-        } else if val < cur_min {
+        } else if val.total_cmp(&cur_min).is_lt() {
             cur_min = val;
         }
     }
@@ -119,8 +120,8 @@ pub fn pow<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let n = args[0].as_f64();
-    let p = args[1].as_f64();
+    let n = args.get_f64(0);
+    let p = args.get_f64(1);
 
     Ok(f64::powf(n, p).into())
 }

@@ -5,9 +5,10 @@ use crate::avm1::{
     ExecutionReason as Avm1ExecutionReason, FlvValueAvm1Ext, Object as Avm1Object,
     Value as Avm1Value,
 };
+use crate::avm2::object::NetStreamObject;
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
-    FlvValueAvm2Ext, Object as Avm2Object, Value as Avm2Value,
+    FlvValueAvm2Ext, FunctionArgs, Object as Avm2Object, Value as Avm2Value,
 };
 use crate::backend::audio::{
     DecodeError, SoundInstanceHandle, SoundStreamInfo, SoundStreamWrapping,
@@ -18,7 +19,6 @@ use crate::context::UpdateContext;
 use crate::display_object::{MovieClip, TDisplayObject};
 use crate::loader::Error;
 use crate::string::AvmString;
-use crate::vminterface::AvmObject;
 use flv_rs::{
     AudioData as FlvAudioData, AudioDataType as FlvAudioDataType, Error as FlvError, FlvReader,
     FrameType as FlvFrameType, Header as FlvHeader, ScriptData as FlvScriptData,
@@ -135,6 +135,13 @@ impl<'gc> StreamManager<'gc> {
     }
 }
 
+#[derive(Copy, Clone, Collect, Debug)]
+#[collect(no_drop)]
+enum NetStreamKind<'gc> {
+    Avm2(NetStreamObject<'gc>),
+    Avm1(Avm1Object<'gc>),
+}
+
 /// A stream representing download of some (audiovisual) data.
 ///
 /// `NetStream` interacts with several different parts of player
@@ -166,7 +173,7 @@ impl Eq for NetStream<'_> {}
 pub enum NetStreamType {
     /// The stream is an FLV.
     Flv {
-        #[allow(dead_code)] // set but never read
+        #[expect(dead_code)] // set but never read
         header: FlvHeader,
 
         /// The currently playing video track's stream instance.
@@ -244,7 +251,7 @@ pub struct NetStreamData<'gc> {
     last_decoded_bitmap: RefCell<Option<BitmapInfo>>,
 
     /// The AVM side of this stream.
-    avm_object: Lock<Option<AvmObject<'gc>>>,
+    avm_object: Lock<Option<NetStreamKind<'gc>>>,
 
     /// The AVM2 client object, which corresponds to `NetStream.client`.
     avm2_client: Lock<Option<Avm2Object<'gc>>>,
@@ -276,7 +283,18 @@ impl Default for NetStreamSource {
 }
 
 impl<'gc> NetStream<'gc> {
-    pub fn new(gc_context: &Mutation<'gc>, avm_object: Option<AvmObject<'gc>>) -> Self {
+    /// Create a `NetStream` for use in AVM1.
+    pub fn new_avm1(gc_context: &Mutation<'gc>, avm_object: Avm1Object<'gc>) -> Self {
+        Self::new(gc_context, Some(NetStreamKind::Avm1(avm_object)))
+    }
+
+    /// Create a `NetStream` for use in AVM2. The caller is expected to initialize
+    /// the AVM side of the `NetStream` later, by using `set_avm2_object`.
+    pub fn new_avm2(gc_context: &Mutation<'gc>) -> Self {
+        Self::new(gc_context, None)
+    }
+
+    fn new(gc_context: &Mutation<'gc>, avm_object: Option<NetStreamKind<'gc>>) -> Self {
         // IMPORTANT: When adding new fields consider if they need to be
         //     added here or to NetStreamSource.
         Self(Gc::new(
@@ -306,8 +324,9 @@ impl<'gc> NetStream<'gc> {
         self.0.avm2_client.get()
     }
 
-    pub fn set_avm_object(self, gc_context: &Mutation<'gc>, avm_object: AvmObject<'gc>) {
-        unlock!(Gc::write(gc_context, self.0), NetStreamData, avm_object).set(Some(avm_object));
+    pub fn set_avm2_object(self, gc_context: &Mutation<'gc>, object: NetStreamObject<'gc>) {
+        let write = Gc::write(gc_context, self.0);
+        unlock!(write, NetStreamData, avm_object).set(Some(NetStreamKind::Avm2(object)));
     }
 
     fn set_attached_to(self, gc_context: &Mutation<'gc>, attached_to: Option<MovieClip<'gc>>) {
@@ -367,7 +386,7 @@ impl<'gc> NetStream<'gc> {
         // NOTE: The onMetaData event triggers before this event in Flash due to its streaming behavior.
         self.trigger_status_event(
             context,
-            vec![("code", "NetStream.Buffer.Full"), ("level", "status")],
+            [("code", "NetStream.Buffer.Full"), ("level", "status")],
         );
     }
 
@@ -414,8 +433,8 @@ impl<'gc> NetStream<'gc> {
             let trigger = format!("Start Seeking {}", offset as u64);
             self.trigger_status_event(
                 context,
-                vec![
-                    ("description", &trigger),
+                [
+                    ("description", trigger.as_str()),
                     ("level", "status"),
                     ("code", "NetStream.SeekStart.Notify"),
                 ],
@@ -442,7 +461,7 @@ impl<'gc> NetStream<'gc> {
     pub fn execute_seek(self, context: &mut UpdateContext<'gc>, offset: f64) {
         self.trigger_status_event(
             context,
-            vec![("code", "NetStream.Seek.Notify"), ("level", "status")],
+            [("code", "NetStream.Seek.Notify"), ("level", "status")],
         );
 
         let source = self.source();
@@ -541,10 +560,10 @@ impl<'gc> NetStream<'gc> {
             source.offset.set(offset);
         }
 
-        if let Some(AvmObject::Avm2(_)) = self.0.avm_object.get() {
+        if let Some(NetStreamKind::Avm2(_)) = self.0.avm_object.get() {
             self.trigger_status_event(
                 context,
-                vec![
+                [
                     ("description", "Seek Complete -1"),
                     ("level", "status"),
                     ("code", "NetStream.Seek.Complete"),
@@ -560,8 +579,8 @@ impl<'gc> NetStream<'gc> {
     /// available in the buffer.
     pub fn play(self, context: &mut UpdateContext<'gc>, name: Option<AvmString<'gc>>) {
         if let Some(name) = name {
-            let request = if let Ok(stream_url) =
-                Url::parse(context.swf.url()).and_then(|url| url.join(name.to_string().as_str()))
+            let request = if let Ok(stream_url) = Url::parse(context.root_swf.url())
+                .and_then(|url| url.join(name.to_string().as_str()))
             {
                 Request::get(stream_url.to_string())
             } else {
@@ -581,7 +600,7 @@ impl<'gc> NetStream<'gc> {
 
         self.trigger_status_event(
             context,
-            vec![("code", "NetStream.Play.Start"), ("level", "status")],
+            [("code", "NetStream.Play.Start"), ("level", "status")],
         );
     }
 
@@ -594,7 +613,7 @@ impl<'gc> NetStream<'gc> {
         if notify {
             self.trigger_status_event(
                 context,
-                vec![
+                [
                     ("description", "Pausing"),
                     ("level", "status"),
                     ("code", "NetStream.Pause.Notify"),
@@ -974,7 +993,7 @@ impl<'gc> NetStream<'gc> {
                     Ok(bitmap_info) => {
                         self.0.last_decoded_bitmap.replace(Some(bitmap_info));
                         if let Some(mc) = self.0.attached_to.get() {
-                            mc.invalidate_cached_bitmap(context.gc());
+                            mc.invalidate_cached_bitmap();
                             *context.needs_render = true;
                         }
                     }
@@ -1019,7 +1038,7 @@ impl<'gc> NetStream<'gc> {
                     Ok(bitmap_info) => {
                         self.0.last_decoded_bitmap.replace(Some(bitmap_info));
                         if let Some(mc) = self.0.attached_to.get() {
-                            mc.invalidate_cached_bitmap(context.gc());
+                            mc.invalidate_cached_bitmap();
                             *context.needs_render = true;
                         }
                     }
@@ -1250,19 +1269,19 @@ impl<'gc> NetStream<'gc> {
 
             self.trigger_status_event(
                 context,
-                vec![("code", "NetStream.Buffer.Flush"), ("level", "status")],
+                [("code", "NetStream.Buffer.Flush"), ("level", "status")],
             );
 
             if is_end_of_video {
                 self.trigger_status_event(
                     context,
-                    vec![("code", "NetStream.Play.Stop"), ("level", "status")],
+                    [("code", "NetStream.Play.Stop"), ("level", "status")],
                 );
             }
 
             self.trigger_status_event(
                 context,
-                vec![("code", "NetStream.Buffer.Empty"), ("level", "status")],
+                [("code", "NetStream.Buffer.Empty"), ("level", "status")],
             );
 
             if is_end_of_video {
@@ -1281,10 +1300,14 @@ impl<'gc> NetStream<'gc> {
     }
 
     /// Trigger a status event on the stream.
-    pub fn trigger_status_event(self, context: &mut UpdateContext<'gc>, values: Vec<(&str, &str)>) {
+    pub fn trigger_status_event<'a>(
+        self,
+        context: &mut UpdateContext<'gc>,
+        values: impl IntoIterator<Item = (&'a str, &'a str)>,
+    ) {
         let object = self.0.avm_object.get();
         match object {
-            Some(AvmObject::Avm1(object)) => {
+            Some(NetStreamKind::Avm1(object)) => {
                 let root = context.stage.root_clip().expect("root");
                 let object_proto = context.avm1.prototypes().object;
                 let mut activation = Avm1Activation::from_nothing(
@@ -1315,11 +1338,11 @@ impl<'gc> NetStream<'gc> {
                     );
                 }
             }
-            Some(AvmObject::Avm2(object)) => {
+            Some(NetStreamKind::Avm2(object)) => {
                 let domain = context.avm2.stage_domain();
                 let mut activation = Avm2Activation::from_domain(context, domain);
                 let net_status_event = Avm2EventObject::net_status_event(&mut activation, values);
-                Avm2::dispatch_event(activation.context, net_status_event, object);
+                Avm2::dispatch_event(activation.context, net_status_event, object.into());
             }
             None => {}
         }
@@ -1327,13 +1350,13 @@ impl<'gc> NetStream<'gc> {
 
     fn handle_script_data(
         self,
-        avm_object: Option<AvmObject<'gc>>,
+        avm_object: Option<NetStreamKind<'gc>>,
         context: &mut UpdateContext<'gc>,
         variable_name: &[u8],
         variable_data: FlvValue,
     ) -> Result<(), Avm2Error<'gc>> {
         match avm_object {
-            Some(AvmObject::Avm1(object)) => {
+            Some(NetStreamKind::Avm1(object)) => {
                 let avm_string_name = AvmString::new_utf8_bytes(context.gc(), variable_name);
 
                 let root = context.stage.root_clip().expect("root");
@@ -1358,17 +1381,18 @@ impl<'gc> NetStream<'gc> {
                     );
                 }
             }
-            Some(AvmObject::Avm2(_object)) => {
+            Some(NetStreamKind::Avm2(_)) => {
                 let mut activation = Avm2Activation::from_nothing(context);
                 let client_object = self
                     .client()
                     .expect("Client should be initialized if script data is being accessed");
 
                 let data_object = variable_data.to_avm2_value(&mut activation);
+                let args = &[data_object];
 
                 Avm2Value::from(client_object).call_public_property(
                     AvmString::new_utf8_bytes(activation.gc(), variable_name),
-                    &[data_object],
+                    FunctionArgs::from_slice(args),
                     &mut activation,
                 )?;
             }

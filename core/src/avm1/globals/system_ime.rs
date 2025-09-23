@@ -1,9 +1,9 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration};
 use crate::avm1::{Object, Value};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "ALPHANUMERIC_FULL" => string("ALPHANUMERIC_FULL"; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -22,6 +22,17 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "setConversionMode" => method(set_conversion_mode; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "setEnabled" => method(set_enabled; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
+
+pub fn create<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    broadcaster_functions: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
+) -> Object<'gc> {
+    let ime = Object::new(context.strings, Some(context.object_proto));
+    broadcaster_functions.initialize(context.strings, ime, array_proto);
+    context.define_properties_on(ime, OBJECT_DECLS);
+    ime
+}
 
 fn on_ime_composition<'gc>(
     _activation: &mut Activation<'_, 'gc>,
@@ -77,17 +88,4 @@ fn set_enabled<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(false.into())
-}
-
-pub fn create<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-    broadcaster_functions: BroadcasterFunctions<'gc>,
-    array_proto: Object<'gc>,
-) -> Object<'gc> {
-    let ime = Object::new(context, Some(proto));
-    broadcaster_functions.initialize(context, ime, array_proto);
-    define_properties_on(OBJECT_DECLS, context, ime, fn_proto);
-    ime
 }

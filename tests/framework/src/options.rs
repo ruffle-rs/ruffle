@@ -7,7 +7,10 @@ use approx::relative_eq;
 use image::ImageFormat;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{PlayerBuilder, PlayerMode, PlayerRuntime, ViewportDimensions};
+use ruffle_core::{
+    DefaultFont, FontQuery, FontType, Player, PlayerBuilder, PlayerMode, PlayerRuntime,
+    ViewportDimensions,
+};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
@@ -32,6 +35,8 @@ pub struct TestOptions {
     pub log_fetch: bool,
     pub required_features: RequiredFeatures,
     pub fonts: HashMap<String, FontOptions>,
+    pub font_sorts: HashMap<String, FontSortOptions>,
+    pub default_fonts: DefaultFontsOptions,
 }
 
 impl Default for TestOptions {
@@ -50,6 +55,8 @@ impl Default for TestOptions {
             log_fetch: false,
             required_features: RequiredFeatures::default(),
             fonts: Default::default(),
+            font_sorts: Default::default(),
+            default_fonts: Default::default(),
         }
     }
 }
@@ -152,6 +159,7 @@ pub struct PlayerOptions {
     with_video: bool,
     runtime: PlayerRuntime,
     mode: Option<PlayerMode>,
+    with_default_font: bool,
 }
 
 impl PlayerOptions {
@@ -177,7 +185,8 @@ impl PlayerOptions {
         player_builder = player_builder
             .with_player_runtime(self.runtime)
             // Assume flashplayerdebugger is used in tests
-            .with_player_mode(self.mode.unwrap_or(PlayerMode::Debug));
+            .with_player_mode(self.mode.unwrap_or(PlayerMode::Debug))
+            .with_default_font(self.with_default_font);
 
         if self.with_video {
             #[cfg(feature = "ruffle_video_external")]
@@ -255,7 +264,7 @@ fn calc_difference(lhs: u8, rhs: u8) -> u8 {
 }
 
 impl ImageComparison {
-    fn checks(&self) -> Result<Cow<[ImageComparisonCheck]>> {
+    fn checks(&self) -> Result<Cow<'_, [ImageComparisonCheck]>> {
         let has_simple_check = self.tolerance.is_some() || self.max_outliers.is_some();
         if has_simple_check && !self.checks.is_empty() {
             return Err(anyhow!(
@@ -492,6 +501,26 @@ pub struct FontOptions {
     pub italic: bool,
 }
 
+impl FontOptions {
+    pub fn to_font_query(&self) -> FontQuery {
+        FontQuery::new(
+            FontType::Device,
+            self.family.clone(),
+            self.bold,
+            self.italic,
+        )
+    }
+}
+
+#[derive(Deserialize, Default, Clone)]
+#[serde(default, deny_unknown_fields)]
+pub struct FontSortOptions {
+    pub family: String,
+    pub bold: bool,
+    pub italic: bool,
+    pub sort: Vec<String>,
+}
+
 /// Test expression is a cfg-like expression that evaluates to a boolean
 /// and can be used in test configuration.
 ///
@@ -532,5 +561,37 @@ impl TestExpression {
             return Err(anyhow!("Unknown predicate used in expression: {pred}"));
         }
         Ok(cfg_matches)
+    }
+}
+
+#[derive(Clone, Default, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct DefaultFontsOptions {
+    pub sans: Vec<String>,
+    pub serif: Vec<String>,
+    pub typewriter: Vec<String>,
+    pub japanese_gothic: Vec<String>,
+    pub japanese_gothic_mono: Vec<String>,
+    pub japanese_mincho: Vec<String>,
+}
+
+impl DefaultFontsOptions {
+    pub fn apply(&self, player: &mut Player) {
+        self.apply_default_font(player, DefaultFont::Sans, &self.sans);
+        self.apply_default_font(player, DefaultFont::Serif, &self.serif);
+        self.apply_default_font(player, DefaultFont::Typewriter, &self.typewriter);
+        self.apply_default_font(player, DefaultFont::JapaneseGothic, &self.japanese_gothic);
+        self.apply_default_font(
+            player,
+            DefaultFont::JapaneseGothicMono,
+            &self.japanese_gothic_mono,
+        );
+        self.apply_default_font(player, DefaultFont::JapaneseMincho, &self.japanese_mincho);
+    }
+
+    fn apply_default_font(&self, player: &mut Player, font: DefaultFont, names: &[String]) {
+        if !names.is_empty() {
+            player.set_default_font(font, names.to_owned());
+        }
     }
 }

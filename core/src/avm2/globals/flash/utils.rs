@@ -1,8 +1,7 @@
 //! `flash.utils` namespace
 
+use crate::avm2::error::argument_error;
 use crate::avm2::globals::avmplus::instance_class_describe_type;
-
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
@@ -33,22 +32,15 @@ pub fn set_interval<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.len() < 2 {
-        return Err(Error::from("setInterval: not enough arguments"));
-    }
-    let (args, params) = args.split_at(2);
+    let closure = args.try_get_function(0);
+    let interval = args.get_f64(1);
+    let params = &args[2..];
+
     let callback = crate::timer::TimerCallback::Avm2Callback {
-        closure: args
-            .get(0)
-            .expect("setInterval: not enough arguments")
-            .as_object()
-            .ok_or("setInterval: argument 0 is not an object")?,
+        closure,
         params: params.to_vec(),
     };
-    let interval = args
-        .get(1)
-        .expect("setInterval: not enough arguments")
-        .coerce_to_number(activation)?;
+
     Ok(Value::Integer(activation.context.timers.add_timer(
         callback,
         interval as i32,
@@ -62,10 +54,7 @@ pub fn clear_interval<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let id = args
-        .get(0)
-        .ok_or("clearInterval: not enough arguments")?
-        .coerce_to_number(activation)?;
+    let id = args.get_u32(0);
     activation.context.timers.remove(id as i32);
     Ok(Value::Undefined)
 }
@@ -76,22 +65,15 @@ pub fn set_timeout<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.len() < 2 {
-        return Err(Error::from("setTimeout: not enough arguments"));
-    }
-    let (args, params) = args.split_at(2);
+    let closure = args.try_get_function(0);
+    let interval = args.get_f64(1);
+    let params = &args[2..];
+
     let callback = crate::timer::TimerCallback::Avm2Callback {
-        closure: args
-            .get(0)
-            .expect("setTimeout: not enough arguments")
-            .as_object()
-            .ok_or("setTimeout: argument 0 is not an object")?,
+        closure,
         params: params.to_vec(),
     };
-    let interval = args
-        .get(1)
-        .expect("setTimeout: not enough arguments")
-        .coerce_to_number(activation)?;
+
     Ok(Value::Integer(activation.context.timers.add_timer(
         callback,
         interval as i32,
@@ -105,10 +87,7 @@ pub fn clear_timeout<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let id = args
-        .get(0)
-        .ok_or("clearTimeout: not enough arguments")?
-        .coerce_to_number(activation)?;
+    let id = args.get_u32(0);
     activation.context.timers.remove(id as i32);
     Ok(Value::Undefined)
 }
@@ -119,10 +98,8 @@ pub fn escape_multi_byte<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let s = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
+    let s = args.get_string(activation, 0);
+
     let utf8 = s.as_wstr().to_utf8_lossy();
     let mut result = WString::new();
     for byte in utf8.as_bytes() {
@@ -153,10 +130,8 @@ pub fn unescape_multi_byte<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let s = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
+    let s = args.get_string(activation, 0);
+
     let bs = s.as_wstr();
     let mut buf = WString::new();
     let chars = bs.chars().map(|c| c.unwrap_or(char::REPLACEMENT_CHARACTER));
@@ -228,9 +203,17 @@ pub fn get_definition_by_name<'gc>(
     let appdomain = activation
         .caller_domain()
         .expect("Missing caller domain in getDefinitionByName");
-    let name = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_string(activation)?;
-    appdomain.get_defined_value_handling_vector(activation, name)
+    let name = args.try_get_string(0);
+
+    if let Some(name) = name {
+        appdomain.get_defined_value_handling_vector(activation, name)
+    } else {
+        // For some reason this throws error #1507, so we can't use
+        // `get_string_non_null` to get the argument
+        Err(Error::avm_error(argument_error(
+            activation,
+            "Error #1507: Argument name cannot be null.",
+            1507,
+        )?))
+    }
 }

@@ -6,7 +6,7 @@ use crate::avm2::globals::flash::display::display_object::initialize_for_allocat
 use crate::avm2::globals::slots::{
     flash_display_sprite as sprite_slots, flash_geom_rectangle as rectangle_slots,
 };
-use crate::avm2::object::{ClassObject, Object, StageObject, TObject};
+use crate::avm2::object::{ClassObject, Object, StageObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
@@ -24,7 +24,11 @@ pub fn sprite_allocator<'gc>(
         if class == sprite_cls {
             let movie = activation.caller_movie_or_root();
             let display_object = MovieClip::new(movie, activation.gc()).into();
-            return initialize_for_allocator(activation, display_object, orig_class);
+            return Ok(initialize_for_allocator(
+                activation.context,
+                display_object,
+                orig_class,
+            ));
         }
 
         if let Some((movie, symbol)) = activation
@@ -40,7 +44,11 @@ pub fn sprite_allocator<'gc>(
                 .instantiate_by_id(symbol, activation.context.gc_context);
 
             if let Some(child) = child {
-                return initialize_for_allocator(activation, child, orig_class);
+                return Ok(initialize_for_allocator(
+                    activation.context,
+                    child,
+                    orig_class,
+                ));
             } else {
                 return Err(make_error_2136(activation));
             }
@@ -63,7 +71,7 @@ pub fn get_drop_target<'gc>(
         .and_then(|o| o.as_movie_clip())
         .and_then(|o| o.drop_target())
     {
-        return Ok(mc.object2());
+        return Ok(mc.object2_or_null());
     }
 
     Ok(Value::Null)
@@ -81,7 +89,7 @@ pub fn get_graphics<'gc>(
         // Lazily initialize the `Graphics` object in a hidden property.
         let graphics = match this.get_slot(sprite_slots::_GRAPHICS) {
             Value::Undefined | Value::Null => {
-                let graphics = Value::from(StageObject::graphics(activation, dobj)?);
+                let graphics = Value::from(StageObject::graphics(activation, dobj));
                 this.set_slot(sprite_slots::_GRAPHICS, graphics, activation)?;
                 graphics
             }
@@ -102,7 +110,7 @@ pub fn get_sound_transform<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        let dobj_st = dobj.base().sound_transform().clone();
+        let dobj_st = dobj.base().sound_transform();
 
         return Ok(dobj_st.into_avm2_object(activation)?.into());
     }
@@ -171,7 +179,7 @@ pub fn start_drag<'gc>(
     if let Some(display_object) = this.as_display_object() {
         let lock_center = args.get_bool(0);
 
-        let rectangle = args.try_get_object(activation, 1);
+        let rectangle = args.try_get_object(1);
         let constraint = if let Some(rectangle) = rectangle {
             let x = rectangle
                 .get_slot(rectangle_slots::X)
@@ -288,7 +296,7 @@ pub fn get_hit_area<'gc>(
         .and_then(|o| o.as_movie_clip())
         .and_then(|o| o.hit_area())
     {
-        return Ok(mc.object2());
+        return Ok(mc.object2_or_null());
     }
 
     Ok(Value::Null)
@@ -307,9 +315,9 @@ pub fn set_hit_area<'gc>(
         .and_then(|this| this.as_movie_clip())
     {
         let object = args
-            .try_get_object(activation, 0)
+            .try_get_object(0)
             .and_then(|hit_area| hit_area.as_display_object());
-        mc.set_hit_area(activation.context, object);
+        mc.set_hit_area(activation.gc(), object);
     }
 
     Ok(Value::Undefined)

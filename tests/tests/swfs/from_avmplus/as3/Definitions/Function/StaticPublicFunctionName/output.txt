@@ -1,0 +1,13 @@
+inside class inside package function Name a1() PASSED!
+inside class inside package function Name a_1() PASSED!
+inside class inside package function Name _a1() PASSED!
+inside class inside package function Name __a1() PASSED!
+inside class inside package function Name _a1_() PASSED!
+inside class inside package function Name __a1__() PASSED!
+inside class inside package function Name $a1() PASSED!
+inside class inside package function Name a$1() PASSED!
+inside class inside package function Name a1$() PASSED!
+inside class inside package function Name A1() PASSED!
+inside class inside package function Name cases() PASSED!
+inside class inside package function Name Cases() PASSED!
+inside class inside package function Name all() PASSED!

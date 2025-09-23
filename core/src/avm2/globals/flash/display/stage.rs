@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
-use crate::avm2::object::{TObject, VectorObject};
+use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
@@ -49,7 +49,7 @@ pub fn set_align<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let align = args.get_string(activation, 0)?.parse().unwrap_or_default();
+    let align = args.get_string(activation, 0).parse().unwrap_or_default();
     activation
         .context
         .stage
@@ -99,14 +99,14 @@ pub fn get_color<'gc>(
 
 /// Implement `color`'s setter
 pub fn set_color<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object().and_then(|this| this.as_stage()) {
-        let color = Color::from_rgb(args.get_u32(activation, 0)?, 255);
+        let color = Color::from_rgb(args.get_u32(0), 255);
         dobj.set_background_color(Some(color));
     }
 
@@ -156,7 +156,7 @@ pub fn set_display_state<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Ok(mut display_state) = args.get_string(activation, 0)?.parse() {
+    if let Ok(mut display_state) = args.get_string(activation, 0).parse() {
         // It's not entirely clear why when setting to FullScreen, desktop flash player at least will
         // set its value to FullScreenInteractive. Overriding until flash logic is clearer.
         if display_state == StageDisplayState::FullScreen {
@@ -183,8 +183,7 @@ pub fn get_focus<'gc>(
         .focus_tracker
         .get()
         .map(|o| o.as_displayobject())
-        .and_then(|focus_dobj| focus_dobj.object2().as_object())
-        .map(|o| o.into())
+        .map(|focus_dobj| focus_dobj.object2_or_null())
         .unwrap_or(Value::Null))
 }
 
@@ -195,7 +194,7 @@ pub fn set_focus<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let focus = activation.context.focus_tracker;
-    match args.try_get_object(activation, 0) {
+    match args.try_get_object(0) {
         None => focus.set(None, activation.context),
         Some(obj) => {
             let dobj = obj
@@ -231,7 +230,7 @@ pub fn set_frame_rate<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if !activation.context.forced_frame_rate {
-        let new_frame_rate = args.get_f64(activation, 0)?.clamp(0.01, 1000.0);
+        let new_frame_rate = args.get_f64(0).clamp(0.01, 1000.0);
         *activation.context.frame_rate = new_frame_rate;
     }
 
@@ -278,7 +277,7 @@ pub fn set_scale_mode<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Ok(scale_mode) = args.get_string(activation, 0)?.parse() {
+    if let Ok(scale_mode) = args.get_string(activation, 0).parse() {
         activation
             .context
             .stage
@@ -411,7 +410,7 @@ pub fn set_quality<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Invalid values result in no change.
-    if let Ok(quality) = args.get_string(activation, 0)?.parse() {
+    if let Ok(quality) = args.get_string(activation, 0).parse() {
         activation
             .context
             .stage

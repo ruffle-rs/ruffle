@@ -1,11 +1,11 @@
 about-ruffle = O Ruffle
 about-ruffle-version = Wersja
 about-ruffle-channel = Kanał
-about-ruffle-build-time = Czas Kompilacji
+about-ruffle-build-time = Czas kompilacji
 about-ruffle-build-features = Cechy kompilacji
 about-ruffle-commit-ref = Rewizja
 about-ruffle-commit-time = Czas rewizji
 about-ruffle-visit-website = Strona WWW
 about-ruffle-visit-github = GitHub
 about-ruffle-visit-discord = Discord
-about-ruffle-visit-sponsor = Zostań Sponsorem
+about-ruffle-visit-sponsor = Zostań sponsorem

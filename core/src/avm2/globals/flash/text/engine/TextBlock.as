@@ -23,17 +23,17 @@ package flash.text.engine {
         [Ruffle(NativeAccessible)]
         private var _firstLine:TextLine = null;
 
-
-        public function TextBlock(content:ContentElement = null,
-                                  tabStops:Vector.<TabStop> = null,
-                                  textJustifier:TextJustifier = null,
-                                  lineRotation:String = "rotate0",
-                                  baselineZero:String = "roman",
-                                  bidiLevel:int = 0,
-                                  applyNonLinearFontScaling:Boolean = true,
-                                  baselineFontDescription:FontDescription = null,
-                                  baselineFontSize:Number = 12
-                                 ) {
+        public function TextBlock(
+            content:ContentElement = null,
+            tabStops:Vector.<TabStop> = null,
+            textJustifier:TextJustifier = null,
+            lineRotation:String = "rotate0",
+            baselineZero:String = "roman",
+            bidiLevel:int = 0,
+            applyNonLinearFontScaling:Boolean = true,
+            baselineFontDescription:FontDescription = null,
+            baselineFontSize:Number = 12
+        ) {
             // The order of setting these properties matters- if lineRotation
             // is null/invalid, the rest won't be set because it will throw an error
             if (content) {

@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ObjectPtr, TObject};
+use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
 use crate::avm2::AvmString;
 use crate::avm2::Error;
@@ -71,7 +71,7 @@ impl<'gc> QNameObject<'gc> {
         ))
     }
 
-    pub fn name(&self) -> Ref<Multiname<'gc>> {
+    pub fn name(&self) -> Ref<'_, Multiname<'gc>> {
         self.0.name.borrow()
     }
 
@@ -87,7 +87,7 @@ impl<'gc> QNameObject<'gc> {
         write_name.set_local_name(local);
     }
 
-    pub fn local_name(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
+    pub fn local_name(self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         let name = self.name();
 
         name.local_name().unwrap_or_else(|| istr!(context, "*"))
@@ -99,7 +99,7 @@ impl<'gc> QNameObject<'gc> {
         write_name.set_is_qname(is_qname);
     }
 
-    pub fn uri(&self, context: &mut StringContext<'gc>) -> Option<AvmString<'gc>> {
+    pub fn uri(self, context: &mut StringContext<'gc>) -> Option<AvmString<'gc>> {
         let name = self.0.name.borrow();
 
         if name.is_any_namespace() {
@@ -114,7 +114,7 @@ impl<'gc> QNameObject<'gc> {
         }
     }
 
-    pub fn is_any_namespace(&self) -> bool {
+    pub fn is_any_namespace(self) -> bool {
         self.0.name.borrow().is_any_namespace()
     }
 
@@ -128,14 +128,6 @@ impl<'gc> QNameObject<'gc> {
 impl<'gc> TObject<'gc> for QNameObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_qname_object(self) -> Option<QNameObject<'gc>> {
-        Some(self)
     }
 
     fn get_next_enumerant(

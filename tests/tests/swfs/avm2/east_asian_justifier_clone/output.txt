@@ -1,0 +1,8 @@
+trace(eaj.locale == eaj2.locale);
+true
+trace(eaj.lineJustification == eaj2.lineJustification);
+true
+trace(eaj.justificationStyle == eaj2.justificationStyle);
+true
+trace(eaj.composeTrailingIdeographicSpaces == eaj2.composeTrailingIdeographicSpaces);
+true

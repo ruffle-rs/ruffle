@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::test::Font;
 use chrono::{DateTime, Utc};
 use ruffle_core::{
@@ -5,7 +7,7 @@ use ruffle_core::{
         DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
         FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
     },
-    FontQuery,
+    FontFileData, FontQuery,
 };
 use url::Url;
 
@@ -80,14 +82,19 @@ impl FileDialogResult for TestFileDialogResult {
 ///   otherwise a user cancellation will be simulated
 /// * Simulated in-memory clipboard
 pub struct TestUiBackend {
-    fonts: Vec<Font>,
+    fonts: HashMap<FontQuery, Font>,
+    font_sorts: HashMap<FontQuery, Vec<FontQuery>>,
     clipboard: String,
 }
 
 impl TestUiBackend {
-    pub fn new(fonts: Vec<Font>) -> Self {
+    pub fn new(
+        fonts: HashMap<FontQuery, Font>,
+        font_sorts: HashMap<FontQuery, Vec<FontQuery>>,
+    ) -> Self {
         Self {
             fonts,
+            font_sorts,
             clipboard: "".to_string(),
         }
     }
@@ -114,7 +121,8 @@ impl UiBackend for TestUiBackend {
         Ok(())
     }
 
-    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool) {}
+    fn display_root_movie_download_failed_message(&self, _invalid_swf: bool, _fetch_error: String) {
+    }
 
     fn message(&self, _message: &str) {}
 
@@ -129,35 +137,31 @@ impl UiBackend for TestUiBackend {
     fn display_unsupported_video(&self, _url: Url) {}
 
     fn load_device_font(&self, query: &FontQuery, register: &mut dyn FnMut(FontDefinition)) {
-        let name = &query.name;
-        let is_bold = query.is_bold;
-        let is_italic = query.is_italic;
+        let Some(font) = self.fonts.get(query) else {
+            return;
+        };
 
-        for font in &self.fonts {
-            if !font.family.eq_ignore_ascii_case(name)
-                || font.bold != is_bold
-                || font.italic != is_italic
-            {
-                continue;
-            }
-
-            register(FontDefinition::FontFile {
-                name: name.to_owned(),
-                is_bold,
-                is_italic,
-                data: font.bytes.clone(),
-                index: 0,
-            });
-            break;
-        }
+        register(FontDefinition::FontFile {
+            name: font.family.to_owned(),
+            is_bold: font.bold,
+            is_italic: font.italic,
+            data: FontFileData::new(font.bytes.clone()),
+            index: 0,
+        });
     }
 
     fn sort_device_fonts(
         &self,
-        _query: &FontQuery,
-        _register: &mut dyn FnMut(FontDefinition),
+        query: &FontQuery,
+        register: &mut dyn FnMut(FontDefinition),
     ) -> Vec<FontQuery> {
-        Vec::new()
+        let Some(sort) = self.font_sorts.get(query) else {
+            return Vec::new();
+        };
+        for query in sort {
+            self.load_device_font(query, register);
+        }
+        sort.clone()
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {

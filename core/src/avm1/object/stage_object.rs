@@ -150,7 +150,7 @@ fn resolve_path_property<'gc>(
 ) -> Option<Value<'gc>> {
     let case_sensitive = activation.is_case_sensitive();
     if name.eq_with_case(b"_root", case_sensitive) {
-        return Some(activation.root_object());
+        return Some(dobj.avm1_root().object());
     } else if name.eq_with_case(b"_parent", case_sensitive) {
         return Some(
             dobj.avm1_parent()
@@ -325,7 +325,7 @@ fn set_x<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(x) = property_coerce_to_number(activation, val)? {
-        this.set_x(activation.gc(), Twips::from_pixels(x));
+        this.set_x(Twips::from_pixels(x));
     }
     Ok(())
 }
@@ -340,7 +340,7 @@ fn set_y<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(y) = property_coerce_to_number(activation, val)? {
-        this.set_y(activation.gc(), Twips::from_pixels(y));
+        this.set_y(Twips::from_pixels(y));
     }
     Ok(())
 }
@@ -355,7 +355,7 @@ fn set_x_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_x(activation.gc(), Percent::from(val));
+        this.set_scale_x(Percent::from(val));
     }
     Ok(())
 }
@@ -370,7 +370,7 @@ fn set_y_scale<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_scale_y(activation.gc(), Percent::from(val));
+        this.set_scale_y(Percent::from(val));
     }
     Ok(())
 }
@@ -389,7 +389,7 @@ fn total_frames<'gc>(
     this: DisplayObject<'gc>,
 ) -> Value<'gc> {
     this.as_movie_clip()
-        .map(MovieClip::total_frames)
+        .map(MovieClip::header_frames)
         .map_or(Value::Undefined, Value::from)
 }
 
@@ -403,7 +403,7 @@ fn set_alpha<'gc>(
     val: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if let Some(val) = property_coerce_to_number(activation, val)? {
-        this.set_alpha(activation.gc(), val / 100.0);
+        this.set_alpha(val / 100.0);
     }
     Ok(())
 }
@@ -473,7 +473,7 @@ fn set_rotation<'gc>(
         } else if degrees > 180.0 {
             degrees -= 360.0
         }
-        this.set_rotation(activation.gc(), degrees.into());
+        this.set_rotation(degrees.into());
     }
     Ok(())
 }
@@ -486,9 +486,10 @@ fn frames_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: DisplayObject<'gc>,
 ) -> Value<'gc> {
-    this.as_movie_clip()
-        .map(MovieClip::frames_loaded)
-        .map_or(Value::Undefined, Value::from)
+    if let Some(mc) = this.as_movie_clip() {
+        return mc.frames_loaded().min(mc.header_frames() as i32).into();
+    }
+    Value::Undefined
 }
 
 fn name<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {
@@ -602,7 +603,7 @@ fn set_focus_rect<'gc>(
             Value::Undefined | Value::Null => None,
             _ => Some(val.as_bool(activation.swf_version())),
         };
-        obj.set_focus_rect(activation.gc(), val);
+        obj.set_focus_rect(val);
     }
     Ok(())
 }

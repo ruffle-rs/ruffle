@@ -3,12 +3,12 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::shared_object::{deserialize_value, serialize};
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{ActivationIdentifier, ExecutionReason, NativeObject, Object, Value};
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::local_connection::{LocalConnectionHandle, LocalConnections};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
@@ -49,7 +49,7 @@ impl<'gc> LocalConnection<'gc> {
         }
 
         let connection_handle = activation.context.local_connections.connect(
-            &LocalConnections::get_domain(activation.context.swf.url()),
+            &LocalConnections::get_domain(activation.context.root_swf.url()),
             this,
             &name,
         );
@@ -135,6 +135,32 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "send" => method(send; DONT_DELETE | DONT_ENUM);
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
+
+fn constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    this.set_native(
+        activation.gc(),
+        NativeObject::LocalConnection(LocalConnection(Gc::new(
+            activation.gc(),
+            LocalConnectionData {
+                handle: RefCell::new(None),
+            },
+        ))),
+    );
+    Ok(this.into())
+}
+
 pub fn domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
@@ -202,7 +228,7 @@ pub fn send<'gc>(
     }
 
     activation.context.local_connections.send(
-        &LocalConnections::get_domain(activation.context.swf.url()),
+        &LocalConnections::get_domain(activation.context.root_swf.url()),
         this,
         *connection_name,
         *method_name,
@@ -220,31 +246,4 @@ pub fn close<'gc>(
         local_connection.disconnect(activation);
     }
     Ok(Value::Undefined)
-}
-
-pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    this.set_native(
-        activation.gc(),
-        NativeObject::LocalConnection(LocalConnection(Gc::new(
-            activation.gc(),
-            LocalConnectionData {
-                handle: RefCell::new(None),
-            },
-        ))),
-    );
-    Ok(this.into())
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
 }

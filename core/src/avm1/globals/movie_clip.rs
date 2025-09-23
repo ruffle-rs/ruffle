@@ -5,14 +5,14 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
 use crate::avm1::globals::{self, bitmap_filter, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{self, ArrayBuilder, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
 use crate::display_object::{Bitmap, EditText, MovieClip, TInteractiveObject};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use crate::vminterface::Instantiator;
 use crate::{avm1_stub, avm_error, avm_warn};
 use ruffle_macros::istr;
@@ -123,6 +123,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     // NOTE: `tabChildren` is not a built-in property of MovieClip.
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.empty_class(super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
+
 pub fn new_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     rectangle: Rectangle<Twips>,
@@ -177,7 +186,7 @@ fn set_scroll_rect<'gc>(
     if let Value::Object(object) = value {
         this.set_has_scroll_rect(true);
         if let Some(rectangle) = object_to_rectangle(activation, object)? {
-            this.set_next_scroll_rect(activation.gc(), rectangle);
+            this.set_next_scroll_rect(rectangle);
         }
     } else {
         this.set_has_scroll_rect(false);
@@ -214,7 +223,6 @@ fn set_scale_9_grid<'gc>(
     Ok(())
 }
 
-#[allow(clippy::comparison_chain)]
 pub fn hit_test<'gc>(
     movie_clip: MovieClip<'gc>,
     activation: &mut Activation<'_, 'gc>,
@@ -251,16 +259,6 @@ pub fn hit_test<'gc>(
     }
 
     Ok(false.into())
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
 }
 
 fn attach_bitmap<'gc>(
@@ -392,11 +390,9 @@ fn line_style<'gc>(
             .with_allow_scale_y(allow_scale_y)
             .with_is_pixel_hinted(is_pixel_hinted)
             .with_allow_close(false);
-        movie_clip
-            .drawing_mut(activation.gc())
-            .set_line_style(Some(line_style));
+        movie_clip.drawing_mut().set_line_style(Some(line_style));
     } else {
-        movie_clip.drawing_mut(activation.gc()).set_line_style(None);
+        movie_clip.drawing_mut().set_line_style(None);
     }
     Ok(Value::Undefined)
 }
@@ -476,9 +472,7 @@ fn line_gradient_style<'gc>(
                 focal_point: Fixed8::from_f64(focal_point),
             },
         };
-        movie_clip
-            .drawing_mut(activation.gc())
-            .set_line_fill_style(style);
+        movie_clip.drawing_mut().set_line_fill_style(style);
     }
     Ok(Value::Undefined)
 }
@@ -570,10 +564,10 @@ fn begin_fill<'gc>(
             / 100.0
             * 255.0;
         movie_clip
-            .drawing_mut(activation.gc())
+            .drawing_mut()
             .set_fill_style(Some(FillStyle::Color(Color::from_rgb(rgb, alpha as u8))));
     } else {
-        movie_clip.drawing_mut(activation.gc()).set_fill_style(None);
+        movie_clip.drawing_mut().set_fill_style(None);
     }
     Ok(Value::Undefined)
 }
@@ -592,7 +586,7 @@ fn begin_bitmap_fill<'gc>(
                 width: bitmap_data.width() as u16,
                 height: bitmap_data.height() as u16,
             };
-            let id = movie_clip.drawing_mut(activation.gc()).add_bitmap(bitmap);
+            let id = movie_clip.drawing_mut().add_bitmap(bitmap);
 
             let mut matrix = avm1::globals::matrix::object_to_matrix_or_default(
                 args.get(1)
@@ -625,9 +619,7 @@ fn begin_bitmap_fill<'gc>(
     } else {
         None
     };
-    movie_clip
-        .drawing_mut(activation.gc())
-        .set_fill_style(fill_style);
+    movie_clip.drawing_mut().set_fill_style(fill_style);
     Ok(Value::Undefined)
 }
 
@@ -638,7 +630,7 @@ fn begin_gradient_fill<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if Value::Undefined == *args.get(0).unwrap_or(&Value::Undefined) {
         // The path has no fill if the first parameter is `undefined`, or if no parameters are passed.
-        movie_clip.drawing_mut(activation.gc()).set_fill_style(None);
+        movie_clip.drawing_mut().set_fill_style(None);
     } else if let (Some(gradient_type), Some(colors), Some(alphas), Some(ratios), Some(matrix)) = (
         args.get(0),
         args.get(1),
@@ -701,9 +693,7 @@ fn begin_gradient_fill<'gc>(
                 focal_point: Fixed8::from_f64(focal_point),
             },
         };
-        movie_clip
-            .drawing_mut(activation.gc())
-            .set_fill_style(Some(style));
+        movie_clip.drawing_mut().set_fill_style(Some(style));
     }
     Ok(Value::Undefined)
 }
@@ -717,7 +707,7 @@ fn move_to<'gc>(
         let x = x.coerce_to_f64(activation)?;
         let y = y.coerce_to_f64(activation)?;
         movie_clip
-            .drawing_mut(activation.gc())
+            .drawing_mut()
             .draw_command(DrawCommand::MoveTo(Point::from_pixels(x, y)));
     }
     Ok(Value::Undefined)
@@ -732,7 +722,7 @@ fn line_to<'gc>(
         let x = x.coerce_to_f64(activation)?;
         let y = y.coerce_to_f64(activation)?;
         movie_clip
-            .drawing_mut(activation.gc())
+            .drawing_mut()
             .draw_command(DrawCommand::LineTo(Point::from_pixels(x, y)));
     }
     Ok(Value::Undefined)
@@ -749,7 +739,7 @@ fn curve_to<'gc>(
         let anchor_x = anchor_x.coerce_to_f64(activation)?;
         let anchor_y = anchor_y.coerce_to_f64(activation)?;
         movie_clip
-            .drawing_mut(activation.gc())
+            .drawing_mut()
             .draw_command(DrawCommand::QuadraticCurveTo {
                 control: Point::from_pixels(control_x, control_y),
                 anchor: Point::from_pixels(anchor_x, anchor_y),
@@ -760,19 +750,19 @@ fn curve_to<'gc>(
 
 fn end_fill<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.drawing_mut(activation.gc()).set_fill_style(None);
+    movie_clip.drawing_mut().set_fill_style(None);
     Ok(Value::Undefined)
 }
 
 fn clear<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    movie_clip.drawing_mut(activation.gc()).clear();
+    movie_clip.drawing_mut().clear();
     Ok(Value::Undefined)
 }
 
@@ -984,13 +974,13 @@ pub fn clone_sprite<'gc>(
     parent.replace_at_depth(context, new_clip.into(), depth);
 
     // Copy display properties from previous clip to new clip.
-    new_clip.set_matrix(context.gc(), *movie_clip.base().matrix());
-    new_clip.set_color_transform(context.gc(), *movie_clip.base().color_transform());
+    new_clip.set_matrix(movie_clip.base().matrix());
+    new_clip.set_color_transform(movie_clip.base().color_transform());
 
-    new_clip.set_clip_event_handlers(context.gc(), movie_clip.clip_actions().to_vec());
+    new_clip.init_clip_event_handlers(movie_clip.clip_actions().into());
 
     if let Some(drawing) = movie_clip.drawing().as_deref().cloned() {
-        *new_clip.drawing_mut(context.gc()) = drawing;
+        *new_clip.drawing_mut() = drawing;
     }
     // TODO: Any other properties we should copy...?
     // Definitely not Object properties.
@@ -1195,13 +1185,9 @@ fn set_mask<'gc>(
             mask
         }
     };
-    let movie_clip = DisplayObject::MovieClip(movie_clip);
-    let mc = activation.gc();
-    movie_clip.set_clip_depth(0);
-    movie_clip.set_masker(mc, mask, true);
-    if let Some(m) = mask {
-        m.set_maskee(mc, Some(movie_clip), true);
-    }
+    movie_clip
+        .as_displayobject()
+        .set_mask(mask, activation.gc());
     Ok(Value::Bool(true))
 }
 
@@ -1427,7 +1413,7 @@ fn get_bounds<'gc>(
         if !activation.context.avm1.get_use_new_invalid_bounds_value() {
             // The value is set to true if the activation SWF version is >= 8 or if the SWF
             // version of the root movie is >= 8.
-            if activation.swf_version() >= 8 || activation.context.swf.version() >= 8 {
+            if activation.swf_version() >= 8 || activation.context.root_swf.version() >= 8 {
                 // If only the activation SWF version (and not the root movie SWF version)
                 // is >= 8 and the movie clip equals the target, the value sometimes isn't set
                 // in Flash Player 10.
@@ -1666,16 +1652,16 @@ fn set_transform<'gc>(
     if let Value::Object(object) = value {
         if let NativeObject::Transform(transform) = object.native() {
             if let Some(clip) = transform.clip(activation) {
-                let matrix = *clip.base().matrix();
-                this.set_matrix(activation.gc(), matrix);
+                let matrix = clip.base().matrix();
+                this.set_matrix(matrix);
 
-                let color_transform = *clip.base().color_transform();
-                this.set_color_transform(activation.gc(), color_transform);
+                let color_transform = clip.base().color_transform();
+                this.set_color_transform(color_transform);
 
                 if let Some(parent) = this.parent() {
                     // Self-transform changes are automatically handled,
                     // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                    parent.invalidate_cached_bitmap(activation.gc());
+                    parent.invalidate_cached_bitmap();
                 }
 
                 this.set_transformed_by_script(true);
@@ -1713,12 +1699,12 @@ fn blend_mode<'gc>(
 
 fn set_blend_mode<'gc>(
     this: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // No-op if value is not a valid blend mode.
     if let Some(mode) = value.as_blend_mode() {
-        this.set_blend_mode(activation.gc(), mode.into());
+        this.set_blend_mode(mode.into());
     } else {
         tracing::error!("Unknown blend mode {value:?}");
     }
@@ -1739,7 +1725,7 @@ fn set_cache_as_bitmap<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // Note that the *getter* returns actual, and *setter* is preference
-    this.set_bitmap_cached_preference(activation.gc(), value.as_bool(activation.swf_version()));
+    this.set_bitmap_cached_preference(value.as_bool(activation.swf_version()));
     Ok(())
 }
 
@@ -1760,12 +1746,9 @@ fn set_opaque_background<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     if matches!(value, Value::Undefined | Value::Null) {
-        this.set_opaque_background(activation.gc(), None);
+        this.set_opaque_background(None);
     } else {
-        this.set_opaque_background(
-            activation.gc(),
-            Some(Color::from_rgb(value.coerce_to_u32(activation)?, 255)),
-        );
+        this.set_opaque_background(Some(Color::from_rgb(value.coerce_to_u32(activation)?, 255)));
     }
     Ok(())
 }
@@ -1777,8 +1760,8 @@ fn filters<'gc>(
     Ok(ArrayBuilder::new(activation)
         .with(
             this.filters()
-                .into_iter()
-                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
+                .iter()
+                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter.clone())),
         )
         .into())
 }
@@ -1797,7 +1780,7 @@ fn set_filters<'gc>(
             }
         }
     }
-    this.set_filters(activation.gc(), filters);
+    this.set_filters(filters.into_boxed_slice());
     Ok(())
 }
 
@@ -1805,7 +1788,7 @@ fn tab_index<'gc>(
     this: MovieClip<'gc>,
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(index) = this.as_interactive().and_then(|this| this.tab_index()) {
+    if let Some(index) = this.tab_index() {
         Ok(Value::Number(index as f64))
     } else {
         Ok(Value::Undefined)
@@ -1817,18 +1800,16 @@ fn set_tab_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Some(this) = this.as_interactive() {
-        let value = match value {
-            Value::Undefined | Value::Null => None,
-            Value::Bool(_) | Value::Number(_) => {
-                // FIXME This coercion is not perfect, as it wraps
-                //       instead of falling back to MIN, as FP does
-                let i32_value = value.coerce_to_i32(activation)?;
-                Some(i32_value)
-            }
-            _ => Some(i32::MIN),
-        };
-        this.set_tab_index(activation.context, value);
-    }
+    let value = match value {
+        Value::Undefined | Value::Null => None,
+        Value::Bool(_) | Value::Number(_) => {
+            // FIXME This coercion is not perfect, as it wraps
+            //       instead of falling back to MIN, as FP does
+            let i32_value = value.coerce_to_i32(activation)?;
+            Some(i32_value)
+        }
+        _ => Some(i32::MIN),
+    };
+    this.set_tab_index(value);
     Ok(())
 }

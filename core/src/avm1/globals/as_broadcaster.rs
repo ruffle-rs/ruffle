@@ -2,9 +2,8 @@
 
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::Declaration;
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Activation, ArrayBuilder, Object, Value};
 use crate::string::{AvmString, StringContext};
 use gc_arena::Collect;
@@ -17,19 +16,17 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "broadcastMessage" => function(broadcast_message; DONT_ENUM | DONT_DELETE);
 };
 
-pub fn create<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> (BroadcasterFunctions<'gc>, Object<'gc>) {
-    let as_broadcaster_proto = Object::new(context, Some(proto));
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> (BroadcasterFunctions<'gc>, SystemClass<'gc>) {
     // Despite the documentation says that there is no constructor function for the `AsBroadcaster`
     // class, Flash accepts expressions like `new AsBroadcaster()`, and a newly-created object is
     // returned in such cases.
-    let as_broadcaster = FunctionObject::empty(context, fn_proto, as_broadcaster_proto);
+    let class = context.empty_class(super_proto);
 
     let mut define_as_object = |index: usize| -> Object<'gc> {
-        match OBJECT_DECLS[index].define_on(context, as_broadcaster, fn_proto) {
+        match OBJECT_DECLS[index].define_on(context.strings, class.constr, context.fn_proto) {
             Value::Object(o) => o,
             _ => panic!("expected object for broadcaster function"),
         }
@@ -42,7 +39,7 @@ pub fn create<'gc>(
             remove_listener: define_as_object(2),
             broadcast_message: define_as_object(3),
         },
-        as_broadcaster,
+        class,
     )
 }
 

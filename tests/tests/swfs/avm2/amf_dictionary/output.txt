@@ -1,0 +1,9 @@
+Dictionary with object key:
+[object Object]
+object
+    key: value
+    value1
+Dictionary with string key:
+obj
+string
+    value1

@@ -17,15 +17,16 @@ ruffle_render = { path = "..", features = ["tessellator", "wgpu"] }
 bytemuck = { workspace = true, features = ["derive"] }
 clap = { workspace = true, optional = true }
 enum-map = { workspace = true }
-fnv = "1.0.7"
+fnv = { workspace = true }
 swf = { path = "../../swf" }
 image = { workspace = true }
 naga-agal = { path = "../naga-agal" }
 naga-pixelbender = { path = "../naga-pixelbender" }
 profiling = { version = "1.0", default-features = false, optional = true }
-lru = "0.14.0"
+lru = "0.16.0"
 naga = { workspace = true }
-indexmap = "2.9.0"
+indexmap = { workspace = true }
+smallvec = { workspace = true }
 
 # desktop
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]

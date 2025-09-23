@@ -1,0 +1,16 @@
+var date = new Date(0); date.setMilliseconds(-86400000); date.getTime() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.valueOf() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getUTCFullYear() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getUTCMonth() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getUTCDate() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getUTCHours() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getUTCMinutes() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getUTCSeconds() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getUTCMilliseconds() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getFullYear() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getMonth() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getDate() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getHours() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getMinutes() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getSeconds() PASSED!
+var date = new Date(0); date.setMilliseconds(-86400000); date.getMilliseconds() PASSED!

@@ -4,24 +4,25 @@ loader.contentLoaderInfo.bytesLoaded = 0
 loader.contentLoaderInfo.bytesTotal = 0
 loader.contentLoaderInfo.bytes = null
 loader.contentLoaderInfo.url = null
-Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=0 bytesTotal=953]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 953, loader.contentLoaderInfo.url = null
+loader.contentLoaderInfo.loaderURL = file:///
+Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=0 bytesTotal=1164]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 0, loader.contentLoaderInfo.bytesTotal = 1164, loader.contentLoaderInfo.url = null
 bytes.position = 0
-Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=953 bytesTotal=953]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 953, loader.contentLoaderInfo.bytesTotal = 953, loader.contentLoaderInfo.url = null
+Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2 bytesLoaded=1164 bytesTotal=1164]: loader.numChildren = 0, loader.content = null, loader.contentLoaderInfo.bytesLoaded = 1164, loader.contentLoaderInfo.bytesTotal = 1164, loader.contentLoaderInfo.url = null
 bytes.position = 0
 Hello from loaded SWF:
 Loaded swf loaderInfo.url: null content: null
-Added to stage: this.loaderInfo.url = file:/// this.loaderInfo.content = [object Loadable]
+Added to stage: this.loaderInfo.url = file:/// / this.loaderInfo.content = [object Loadable] / this.loaderInfo.loaderURL = file:////test.swf
 Framescript frame 1
 loader.contentLoaderInfo === loader.content.loaderInfo : true
 loader.contentLoaderInfo.content === loader.content : true
-Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object Loadable], loader.contentLoaderInfo.bytesLoaded = 953, loader.contentLoaderInfo.bytesTotal = 953, loader.contentLoaderInfo.url = file:///
+Event [Event type="init" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object Loadable], loader.contentLoaderInfo.bytesLoaded = 1164, loader.contentLoaderInfo.bytesTotal = 1164, loader.contentLoaderInfo.url = file:///
 bytes.position = 0
-Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object Loadable], loader.contentLoaderInfo.bytesLoaded = 953, loader.contentLoaderInfo.bytesTotal = 953, loader.contentLoaderInfo.url = file:///
+Event [Event type="complete" bubbles=false cancelable=false eventPhase=2]: loader.numChildren = 1, loader.content = [object Loadable], loader.contentLoaderInfo.bytesLoaded = 1164, loader.contentLoaderInfo.bytesTotal = 1164, loader.contentLoaderInfo.url = file:///
 bytes.position = 0
 Stage children before addChild attempt: 2
 loader.numChildren before addChild attempt: 1
 loader.content before addChild attempt: [object Loadable]
-Added to stage: this.loaderInfo.url = file:/// this.loaderInfo.content = [object Loadable]
+Added to stage: this.loaderInfo.url = file:/// / this.loaderInfo.content = [object Loadable] / this.loaderInfo.loaderURL = file:////test.swf
 Stage children after addChild attempt: 3
 loader.numChildren after addChild attempt: 0
 loader.content after addChild attempt: [object Loadable]

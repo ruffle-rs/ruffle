@@ -5,10 +5,10 @@ use crate::avm1::{ArrayBuilder as Avm1ArrayBuilder, Error as Avm1Error, Object a
 use crate::avm2::activation::Activation as Avm2Activation;
 use crate::avm2::error::Error as Avm2Error;
 use crate::avm2::object::{
-    ArrayObject as Avm2ArrayObject, Object as Avm2Object, ScriptObject as Avm2ScriptObject,
-    TObject as _,
+    ArrayObject as Avm2ArrayObject, FunctionObject as Avm2FunctionObject, Object as Avm2Object,
+    ScriptObject as Avm2ScriptObject, TObject as _,
 };
-use crate::avm2::Value as Avm2Value;
+use crate::avm2::{FunctionArgs, Value as Avm2Value};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::Collect;
@@ -248,8 +248,7 @@ impl Value {
                 for (key, value) in values.into_iter() {
                     let key = AvmString::new_utf8(activation.gc(), key);
                     let value = value.into_avm2(activation);
-                    obj.set_string_property_local(key, value, activation)
-                        .unwrap();
+                    obj.set_dynamic_property(key, value, activation.gc());
                 }
                 Avm2Value::Object(obj)
             }
@@ -273,7 +272,7 @@ pub enum Callback<'gc> {
         method: Avm1Object<'gc>,
     },
     Avm2 {
-        method: Avm2Object<'gc>,
+        method: Avm2FunctionObject<'gc>,
     },
 }
 
@@ -308,11 +307,9 @@ impl<'gc> Callback<'gc> {
                 Value::Null
             }
             Callback::Avm2 { method } => {
-                let method = Avm2Value::from(*method);
-
                 let domain = context
                     .library
-                    .library_for_movie(context.swf.clone())
+                    .library_for_movie(context.root_swf.clone())
                     .unwrap()
                     .avm2_domain();
                 let mut activation = Avm2Activation::from_domain(context, domain);
@@ -320,10 +317,13 @@ impl<'gc> Callback<'gc> {
                     .into_iter()
                     .map(|v| v.into_avm2(&mut activation))
                     .collect();
-                match method
-                    .call(&mut activation, Avm2Value::Null, &args)
-                    .and_then(|value| Value::from_avm2(&mut activation, value))
-                {
+
+                let result = method.call(
+                    &mut activation,
+                    Avm2Value::Null,
+                    FunctionArgs::from_slice(&args),
+                );
+                match result.and_then(|value| Value::from_avm2(&mut activation, value)) {
                     Ok(result) => result,
                     Err(e) => {
                         tracing::error!(

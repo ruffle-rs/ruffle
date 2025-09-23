@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Error;
 use crate::streams::NetStream;
 use crate::utils::HasPrefixField;
@@ -15,15 +15,14 @@ pub fn netstream_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let base = ScriptObjectData::new(class);
 
-    let ns = NetStream::new(activation.gc(), None);
-    let this: Object<'gc> =
-        NetStreamObject(Gc::new(activation.gc(), NetStreamObjectData { base, ns })).into();
+    let ns = NetStream::new_avm2(activation.gc());
+    let this = NetStreamObject(Gc::new(activation.gc(), NetStreamObjectData { base, ns }));
 
-    ns.set_avm_object(activation.gc(), this.into());
+    ns.set_avm2_object(activation.gc(), this);
 
-    ns.set_client(activation.gc(), this);
+    ns.set_client(activation.gc(), this.into());
 
-    Ok(this)
+    Ok(this.into())
 }
 
 #[derive(Clone, Collect, Copy)]
@@ -42,17 +41,15 @@ pub struct NetStreamObjectData<'gc> {
     ns: NetStream<'gc>,
 }
 
+impl<'gc> NetStreamObject<'gc> {
+    pub fn netstream(self) -> NetStream<'gc> {
+        self.0.ns
+    }
+}
+
 impl<'gc> TObject<'gc> for NetStreamObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_netstream(self) -> Option<NetStream<'gc>> {
-        Some(self.0.ns)
     }
 }
 

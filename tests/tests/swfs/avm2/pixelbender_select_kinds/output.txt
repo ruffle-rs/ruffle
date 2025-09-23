@@ -1,0 +1,8 @@
+Shader 1 compiled
+Error compiling shader 2: ArgumentError: Error #2004: One of the parameters is invalid.
+Error compiling shader 3: ArgumentError: Error #2004: One of the parameters is invalid.
+Error compiling shader 4: ArgumentError: Error #2004: One of the parameters is invalid.
+Error compiling shader 5: ArgumentError: Error #2004: One of the parameters is invalid.
+Error compiling shader 6: ArgumentError: Error #2004: One of the parameters is invalid.
+Error compiling shader 7: ArgumentError: Error #2004: One of the parameters is invalid.
+Shader 8 compiled

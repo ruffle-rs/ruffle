@@ -1,0 +1,10 @@
+direct call to f() PASSED!
+super call to f() PASSED!
+direct call to g() PASSED!
+super chain call to g() PASSED!
+direct call to h() PASSED!
+super chain call to h() PASSED!
+super parent call to h() PASSED!
+direct call to i() PASSED!
+super chain call to i() PASSED!
+super parent call to i() PASSED!

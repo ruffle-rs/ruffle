@@ -1,0 +1,12 @@
+TESTOBJ.noReturnNoParams() PASSED!
+TESTOBJ.noReturnParams(s,b) PASSED!
+TESTOBJ.noReturnCustomParams(c) PASSED!
+TESTOBJ.returnNoParams() PASSED!
+TESTOBJ.returnParams(s,b) PASSED!
+TESTOBJ.returnCustomNoParams() PASSED!
+TESTOBJ.noReturnNoParams() PASSED!
+TESTOBJ.noReturnParams(s,b) PASSED!
+TESTOBJ.noReturnCustomParams() PASSED!
+TESTOBJ.returnNoParams() PASSED!
+TESTOBJ.returnParams(s,b) PASSED!
+TESTOBJ.returnCustomNoParams() PASSED!

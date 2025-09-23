@@ -18,7 +18,7 @@ jobs:
     outputs:
       should_run: ${{ steps.filter.outputs.src }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - uses: AurorNZ/paths-filter@v4
         id: filter
@@ -36,13 +36,13 @@ jobs:
       fail-fast: false
       matrix:
         node_version: ["22", "24"]
-        os: [ubuntu-24.04, windows-latest]
+        os: [ubuntu-24.04, windows-2025]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: ${{ matrix.node_version }}
           cache: npm
@@ -70,7 +70,7 @@ jobs:
       - name: Install wasm-opt
         # It runs for a long time, and the build is already slow on Windows,
         # where it doesn't have much benefit anyway - most tests are run on Ubuntu.
-        if: matrix.os != 'windows-latest'
+        if: matrix.os != 'windows-2025'
         uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
@@ -104,10 +104,10 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
@@ -162,17 +162,17 @@ jobs:
         browser: ["chrome", "firefox", "edge"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: web/package-lock.json
 
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: selfhosted-dist
           path: web/packages/selfhosted/dist
@@ -198,7 +198,7 @@ jobs:
     strategy:
       matrix:
         node_version: ["22", "24"]
-        os: [ubuntu-24.04, windows-latest]
+        os: [ubuntu-24.04, windows-2025]
 
     steps:
       - name: No-op

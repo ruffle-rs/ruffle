@@ -1,3 +1,2 @@
 num_ticks = 3
 sleep_to_meet_frame_rate = true
-known_failure = true

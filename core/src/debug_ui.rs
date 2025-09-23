@@ -115,7 +115,8 @@ impl DebugUi {
                     self.movies.insert(movie, Default::default());
                 }
                 Message::TrackTopLevelMovie => {
-                    self.movies.insert(context.swf.clone(), Default::default());
+                    self.movies
+                        .insert(context.root_swf.clone(), Default::default());
                 }
                 Message::TrackAVM1Object(object) => {
                     self.avm1_objects.insert(object, Default::default());
@@ -169,7 +170,7 @@ impl DebugUi {
         context: &mut RenderContext<'_, 'gc>,
         dynamic_root_set: DynamicRootSet<'gc>,
     ) {
-        let world_matrix = context.stage.view_matrix() * *context.stage.base().matrix();
+        let world_matrix = context.stage.view_matrix() * context.stage.base().matrix();
 
         for (object, window) in self.display_objects.iter() {
             if let Some(color) = window.debug_rect_color() {
@@ -193,11 +194,11 @@ impl DebugUi {
         }
 
         if let Some(window) = &self.display_object_search {
-            for (color, object) in window.hovered_debug_rects() {
+            for (object, color) in window.hovered_debug_rects() {
                 let object = object.fetch(dynamic_root_set);
                 let bounds = world_matrix * object.debug_rect_bounds();
 
-                draw_debug_rect(context, color, bounds, 5.0);
+                draw_debug_rect(context, *color, bounds, 5.0);
             }
         }
 

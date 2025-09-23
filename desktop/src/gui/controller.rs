@@ -14,6 +14,8 @@ use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend}
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::utils::{format_list, get_backend_names};
 use std::any::Any;
+use std::fs::File;
+use std::path::Path;
 use std::sync::{Arc, MutexGuard};
 use std::time::{Duration, Instant};
 use url::Url;
@@ -64,7 +66,6 @@ impl GuiController {
             &instance,
             Some(&surface),
             preferences.graphics_power_preference().into(),
-            preferences.cli.trace_path(),
         ))
         .map_err(|e| anyhow!(e.to_string()))?;
         let adapter_info = adapter.get_info();
@@ -579,6 +580,7 @@ fn load_system_fonts(
         4,
         vec![
             Family::Name("Noto Sans Hebrew"), // Open font
+            Family::Name("Tahoma"),           // Windows
         ],
     ));
 
@@ -587,6 +589,16 @@ fn load_system_fonts(
         5,
         vec![
             Family::Name("Noto Sans Arabic"), // Open font
+            Family::Name("Tahoma"),           // Windows
+        ],
+    ));
+
+    // Thai
+    queries.push((
+        6,
+        vec![
+            Family::Name("Noto Sans Thai"), // Open font
+            Family::Name("Tahoma"),         // Windows
         ],
     ));
 
@@ -653,11 +665,16 @@ fn load_system_font(
         .expect("id not found in font database");
 
     let mut fontdata = match src {
-        Source::File(path) => {
-            let data = std::fs::read(path)?;
-            egui::FontData::from_owned(data)
+        Source::File(path) | Source::SharedFile(path, _) => {
+            let data = mmap_system_font(&path)?;
+
+            // egui accepts only static data, so we have to leak mmapped fonts.
+            // This is acceptable, as we're doing it only once.
+            let data = Box::leak(Box::new(data));
+
+            egui::FontData::from_static(data)
         }
-        Source::Binary(bin) | Source::SharedFile(_, bin) => {
+        Source::Binary(bin) => {
             let data = bin.as_ref().as_ref().to_vec();
             egui::FontData::from_owned(data)
         }
@@ -665,4 +682,15 @@ fn load_system_font(
     fontdata.index = index;
 
     Ok((name, fontdata))
+}
+
+fn mmap_system_font(path: &Path) -> anyhow::Result<memmap2::Mmap> {
+    let file = File::open(path).map_err(|e| anyhow!("Couldn't open font file at {path:?}: {e}"))?;
+
+    // SAFETY: We have to assume that the font file won't change.
+    // This assumption is realistic, as we're using system fonts only.
+    let mmap = unsafe { memmap2::Mmap::map(&file) };
+
+    let mmap = mmap.map_err(|e| anyhow!("Failed to mmap font file at {path:?}: {e}"))?;
+    Ok(mmap)
 }

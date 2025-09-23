@@ -1,0 +1,4 @@
+initial counter PASSED!
+explicit counter PASSED!
+implicit counter PASSED!
+implicit counter with no constructor defined PASSED!

@@ -24,19 +24,19 @@ lzma = ["ruffle_test_framework/lzma"]
 
 [dependencies]
 ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
-regex = "1.11.1"
 
 [dev-dependencies]
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "aac", "default_font"] }
 ruffle_test_framework = { path = "framework" }
-libtest-mimic = "0.8.1"
-walkdir = { workspace = true }
+ruffle_fs_tests_runner = { path = "fs-tests-runner" }
+libtest-mimic = { workspace = true }
 anyhow = { workspace = true }
 image = { workspace = true, features  = ["png"] }
 futures = { workspace = true }
 env_logger = "0.11.8"
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+clap = { workspace = true }
 
 [[test]]
 name = "tests"

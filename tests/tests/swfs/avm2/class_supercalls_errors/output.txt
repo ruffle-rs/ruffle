@@ -1,0 +1,35 @@
+SupercallTest() called
+Test.getter called
+SuperCallTest.getter called
+function returned by getter called
+undefined
+Test.setter called
+SuperCallTest.setter called
+Test.method called
+SuperCallTest.method called
+undefined
+SuperCallTest.getter called
+function returned by getter called
+undefined
+SuperCallTest.setter called
+SuperCallTest.method called
+undefined
+3
+3
+6
+6
+7
+7
+99
+4
+99
+8
+9
+8
+function Function() {}
+e1: 1074
+e2: no error
+e3: 1070
+e4: 1077
+e5: no error
+e6: 1065

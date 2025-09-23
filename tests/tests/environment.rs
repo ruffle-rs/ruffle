@@ -101,7 +101,6 @@ mod renderer {
             &instance,
             None,
             Default::default(),
-            None,
         ))
         .ok()
         .map(|(adapter, device, queue)| (instance, adapter, device, queue))

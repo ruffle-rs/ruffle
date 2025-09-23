@@ -1,7 +1,6 @@
 use crate::avm2::amf::serialize_value;
 use crate::avm2::error::make_error_2126;
 pub use crate::avm2::object::net_connection_allocator;
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::net_connection::NetConnections;
 use crate::string::AvmString;
@@ -28,24 +27,28 @@ pub fn connect<'gc>(
         .as_net_connection()
         .expect("Must be NetConnection object");
 
-    if let Value::Null = args[0] {
-        NetConnections::connect_to_local(activation.context, connection);
-        return Ok(Value::Undefined);
-    }
+    let url = args.try_get_string(0);
 
-    let url = args.get_string(activation, 0)?;
-    if url.starts_with(WStr::from_units(b"http://"))
-        || url.starts_with(WStr::from_units(b"https://"))
-    {
-        // HTTP(S) is for Flash Remoting, which is just POST requests to the URL.
-        NetConnections::connect_to_flash_remoting(activation.context, connection, url.to_string());
+    if let Some(url) = url {
+        if url.starts_with(WStr::from_units(b"http://"))
+            || url.starts_with(WStr::from_units(b"https://"))
+        {
+            // HTTP(S) is for Flash Remoting, which is just POST requests to the URL.
+            NetConnections::connect_to_flash_remoting(
+                activation.context,
+                connection,
+                url.to_string(),
+            );
+        } else {
+            avm2_stub_method!(
+                activation,
+                "flash.net.NetConnection",
+                "connect",
+                "with non-null, non-http command"
+            );
+        }
     } else {
-        avm2_stub_method!(
-            activation,
-            "flash.net.NetConnection",
-            "connect",
-            "with non-null, non-http command"
-        );
+        NetConnections::connect_to_local(activation.context, connection);
     }
 
     Ok(Value::Undefined)
@@ -271,10 +274,8 @@ pub fn call<'gc>(
         .as_net_connection()
         .expect("Must be NetConnection object");
 
-    let command = args.get_string(activation, 0)?;
-    let responder = args
-        .try_get_object(activation, 1)
-        .and_then(|o| o.as_responder());
+    let command = args.get_string(activation, 0);
+    let responder = args.try_get_object(1).and_then(|o| o.as_responder());
     let mut arguments = Vec::new();
 
     let mut object_table = FnvHashMap::default();
@@ -329,12 +330,12 @@ pub fn add_header<'gc>(
     // `addHeader(name)` - but this is clearly false. It instead replaces the value of the header
     // with a null value, sending that over the wire.
 
-    let name = args.get_string(activation, 0)?;
+    let name = args.get_string(activation, 0);
     let must_understand = args.get_bool(1);
     // FIXME - do we re-use the same object reference table for all headers?
     let value = serialize_value(
         activation,
-        args[2],
+        args.get_value(2),
         AMFVersion::AMF0,
         &mut Default::default(),
     )

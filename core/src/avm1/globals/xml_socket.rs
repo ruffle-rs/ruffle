@@ -1,12 +1,9 @@
-use crate::avm1::function::FunctionObject;
-use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::define_properties_on;
-use crate::avm1::{property_decl::Declaration, Object};
-use crate::avm1::{Activation, Error, ExecutionReason, Value};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::{Activation, Error, ExecutionReason, NativeObject, Object, Value};
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::socket::SocketHandle;
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use std::cell::{Cell, RefCell, RefMut};
@@ -66,6 +63,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "onData" => method(on_data; DONT_ENUM | DONT_DELETE);
     "onXML" => method(on_xml; DONT_ENUM | DONT_DELETE);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
 
 fn get_timeout<'gc>(
     _activation: &mut Activation<'_, 'gc>,
@@ -222,7 +228,7 @@ fn on_xml<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn constructor<'gc>(
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -240,22 +246,4 @@ pub fn constructor<'gc>(
     this.set_native(activation.gc(), NativeObject::XmlSocket(xml_socket));
 
     Ok(Value::Undefined)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let xml_socket_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, xml_socket_proto, fn_proto);
-    xml_socket_proto
-}
-
-pub fn create_class<'gc>(
-    context: &mut StringContext<'gc>,
-    xml_socket_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::native(context, constructor, fn_proto, xml_socket_proto)
 }

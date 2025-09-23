@@ -61,7 +61,7 @@ pub struct WebNavigatorBackend {
     player: Weak<Mutex<Player>>,
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 impl WebNavigatorBackend {
     pub fn new(
         allow_script_access: bool,
@@ -402,7 +402,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             let redirected = response.redirected();
             if !response.ok() {
                 let error = Error::HttpNotOk(
-                    format!("HTTP status is not ok, got {}", response.status_text()),
+                    format!("Got {}", response.status_text()),
                     status,
                     redirected,
                     0,
@@ -567,7 +567,7 @@ struct WebResponseWrapper {
 }
 
 impl SuccessResponse for WebResponseWrapper {
-    fn url(&self) -> Cow<str> {
+    fn url(&self) -> Cow<'_, str> {
         Cow::Owned(self.response.url())
     }
 
@@ -608,7 +608,7 @@ impl SuccessResponse for WebResponseWrapper {
         self.response.redirected()
     }
 
-    #[allow(clippy::await_holding_refcell_ref)]
+    #[expect(clippy::await_holding_refcell_ref)]
     fn next_chunk(&mut self) -> OwnedFuture<Option<Vec<u8>>, Error> {
         if self.body_stream.is_none() {
             let body = self.response.body();

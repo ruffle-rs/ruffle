@@ -24,21 +24,26 @@ impl DomainListWindow {
         Window::new("Domain List")
             .open(&mut keep_open)
             .show(egui_ctx, |ui| {
-                TextEdit::singleline(&mut self.search)
-                    .hint_text("Search")
-                    .show(ui);
+                ui.push_id("domain_search", |ui| {
+                    TextEdit::singleline(&mut self.search)
+                        .hint_text("Search")
+                        .show(ui);
+                });
+
                 ui.add_space(10.0);
                 // Let's search ascii-insensitive for QOL
                 let search = self.search.to_ascii_lowercase();
                 let domain = context.avm2.playerglobals_domain();
                 egui::ScrollArea::both().show(ui, |ui| {
-                    self.show_domain(ui, context, domain, messages, &search)
+                    ui.push_id("domain_scroll_content", |ui| {
+                        self.show_domain(ui, context, domain, messages, &search, 0)
+                    });
                 });
             });
         keep_open
     }
 
-    #[allow(clippy::only_used_in_recursion)]
+    #[expect(clippy::only_used_in_recursion)]
     pub fn show_domain<'gc>(
         &mut self,
         ui: &mut Ui,
@@ -46,42 +51,71 @@ impl DomainListWindow {
         domain: Domain<'gc>,
         messages: &mut Vec<Message>,
         search: &str,
+        depth: usize,
     ) {
-        CollapsingState::load_with_default_open(ui.ctx(), ui.id().with(domain.as_ptr()), false)
-            .show_header(ui, |ui| {
-                open_domain_button(ui, context, messages, domain);
-            })
-            .body(|ui| {
-                let class_props = domain.classes();
-                let mut classes: Vec<_> = class_props.iter().collect();
-                classes.sort_by_key(|(name, _, _)| *name);
+        let domain_id = format!("domain_{}_{:p}", depth, domain.as_ptr());
 
-                for (_, _, class) in classes {
-                    let class_name = class.name().to_qualified_name(context.gc());
-                    if !class_name.to_string().to_ascii_lowercase().contains(search) {
-                        continue;
+        ui.push_id(domain_id, |ui| {
+            CollapsingState::load_with_default_open(ui.ctx(), ui.id().with("domain_header"), false)
+                .show_header(ui, |ui| {
+                    open_domain_button(ui, context, messages, domain);
+                })
+                .body(|ui| {
+                    let class_props = domain.classes();
+                    let mut classes: Vec<_> = class_props.iter().collect();
+                    classes.sort_by_key(|(name, _, _)| *name);
+
+                    for (class_index, (_, _, class)) in classes.iter().enumerate() {
+                        let class_name = class.name().to_qualified_name(context.gc());
+                        if !class_name.to_string().to_ascii_lowercase().contains(search) {
+                            continue;
+                        }
+
+                        let class_id =
+                            format!("class_{}_{}_{:p}", depth, class_index, class.as_ptr());
+
+                        ui.push_id(class_id, |ui| {
+                            CollapsingHeader::new(format!("Class {class_name}")).show(ui, |ui| {
+                                for (obj_index, class_obj) in
+                                    class.class_objects().iter().enumerate()
+                                {
+                                    ui.push_id(
+                                        format!("class_obj_{}_{}", class_index, obj_index),
+                                        |ui| {
+                                            let button = ui.button(format!("{class_obj:?}"));
+                                            if button.clicked() {
+                                                messages.push(Message::TrackAVM2Object(
+                                                    AVM2ObjectHandle::new(
+                                                        context,
+                                                        (*class_obj).into(),
+                                                    ),
+                                                ));
+                                            }
+                                        },
+                                    );
+                                }
+                            });
+                        });
                     }
 
-                    CollapsingHeader::new(format!("Class {class_name}"))
-                        .id_salt(ui.id().with(class.0.as_ptr()))
-                        .show(ui, |ui| {
-                            for class_obj in &*class.class_objects() {
-                                let button = ui.button(format!("{class_obj:?}"));
-                                if button.clicked() {
-                                    messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(
-                                        context,
-                                        (*class_obj).into(),
-                                    )));
-                                }
-                            }
-                        });
-                }
-                drop(class_props);
+                    drop(class_props);
 
-                for child_domain in domain.children(context.gc()) {
-                    self.show_domain(ui, context, child_domain, messages, search);
-                }
-            });
+                    for (child_index, child_domain) in
+                        domain.children(context.gc()).into_iter().enumerate()
+                    {
+                        ui.push_id(format!("child_domain_{}_{}", depth, child_index), |ui| {
+                            self.show_domain(
+                                ui,
+                                context,
+                                child_domain,
+                                messages,
+                                search,
+                                depth + 1,
+                            );
+                        });
+                    }
+                });
+        });
     }
 }
 
@@ -96,6 +130,3 @@ pub fn open_domain_button<'gc>(
         messages.push(Message::TrackDomain(DomainHandle::new(context, domain)));
     }
 }
-
-#[derive(Debug, Default)]
-pub struct DomainWindow {}

@@ -21,16 +21,16 @@ use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::globals::xml::Xml;
 use crate::avm1::globals::xml_socket::XmlSocket;
 use crate::avm1::object::super_object::SuperObject;
+use crate::avm1::xml::XmlNode;
 use crate::avm1::{Activation, Error, Value};
-use crate::bitmap::bitmap_data::BitmapDataWrapper;
+use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::{
     Avm1Button, DisplayObject, EditText, MovieClip, TDisplayObject as _, Video,
 };
 use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
-use crate::xml::XmlNode;
-use gc_arena::{Collect, Gc, GcCell, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use std::cell::{Cell, RefCell};
 use std::marker::PhantomData;
@@ -81,14 +81,14 @@ pub enum NativeObject<'gc> {
     ConvolutionFilter(ConvolutionFilter<'gc>),
     GradientBevelFilter(GradientFilter<'gc>),
     GradientGlowFilter(GradientFilter<'gc>),
-    ColorTransform(GcCell<'gc, ColorTransformObject>),
+    ColorTransform(Gc<'gc, ColorTransformObject>),
     Transform(TransformObject<'gc>),
     TextFormat(Gc<'gc, RefCell<TextFormat>>),
     NetStream(NetStream<'gc>),
-    BitmapData(BitmapDataWrapper<'gc>),
+    BitmapData(BitmapData<'gc>),
     Xml(Xml<'gc>),
     XmlNode(XmlNode<'gc>),
-    SharedObject(GcCell<'gc, SharedObject>),
+    SharedObject(Gc<'gc, RefCell<SharedObject>>),
     XmlSocket(XmlSocket<'gc>),
     FileReference(FileReferenceObject<'gc>),
     NetConnection(NetConnection<'gc>),
@@ -150,16 +150,7 @@ impl<'gc> Object<'gc> {
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        // TODO: Extract logic to a `lookup` function.
-        let (this, proto) = if let Some(super_object) = self.as_super_object() {
-            (super_object.this(), super_object.proto(activation))
-        } else {
-            (self, Value::Object(self))
-        };
-        match search_prototype(proto, name.into(), activation, this, false)? {
-            Some((value, _depth)) => Ok(value),
-            None => Ok(Value::Undefined),
-        }
+        self.lookup(name, activation, false)
     }
 
     /// Retrieve a named property from the object, or its prototype.
@@ -168,13 +159,21 @@ impl<'gc> Object<'gc> {
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        // TODO: Extract logic to a `lookup` function.
+        self.lookup(name, activation, true)
+    }
+
+    fn lookup(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+        is_slash_path: bool,
+    ) -> Result<Value<'gc>, Error<'gc>> {
         let (this, proto) = if let Some(super_object) = self.as_super_object() {
             (super_object.this(), super_object.proto(activation))
         } else {
             (self, Value::Object(self))
         };
-        match search_prototype(proto, name.into(), activation, this, true)? {
+        match search_prototype(proto, name.into(), activation, this, is_slash_path)? {
             Some((value, _depth)) => Ok(value),
             None => Ok(Value::Undefined),
         }

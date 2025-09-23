@@ -2,13 +2,13 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{globals, ArrayBuilder, Object, Value};
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
 };
 use crate::html::TextFormat;
-use crate::string::{AvmString, StringContext, WStr};
+use crate::string::{AvmString, WStr};
 use gc_arena::Gc;
 use ruffle_macros::istr;
 use swf::Color;
@@ -100,14 +100,13 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "styleSheet" => property(tf_getter!(style_sheet), tf_setter!(set_style_sheet); VERSION_7);
 };
 
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.empty_class(super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
 }
 
 pub fn password<'gc>(
@@ -249,10 +248,9 @@ fn replace_sel<'gc>(
         &text,
         activation.context,
     );
-    text_field.set_selection(
-        Some(TextSelection::for_position(selection.start() + text.len())),
-        activation.gc(),
-    );
+    text_field.set_selection(Some(TextSelection::for_position(
+        selection.start() + text.len(),
+    )));
 
     text_field.propagate_text_binding(activation);
 
@@ -390,7 +388,7 @@ pub fn set_background<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let has_background = value.as_bool(activation.swf_version());
-    this.set_has_background(activation.gc(), has_background);
+    this.set_has_background(has_background);
     Ok(())
 }
 
@@ -408,7 +406,7 @@ pub fn set_background_color<'gc>(
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
     let color = Color::from_rgb(rgb, 255);
-    this.set_background_color(activation.gc(), color);
+    this.set_background_color(color);
     Ok(())
 }
 
@@ -425,7 +423,7 @@ pub fn set_border<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let has_border = value.as_bool(activation.swf_version());
-    this.set_has_border(activation.gc(), has_border);
+    this.set_has_border(has_border);
     Ok(())
 }
 
@@ -443,7 +441,7 @@ pub fn set_border_color<'gc>(
 ) -> Result<(), Error<'gc>> {
     let rgb = value.coerce_to_u32(activation)?;
     let color = Color::from_rgb(rgb, 255);
-    this.set_border_color(activation.gc(), color);
+    this.set_border_color(color);
     Ok(())
 }
 
@@ -651,7 +649,7 @@ pub fn set_hscroll<'gc>(
     // SWF v8 and earlier has the simple clamping behaviour below. SWF v9+ is much more complicated. See #4634.
     let hscroll_pixels = value.coerce_to_i32(activation)? as f64;
     let clamped = hscroll_pixels.clamp(0.0, this.maxhscroll());
-    this.set_hscroll(clamped, activation.context);
+    this.set_hscroll(clamped);
     Ok(())
 }
 
@@ -675,7 +673,7 @@ pub fn set_scroll<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let input = value.coerce_to_f64(activation)?;
-    this.set_scroll(input, activation.context);
+    this.set_scroll(input);
     Ok(())
 }
 
@@ -822,8 +820,8 @@ fn filters<'gc>(
     Ok(ArrayBuilder::new(activation)
         .with(
             this.filters()
-                .into_iter()
-                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
+                .iter()
+                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter.clone())),
         )
         .into())
 }
@@ -842,7 +840,7 @@ fn set_filters<'gc>(
             }
         }
     }
-    this.set_filters(activation.gc(), filters);
+    this.set_filters(filters.into_boxed_slice());
     Ok(())
 }
 
@@ -883,7 +881,7 @@ pub fn tab_index<'gc>(
     this: EditText<'gc>,
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(index) = this.as_interactive().and_then(|this| this.tab_index()) {
+    if let Some(index) = this.tab_index() {
         Ok(Value::Number(index as u32 as f64))
     } else {
         Ok(Value::Undefined)
@@ -895,19 +893,17 @@ pub fn set_tab_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Some(this) = this.as_interactive() {
-        let value = match value {
-            Value::Undefined | Value::Null => None,
-            _ => {
-                // `tabIndex` is u32 in TextField, compared to i32 in Button and MovieClip,
-                // but that is only a data representation difference,
-                // as both are interpreted as i32.
-                let u32_value = value.coerce_to_u32(activation)?;
-                Some(u32_value as i32)
-            }
-        };
-        this.set_tab_index(activation.context, value);
-    }
+    let value = match value {
+        Value::Undefined | Value::Null => None,
+        _ => {
+            // `tabIndex` is u32 in TextField, compared to i32 in Button and MovieClip,
+            // but that is only a data representation difference,
+            // as both are interpreted as i32.
+            let u32_value = value.coerce_to_u32(activation)?;
+            Some(u32_value as i32)
+        }
+    };
+    this.set_tab_index(value);
     Ok(())
 }
 

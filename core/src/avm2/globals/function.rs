@@ -2,9 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{eval_error, type_error};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::globals::methods::function as function_class_methods;
-use crate::avm2::object::{FunctionObject, TObject};
+use crate::avm2::object::FunctionObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -36,7 +37,7 @@ pub fn function_constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if !args.is_empty() {
-        return Err(Error::AvmError(eval_error(
+        return Err(Error::avm_error(eval_error(
             activation,
             "Error #1066: The form function('function body') is not supported.",
             1066,
@@ -45,18 +46,6 @@ pub fn function_constructor<'gc>(
 
     let function_object = create_dummy_function(activation);
     Ok(function_object.into())
-}
-
-pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation
-        .avm2()
-        .classes()
-        .function
-        .construct(activation, args)
 }
 
 pub fn _init_function_class<'gc>(
@@ -87,9 +76,10 @@ pub fn call<'gc>(
     let this = args.get_value(0);
 
     if args.len() > 1 {
-        Ok(func.call(activation, this, &args[1..])?)
+        let passed_args = &args[1..];
+        Ok(func.call(activation, this, FunctionArgs::from_slice(passed_args))?)
     } else {
-        Ok(func.call(activation, this, &[])?)
+        Ok(func.call(activation, this, FunctionArgs::empty())?)
     }
 }
 
@@ -106,20 +96,16 @@ pub fn apply<'gc>(
     let arg_array = args.get_value(1);
     let resolved_args = if !matches!(arg_array, Value::Undefined | Value::Null) {
         if let Some(array_object) = arg_array.as_object().and_then(|o| o.as_array_object()) {
-            let arg_storage = array_object
-                .as_array_storage()
-                .unwrap()
-                .iter()
-                .collect::<Vec<_>>();
+            let arg_storage = array_object.storage();
 
-            let mut resolved_args = Vec::with_capacity(arg_storage.len());
+            let mut resolved_args = Vec::with_capacity(arg_storage.length());
             for (i, v) in arg_storage.iter().enumerate() {
-                resolved_args.push(resolve_array_hole(activation, array_object.into(), i, *v)?);
+                resolved_args.push(resolve_array_hole(activation, array_object.into(), i, v)?);
             }
 
             resolved_args
         } else {
-            return Err(Error::AvmError(type_error(
+            return Err(Error::avm_error(type_error(
                 activation,
                 "Error #1116: second argument to Function.prototype.apply must be an array.",
                 1116,
@@ -130,7 +116,7 @@ pub fn apply<'gc>(
         Vec::new()
     };
 
-    func.call(activation, this, &resolved_args)
+    func.call(activation, this, FunctionArgs::from_slice(&resolved_args))
 }
 
 pub fn get_length<'gc>(

@@ -4,12 +4,12 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::movie_clip::{new_rectangle, object_to_rectangle};
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::ArrayBuilder;
 use crate::avm1::{globals, Object, Value};
 use crate::avm1_stub;
 use crate::display_object::{Avm1Button, TDisplayObject, TInteractiveObject};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 
 macro_rules! button_getter {
     ($name:ident) => {
@@ -50,14 +50,13 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "tabIndex" => property(button_getter!(tab_index), button_setter!(set_tab_index); VERSION_6);
 };
 
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.empty_class(super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
 }
 
 fn blend_mode<'gc>(
@@ -70,12 +69,12 @@ fn blend_mode<'gc>(
 
 fn set_blend_mode<'gc>(
     this: Avm1Button<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // No-op if value is not a valid blend mode.
     if let Some(mode) = value.as_blend_mode() {
-        this.set_blend_mode(activation.gc(), mode.into());
+        this.set_blend_mode(mode.into());
     } else {
         tracing::error!("Unknown blend mode {value:?}");
     }
@@ -89,8 +88,8 @@ fn filters<'gc>(
     Ok(ArrayBuilder::new(activation)
         .with(
             this.filters()
-                .into_iter()
-                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter)),
+                .iter()
+                .map(|filter| bitmap_filter::filter_to_avm1(activation, filter.clone())),
         )
         .into())
 }
@@ -109,7 +108,7 @@ fn set_filters<'gc>(
             }
         }
     }
-    this.set_filters(activation.gc(), filters);
+    this.set_filters(filters.into_boxed_slice());
     Ok(())
 }
 
@@ -127,7 +126,7 @@ fn set_cache_as_bitmap<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     // Note that the *getter* returns actual, and *setter* is preference
-    this.set_bitmap_cached_preference(activation.gc(), value.as_bool(activation.swf_version()));
+    this.set_bitmap_cached_preference(value.as_bool(activation.swf_version()));
     Ok(())
 }
 
@@ -164,7 +163,7 @@ fn tab_index<'gc>(
     this: Avm1Button<'gc>,
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(index) = this.as_interactive().and_then(|this| this.tab_index()) {
+    if let Some(index) = this.tab_index() {
         Ok(Value::Number(index as f64))
     } else {
         Ok(Value::Undefined)
@@ -176,18 +175,16 @@ fn set_tab_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Some(this) = this.as_interactive() {
-        let value = match value {
-            Value::Undefined | Value::Null => None,
-            Value::Bool(_) | Value::Number(_) => {
-                // FIXME This coercion is not perfect, as it wraps
-                //       instead of falling back to MIN, as FP does
-                let i32_value = value.coerce_to_i32(activation)?;
-                Some(i32_value)
-            }
-            _ => Some(i32::MIN),
-        };
-        this.set_tab_index(activation.context, value);
-    }
+    let value = match value {
+        Value::Undefined | Value::Null => None,
+        Value::Bool(_) | Value::Number(_) => {
+            // FIXME This coercion is not perfect, as it wraps
+            //       instead of falling back to MIN, as FP does
+            let i32_value = value.coerce_to_i32(activation)?;
+            Some(i32_value)
+        }
+        _ => Some(i32::MIN),
+    };
+    this.set_tab_index(value);
     Ok(())
 }

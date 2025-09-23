@@ -1,13 +1,12 @@
-use crate::avm1::function::FunctionObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::{Lso, ObjectId, Reference, Value as AmfValue};
-use gc_arena::{Collect, GcCell};
+use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
@@ -48,6 +47,16 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "getLocal" => method(get_local);
     "getRemote" => method(get_remote);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.constr, OBJECT_DECLS);
+    class
+}
 
 fn delete_all<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -408,9 +417,7 @@ fn get_local<'gc>(
 
     // Set the internal name
     if let NativeObject::SharedObject(shared_object) = this.native() {
-        shared_object
-            .write(activation.gc())
-            .set_name(full_name.clone());
+        shared_object.borrow_mut().set_name(full_name.clone());
     }
 
     let mut data = Value::Undefined;
@@ -465,7 +472,7 @@ fn clear<'gc>(
     }
 
     if let NativeObject::SharedObject(shared_object) = this.native() {
-        let name = shared_object.read().name();
+        let name = shared_object.borrow().name();
         activation.context.storage.remove_key(&name);
     }
 
@@ -498,7 +505,7 @@ pub(crate) fn flush<'gc>(
     let NativeObject::SharedObject(shared_object) = this.native() else {
         return Ok(Value::Undefined);
     };
-    let name = shared_object.read().name();
+    let name = shared_object.borrow().name();
     let data = this
         .get(istr!("data"), activation)?
         .coerce_to_object(activation);
@@ -521,7 +528,7 @@ fn get_size<'gc>(
     let NativeObject::SharedObject(shared_object) = this.native() else {
         return Ok(Value::Undefined);
     };
-    let name = shared_object.read().name();
+    let name = shared_object.borrow().name();
     let data = this
         .get(istr!("data"), activation)?
         .coerce_to_object(activation);
@@ -578,19 +585,7 @@ fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     this.set_native(
         activation.gc(),
-        NativeObject::SharedObject(GcCell::new(activation.gc(), Default::default())),
+        NativeObject::SharedObject(Gc::new(activation.gc(), Default::default())),
     );
     Ok(Value::Undefined)
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let shared_object_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, shared_object_proto, fn_proto);
-    let constructor = FunctionObject::native(context, constructor, fn_proto, shared_object_proto);
-    define_properties_on(OBJECT_DECLS, context, constructor, fn_proto);
-    constructor
 }

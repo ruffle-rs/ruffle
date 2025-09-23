@@ -14,10 +14,10 @@ workspace = true
 clap = { workspace = true }
 cpal = { workspace = true }
 egui = { workspace = true }
-egui_extras = { version = "0.31.1", default-features = false, features = ["image"] }
-egui-wgpu = { version = "0.31.1", features = ["winit"] }
+egui_extras = { git = "https://github.com/emilk/egui.git", branch = "main", default-features = false, features = ["image"] }
+egui-wgpu = { git = "https://github.com/emilk/egui.git", branch = "main", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
-egui-winit = "0.31.1"
+egui-winit = { git = "https://github.com/emilk/egui.git", branch = "main" }
 fontdb = "0.23"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "aac", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
@@ -28,8 +28,8 @@ ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.3"
-winit = "0.30.11"
-webbrowser = "1.0.4"
+winit = "0.30.12"
+webbrowser = "1.0.5"
 url = { workspace = true }
 dirs = "6.0"
 rfd = { workspace = true }
@@ -41,7 +41,7 @@ sys-locale = "0.3.2"
 wgpu = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
-fluent-templates = "0.13.0"
+fluent-templates = { workspace = true }
 toml_edit = { version = "0.22.27", features = ["parse"] }
 gilrs = "0.11"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs"] }
@@ -52,12 +52,13 @@ thiserror.workspace = true
 async-channel.workspace = true
 unicode-bidi = "0.3.18"
 fontconfig = { version = "0.10.0", optional = true, features = ["dlopen"]}
+memmap2.workspace = true
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ashpd = "0.11.0"
 
 [target.'cfg(windows)'.dependencies]
-winapi = "0.3.9"
+windows-sys = { version = "0.59.0", features = ["Win32_System_Console"] }
 
 [build-dependencies]
 embed-resource = "3"

@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle não conseguiu executar o Flash incorporado nesta página.
     Você pode tentar abrir o arquivo em uma guia separada para evitar esse problema.
+message-restored-from-bfcache =
+    Seu navegador restaurou este conteúdo Flash de uma sessão anterior.
+    Para começar do zero, recarregue a página.
 panic-title = Algo deu errado :(
 more-info = Mais informação
 run-anyway = Executar mesmo assim
@@ -24,6 +27,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } para copiar
 clipboard-message-cut = { " " } para recortar
 clipboard-message-paste = { " " } para colar
+error-canvas-reload = Não é possível recarregar com o renderizador canvas enquanto ele já está em uso.
 error-file-protocol =
     Parece que você está executando o Ruffle no protocolo "file:".
     Isto não funciona como navegadores bloqueiam muitos recursos de funcionar por razões de segurança.
@@ -69,8 +73,8 @@ error-wasm-disabled-on-edge =
     Isso permitirá que seu navegador carregue os arquivos ".wasm" necessários.
     Se o problema persistir, talvez seja necessário usar um navegador diferente.
 error-wasm-unsupported-browser =
-    O navegador que você está usando não suporta as extensões WebAssembly Ruffle exige que seja executado.
-    Por favor, mude para um navegador suportado.
+    O navegador que você está usando não suporta as extensões WebAssembly necessárias para o Ruffle.
+    Por favor, utilize um navegador compatível.
     Você pode encontrar uma lista de navegadores suportados no wiki.
 error-javascript-conflict =
     Ruffle encontrou um grande problema ao tentar inicializar.

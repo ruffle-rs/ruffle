@@ -6,7 +6,11 @@
 
 use crate::avm1::ExecutionReason;
 use crate::avm1::{Activation, ActivationIdentifier, Object as Avm1Object, Value as Avm1Value};
-use crate::avm2::{Activation as Avm2Activation, Object as Avm2Object, Value as Avm2Value};
+use crate::avm2::error::make_null_or_undefined_error;
+use crate::avm2::object::FunctionObject as Avm2FunctionObject;
+use crate::avm2::{
+    Activation as Avm2Activation, Error as Avm2Error, FunctionArgs, Value as Avm2Value,
+};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
@@ -138,11 +142,22 @@ impl<'gc> Timers<'gc> {
                 TimerCallback::Avm2Callback { closure, params } => {
                     let domain = context.avm2.stage_domain();
                     let mut avm2_activation = Avm2Activation::from_domain(context, domain);
-                    match Avm2Value::from(closure).call(
-                        &mut avm2_activation,
-                        Avm2Value::Null,
-                        &params,
-                    ) {
+
+                    let mut run_closure = || -> Result<Avm2Value<'gc>, Avm2Error<'gc>> {
+                        // Reproduce FP's behavior
+                        let Some(closure) = closure else {
+                            return Err(make_null_or_undefined_error(
+                                &mut avm2_activation,
+                                Avm2Value::Null,
+                                None,
+                            ));
+                        };
+
+                        let params = FunctionArgs::from_slice(&params);
+                        closure.call(&mut avm2_activation, Avm2Value::Null, params)
+                    };
+
+                    match run_closure() {
                         Ok(v) => v.coerce_to_boolean(),
                         Err(e) => {
                             tracing::error!("Unhandled AVM2 error in timer callback: {e:?}",);
@@ -364,7 +379,7 @@ pub enum TimerCallback<'gc> {
     },
 
     Avm2Callback {
-        closure: Avm2Object<'gc>,
+        closure: Option<Avm2FunctionObject<'gc>>,
         params: Vec<Avm2Value<'gc>>,
     },
 }

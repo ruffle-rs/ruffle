@@ -3,6 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::error::{make_error_1125, range_error};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -25,9 +26,9 @@ pub fn array_initializer<'gc>(
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
         if args.len() == 1 {
-            if let Some(expected_len) = args.get(0).filter(|v| v.is_number()).map(|v| v.as_f64()) {
+            if let Some(expected_len) = args.get_optional(0).and_then(|v| v.try_as_f64()) {
                 if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
-                    return Err(Error::AvmError(range_error(
+                    return Err(Error::avm_error(range_error(
                         activation,
                         &format!(
                             "Error #1005: Array index is not a positive integer ({expected_len})"
@@ -48,18 +49,6 @@ pub fn array_initializer<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation
-        .avm2()
-        .classes()
-        .array
-        .construct(activation, args)
 }
 
 /// Implements `Array.length`'s getter
@@ -86,7 +75,7 @@ pub fn set_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-        let size = args.get_u32(activation, 0)?;
+        let size = args.get_u32(0);
         array.set_length(size as usize);
     }
 
@@ -102,7 +91,6 @@ pub fn build_array<'gc>(
 }
 
 /// Implements `Array.concat`
-#[allow(clippy::map_clone)] //You can't clone `Option<Ref<T>>` without it
 pub fn concat<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -261,7 +249,7 @@ impl<'gc> ArrayIter<'gc> {
             let val = if let Some(storage) = self.array_object.as_vector_storage() {
                 // Special case for Vector- it throws an error if trying to access
                 // an element that was removed
-                val.ok_or_else(|| make_error_1125(activation, i as usize, storage.length()))?
+                val.ok_or_else(|| make_error_1125(activation, i as f64, storage.length()))?
             } else {
                 val.unwrap_or(Value::Undefined)
             };
@@ -290,7 +278,7 @@ impl<'gc> ArrayIter<'gc> {
             let val = if let Some(storage) = self.array_object.as_vector_storage() {
                 // Special case for Vector- it throws an error if trying to access
                 // an element that was removed
-                val.ok_or_else(|| make_error_1125(activation, i as usize, storage.length()))?
+                val.ok_or_else(|| make_error_1125(activation, i as f64, storage.length()))?
             } else {
                 val.unwrap_or(Value::Undefined)
             };
@@ -303,6 +291,7 @@ impl<'gc> ArrayIter<'gc> {
 }
 
 /// Implements `Array.forEach`
+/// NOTE: This is also the implementation for `Vector.forEach`
 pub fn for_each<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -310,12 +299,16 @@ pub fn for_each<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let callback = match args.try_get_function(0) {
+        None => return Ok(Value::Undefined),
+        Some(callback) => callback,
+    };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
-        callback.call(activation, receiver, &[item, i.into(), this.into()])?;
+        let args = &[item, i.into(), this.into()];
+        callback.call(activation, receiver, FunctionArgs::from_slice(args))?;
     }
 
     Ok(Value::Undefined)
@@ -329,13 +322,17 @@ pub fn map<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let callback = match args.try_get_function(0) {
+        None => return Ok(ArrayObject::empty(activation).into()),
+        Some(callback) => callback,
+    };
     let receiver = args.get_value(1);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
-        let new_item = callback.call(activation, receiver, &[item, i.into(), this.into()])?;
+        let args = &[item, i.into(), this.into()];
+        let new_item = callback.call(activation, receiver, FunctionArgs::from_slice(args))?;
 
         new_array.push(new_item);
     }
@@ -351,14 +348,18 @@ pub fn filter<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let callback = match args.try_get_function(0) {
+        None => return Ok(ArrayObject::empty(activation).into()),
+        Some(callback) => callback,
+    };
     let receiver = args.get_value(1);
     let mut new_array = ArrayStorage::new(0);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
+        let args = &[item, i.into(), this.into()];
         let is_allowed = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
+            .call(activation, receiver, FunctionArgs::from_slice(args))?
             .coerce_to_boolean();
 
         if is_allowed {
@@ -370,6 +371,7 @@ pub fn filter<'gc>(
 }
 
 /// Implements `Array.every`
+/// NOTE: This is also the implementation for `Vector.every`
 pub fn every<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -377,13 +379,17 @@ pub fn every<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let callback = match args.try_get_function(0) {
+        None => return Ok(true.into()),
+        Some(callback) => callback,
+    };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
+        let args = &[item, i.into(), this.into()];
         let result = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
+            .call(activation, receiver, FunctionArgs::from_slice(args))?
             .coerce_to_boolean();
 
         if !result {
@@ -394,7 +400,6 @@ pub fn every<'gc>(
     Ok(true.into())
 }
 
-/// Implements `Array.some`
 pub fn some<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -402,13 +407,17 @@ pub fn some<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let callback = args.get_value(0);
+    let callback = match args.try_get_function(0) {
+        None => return Ok(false.into()),
+        Some(callback) => callback,
+    };
     let receiver = args.get_value(1);
     let mut iter = ArrayIter::new(activation, this)?;
 
     while let Some((i, item)) = iter.next(activation)? {
+        let args = &[item, i.into(), this.into()];
         let result = callback
-            .call(activation, receiver, &[item, i.into(), this.into()])?
+            .call(activation, receiver, FunctionArgs::from_slice(args))?
             .coerce_to_boolean();
 
         if result {
@@ -420,7 +429,7 @@ pub fn some<'gc>(
 }
 
 /// Implements `Array.indexOf`
-pub fn index_of<'gc>(
+pub fn _index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -429,7 +438,7 @@ pub fn index_of<'gc>(
 
     if let Some(array) = this.as_array_storage() {
         let search_val = args.get_value(0);
-        let from = args.get_i32(activation, 1)?;
+        let from = args.get_i32(1);
 
         for (i, val) in array.iter().enumerate() {
             let val = resolve_array_hole(activation, this, i, val)?;
@@ -445,7 +454,7 @@ pub fn index_of<'gc>(
 }
 
 /// Implements `Array.lastIndexOf`
-pub fn last_index_of<'gc>(
+pub fn _last_index_of<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -454,11 +463,17 @@ pub fn last_index_of<'gc>(
 
     if let Some(array) = this.as_array_storage() {
         let search_val = args.get_value(0);
-        let from = args.get_i32(activation, 1)?;
+        let from = args.get_i32(1);
+
+        let from_index = if from >= 0 {
+            from as usize
+        } else {
+            array.length().saturating_sub(-from as usize)
+        };
 
         for (i, val) in array.iter().enumerate().rev() {
             let val = resolve_array_hole(activation, this, i, val)?;
-            if i <= from as usize && val == search_val {
+            if i <= from_index && val == search_val {
                 return Ok(i.into());
             }
         }
@@ -631,11 +646,10 @@ pub fn splice<'gc>(
     let array_length = this.as_array_storage().map(|a| a.length());
 
     if let Some(array_length) = array_length {
-        if let Some(start) = args.get(0).copied() {
+        if let Some(start) = args.get_optional(0) {
             let actual_start = resolve_index(activation, start, array_length)?;
             let delete_count = args
-                .get(1)
-                .copied()
+                .get_optional(1)
                 .unwrap_or_else(|| array_length.into())
                 .coerce_to_i32(activation)?;
 
@@ -926,11 +940,44 @@ pub fn compare_string_case_insensitive<'gc>(
     Ok(string_a.cmp_ignore_case(&string_b))
 }
 
-pub fn compare_numeric<'gc>(
+/// Perform numeric comparison for sort, slow.
+///
+/// Use [`compare_numeric`] where possible, use this function only when you
+/// would have to check the SWF version anyway.
+pub fn compare_numeric_slow<'gc>(
     activation: &mut Activation<'_, 'gc>,
     a: Value<'gc>,
     b: Value<'gc>,
 ) -> Result<Ordering, Error<'gc>> {
+    if activation.caller_movie_or_root().version() < 11 {
+        compare_numeric::<true>(activation, a, b)
+    } else {
+        compare_numeric::<false>(activation, a, b)
+    }
+}
+
+/// Perform numeric comparison for sort, fast.
+///
+/// The value of `COMPAT` should be `true` when the SWF version is less than 11.
+pub fn compare_numeric<'gc, const COMPAT: bool>(
+    activation: &mut Activation<'_, 'gc>,
+    a: Value<'gc>,
+    b: Value<'gc>,
+) -> Result<Ordering, Error<'gc>> {
+    if COMPAT {
+        // See <https://bugzilla.mozilla.org/show_bug.cgi?id=524122>
+        // See <https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ArrayClass.cpp#L498>
+        if let (Value::Integer(a), Value::Integer(b)) = (a, b) {
+            // The following expression corresponds to atomFromIntptrValue,
+            // see <https://github.com/adobe-flash/avmplus/blob/master/core/atom-inlines.h#L82>
+            let a = (a << 3) | 6;
+            let b = (b << 3) | 6;
+            // for SWF<11, FP relies on the following overflow
+            let diff = a.wrapping_sub(b);
+            return Ok(diff.cmp(&0i32));
+        }
+    }
+
     let num_a = a.coerce_to_number(activation)?;
     let num_b = b.coerce_to_number(activation)?;
 
@@ -1022,15 +1069,19 @@ pub fn sort<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // FIXME avmplus does some manual argument count/type checking here,
+    // FIXME avmplus does some manual argument type checking here,
     // should we try to match that?
     let (compare_fnc, options) = if args.len() > 1 {
+        // We have two or more args
+        let compare_fnc = args.get_value(0);
+        let options = args.get_value(1).coerce_to_u32(activation)?;
+
         (
-            Some(args.get_value(0)),
-            SortOptions::from_bits_truncate(args.get_u32(activation, 1)? as u8),
+            Some(compare_fnc),
+            SortOptions::from_bits_truncate(options as u8),
         )
-    } else {
-        let arg = args.get(0).copied().unwrap_or(Value::Undefined);
+    } else if let Some(arg) = args.get_optional(0) {
+        // We had exactly one arg
         if let Some(callable) = arg
             .as_object()
             .filter(|o| o.as_class_object().is_some() || o.as_function_object().is_some())
@@ -1042,6 +1093,9 @@ pub fn sort<'gc>(
                 SortOptions::from_bits_truncate(arg.coerce_to_u32(activation)? as u8),
             )
         }
+    } else {
+        // No arg was passed, so use default options
+        (None, SortOptions::empty())
     };
 
     let mut values = if let Some(values) = extract_array_values(activation, this.into())? {
@@ -1055,26 +1109,49 @@ pub fn sort<'gc>(
     };
 
     let unique_satisfied = if let Some(v) = compare_fnc {
-        sort_inner(
-            activation,
-            &mut values,
-            options,
-            constrain(|activation, a, b| {
-                let order = v
-                    .call(activation, this.into(), &[a, b])?
-                    .coerce_to_number(activation)?;
+        // See <https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ArrayClass.cpp#L821>
+        // See <https://bugzilla.mozilla.org/show_bug.cgi?id=532454>
+        if activation.caller_movie_or_root().version() < 13 {
+            sort_inner(
+                activation,
+                &mut values,
+                options,
+                constrain(|activation, a, b| {
+                    let args = &[a, b];
+                    let order = v
+                        .call(activation, this.into(), FunctionArgs::from_slice(args))?
+                        .coerce_to_i32(activation)?;
 
-                if order > 0.0 {
-                    Ok(Ordering::Greater)
-                } else if order < 0.0 {
-                    Ok(Ordering::Less)
-                } else {
-                    Ok(Ordering::Equal)
-                }
-            }),
-        )?
+                    Ok(order.cmp(&0))
+                }),
+            )?
+        } else {
+            sort_inner(
+                activation,
+                &mut values,
+                options,
+                constrain(|activation, a, b| {
+                    let args = &[a, b];
+                    let order = v
+                        .call(activation, this.into(), FunctionArgs::from_slice(args))?
+                        .coerce_to_number(activation)?;
+
+                    if order > 0.0 {
+                        Ok(Ordering::Greater)
+                    } else if order < 0.0 {
+                        Ok(Ordering::Less)
+                    } else {
+                        Ok(Ordering::Equal)
+                    }
+                }),
+            )?
+        }
     } else if options.contains(SortOptions::NUMERIC) {
-        sort_inner(activation, &mut values, options, compare_numeric)?
+        if activation.caller_movie_or_root().version() < 11 {
+            sort_inner(activation, &mut values, options, compare_numeric::<true>)?
+        } else {
+            sort_inner(activation, &mut values, options, compare_numeric::<false>)?
+        }
     } else if options.contains(SortOptions::CASE_INSENSITIVE) {
         sort_inner(
             activation,
@@ -1195,7 +1272,7 @@ pub fn sort_on<'gc>(
                 let b_field = b_object.get_public_property(*field_name, activation)?;
 
                 let ord = if options.contains(SortOptions::NUMERIC) {
-                    compare_numeric(activation, a_field, b_field)?
+                    compare_numeric_slow(activation, a_field, b_field)?
                 } else if options.contains(SortOptions::CASE_INSENSITIVE) {
                     compare_string_case_insensitive(activation, a_field, b_field)?
                 } else {
@@ -1229,7 +1306,7 @@ pub fn remove_at<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-        let index = args.get_i32(activation, 0)?;
+        let index = args.get_i32(0);
 
         return Ok(array.remove(index).unwrap_or(Value::Undefined));
     }

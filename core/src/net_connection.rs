@@ -144,7 +144,7 @@ impl<'gc> NetConnections<'gc> {
                 let mut activation = Avm2Activation::from_nothing(context);
                 let event = Avm2EventObject::net_status_event(
                     &mut activation,
-                    vec![
+                    [
                         ("code", "NetConnection.Connect.Success"),
                         ("level", "status"),
                     ],
@@ -196,7 +196,7 @@ impl<'gc> NetConnections<'gc> {
                 let mut activation = Avm2Activation::from_nothing(context);
                 let event = Avm2EventObject::net_status_event(
                     &mut activation,
-                    vec![
+                    [
                         ("code", "NetConnection.Connect.Closed"),
                         ("level", "status"),
                     ],
@@ -209,7 +209,7 @@ impl<'gc> NetConnections<'gc> {
                     // [NA] I have no idea why, but a NetConnection receives a second and nonsensical event on close
                     let event = Avm2EventObject::net_status_event(
                         &mut activation,
-                        vec![
+                        [
                             ("code", ""),
                             ("description", ""),
                             ("details", ""),
@@ -546,7 +546,7 @@ impl FlashRemoting {
                                     let mut activation = Avm2Activation::from_nothing(uc);
                                     let event = Avm2EventObject::net_status_event(
                                         &mut activation,
-                                        vec![
+                                        [
                                             ("code", "NetConnection.Call.Failed"),
                                             ("level", "error"),
                                             ("details", &response.url),

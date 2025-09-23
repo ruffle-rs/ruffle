@@ -406,13 +406,11 @@ impl<'a> Reader<'a> {
                 Tag::DefineBinaryData(tag_reader.read_define_binary_data()?)
             }
             TagCode::DefineBits => {
-                let id = tag_reader.read_u16()?;
-                let jpeg_data = tag_reader.read_slice_to_end();
+                let (id, jpeg_data) = tag_reader.read_define_bits()?;
                 Tag::DefineBits { id, jpeg_data }
             }
             TagCode::DefineBitsJpeg2 => {
-                let id = tag_reader.read_u16()?;
-                let jpeg_data = tag_reader.read_slice_to_end();
+                let (id, jpeg_data) = tag_reader.read_define_bits_jpeg_2()?;
                 Tag::DefineBitsJpeg2 { id, jpeg_data }
             }
             TagCode::DefineBitsJpeg3 => {
@@ -436,7 +434,7 @@ impl<'a> Reader<'a> {
             TagCode::DefineEditText => {
                 Tag::DefineEditText(Box::new(tag_reader.read_define_edit_text()?))
             }
-            TagCode::DefineFont => Tag::DefineFont(Box::new(tag_reader.read_define_font_1()?)),
+            TagCode::DefineFont => Tag::DefineFont(tag_reader.read_define_font_1()?),
             TagCode::DefineFont2 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(2)?)),
             TagCode::DefineFont3 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(3)?)),
             TagCode::DefineFont4 => Tag::DefineFont4(tag_reader.read_define_font_4()?),
@@ -454,11 +452,11 @@ impl<'a> Reader<'a> {
             TagCode::DefineMorphShape2 => {
                 Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(2)?))
             }
-            TagCode::DefineShape => Tag::DefineShape(tag_reader.read_define_shape(1)?),
-            TagCode::DefineShape2 => Tag::DefineShape(tag_reader.read_define_shape(2)?),
-            TagCode::DefineShape3 => Tag::DefineShape(tag_reader.read_define_shape(3)?),
-            TagCode::DefineShape4 => Tag::DefineShape(tag_reader.read_define_shape(4)?),
-            TagCode::DefineSound => Tag::DefineSound(Box::new(tag_reader.read_define_sound()?)),
+            TagCode::DefineShape => Tag::DefineShape(Box::new(tag_reader.read_define_shape(1)?)),
+            TagCode::DefineShape2 => Tag::DefineShape(Box::new(tag_reader.read_define_shape(2)?)),
+            TagCode::DefineShape3 => Tag::DefineShape(Box::new(tag_reader.read_define_shape(3)?)),
+            TagCode::DefineShape4 => Tag::DefineShape(Box::new(tag_reader.read_define_shape(4)?)),
+            TagCode::DefineSound => Tag::DefineSound(tag_reader.read_define_sound()?),
             TagCode::DefineText => Tag::DefineText(Box::new(tag_reader.read_define_text(1)?)),
             TagCode::DefineText2 => Tag::DefineText2(Box::new(tag_reader.read_define_text(2)?)),
             TagCode::DefineVideoStream => {
@@ -504,11 +502,11 @@ impl<'a> Reader<'a> {
 
             TagCode::SoundStreamHead => Tag::SoundStreamHead(
                 // TODO: Disallow certain compressions.
-                Box::new(tag_reader.read_sound_stream_head()?),
+                tag_reader.read_sound_stream_head()?,
             ),
 
             TagCode::SoundStreamHead2 => {
-                Tag::SoundStreamHead2(Box::new(tag_reader.read_sound_stream_head()?))
+                Tag::SoundStreamHead2(tag_reader.read_sound_stream_head()?)
             }
 
             TagCode::StartSound => Tag::StartSound(tag_reader.read_start_sound_1()?),
@@ -723,6 +721,10 @@ impl<'a> Reader<'a> {
             tags.push(tag);
         }
         Ok(tags)
+    }
+
+    pub fn read_tag_code(&mut self) -> Result<u16> {
+        Ok(self.read_u16()? >> 6)
     }
 
     pub fn read_tag_code_and_length(&mut self) -> Result<(u16, usize)> {
@@ -1087,7 +1089,7 @@ impl<'a> Reader<'a> {
             let leading = self.read_i16()?;
 
             for glyph in &mut glyphs {
-                glyph.advance = self.read_i16()?;
+                glyph.advance = self.read_u16()?;
             }
 
             // Some older SWFs end the tag here, as this data isn't used until v7.
@@ -2483,7 +2485,19 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
+    pub fn read_define_bits(&mut self) -> Result<(CharacterId, &'a [u8])> {
+        let id = self.read_character_id()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok((id, jpeg_data))
+    }
+
+    pub fn read_define_bits_jpeg_2(&mut self) -> Result<(CharacterId, &'a [u8])> {
+        let id = self.read_character_id()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok((id, jpeg_data))
+    }
+
+    pub fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
         let id = self.read_character_id()?;
         let data_size = self.read_u32()? as usize;
         let deblocking = if version >= 4 {
@@ -2578,7 +2592,7 @@ pub fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
 }
 
 #[cfg(test)]
-#[allow(clippy::unusual_byte_groupings)]
+#[expect(clippy::unusual_byte_groupings)]
 pub mod tests {
     use super::*;
     use crate::test_data;

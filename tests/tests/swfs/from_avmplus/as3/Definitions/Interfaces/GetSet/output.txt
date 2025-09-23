@@ -1,0 +1,10 @@
+simple get PASSED!
+simple set PASSED!
+simple get PASSED!
+simple set PASSED!
+blend get PASSED!
+blend set PASSED!
+blend get PASSED!
+blend set PASSED!
+blend get PASSED!
+blend set PASSED!

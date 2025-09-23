@@ -8,8 +8,8 @@ pub struct Matrix3D {
     pub raw_data: [f64; 16],
 }
 
-impl From<Matrix> for Matrix3D {
-    fn from(matrix: Matrix) -> Self {
+impl Matrix3D {
+    pub fn from_matrix(matrix: Matrix) -> Self {
         Self {
             raw_data: [
                 // 1st column
@@ -35,16 +35,15 @@ impl From<Matrix> for Matrix3D {
             ],
         }
     }
-}
-impl From<Matrix3D> for Matrix {
-    fn from(matrix: Matrix3D) -> Self {
-        Self {
-            a: matrix.raw_data[0] as f32,
-            b: matrix.raw_data[1] as f32,
-            c: matrix.raw_data[4] as f32,
-            d: matrix.raw_data[5] as f32,
-            tx: Twips::from_pixels(matrix.raw_data[12]),
-            ty: Twips::from_pixels(matrix.raw_data[13]),
+
+    pub fn to_matrix(self) -> Matrix {
+        Matrix {
+            a: self.raw_data[0] as f32,
+            b: self.raw_data[1] as f32,
+            c: self.raw_data[4] as f32,
+            d: self.raw_data[5] as f32,
+            tx: Twips::from_pixels(self.raw_data[12]),
+            ty: Twips::from_pixels(self.raw_data[13]),
         }
     }
 }

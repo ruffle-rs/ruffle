@@ -11,16 +11,24 @@ use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
 use crate::avm1::globals::glow_filter::GlowFilter;
 use crate::avm1::globals::gradient_filter::GradientFilter;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Attribute, Object, Value};
 use crate::context::UpdateContext;
-use crate::string::StringContext;
 use ruffle_macros::istr;
 use ruffle_render::filters::Filter;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
     "clone" => method(clone);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.empty_class(super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
 
 pub fn clone<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -163,14 +171,4 @@ pub fn create_instance<'gc>(
     }
     result.set_native(activation.gc(), native);
     result
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
 }

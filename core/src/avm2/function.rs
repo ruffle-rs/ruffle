@@ -2,7 +2,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::error::{make_mismatch_error, Error};
 use crate::avm2::method::{Method, MethodKind, ParamConfig};
-use crate::avm2::object::ClassObject;
+use crate::avm2::object::{ClassObject, FunctionObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
@@ -10,6 +10,7 @@ use crate::avm2::Multiname;
 use crate::string::WString;
 use gc_arena::{Collect, Gc};
 use std::borrow::Cow;
+use std::cell::Cell;
 use std::fmt;
 
 /// Represents a bound method.
@@ -60,9 +61,9 @@ impl<'gc> BoundMethod<'gc> {
     pub fn exec(
         &self,
         unbound_receiver: Value<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
-        callee: Value<'gc>,
+        callee: Option<FunctionObject<'gc>>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let receiver = if let Some(receiver) = self.bound_receiver {
             receiver
@@ -81,7 +82,7 @@ impl<'gc> BoundMethod<'gc> {
             receiver,
             self.bound_superclass,
             self.bound_class,
-            FunctionArgs::AsArgSlice { arguments },
+            arguments,
             activation,
             callee,
         )
@@ -116,42 +117,68 @@ impl<'gc> BoundMethod<'gc> {
 
 #[derive(Clone, Copy)]
 pub enum FunctionArgs<'a, 'gc> {
-    OnAvmStack { arg_count: usize, stack_base: usize },
-    AsArgSlice { arguments: &'a [Value<'gc>] },
+    AsCellArgs(&'a [Cell<Value<'gc>>]),
+    AsArgs(&'a [Value<'gc>]),
 }
 
 impl<'a, 'gc> FunctionArgs<'a, 'gc> {
-    pub fn to_slice(self, activation: &mut Activation<'_, 'gc>) -> Cow<'a, [Value<'gc>]> {
+    pub fn empty() -> Self {
+        FunctionArgs::AsArgs(&[])
+    }
+
+    pub fn from_slice(args: &'a [Value<'gc>]) -> Self {
+        FunctionArgs::AsArgs(args)
+    }
+
+    pub fn from_cell_slice(args: &'a [Cell<Value<'gc>>]) -> Self {
+        FunctionArgs::AsCellArgs(args)
+    }
+
+    pub fn to_slice(self) -> Cow<'a, [Value<'gc>]> {
         match self {
-            FunctionArgs::OnAvmStack {
-                arg_count,
-                stack_base,
-            } => {
-                let args_slice = activation.avm2().stack_slice(stack_base, arg_count);
-                Cow::Owned(args_slice.to_vec())
+            FunctionArgs::AsCellArgs(arguments) => {
+                Cow::Owned(arguments.iter().map(|o| o.get()).collect::<Vec<_>>())
             }
-            FunctionArgs::AsArgSlice { arguments } => Cow::Borrowed(arguments),
+            FunctionArgs::AsArgs(arguments) => Cow::Borrowed(arguments),
         }
     }
 
-    pub fn get_at(&self, activation: &mut Activation<'_, 'gc>, index: usize) -> Value<'gc> {
+    pub fn get_at(&self, index: usize) -> Value<'gc> {
         match self {
-            FunctionArgs::OnAvmStack {
-                arg_count,
-                stack_base,
-            } => {
-                assert!(index < *arg_count);
+            FunctionArgs::AsCellArgs(arguments) => arguments[index].get(),
+            FunctionArgs::AsArgs(arguments) => arguments[index],
+        }
+    }
 
-                activation.avm2().stack_at(stack_base + index)
-            }
-            FunctionArgs::AsArgSlice { arguments } => arguments[index],
+    pub fn iter(&'a self) -> FunctionArgsIter<'a, 'gc> {
+        FunctionArgsIter {
+            args: self,
+            next: 0,
         }
     }
 
     pub fn len(&self) -> usize {
         match self {
-            FunctionArgs::OnAvmStack { arg_count, .. } => *arg_count,
-            FunctionArgs::AsArgSlice { arguments } => arguments.len(),
+            FunctionArgs::AsCellArgs(arguments) => arguments.len(),
+            FunctionArgs::AsArgs(arguments) => arguments.len(),
+        }
+    }
+}
+
+pub struct FunctionArgsIter<'a, 'gc> {
+    args: &'a FunctionArgs<'a, 'gc>,
+    next: usize,
+}
+
+impl<'a, 'gc> Iterator for FunctionArgsIter<'a, 'gc> {
+    type Item = Value<'gc>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next == self.args.len() {
+            None
+        } else {
+            self.next += 1;
+            Some(self.args.get_at(self.next - 1))
         }
     }
 }
@@ -163,14 +190,14 @@ impl<'a, 'gc> FunctionArgs<'a, 'gc> {
 /// The value returned in either case will be provided here.
 ///
 /// It is a panicking logic error to attempt to execute user code while any
-/// reachable object is currently under a GcCell write lock.
+/// reachable object is currently under a write lock.
 ///
 /// Passed-in arguments will be conformed to the set of method parameters
 /// declared on the function.
 ///
 /// It is the caller's responsibility to ensure that the `receiver` passed
 /// to this method is not Value::Null or Value::Undefined.
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn exec<'gc>(
     method: Method<'gc>,
     scope: ScopeChain<'gc>,
@@ -179,12 +206,12 @@ pub fn exec<'gc>(
     bound_class: Option<Class<'gc>>,
     arguments: FunctionArgs<'_, 'gc>,
     activation: &mut Activation<'_, 'gc>,
-    callee: Value<'gc>,
+    callee: Option<FunctionObject<'gc>>,
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let mc = activation.gc();
+
     let ret = match method.method_kind() {
         MethodKind::Native { native_method, .. } => {
-            let arguments = &arguments.to_slice(activation);
-
             let caller_domain = activation.caller_domain();
             let caller_movie = activation.caller_movie();
             let mut activation = Activation::from_builtin(
@@ -196,16 +223,14 @@ pub fn exec<'gc>(
                 caller_movie,
             );
 
-            if !method.is_info_resolved() {
-                method.resolve_info(&mut activation)?;
-            }
+            method.resolve_info(&mut activation)?;
 
-            let signature = &*method.resolved_param_config();
+            let signature = method.resolved_param_config();
 
             // Check for too many arguments
             if arguments.len() > signature.len() && !method.is_variadic() && !method.is_unchecked()
             {
-                return Err(Error::AvmError(make_mismatch_error(
+                return Err(Error::avm_error(make_mismatch_error(
                     &mut activation,
                     method,
                     arguments.len(),
@@ -227,26 +252,33 @@ pub fn exec<'gc>(
                 span
             };
 
-            activation
-                .context
-                .avm2
-                .push_call(activation.gc(), method, bound_class);
+            activation.context.avm2.push_call(mc, method, bound_class);
 
             native_method(&mut activation, receiver, &arguments)
         }
         MethodKind::Bytecode { .. } => {
+            // We must initialize the stack frame here so the lifetime works out
+            let stack = activation.context.avm2.stack;
+            let stack_frame = stack.get_stack_frame(method);
+
             // This used to be a one step called Activation::from_method,
             // but avoiding moving an Activation around helps perf
             let mut activation = Activation::from_nothing(activation.context);
-            activation.init_from_method(
+            if let Err(e) = activation.init_from_method(
                 method,
                 scope,
                 receiver,
                 arguments,
+                stack_frame,
                 bound_superclass,
                 bound_class,
                 callee,
-            )?;
+            ) {
+                // If an error is thrown during verification or argument coercion,
+                // we still need to call cleanup to dispose of the stack frame
+                activation.cleanup();
+                return Err(e);
+            }
 
             #[cfg(feature = "tracy_avm")]
             let _span = {
@@ -264,10 +296,7 @@ pub fn exec<'gc>(
                 span
             };
 
-            activation
-                .context
-                .avm2
-                .push_call(activation.gc(), method, bound_class);
+            activation.context.avm2.push_call(mc, method, bound_class);
 
             let result = activation.run_actions(method);
 
@@ -276,7 +305,7 @@ pub fn exec<'gc>(
             result
         }
     };
-    activation.context.avm2.pop_call(activation.gc());
+    activation.context.avm2.pop_call(mc);
     ret
 }
 
@@ -313,8 +342,7 @@ pub fn display_function<'gc>(
         } else {
             let mut method_trait = None;
 
-            let traits = bound_class.traits();
-            for t in &*traits {
+            for t in bound_class.traits() {
                 if t.as_method().is_some_and(|tm| tm == method) {
                     method_trait = Some(t);
                     break;

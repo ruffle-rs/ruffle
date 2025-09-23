@@ -1,0 +1,9 @@
+Variable Definition <empty> defined inside class PASSED!
+var Identifier = <empty> PASSED!
+var Identifier = AssignmentExpression PASSED!
+var VariableBindingList, Identifier = <empty> [1] PASSED!
+var VariableBindingList, Identifier = <empty> [2] PASSED!
+var VariableBindingList, Identifier = <empty> [3] PASSED!
+var VariableBindingList, Identifier = AssignmentExpression [1] PASSED!
+var VariableBindingList, Identifier = AssignmentExpression [2] PASSED!
+var VariableBindingList, Identifier = AssignmentExpression [3] PASSED!

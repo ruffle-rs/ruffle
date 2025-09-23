@@ -5,7 +5,8 @@ use ruffle_macros::istr;
 use crate::avm2::activation::Activation;
 use crate::avm2::e4x::is_xml_name;
 use crate::avm2::error::make_error_1098;
-use crate::avm2::object::{NamespaceObject, Object, TObject};
+use crate::avm2::object::{NamespaceObject, Object};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
@@ -22,7 +23,7 @@ pub fn namespace_constructor<'gc>(
         0 => (Some(istr!("")), namespaces.public_all()),
         1 => {
             // These cases only activate with exactly one argument passed
-            match args[0] {
+            match args.get_value(0) {
                 Value::Object(Object::QNameObject(qname)) => {
                     let uri = qname.uri(activation.strings());
                     let ns = uri.map_or_else(Namespace::any, |uri| {
@@ -44,8 +45,8 @@ pub fn namespace_constructor<'gc>(
             }
         }
         2.. => {
-            let prefix = args[0];
-            let uri = args[1];
+            let prefix = args.get_value(0);
+            let uri = args.get_value(1);
 
             let namespace_uri = if let Value::Object(Object::QNameObject(qname)) = uri {
                 qname.uri(activation.strings()).unwrap_or_else(|| istr!(""))
@@ -73,18 +74,6 @@ pub fn namespace_constructor<'gc>(
     };
 
     Ok(NamespaceObject::from_ns_and_prefix(activation, namespace, prefix).into())
-}
-
-pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation
-        .avm2()
-        .classes()
-        .namespace
-        .construct(activation, args)
 }
 
 /// Implements `Namespace.prefix`'s getter

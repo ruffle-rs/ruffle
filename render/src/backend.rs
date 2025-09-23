@@ -4,7 +4,8 @@ use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, RgbaBufRead
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
-use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle};
+use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderHandle};
+use crate::pixel_bender_support::PixelBenderShaderArgument;
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use ruffle_wstr::WStr;
@@ -77,16 +78,15 @@ pub trait RenderBackend: Any {
 
     fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error>;
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
+    fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, Error>;
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        bitmap: Bitmap,
+        bitmap: Bitmap<'_>,
         region: PixelRegion,
     ) -> Result<(), Error>;
 
     fn create_context3d(&mut self, profile: Context3DProfile) -> Result<Box<dyn Context3D>, Error>;
-    fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
     /// An internal name that is used to identify the render-backend.
@@ -277,6 +277,8 @@ pub trait Context3D: Any {
     ) -> Result<Rc<dyn Texture>, Error>;
 
     fn process_command(&mut self, command: Context3DCommand<'_>);
+
+    fn present(&mut self);
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -444,14 +446,14 @@ pub enum Context3DCommand<'a> {
     UploadToIndexBuffer {
         buffer: &'a mut dyn IndexBuffer,
         start_offset: usize,
-        data: Vec<u8>,
+        data: &'a [u8],
     },
 
     UploadToVertexBuffer {
         buffer: Rc<dyn VertexBuffer>,
         start_vertex: usize,
         data32_per_vertex: u8,
-        data: Vec<u8>,
+        data: &'a [u8],
     },
 
     DrawTriangles {
@@ -484,7 +486,7 @@ pub enum Context3DCommand<'a> {
         face: Context3DTriangleFace,
     },
     CopyBitmapToTexture {
-        source: Vec<u8>,
+        source: &'a [u8],
         source_width: u32,
         source_height: u32,
         dest: Rc<dyn Texture>,

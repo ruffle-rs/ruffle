@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Error;
 use crate::html::{TextDisplay, TextFormat};
 use crate::utils::HasPrefixField;
@@ -72,24 +72,18 @@ impl<'gc> TextFormatObject<'gc> {
 
         Ok(this)
     }
+
+    pub fn text_format(self) -> Ref<'gc, TextFormat> {
+        Gc::as_ref(self.0).text_format.borrow()
+    }
+
+    pub fn text_format_mut(self) -> RefMut<'gc, TextFormat> {
+        Gc::as_ref(self.0).text_format.borrow_mut()
+    }
 }
 
 impl<'gc> TObject<'gc> for TextFormatObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    /// Unwrap this object as a text format.
-    fn as_text_format(&self) -> Option<Ref<TextFormat>> {
-        Some(self.0.text_format.borrow())
-    }
-
-    /// Unwrap this object as a mutable text format.
-    fn as_text_format_mut(&self) -> Option<RefMut<TextFormat>> {
-        Some(self.0.text_format.borrow_mut())
     }
 }

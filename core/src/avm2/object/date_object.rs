@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Hint;
 use crate::avm2::Error;
 use crate::utils::HasPrefixField;
@@ -43,22 +43,41 @@ impl<'gc> DateObject<'gc> {
     pub fn from_date_time(
         activation: &mut Activation<'_, 'gc>,
         date_time: DateTime<Utc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Object<'gc> {
         let class = activation.avm2().classes().date;
         let base = ScriptObjectData::new(class);
 
-        let instance: Object<'gc> = DateObject(Gc::new(
+        DateObject(Gc::new(
             activation.gc(),
             DateObjectData {
                 base,
                 date_time: Cell::new(Some(date_time)),
             },
         ))
+        .into()
+    }
+
+    pub fn for_prototype(
+        activation: &mut Activation<'_, 'gc>,
+        date_class: ClassObject<'gc>,
+    ) -> Object<'gc> {
+        let object_class = activation.avm2().classes().object;
+        let base = ScriptObjectData::custom_new(
+            date_class.inner_class_definition(),
+            Some(object_class.prototype()),
+            date_class.instance_vtable(),
+        );
+
+        let instance: Object<'gc> = DateObject(Gc::new(
+            activation.gc(),
+            DateObjectData {
+                base,
+                date_time: Cell::new(None),
+            },
+        ))
         .into();
 
-        class.call_init(instance.into(), &[], activation)?;
-
-        Ok(instance)
+        instance
     }
 
     pub fn date_time(self) -> Option<DateTime<Utc>> {
@@ -85,15 +104,7 @@ impl<'gc> TObject<'gc> for DateObject<'gc> {
         HasPrefixField::as_prefix_gc(self.0)
     }
 
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
     fn default_hint(&self) -> Hint {
         Hint::String
-    }
-
-    fn as_date_object(&self) -> Option<DateObject<'gc>> {
-        Some(*self)
     }
 }

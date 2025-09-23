@@ -1,6 +1,5 @@
 use crate::avm2::amf::serialize_value;
 use crate::avm2::error::{argument_error, make_error_2004, make_error_2085, Error2004Type};
-use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
@@ -15,7 +14,7 @@ pub fn get_domain<'gc>(
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let movie = &activation.context.swf;
+    let movie = &activation.context.root_swf;
     let domain = LocalConnections::get_domain(movie.url());
 
     Ok(Value::String(AvmString::new_utf8(activation.gc(), domain)))
@@ -58,7 +57,7 @@ pub fn send<'gc>(
 
     if let Some(local_connection) = this.as_local_connection_object() {
         activation.context.local_connections.send(
-            &LocalConnections::get_domain(activation.context.swf.url()),
+            &LocalConnections::get_domain(activation.context.root_swf.url()),
             (activation.domain(), local_connection),
             connection_name,
             method_name,
@@ -89,7 +88,7 @@ pub fn connect<'gc>(
         if !local_connection.connect(activation, connection_name) {
             // This triggers both if this object is already connected, OR there's something else taking the name
             // (The error message is misleading, in that case!)
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2082: Connect failed because the object is already connected.",
                 2082,
@@ -110,7 +109,7 @@ pub fn close<'gc>(
 
     if let Some(local_connection) = this.as_local_connection_object() {
         if !local_connection.is_connected() {
-            return Err(Error::AvmError(argument_error(
+            return Err(Error::avm_error(argument_error(
                 activation,
                 "Error #2083: Close failed because the object is not connected.",
                 2083,
@@ -145,7 +144,7 @@ pub fn set_client<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(local_connection) = this.as_local_connection_object() {
-        let client_obj = args.try_get_object(activation, 0);
+        let client_obj = args.try_get_object(0);
 
         if let Some(client_obj) = client_obj {
             local_connection.set_client(activation.gc(), client_obj);

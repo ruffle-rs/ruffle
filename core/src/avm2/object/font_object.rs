@@ -1,5 +1,5 @@
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::{Activation, ClassObject, Error};
 use crate::character::Character;
 use crate::font::Font;
@@ -22,7 +22,7 @@ pub fn font_allocator<'gc>(
     {
         if let Some(lib) = activation.context.library.library_for_movie(movie) {
             if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                Some(*font)
+                Some(font)
             } else {
                 None
             }
@@ -56,19 +56,15 @@ impl<'gc> FontObject<'gc> {
         ))
         .into()
     }
+
+    pub fn font(self) -> Option<Font<'gc>> {
+        self.0.font
+    }
 }
 
 impl<'gc> TObject<'gc> for FontObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_font(&self) -> Option<Font<'gc>> {
-        self.0.font
     }
 }
 

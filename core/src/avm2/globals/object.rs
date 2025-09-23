@@ -14,23 +14,14 @@ pub fn object_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(arg) = args.get(0) {
+    if let Some(arg) = args.get_optional(0) {
         if !matches!(arg, Value::Undefined | Value::Null) {
-            return Ok(*arg);
+            return Ok(arg);
         }
     }
 
     let constructed_object = ScriptObject::new_object(activation);
     Ok(constructed_object.into())
-}
-
-pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    // Calling `Object(...)` is equivalent to constructing `new Object(...)`
-    object_constructor(activation, args)
 }
 
 /// Implements `Object.prototype.toString`
@@ -56,7 +47,7 @@ pub fn has_own_property<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let name = args.get_string(activation, 0)?;
+    let name = args.get_value(0).coerce_to_string(activation)?;
 
     if let Some(this) = this.as_object() {
         Ok(this.has_own_property_string(name, activation)?.into())
@@ -95,7 +86,7 @@ pub fn property_is_enumerable<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_object() {
-        let name = args.get_string(activation, 0)?;
+        let name = args.get_value(0).coerce_to_string(activation)?;
 
         Ok(this.property_is_enumerable(name).into())
     } else {
@@ -111,7 +102,7 @@ pub fn _set_property_is_enumerable<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = args.get_value(0);
 
-    let name = args.get_string(activation, 1)?;
+    let name = args.get_string(activation, 1);
 
     if let Some(this) = this.as_object() {
         let is_enum = args.get_bool(2);

@@ -2,51 +2,20 @@
 
 use crate::context::UpdateContext;
 use crate::drawing::Drawing;
-use crate::font::{EvalParameters, Font, FontType};
+use crate::font::{EvalParameters, Font, FontLike, FontSet, FontType};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::string::{utils as string_utils, WStr};
 use crate::tag_utils::SwfMovie;
 use crate::DefaultFont;
 use gc_arena::Collect;
-use ruffle_render::shape_utils::DrawCommand;
 use std::cmp::{max, min, Ordering};
 use std::fmt::{Debug, Formatter};
 use std::mem;
 use std::ops::Range;
 use std::slice::Iter;
 use std::sync::Arc;
-use swf::{Point, Rectangle, Twips};
-
-/// Draw an underline on a particular drawing.
-///
-/// This will not draw underlines shorter than a pixel in width.
-fn draw_underline(
-    drawing: &mut Drawing,
-    starting_pos: Position<Twips>,
-    width: Twips,
-    color: swf::Color,
-) {
-    if width < Twips::ONE_PX {
-        return;
-    }
-
-    let ending_pos = starting_pos + Position::from((width, Twips::ZERO));
-
-    drawing.set_line_style(Some(
-        swf::LineStyle::new()
-            .with_width(Twips::new(1))
-            .with_color(color),
-    ));
-    drawing.draw_command(DrawCommand::MoveTo(Point::new(
-        starting_pos.x(),
-        starting_pos.y(),
-    )));
-    drawing.draw_command(DrawCommand::LineTo(Point::new(
-        ending_pos.x(),
-        ending_pos.y(),
-    )));
-}
+use swf::{Rectangle, Twips};
 
 /// Contains information relating to the current layout operation.
 pub struct LayoutContext<'a, 'gc> {
@@ -72,8 +41,8 @@ pub struct LayoutContext<'a, 'gc> {
     /// current line, not the left edge of the text field being laid out.
     cursor: Position<Twips>,
 
-    /// The resolved font object to use when measuring text.
-    font: Option<Font<'gc>>,
+    /// The resolved font set to use when measuring text.
+    font_set: Option<FontSet<'gc>>,
 
     /// The underlying bundle of text being formatted.
     text: &'a WStr,
@@ -144,7 +113,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         Self {
             movie,
             cursor: Default::default(),
-            font: None,
+            font_set: None,
             text,
             max_font_size: Default::default(),
             max_ascent: Default::default(),
@@ -178,8 +147,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         span_text: &'a WStr,
         span: &TextSpan,
     ) {
-        let font = self.resolve_font(context, span);
-        self.font = Some(font);
+        let font_set = self.resolve_font(context, span);
+        self.font_set = Some(font_set);
         self.newspan(span);
 
         let params = EvalParameters::from_span(span);
@@ -209,7 +178,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             if self.is_word_wrap {
                 let (mut width, mut offset) = self.wrap_dimensions(span);
 
-                while let Some(breakpoint) = font.wrap_line(
+                while let Some(breakpoint) = font_set.wrap_line(
                     &text[last_breakpoint..],
                     params,
                     width,
@@ -294,82 +263,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    /// Construct an underline drawing for the current line of text and add it
-    /// to the line.
-    fn append_underlines(&mut self) {
-        let mut starting_pos: Option<Position<Twips>> = None;
-        let mut current_width: Option<Twips> = None;
-        let mut underline_color: Option<swf::Color> = None;
-        let mut line_drawing = Drawing::new();
-        let mut has_underline: bool = false;
-
-        for linebox in self.boxes.iter() {
-            if linebox.is_text_box() {
-                if let Some((_t, tf, font, params, color)) = linebox.as_renderable_text(self.text) {
-                    let underline_baseline =
-                        font.get_baseline_for_height(params.height()) + Twips::from_pixels(2.0);
-                    let mut line_extended = false;
-
-                    if let (Some(starting_pos), Some(underline_color)) =
-                        (starting_pos, underline_color)
-                    {
-                        if tf.underline.unwrap_or(false)
-                            && underline_baseline + linebox.bounds().origin().y()
-                                == starting_pos.y()
-                            && underline_color == color
-                        {
-                            //Underline is at the same baseline, extend it
-                            current_width = Some(linebox.bounds().extent_x() - starting_pos.x());
-
-                            line_extended = true;
-                        }
-                    }
-
-                    if !line_extended {
-                        //For whatever reason, we cannot extend the current underline.
-                        //This can happen if we don't have an underline to extend, the
-                        //underlines don't match, or this span doesn't call for one.
-                        if let (Some(pos), Some(width), Some(color)) =
-                            (starting_pos, current_width, underline_color)
-                        {
-                            draw_underline(&mut line_drawing, pos, width, color);
-                            has_underline = true;
-                            starting_pos = None;
-                            current_width = None;
-                            underline_color = None;
-                        }
-
-                        if tf.underline.unwrap_or(false) {
-                            starting_pos = Some(
-                                linebox.bounds().origin()
-                                    + Position::from((Twips::ZERO, underline_baseline)),
-                            );
-                            current_width = Some(linebox.bounds().width());
-                            underline_color = Some(color);
-                        }
-                    }
-                }
-            }
-        }
-
-        if let (Some(starting_pos), Some(current_width), Some(underline_color)) =
-            (starting_pos, current_width, underline_color)
-        {
-            draw_underline(
-                &mut line_drawing,
-                starting_pos,
-                current_width,
-                underline_color,
-            );
-            has_underline = true;
-        }
-
-        if has_underline {
-            let pos = self.last_box_end_position();
-            self.append_box(LayoutBox::from_drawing(pos, line_drawing));
-        }
-    }
-
     /// Apply all indents and alignment to the current line, if necessary.
     ///
     /// The `only_line` parameter should be flagged if this is the only line in
@@ -404,7 +297,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         let mut line_size_bounds = None;
         let mut box_count: i32 = 0;
         for linebox in self.boxes.iter_mut() {
-            let (text, _tf, font, params, _color) =
+            let (text, _tf, font_set, params, _color) =
                 linebox.as_renderable_text(self.text).expect("text");
 
             // Flash ignores trailing spaces when aligning lines, so should we
@@ -412,7 +305,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             if self.current_line_span.align != swf::TextAlign::Left {
                 linebox.bounds = linebox
                     .bounds
-                    .with_width(font.measure(text.trim_end(), params));
+                    .with_width(font_set.measure(text.trim_end(), params));
             }
 
             Self::extend_bounds(&mut line_size_bounds, linebox.bounds);
@@ -466,8 +359,6 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
             box_count += 1;
         }
-
-        self.append_underlines();
 
         line_size_bounds +=
             Position::from((left_adjustment + align_adjustment, baseline_adjustment));
@@ -563,7 +454,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.has_line_break = true;
 
         let font_size = Twips::from_pixels(self.current_line_span.font.size);
-        let font = self.font.unwrap();
+        let font = self.font_set.unwrap();
         self.max_font_size = font_size;
         self.max_ascent = font.get_baseline_for_height(font_size);
         self.max_descent = font.get_descent_for_height(font_size);
@@ -598,7 +489,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// Enter a new span.
     fn newspan(&mut self, first_span: &TextSpan) {
         let font_size = Twips::from_pixels(first_span.font.size);
-        let font = self.font.unwrap();
+        let font = self.font_set.unwrap();
         let ascent = font.get_baseline_for_height(font_size);
         let descent = font.get_descent_for_height(font_size);
         let leading = Twips::from_pixels(first_span.leading);
@@ -616,19 +507,20 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         }
     }
 
-    fn resolve_font(&mut self, context: &mut UpdateContext<'gc>, span: &TextSpan) -> Font<'gc> {
+    fn resolve_font(&mut self, context: &mut UpdateContext<'gc>, span: &TextSpan) -> FontSet<'gc> {
         fn new_empty_font<'gc>(
             context: &mut UpdateContext<'gc>,
             span: &TextSpan,
             font_type: FontType,
-        ) -> Font<'gc> {
-            Font::empty_font(
+        ) -> FontSet<'gc> {
+            let font = Font::empty_font(
                 context.gc(),
                 &span.font.face.to_utf8_lossy(),
                 span.style.bold,
                 span.style.italic,
                 font_type,
-            )
+            );
+            FontSet::from_one_font(context.gc(), font)
         }
 
         fn describe_font(span: &TextSpan) -> String {
@@ -658,7 +550,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 )
                 .filter(|f| f.has_glyphs())
             {
-                return font;
+                return FontSet::from_one_font(context.gc(), font);
             }
             // TODO: If set to use embedded fonts and we couldn't find any matching font, show nothing
             // However - at time of writing, we don't support DefineFont4. If we matched this behaviour,
@@ -673,19 +565,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
             // Check if the font name is one of the known default fonts.
             if let Some(default_font) = DefaultFont::from_name(font_name) {
-                if let Some(&font) = context
-                    .library
-                    .default_font(
-                        default_font,
-                        span.style.bold,
-                        span.style.italic,
-                        context.ui,
-                        context.renderer,
-                        context.gc_context,
-                    )
-                    .first()
-                {
-                    return font;
+                let fonts = context.library.default_font(
+                    default_font,
+                    span.style.bold,
+                    span.style.italic,
+                    context.ui,
+                    context.renderer,
+                    context.gc_context,
+                );
+                if let Some(font_sort) = FontSet::from_fonts(context.gc(), &fonts) {
+                    return font_sort;
                 } else {
                     let font_desc = describe_font(span);
                     tracing::error!(
@@ -695,19 +584,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 }
             }
 
-            if let Some(&font) = context
-                .library
-                .get_or_sort_device_fonts(
-                    font_name,
-                    span.style.bold,
-                    span.style.italic,
-                    context.ui,
-                    context.renderer,
-                    context.gc_context,
-                )
-                .first()
-            {
-                return font;
+            let fonts = context.library.get_or_sort_device_fonts(
+                font_name,
+                span.style.bold,
+                span.style.italic,
+                context.ui,
+                context.renderer,
+                context.gc_context,
+            );
+            if let Some(font_sort) = FontSet::from_fonts(context.gc(), &fonts) {
+                return font_sort;
             }
         }
 
@@ -739,19 +625,16 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             }
         };
 
-        if let Some(&font) = context
-            .library
-            .default_font(
-                default_font,
-                span.style.bold,
-                span.style.italic,
-                context.ui,
-                context.renderer,
-                context.gc_context,
-            )
-            .first()
-        {
-            font
+        let fonts = context.library.default_font(
+            default_font,
+            span.style.bold,
+            span.style.italic,
+            context.ui,
+            context.renderer,
+            context.gc_context,
+        );
+        if let Some(font_sort) = FontSet::from_fonts(context.gc(), &fonts) {
+            font_sort
         } else {
             let font_desc = describe_font(span);
             tracing::error!(
@@ -794,14 +677,14 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// This function bypasses the text fragmentation necessary for justify to
     /// work, and it should only be called internally.
     fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
-        let font = self.font.expect("text fragment requires a font");
+        let font_set = self.font_set.expect("text fragment requires a font");
         let params = EvalParameters::from_span(span);
-        let ascent = font.get_baseline_for_height(params.height());
-        let descent = font.get_descent_for_height(params.height());
-        let text_width = font.measure(text, params);
+        let ascent = font_set.get_baseline_for_height(params.height());
+        let descent = font_set.get_descent_for_height(params.height());
+        let text_width = font_set.measure(text, params);
         let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
-        let mut new_box = LayoutBox::from_text(text, start, end, font, span);
+        let mut new_box = LayoutBox::from_text(text, start, end, font_set, span);
         new_box.bounds = BoxBounds::from_position_and_size(
             box_origin,
             Size::from((text_width, ascent + descent)),
@@ -1246,8 +1129,8 @@ pub enum LayoutContent<'gc> {
         #[collect(require_static)]
         text_format: TextFormat,
 
-        /// The font that was resolved at the time of layout for this text.
-        font: Font<'gc>,
+        /// The font set that was resolved at the time of layout for this text.
+        font_set: FontSet<'gc>,
 
         /// All parameters used to evaluate the font at the time of layout for
         /// this text.
@@ -1272,6 +1155,9 @@ pub enum LayoutContent<'gc> {
         /// ```
         #[collect(require_static)]
         char_end_pos: Vec<Twips>,
+
+        /// Whether this text should be underlined.
+        underline: bool,
     },
 
     /// A layout box containing a bullet.
@@ -1286,8 +1172,8 @@ pub enum LayoutContent<'gc> {
         #[collect(require_static)]
         text_format: TextFormat,
 
-        /// The font that was resolved at the time of layout for this text.
-        font: Font<'gc>,
+        /// The font set that was resolved at the time of layout for this text.
+        font_set: FontSet<'gc>,
 
         /// All parameters used to evaluate the font at the time of layout for
         /// this text.
@@ -1339,13 +1225,13 @@ impl<'gc> LayoutBox<'gc> {
         text: &WStr,
         start: usize,
         end: usize,
-        font: Font<'gc>,
+        font_set: FontSet<'gc>,
         span: &TextSpan,
     ) -> Self {
         let params = EvalParameters::from_span(span);
         let mut char_end_pos = Vec::with_capacity(end - start);
 
-        font.evaluate(text, Default::default(), params, |_, _, _, advance, x| {
+        font_set.evaluate(text, Default::default(), params, |_, _, _, advance, x| {
             char_end_pos.push(x + advance);
         });
 
@@ -1355,16 +1241,17 @@ impl<'gc> LayoutBox<'gc> {
                 start,
                 end,
                 text_format: span.get_text_format(),
-                font,
+                font_set,
                 params,
                 color: span.font.color,
                 char_end_pos,
+                underline: span.style.underline,
             },
         }
     }
 
     /// Construct a bullet.
-    pub fn from_bullet(position: usize, font: Font<'gc>, span: &TextSpan) -> Self {
+    pub fn from_bullet(position: usize, font_set: FontSet<'gc>, span: &TextSpan) -> Self {
         let params = EvalParameters::from_span(span);
 
         Self {
@@ -1372,7 +1259,7 @@ impl<'gc> LayoutBox<'gc> {
             content: LayoutContent::Bullet {
                 position,
                 text_format: span.get_text_format(),
-                font,
+                font_set,
                 params,
                 color: span.font.color,
             },
@@ -1380,6 +1267,10 @@ impl<'gc> LayoutBox<'gc> {
     }
 
     /// Construct a drawing.
+    ///
+    /// TODO It's currently unused, but will be useful when adding support for
+    /// images embedded in HTML.
+    #[allow(unused)]
     pub fn from_drawing(position: usize, drawing: Drawing) -> Self {
         Self {
             bounds: Default::default(),
@@ -1414,33 +1305,39 @@ impl<'gc> LayoutBox<'gc> {
     pub fn as_renderable_text<'a>(
         &self,
         text: &'a WStr,
-    ) -> Option<(&'a WStr, &TextFormat, Font<'gc>, EvalParameters, swf::Color)> {
+    ) -> Option<(
+        &'a WStr,
+        &TextFormat,
+        FontSet<'gc>,
+        EvalParameters,
+        swf::Color,
+    )> {
         match &self.content {
             LayoutContent::Text {
                 start,
                 end,
                 text_format,
-                font,
+                font_set,
                 params,
                 color,
                 ..
             } => Some((
                 text.slice(*start..*end)?,
                 text_format,
-                *font,
+                *font_set,
                 *params,
                 swf::Color::from_rgb(color.to_rgb(), 0xFF),
             )),
             LayoutContent::Bullet {
                 text_format,
-                font,
+                font_set,
                 params,
                 color,
                 ..
             } => Some((
                 WStr::from_units(&[0x2022u16]),
                 text_format,
-                *font,
+                *font_set,
                 *params,
                 swf::Color::from_rgb(color.to_rgb(), 0xFF),
             )),
@@ -1479,6 +1376,10 @@ impl<'gc> LayoutBox<'gc> {
             LayoutContent::Bullet { position, .. } => *position,
             LayoutContent::Drawing { position, .. } => *position,
         }
+    }
+
+    pub fn text_range(&self) -> Range<usize> {
+        self.start()..self.end()
     }
 
     /// Return x-axis char bounds of the given char relative to the whole layout.

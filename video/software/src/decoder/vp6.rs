@@ -70,7 +70,7 @@ impl Vp6Decoder {
 }
 
 fn crop(data: &[u8], mut width: usize, to_size: (u16, u16)) -> Vec<u8> {
-    debug_assert!(data.len() % width == 0);
+    debug_assert!(data.len().is_multiple_of(width));
     let mut height = data.len() / width;
     let mut data = data.to_vec();
 

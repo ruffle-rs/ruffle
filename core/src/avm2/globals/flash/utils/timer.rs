@@ -41,14 +41,15 @@ pub fn start<'gc>(
         let on_update = this
             .get_slot(slots::_ON_UPDATE_CLOSURE)
             .as_object()
-            .expect("Internal function is object");
+            .and_then(|o| o.as_function_object())
+            .expect("Internal function is function");
 
         // Note - we deliberately do *not* check if currentCount is less than repeatCount.
         // Calling 'start' on a timer that has currentCount >= repeatCount will tick exactly
         // once, and then stop immediately. This is handled by Timer.onUpdate
         let id = activation.context.timers.add_timer(
             TimerCallback::Avm2Callback {
-                closure: on_update,
+                closure: Some(on_update),
                 params: vec![],
             },
             delay,

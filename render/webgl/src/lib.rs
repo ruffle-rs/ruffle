@@ -1071,7 +1071,7 @@ impl RenderBackend for WebGlRenderBackend {
         self.end_frame();
     }
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, BitmapError> {
+    fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, BitmapError> {
         let (format, bitmap) = match bitmap.format() {
             BitmapFormat::Rgb | BitmapFormat::Yuv420p => (Gl::RGB, bitmap.to_rgb()),
             BitmapFormat::Rgba | BitmapFormat::Yuva420p => (Gl::RGBA, bitmap.to_rgba()),
@@ -1118,7 +1118,7 @@ impl RenderBackend for WebGlRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        bitmap: Bitmap,
+        bitmap: Bitmap<'_>,
         _region: PixelRegion,
     ) -> Result<(), BitmapError> {
         let texture = &as_registry_data(handle).texture;
@@ -1153,9 +1153,6 @@ impl RenderBackend for WebGlRenderBackend {
         _profile: Context3DProfile,
     ) -> Result<Box<dyn Context3D>, BitmapError> {
         Err(BitmapError::Unimplemented("createContext3D".into()))
-    }
-    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), BitmapError> {
-        Err(BitmapError::Unimplemented("Context3D.present".into()))
     }
 
     fn debug_info(&self) -> Cow<'static, str> {
@@ -1217,7 +1214,7 @@ impl RenderBackend for WebGlRenderBackend {
     fn run_pixelbender_shader(
         &mut self,
         _handle: ruffle_render::pixel_bender::PixelBenderShaderHandle,
-        _arguments: &[ruffle_render::pixel_bender::PixelBenderShaderArgument],
+        _arguments: &[ruffle_render::pixel_bender_support::PixelBenderShaderArgument],
         _target: &PixelBenderTarget,
     ) -> Result<PixelBenderOutput, BitmapError> {
         Err(BitmapError::Unimplemented("run_pixelbender_shader".into()))
@@ -1553,6 +1550,11 @@ impl CommandHandler for WebGlRenderBackend {
         commands.execute(self);
         self.pop_blend_mode();
     }
+
+    fn render_alpha_mask(&mut self, maskee_commands: CommandList, _mask_commands: CommandList) {
+        // TODO Add support for alpha masks
+        maskee_commands.execute(self);
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -1662,11 +1664,12 @@ impl Drop for Buffer {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 struct Draw {
     draw_type: DrawType,
+    #[expect(dead_code)]
     vertex_buffer: Buffer,
+    #[expect(dead_code)]
     index_buffer: Buffer,
     vao: WebGlVertexArrayObject,
     num_indices: i32,

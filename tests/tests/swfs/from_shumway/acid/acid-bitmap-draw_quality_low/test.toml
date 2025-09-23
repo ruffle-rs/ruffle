@@ -1,0 +1,21 @@
+# Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/acid
+
+num_frames = 1
+
+# FIXME Even on low quality, Flash uses antialiasing here
+known_failure = true
+
+[[image_comparisons.output.checks]]
+tolerance = 5
+max_outliers = 35000
+
+[[image_comparisons.output.checks]]
+tolerance = 32
+max_outliers = 700
+
+[[image_comparisons.output.checks]]
+tolerance = 64
+max_outliers = 0
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

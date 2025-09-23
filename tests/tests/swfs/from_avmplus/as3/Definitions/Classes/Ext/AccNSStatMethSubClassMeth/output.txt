@@ -1,0 +1,6 @@
+*** Access the static method via base class *** PASSED!
+BaseClass.ns1::echo('hello') PASSED!
+*** Access the static method via sub class using unadorned method name *** PASSED!
+obj.callEcho('world') PASSED!
+*** Access the static method via sub class using adorned method name *** PASSED!
+obj.callBaseEcho('elvis') PASSED!

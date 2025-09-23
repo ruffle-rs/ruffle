@@ -135,7 +135,6 @@ impl<'a, F: FnMut(u16) -> bool> Pattern<'a> for F {
 }
 
 impl<'a> Pattern<'a> for &'a WStr {
-    #[allow(clippy::type_complexity)]
     type Searcher = Either<
         Either<Either<SliceSearcher<'a, u8>, SliceSearcher<'a, u16>>, StrSearcher<'a>>,
         EmptySearcher,

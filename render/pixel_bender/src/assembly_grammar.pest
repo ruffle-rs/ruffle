@@ -1,0 +1,62 @@
+term_end = _{ !ASCII_ALPHANUMERIC | &EOI }
+non_negative_number = _{ ( ASCII_NONZERO_DIGIT ~ ( ASCII_DIGIT* ) ) | "0" }
+number = @{ "-"? ~ non_negative_number ~ !ASCII_DIGIT }
+int = @{ number }
+float = @{ number ~ ( "." ~ non_negative_number )? }
+
+comment = _{ ( "//" | ";" | "#" ) ~ (!NEWLINE ~ ANY)* ~ NEWLINE }
+
+literal_int = ${ int ~ "i" ~ term_end }
+literal_float = ${ float ~ "f" ~ term_end }
+literal_string_char = @{ (!"\"" ~ !"\\" ~ ANY) | ("\\" ~ "\"") }
+literal_string_inner = @{ literal_string_char* }
+literal_string = ${ "\"" ~ literal_string_inner ~ "\"" }
+literal = { literal_string | literal_float | literal_int }
+
+type_float = @{ "float" ~ ( "2" | "3" | "4" )? ~ term_end }
+type_int = @{ "int" ~ ( "2" | "3" | "4" )? ~ term_end }
+type_bool = @{ "bool" ~ ( "2" | "3" | "4" )? ~ term_end }
+type_matrix = @{ "float" ~ ( "2x2" | "3x3" | "4x4" ) ~ term_end }
+type = ${ type_float | type_int | type_bool | type_matrix }
+
+typed_value_float1 = { "float" ~ "(" ~ literal_float ~ ")" }
+typed_value_float2 = { "float2" ~ "(" ~ literal_float ~ "," ~ literal_float ~ ")" }
+typed_value_float3 = { "float3" ~ "(" ~ literal_float ~ ( "," ~ literal_float ){2} ~ ")" }
+typed_value_float4 = { "float4" ~ "(" ~ literal_float ~ ( "," ~ literal_float ){3} ~ ")" }
+typed_value_float = _{ typed_value_float1 | typed_value_float2 | typed_value_float3 | typed_value_float4 }
+typed_value_int1 = { "int" ~ "(" ~ literal_int ~ ")" }
+typed_value_int2 = { "int2" ~ "(" ~ literal_int ~ "," ~ literal_int ~ ")" }
+typed_value_int3 = { "int3" ~ "(" ~ literal_int ~ ( "," ~ literal_int ){2} ~ ")" }
+typed_value_int4 = { "int4" ~ "(" ~ literal_int ~ ( "," ~ literal_int ){3} ~ ")" }
+typed_value_int = _{ typed_value_int1 | typed_value_int2 | typed_value_int3 | typed_value_int4 }
+typed_value_bool1 = { "bool" ~ "(" ~ literal_int ~ ")" }
+typed_value_bool2 = { "bool2" ~ "(" ~ literal_int ~ "," ~ literal_int ~ ")" }
+typed_value_bool3 = { "bool3" ~ "(" ~ literal_int ~ ( "," ~ literal_int ){2} ~ ")" }
+typed_value_bool4 = { "bool4" ~ "(" ~ literal_int ~ ( "," ~ literal_int ){3} ~ ")" }
+typed_value_bool = _{ typed_value_bool1 | typed_value_bool2 | typed_value_bool3 | typed_value_bool4 }
+typed_value_matrix2 = { "float2x2" ~ "(" ~ literal_float ~ ( "," ~ literal_float ){3} ~ ")" }
+typed_value_matrix3 = { "float3x3" ~ "(" ~ literal_float ~ ( "," ~ literal_float ){8} ~ ")" }
+typed_value_matrix4 = { "float4x4" ~ "(" ~ literal_float ~ ( "," ~ literal_float ){15} ~ ")" }
+typed_value_matrix = _{ typed_value_matrix2 | typed_value_matrix3 | typed_value_matrix4 }
+typed_value_string = { "string" ~ "(" ~ literal_string ~ ")" }
+typed_value = { typed_value_float | typed_value_int | typed_value_bool | typed_value_matrix | typed_value_string }
+
+reg_kind = @{ "i" | "f" }
+reg_index = @{ number }
+reg_channel_rgba = @{ "r" | "g" | "b" | "a" }
+reg_channel_matrix = @{ "m2" | "m3" | "m4" }
+reg_channels = @{ reg_channel_rgba+ | reg_channel_matrix }
+register = ${ reg_kind ~ reg_index ~ "." ~ reg_channels }
+
+opcode_first = _{ ASCII_ALPHA_LOWER | "." }
+opcode_rest = _{ ASCII_ALPHA_LOWER | "." | ASCII_DIGIT }
+opcode = @{ opcode_first ~ opcode_rest* ~ term_end }
+argument = { typed_value | type | register | literal }
+statement = { opcode ~ ( argument ~ ( "," ~ argument )* )? ~ ( comment | NEWLINE ) }
+
+line = { statement | comment | NEWLINE }
+lines = _{ line+ }
+
+shader = _{ SOI ~ lines ~ EOI }
+
+WHITESPACE = _{ " " | "\t" }

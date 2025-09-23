@@ -64,7 +64,7 @@ pub struct ExternalNavigatorBackend<F: FutureSpawner, I: NavigatorInterface> {
 
 impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
     /// Construct a navigator backend with fetch and async capability.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
         mut base_url: Url,
         referer: Option<Url>,
@@ -258,7 +258,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
                 let redirected = *response.url() != processed_url;
                 if !response.status().is_success() {
                     let error = Error::HttpNotOk(
-                        format!("HTTP status is not ok, got {}", response.status()),
+                        format!("Got {}", response.status()),
                         status,
                         redirected,
                         response.content_length().unwrap_or_default(),
@@ -468,7 +468,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
+#[expect(clippy::unwrap_used)]
 mod tests {
     use ruffle_core::socket::SocketAction::{Close, Connect, Data};
     use std::net::SocketAddr;

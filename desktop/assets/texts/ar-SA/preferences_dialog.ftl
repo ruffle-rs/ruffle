@@ -28,3 +28,8 @@ gamemode-tooltip =
     يطلب رفل وضع اللعبة فقط عند تشغيل فيلم.
 gamemode-default = المبدئي
 gamemode-default-tooltip = سيمكَّن GameMode فقط عند ضبط تفضيل الطاقة على مرتفع.
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = أسلوب الإدخال
+ime-enabled-experimental = (تجريبي)
+ime-enabled-tooltip = يسمح أسلوب الادخال بإدخال حروف غير موجودة على لوحة المفاتيح، مثلًا الحروف الصينية، أو اليابانية، أو الكورية.
+ime-enabled-default = المبدئي

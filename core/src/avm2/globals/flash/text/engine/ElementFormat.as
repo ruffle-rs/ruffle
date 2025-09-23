@@ -43,12 +43,14 @@ package flash.text.engine {
         private var _typographicCase:String;
 
 
-        public function ElementFormat(fontDescription:FontDescription = null, fontSize:Number = 12, color:uint = 0, alpha:Number = 1,
-                                      textRotation:String = "auto", dominantBaseline:String = "roman",
-                                      alignmentBaseline:String = "useDominantBaseline", baselineShift:Number = 0, kerning:String = "on",
-                                      trackingRight:Number = 0, trackingLeft:Number = 0, locale:String = "en", breakOpportunity:String = "auto",
-                                      digitCase:String = "default", digitWidth:String = "default", ligatureLevel:String = "common",
-                                      typographicCase:String = "default") {
+        public function ElementFormat(
+            fontDescription:FontDescription = null, fontSize:Number = 12, color:uint = 0, alpha:Number = 1,
+            textRotation:String = "auto", dominantBaseline:String = "roman",
+            alignmentBaseline:String = "useDominantBaseline", baselineShift:Number = 0, kerning:String = "on",
+            trackingRight:Number = 0, trackingLeft:Number = 0, locale:String = "en", breakOpportunity:String = "auto",
+            digitCase:String = "default", digitWidth:String = "default", ligatureLevel:String = "common",
+            typographicCase:String = "default"
+        ) {
             this.fontDescription = (fontDescription != null) ? fontDescription : new FontDescription();
 
             this.alignmentBaseline = alignmentBaseline;
@@ -204,6 +206,17 @@ package flash.text.engine {
         public function set typographicCase(value:String):void {
             this._typographicCase = value;
         }
+
+        public function clone():ElementFormat {
+            var fd = this.fontDescription ? this.fontDescription.clone() : null;
+            return new ElementFormat(
+                fd, this.fontSize, this.color, this.alpha, this.textRotation,
+                this.dominantBaseline, this.alignmentBaseline, this.baselineShift, this.kerning,
+                this.trackingRight, this.trackingLeft, this.locale, this.breakOpportunity,
+                this.digitCase, this.digitWidth, this.ligatureLevel, this.typographicCase
+            );
+        }
+
 
         public function getFontMetrics():FontMetrics {
             stub_method("flash.text.engine.ElementFormat", "getFontMetrics");

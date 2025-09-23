@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2136, Error};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::object::{ClassObject, Object, StageObject, TObject};
+use crate::avm2::object::{ClassObject, Object, StageObject};
 use crate::avm2::value::Value;
 use crate::display_object::{Avm2Button, ButtonTracking, TDisplayObject};
 use swf::ButtonState;
@@ -33,8 +33,8 @@ pub fn simple_button_allocator<'gc>(
             // [NA] Buttons specifically need to PO'd
             button.post_instantiation(activation.context, None, Instantiator::Avm2, false);
             let display_object = button.into();
-            let obj = StageObject::for_display_object(activation, display_object, orig_class)?;
-            display_object.set_object2(activation.context, obj.into());
+            let obj = StageObject::for_display_object(activation.gc(), display_object, orig_class);
+            display_object.set_object2(activation.context, obj);
             return Ok(obj.into());
         }
 
@@ -51,7 +51,11 @@ pub fn simple_button_allocator<'gc>(
                 .instantiate_by_id(symbol, activation.context.gc_context);
 
             if let Some(child) = child {
-                return initialize_for_allocator(activation, child, orig_class);
+                return Ok(initialize_for_allocator(
+                    activation.context,
+                    child,
+                    orig_class,
+                ));
             } else {
                 return Err(make_error_2136(activation));
             }
@@ -73,30 +77,22 @@ pub fn init<'gc>(
         .as_display_object()
         .and_then(|this| this.as_avm2_button())
     {
-        let up_state = args
-            .try_get_object(activation, 0)
-            .and_then(|o| o.as_display_object());
+        let up_state = args.try_get_object(0).and_then(|o| o.as_display_object());
         if up_state.is_some() {
             new_do.set_state_child(activation.context, ButtonState::UP, up_state);
         }
 
-        let over_state = args
-            .try_get_object(activation, 1)
-            .and_then(|o| o.as_display_object());
+        let over_state = args.try_get_object(1).and_then(|o| o.as_display_object());
         if over_state.is_some() {
             new_do.set_state_child(activation.context, ButtonState::OVER, over_state);
         }
 
-        let down_state = args
-            .try_get_object(activation, 2)
-            .and_then(|o| o.as_display_object());
+        let down_state = args.try_get_object(2).and_then(|o| o.as_display_object());
         if down_state.is_some() {
             new_do.set_state_child(activation.context, ButtonState::DOWN, down_state);
         }
 
-        let hit_state = args
-            .try_get_object(activation, 3)
-            .and_then(|o| o.as_display_object());
+        let hit_state = args.try_get_object(3).and_then(|o| o.as_display_object());
         if hit_state.is_some() {
             new_do.set_state_child(activation.context, ButtonState::HIT_TEST, hit_state);
         }
@@ -124,7 +120,7 @@ pub fn get_down_state<'gc>(
     {
         return Ok(btn
             .get_state_child(ButtonState::DOWN)
-            .map(|state| state.object2())
+            .map(|state| state.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -144,7 +140,7 @@ pub fn set_down_state<'gc>(
         .and_then(|this| this.as_avm2_button())
     {
         let new_state = args
-            .try_get_object(activation, 0)
+            .try_get_object(0)
             .and_then(|val| val.as_display_object());
 
         btn.set_state_child(activation.context, ButtonState::DOWN, new_state);
@@ -167,7 +163,7 @@ pub fn get_over_state<'gc>(
     {
         return Ok(btn
             .get_state_child(ButtonState::OVER)
-            .map(|state| state.object2())
+            .map(|state| state.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -187,7 +183,7 @@ pub fn set_over_state<'gc>(
         .and_then(|this| this.as_avm2_button())
     {
         let new_state = args
-            .try_get_object(activation, 0)
+            .try_get_object(0)
             .and_then(|val| val.as_display_object());
 
         btn.set_state_child(activation.context, ButtonState::OVER, new_state);
@@ -210,7 +206,7 @@ pub fn get_hit_test_state<'gc>(
     {
         return Ok(btn
             .get_state_child(ButtonState::HIT_TEST)
-            .map(|state| state.object2())
+            .map(|state| state.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -230,7 +226,7 @@ pub fn set_hit_test_state<'gc>(
         .and_then(|this| this.as_avm2_button())
     {
         let new_state = args
-            .try_get_object(activation, 0)
+            .try_get_object(0)
             .and_then(|val| val.as_display_object());
 
         btn.set_state_child(activation.context, ButtonState::HIT_TEST, new_state);
@@ -253,7 +249,7 @@ pub fn get_up_state<'gc>(
     {
         return Ok(btn
             .get_state_child(ButtonState::UP)
-            .map(|state| state.object2())
+            .map(|state| state.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -273,7 +269,7 @@ pub fn set_up_state<'gc>(
         .and_then(|this| this.as_avm2_button())
     {
         let new_state = args
-            .try_get_object(activation, 0)
+            .try_get_object(0)
             .and_then(|val| val.as_display_object());
 
         btn.set_state_child(activation.context, ButtonState::UP, new_state);

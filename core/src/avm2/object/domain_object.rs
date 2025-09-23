@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::domain::Domain;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
+use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Error;
 use crate::utils::HasPrefixField;
 use core::fmt;
@@ -71,22 +71,18 @@ impl<'gc> DomainObject<'gc> {
             },
         ))
     }
+
+    pub fn domain(self) -> Domain<'gc> {
+        self.0.domain.get()
+    }
+
+    pub fn init_domain(self, mc: &Mutation<'gc>, domain: Domain<'gc>) {
+        unlock!(Gc::write(mc, self.0), DomainObjectData, domain).set(domain);
+    }
 }
 
 impl<'gc> TObject<'gc> for DomainObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_application_domain(&self) -> Option<Domain<'gc>> {
-        Some(self.0.domain.get())
-    }
-
-    fn init_application_domain(&self, mc: &Mutation<'gc>, domain: Domain<'gc>) {
-        unlock!(Gc::write(mc, self.0), DomainObjectData, domain).set(domain);
     }
 }

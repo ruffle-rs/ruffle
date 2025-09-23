@@ -12,13 +12,31 @@ pub fn number_constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let number_value = args
-        .get(0)
-        .copied()
+        .get_optional(0)
         .unwrap_or(Value::Integer(0))
         .coerce_to_number(activation)?;
 
     Ok(number_value.into())
 }
+
+macro_rules! define_math_functions {
+    ($($name:ident),* $(,)?) => {
+        $(
+            pub fn $name<'gc>(
+                activation: &mut Activation<'_, 'gc>,
+                this: Value<'gc>,
+                args: &[Value<'gc>],
+            ) -> Result<Value<'gc>, Error<'gc>> {
+                crate::avm2::globals::math::$name(activation, this, args)
+            }
+        )*
+    };
+}
+
+define_math_functions!(
+    abs, acos, asin, atan, atan2, ceil, cos, exp, floor, log, max, min, pow, random, round, sin,
+    sqrt, tan
+);
 
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -26,8 +44,7 @@ pub fn call_handler<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(args
-        .get(0)
-        .cloned()
+        .get_optional(0)
         .unwrap_or(Value::Number(0.0))
         .coerce_to_number(activation)?
         .into())

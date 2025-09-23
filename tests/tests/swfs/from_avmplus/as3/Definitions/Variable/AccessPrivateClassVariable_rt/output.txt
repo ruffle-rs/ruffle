@@ -1,0 +1,1 @@
+attempt to access private variable of Class1 in Class2 PASSED!

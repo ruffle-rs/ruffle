@@ -119,6 +119,39 @@ pub fn serialize_value<'gc>(
                 ))
             } else if let Some(bytearray) = o.as_bytearray() {
                 Some(AmfValue::ByteArray(bytearray.bytes().to_vec()))
+            } else if let Some(dictionary) = o.as_dictionary_object() {
+                // FIXME change this once weak keys are implemented
+                let has_weak_keys = false;
+
+                let mut dictionary_body = Vec::new();
+
+                let mut last_index = dictionary.get_next_enumerant(0, activation).unwrap();
+                while last_index != 0 {
+                    let name = dictionary
+                        .get_enumerant_name(last_index, activation)
+                        .unwrap();
+                    let value = dictionary
+                        .get_enumerant_value(last_index, activation)
+                        .unwrap();
+
+                    // Serialize both name and value
+                    let name = get_or_create_value(activation, name, object_table, amf_version);
+                    let value = get_or_create_value(activation, value, object_table, amf_version);
+
+                    if let (Some(name), Some(value)) = (name, value) {
+                        dictionary_body.push((name, value));
+                    }
+
+                    last_index = dictionary
+                        .get_next_enumerant(last_index, activation)
+                        .unwrap();
+                }
+
+                Some(AmfValue::Dictionary(
+                    ObjectId::INVALID,
+                    dictionary_body,
+                    has_weak_keys,
+                ))
             } else {
                 let class = o.instance_class();
                 let name = class_to_alias(activation, class);
@@ -189,10 +222,11 @@ pub fn recursive_serialize<'gc>(
     if let Some(static_properties) = static_properties {
         let vtable = obj.vtable();
         // TODO: respect versioning
-        let mut props = vtable.public_properties();
         // Flash appears to use vtable iteration order, but we sort ours
         // to make our test output consistent.
-        props.sort_by_key(|(name, _)| name.to_utf8_lossy().to_string());
+        let mut props = vtable.public_properties().collect::<Vec<_>>();
+        props.sort_by_key(|(name, _)| *name);
+
         for (name, prop) in props {
             if let Property::Method { .. } = prop {
                 continue;
@@ -239,8 +273,22 @@ fn get_or_create_element<'gc>(
     object_table: &mut ObjectTable<'gc>,
     amf_version: AMFVersion,
 ) -> Option<Element> {
+    let value = get_or_create_value(activation, val, object_table, amf_version);
+    if let Some(value) = value {
+        Some(Element::new(name, value))
+    } else {
+        None
+    }
+}
+
+fn get_or_create_value<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    val: Value<'gc>,
+    object_table: &mut ObjectTable<'gc>,
+    amf_version: AMFVersion,
+) -> Option<Rc<AmfValue>> {
     if let Some(obj) = val.as_object() {
-        let rc_val = match object_table.get(&obj) {
+        match object_table.get(&obj) {
             Some(rc_val) => {
                 // Even though we'll clone the same 'Rc<AmfValue>' for each occurrence
                 // of 'Object', flash_lso doesn't serialize this correctly yet.
@@ -262,12 +310,12 @@ fn get_or_create_element<'gc>(
                     None
                 }
             }
-        };
-        return rc_val.map(|val| Element::new(name, val));
+        }
     } else if let Some(value) = serialize_value(activation, val, amf_version, object_table) {
-        return Some(Element::new(name, Rc::new(value)));
+        Some(Rc::new(value))
+    } else {
+        None
     }
-    None
 }
 
 /// Deserialize a AmfValue to a Value
@@ -292,8 +340,8 @@ pub fn deserialize_value_impl<'gc>(
         AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.gc(), s)),
         AmfValue::Bool(b) => (*b).into(),
         AmfValue::ByteArray(bytes) => {
-            let storage = ByteArrayStorage::from_vec(bytes.clone());
-            let bytearray = ByteArrayObject::from_storage(activation, storage)?;
+            let storage = ByteArrayStorage::from_vec(activation.context, bytes.clone());
+            let bytearray = ByteArrayObject::from_storage(activation, storage);
             bytearray.into()
         }
         AmfValue::ECMAArray(id, values, elements, _) => {
@@ -307,16 +355,25 @@ pub fn deserialize_value_impl<'gc>(
                 arr.push(Some(deserialize_value_impl(activation, value, object_map)?));
             }
             array
-                .array_storage_mut(activation.gc())
+                .storage_mut(activation.gc())
                 .replace_dense_storage(arr);
 
             // Now let's add each element as a property
             for element in elements {
-                array.set_string_property_local(
-                    AvmString::new_utf8(activation.gc(), element.name()),
-                    deserialize_value_impl(activation, element.value(), object_map)?,
-                    activation,
-                )?;
+                let name = ruffle_wstr::from_utf8(element.name());
+                let value = deserialize_value_impl(activation, element.value(), object_map)?;
+
+                // If the name of the element was a valid array index, we set an
+                // element on the array instead of setting a dynamic property.
+                if let Some(index) = ArrayObject::as_array_index(&name) {
+                    array.set_element(activation.gc(), index, value);
+                } else {
+                    array.set_dynamic_property(
+                        AvmString::new(activation.gc(), name),
+                        value,
+                        activation.gc(),
+                    );
+                }
             }
             array.into()
         }
@@ -331,7 +388,7 @@ pub fn deserialize_value_impl<'gc>(
             }
 
             array
-                .array_storage_mut(activation.gc())
+                .storage_mut(activation.gc())
                 .replace_dense_storage(arr);
 
             array.into()
@@ -359,7 +416,7 @@ pub fn deserialize_value_impl<'gc>(
                     tracing::warn!(
                         "Ignoring error deserializing AMF property for field {name:?}: {e:?}"
                     );
-                    if let Error::AvmError(e) = e {
+                    if let Some(e) = e.as_avm_error() {
                         if let Some(e) = e.as_object().and_then(|o| o.as_error_object()) {
                             // Flash player *traces* the error (without a stacktrace)
                             activation.context.avm_trace(&e.display().to_string());
@@ -408,12 +465,8 @@ pub fn deserialize_value_impl<'gc>(
             let class = alias_to_class(activation, name)?;
 
             // Create an empty vector, as it has to exist in the map before reading children, in case they reference it
-            let empty_storage = VectorStorage::new(
-                0,
-                *is_fixed,
-                Some(class.inner_class_definition()),
-                activation,
-            );
+            let empty_storage =
+                VectorStorage::new(0, *is_fixed, Some(class.inner_class_definition()));
             let obj = VectorObject::from_vector(empty_storage, activation)?;
             object_map.insert(*id, obj);
 
@@ -461,7 +514,7 @@ pub fn deserialize_value_impl<'gc>(
                     dict_obj.set_property_by_object(key, value, activation.gc());
                 } else {
                     let key_string = key.coerce_to_string(activation)?;
-                    dict_obj.set_string_property_local(key_string, value, activation)?;
+                    dict_obj.set_dynamic_property(key_string, value, activation.gc());
                 }
             }
             dict_obj.into()
@@ -498,11 +551,11 @@ pub fn deserialize_lso<'gc>(
     let obj = ScriptObject::new_object(activation);
 
     for child in &lso.body {
-        obj.set_string_property_local(
+        obj.set_dynamic_property(
             AvmString::new_utf8(activation.gc(), &child.name),
             deserialize_value(activation, child.value())?,
-            activation,
-        )?;
+            activation.gc(),
+        );
     }
 
     Ok(obj)

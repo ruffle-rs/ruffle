@@ -10,7 +10,8 @@ use crate::bitmap::{
 };
 use crate::commands::CommandList;
 use crate::error::Error;
-use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle};
+use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderHandle};
+use crate::pixel_bender_support::PixelBenderShaderArgument;
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
 use swf::Color;
@@ -78,14 +79,14 @@ impl RenderBackend for NullRenderer {
         _cache_entries: Vec<BitmapCacheEntry>,
     ) {
     }
-    fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+    fn register_bitmap(&mut self, _bitmap: Bitmap<'_>) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(Arc::new(NullBitmapHandle)))
     }
 
     fn update_texture(
         &mut self,
         _handle: &BitmapHandle,
-        _bitmap: Bitmap,
+        _bitmap: Bitmap<'_>,
         _region: PixelRegion,
     ) -> Result<(), Error> {
         Ok(())
@@ -94,12 +95,8 @@ impl RenderBackend for NullRenderer {
     fn create_context3d(
         &mut self,
         _profile: Context3DProfile,
-    ) -> Result<Box<dyn super::Context3D>, Error> {
+    ) -> Result<Box<dyn Context3D>, Error> {
         Err(Error::Unimplemented("createContext3D".into()))
-    }
-
-    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), Error> {
-        Err(Error::Unimplemented("Context3D.present".into()))
     }
 
     fn debug_info(&self) -> Cow<'static, str> {

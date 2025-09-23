@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle, bu sayfaya gömülü Flash'ı çalıştıramadı.
     Bu sorunu ortadan kaldırmak için dosyayı ayrı bir sekmede açmayı deneyebilirsiniz.
+message-restored-from-bfcache =
+    Tarayıcınız bu Flash içeriğini önceki bir oturumdan geri yükledi.
+    Sıfırdan başlamak için sayfayı yeniden yükleyin.
 panic-title = Bir şeyler yanlış gitti :(
 more-info = Daha fazla bilgi
 run-anyway = Yine de çalıştır

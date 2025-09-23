@@ -63,7 +63,7 @@ fn init() {
     // silently if the parent has no console.
     #[cfg(windows)]
     unsafe {
-        use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
+        use windows_sys::Win32::System::Console::{AttachConsole, ATTACH_PARENT_PROCESS};
         AttachConsole(ATTACH_PARENT_PROCESS);
     }
 
@@ -144,7 +144,7 @@ fn shutdown() {
     // Without explicitly detaching the console cmd won't redraw it's prompt.
     #[cfg(windows)]
     unsafe {
-        winapi::um::wincon::FreeConsole();
+        windows_sys::Win32::System::Console::FreeConsole();
     }
 }
 

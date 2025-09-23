@@ -24,14 +24,16 @@ package flash.filters {
         [Ruffle(NativeAccessible)]
         public var strength:Number;
 
-        public function GlowFilter(color:uint = 0xFF0000,
-                                   alpha:Number = 1.0,
-                                   blurX:Number = 6.0,
-                                   blurY:Number = 6.0,
-                                   strength:Number = 2,
-                                   quality:int = 1,
-                                   inner:Boolean = false,
-                                   knockout:Boolean = false)  {
+        public function GlowFilter(
+            color:uint = 0xFF0000,
+            alpha:Number = 1.0,
+            blurX:Number = 6.0,
+            blurY:Number = 6.0,
+            strength:Number = 2,
+            quality:int = 1,
+            inner:Boolean = false,
+            knockout:Boolean = false
+        ) {
             this.alpha = alpha;
             this.blurX = blurX;
             this.blurY = blurY;

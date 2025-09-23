@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::events;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
-use crate::avm2::object::{DispatchObject, Object, TObject};
+use crate::avm2::object::{DispatchObject, Object, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
@@ -33,10 +33,10 @@ pub fn add_event_listener<'gc>(
     let this = this.as_object().unwrap();
 
     let dispatch_list = dispatch_list(activation, this)?;
-    let event_type = args.get_string(activation, 0)?;
-    let listener = args.get_object(activation, 1, "listener")?;
+    let event_type = args.get_string(activation, 0);
+    let listener = args.get_function(activation, 1, "listener")?;
     let use_capture = args.get_bool(2);
-    let priority = args.get_i32(activation, 3)?;
+    let priority = args.get_i32(3);
 
     //TODO: If we ever get weak GC references, we should respect `useWeakReference`.
     dispatch_list
@@ -58,8 +58,8 @@ pub fn remove_event_listener<'gc>(
     let this = this.as_object().unwrap();
 
     let dispatch_list = dispatch_list(activation, this)?;
-    let event_type = args.get_string(activation, 0)?;
-    let listener = args.get_object(activation, 1, "listener")?;
+    let event_type = args.get_string(activation, 0);
+    let listener = args.get_function(activation, 1, "listener")?;
     let use_capture = args.get_bool(2);
 
     dispatch_list
@@ -79,7 +79,7 @@ pub fn has_event_listener<'gc>(
     let this = this.as_object().unwrap();
 
     let dispatch_list = dispatch_list(activation, this)?;
-    let event_type = args.get_string(activation, 0)?;
+    let event_type = args.get_string(activation, 0);
 
     let does_have = dispatch_list
         .as_dispatch_mut(activation.gc())
@@ -99,7 +99,7 @@ pub fn will_trigger<'gc>(
     let this = this.as_object().unwrap();
 
     let dispatch_list = dispatch_list(activation, this)?;
-    let event_type = args.get_string(activation, 0)?;
+    let event_type = args.get_string(activation, 0);
 
     if dispatch_list
         .as_dispatch_mut(activation.gc())

@@ -10,7 +10,7 @@ use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::globals::slots::flash_net_url_request_header as url_request_header_slots;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
-use crate::avm2::object::TObject;
+use crate::avm2::object::TObject as _;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::ClassObject;
@@ -30,8 +30,9 @@ pub fn loader_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     // Loader does not have an associated `Character` variant, and can never be
     // instantiated from the timeline.
-    let display_object = LoaderDisplay::empty(activation, activation.context.swf.clone()).into();
-    let loader = initialize_for_allocator(activation, display_object, class)?;
+    let display_object =
+        LoaderDisplay::empty(activation, activation.context.root_swf.clone()).into();
+    let loader = initialize_for_allocator(activation.context, display_object, class);
 
     // Note that the initialization of `_contentLoaderInfo` is intentionally done here,
     // and not in the Loader constructor - subclasess of Loader can observe 'contentLoaderInfo'
@@ -40,9 +41,10 @@ pub fn loader_allocator<'gc>(
     // Some LoaderInfo properties (such as 'bytesLoaded' and 'bytesTotal') are always
     // accessible, even before the 'init' event has fired. Using an empty movie gives
     // us the correct value (0) for them.
+    let movie = &activation.context.root_swf;
     let loader_info = LoaderInfoObject::not_yet_loaded(
         activation,
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
         Some(loader),
         None,
         false,
@@ -63,7 +65,7 @@ pub fn load<'gc>(
     let this = this.as_object().unwrap();
 
     let url_request = args.get_object(activation, 0, "request")?;
-    let context = args.try_get_object(activation, 1);
+    let context = args.try_get_object(1);
 
     let loader_info = this
         .get_slot(loader_slots::_CONTENT_LOADER_INFO)
@@ -87,15 +89,16 @@ pub fn load<'gc>(
     loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
+    let movie = &activation.context.root_swf;
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
         activation.gc(),
     );
 
     // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
     loader_info.set_loader_stream(
         LoaderStream::NotYetLoaded(
-            Arc::new(SwfMovie::empty(activation.context.swf.version())),
+            Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
             Some(content.into()),
             false,
         ),
@@ -111,7 +114,7 @@ pub fn load<'gc>(
         request,
         Some(url),
         MovieLoaderVMData::Avm2 {
-            loader_info: *loader_info,
+            loader_info,
             context,
             default_domain: activation
                 .caller_domain()
@@ -233,7 +236,7 @@ pub fn load_bytes<'gc>(
 
     let arg0 = args.get_object(activation, 0, "data")?;
     let bytes = arg0.as_bytearray().unwrap().bytes().to_vec();
-    let context = args.try_get_object(activation, 1);
+    let context = args.try_get_object(1);
 
     let loader_info = this
         .get_slot(loader_slots::_CONTENT_LOADER_INFO)
@@ -257,8 +260,9 @@ pub fn load_bytes<'gc>(
     loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
+    let movie = &activation.context.root_swf;
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(activation.context.swf.version())),
+        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
         activation.gc(),
     );
 
@@ -271,12 +275,12 @@ pub fn load_bytes<'gc>(
         content.into(),
         bytes,
         MovieLoaderVMData::Avm2 {
-            loader_info: *loader_info,
+            loader_info,
             context,
             default_domain,
         },
     ) {
-        return Err(Error::RustError(
+        return Err(Error::rust_error(
             format!("Error in Loader.loadBytes: {e:?}").into(),
         ));
     }

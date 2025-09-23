@@ -2,8 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{Object, ObjectPtr, TObject};
-use crate::avm2::Error;
+use crate::avm2::object::{Object, TObject};
 use crate::utils::HasPrefixField;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_render::backend::IndexBuffer;
@@ -24,10 +23,10 @@ impl<'gc> IndexBuffer3DObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         context3d: Context3DObject<'gc>,
         handle: Box<dyn IndexBuffer>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Object<'gc> {
         let class = activation.avm2().classes().indexbuffer3d;
 
-        let this: Object<'gc> = IndexBuffer3DObject(Gc::new(
+        IndexBuffer3DObject(Gc::new(
             activation.gc(),
             IndexBuffer3DObjectData {
                 base: ScriptObjectData::new(class),
@@ -36,18 +35,14 @@ impl<'gc> IndexBuffer3DObject<'gc> {
                 count: Cell::new(0),
             },
         ))
-        .into();
-
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
+        .into()
     }
 
-    pub fn count(&self) -> usize {
+    pub fn count(self) -> usize {
         self.0.count.get()
     }
 
-    pub fn set_count(&self, val: usize) {
+    pub fn set_count(self, val: usize) {
         self.0.count.set(val);
     }
 
@@ -55,7 +50,7 @@ impl<'gc> IndexBuffer3DObject<'gc> {
         RefMut::map(self.0.handle.borrow_mut(), |h| h.as_mut())
     }
 
-    pub fn context3d(&self) -> Context3DObject<'gc> {
+    pub fn context3d(self) -> Context3DObject<'gc> {
         self.0.context3d
     }
 }
@@ -77,14 +72,6 @@ pub struct IndexBuffer3DObjectData<'gc> {
 impl<'gc> TObject<'gc> for IndexBuffer3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn as_index_buffer(&self) -> Option<IndexBuffer3DObject<'gc>> {
-        Some(*self)
     }
 }
 

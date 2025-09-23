@@ -1,6 +1,7 @@
 use crate::avm2::error::{eof_error, make_error_2006};
 use crate::avm2::Activation;
 use crate::avm2::Error;
+use crate::context::UpdateContext;
 use crate::string::{FromWStr, WStr};
 use flate2::read::*;
 use flate2::Compression;
@@ -40,7 +41,7 @@ impl ByteArrayError {
                 "Error #2030: End of file was encountered.",
                 2030,
             ) {
-                Ok(e) => Error::AvmError(e),
+                Ok(e) => Error::avm_error(e),
                 Err(e) => e,
             },
             ByteArrayError::IndexOutOfBounds => make_error_2006(activation),
@@ -99,22 +100,22 @@ pub struct ByteArrayStorage {
 
 impl ByteArrayStorage {
     /// Create a new ByteArrayStorage
-    pub fn new() -> ByteArrayStorage {
+    pub fn new(context: &mut UpdateContext<'_>) -> ByteArrayStorage {
         ByteArrayStorage {
             bytes: Vec::new(),
             position: Cell::new(0),
             endian: Endian::Big,
-            object_encoding: ObjectEncoding::Amf3,
+            object_encoding: context.avm2.default_bytearray_encoding,
         }
     }
 
     /// Create a new ByteArrayStorage using an already existing vector
-    pub fn from_vec(bytes: Vec<u8>) -> ByteArrayStorage {
+    pub fn from_vec(context: &mut UpdateContext<'_>, bytes: Vec<u8>) -> ByteArrayStorage {
         ByteArrayStorage {
             bytes,
             position: Cell::new(0),
             endian: Endian::Big,
-            object_encoding: ObjectEncoding::Amf3,
+            object_encoding: context.avm2.default_bytearray_encoding,
         }
     }
 
@@ -487,9 +488,3 @@ macro_rules! impl_read{
 
 impl_write!(write_float f32, write_double f64, write_int i32, write_unsigned_int u32, write_short i16, write_unsigned_short u16);
 impl_read!(read_float read_float_at 4; f32, read_double read_double_at 8; f64, read_int read_int_at 4; i32, read_unsigned_int read_unsigned_int_at 4; u32, read_short read_short_at 2; i16, read_unsigned_short read_unsigned_short_at 2; u16, read_byte read_byte_at 1; i8, read_unsigned_byte read_unsigned_byte_at 1; u8);
-
-impl Default for ByteArrayStorage {
-    fn default() -> Self {
-        Self::new()
-    }
-}

@@ -1,0 +1,16 @@
+Logical AND Assignment: x=true; y=true; x &&= y; x= PASSED!
+Logical AND Assignment: x=true; y=false; x &&= y; x= PASSED!
+Logical AND Assignment: x=false; y=false; x &&= y; x= PASSED!
+Logical AND Assignment: x=false; y=true; x &&= y; x= PASSED!
+Logical AND Assignment: x=true; x &&= true; x= PASSED!
+Logical AND Assignment: x=true; x &&= false; x= PASSED!
+Logical AND Assignment: x=false; x &&= false; x= PASSED!
+Logical AND Assignment: x=false; x &&= true; x= PASSED!
+Logical OR Assignment: x=true; y=true; x ||= y; x= PASSED!
+Logical OR Assignment: x=true; y=false; x ||= y; x= PASSED!
+Logical OR Assignment: x=false; y=false; x ||= y; x= PASSED!
+Logical OR Assignment: x=false; y=true; x ||= y; x= PASSED!
+Logical OR Assignment: x=true; x ||= true; x= PASSED!
+Logical OR Assignment: x=true; x ||= false; x= PASSED!
+Logical OR Assignment: x=false; x ||= false; x= PASSED!
+Logical OR Assignment: x=false; x ||= true; x= PASSED!

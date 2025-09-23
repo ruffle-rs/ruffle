@@ -1,0 +1,10 @@
+Access final method from outside of class PASSED!
+Access final method from default method of sub class PASSED!
+Access final method from public method of sub class PASSED!
+Access final method from private method of sub class PASSED!
+Access final method from final method of sub class PASSED!
+Access final property from outside of class PASSED!
+Access final property from outside of class PASSED!
+Access final property from default method in sub class PASSED!
+Access final property from public method in sub class PASSED!
+Access final property from final method in sub class, EXTDCLASS.finSubGetDPArray() PASSED!

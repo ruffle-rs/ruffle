@@ -1,7 +1,6 @@
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::Error;
-use crate::avm2::TObject;
 use crate::avm2::Value;
 
 use super::texture::do_copy;
@@ -15,7 +14,7 @@ pub fn upload_from_byte_array<'gc>(
 
     let texture = this.as_texture().unwrap();
     let data = args.get_object(activation, 0, "data")?;
-    let byte_array_offset = args.get_u32(activation, 1)?;
+    let byte_array_offset = args.get_u32(1);
 
     do_copy(activation, data, texture, byte_array_offset, 0, 0)?;
     Ok(Value::Undefined)
@@ -33,12 +32,12 @@ pub fn upload_from_bitmap_data<'gc>(
 
         if let Some(source) = source_obj.as_bitmap_data() {
             texture.context3d().copy_bitmapdata_to_texture(
-                source.sync(activation.context.renderer),
+                &source.sync(activation.context.renderer).borrow(),
                 texture.handle(),
                 0,
             );
         } else {
-            panic!("Invalid source: {:?}", args[0]);
+            unreachable!("Argument is BitmapData-typed");
         }
     }
     Ok(Value::Undefined)

@@ -1,12 +1,10 @@
 //! flash.filters.GradientBevelFilter and flash.filters.GradientGlowFilter objects
 
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
-use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use std::cell::{Cell, RefCell};
@@ -80,7 +78,7 @@ impl From<swf::GradientFilter> for GradientFilterData {
 }
 
 impl Default for GradientFilterData {
-    #[allow(clippy::approx_constant)]
+    #[expect(clippy::approx_constant)]
     fn default() -> Self {
         Self {
             distance: Cell::new(4.0),
@@ -407,6 +405,24 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "type" => property(gradient_filter_method!(21), gradient_filter_method!(22); VERSION_8);
 };
 
+pub fn create_bevel_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(gradient_filter_method!(1000), None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
+
+pub fn create_glow_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(gradient_filter_method!(0), None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS);
+    class
+}
+
 fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -527,46 +543,4 @@ fn method<'gc>(
         }
         _ => Value::Undefined,
     })
-}
-
-pub fn create_bevel_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let gradient_bevel_filter_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
-    gradient_bevel_filter_proto
-}
-
-pub fn create_bevel_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        gradient_filter_method!(1000),
-        None,
-        fn_proto,
-        proto,
-    )
-}
-
-pub fn create_glow_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let gradient_bevel_filter_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
-    gradient_bevel_filter_proto
-}
-
-pub fn create_glow_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(context, gradient_filter_method!(0), None, fn_proto, proto)
 }

@@ -1,0 +1,33 @@
+name: General Lints
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  editorconfig:
+    name: EditorConfig
+    runs-on: ubuntu-24.04
+    env:
+      VERSION: "v3.3.0"
+      OS: "linux"
+      ARCH: "amd64"
+      SHA256: "923b80494b09b362d4fdb0d706913b67da0d60b4e2d34e5e346aa7e4118d6ab3"
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Install editorconfig-checker
+        run: |
+          curl -O -L -C - https://github.com/editorconfig-checker/editorconfig-checker/releases/download/$VERSION/ec-$OS-$ARCH.tar.gz
+          tar xzf ec-$OS-$ARCH.tar.gz -C /tmp
+          echo "$SHA256  ec-$OS-$ARCH.tar.gz" | sha256sum -c
+
+      - name: Run editorconfig-checker
+        run: |
+          /tmp/bin/ec-$OS-$ARCH

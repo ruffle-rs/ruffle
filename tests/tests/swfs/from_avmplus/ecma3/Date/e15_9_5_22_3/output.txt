@@ -1,0 +1,11 @@
+(new Date(1)).getTimezoneOffset() PASSED!
+(new Date(2)).getTimezoneOffset() PASSED!
+(new Date(3)).getTimezoneOffset() PASSED!
+(new Date(4)).getTimezoneOffset() PASSED!
+(new Date(5)).getTimezoneOffset() PASSED!
+(new Date(6)).getTimezoneOffset() PASSED!
+(new Date(7)).getTimezoneOffset() PASSED!
+(new Date(8)).getTimezoneOffset() PASSED!
+(new Date(9)).getTimezoneOffset() PASSED!
+(new Date(10)).getTimezoneOffset() PASSED!
+(new Date(11)).getTimezoneOffset() PASSED!

@@ -15,10 +15,11 @@ jobs:
       max-parallel: 1
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Install dependencies
         run: |
+          sudo apt-get update
           sudo apt-get install -y itstool gettext appstream
 
       - name: Generate desktop & metainfo sources
@@ -79,7 +80,7 @@ jobs:
 
           pr_url=$(gh pr create \
             --title 'chore: Update translations' \
-            --body 'New Crowdin pull request with translations 🎉' \
+            --body 'New [Crowdin](https://crowdin.com/project/ruffle) pull request with translations 🎉' \
             --head l10n_crowdin_translations \
             --base master)
 

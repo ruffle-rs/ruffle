@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use crate::environment::Environment;
 use crate::options::TestOptions;
 use crate::runner::TestRunner;
 use crate::util::read_bytes;
 use anyhow::{anyhow, Result};
-use ruffle_core::tag_utils::SwfMovie;
+use ruffle_core::{tag_utils::SwfMovie, FontQuery, FontType};
 use ruffle_input_format::InputInjector;
 use ruffle_socket_format::SocketEvent;
 use vfs::VfsPath;
@@ -73,9 +75,10 @@ impl Test {
 
     fn socket_events(&self) -> Result<Option<Vec<SocketEvent>>> {
         Ok(if self.socket_path.is_file()? {
-            Some(SocketEvent::from_reader(
-                &read_bytes(&self.socket_path)?[..],
-            )?)
+            Some(
+                SocketEvent::from_reader(&read_bytes(&self.socket_path)?[..])
+                    .map_err(|e| anyhow!("Error reading {}: {e}", self.socket_path.as_str()))?,
+            )
         } else {
             None
         })
@@ -83,29 +86,62 @@ impl Test {
 
     fn input_injector(&self) -> Result<InputInjector> {
         Ok(if self.input_path.is_file()? {
-            InputInjector::from_reader(&read_bytes(&self.input_path)?[..])?
+            InputInjector::from_reader(&read_bytes(&self.input_path)?[..])
+                .map_err(|e| anyhow!("Error reading {}: {e}", self.input_path.as_str()))?
         } else {
             InputInjector::empty()
         })
     }
 
-    pub fn fonts(&self) -> Result<Vec<Font>> {
+    pub fn fonts(&self) -> Result<HashMap<FontQuery, Font>> {
         self.options
             .fonts
             .values()
             .map(|font| {
-                Ok(Font {
-                    bytes: read_bytes(&self.root_path.join(&font.path)?)?.to_vec(),
-                    family: font.family.to_owned(),
-                    bold: font.bold,
-                    italic: font.italic,
-                })
+                Ok((
+                    font.to_font_query(),
+                    Font {
+                        bytes: read_bytes(&self.root_path.join(&font.path)?)?.to_vec(),
+                        family: font.family.to_owned(),
+                        bold: font.bold,
+                        italic: font.italic,
+                    },
+                ))
             })
             .collect()
     }
 
-    pub fn should_run(&self, check_renderer: bool, environment: &impl Environment) -> bool {
+    pub fn font_sorts(&self) -> HashMap<FontQuery, Vec<FontQuery>> {
+        self.options
+            .font_sorts
+            .values()
+            .map(|font_sort| {
+                let query = FontQuery::new(
+                    FontType::Device,
+                    font_sort.family.clone(),
+                    font_sort.bold,
+                    font_sort.italic,
+                );
+                let sort = font_sort
+                    .sort
+                    .iter()
+                    .filter_map(|name| Some(self.options.fonts.get(name)?.to_font_query()))
+                    .collect();
+                (query, sort)
+            })
+            .collect()
+    }
+
+    pub fn should_run(
+        &self,
+        ignore_known_failures: bool,
+        check_renderer: bool,
+        environment: &impl Environment,
+    ) -> bool {
         if self.options.ignore {
+            return false;
+        }
+        if ignore_known_failures && self.options.known_failure {
             return false;
         }
         self.options.required_features.can_run()

@@ -23,7 +23,7 @@ pub use crate::avm2::globals::vector::{
     reverse,
     shift,
     slice,
-    some,
+    _some,
     sort,
     splice,
     unshift,

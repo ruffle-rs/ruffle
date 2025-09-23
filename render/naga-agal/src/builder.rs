@@ -245,7 +245,7 @@ impl VertexAttributeFormat {
 pub struct ShaderConfig<'a> {
     pub shader_type: ShaderType,
     pub vertex_attributes: &'a [Option<VertexAttributeFormat>; 8],
-    #[allow(dead_code)] // set but never read
+    #[expect(dead_code)] // set but never read
     pub sampler_configs: &'a [SamplerConfig; 8],
     pub version: AgalVersion,
 }
@@ -509,7 +509,7 @@ impl<'a> NagaBuilder<'a> {
                             location: 0,
                             interpolation: None,
                             sampling: None,
-                            second_blend_source: false,
+                            blend_src: None,
                         }),
                         offset: 0,
                     }],
@@ -532,7 +532,7 @@ impl<'a> NagaBuilder<'a> {
                         location: 0,
                         interpolation: None,
                         sampling: None,
-                        second_blend_source: false,
+                        blend_src: None,
                     }),
                 });
             }
@@ -644,7 +644,7 @@ impl<'a> NagaBuilder<'a> {
                     location: index as u32,
                     interpolation: None,
                     sampling: None,
-                    second_blend_source: false,
+                    blend_src: None,
                 }),
             });
 

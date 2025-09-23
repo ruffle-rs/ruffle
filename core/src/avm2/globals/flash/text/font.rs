@@ -2,16 +2,16 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_1508;
-use crate::avm2::object::{FontObject, TObject};
+use crate::avm2::object::FontObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::{ArrayObject, ArrayStorage, Error};
+use crate::avm2::{ArrayObject, Error};
 use crate::avm2_stub_method;
 use crate::string::AvmString;
 
 pub use crate::avm2::object::font_allocator;
 use crate::character::Character;
-use crate::font::{Font, FontType};
+use crate::font::{Font, FontLike, FontType};
 
 use ruffle_macros::istr;
 
@@ -82,7 +82,7 @@ pub fn has_glyphs<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(font) = this.as_font() {
-        let my_str = args.get_string(activation, 0)?;
+        let my_str = args.get_string(activation, 0);
         return Ok(font.has_glyphs_for_str(&my_str).into());
     }
 
@@ -133,10 +133,11 @@ pub fn enumerate_fonts<'gc>(
     });
 
     let font_class = activation.avm2().classes().font;
-    let mut storage = ArrayStorage::new(fonts.len());
-    for font in fonts {
-        storage.push(FontObject::for_font(activation.gc(), font_class, font).into());
-    }
+    let storage = fonts
+        .into_iter()
+        .map(|font| FontObject::for_font(activation.gc(), font_class, font))
+        .collect();
+
     Ok(ArrayObject::from_storage(activation, storage).into())
 }
 
@@ -157,7 +158,7 @@ pub fn register_font<'gc>(
         {
             if let Some(lib) = activation.context.library.library_for_movie(movie) {
                 if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                    activation.context.library.register_global_font(*font);
+                    activation.context.library.register_global_font(font);
                     return Ok(Value::Undefined);
                 }
             }

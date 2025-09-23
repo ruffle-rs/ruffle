@@ -2,7 +2,8 @@ use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{argument_error, error, make_error_2037, make_error_2097};
 use crate::avm2::globals::slots::flash_net_file_filter as file_filter_slots;
 use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
-use crate::avm2::{Activation, Avm2, Error, EventObject, TObject, Value};
+use crate::avm2::parameters::ParametersExt;
+use crate::avm2::{Activation, Avm2, Error, EventObject, TObject as _, Value};
 use crate::backend::ui::FileFilter;
 use crate::string::AvmString;
 
@@ -21,7 +22,7 @@ pub fn get_creation_date<'gc>(
         FileReference::None => return Err(make_error_2037(activation)),
         FileReference::FileDialogResult(ref dialog_result) => {
             if let Some(time) = dialog_result.creation_time() {
-                DateObject::from_date_time(activation, time)?.into()
+                DateObject::from_date_time(activation, time).into()
             } else {
                 Value::Null
             }
@@ -43,8 +44,8 @@ pub fn get_data<'gc>(
     let bytearray = match *this.file_reference() {
         FileReference::FileDialogResult(ref dialog_result) if this.loaded() => {
             let bytes = dialog_result.contents();
-            let storage = ByteArrayStorage::from_vec(bytes.to_vec());
-            ByteArrayObject::from_storage(activation, storage)?
+            let storage = ByteArrayStorage::from_vec(activation.context, bytes.to_vec());
+            ByteArrayObject::from_storage(activation, storage)
         }
         // Contrary to other getters `data` will return null instead of throwing.
         _ => return Ok(Value::Null),
@@ -66,7 +67,7 @@ pub fn get_modification_date<'gc>(
         FileReference::None => return Err(make_error_2037(activation)),
         FileReference::FileDialogResult(ref dialog_result) => {
             if let Some(time) = dialog_result.modification_time() {
-                DateObject::from_date_time(activation, time)?.into()
+                DateObject::from_date_time(activation, time).into()
             } else {
                 Value::Null
             }
@@ -143,7 +144,7 @@ pub fn browse<'gc>(
     let this = this.as_file_reference().unwrap();
 
     let mut filters = Vec::new();
-    if let Value::Object(obj) = args[0] {
+    if let Some(obj) = args.try_get_object(0) {
         if let Some(array_storage) = obj.as_array_storage() {
             for filter in array_storage.iter() {
                 if let Some(Value::Object(obj)) = filter {
@@ -252,12 +253,12 @@ pub fn save<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_file_reference().unwrap();
-    let data = args[0];
+    let data = args.get_value(0);
 
     let data = match data {
         Value::Null | Value::Undefined => {
             // For some reason this isn't a proper error.
-            return Err(Error::AvmError(argument_error(activation, "data", 0)?));
+            return Err(Error::avm_error(argument_error(activation, "data", 0)?));
         }
         Value::Object(obj) => {
             if let Some(bytearray) = obj.as_bytearray() {
@@ -271,7 +272,7 @@ pub fn save<'gc>(
         _ => data.coerce_to_string(activation)?.to_string().into_bytes(),
     };
 
-    let file_name = if let Value::String(name) = args[1] {
+    let file_name = if let Some(name) = args.try_get_string(1) {
         name.to_string()
     } else {
         "".into()
@@ -294,7 +295,7 @@ pub fn save<'gc>(
 
             activation.context.navigator.spawn_future(process);
         }
-        None => return Err(Error::AvmError(error(activation, "Error #2174: Only one download, upload, load or save operation can be active at a time on each FileReference.", 2174)?)),
+        None => return Err(Error::avm_error(error(activation, "Error #2174: Only one download, upload, load or save operation can be active at a time on each FileReference.", 2174)?)),
     }
 
     Ok(Value::Undefined)

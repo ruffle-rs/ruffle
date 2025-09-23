@@ -1,5 +1,20 @@
-[class Stage]
-ArgumentError: Error #2012: Stage$ class cannot be instantiated.
+[class Accessibility]
+ArgumentError: Error #2012: Accessibility$ class cannot be instantiated.
+	at Test()
+[class AVM1Movie]
+ArgumentError: Error #2012: AVM1Movie$ class cannot be instantiated.
+	at Test()
+[class Capabilities]
+ArgumentError: Error #2012: Capabilities$ class cannot be instantiated.
+	at Test()
+[class Class]
+TypeError: Error #1115: Class$ is not a constructor.
+	at Test()
+[class Context3D]
+ArgumentError: Error #2012: Context3D$ class cannot be instantiated.
+	at Test()
+[class CubeTexture]
+ArgumentError: Error #2012: CubeTexture$ class cannot be instantiated.
 	at Test()
 [class DisplayObject]
 ArgumentError: Error #2012: DisplayObject$ class cannot be instantiated.
@@ -7,24 +22,111 @@ ArgumentError: Error #2012: DisplayObject$ class cannot be instantiated.
 [class DisplayObjectContainer]
 ArgumentError: Error #2012: DisplayObjectContainer$ class cannot be instantiated.
 	at Test()
+[class DRMManager]
+ArgumentError: Error #2012: DRMManager$ class cannot be instantiated.
+	at Test()
+[class DRMPlaybackTimeWindow]
+ArgumentError: Error #2012: DRMPlaybackTimeWindow$ class cannot be instantiated.
+	at Test()
+[class DRMVoucher]
+ArgumentError: Error #2012: DRMVoucher$ class cannot be instantiated.
+	at Test()
+[class ExternalInterface]
+ArgumentError: Error #2012: ExternalInterface$ class cannot be instantiated.
+	at Test()
+[class GameInputControl]
+ArgumentError: Error #2012: GameInputControl$ class cannot be instantiated.
+	at Test()
+[class Graphics]
+ArgumentError: Error #2012: Graphics$ class cannot be instantiated.
+	at Test()
+[class IME]
+ArgumentError: Error #2012: IME$ class cannot be instantiated.
+	at Test()
+[class IndexBuffer3D]
+ArgumentError: Error #2012: IndexBuffer3D$ class cannot be instantiated.
+	at Test()
 [class InteractiveObject]
 ArgumentError: Error #2012: InteractiveObject$ class cannot be instantiated.
+	at Test()
+[class JSON]
+ArgumentError: Error #2012: JSON$ class cannot be instantiated.
+	at Test()
+[class Keyboard]
+ArgumentError: Error #2012: Keyboard$ class cannot be instantiated.
 	at Test()
 [class LoaderInfo]
 ArgumentError: Error #2012: LoaderInfo$ class cannot be instantiated.
 	at Test()
-[class TextLine]
-ArgumentError: Error #2012: TextLine$ class cannot be instantiated.
-	at Test()
-[class Class]
-TypeError: Error #1115: Class$ is not a constructor.
-	at Test()
 [class Math]
 TypeError: Error #1076: Math is not a constructor.
+	at Test()
+[class MessageChannel]
+ArgumentError: Error #2012: MessageChannel$ class cannot be instantiated.
 	at Test()
 [class MorphShape]
 ArgumentError: Error #2012: MorphShape$ class cannot be instantiated.
 	at Test()
+[class Mouse]
+ArgumentError: Error #2012: Mouse$ class cannot be instantiated.
+	at Test()
+[class Multitouch]
+ArgumentError: Error #2012: Multitouch$ class cannot be instantiated.
+	at Test()
+[class ObjectEncoding]
+ArgumentError: Error #2012: ObjectEncoding$ class cannot be instantiated.
+	at Test()
+[class Program3D]
+ArgumentError: Error #2012: Program3D$ class cannot be instantiated.
+	at Test()
+[class RectangleTexture]
+ArgumentError: Error #2012: RectangleTexture$ class cannot be instantiated.
+	at Test()
+[class Security]
+ArgumentError: Error #2012: Security$ class cannot be instantiated.
+	at Test()
+[class SecurityDomain]
+ArgumentError: Error #2012: SecurityDomain class cannot be instantiated.
+	at Test()
+[class SharedObject]
+ArgumentError: Error #2012: SharedObject$ class cannot be instantiated.
+	at Test()
+[class Stage]
+ArgumentError: Error #2012: Stage$ class cannot be instantiated.
+	at Test()
+[class Stage3D]
+ArgumentError: Error #2012: Stage3D$ class cannot be instantiated.
+	at Test()
+[class StageVideo]
+ArgumentError: Error #2012: StageVideo$ class cannot be instantiated.
+	at Test()
+[class StaticText]
+ArgumentError: Error #2012: StaticText$ class cannot be instantiated.
+	at Test()
+[class System]
+ArgumentError: Error #2012: System$ class cannot be instantiated.
+	at Test()
+[class TextLine]
+ArgumentError: Error #2012: TextLine$ class cannot be instantiated.
+	at Test()
+[class TextLineMirrorRegion]
+ArgumentError: Error #2012: TextLineMirrorRegion$ class cannot be instantiated.
+	at Test()
+[class TextSnapshot]
+ArgumentError: Error #2012: TextSnapshot$ class cannot be instantiated.
+	at Test()
+[class Texture]
+ArgumentError: Error #2012: Texture$ class cannot be instantiated.
+	at Test()
+[class Utils3D]
+ArgumentError: Error #2012: Utils3D$ class cannot be instantiated.
+	at Test()
+[class VertexBuffer3D]
+ArgumentError: Error #2012: VertexBuffer3D$ class cannot be instantiated.
+	at Test()
 [class Worker]
 ArgumentError: Error #2012: Worker$ class cannot be instantiated.
+	at Test()
+[class WorkerDomain]
+ArgumentError: Error #2012: WorkerDomain$ class cannot be instantiated.
 	at Test()

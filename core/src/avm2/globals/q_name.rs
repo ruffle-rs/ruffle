@@ -4,7 +4,8 @@ use ruffle_macros::istr;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::object::{Object, QNameObject, TObject};
+use crate::avm2::object::{Object, QNameObject};
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Namespace;
@@ -14,15 +15,11 @@ pub fn call_handler<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.len() == 1 {
+    if let Some(arg0) = args.get_optional(0).filter(|_| args.len() == 1) {
         // 1. If Namespace is not specified and Type(Name) is Object and Name.[[Class]] == “QName”
-        if args[0]
-            .as_object()
-            .and_then(|x| x.as_qname_object())
-            .is_some()
-        {
+        if arg0.as_object().and_then(|x| x.as_qname_object()).is_some() {
             // 1.a. Return Name
-            return Ok(args[0]);
+            return Ok(arg0);
         }
     }
 
@@ -43,8 +40,8 @@ pub fn q_name_constructor<'gc>(
     let this = QNameObject::new_empty(activation);
 
     let namespace = if args.len() >= 2 {
-        let ns_arg = args[0];
-        let mut local_arg = args[1];
+        let ns_arg = args.get_value(0);
+        let mut local_arg = args.get_value(1);
 
         if matches!(local_arg, Value::Undefined) {
             local_arg = istr!("").into();
@@ -78,7 +75,7 @@ pub fn q_name_constructor<'gc>(
 
         namespace
     } else {
-        let qname_arg = args.get(0).copied().unwrap_or(Value::Undefined);
+        let qname_arg = args.get_optional(0).unwrap_or(Value::Undefined);
         if let Value::Object(Object::QNameObject(qname_obj)) = qname_arg {
             this.init_name(activation.gc(), qname_obj.name().clone());
             return Ok(this.into());

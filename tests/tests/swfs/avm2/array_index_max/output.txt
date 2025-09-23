@@ -1,0 +1,85 @@
+testing index 0
+    1
+    true
+    0
+
+testing index 0
+    1
+    true
+    0
+
+testing index 4294967293
+    4294967294
+    true
+    0
+
+testing index 4294967294
+    4294967295
+    true
+    0
+
+testing index 4294967295
+    0
+    true
+    0
+
+testing index 4294967296
+    0
+    true
+    0
+
+testing index 4294967297
+    0
+    true
+    0
+
+testing index 4294967293
+    4294967294
+    true
+    0
+
+testing index 4294967294
+    4294967295
+    true
+    0
+
+testing index 4294967295
+    0
+    true
+    0
+
+testing index 4294967296
+    0
+    true
+    0
+
+testing index 4294967297
+    0
+    true
+    0
+
+testing index 2147483645
+    2147483646
+    true
+    0
+
+testing index 2147483646
+    2147483647
+    true
+    0
+
+testing index 2147483647
+    2147483648
+    true
+    0
+
+testing index 2147483648
+    2147483649
+    true
+    0
+
+testing index 2147483649
+    2147483650
+    true
+    0
+
