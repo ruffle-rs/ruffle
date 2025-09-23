@@ -153,7 +153,7 @@
                                 <div class="settings-option-control" id="control-backgroundColor">
                                     <label for="site-backgroundColor">Background Color</label>
                                     <input type="text" id="site-backgroundColor" placeholder="#FFFFFF">
-                                    <small>HTML color for the background (null for SWF default).</small>
+                                    <small>HTML color for the background.</small>
                                 </div>
                             </div>
 
@@ -162,9 +162,9 @@
                                 <div class="settings-option-control" id="control-letterbox">
                                     <label for="site-letterbox">Letterbox</label>
                                     <select id="site-letterbox">
-                                        <option value="off">Off</option>
-                                        <option value="fullscreen">Fullscreen</option>
-                                        <option value="on">On</option>
+                                        <option value="off">Off - The content will never be letterboxed.</option>
+                                        <option value="fullscreen" selected>Fullscreen - The content will only be letterboxed if the content is running fullscreen.</option>
+                                        <option value="on">On - The content will always be letterboxed.</option>
                                     </select>
                                     <small>Controls letterbox behavior when container size doesn't match movie size.</small>
                                 </div>
@@ -191,11 +191,11 @@
                                <div class="settings-option-control" id="control-wmode">
                                    <label for="site-wmode">Window Mode</label>
                                    <select id="site-wmode">
-                                       <option value="window">Window</option>
-                                       <option value="opaque">Opaque</option>
-                                       <option value="transparent">Transparent</option>
-                                       <option value="direct">Direct</option>
-                                       <option value="gpu">GPU</option>
+                                       <option value="window" selected>Window - Default browser layering</option>
+                                       <option value="opaque">Opaque - Layers with HTML, opaque background</option>
+                                       <option value="transparent">Transparent - Layers with HTML, transparent background</option>
+                                       <option value="direct">Direct - Hardware acceleration (same as Opaque)</option>
+                                       <option value="gpu">GPU - Direct rendering (same as Opaque)</option>
                                    </select>
                                    <small>Controls how Ruffle is layered with other content.</small>
                                </div>
@@ -205,28 +205,43 @@
                                <input type="checkbox" class="settings-option-toggle" data-option-id="scale">
                                <div class="settings-option-control" id="control-scale">
                                    <label for="site-scale">Scale Mode</label>
-                                   <input type="text" id="site-scale" placeholder="showAll">
+                                   <select id="site-scale">
+                                       <option value="exactFit">Exact Fit - Stretches to fill container, aspect ratio not preserved</option>
+                                       <option value="noBorder">No Border - Fills container, preserves aspect ratio, edges may be cropped</option>
+                                       <option value="noScale">No Scale - No scaling, content uses container size (may be clipped)</option>
+                                       <option value="showAll" selected>Show All - Scales to fit container, preserves aspect ratio (letterboxed if needed)</option>
+                                   </select>
                                    <small>Equivalent to Stage.scaleMode (e.g., "showAll", "noBorder", "exactFit", "noScale").</small>
                                </div>
                            </div>
 
-                           <div class="settings-option">
-                               <input type="checkbox" class="settings-option-toggle" data-option-id="salign">
-                               <div class="settings-option-control" id="control-salign">
-                                   <label for="site-salign">Stage Alignment</label>
-                                   <input type="text" id="site-salign" placeholder="">
-                                   <small>Equivalent to Stage.align (e.g., "TL", "TR", "BL", "BR", "T", "B", "L", "R").</small>
-                               </div>
-                           </div>
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="salign">
+                                <div class="settings-option-control" id="control-salign">
+                                    <label for="site-salign">Stage Alignment</label>
+                                    <select id="site-salign">
+                                        <option value="">Center</option>
+                                        <option value="T">Top</option>
+                                        <option value="B">Bottom</option>
+                                        <option value="L">Left</option>
+                                        <option value="R">Right</option>
+                                        <option value="TL">Top Left</option>
+                                        <option value="TR">Top Right</option>
+                                        <option value="BL">Bottom Left</option>
+                                        <option value="BR">Bottom Right</option>
+                                    </select>
+                                    <small>Equivalent to Stage.align. Choose how content is anchored in the container.</small>
+                                </div>
+                            </div>
 
-                           <div class="settings-option">
-                               <input type="checkbox" class="settings-option-toggle" data-option-id="quality">
-                               <div class="settings-option-control" id="control-quality">
-                                   <label for="site-quality">Quality</label>
-                                   <input type="text" id="site-quality" placeholder="">
-                                   <small>Equivalent to Stage.quality (e.g., "low", "medium", "high", "best").</small>
-                               </div>
-                           </div>
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="quality">
+                                <div class="settings-option-control" id="control-quality">
+                                    <label for="site-quality">Quality</label>
+                                    <input type="text" id="site-quality" placeholder="">
+                                    <small>Equivalent to Stage.quality (e.g., "low", "medium", "high", "best").</small>
+                                </div>
+                            </div>
                        </div>
 
                         <div>
