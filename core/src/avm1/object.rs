@@ -123,7 +123,7 @@ impl<'gc> BoxedF64<'gc> {
     }
 
     #[inline]
-    pub fn value(&self) -> f64 {
+    pub fn value(self) -> f64 {
         #[cfg(target_pointer_width = "64")]
         return self.value;
         #[cfg(not(target_pointer_width = "64"))]
@@ -315,7 +315,7 @@ impl<'gc> Object<'gc> {
     /// can't implement interfaces within interfaces (fortunately), but if you
     /// somehow could this would support that, too.
     pub fn is_instance_of(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         constructor: Object<'gc>,
         prototype: Object<'gc>,
@@ -351,7 +351,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Get the underlying XML node for this object, if it exists.
-    pub fn as_xml_node(&self) -> Option<XmlNode<'gc>> {
+    pub fn as_xml_node(self) -> Option<XmlNode<'gc>> {
         match self.native() {
             NativeObject::Xml(xml) => Some(xml.root()),
             NativeObject::XmlNode(xml_node) => Some(xml_node),
@@ -360,11 +360,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Check if this object is in the prototype chain of the specified test object.
-    pub fn is_prototype_of(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        other: Object<'gc>,
-    ) -> bool {
+    pub fn is_prototype_of(self, activation: &mut Activation<'_, 'gc>, other: Object<'gc>) -> bool {
         let mut proto = other.proto(activation);
 
         while let Value::Object(proto_ob) = proto {
