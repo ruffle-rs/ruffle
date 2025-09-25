@@ -181,6 +181,27 @@
                                     <small>Show unmute overlay when player is muted.</small>
                                 </div>
                             </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="preloader">
+                                <div class="settings-option-control" id="control-preloader">
+                                    <label for="site-preloader">Preloader</label>
+                                    <select id="site-preloader">
+                                        <option value="true">Enabled</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
+                                    <small>Whether or not to show a splash screen before the SWF has loaded with Ruffle (backwards-compatibility).</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="parameters">
+                                <div class="settings-option-control" id="control-parameters">
+                                    <label for="site-parameters">Parameters (Flashvars)</label>
+                                    <input type="text" id="site-parameters" placeholder="key1=value1&key2=value2">
+                                    <small>Values that may be passed to and loaded by the movie.</small>
+                                </div>
+                            </div>
                         </div>
 
                         <div>
@@ -242,7 +263,20 @@
                                     <small>Equivalent to Stage.quality (e.g., "low", "medium", "high", "best").</small>
                                 </div>
                             </div>
-                       </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="scrollingBehavior">
+                                <div class="settings-option-control" id="control-scrollingBehavior">
+                                    <label for="site-scrollingBehavior">Scrolling Behavior</label>
+                                    <select id="site-scrollingBehavior">
+                                        <option value="smart" selected>Smart - Scroll the page only when the Flash content hasn't handled the scroll.</option>
+                                        <option value="never">Never - Never scroll the page.</option>
+                                        <option value="always">Always - Always scroll the page.</option>
+                                    </select>
+                                    <small>Defines the scrolling behavior of Flash content on the web page.</small>
+                                </div>
+                            </div>
+                        </div>
 
                         <div>
                             <div class="settings-section-title">Performance</div>
@@ -319,6 +353,46 @@
                                     <small>Console logging level for this site.</small>
                                 </div>
                             </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="publicPath">
+                                <div class="settings-option-control" id="control-publicPath">
+                                    <label for="site-publicPath">Public Path</label>
+                                    <input type="text" id="site-publicPath" placeholder="/path/to/ruffle/">
+                                    <small>The URL at which Ruffle can load its extra files (i.e. '.wasm').</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="polyfills">
+                                <div class="settings-option-control" id="control-polyfills">
+                                    <label for="site-polyfills">Polyfills</label>
+                                    <select id="site-polyfills">
+                                        <option value="true">Enabled</option>
+                                        <option value="false">Disabled</option>
+                                    </select>
+                                    <small>Enable polyfills on the page for legacy Flash content.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="fontSources">
+                                <div class="settings-option-control" id="control-fontSources">
+                                    <label for="site-fontSources">Font Sources</label>
+                                    <input type="text" id="site-fontSources" placeholder="/path/to/font.swf,/path/to/font2.swf">
+                                    <small>List of font URLs separated by comma to load.</small>
+                                </div>
+                            </div>
+
+                            <!-- TODO: Add more inputs dynamic -->
+                            <!--<div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="defaultFonts">
+                                <div class="settings-option-control" id="control-defaultFonts">
+                                    <label for="site-defaultFonts">Default Fonts</label>
+                                    <input type="text" id="site-defaultFonts" placeholder="...">
+                                    <small>Names of fonts to use for each default Flash device font.</small>
+                                </div>
+                            </div>-->
                         </div>
 
                         <div>
@@ -385,6 +459,54 @@
                                     <small>Prefer real Adobe Flash Player if available.</small>
                                 </div>
                             </div>
+
+                            <!-- I am not sure if this can be done via UI -->
+                            <!--<div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="openInNewTab">
+                                <div class="settings-option-control" id="control-openInNewTab">
+                                    <label for="site-openInNewTab">Open in New Tab</label>
+                                    <input type="text" id="site-openInNewTab" placeholder="...">
+                                    <small>Function to open content in a new tab.</small>
+                                </div>
+                            </div>-->
+
+                            <!-- TODO: Add more inputs dynamic or use Array? e.g. [{'port': 80, 'host': '0.0.0.0'..}] -->
+                            <!--<div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="socketProxy">
+                                <div class="settings-option-control" id="control-socketProxy">
+                                    <label for="site-socketProxy">Socket Proxy</label>
+                                    <input type="text" id="site-socketProxy" placeholder="...">
+                                    <small>Array of SocketProxy objects for socket connections.</small>
+                                </div>
+                            </div>-->
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="credentialAllowList">
+                                <div class="settings-option-control" id="control-credentialAllowList">
+                                    <label for="site-credentialAllowList">Credential Allow List</label>
+                                    <input type="text" id="site-credentialAllowList" placeholder="https://example.org,https://example2.org">
+                                    <small>List of origins separated by comma to which credentials can be sent.</small>
+                                </div>
+                            </div>
+
+                            <div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="gamepadButtonMapping">
+                                <div class="settings-option-control" id="control-gamepadButtonMapping">
+                                    <label for="site-gamepadButtonMapping">Gamepad Button Mapping</label>
+                                    <input type="text" id="site-gamepadButtonMapping" placeholder="dpad-up:38,dpad-down:40">
+                                    <small>Mapping of gamepad buttons to ActionScript key codes.</small>
+                                </div>
+                            </div>
+
+                            <!-- I am not sure if this can be done via UI without adding more inputs and validations -->
+                            <!--<div class="settings-option">
+                                <input type="checkbox" class="settings-option-toggle" data-option-id="urlRewriteRules">
+                                <div class="settings-option-control" id="control-urlRewriteRules">
+                                    <label for="site-urlRewriteRules">URL Rewrite Rules</label>
+                                    <input type="text" id="site-urlRewriteRules" placeholder="...">
+                                    <small>Set of rules that rewrite URLs in network requests and links.</small>
+                                </div>
+                            </div>-->
                         </div>
 
                         <div>
@@ -498,19 +620,6 @@
                                     <label for="site-base">Base URL</label>
                                     <input type="text" id="site-base" placeholder="">
                                     <small>Base directory/URL for resolving relative paths in SWF.</small>
-                                </div>
-                            </div>
-
-                            <div class="settings-option">
-                                <input type="checkbox" class="settings-option-toggle" data-option-id="scrollingBehavior">
-                                <div class="settings-option-control" id="control-scrollingBehavior">
-                                    <label for="site-scrollingBehavior">Scrolling Behavior</label>
-                                    <select id="site-scrollingBehavior">
-                                        <option value="smart">Smart</option>
-                                        <option value="always">Always</option>
-                                        <option value="never">Never</option>
-                                    </select>
-                                    <small>How scrolling Flash content affects the web page.</small>
                                 </div>
                             </div>
                         </div>
