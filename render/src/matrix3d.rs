@@ -47,3 +47,37 @@ impl Matrix3D {
         }
     }
 }
+
+impl Matrix3D {
+    pub const ZERO: Self = Self {
+        raw_data: [0.0; 16],
+    };
+    pub const IDENTITY: Self = Self {
+        raw_data: [
+            1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0, 1.0,
+        ],
+    };
+
+    pub fn tz(&self) -> f64 {
+        self.raw_data[14]
+    }
+    pub fn set_tz(&mut self, tz: f64) {
+        self.raw_data[14] = tz;
+    }
+}
+
+impl std::ops::Mul for Matrix3D {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        let mut res = Matrix3D::ZERO;
+        for i in 0..4 {
+            for j in 0..4 {
+                for k in 0..4 {
+                    res.raw_data[i + 4 * j] += self.raw_data[i + 4 * k] * rhs.raw_data[k + 4 * j];
+                }
+            }
+        }
+        res
+    }
+}
