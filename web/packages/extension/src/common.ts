@@ -111,7 +111,13 @@ class SelectOption implements OptionElement<string | null> {
 }
 
 function getElement(option: Element): OptionElement<unknown> {
-    const label = option.getElementsByTagName("label")[0]!;
+    const element = option.querySelector<HTMLInputElement | HTMLSelectElement>(
+        "input, select",
+    )!;
+
+    const label = option.querySelector<HTMLLabelElement>(
+        `label[for="${element.id}"]`,
+    )!;
 
     const [input] = option.getElementsByTagName("input");
     if (input) {
