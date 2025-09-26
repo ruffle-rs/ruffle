@@ -109,7 +109,7 @@ mod tests {
 
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
         assert_eq!(result.warnings.len(), 1);
-        assert_eq!("Invalid TOML: TOML parse error at line 1, column 1\n  |\n1 | ~~INVALID~~\n  | ^\ninvalid key\n", result.warnings[0].to_string());
+        assert_eq!("Invalid TOML: TOML parse error at line 1, column 12\n  |\n1 | ~~INVALID~~\n  |            ^\nkey with no value, expected `=`\n", result.warnings[0].to_string());
     }
 
     #[test]
