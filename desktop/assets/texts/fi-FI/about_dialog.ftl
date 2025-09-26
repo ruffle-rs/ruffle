@@ -1,4 +1,4 @@
-about-ruffle = Tietoja - Ruffle
+about-ruffle = Tietoja – Ruffle
 about-ruffle-version = Versio
 about-ruffle-channel = Kanava
 about-ruffle-build-time = Koontiaika
