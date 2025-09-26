@@ -113,26 +113,31 @@ class SelectOption implements OptionElement<string | null> {
 function getElement(option: Element): OptionElement<unknown> {
     const element = option.querySelector<HTMLInputElement | HTMLSelectElement>(
         "input, select",
-    )!;
+    );
+
+    if (!element) {
+        throw new Error(
+            "No input or select element found inside the option container.",
+        );
+    }
 
     const label = option.querySelector<HTMLLabelElement>(
         `label[for="${element.id}"]`,
-    )!;
+    );
 
-    const [input] = option.getElementsByTagName("input");
-    if (input) {
-        if (input.type === "checkbox") {
-            return new CheckboxOption(input, label);
-        }
-
-        if (input.type === "number") {
-            return new NumberOption(input, label);
-        }
+    if (!label) {
+        throw new Error(`No label found with for="${element.id}"`);
     }
 
-    const [select] = option.getElementsByTagName("select");
-    if (select) {
-        return new SelectOption(select, label);
+    if (element instanceof HTMLInputElement) {
+        switch (element.type) {
+            case "checkbox":
+                return new CheckboxOption(element, label);
+            case "number":
+                return new NumberOption(element, label);
+        }
+    } else if (element instanceof HTMLSelectElement) {
+        return new SelectOption(element, label);
     }
 
     throw new Error("Unknown option element");
