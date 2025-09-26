@@ -199,4 +199,11 @@ impl Matrix3D {
 
         Self { raw_data: result }
     }
+
+    pub fn tz(&self) -> f32 {
+        self.raw_data[14]
+    }
+    pub fn set_tz(&mut self, tz: f32) {
+        self.raw_data[14] = tz;
+    }
 }
