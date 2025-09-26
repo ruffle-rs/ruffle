@@ -47,7 +47,7 @@ null
 false
 true
 16711680
-0
+30
 line#2
 [object Test]
 [object Stage]
