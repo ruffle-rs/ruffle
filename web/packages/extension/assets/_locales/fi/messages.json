@@ -23,8 +23,14 @@
     "settings_log_level_warn": {
         "message": "Varoitukset"
     },
+    "settings_log_level_info": {
+        "message": "Info"
+    },
     "settings_log_level_debug": {
         "message": "Vianjäljitys"
+    },
+    "settings_log_level_trace": {
+        "message": "Trace"
     },
     "settings_player_version": {
         "message": "Emuloitava Flash-soittimen versio (välillä 1-32)"
@@ -53,6 +59,9 @@
     "status_result_running": {
         "message": "Ruffle on valmis toistamaan Flash-sisältöä nykyisellä välilehdellä."
     },
+    "status_result_running_protected": {
+        "message": "Ruffle on valmis toistamaan pyytämääsi Flash-sisältöä."
+    },
     "status_result_disabled": {
         "message": "Ruffle on poistettu käytöstä."
     },
@@ -69,7 +78,7 @@
         "message": "Asetusten sivu"
     },
     "description": {
-        "message": "Asettaa Flashin takaisin sinne minne kuuluukin - verkkoon."
+        "message": "Asettaa Flashin takaisin sinne minne kuuluukin – verkkoon."
     },
     "save_settings": {
         "message": "Tallenna asetukset"
