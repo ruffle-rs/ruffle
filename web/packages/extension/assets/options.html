@@ -635,55 +635,6 @@
             </div>
         </div>
 
-        <script>
-            document.addEventListener('DOMContentLoaded', () => {
-                const modal = document.getElementById('site-settings-modal');
-                const addNewBtn = document.getElementById('site-entry-new');
-                const closeBtns = document.querySelectorAll('.modal-close-btn, #modal-cancel-btn');
-
-                const openModal = () => {
-                    modal.style.display = 'flex';
-                    document.body.classList.add('modal-open');
-                };
-
-                const closeModal = () => {
-                    modal.style.display = 'none';
-                    document.body.classList.remove('modal-open');
-                };
-
-                addNewBtn.addEventListener('click', openModal);
-
-                closeBtns.forEach(btn => btn.addEventListener('click', closeModal));
-
-                document.querySelectorAll('.edit-site-btn').forEach(btn => {
-                    btn.addEventListener('click', openModal);
-                });
-
-                document.querySelectorAll('.settings-option').forEach(option => {
-                    const switchEl = option.querySelector('.settings-option-toggle');
-                    const controlId = switchEl.dataset.optionId;
-                    const controlContainer = document.getElementById(`control-${controlId}`);
-
-                    if (!controlContainer) {
-                        console.warn(`Element with id control-${controlId} not found.`);
-                        return;
-                    }
-
-                    const toggleControl = () => {
-                        if (switchEl.checked) {
-                            controlContainer.classList.remove('settings-option-disabled');
-                        } else {
-                            controlContainer.classList.add('settings-option-disabled');
-                        }
-                    };
-
-                    switchEl.addEventListener('change', toggleControl);
-
-                    toggleControl();
-                });
-            });
-        </script>
-
         <script src="dist/options.js"></script>
     </body>
 </html>
