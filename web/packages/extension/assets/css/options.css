@@ -21,23 +21,29 @@ hr {
 }
 
 #reset-settings {
-    margin: 0 auto;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 .option-title {
     border-bottom: 2px solid var(--ruffle-light-blue);
     padding-bottom: 8px;
-    margin-block-end: 0;
+    margin-block-end: 10px;
     font-size: 1.2em;
     color: var(--ruffle-orange);
 }
 
 .option-description {
     opacity: 0.8;
-    margin-block: 0.2em;
+    margin-block: 15px;
+    margin-left: 5px;
 }
 
 /* Per-site settings */
+
+.per-site {
+}
 
 #per-site-list {
     display: flex;
@@ -59,7 +65,8 @@ hr {
 }
 
 #site-entry-new {
-    align-self: flex-start;
+    display: block;
+    margin: 10px 0 10px auto;
 }
 
 /* Modal  */
@@ -167,9 +174,7 @@ hr {
 /* Sections */
 
 .settings-section > * {
-    margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 2px solid var(--ruffle-light-blue);
 }
 
 .settings-section > :last-child {
@@ -192,7 +197,6 @@ hr {
     grid-template-columns: 40px 1fr;
     align-items: start;
     gap: 15px;
-    padding: 12px 0;
     border-bottom: 1px solid var(--ruffle-light-blue);
 }
 
@@ -217,12 +221,18 @@ hr {
     gap: 5px;
 }
 
-.settings-option-control label {
-    font-weight: bold;
-}
-
 .settings-option-control small {
     font-size: 0.8em;
     color: #ccc;
     opacity: 0.8;
+}
+
+.settings-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.settings-row label {
+    font-weight: bold;
 }
