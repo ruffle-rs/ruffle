@@ -42,9 +42,6 @@ hr {
 
 /* Per-site settings */
 
-.per-site {
-}
-
 #per-site-list {
     display: flex;
     flex-direction: column;
