@@ -23,11 +23,26 @@ pyftsubset --unicodes=2200-22FF NotoSansMath-Regular-NoTable.ttf
 echo "6. Merging fonts"
 pyftmerge NotoSans-Regular.subset.ttf NotoSansMath-Regular-NoTable.subset.ttf
 
-echo "7. Zipping result"
+
+echo "7. Fixing up descent"
+
+ttx merged.ttf
+
+if ! grep -q 'descent value="-423"' merged.ttx ; then
+	echo "ERROR: Need Update descent value!"
+	exit 1
+fi
+
+sed -i -e 's/descent value="-423"/descent value="-293"/' merged.ttx
+sed -i -e 's/sTypoDescender value="-423"/sTypoDescender value="-293"/' merged.ttx
+ttx merged.ttx
+mv merged#1.ttf merged.ttf
+
+echo "8. Zipping result"
 # Pure gzip (no headers or other sections)
 cat merged.ttf | gzip --best --no-name | tail --bytes=+11 | head --bytes=-8 > notosans.subset.ttf.gz
 
 echo "DONE: Created notosans.subset.ttf.gz"
 
-echo "8. Removing artifacts"
-rm *.ttf
+echo "9. Removing artifacts"
+rm *.ttf *.ttx
