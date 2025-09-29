@@ -16,9 +16,9 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "@tsconfig/strictest": "^2.0.5",
+        "@tsconfig/strictest": "^2.0.6",
         "@types/archiver": "^6.0.3",
-        "@types/chrome": "^0.1.12",
+        "@types/chrome": "^0.1.14",
         "@types/common-tags": "^1.8.4",
         "@types/firefox-webext-browser": "^120.0.4",
         "@types/jsonwebtoken": "^9.0.10",
@@ -30,6 +30,6 @@
         "axios": "^1.12.2",
         "form-data": "^4.0.4",
         "jsonwebtoken": "^9.0.2",
-        "tsx": "^4.20.5"
+        "tsx": "^4.20.6"
     }
 }
