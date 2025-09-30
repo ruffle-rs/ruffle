@@ -191,15 +191,6 @@ if (browserstack) {
     };
 }
 
-if (!browserstack) {
-    setupLogging = async () => {
-        await browser.sessionSubscribe({ events: ["log.entryAdded"] });
-        browser.on("log.entryAdded", (entryAdded) =>
-            console.log("[Console] [%s] %s", entryAdded.level, entryAdded.text),
-        );
-    };
-}
-
 services.push([
     "static-server",
     {
@@ -244,6 +235,19 @@ export const config: WebdriverIO.Config = {
     mochaOpts: {
         ui: "bdd",
         timeout: 120000,
+    },
+
+    async beforeSuite() {
+        if (!browserstack) {
+            await browser.sessionSubscribe({ events: ["log.entryAdded"] });
+            browser.on("log.entryAdded", (entryAdded) => {
+                console.log(
+                    "[Console] [%s] %s",
+                    entryAdded.level,
+                    entryAdded.text,
+                );
+            });
+        }
     },
 
     async beforeTest() {
