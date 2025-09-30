@@ -85,13 +85,13 @@ interface TestParams {
         it("scroll the first clip", async () => {
             const player = await browser.$("#objectElement");
 
-            expect(await scroll(browser, player, 100, 100, 1)).to.equal(
+            expect([
+                await scroll(browser, player, 100, 100, 1),
+                await getTraceOutput(browser, player),
+            ]).to.deep.equal([
                 expectedScroll ?? false,
-            );
-
-            expect(await getTraceOutput(browser, player)).to.equal(
                 "Wheel consumed 1, vscroll: 1\n",
-            );
+            ]);
         });
 
         it("scroll the text field up", async () => {
@@ -121,13 +121,13 @@ interface TestParams {
         it("scroll the second clip", async () => {
             const player = await browser.$("#objectElement");
 
-            expect(await scroll(browser, player, 500, 100, 1)).to.equal(
+            expect([
+                await scroll(browser, player, 500, 100, 1),
+                await getTraceOutput(browser, player),
+            ]).to.deep.equal([
                 expectedScroll ?? false,
-            );
-
-            expect(await getTraceOutput(browser, player)).to.equal(
                 "Wheel consumed 2, vscroll: 2\n",
-            );
+            ]);
         });
 
         it("scroll non-interactive content", async () => {
