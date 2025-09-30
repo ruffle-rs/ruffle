@@ -106,6 +106,7 @@ export async function setupAndPlay(
             player.__ruffle_log__ = "";
             player.ruffle().traceObserver = (msg) => {
                 player.__ruffle_log__ += msg + "\n";
+                console.log(`[trace] ${msg}`);
             };
             player.ruffle().resume();
         },
