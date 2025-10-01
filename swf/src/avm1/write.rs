@@ -157,7 +157,7 @@ impl<W: Write> Writer<W> {
             Action::StartDrag => self.write_small_action(OpCode::StartDrag),
             Action::Stop => self.write_small_action(OpCode::Stop),
             Action::StopSounds => self.write_small_action(OpCode::StopSounds),
-            Action::StoreRegister(action) => self.write_store_register(action),
+            Action::StoreRegister(action) => self.write_store_register(*action),
             Action::StrictEquals => self.write_small_action(OpCode::StrictEquals),
             Action::StringAdd => self.write_small_action(OpCode::StringAdd),
             Action::StringEquals => self.write_small_action(OpCode::StringEquals),
@@ -382,7 +382,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_store_register(&mut self, action: &StoreRegister) -> Result<()> {
+    fn write_store_register(&mut self, action: StoreRegister) -> Result<()> {
         self.write_action_header(OpCode::StoreRegister, 1)?;
         self.write_u8(action.register)?;
         Ok(())

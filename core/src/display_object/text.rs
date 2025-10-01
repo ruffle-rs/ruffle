@@ -74,7 +74,7 @@ impl<'gc> Text<'gc> {
         self.invalidate_cached_bitmap();
     }
 
-    pub fn text(&self, context: &mut UpdateContext<'gc>) -> WString {
+    pub fn text(self, context: &mut UpdateContext<'gc>) -> WString {
         let mut ret = WString::new();
 
         for block in &self.0.shared.get().text_blocks {

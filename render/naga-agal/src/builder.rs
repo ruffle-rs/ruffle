@@ -154,7 +154,7 @@ impl VertexAttributeFormat {
     }
 
     fn extend_to_float4(
-        &self,
+        self,
         base_expr: Handle<Expression>,
         builder: &mut NagaBuilder,
     ) -> Result<Handle<Expression>> {

@@ -206,7 +206,7 @@ impl<'gc> Video<'gc> {
     ///
     /// This function yields an error if this video player is not playing an
     /// embedded SWF video.
-    pub fn preload_swf_frame(&self, tag: VideoFrame) {
+    pub fn preload_swf_frame(self, tag: VideoFrame) {
         let movie = self.0.movie.clone();
 
         match self.0.source.get() {
