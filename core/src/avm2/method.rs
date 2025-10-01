@@ -67,7 +67,7 @@ impl<'gc> ParamConfig<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let param_type_name = txunit.pool_multiname_static_any(activation, config.kind)?;
 
-        let default_value = if let Some(dv) = &config.default_value {
+        let default_value = if let Some(dv) = config.default_value {
             Some(abc_default_value(txunit, dv, activation)?)
         } else {
             None

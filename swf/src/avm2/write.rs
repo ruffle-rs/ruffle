@@ -184,7 +184,7 @@ impl<W: Write> Writer<W> {
         if !constant_pool.namespaces.is_empty() {
             self.write_u30(constant_pool.namespaces.len() as u32 + 1)?;
             for namespace in &constant_pool.namespaces {
-                self.write_namespace(namespace)?;
+                self.write_namespace(*namespace)?;
             }
         } else {
             self.write_u32(0)?;
@@ -211,8 +211,8 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_namespace(&mut self, namespace: &Namespace) -> Result<()> {
-        match *namespace {
+    fn write_namespace(&mut self, namespace: Namespace) -> Result<()> {
+        match namespace {
             Namespace::Namespace(ref name) => {
                 self.write_u8(0x08)?;
                 self.write_index(name)?;
@@ -346,7 +346,7 @@ impl<W: Write> Writer<W> {
             self.write_u30(num_optional_params)?;
             let num_required = method.params.len() - num_optional_params as usize;
             for param in method.params.iter().skip(num_required) {
-                if let Some(ref value) = param.default_value {
+                if let Some(value) = param.default_value {
                     self.write_constant_value(value)?;
                 }
             }
@@ -363,8 +363,8 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_constant_value(&mut self, value: &DefaultValue) -> Result<()> {
-        let (index, kind) = match *value {
+    fn write_constant_value(&mut self, value: DefaultValue) -> Result<()> {
+        let (index, kind) = match value {
             DefaultValue::Undefined => (0, 0x00),
             DefaultValue::String(ref i) => (i.as_u30(), 0x01),
             DefaultValue::Int(ref i) => (i.as_u30(), 0x03),
@@ -386,8 +386,8 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_optional_value(&mut self, value: &Option<DefaultValue>) -> Result<()> {
-        match *value {
+    fn write_optional_value(&mut self, value: Option<DefaultValue>) -> Result<()> {
+        match value {
             None => self.write_u30(0)?,
             Some(ref value) => {
                 let (index, kind) = match *value {
@@ -489,7 +489,7 @@ impl<W: Write> Writer<W> {
             TraitKind::Slot {
                 slot_id,
                 ref type_name,
-                ref value,
+                value,
             } => {
                 self.write_u8(flags)?;
                 self.write_u30(slot_id)?;
@@ -536,7 +536,7 @@ impl<W: Write> Writer<W> {
             TraitKind::Const {
                 slot_id,
                 ref type_name,
-                ref value,
+                value,
             } => {
                 self.write_u8(flags | 6)?;
                 self.write_u30(slot_id)?;

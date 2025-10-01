@@ -131,19 +131,19 @@ impl<'gc> Trait<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let name = QName::from_abc_multiname(activation, unit, abc_trait.name)?;
 
-        Ok(match &abc_trait.kind {
+        Ok(match abc_trait.kind {
             AbcTraitKind::Slot {
                 slot_id,
                 type_name,
                 value,
             } => {
-                let type_name = unit.pool_multiname_static_any(activation, *type_name)?;
+                let type_name = unit.pool_multiname_static_any(activation, type_name)?;
                 let default_value = slot_default_value(unit, value, type_name, activation)?;
                 Trait {
                     name,
                     attributes: trait_attribs_from_abc_traits(abc_trait),
                     kind: TraitKind::Slot {
-                        slot_id: *slot_id,
+                        slot_id,
                         type_name,
                         default_value,
                         domain: unit.domain(),
@@ -155,8 +155,8 @@ impl<'gc> Trait<'gc> {
                 name,
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Method {
-                    disp_id: *disp_id,
-                    method: unit.load_method(*method, false, activation)?,
+                    disp_id,
+                    method: unit.load_method(method, false, activation)?,
                 },
                 metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
             },
@@ -164,8 +164,8 @@ impl<'gc> Trait<'gc> {
                 name,
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Getter {
-                    disp_id: *disp_id,
-                    method: unit.load_method(*method, false, activation)?,
+                    disp_id,
+                    method: unit.load_method(method, false, activation)?,
                 },
                 metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
             },
@@ -173,8 +173,8 @@ impl<'gc> Trait<'gc> {
                 name,
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Setter {
-                    disp_id: *disp_id,
-                    method: unit.load_method(*method, false, activation)?,
+                    disp_id,
+                    method: unit.load_method(method, false, activation)?,
                 },
                 metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
             },
@@ -182,7 +182,7 @@ impl<'gc> Trait<'gc> {
                 name,
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Class {
-                    slot_id: *slot_id,
+                    slot_id,
                     class: unit.load_class(class.0, activation)?,
                 },
                 metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
@@ -193,13 +193,13 @@ impl<'gc> Trait<'gc> {
                 type_name,
                 value,
             } => {
-                let type_name = unit.pool_multiname_static_any(activation, *type_name)?;
+                let type_name = unit.pool_multiname_static_any(activation, type_name)?;
                 let default_value = slot_default_value(unit, value, type_name, activation)?;
                 Trait {
                     name,
                     attributes: trait_attribs_from_abc_traits(abc_trait),
                     kind: TraitKind::Const {
-                        slot_id: *slot_id,
+                        slot_id,
                         type_name,
                         default_value,
                         domain: unit.domain(),
@@ -305,7 +305,7 @@ impl<'gc> Trait<'gc> {
 /// If no default value is supplied, the "null" value for the type's trait is returned.
 fn slot_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
-    value: &Option<AbcDefaultValue>,
+    value: Option<AbcDefaultValue>,
     type_name: Option<Gc<'gc, Multiname<'gc>>>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {

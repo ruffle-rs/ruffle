@@ -502,13 +502,13 @@ pub fn abc_double<'gc>(
 /// Retrieve a default value as an AVM2 `Value`.
 pub fn abc_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
-    default: &AbcDefaultValue,
+    default: AbcDefaultValue,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     match default {
-        AbcDefaultValue::Int(i) => abc_int(translation_unit, *i).map(|v| v.into()),
-        AbcDefaultValue::Uint(u) => abc_uint(translation_unit, *u).map(|v| v.into()),
-        AbcDefaultValue::Double(d) => abc_double(translation_unit, *d).map(|v| v.into()),
+        AbcDefaultValue::Int(i) => abc_int(translation_unit, i).map(|v| v.into()),
+        AbcDefaultValue::Uint(u) => abc_uint(translation_unit, u).map(|v| v.into()),
+        AbcDefaultValue::Double(d) => abc_double(translation_unit, d).map(|v| v.into()),
         AbcDefaultValue::String(s) => translation_unit
             .pool_string(s.0, activation.strings())
             .map(Into::into),
@@ -523,7 +523,7 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
         | AbcDefaultValue::Private(ns) => {
-            let ns = translation_unit.pool_namespace(activation, *ns)?;
+            let ns = translation_unit.pool_namespace(activation, ns)?;
             Ok(NamespaceObject::from_namespace(activation, ns).into())
         }
     }

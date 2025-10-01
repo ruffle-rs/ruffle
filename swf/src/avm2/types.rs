@@ -41,7 +41,7 @@ impl<T> Index<T> {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub enum Namespace {
     Namespace(Index<String>),
     Package(Index<String>),
@@ -146,10 +146,7 @@ pub struct Exception {
     pub type_name: Index<Multiname>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub struct Opcode;
-
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum DefaultValue {
     Int(Index<i32>),
     Uint(Index<u32>),
@@ -174,7 +171,7 @@ pub struct Metadata {
     pub items: Vec<MetadataItem>,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct MetadataItem {
     pub key: Index<String>,
     pub value: Index<String>,
