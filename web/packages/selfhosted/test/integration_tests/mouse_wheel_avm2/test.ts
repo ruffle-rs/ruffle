@@ -1,5 +1,6 @@
 import {
-    getTraceOutput,
+    assertNoMoreTraceOutput,
+    expectTraceOutput,
     hideHardwareAccelerationModal,
     injectRuffleAndWait,
     openTest,
@@ -77,7 +78,7 @@ interface TestParams {
             );
             await injectRuffleAndWait(browser);
             const player = await browser.$("<ruffle-object>");
-            await playAndMonitor(browser, player, "Loaded!\n");
+            await playAndMonitor(browser, player, ["Loaded!"]);
             await hideHardwareAccelerationModal(browser, player);
             // await new Promise(f => setTimeout(f, 10000000));
         });
@@ -85,12 +86,11 @@ interface TestParams {
         it("scroll the first clip", async () => {
             const player = await browser.$("#objectElement");
 
-            expect([
-                await scroll(browser, player, 100, 100, 1),
-                await getTraceOutput(browser, player),
-            ]).to.deep.equal([
+            expect(await scroll(browser, player, 100, 100, 1)).to.equal(
                 expectedScroll ?? false,
-                "Wheel consumed 1, vscroll: 1\n",
+            );
+            await expectTraceOutput(browser, player, [
+                "Wheel consumed 1, vscroll: 1",
             ]);
         });
 
@@ -121,12 +121,11 @@ interface TestParams {
         it("scroll the second clip", async () => {
             const player = await browser.$("#objectElement");
 
-            expect([
-                await scroll(browser, player, 500, 100, 1),
-                await getTraceOutput(browser, player),
-            ]).to.deep.equal([
+            expect(await scroll(browser, player, 500, 100, 1)).to.equal(
                 expectedScroll ?? false,
-                "Wheel consumed 2, vscroll: 2\n",
+            );
+            await expectTraceOutput(browser, player, [
+                "Wheel consumed 2, vscroll: 2",
             ]);
         });
 
@@ -136,6 +135,11 @@ interface TestParams {
             expect(await scroll(browser, player, 700, 100, 1)).to.equal(
                 expectedScroll ?? true,
             );
+        });
+
+        it("no more traces", async function () {
+            const player = await browser.$("#objectElement");
+            assertNoMoreTraceOutput(browser, player);
         });
     });
 });

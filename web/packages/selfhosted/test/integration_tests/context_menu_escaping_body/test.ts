@@ -1,4 +1,9 @@
-import { injectRuffleAndWait, openTest, playAndMonitor } from "../../utils.js";
+import {
+    assertNoMoreTraceOutput,
+    injectRuffleAndWait,
+    openTest,
+    playAndMonitor,
+} from "../../utils.js";
 import { expect, use } from "chai";
 import chaiHtml from "chai-html";
 
@@ -15,7 +20,7 @@ describe("Context Menu", () => {
         );
         await injectRuffleAndWait(browser);
         const player = await browser.$("<ruffle-object>");
-        await playAndMonitor(browser, player, "Loaded!\n");
+        await playAndMonitor(browser, player, ["Loaded!"]);
 
         // Dismiss hardware acceleration modal in Chrome
         await player.click();
@@ -44,7 +49,7 @@ describe("Context Menu", () => {
         );
         await injectRuffleAndWait(browser);
         const player = await browser.$("<ruffle-object>");
-        await playAndMonitor(browser, player, "Loaded!\n");
+        await playAndMonitor(browser, player, ["Loaded!"]);
 
         // Dismiss hardware acceleration modal in Chrome
         await player.click();
@@ -63,5 +68,10 @@ describe("Context Menu", () => {
 
         // Dismiss the menu
         await player.click({ x: -151, y: -151 });
+    });
+
+    it("no more traces", async function () {
+        const player = await browser.$("#objectElement");
+        assertNoMoreTraceOutput(browser, player);
     });
 });

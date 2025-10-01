@@ -1,5 +1,6 @@
 import {
-    getTraceOutput,
+    assertNoMoreTraceOutput,
+    expectTraceOutput,
     hideHardwareAccelerationModal,
     injectRuffleAndWait,
     openTest,
@@ -15,7 +16,7 @@ describe("URL Rewrite Rules", () => {
         await openTest(browser, "integration_tests/url_rewrite_rules");
         await injectRuffleAndWait(browser);
         const player = await browser.$("<ruffle-object>");
-        await playAndMonitor(browser, player, "Loaded test!\n");
+        await playAndMonitor(browser, player, ["Loaded test!"]);
         await hideHardwareAccelerationModal(browser, player);
     });
 
@@ -34,9 +35,10 @@ describe("URL Rewrite Rules", () => {
             );
         }, player);
 
-        expect(await getTraceOutput(browser, player)).to.equal(
-            "Loaded other1!\nQP Value: example.com/other1\n",
-        );
+        await expectTraceOutput(browser, player, [
+            "Loaded other1!",
+            "QP Value: example.com/other1",
+        ]);
     });
 
     it("rewrites URL of other1 to an absolute one", async () => {
@@ -54,9 +56,10 @@ describe("URL Rewrite Rules", () => {
             );
         }, player);
 
-        expect(await getTraceOutput(browser, player)).to.equal(
-            "Loaded other1!\nQP Value: http://localhost:4567/test/integration_tests/url_rewrite_rules/other1\n",
-        );
+        await expectTraceOutput(browser, player, [
+            "Loaded other1!",
+            "QP Value: http://localhost:4567/test/integration_tests/url_rewrite_rules/other1",
+        ]);
     });
 
     it("does not rewrite URL of other2", async () => {
@@ -74,9 +77,7 @@ describe("URL Rewrite Rules", () => {
             );
         }, player);
 
-        expect(await getTraceOutput(browser, player)).to.equal(
-            "Loaded other2!\n",
-        );
+        await expectTraceOutput(browser, player, ["Loaded other2!"]);
     });
 
     it("rewrites URL of a clicked link", async () => {
@@ -98,5 +99,10 @@ describe("URL Rewrite Rules", () => {
         expect(await browser.getUrl()).to.equal(
             "https://www.example.com/$1/$&",
         );
+    });
+
+    it("no more traces", async function () {
+        const player = await browser.$("#objectElement");
+        assertNoMoreTraceOutput(browser, player);
     });
 });
