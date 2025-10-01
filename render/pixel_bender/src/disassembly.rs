@@ -98,7 +98,7 @@ impl PixelBenderShaderDisassembly<'_> {
         if !reg.channels.is_empty() {
             write!(f, ".")?;
             for ch in &reg.channels {
-                f.write_str(self.channel_to_str(ch))?;
+                f.write_str(self.channel_to_str(*ch))?;
             }
         }
 
@@ -266,7 +266,7 @@ impl PixelBenderShaderDisassembly<'_> {
         }
     }
 
-    fn channel_to_str(&self, ch: &PixelBenderRegChannel) -> &'static str {
+    fn channel_to_str(&self, ch: PixelBenderRegChannel) -> &'static str {
         match ch {
             PixelBenderRegChannel::R => "r",
             PixelBenderRegChannel::G => "g",

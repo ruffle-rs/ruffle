@@ -385,7 +385,7 @@ impl<'gc> MovieClip<'gc> {
         self.0.set_initialized(true);
     }
 
-    pub fn next_avm1_clip(&self) -> Option<MovieClip<'gc>> {
+    pub fn next_avm1_clip(self) -> Option<MovieClip<'gc>> {
         self.0.next_avm1_clip.get()
     }
 
@@ -716,7 +716,7 @@ impl<'gc> MovieClip<'gc> {
     }
 
     /// Does this clip have a unload handler
-    pub fn has_unload_handler(&self) -> bool {
+    pub fn has_unload_handler(self) -> bool {
         self.clip_actions()
             .iter()
             .any(|handler| handler.events.contains(ClipEventFlag::UNLOAD))
@@ -1987,7 +1987,7 @@ impl<'gc> MovieClip<'gc> {
         unlock!(Gc::write(mc, self.0), MovieClipData, hit_area).set(hit_area);
     }
 
-    pub fn tag_stream_len(&self) -> usize {
+    pub fn tag_stream_len(self) -> usize {
         self.0.tag_stream_len()
     }
 
@@ -2009,7 +2009,7 @@ impl<'gc> MovieClip<'gc> {
         self.0.drawing.get().map(|d| d.borrow())
     }
 
-    pub fn is_button_mode(&self, context: &mut UpdateContext<'gc>) -> bool {
+    pub fn is_button_mode(self, context: &mut UpdateContext<'gc>) -> bool {
         if self.forced_button_mode()
             || self
                 .0
@@ -2041,7 +2041,7 @@ impl<'gc> MovieClip<'gc> {
 
     /// Remove all tags matching the given filter off the internal tag queue.
     fn unqueue_filtered(
-        &self,
+        self,
         mut filter: impl FnMut(&mut QueuedTagList) -> Option<QueuedTag>,
     ) -> Vec<(Depth, QueuedTag)> {
         use std::collections::hash_map::Entry;
@@ -2075,7 +2075,7 @@ impl<'gc> MovieClip<'gc> {
     // calls with one frame delay? Does transform_to_unloaded_state need to get executed
     // after one frame if the target is a MovieClip? Test the behaviour and adapt the code
     // if necessary.
-    pub fn avm1_unload_movie(&self, context: &mut UpdateContext<'gc>) {
+    pub fn avm1_unload_movie(self, context: &mut UpdateContext<'gc>) {
         // TODO: In Flash player, the MovieClip properties change to the unloaded state
         // one frame after the unloadMovie command has been read, even if the MovieClip
         // is not a root MovieClip (see the movieclip_library_state_values test).
@@ -2087,7 +2087,7 @@ impl<'gc> MovieClip<'gc> {
         if self.is_root() {
             let unloader = Loader::MovieUnloader {
                 self_handle: None,
-                target_clip: DisplayObject::MovieClip(*self),
+                target_clip: DisplayObject::MovieClip(self),
             };
             let handle = context.load_manager.add_loader(unloader);
 
@@ -2132,7 +2132,7 @@ impl<'gc> MovieClip<'gc> {
     ///
     /// This happens if a MovieClip has been unloaded. The state is then changed one
     /// frame after the command to unload the MovieClip has been read.
-    fn transform_to_unloaded_state(&self, context: &mut UpdateContext<'gc>) {
+    fn transform_to_unloaded_state(self, context: &mut UpdateContext<'gc>) {
         let movie = if let Some(DisplayObject::MovieClip(parent_mc)) = self.parent() {
             let parent_movie = parent_mc.movie();
             let parent_version = parent_movie.version();
@@ -4329,7 +4329,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         Ok(())
     }
 
-    pub fn set_constructing_frame(&self, val: bool) {
+    pub fn set_constructing_frame(self, val: bool) {
         self.0
             .set_flag(MovieClipFlags::RUNNING_CONSTRUCT_FRAME, val);
     }
