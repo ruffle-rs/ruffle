@@ -320,5 +320,8 @@
         <color type="primary" scheme_preference="dark">#2c4270</color>
     </branding>
     <releases>
+        <release version="0.2.0-nightly.2025.10.1" date="2025-10-01">
+            <url>https://github.com/ruffle-rs/ruffle/releases/tag/nightly-2025-10-01</url>
+        </release>
     </releases>
 </component>
