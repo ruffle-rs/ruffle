@@ -611,7 +611,7 @@ pub struct ExportedAsset<'a> {
     pub name: &'a SwfStr,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct RemoveObject {
     pub depth: Depth,
     pub character_id: Option<CharacterId>,

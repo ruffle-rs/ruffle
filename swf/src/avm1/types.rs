@@ -176,7 +176,7 @@ pub struct GetUrl<'a> {
     pub target: &'a SwfStr,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct GetUrl2(pub(crate) GetUrlFlags);
 
 impl GetUrl2 {
@@ -257,28 +257,28 @@ pub enum SendVarsMethod {
     Post = 2,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct GotoFrame {
     pub frame: u16,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct GotoFrame2 {
     pub set_playing: bool,
     pub scene_offset: u16,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct GotoLabel<'a> {
     pub label: &'a SwfStr,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct If {
     pub offset: i16,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Jump {
     pub offset: i16,
 }
@@ -301,7 +301,7 @@ pub enum Value<'a> {
     ConstantPool(u16),
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct SetTarget<'a> {
     pub target: &'a SwfStr,
 }
@@ -332,13 +332,13 @@ bitflags! {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct WaitForFrame {
     pub frame: u16,
     pub num_actions_to_skip: u8,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct WaitForFrame2 {
     pub num_actions_to_skip: u8,
 }
