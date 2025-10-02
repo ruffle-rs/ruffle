@@ -463,10 +463,16 @@ function addElement(settingForm: SettingForm): HTMLElement {
 
     settingsOptionControl.appendChild(formElement);
 
-    const formGroup = document.createElement("div");
-    formGroup.classList.add("form-group");
+    // formGroup wraps label (and description)
+    // if a description exists; otherwise use formElement directly.
+    let formGroup = formElement;
 
-    formElement.appendChild(formGroup);
+    if (settingForm.description) {
+        formGroup = document.createElement("div");
+        formGroup.classList.add("form-group");
+
+        formElement.appendChild(formGroup);
+    }
 
     const formLabel = document.createElement("label");
     formLabel.classList.add("form-label");
@@ -488,6 +494,7 @@ function addElement(settingForm: SettingForm): HTMLElement {
                 const formTypeInput = document.createElement("input");
                 formTypeInput.id = `setting-${settingForm.id}`;
                 formTypeInput.classList.add("form-type-text");
+                formTypeInput.type = "text";
 
                 if (settingForm.placeholder) {
                     formTypeInput.placeholder =
@@ -502,6 +509,7 @@ function addElement(settingForm: SettingForm): HTMLElement {
                 const formTypeNumber = document.createElement("input");
                 formTypeNumber.id = `setting-${settingForm.id}`;
                 formTypeNumber.classList.add("form-type-number");
+                formTypeNumber.type = "number";
 
                 if (settingForm.placeholder) {
                     formTypeNumber.placeholder =
