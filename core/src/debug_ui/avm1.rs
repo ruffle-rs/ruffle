@@ -310,11 +310,11 @@ fn show_value_type_combo_box<'gc>(
             // so just disable the selectable labels to prevent setting to these types.
             ui.add_enabled(
                 false,
-                egui::SelectableLabel::new(matches!(value, Value::Object(_)), "Object"),
+                egui::Button::selectable(matches!(value, Value::Object(_)), "Object"),
             );
             ui.add_enabled(
                 false,
-                egui::SelectableLabel::new(matches!(value, Value::MovieClip(_)), "MovieClip"),
+                egui::Button::selectable(matches!(value, Value::MovieClip(_)), "MovieClip"),
             );
         });
     new
