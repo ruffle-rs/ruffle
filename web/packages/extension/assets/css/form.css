@@ -16,11 +16,15 @@
 }
 
 .form-type-number {
-    width: 60px;
+    width: 130px;
 }
 
 .form-type-text {
-    width: 124px;
+    width: 130px;
+}
+
+.form-type-select {
+    width: 142px;
 }
 
 /* Switch - Based on "Pure CSS Slider Checkboxes": https://codepen.io/Qvcool/pen/bdzVYW */
