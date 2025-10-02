@@ -13,7 +13,7 @@ type SettingForm = {
     placeholder?: string | number;
 
     label: string;
-    description: string;
+    description?: string;
     options?: SelectOption[];
 };
 
@@ -49,14 +49,10 @@ const settingData: SettingGroup = {
         },
         {
             id: "allowScriptAccess",
-            type: "select",
+            type: "switch",
             label: "Allow Script Access",
             description:
                 "Allow movie to interact with page through JavaScript.",
-            options: [
-                { value: "true", text: "Enabled" },
-                { value: "false", text: "Disabled" },
-            ],
         },
         {
             id: "backgroundColor",
@@ -88,13 +84,9 @@ const settingData: SettingGroup = {
         },
         {
             id: "unmuteOverlay",
-            type: "select",
+            type: "switch",
             label: "Unmute Overlay",
-            description: "Show unmute overlay when player is muted.",
-            options: [
-                { value: "visible", text: "Visible" },
-                { value: "hidden", text: "Hidden" },
-            ],
+            description: "Show unmute overlay when player is muted.", // TODO: Update with better description to match switch
         },
         {
             id: "preloader",
@@ -102,10 +94,6 @@ const settingData: SettingGroup = {
             label: "Preloader",
             description:
                 "Whether or not to show a splash screen before the SWF has loaded.",
-            options: [
-                { value: "true", text: "Enabled" },
-                { value: "false", text: "Disabled" },
-            ],
         },
         {
             id: "parameters",
@@ -284,14 +272,10 @@ const settingData: SettingGroup = {
         },
         {
             id: "polyfills",
-            type: "select",
+            type: "switch",
             label: "Polyfills",
             description:
                 "Enable polyfills on the page for legacy Flash content.",
-            options: [
-                { value: "true", text: "Enabled" },
-                { value: "false", text: "Disabled" },
-            ],
         },
         {
             id: "fontSources",
@@ -333,33 +317,21 @@ const settingData: SettingGroup = {
         },
         {
             id: "upgradeToHttps",
-            type: "select",
+            type: "switch",
             label: "Upgrade to HTTPS",
             description: "Auto-upgrade embedded HTTP URLs to HTTPS.",
-            options: [
-                { value: "true", text: "Enabled" },
-                { value: "false", text: "Disabled" },
-            ],
         },
         {
             id: "compatibilityRules",
-            type: "select",
+            type: "switch",
             label: "Compatibility Rules",
             description: "Enable Ruffle's built-in compatibility rules.",
-            options: [
-                { value: "true", text: "Enabled" },
-                { value: "false", text: "Disabled" },
-            ],
         },
         {
             id: "favorFlash",
-            type: "select",
+            type: "switch",
             label: "Favor Flash Player",
             description: "Prefer real Adobe Flash Player if available.",
-            options: [
-                { value: "true", text: "Enabled" },
-                { value: "false", text: "Disabled" },
-            ],
         },
         // I am not sure if this can be done via UI
         /* {
@@ -415,72 +387,47 @@ const settingData: SettingGroup = {
         },
         {
             id: "showSwfDownload",
-            type: "select",
+            type: "switch",
             label: "Show SWF Download",
             description: "Add SWF download option to context menu.",
-            options: [
-                { value: "true", text: "Enabled" },
-                { value: "false", text: "Disabled" },
-            ],
         },
         {
             id: "menu",
-            type: "select",
+            type: "switch",
             label: "Built-in Menu Items",
-            description: "Equivalent to Stage.showMenu.",
-            options: [
-                { value: "true", text: "Visible" },
-                { value: "false", text: "Hidden" },
-            ],
+            description: "Equivalent to Stage.showMenu.", // TODO: Update with better description to match switch
         },
         {
             id: "splashScreen",
-            type: "select",
+            type: "switch",
             label: "Splash Screen",
-            description: "Show splash screen before SWF loads.",
-            options: [
-                { value: "true", text: "Show" },
-                { value: "false", text: "Hide" },
-            ],
+            description: "Show splash screen before SWF loads.", // TODO: Update with better description to match switch
         },
     ],
     settingsFullscreenScaling: [
         {
             id: "allowFullscreen",
-            type: "select",
+            type: "switch",
             label: "Allow Fullscreen",
             description: "Allow Stage's displayState to be changed.",
-            options: [
-                { value: "true", text: "Enabled" },
-                { value: "false", text: "Disabled" },
-            ],
         },
         {
             id: "forceAlign",
-            type: "select",
+            type: "switch",
             label: "Force Alignment",
             description: "Prevent movies from changing stage alignment.",
-            options: [
-                { value: "true", text: "Enabled" },
-                { value: "false", text: "Disabled" },
-            ],
         },
         {
             id: "forceScale",
-            type: "select",
+            type: "switch",
             label: "Force Scale",
             description: "Prevent movies from changing stage scale mode.",
-            options: [
-                { value: "true", text: "Enabled" },
-                { value: "false", text: "Disabled" },
-            ],
         },
         {
             id: "fullScreenAspectRatio",
             type: "text",
             label: "Fullscreen Aspect Ratio",
             description: "Controls orientation on mobile in fullscreen mode.",
-            options: [],
         },
     ],
     settingMiscellaneous: [
@@ -490,26 +437,9 @@ const settingData: SettingGroup = {
             label: "Base URL",
             description:
                 "Base directory/URL for resolving relative paths in SWF.",
-            options: [],
         },
     ],
 };
-
-/* const template: string = `
-        <div class="settings-option">
-            <input type="checkbox" class="settings-option-toggle" data-option-id="{id}">
-
-            <div class="settings-option-control" id="control-{id}">
-                <div class="form-element">
-                    <div class="form-group">
-                        <label class="form-label" for="site-{id}">{label}</label>
-                        <small>{description}</small>
-                    </div>
-                    <select class="form-type-text" id="site-{id}"></select>
-                </div>
-            </div>
-        </div>
-    `; */
 
 function addElement(settingForm: SettingForm): HTMLElement {
     const settingsOption = document.createElement("div");
@@ -603,6 +533,23 @@ function addElement(settingForm: SettingForm): HTMLElement {
             }
             break;
         case "switch":
+            {
+                const formTypeSwitch = document.createElement("div");
+                formTypeSwitch.classList.add("form-type-switch");
+
+                const formTypeSwitchCheckbox = document.createElement("input");
+                formTypeSwitchCheckbox.id = `setting-${settingForm.id}`;
+                formTypeSwitchCheckbox.type = "checkbox";
+
+                formTypeSwitch.appendChild(formTypeSwitchCheckbox);
+
+                const formTypeSwitchSlider = document.createElement("div");
+                formTypeSwitchSlider.classList.add("slider");
+
+                formTypeSwitch.appendChild(formTypeSwitchSlider);
+
+                formElement.appendChild(formTypeSwitch);
+            }
             break;
     }
 
