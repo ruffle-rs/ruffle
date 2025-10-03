@@ -238,6 +238,7 @@ pub struct DisplayObjectBase<'gc> {
     parent: Lock<Option<DisplayObject<'gc>>>,
     place_frame: Cell<u16>,
     depth: Cell<Depth>,
+    ratio: Cell<u16>,
     name: Lock<Option<AvmString<'gc>>>,
     clip_depth: Cell<Depth>,
 
@@ -316,6 +317,7 @@ impl Default for DisplayObjectBase<'_> {
             parent: Default::default(),
             place_frame: Default::default(),
             depth: Default::default(),
+            ratio: Default::default(),
             name: Lock::new(None),
             clip_depth: Default::default(),
             matrix: Default::default(),
@@ -1686,6 +1688,20 @@ pub trait TDisplayObject<'gc>:
         self.set_scale_y(Percent::from_unit(new_scale_y));
     }
 
+    #[no_dynamic]
+    fn ratio(self) -> u16 {
+        self.base().ratio.get()
+    }
+
+    #[no_dynamic]
+    fn set_ratio(self, context: &mut UpdateContext<'gc>, ratio: u16) {
+        self.base().ratio.set(ratio);
+        self.invalidate_cached_bitmap();
+        self.on_ratio_changed(context, ratio);
+    }
+
+    fn on_ratio_changed(self, _context: &mut UpdateContext<'gc>, _new_ratio: u16) {}
+
     /// The opacity of this display object.
     /// 1 is fully opaque.
     /// Returned by the `_alpha`/`alpha` ActionScript properties.
@@ -2427,11 +2443,7 @@ pub trait TDisplayObject<'gc>:
                 }
             }
             if let Some(ratio) = place_object.ratio {
-                if let Some(morph_shape) = self.as_morph_shape() {
-                    morph_shape.set_ratio(ratio);
-                } else if let Some(video) = self.as_video() {
-                    video.seek(context, ratio.into());
-                }
+                self.set_ratio(context, ratio);
             }
             if let Some(is_bitmap_cached) = place_object.is_bitmap_cached {
                 self.set_bitmap_cached_preference(is_bitmap_cached);

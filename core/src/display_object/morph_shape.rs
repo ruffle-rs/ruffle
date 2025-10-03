@@ -11,7 +11,7 @@ use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
-use std::cell::{Cell, RefCell, RefMut};
+use std::cell::{RefCell, RefMut};
 use std::sync::Arc;
 use swf::{Fixed16, Fixed8};
 
@@ -35,7 +35,6 @@ pub struct MorphShapeData<'gc> {
     shared: Lock<Gc<'gc, MorphShapeShared>>,
     /// The AVM2 representation of this MorphShape.
     object: Lock<Option<Avm2StageObject<'gc>>>,
-    ratio: Cell<u16>,
 }
 
 impl<'gc> MorphShape<'gc> {
@@ -50,19 +49,9 @@ impl<'gc> MorphShape<'gc> {
             MorphShapeData {
                 base: Default::default(),
                 shared: Lock::new(Gc::new(gc_context, shared)),
-                ratio: Cell::new(0),
                 object: Lock::new(None),
             },
         ))
-    }
-
-    pub fn ratio(self) -> u16 {
-        self.0.ratio.get()
-    }
-
-    pub fn set_ratio(self, ratio: u16) {
-        self.0.ratio.set(ratio);
-        self.invalidate_cached_bitmap();
     }
 }
 
@@ -117,7 +106,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn render_self(self, context: &mut RenderContext) {
-        let ratio = self.0.ratio.get();
+        let ratio = self.ratio();
         let shared = self.0.shared.get();
         let shape_handle = shared.get_shape(context, context.library, ratio);
         context
@@ -126,7 +115,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn self_bounds(self) -> Rectangle<Twips> {
-        let ratio = self.0.ratio.get();
+        let ratio = self.ratio();
         let shared = self.0.shared.get();
         let frame = shared.get_frame(ratio);
         frame.bounds

@@ -454,6 +454,10 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
+    fn on_ratio_changed(self, context: &mut UpdateContext<'gc>, new_ratio: u16) {
+        self.seek(context, new_ratio.into());
+    }
+
     fn id(self) -> CharacterId {
         match self.0.source.get() {
             VideoSource::Swf(swf_source) => swf_source.streamdef.id,
