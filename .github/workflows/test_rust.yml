@@ -272,14 +272,6 @@ jobs:
         if: always()
         run: cat target/diff-cover/report.md >> $GITHUB_STEP_SUMMARY
 
-      - name: Comment
-        if: always()
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: |
-          $COVERAGE_SCRIPT comment_report "target/diff-cover/report.json" "${{ github.event.pull_request.number }}" "${RUN_URL}"
-
   dependencies:
     needs: changes
     if: needs.changes.outputs.should_run == 'true'
