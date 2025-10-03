@@ -906,7 +906,7 @@ pub fn render_base<'gc>(
         None
     };
 
-    let cache_info = if context.use_bitmap_cache && this.is_bitmap_cached() {
+    let cache_info = if this.is_bitmap_cached() {
         let mut cache_info: Option<DrawCacheInfo> = None;
         let base_transform = context.transform_stack.transform();
         let bounds: Rectangle<Twips> = this.render_bounds_with_transform(
@@ -1019,7 +1019,6 @@ pub fn render_base<'gc>(
                 library: context.library,
                 transform_stack: &mut transform_stack,
                 is_offscreen: true,
-                use_bitmap_cache: true,
                 stage: context.stage,
             };
             this.render_self(&mut offscreen_context);
