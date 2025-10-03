@@ -767,6 +767,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_flag(DisplayObjectFlags::PLACED_BY_SCRIPT, value);
     }
 
+    fn placed_by_avm1_script(&self) -> bool {
+        self.contains_flag(DisplayObjectFlags::PLACED_BY_AVM1_SCRIPT)
+    }
+
+    fn set_placed_by_avm1_script(&self, value: bool) {
+        self.set_flag(DisplayObjectFlags::PLACED_BY_AVM1_SCRIPT, value);
+    }
+
     fn is_bitmap_cached_preference(&self) -> bool {
         self.contains_flag(DisplayObjectFlags::CACHE_AS_BITMAP)
     }
@@ -2154,6 +2162,16 @@ pub trait TDisplayObject<'gc>:
         self.base().set_placed_by_script(value)
     }
 
+    #[no_dynamic]
+    fn placed_by_avm1_script(self) -> bool {
+        self.base().placed_by_avm1_script()
+    }
+
+    #[no_dynamic]
+    fn set_placed_by_avm1_script(self, value: bool) {
+        self.base().set_placed_by_avm1_script(value);
+    }
+
     /// Whether this display object has been instantiated by the timeline.
     /// When this flag is set, attempts to change the object's name from AVM2
     /// throw an exception.
@@ -2849,6 +2867,7 @@ bitflags! {
 
         /// Whether this object has been placed in a container by ActionScript 3.
         /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
+        // TODO [KJ] Can we repurpose it to cover PLACED_BY_AVM1_SCRIPT too?
         const PLACED_BY_SCRIPT         = 1 << 4;
 
         /// Whether this object has been instantiated by a SWF tag.
@@ -2887,6 +2906,11 @@ bitflags! {
 
         /// Whether this object has matrix3D (used for stubbing).
         const HAS_MATRIX3D_STUB        = 1 << 14;
+
+        /// Whether this object has been placed by an AVM1 method,
+        /// i.e. attachMovie, createEmptyMovieClip, duplicateMovieClip.
+        // TODO [KJ] Can this be merged with PLACED_BY_SCRIPT?
+        const PLACED_BY_AVM1_SCRIPT    = 1 << 15;
     }
 }
 
