@@ -301,8 +301,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 linebox.as_renderable_text(self.text).expect("text");
 
             // Flash ignores trailing spaces when aligning lines, so should we
-            // TODO This behavior is dependent on SWF version
-            if self.current_line_span.align != swf::TextAlign::Left {
+            if self.movie.version() >= 8 && self.current_line_span.align != swf::TextAlign::Left {
                 linebox.bounds = linebox
                     .bounds
                     .with_width(font_set.measure(text.trim_end(), params));
