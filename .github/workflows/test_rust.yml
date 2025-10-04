@@ -164,6 +164,8 @@ jobs:
     if: needs.changes.outputs.should_run == 'true'
     name: Coverage Report
     runs-on: ubuntu-24.04
+    permissions:
+      pull-requests: write
     steps:
       - uses: actions/checkout@v5
         with:
@@ -271,13 +273,23 @@ jobs:
         if: always()
         run: cat target/diff-cover/report.md >> $GITHUB_STEP_SUMMARY
 
-      - name: Comment
+      - name: Generate comment
+        id: generate_comment
         if: always()
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: |
-          $COVERAGE_SCRIPT comment_report "target/diff-cover/report.json" "${{ github.event.pull_request.number }}" "${RUN_URL}"
+          comment=$($COVERAGE_SCRIPT comment_report "target/diff-cover/report.json" "" "${RUN_URL}")
+          echo "comment<<EOF" >> $GITHUB_OUTPUT
+          echo "$comment" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Post comment
+        if: always() && steps.generate_comment.outputs.comment != ''
+        uses: thollander/actions-comment-pull-request@v3
+        with:
+          message: ${{ steps.generate_comment.outputs.comment }}
+          comment-tag: coverage-report
 
   dependencies:
     needs: changes
