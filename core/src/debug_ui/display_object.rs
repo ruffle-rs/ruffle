@@ -11,7 +11,7 @@ use crate::debug_ui::movie::open_movie_button;
 use crate::debug_ui::Message;
 use crate::display_object::{
     AutoSizeMode, Avm2Button, Bitmap, ButtonState, DisplayObject, EditText, InteractiveObject,
-    LayoutDebugBoxesFlag, MovieClip, Stage, TDisplayObject, TDisplayObjectContainer,
+    LayoutDebugBoxesFlag, MovieClip, RenderMask, Stage, TDisplayObject, TDisplayObjectContainer,
     TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
@@ -1337,20 +1337,32 @@ impl DisplayObjectWindow {
                 }
                 ui.end_row();
 
-                if let Some(other) = object.masker() {
-                    ui.label("Masker");
-                    open_display_object_button(
-                        ui,
-                        context,
-                        messages,
-                        other,
-                        &mut self.hovered_debug_rect,
-                    );
-                    ui.end_row();
+                ui.label("Mask");
+                match object.get_render_mask() {
+                    RenderMask::None => {
+                        ui.weak("None");
+                    }
+                    RenderMask::Stencil(mask) | RenderMask::Alpha(mask) => {
+                        ui.horizontal(|ui| {
+                            open_display_object_button(
+                                ui,
+                                context,
+                                messages,
+                                mask,
+                                &mut self.hovered_debug_rect,
+                            );
+                            match object.get_render_mask() {
+                                RenderMask::None => unreachable!(),
+                                RenderMask::Stencil(_) => ui.weak("(stencil)"),
+                                RenderMask::Alpha(_) => ui.weak("(alpha)"),
+                            };
+                        });
+                    }
                 }
+                ui.end_row();
 
+                ui.label("Maskee");
                 if let Some(other) = object.maskee() {
-                    ui.label("Maskee");
                     open_display_object_button(
                         ui,
                         context,
@@ -1358,8 +1370,10 @@ impl DisplayObjectWindow {
                         other,
                         &mut self.hovered_debug_rect,
                     );
-                    ui.end_row();
+                } else {
+                    ui.weak("None");
                 }
+                ui.end_row();
 
                 ui.label("Cache as Bitmap");
                 ui.horizontal(|ui| {
