@@ -1,6 +1,7 @@
 use crate::avm1::callable_value::CallableValue;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
+use crate::avm1::object_reference::MovieClipReference;
 use crate::avm1::property::Attribute;
 use crate::avm1::runtime::skip_actions;
 use crate::avm1::scope::{Scope, ScopeClass};
@@ -29,8 +30,6 @@ use swf::avm1::read::Reader;
 use swf::avm1::types::*;
 use url::form_urlencoded;
 use web_time::Instant;
-
-use super::object_reference::MovieClipReference;
 
 macro_rules! avm_debug {
     ($avm: expr, $($arg:tt)*) => (
@@ -870,7 +869,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let swf_version = self.swf_version();
         let func_data = parent_data.to_unbounded_subslice(action.actions);
         let constant_pool = self.constant_pool();
-        let bc = self.base_clip.object().coerce_to_object(self);
+
+        let mcr = MovieClipReference::from_display_object(self, self.base_clip);
+
         let func = Avm1Function::from_swf_function(
             self.gc(),
             swf_version,
@@ -878,8 +879,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             action,
             self.scope(),
             constant_pool,
-            // `base_clip` should always be a living `MovieClip` so this can't fail
-            MovieClipReference::try_from_stage_object(self, bc).unwrap(),
+            mcr,
         );
         let name = func.name();
         let prototype = Object::new(
