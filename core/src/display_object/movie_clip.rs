@@ -444,11 +444,17 @@ impl<'gc> MovieClip<'gc> {
         let shared = Gc::as_ref(self.0.shared.get());
         let (swf, progress) = (&shared.swf, &shared.preload_progress);
 
-        if progress.next_preload_chunk.get() >= swf.len() as u64 {
+        // Make sure we're actually preloading- `next_preload_chunk` will only
+        // be `Some` if preloading is in progress
+        let Some(next_preload_chunk) = progress.next_preload_chunk.get() else {
+            return true;
+        };
+
+        if next_preload_chunk >= swf.len() as u64 {
             return true;
         }
 
-        let reader = &mut swf.read_from(progress.next_preload_chunk.get());
+        let reader = &mut swf.read_from(next_preload_chunk);
 
         let mut sub_preload_done = true;
         if let Some(symbol) = progress.cur_preload_symbol.take() {
@@ -555,11 +561,11 @@ impl<'gc> MovieClip<'gc> {
                 shared.show_frame(reader, 0).unwrap();
             }
             // Flag the movie as fully preloaded when we hit the end of the tag stream.
-            progress.next_preload_chunk.set(u64::MAX);
+            progress.next_preload_chunk.set(None);
         } else {
             let next_chunk =
                 (reader.get_ref().as_ptr() as u64).saturating_sub(swf.data().as_ptr() as u64);
-            progress.next_preload_chunk.set(next_chunk);
+            progress.next_preload_chunk.set(Some(next_chunk));
         }
 
         is_finished
@@ -969,14 +975,15 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn loaded_bytes(self) -> u32 {
         let progress = &Gc::as_ref(self.0.shared.get()).preload_progress;
-        if progress.next_preload_chunk.get() == u64::MAX {
-            // u64::MAX is a sentinel for load complete
-            return max(self.total_bytes(), 0) as u32;
+
+        if let Some(next_preload_chunk) = progress.next_preload_chunk.get() {
+            let swf_header_size = max(self.total_bytes(), 0) as u32 - self.tag_stream_len() as u32;
+
+            swf_header_size + next_preload_chunk as u32
+        } else {
+            // Preloading was completed
+            max(self.total_bytes(), 0) as u32
         }
-
-        let swf_header_size = max(self.total_bytes(), 0) as u32 - self.tag_stream_len() as u32;
-
-        swf_header_size + progress.next_preload_chunk.get() as u32
     }
 
     /// Calculate the compressed total size of this movie clip's tag stream.
@@ -1149,9 +1156,9 @@ impl<'gc> MovieClip<'gc> {
     fn determine_next_frame(self) -> NextFrame {
         let mc = self.0.shared.get();
         // We know that we are not on the last frame if either condition is true:
-        // 1. The movieclip is not done preloading frames (indicated by next_preload_chunk not being u64::MAX)
+        // 1. The movieclip is not done preloading frames (indicated by next_preload_chunk being `Some`)
         // 2. The current frame is less than the amount of frames loaded.
-        if mc.preload_progress.next_preload_chunk.get() != u64::MAX
+        if mc.preload_progress.next_preload_chunk.get().is_some()
             || self.current_frame() < self.frames_loaded() as u16
         {
             NextFrame::Next
@@ -4354,8 +4361,9 @@ impl Default for Scene {
 
 /// The load progress for a given SWF or substream of that SWF.
 struct PreloadProgress {
-    /// The SWF offset to start the next progress chunk from.
-    next_preload_chunk: Cell<u64>,
+    /// The SWF offset to start the next progress chunk from. If this is `None`,
+    /// the `MovieClip` has finished preloading.
+    next_preload_chunk: Cell<Option<u64>>,
 
     /// The current frame being preloaded.
     cur_preload_frame: Cell<u16>,
@@ -4371,7 +4379,7 @@ struct PreloadProgress {
 impl Default for PreloadProgress {
     fn default() -> Self {
         Self {
-            next_preload_chunk: Cell::new(0),
+            next_preload_chunk: Cell::new(Some(0)),
             cur_preload_frame: Cell::new(1),
             #[cfg(feature = "timeline_debug")]
             start_pos: Cell::new(0),
