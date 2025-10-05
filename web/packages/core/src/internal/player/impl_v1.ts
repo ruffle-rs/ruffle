@@ -41,6 +41,10 @@ export class PlayerV1Impl implements PlayerV1 {
         this.#inner.play();
     }
 
+    tick(timestamp: number): void {
+        this.#inner.tick(timestamp);
+    }
+
     get isPlaying(): boolean {
         return this.#inner.isPlaying;
     }
