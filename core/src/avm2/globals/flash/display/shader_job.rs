@@ -218,11 +218,7 @@ pub fn start<'gc>(
         let mut target_bitmap_data = target_bitmap.borrow_mut(activation.gc());
         target_bitmap_data.update_dirty_texture(activation.context.renderer);
 
-        PixelBenderTarget::Bitmap(
-            target_bitmap_data
-                .bitmap_handle(activation.context.renderer)
-                .expect("Missing handle"),
-        )
+        PixelBenderTarget::Bitmap(target_bitmap_data.bitmap_handle(activation.context.renderer))
     } else {
         PixelBenderTarget::Bytes {
             width: output_width,
