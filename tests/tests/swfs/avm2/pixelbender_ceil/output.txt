@@ -1,0 +1,77 @@
+ii
+Error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::ShaderData/_setByteCode()
+	at flash.display::ShaderData()
+	at flash.display::Shader/set byteCode()
+	at flash.display::Shader()
+	at Test/testLoadingShader()
+	at Test()
+fi
+Error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::ShaderData/_setByteCode()
+	at flash.display::ShaderData()
+	at flash.display::Shader/set byteCode()
+	at flash.display::Shader()
+	at Test/testLoadingShader()
+	at Test()
+if
+Error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::ShaderData/_setByteCode()
+	at flash.display::ShaderData()
+	at flash.display::Shader/set byteCode()
+	at flash.display::Shader()
+	at Test/testLoadingShader()
+	at Test()
+ff
+0 -> ff666666
+0 -> ff666666
+0.1 -> ff666aff
+0.1 -> ff6a6a6a
+0.4 -> ff686aff
+0.4 -> ff6a6a6a
+0.5 -> ff686aff
+0.5 -> ff6a6a6a
+0.6 -> ff686aff
+0.6 -> ff6a6a6a
+0.9 -> ff6a6aff
+0.9 -> ff6a6a6a
+1 -> ff6a6aff
+1 -> ff6a6a6a
+1.1 -> ff6a6eff
+1.1 -> ff6e6e6e
+1.4 -> ff6c6eff
+1.4 -> ff6e6e6e
+1.5 -> ff6c6eff
+1.5 -> ff6e6e6e
+1.6 -> ff6c6eff
+1.6 -> ff6e6e6e
+1.9 -> ff6e6eff
+1.9 -> ff6e6e6e
+2 -> ff6e6eff
+2 -> ff6e6e6e
+0 -> ff666666
+0 -> ff666666
+-0.1 -> ff666666
+-0.1 -> ff666666
+-0.4 -> ff646666
+-0.4 -> ff666666
+-0.5 -> ff646666
+-0.5 -> ff666666
+-0.6 -> ff646666
+-0.6 -> ff666666
+-0.9 -> ff626666
+-0.9 -> ff666666
+-1 -> ff626200
+-1 -> ff626262
+-1.1 -> ff626200
+-1.1 -> ff626262
+-1.4 -> ff606200
+-1.4 -> ff626262
+-1.5 -> ff606200
+-1.5 -> ff626262
+-1.6 -> ff606200
+-1.6 -> ff626262
+-1.9 -> ff5e6200
+-1.9 -> ff626262
+-2 -> ff5e5e00
+-2 -> ff5e5e5e
