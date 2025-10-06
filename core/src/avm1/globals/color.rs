@@ -92,7 +92,7 @@ fn get_transform<'gc>(
         let color_transform = base.color_transform();
         let out = Object::new(
             &activation.context.strings,
-            Some(activation.context.avm1.prototypes().object),
+            Some(activation.prototypes().object),
         );
         out.set(
             istr!("ra"),

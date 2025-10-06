@@ -208,7 +208,7 @@ fn on_data<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml_constructor = activation.context.avm1.prototypes().xml_constructor;
+    let xml_constructor = activation.prototypes().xml_constructor;
 
     if let Ok(xml) = xml_constructor.construct(activation, args) {
         let _ = this.call_method(istr!("onXML"), &[xml], activation, ExecutionReason::Special)?;

@@ -92,7 +92,7 @@ impl<'gc> ArrayBuilder<'gc> {
     }
 
     pub fn new(activation: &Activation<'_, 'gc>) -> Self {
-        let proto = activation.context.avm1.prototypes().array;
+        let proto = activation.prototypes().array;
         Self::new_with_proto(&activation.context.strings, proto)
     }
 

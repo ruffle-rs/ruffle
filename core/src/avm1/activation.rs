@@ -218,6 +218,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self.context.strings
     }
 
+    #[inline(always)]
+    pub fn prototypes(&self) -> &crate::avm1::globals::SystemPrototypes<'gc> {
+        self.context.avm1.prototypes()
+    }
+
     #[expect(clippy::too_many_arguments)]
     pub fn from_action(
         context: &'a mut UpdateContext<'gc>,
@@ -882,14 +887,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             MovieClipReference::try_from_stage_object(self, bc).unwrap(),
         );
         let name = func.name();
-        let prototype = Object::new(
-            &self.context.strings,
-            Some(self.context.avm1.prototypes().object),
-        );
+        let prototype = Object::new(&self.context.strings, Some(self.prototypes().object));
         let func_obj = FunctionObject::function(
             &self.context.strings,
             Gc::new(self.gc(), func),
-            self.context.avm1.prototypes().function,
+            self.prototypes().function,
             prototype,
         );
         if let Some(name) = name {
@@ -1453,10 +1455,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             // InitArray pops no args and pushes undefined if num_props is out of range.
             Value::Undefined
         } else {
-            let object = Object::new(
-                &self.context.strings,
-                Some(self.context.avm1.prototypes().object),
-            );
+            let object = Object::new(&self.context.strings, Some(self.prototypes().object));
             for _ in 0..num_props as usize {
                 let value = self.context.avm1.pop();
                 let name_val = self.context.avm1.pop();

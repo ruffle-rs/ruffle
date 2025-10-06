@@ -473,9 +473,9 @@ impl<'gc> Value<'gc> {
             }
             // Else, select the correct prototype for it from the system prototypes list.
             Value::Null | Value::Undefined => (self, None),
-            Value::Bool(_) => (self, Some(activation.context.avm1.prototypes().boolean)),
-            Value::Number(_) => (self, Some(activation.context.avm1.prototypes().number)),
-            Value::String(_) => (self, Some(activation.context.avm1.prototypes().string)),
+            Value::Bool(_) => (self, Some(activation.prototypes().boolean)),
+            Value::Number(_) => (self, Some(activation.prototypes().number)),
+            Value::String(_) => (self, Some(activation.prototypes().string)),
         };
 
         let obj = Object::new(&activation.context.strings, proto);

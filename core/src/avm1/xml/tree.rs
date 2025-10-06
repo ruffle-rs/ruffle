@@ -357,7 +357,7 @@ impl<'gc> XmlNode<'gc> {
         match self.get_script_object() {
             Some(object) => object,
             None => {
-                let xml_node = activation.context.avm1.prototypes().xml_node_constructor;
+                let xml_node = activation.prototypes().xml_node_constructor;
                 let prototype = xml_node
                     .get(istr!("prototype"), activation)
                     .map(|p| p.coerce_to_object(activation))
