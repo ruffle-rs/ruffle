@@ -990,6 +990,13 @@ impl ShaderBuilder<'_> {
                                 expr: src,
                             })
                         }
+                        Opcode::Ceil => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Ceil,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
+                        }),
                         Opcode::Floor => self.evaluate_expr(Expression::Math {
                             fun: MathFunction::Floor,
                             arg: src,
