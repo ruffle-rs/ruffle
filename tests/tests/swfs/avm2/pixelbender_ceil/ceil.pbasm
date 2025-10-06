@@ -1,0 +1,26 @@
+version 1i
+name "ceil_i"
+
+param.in "floatInput", float, f1.r
+
+param.out "dst", float4, f0.rgba
+
+ld f2.a, 0.4f
+ld f2.b, 64f
+
+ceil f1.g, f1.r
+
+mov f0.r, f1.r
+mov f0.g, f1.g
+mov f0.b, f1.g
+
+div f0.r, f2.b
+add f0.r, f2.a
+
+div f0.g, f2.b
+add f0.g, f2.a
+
+mul f0.b, f2.b
+add f0.b, f2.a
+
+ld f0.a, 1f
