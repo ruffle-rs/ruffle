@@ -61,10 +61,10 @@ gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "08e08414249d5
 slotmap = "1.0.7"
 async-channel = "2.5.0"
 bitflags = "2.9.4"
-bytemuck = "1.23.2"
+bytemuck = "1.24.0"
 chrono = { version = "0.4.42", default-features = false }
 enum-map = "2.7.3"
-flate2 = "1.1.2"
+flate2 = "1.1.4"
 futures = "0.3.31"
 image = { version = "0.25.8", default-features = false }
 js-sys = "0.3.77"
