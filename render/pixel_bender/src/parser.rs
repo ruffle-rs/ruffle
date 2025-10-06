@@ -36,6 +36,9 @@ pub enum PixelBenderParsingError {
     #[error("Incompatible register kinds")]
     IncompatibleRegisterKinds,
 
+    #[error("Unsupported register kinds for opcode")]
+    UnsupportedRegisterKinds,
+
     #[error("Missing output parameter")]
     MissingOutputParameter,
 
@@ -658,7 +661,7 @@ fn read_op<R: Read>(
             skip_padding(data, 1)?;
             mask >>= 4;
 
-            if matrix != 0 {
+            let op = if matrix != 0 {
                 assert_eq!(src >> 16, 0);
                 assert_eq!(size, 1);
                 let dst = if mask == 0 {
@@ -666,20 +669,41 @@ fn read_op<R: Read>(
                 } else {
                     read_dst_reg(dst, mask)
                 };
-                shader.operations.push(Operation::Normal {
+                Operation::Normal {
                     opcode,
                     dst,
                     src: read_matrix_reg(src as u16, matrix),
-                });
+                }
             } else {
                 let dst = read_dst_reg(dst, mask);
                 let src = read_src_reg(src, size);
-                shader
-                    .operations
-                    .push(Operation::Normal { opcode, dst, src })
+                Operation::Normal { opcode, dst, src }
             };
+
+            if validate {
+                validate_op(&op)?;
+            }
+            shader.operations.push(op);
         }
     };
+    Ok(())
+}
+
+fn validate_op(op: &Operation) -> Result<()> {
+    #[expect(clippy::single_match)]
+    match op {
+        Operation::Normal {
+            opcode: Opcode::Ceil,
+            dst,
+            src,
+        } => {
+            if dst.kind != PixelBenderRegKind::Float || src.kind != PixelBenderRegKind::Float {
+                return Err(PixelBenderParsingError::UnsupportedRegisterKinds);
+            }
+        }
+        _ => {}
+    };
+
     Ok(())
 }
 
