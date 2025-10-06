@@ -73,7 +73,7 @@ fn shallow_copy<'gc>(
     value: Value<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::Object(object) = value {
-        let object_proto = activation.context.avm1.prototypes().object;
+        let object_proto = activation.prototypes().object;
         let result = Object::new(activation.strings(), Some(object_proto));
 
         for key in object.get_keys(activation, false) {
@@ -377,7 +377,7 @@ fn transform<'gc>(
         }
     }
 
-    let proto = activation.context.avm1.prototypes().text_format;
+    let proto = activation.prototypes().text_format;
     let object = Object::new(activation.strings(), Some(proto));
     object.set_native(
         activation.gc(),
@@ -399,7 +399,7 @@ fn parse_css<'gc>(
     if let Ok(css) = CssStream::new(&source).parse() {
         for (selector, properties) in css.into_iter() {
             if !selector.is_empty() {
-                let proto = activation.context.avm1.prototypes().object;
+                let proto = activation.prototypes().object;
                 let object = Object::new(activation.strings(), Some(proto));
 
                 for (key, value) in properties.into_iter() {

@@ -170,7 +170,7 @@ fn initialize<'gc>(
             &activation.context.strings,
             broadcaster,
             activation.context.avm1.broadcaster_functions(),
-            activation.context.avm1.prototypes().array,
+            activation.prototypes().array,
         );
     }
     Ok(Value::Undefined)

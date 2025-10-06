@@ -173,7 +173,7 @@ fn get_rectangle<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::BitmapData(bitmap_data) = this.native() {
         if !bitmap_data.disposed() {
-            let proto = activation.context.avm1.prototypes().rectangle_constructor;
+            let proto = activation.prototypes().rectangle_constructor;
             let rect = proto.construct(
                 activation,
                 &[
@@ -772,7 +772,7 @@ fn get_color_bounds_rect<'gc>(
                     color,
                 );
 
-                let proto = activation.context.avm1.prototypes().rectangle_constructor;
+                let proto = activation.prototypes().rectangle_constructor;
                 let rect =
                     proto.construct(activation, &[x.into(), y.into(), w.into(), h.into()])?;
                 return Ok(rect);

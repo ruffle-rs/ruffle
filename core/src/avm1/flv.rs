@@ -6,7 +6,7 @@ fn avm1_object_from_flv_variables<'gc>(
     activation: &mut Activation<'_, 'gc>,
     variables: Vec<FlvVariable>,
 ) -> Avm1Value<'gc> {
-    let object_proto = activation.context.avm1.prototypes().object;
+    let object_proto = activation.prototypes().object;
     let info_object = Object::new(activation.strings(), Some(object_proto));
 
     for value in variables {
@@ -29,7 +29,7 @@ fn avm1_date_from_flv_date<'gc>(
     unix_time: f64,
     _local_offset: i16,
 ) -> Avm1Value<'gc> {
-    let constructor = activation.context.avm1.prototypes().date_constructor;
+    let constructor = activation.prototypes().date_constructor;
     let result = constructor.construct(activation, &[unix_time.into()]);
 
     result.expect("AVM1 date constructed from FLV date")

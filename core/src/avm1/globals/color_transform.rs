@@ -50,11 +50,7 @@ impl<'gc> ColorTransformObject {
             color_transform.b_add.into(),
             color_transform.a_add.into(),
         ];
-        let constructor = activation
-            .context
-            .avm1
-            .prototypes()
-            .color_transform_constructor;
+        let constructor = activation.prototypes().color_transform_constructor;
         constructor.construct(activation, &args)
     }
 

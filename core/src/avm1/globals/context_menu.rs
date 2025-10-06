@@ -34,7 +34,7 @@ fn constructor<'gc>(
 
     let built_in_items = Object::new(
         &activation.context.strings,
-        Some(activation.context.avm1.prototypes().object),
+        Some(activation.prototypes().object),
     );
 
     built_in_items.set(istr!("print"), true.into(), activation)?;
@@ -48,7 +48,7 @@ fn constructor<'gc>(
 
     this.set(istr!("builtInItems"), built_in_items.into(), activation)?;
 
-    let constructor = activation.context.avm1.prototypes().array_constructor;
+    let constructor = activation.prototypes().array_constructor;
     let custom_items = constructor.construct(activation, &[])?;
 
     this.set(istr!("customItems"), custom_items, activation)?;
@@ -65,11 +65,7 @@ pub fn copy<'gc>(
         .get(istr!("onSelect"), activation)?
         .coerce_to_object(activation);
 
-    let constructor = activation
-        .context
-        .avm1
-        .prototypes()
-        .context_menu_constructor;
+    let constructor = activation.prototypes().context_menu_constructor;
     let copy = constructor
         .construct(activation, &[callback.into()])?
         .coerce_to_object(activation);
