@@ -59,7 +59,7 @@ impl<'gc> NetConnection<'gc> {
             ActivationIdentifier::root("[NetConnection connect]"),
             root_clip,
         );
-        let constructor = activation.context.avm1.prototypes().object_constructor;
+        let constructor = activation.prototypes().object_constructor;
         let event = constructor
             .construct(&mut activation, &[])?
             .coerce_to_object(&mut activation);

@@ -1309,12 +1309,12 @@ impl<'gc> NetStream<'gc> {
         match object {
             Some(NetStreamKind::Avm1(object)) => {
                 let root = context.stage.root_clip().expect("root");
-                let object_proto = context.avm1.prototypes().object;
                 let mut activation = Avm1Activation::from_nothing(
                     context,
                     Avm1ActivationIdentifier::root("[NetStream Status Event]"),
                     root,
                 );
+                let object_proto = activation.prototypes().object;
                 let info_object = Avm1Object::new(&activation.context.strings, Some(object_proto));
 
                 for (key, value) in values {

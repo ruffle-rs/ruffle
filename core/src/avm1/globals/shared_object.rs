@@ -165,7 +165,7 @@ pub fn deserialize_value<'gc>(
         AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.gc(), s)),
         AmfValue::Bool(b) => (*b).into(),
         AmfValue::ECMAArray(_, _, associative, len) => {
-            let array_constructor = activation.context.avm1.prototypes().array_constructor;
+            let array_constructor = activation.prototypes().array_constructor;
             if let Ok(Value::Object(obj)) =
                 array_constructor.construct(activation, &[(*len).into()])
             {
@@ -200,7 +200,7 @@ pub fn deserialize_value<'gc>(
             // Deserialize Object
             let obj = Object::new(
                 &activation.context.strings,
-                Some(activation.context.avm1.prototypes().object),
+                Some(activation.prototypes().object),
             );
 
             let v: Value<'gc> = obj.into();
@@ -219,7 +219,7 @@ pub fn deserialize_value<'gc>(
             v
         }
         AmfValue::Date(time, _) => {
-            let date_proto = activation.context.avm1.prototypes().date_constructor;
+            let date_proto = activation.prototypes().date_constructor;
 
             if let Ok(Value::Object(obj)) = date_proto.construct(activation, &[(*time).into()]) {
                 Value::Object(obj)
@@ -228,7 +228,7 @@ pub fn deserialize_value<'gc>(
             }
         }
         AmfValue::XML(content, _) => {
-            let xml_proto = activation.context.avm1.prototypes().xml_constructor;
+            let xml_proto = activation.prototypes().xml_constructor;
 
             if let Ok(Value::Object(obj)) = xml_proto.construct(
                 activation,
@@ -257,7 +257,7 @@ fn deserialize_lso<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let obj = Object::new(
         &activation.context.strings,
-        Some(activation.context.avm1.prototypes().object),
+        Some(activation.prototypes().object),
     );
 
     let mut reference_cache = BTreeMap::default();
@@ -406,11 +406,7 @@ fn get_local<'gc>(
     }
 
     // Data property only should exist when created with getLocal/Remote
-    let constructor = activation
-        .context
-        .avm1
-        .prototypes()
-        .shared_object_constructor;
+    let constructor = activation.prototypes().shared_object_constructor;
     let this = constructor
         .construct(activation, &[])?
         .coerce_to_object(activation);
@@ -434,7 +430,7 @@ fn get_local<'gc>(
         // No data; create a fresh data object.
         data = Object::new(
             &activation.context.strings,
-            Some(activation.context.avm1.prototypes().object),
+            Some(activation.prototypes().object),
         )
         .into();
     }

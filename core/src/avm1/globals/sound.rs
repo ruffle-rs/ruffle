@@ -370,7 +370,7 @@ fn get_transform<'gc>(
 
         let obj = Object::new(
             &activation.context.strings,
-            Some(activation.context.avm1.prototypes().object),
+            Some(activation.prototypes().object),
         );
         // Surprisingly `lr` means "right-to-left" and `rl` means "left-to-right".
         obj.set(istr!("ll"), transform.left_to_left.into(), activation)?;

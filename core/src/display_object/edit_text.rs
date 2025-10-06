@@ -2104,7 +2104,7 @@ impl<'gc> EditText<'gc> {
             activation.context.avm1.broadcaster_functions().initialize(
                 &activation.context.strings,
                 object,
-                activation.context.avm1.prototypes().array,
+                activation.prototypes().array,
             );
 
             if let Ok(Avm1Value::Object(listeners)) = object.get(istr!("_listeners"), activation) {

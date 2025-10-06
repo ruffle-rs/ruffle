@@ -138,7 +138,7 @@ fn clone<'gc>(
         this.get(istr!("width"), activation)?,
         this.get(istr!("height"), activation)?,
     ];
-    let constructor = activation.context.avm1.prototypes().rectangle_constructor;
+    let constructor = activation.prototypes().rectangle_constructor;
     let cloned = constructor.construct(activation, &args)?;
     Ok(cloned)
 }
@@ -384,7 +384,7 @@ fn union<'gc>(
         this_bottom.max(other_bottom)
     } - top;
 
-    let constructor = activation.context.avm1.prototypes().rectangle_constructor;
+    let constructor = activation.prototypes().rectangle_constructor;
     let result = constructor.construct(
         activation,
         &[left.into(), top.into(), width.into(), height.into()],
@@ -592,7 +592,7 @@ fn intersection<'gc>(
         top = 0.0;
     }
 
-    let constructor = activation.context.avm1.prototypes().rectangle_constructor;
+    let constructor = activation.prototypes().rectangle_constructor;
     let result = constructor.construct(
         activation,
         &[
@@ -619,8 +619,8 @@ fn equals<'gc>(
         let other_y = other.get(istr!("y"), activation)?;
         let other_width = other.get(istr!("width"), activation)?;
         let other_height = other.get(istr!("height"), activation)?;
-        let proto = activation.context.avm1.prototypes().rectangle;
-        let constructor = activation.context.avm1.prototypes().rectangle_constructor;
+        let proto = activation.prototypes().rectangle;
+        let constructor = activation.prototypes().rectangle_constructor;
         return Ok((this_x == other_x
             && this_y == other_y
             && this_width == other_width
