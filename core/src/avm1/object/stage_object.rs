@@ -159,7 +159,7 @@ fn resolve_path_property<'gc>(
                 .unwrap_or(Value::Undefined),
         );
     } else if name.eq_with_case(b"_global", case_sensitive) {
-        return Some(activation.context.avm1.global_object().into());
+        return Some(activation.global_object().into());
     }
 
     // Resolve level names `_levelN`.
