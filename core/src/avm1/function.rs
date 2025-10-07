@@ -446,26 +446,19 @@ pub struct FunctionObject<'gc> {
 }
 
 impl<'gc> FunctionObject<'gc> {
-    /// Construct a function with any combination of regular and constructor parts.
+    /// Builds a new function object.
     ///
     /// `fn_proto` refers to the implicit proto of the function object, and the
-    /// `prototype` refers to the explicit prototype of the function.
-    /// The function and its prototype will be linked to each other.
-    fn allocate_function(
+    /// `prototype` refers to the explicit prototype of the function. If the
+    /// prototype is present, it will be linked with the newly-created object.
+    pub fn build(
+        self,
         context: &StringContext<'gc>,
-        function: Executable<'gc>,
-        constructor: Option<NativeFunction>,
         fn_proto: Object<'gc>,
         prototype: Option<Object<'gc>>,
     ) -> Object<'gc> {
         let obj = Object::new(context, Some(fn_proto));
-        let native = NativeObject::Function(Gc::new(
-            context.gc(),
-            Self {
-                function,
-                constructor,
-            },
-        ));
+        let native = NativeObject::Function(Gc::new(context.gc(), self));
         obj.set_native(context.gc(), native);
 
         if let Some(prototype) = prototype {
@@ -486,41 +479,33 @@ impl<'gc> FunctionObject<'gc> {
         obj
     }
 
-    /// Constructs a function that does nothing.
+    /// A function that does nothing.
     ///
     /// This can also serve as a no-op constructor.
-    pub fn empty(
-        context: &StringContext<'gc>,
-        fn_proto: Object<'gc>,
-        prototype: Object<'gc>,
-    ) -> Object<'gc> {
-        let empty = Executable::Native(|_, _, _| Ok(Value::Undefined));
-        Self::allocate_function(context, empty, None, fn_proto, Some(prototype))
+    pub fn empty() -> Self {
+        Self {
+            function: Executable::Native(|_, _, _| Ok(Value::Undefined)),
+            constructor: None,
+        }
     }
 
-    /// Construct a function from AVM1 bytecode and associated protos.
-    pub fn function(
-        context: &StringContext<'gc>,
-        function: Gc<'gc, Avm1Function<'gc>>,
-        fn_proto: Object<'gc>,
-        prototype: Object<'gc>,
-    ) -> Object<'gc> {
-        let function = Executable::Action(function);
-        Self::allocate_function(context, function, None, fn_proto, Some(prototype))
+    /// A function with AVM1 bytecode.
+    pub fn bytecode(function: Gc<'gc, Avm1Function<'gc>>) -> Self {
+        Self {
+            function: Executable::Action(function),
+            constructor: None,
+        }
     }
 
-    /// Construct a function from a native executable and associated protos.
-    pub fn native(
-        context: &StringContext<'gc>,
-        function: NativeFunction,
-        fn_proto: Object<'gc>,
-        prototype: Option<Object<'gc>>,
-    ) -> Object<'gc> {
-        let function = Executable::Native(function);
-        Self::allocate_function(context, function, None, fn_proto, prototype)
+    /// A function with a native executable.
+    pub fn native(function: NativeFunction) -> Self {
+        Self {
+            function: Executable::Native(function),
+            constructor: None,
+        }
     }
 
-    /// Construct a native constructor from native executables and associated protos.
+    /// A native constructor.
     ///
     /// This differs from [`Self::native`] in two important ways:
     /// - When called through `new`, the return value will always become the result of the
@@ -528,20 +513,11 @@ impl<'gc> FunctionObject<'gc> {
     ///   if the object was successfully constructed, or `undefined` if not.
     /// - When called as a normal function, `function` will be called instead of `constructor`;
     ///   if it is `None`, the return value will be `undefined`.
-    pub fn constructor(
-        context: &StringContext<'gc>,
-        constructor: NativeFunction,
-        function: Option<NativeFunction>,
-        fn_proto: Object<'gc>,
-        prototype: Object<'gc>,
-    ) -> Object<'gc> {
-        Self::allocate_function(
-            context,
-            Executable::Native(function.unwrap_or(|_, _, _| Ok(Value::Undefined))),
-            Some(constructor),
-            fn_proto,
-            Some(prototype),
-        )
+    pub fn constructor(constructor: NativeFunction, function: Option<NativeFunction>) -> Self {
+        Self {
+            function: Executable::Native(function.unwrap_or(|_, _, _| Ok(Value::Undefined))),
+            constructor: Some(constructor),
+        }
     }
 
     /// Execute the given code.
