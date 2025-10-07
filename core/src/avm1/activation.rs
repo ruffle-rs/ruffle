@@ -181,9 +181,6 @@ pub struct Activation<'a, 'gc: 'a> {
     /// This can be changed with `tellTarget` (via `ActionSetTarget` and `ActionSetTarget2`).
     target_clip: Option<DisplayObject<'gc>>,
 
-    /// Whether the base clip was removed when we started this frame.
-    base_clip_unloaded: bool,
-
     pub context: &'a mut UpdateContext<'gc>,
 
     /// An identifier to refer to this activation by, when debugging.
@@ -251,7 +248,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             constant_pool,
             base_clip,
             target_clip: Some(base_clip),
-            base_clip_unloaded: base_clip.avm1_removed(),
             this,
             callee,
             local_registers: None,
@@ -274,7 +270,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             constant_pool: self.constant_pool,
             base_clip: self.base_clip,
             target_clip: self.target_clip,
-            base_clip_unloaded: self.base_clip_unloaded,
             this: self.this,
             callee: self.callee,
             local_registers: self.local_registers.clone(),
@@ -304,7 +299,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             constant_pool: context.avm1.constant_pool(),
             base_clip,
             target_clip: Some(base_clip),
-            base_clip_unloaded: base_clip.avm1_removed(),
             this: scope.locals_cell().into(),
             callee: None,
             local_registers: None,
@@ -3077,11 +3071,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// If the clip executing a script is removed during execution, return from this activation.
     /// Should be called after any action that could potentially destroy a clip (gotos, etc.)
     fn continue_if_base_clip_exists(&self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        // The exception is `unload` clip event handlers, which currently are called when the clip
-        // has already been removed. If this activation started with the base clip already removed,
-        // this is an unload handler, so allow the code to run regardless.
-        // (This may no longer be necessary once #1535 is fixed.)
-        if !self.base_clip_unloaded && self.base_clip.avm1_removed() {
+        if self.base_clip.avm1_removed() {
             Ok(FrameControl::Return(ReturnType::Explicit(Value::Undefined)))
         } else {
             Ok(FrameControl::Continue)
