@@ -429,7 +429,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         if self.0.object.get().is_none() && !movie.is_action_script_3() {
             let object = Avm1Object::new_with_native(
                 &context.strings,
-                Some(context.avm1.prototypes().video),
+                Some(context.avm1.prototypes(self.swf_version()).video),
                 Avm1NativeObject::Video(self),
             );
             self.set_object(context, object.into());

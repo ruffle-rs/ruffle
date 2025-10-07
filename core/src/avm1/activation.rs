@@ -218,9 +218,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self.context.strings
     }
 
-    #[inline(always)]
     pub fn prototypes(&self) -> &crate::avm1::globals::SystemPrototypes<'gc> {
-        self.context.avm1.prototypes()
+        self.context.avm1.prototypes(self.swf_version())
+    }
+
+    /// Obtain a reference to the global scope.
+    pub fn global_scope(&self) -> Gc<'gc, Scope<'gc>> {
+        self.context.avm1.global_scope(self.swf_version())
+    }
+    /// Obtain a reference to `_global`.
+    pub fn global_object(&self) -> Object<'gc> {
+        self.global_scope().locals_cell()
     }
 
     #[expect(clippy::too_many_arguments)]
@@ -287,15 +295,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Self {
         avm_debug!(context.avm1, "START {id}");
 
+        let swf_version = base_clip.swf_version();
+        let scope = context.avm1.global_scope(swf_version);
         Self {
             id,
-            swf_version: base_clip.swf_version(),
-            scope: context.avm1.global_scope(),
+            swf_version,
+            scope,
             constant_pool: context.avm1.constant_pool(),
             base_clip,
             target_clip: Some(base_clip),
             base_clip_unloaded: base_clip.avm1_removed(),
-            this: context.avm1.global_object().into(),
+            this: scope.locals_cell().into(),
             callee: None,
             local_registers: None,
             context,
@@ -385,7 +395,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let child_scope = Gc::new(
             self.gc(),
             Scope::new(
-                self.context.avm1.global_scope(),
+                self.context.avm1.global_scope(swf_version),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -2931,7 +2941,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Returns whether property keys should be case sensitive based on the current SWF version.
     pub fn is_case_sensitive(&self) -> bool {
-        self.swf_version() > 6
+        crate::avm1::runtime::Avm1::is_case_sensitive(self.swf_version())
     }
 
     /// Resolve a particular named local variable within this activation.

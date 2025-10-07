@@ -2101,11 +2101,15 @@ impl<'gc> EditText<'gc> {
 
     fn initialize_as_broadcaster(self, activation: &mut Avm1Activation<'_, 'gc>) {
         if let Avm1Value::Object(object) = self.object() {
-            activation.context.avm1.broadcaster_functions().initialize(
-                &activation.context.strings,
-                object,
-                activation.prototypes().array,
-            );
+            activation
+                .context
+                .avm1
+                .broadcaster_functions(activation.swf_version())
+                .initialize(
+                    &activation.context.strings,
+                    object,
+                    activation.prototypes().array,
+                );
 
             if let Ok(Avm1Value::Object(listeners)) = object.get(istr!("_listeners"), activation) {
                 let length = listeners.length(activation);
@@ -2156,7 +2160,7 @@ impl<'gc> EditText<'gc> {
         if self.0.object.get().is_none() {
             let object = Avm1Object::new_with_native(
                 &context.strings,
-                Some(context.avm1.prototypes().text_field),
+                Some(context.avm1.prototypes(self.swf_version()).text_field),
                 Avm1NativeObject::EditText(self),
             );
 
