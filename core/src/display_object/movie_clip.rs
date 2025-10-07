@@ -1746,7 +1746,7 @@ impl<'gc> MovieClip<'gc> {
 
             let object = Avm1Object::new_with_native(
                 &context.strings,
-                Some(context.avm1.prototypes().movie_clip),
+                Some(context.avm1.prototypes(self.swf_version()).movie_clip),
                 Avm1NativeObject::MovieClip(self),
             );
             let write = Gc::write(context.gc(), self.0);
