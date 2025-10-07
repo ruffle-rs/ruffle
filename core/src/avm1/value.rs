@@ -891,7 +891,6 @@ fn string_to_f64(mut s: &WStr, swf_version: u8) -> f64 {
 #[cfg(test)]
 #[expect(clippy::unreadable_literal)] // Large numeric literals in tests
 mod test {
-    use crate::avm1::activation::Activation;
     use crate::avm1::error::Error;
     use crate::avm1::function::FunctionObject;
     use crate::avm1::globals::create_globals;
@@ -923,17 +922,8 @@ mod test {
 
             assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);
 
-            fn value_of_impl<'gc>(
-                _activation: &mut Activation<'_, 'gc>,
-                _: Object<'gc>,
-                _: &[Value<'gc>],
-            ) -> Result<Value<'gc>, Error<'gc>> {
-                Ok(5.into())
-            }
-
-            let valueof = FunctionObject::native(
+            let valueof = FunctionObject::native(|_, _, _| Ok(5.into())).build(
                 &activation.context.strings,
-                value_of_impl,
                 protos.function,
                 Some(protos.function),
             );

@@ -33,7 +33,7 @@ impl<'gc> DeclContext<'_, 'gc> {
 
     pub fn empty_class(&self, super_proto: Object<'gc>) -> SystemClass<'gc> {
         let proto = Object::new(self.strings, Some(super_proto));
-        let constr = FunctionObject::empty(self.strings, self.fn_proto, proto);
+        let constr = FunctionObject::empty().build(self.strings, self.fn_proto, Some(proto));
         SystemClass { proto, constr }
     }
 
@@ -41,7 +41,8 @@ impl<'gc> DeclContext<'_, 'gc> {
     /// is implemented in bytecode in Flash Player's `playerglobals.swf`.
     pub fn class(&self, function: NativeFunction, super_proto: Object<'gc>) -> SystemClass<'gc> {
         let proto = Object::new(self.strings, Some(super_proto));
-        let constr = FunctionObject::native(self.strings, function, self.fn_proto, Some(proto));
+        let constr =
+            FunctionObject::native(function).build(self.strings, self.fn_proto, Some(proto));
         SystemClass { proto, constr }
     }
 
@@ -63,8 +64,11 @@ impl<'gc> DeclContext<'_, 'gc> {
         function: Option<NativeFunction>,
         proto: Object<'gc>,
     ) -> SystemClass<'gc> {
-        let constr =
-            FunctionObject::constructor(self.strings, constructor, function, self.fn_proto, proto);
+        let constr = FunctionObject::constructor(constructor, function).build(
+            self.strings,
+            self.fn_proto,
+            Some(proto),
+        );
         SystemClass { proto, constr }
     }
 }
@@ -127,16 +131,16 @@ impl Declaration {
         let name = context.intern_static(WStr::from_units(self.name));
         let value = match self.kind {
             DeclKind::Property { getter, setter } => {
-                let getter = FunctionObject::native(context, getter, fn_proto, Some(fn_proto));
-                let setter = setter.map(|setter| {
-                    FunctionObject::native(context, setter, fn_proto, Some(fn_proto))
-                });
+                // Property objects are unobservable by user code, so a bare function is enough.
+                let getter = FunctionObject::native(getter).build(context, fn_proto, None);
+                let setter = setter
+                    .map(|setter| FunctionObject::native(setter).build(context, fn_proto, None));
                 this.add_property(mc, name.into(), getter, setter, self.attributes);
                 return Value::Undefined;
             }
-            DeclKind::Method(func) => FunctionObject::native(context, func, fn_proto, None).into(),
-            DeclKind::Function(func) => {
-                FunctionObject::native(context, func, fn_proto, Some(fn_proto)).into()
+            DeclKind::Method(f) | DeclKind::Function(f) => {
+                let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto);
+                FunctionObject::native(f).build(context, fn_proto, p).into()
             }
             DeclKind::String(s) => context.intern_static(WStr::from_units(s)).into(),
             DeclKind::Bool(b) => b.into(),

@@ -886,11 +886,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             &self.context.strings,
             Some(self.context.avm1.prototypes().object),
         );
-        let func_obj = FunctionObject::function(
+        let func_obj = FunctionObject::bytecode(Gc::new(self.gc(), func)).build(
             &self.context.strings,
-            Gc::new(self.gc(), func),
             self.context.avm1.prototypes().function,
-            prototype,
+            Some(prototype),
         );
         if let Some(name) = name {
             self.define_local(name, func_obj.into())?;
