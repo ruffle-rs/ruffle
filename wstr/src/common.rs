@@ -1,7 +1,7 @@
 use alloc::vec::Vec;
 use core::ops::{Bound, Index, IndexMut, Range, RangeBounds};
 
-use super::{ptr, FromWStr, Pattern, WString};
+use super::{FromWStr, Pattern, WString, ptr};
 
 /// A UCS2 string slice, analogous to `&'a str`.
 #[repr(transparent)]
@@ -177,7 +177,7 @@ impl WStr {
     #[inline]
     pub fn get(&self, i: usize) -> Option<u16> {
         if i < self.len() {
-            // SAFETY: `self` is a valid `WStr` and `i` is a valid index.
+            // SAFETY: `self` is valid for reads and `i` is a valid index.
             Some(unsafe { ptr::read_at(self, i) })
         } else {
             None
@@ -190,7 +190,8 @@ impl WStr {
     /// `i` must be less than `self.len()`.
     #[inline]
     pub unsafe fn get_unchecked(&self, i: usize) -> u16 {
-        ptr::read_at(self, i)
+        // SAFETY: `self` is valid for reads and `i` is guaranteed in-bounds.
+        unsafe { ptr::read_at(self, i) }
     }
 
     #[inline(always)]
@@ -243,8 +244,9 @@ impl WStr {
     /// The range indices must be less than or equal to `self.len()`.
     #[inline]
     pub unsafe fn slice_unchecked<R: RangeBounds<usize>>(&self, range: R) -> &Self {
+        // SAFETY: delegated to the caller
         self.slice(range)
-            .unwrap_or_else(|| core::hint::unreachable_unchecked())
+            .unwrap_or_else(|| unsafe { core::hint::unreachable_unchecked() })
     }
 
     /// Returns a mutable subslice of `self` without doing bound checks.
@@ -253,8 +255,9 @@ impl WStr {
     /// The range indices must be less than or equal to `self.len()`.
     #[inline]
     pub unsafe fn slice_unchecked_mut<R: RangeBounds<usize>>(&mut self, range: R) -> &Self {
+        // SAFETY: delegated to the caller
         self.slice_mut(range)
-            .unwrap_or_else(|| core::hint::unreachable_unchecked())
+            .unwrap_or_else(|| unsafe { core::hint::unreachable_unchecked() })
     }
 
     /// Iterates over the code units of `self`.

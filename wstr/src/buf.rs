@@ -2,12 +2,12 @@ use alloc::borrow::{Cow, ToOwned};
 use alloc::string::String;
 use alloc::vec::Vec;
 use core::fmt;
-use core::mem::{self, size_of, ManuallyDrop};
+use core::mem::{self, ManuallyDrop, size_of};
 use core::ops::{Deref, DerefMut};
 use core::ptr::NonNull;
 
-use super::utils::{encode_raw_utf16, split_ascii_prefix, split_ascii_prefix_bytes, DecodeAvmUtf8};
-use super::{ptr, Units, WStr, WStrMetadata};
+use super::utils::{DecodeAvmUtf8, encode_raw_utf16, split_ascii_prefix, split_ascii_prefix_bytes};
+use super::{Units, WStr, WStrMetadata, ptr};
 
 /// An owned, extensible UCS2 string, analogous to `String`.
 pub struct WString {
@@ -55,17 +55,21 @@ impl WString {
     /// The length and the capacity cannot be greater than `WStr::MAX_LEN`.
     #[inline]
     pub unsafe fn from_buf_unchecked(buf: Units<Vec<u8>, Vec<u16>>) -> Self {
-        // SAFETY: we take ownership of the buffer; avoid double frees
         let mut buf = ManuallyDrop::new(buf);
         let (cap, len, ptr, is_wide) = match buf.deref_mut() {
             Units::Bytes(buf) => (buf.capacity(), buf.len(), buf.as_mut_ptr() as *mut _, false),
             Units::Wide(buf) => (buf.capacity(), buf.len(), buf.as_mut_ptr() as *mut _, true),
         };
 
-        Self {
-            data: NonNull::new_unchecked(ptr),
-            meta: ptr::WStrMetadata::new(len, is_wide),
-            capacity: cap as u32,
+        // SAFETY:
+        // - we've taken ownership of the buffer with `ManuallyDrop`;
+        // - the caller guarantees that the length and capacity are valid.
+        unsafe {
+            Self {
+                data: NonNull::new_unchecked(ptr),
+                meta: ptr::WStrMetadata::new(len, is_wide),
+                capacity: cap as u32,
+            }
         }
     }
 
@@ -223,23 +227,19 @@ impl WString {
     /// - the returned buffer shouldn't be dropped unless self is forgotten.
     #[inline]
     unsafe fn steal_buf(&mut self) -> ManuallyDrop<Units<Vec<u8>, Vec<u16>>> {
+        let ptr = self.data.as_ptr();
+        let len = self.meta.len();
         let cap = self.capacity as usize;
 
-        // SAFETY: we reconstruct the Vec<T> deconstructed in `Self::from_buf`.
-        let buffer = if self.meta.is_wide() {
-            Units::Wide(Vec::from_raw_parts(
-                self.data.cast().as_ptr(),
-                self.meta.len(),
-                cap,
-            ))
-        } else {
-            Units::Bytes(Vec::from_raw_parts(
-                self.data.cast().as_ptr(),
-                self.meta.len(),
-                cap,
-            ))
-        };
-        ManuallyDrop::new(buffer)
+        // SAFETY: we reconstruct the `Vec<T>` deconstructed in `Self::from_buf`;
+        // the caller guarantees the returned buffer is used correctly.
+        ManuallyDrop::new(unsafe {
+            if self.meta.is_wide() {
+                Units::Wide(Vec::from_raw_parts(ptr.cast(), len, cap))
+            } else {
+                Units::Bytes(Vec::from_raw_parts(ptr.cast(), len, cap))
+            }
+        })
     }
 
     /// Cheaply converts the `WString` into its internal buffer.
