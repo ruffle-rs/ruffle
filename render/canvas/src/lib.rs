@@ -988,16 +988,14 @@ fn swf_shape_to_canvas_commands(
                         is_smoothed,
                         is_repeating,
                     } => {
-                        let bitmap = if let Some(bitmap) = create_bitmap_pattern(
+                        let Some(bitmap) = create_bitmap_pattern(
                             *id,
                             *matrix,
                             *is_smoothed,
                             *is_repeating,
                             bitmap_source,
                             backend,
-                        ) {
-                            bitmap
-                        } else {
+                        ) else {
                             continue;
                         };
                         CanvasFillStyle::Bitmap(bitmap)
@@ -1038,16 +1036,14 @@ fn swf_shape_to_canvas_commands(
                         is_smoothed,
                         is_repeating,
                     } => {
-                        let bitmap = if let Some(bitmap) = create_bitmap_pattern(
+                        let Some(bitmap) = create_bitmap_pattern(
                             *id,
                             *matrix,
                             *is_smoothed,
                             *is_repeating,
                             bitmap_source,
                             backend,
-                        ) {
-                            bitmap
-                        } else {
+                        ) else {
                             continue;
                         };
                         CanvasStrokeStyle::Bitmap(bitmap)
