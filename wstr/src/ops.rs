@@ -6,7 +6,7 @@ use core::hash::Hasher;
 use core::slice::Iter as SliceIter;
 
 use super::pattern::{SearchStep, Searcher};
-use super::{utils, Pattern, Units, WStr, WString};
+use super::{Pattern, Units, WStr, WString, utils};
 
 pub struct Iter<'a> {
     inner: Units<SliceIter<'a, u8>, SliceIter<'a, u16>>,
@@ -136,11 +136,7 @@ pub fn str_cmp(left: &WStr, right: &WStr) -> core::cmp::Ordering {
     let bytes = bytes.iter().map(|c| *c as u16);
     let wide = wide.iter().copied();
     let cmp = bytes.cmp(wide);
-    if rev {
-        cmp.reverse()
-    } else {
-        cmp
-    }
+    if rev { cmp.reverse() } else { cmp }
 }
 
 pub fn str_cmp_ignore_case(left: &WStr, right: &WStr) -> core::cmp::Ordering {

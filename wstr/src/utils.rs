@@ -1,7 +1,7 @@
 //! Utilities for operating on strings in SWF files.
 
-use super::tables::{LOWERCASE_TABLE, UPPERCASE_TABLE};
 use super::Units;
+use super::tables::{LOWERCASE_TABLE, UPPERCASE_TABLE};
 use alloc::vec::Vec;
 
 fn is_surrogate_pair_at(us: &[u16], pos: usize) -> bool {
