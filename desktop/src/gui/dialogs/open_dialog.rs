@@ -1,15 +1,15 @@
 use crate::custom_event::RuffleEvent;
 use crate::gui::widgets::PathOrUrlField;
-use crate::gui::{text, FilePicker, LocalizableText};
+use crate::gui::{FilePicker, LocalizableText, text};
 use crate::player::LaunchOptions;
 use egui::{
-    emath, Align2, Button, Checkbox, ComboBox, Grid, Layout, Slider, TextEdit, Ui, Widget, Window,
+    Align2, Button, Checkbox, ComboBox, Grid, Layout, Slider, TextEdit, Ui, Widget, Window, emath,
 };
 use ruffle_core::backend::navigator::SocketMode;
 use ruffle_core::config::Letterbox;
 use ruffle_core::{
-    LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode, DEFAULT_PLAYER_VERSION,
-    NEWEST_PLAYER_VERSION,
+    DEFAULT_PLAYER_VERSION, LoadBehavior, NEWEST_PLAYER_VERSION, PlayerRuntime, StageAlign,
+    StageScaleMode,
 };
 use ruffle_render::quality::StageQuality;
 use std::borrow::Cow;

@@ -1,7 +1,7 @@
 use crate::cli::{GameModePreference, OpenUrlMode};
-use crate::gui::{available_languages, optional_text, text, ThemePreference};
+use crate::gui::{ThemePreference, available_languages, optional_text, text};
 use crate::log::FilenamePattern;
-use crate::preferences::{storage::StorageBackend, GlobalPreferences};
+use crate::preferences::{GlobalPreferences, storage::StorageBackend};
 use cpal::traits::{DeviceTrait, HostTrait};
 use egui::{Align2, Button, Checkbox, ComboBox, DragValue, Grid, Ui, Widget, Window};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};

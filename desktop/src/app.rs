@@ -8,9 +8,9 @@ use crate::util::{
 };
 use anyhow::Error;
 use gilrs::{Event, EventType, Gilrs};
+use ruffle_core::PlayerEvent;
 use ruffle_core::events::{ImeEvent, ImeNotification, PlayerNotification};
 use ruffle_core::swf::HeaderExt;
-use ruffle_core::PlayerEvent;
 use ruffle_render::backend::ViewportDimensions;
 use std::sync::Arc;
 use std::time::Instant;
@@ -46,13 +46,13 @@ impl MainWindow {
         if matches!(event, WindowEvent::RedrawRequested) {
             // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
             if !self.minimized {
-                if let Some(mut player) = self.player.get() {
+                let mut player = self.player.get();
+                if let Some(ref mut player) = player {
                     // Even if the movie is paused, user interaction with debug tools can change the render output
                     player.render();
-                    self.gui.render(Some(player));
-                } else {
-                    self.gui.render(None);
                 }
+
+                self.gui.render(player);
                 plot_stats_in_tracy(&self.gui.descriptors().wgpu_instance);
             }
 
@@ -369,12 +369,10 @@ impl MainWindow {
             let dt = new_time.duration_since(self.time).as_nanos();
             if dt > 0 {
                 self.time = new_time;
-                if let Some(mut player) = self.player.get() {
+                self.next_frame_time = self.player.get().map(|mut player| {
                     player.tick(dt as f64 / 1_000_000.0);
-                    self.next_frame_time = Some(new_time + player.time_til_next_frame());
-                } else {
-                    self.next_frame_time = None;
-                }
+                    new_time + player.time_til_next_frame()
+                });
                 self.check_redraw();
             }
         }

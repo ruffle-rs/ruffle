@@ -10,11 +10,11 @@ mod widgets;
 
 pub use controller::GuiController;
 pub use dialogs::DialogDescriptor;
+pub use locale::LocalizableText;
 pub use locale::available_languages;
 pub use locale::optional_text;
 pub use locale::text;
 pub use locale::text_with_args;
-pub use locale::LocalizableText;
 pub use movie::MovieView;
 pub use picker::FilePicker;
 pub use theme::ThemePreference;

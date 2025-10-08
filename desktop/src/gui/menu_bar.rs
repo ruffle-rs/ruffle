@@ -1,6 +1,6 @@
 use crate::custom_event::RuffleEvent;
 use crate::gui::dialogs::Dialogs;
-use crate::gui::{text, DebugMessage};
+use crate::gui::{DebugMessage, text};
 use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use egui::{Button, Key, KeyboardShortcut, Modifiers, Widget};

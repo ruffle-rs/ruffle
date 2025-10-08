@@ -3,7 +3,7 @@ use crate::custom_event::RuffleEvent;
 use crate::gui::dialogs::message_dialog::MessageDialogConfiguration;
 use crate::gui::{DialogDescriptor, FilePicker, LocalizableText};
 use crate::preferences::GlobalPreferences;
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use chrono::{DateTime, Utc};
 use egui_winit::clipboard::Clipboard;
 use fontdb::{FaceInfo, Family};
@@ -316,7 +316,10 @@ impl UiBackend for DesktopUiBackend {
         // It'd be nice if we can get the full list of candidates... Feature request?
         if let Some(id) = self.font_database.query(&query) {
             if let Some(face) = self.font_database.face(id) {
-                tracing::info!("Loading device font \"{}\" for \"{name}\" (italic: {is_italic}, bold: {is_bold})", face.post_script_name);
+                tracing::info!(
+                    "Loading device font \"{}\" for \"{name}\" (italic: {is_italic}, bold: {is_bold})",
+                    face.post_script_name
+                );
 
                 match load_fontdb_font(name.to_string(), face) {
                     Ok(font_definition) => register(font_definition),

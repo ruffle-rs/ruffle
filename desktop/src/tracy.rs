@@ -1,7 +1,7 @@
 use tracing::Metadata;
 use tracing_subscriber::fmt::format::DefaultFields;
-use tracing_tracy::client::register_demangler;
 use tracing_tracy::Config;
+use tracing_tracy::client::register_demangler;
 
 #[derive(Default)]
 pub struct RuffleTracyConfig(DefaultFields);
