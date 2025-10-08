@@ -1,6 +1,6 @@
 //! Integration tests runner for exporter.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use clap::Parser;
 use exporter::cli::Opt;
 use libtest_mimic::Trial;
@@ -178,22 +178,22 @@ fn load_test(params: TestLoaderParams) -> Trial {
             }
         }
 
-        if let Some(expected_stdout) = &options.expected_stdout {
-            if &stdout != expected_stdout {
-                return Err(anyhow!(
-                    "Unexpected stdout. Expected:\n{expected_stdout}\nActual:\n{stdout}"
-                )
-                .into());
-            }
+        if let Some(expected_stdout) = &options.expected_stdout
+            && stdout != *expected_stdout
+        {
+            return Err(anyhow!(
+                "Unexpected stdout. Expected:\n{expected_stdout}\nActual:\n{stdout}"
+            )
+            .into());
         }
 
-        if let Some(expected_stderr) = &options.expected_stderr {
-            if &stderr != expected_stderr {
-                return Err(anyhow!(
-                    "Unexpected stderr. Expected:\n{expected_stderr}\nActual:\n{stderr}"
-                )
-                .into());
-            }
+        if let Some(expected_stderr) = &options.expected_stderr
+            && stderr != *expected_stderr
+        {
+            return Err(anyhow!(
+                "Unexpected stderr. Expected:\n{expected_stderr}\nActual:\n{stderr}"
+            )
+            .into());
         }
 
         verify_dirs(&actual_dir, &output_dir, &input_dir)
