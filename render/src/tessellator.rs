@@ -3,9 +3,8 @@ use crate::shape_utils::{DistilledShape, DrawCommand, DrawPath, GradientType};
 use indexmap::IndexSet;
 use lyon::path::Path;
 use lyon::tessellation::{
-    self,
+    self, FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
     geometry_builder::{BuffersBuilder, FillVertexConstructor, VertexBuffers},
-    FillTessellator, FillVertex, StrokeTessellator, StrokeVertex, StrokeVertexConstructor,
 };
 use lyon::tessellation::{FillOptions, StrokeOptions};
 use swf::GradientRecord;

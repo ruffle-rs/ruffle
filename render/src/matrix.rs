@@ -315,7 +315,7 @@ fn round_to_i32(f: f32) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::{assert_ulps_eq, AbsDiffEq, UlpsEq};
+    use approx::{AbsDiffEq, UlpsEq, assert_ulps_eq};
 
     macro_rules! test_inverse {
         ($test: ident, $($args: expr),* $(,)?) => {
