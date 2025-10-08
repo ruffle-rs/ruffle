@@ -24,7 +24,7 @@ impl FreedesktopSettings {
         Ok(self.proxy.color_scheme().await?)
     }
 
-    pub async fn watch_color_scheme(&self) -> Result<impl Stream<Item = ColorScheme>> {
+    pub async fn watch_color_scheme(&self) -> Result<impl Stream<Item = ColorScheme> + use<>> {
         Ok(self.proxy.receive_color_scheme_changed().await?)
     }
 }

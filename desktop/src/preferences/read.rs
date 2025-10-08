@@ -20,7 +20,7 @@ pub fn read_preferences(input: &str) -> ParseDetails<SavedGlobalPreferences> {
             return ParseDetails {
                 result: Default::default(),
                 warnings: vec![ParseWarning::InvalidToml(e)],
-            }
+            };
         }
     };
 
@@ -99,7 +99,7 @@ mod tests {
     use crate::cli::{GameModePreference, OpenUrlMode};
     use crate::gui::ThemePreference;
     use crate::log::FilenamePattern;
-    use crate::preferences::{storage::StorageBackend, LogPreferences, StoragePreferences};
+    use crate::preferences::{LogPreferences, StoragePreferences, storage::StorageBackend};
     use fluent_templates::loader::langid;
     use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 
@@ -109,7 +109,10 @@ mod tests {
 
         assert_eq!(&SavedGlobalPreferences::default(), result.values());
         assert_eq!(result.warnings.len(), 1);
-        assert_eq!("Invalid TOML: TOML parse error at line 1, column 12\n  |\n1 | ~~INVALID~~\n  |            ^\nkey with no value, expected `=`\n", result.warnings[0].to_string());
+        assert_eq!(
+            "Invalid TOML: TOML parse error at line 1, column 12\n  |\n1 | ~~INVALID~~\n  |            ^\nkey with no value, expected `=`\n",
+            result.warnings[0].to_string()
+        );
     }
 
     #[test]

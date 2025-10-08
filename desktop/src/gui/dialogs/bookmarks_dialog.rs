@@ -1,5 +1,5 @@
 use crate::gui::widgets::PathOrUrlField;
-use crate::gui::{text, FilePicker};
+use crate::gui::{FilePicker, text};
 use crate::preferences::GlobalPreferences;
 use crate::{custom_event::RuffleEvent, player::LaunchOptions};
 use egui::{Align2, Button, Grid, Label, Layout, Sense, Ui, Widget, Window};

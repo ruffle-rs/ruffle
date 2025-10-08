@@ -1,4 +1,4 @@
-use crate::gui::{text, FilePicker};
+use crate::gui::{FilePicker, text};
 use egui::{Align2, Ui, Window};
 use rfd::FileHandle;
 use ruffle_frontend_utils::bundle::exporter::helpers::FilesystemHelper;

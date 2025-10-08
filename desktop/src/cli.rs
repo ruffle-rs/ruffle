@@ -1,6 +1,6 @@
-use crate::preferences::storage::StorageBackend;
 use crate::RUFFLE_VERSION;
-use anyhow::{anyhow, Error};
+use crate::preferences::storage::StorageBackend;
+use anyhow::{Error, anyhow};
 use clap::{Parser, ValueEnum};
 use ruffle_core::backend::navigator::SocketMode;
 use ruffle_core::config::Letterbox;

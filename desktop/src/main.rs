@@ -1,3 +1,4 @@
+#![allow(clippy::collapsible_if)] // TODO: remove
 #![deny(clippy::unwrap_used)]
 // By default, Windows creates an additional console window for our program.
 //
@@ -63,7 +64,7 @@ fn init() {
     // silently if the parent has no console.
     #[cfg(windows)]
     unsafe {
-        use windows_sys::Win32::System::Console::{AttachConsole, ATTACH_PARENT_PROCESS};
+        use windows_sys::Win32::System::Console::{ATTACH_PARENT_PROCESS, AttachConsole};
         AttachConsole(ATTACH_PARENT_PROCESS);
     }
 
@@ -134,7 +135,10 @@ fn panic_hook(info: &PanicHookInfo) {
         if !extra_info.is_empty() {
             params.push(("extra_info", extra_info.join("\n")));
         }
-        if let Ok(url) = Url::parse_with_params("https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml", &params) {
+        if let Ok(url) = Url::parse_with_params(
+            "https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml",
+            &params,
+        ) {
             let _ = webbrowser::open(url.as_str());
         }
     }

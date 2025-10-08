@@ -31,7 +31,7 @@ impl ExternalInterfaceProvider for DesktopExternalInterfaceProvider {
 
         if name == "eval" {
             if let Some(ref url) = self.spoof_url {
-                if let [ExternalValue::String(ref code)] = args {
+                if let [ExternalValue::String(code)] = args {
                     if is_location_href(code) {
                         return ExternalValue::String(url.to_string());
                     }

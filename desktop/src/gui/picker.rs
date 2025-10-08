@@ -4,8 +4,8 @@ use rfd::AsyncFileDialog;
 use std::{
     path::PathBuf,
     sync::{
-        atomic::{AtomicBool, Ordering},
         Arc, Weak,
+        atomic::{AtomicBool, Ordering},
     },
 };
 use winit::window::Window;

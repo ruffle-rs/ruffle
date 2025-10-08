@@ -11,13 +11,13 @@ use winit::event_loop::EventLoopProxy;
 
 use crate::cli::{FilesystemAccessMode, OpenUrlMode};
 use crate::custom_event::RuffleEvent;
+use crate::gui::DialogDescriptor;
 use crate::gui::dialogs::filesystem_access_dialog::{
     FilesystemAccessDialogConfiguration, FilesystemAccessDialogResult,
 };
 use crate::gui::dialogs::network_access_dialog::{
     NetworkAccessDialogConfiguration, NetworkAccessDialogResult,
 };
-use crate::gui::DialogDescriptor;
 use crate::preferences::GlobalPreferences;
 use crate::util::open_url;
 
