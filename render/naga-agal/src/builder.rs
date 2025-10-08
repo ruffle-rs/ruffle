@@ -15,8 +15,8 @@ use num_traits::FromPrimitive;
 
 use crate::varying::VaryingRegisters;
 use crate::{
-    types::*, Error, ShaderType, VertexAttributeFormat, MAX_TEXTURES, MAX_VERTEX_ATTRIBUTES,
-    SHADER_ENTRY_POINT,
+    Error, MAX_TEXTURES, MAX_VERTEX_ATTRIBUTES, SHADER_ENTRY_POINT, ShaderType,
+    VertexAttributeFormat, types::*,
 };
 
 const VERTEX_PROGRAM_CONSTANTS: u64 = 128;
@@ -904,7 +904,7 @@ impl<'a> NagaBuilder<'a> {
                         return Err(Error::Unimplemented(format!(
                             "Unimplemented register type in indirect mode {:?}",
                             source.register_type
-                        )))
+                        )));
                     }
                 }
             }
@@ -948,7 +948,7 @@ impl<'a> NagaBuilder<'a> {
             _ => {
                 return Err(Error::Unimplemented(format!(
                     "Unimplemented dest reg type: {dest:?}",
-                )))
+                )));
             }
         };
 

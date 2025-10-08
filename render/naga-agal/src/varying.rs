@@ -3,7 +3,7 @@ use naga::{
     StructMember, Type, TypeInner,
 };
 
-use crate::{builder::NagaBuilder, Error, ShaderType};
+use crate::{Error, ShaderType, builder::NagaBuilder};
 
 pub type Result<T> = std::result::Result<T, Error>;
 
