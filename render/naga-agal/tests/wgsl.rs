@@ -1,8 +1,8 @@
 use naga::{
-    valid::{Capabilities, ValidationFlags, Validator},
     Module,
+    valid::{Capabilities, ValidationFlags, Validator},
 };
-use naga_agal::{agal_to_naga, VertexAttributeFormat};
+use naga_agal::{VertexAttributeFormat, agal_to_naga};
 
 pub fn to_wgsl(module: &Module) -> String {
     let mut out = String::new();
