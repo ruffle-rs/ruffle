@@ -1,5 +1,5 @@
-use crate::error::Error;
 use crate::FlvReader;
+use crate::error::Error;
 use std::io::Seek;
 
 #[repr(u8)]
