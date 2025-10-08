@@ -3,7 +3,7 @@ mod exporter;
 mod player_ext;
 mod progress;
 
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use image::RgbaImage;
 use indicatif::ProgressBar;
 use rayon::prelude::*;
@@ -47,7 +47,7 @@ fn take_screenshot(
                         i,
                         swf_path,
                         e
-                    ))
+                    ));
                 }
             }
         }

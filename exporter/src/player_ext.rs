@@ -39,12 +39,11 @@ impl PlayerExporterExt for Arc<Mutex<Player>> {
 
         // Also resume the root MovieClip if stopped
         player.mutate_with_update_context(|ctx| {
-            if let Some(root_clip) = ctx.stage.root_clip() {
-                if let Some(movie_clip) = root_clip.as_movie_clip() {
-                    if !movie_clip.playing() {
-                        movie_clip.play();
-                    }
-                }
+            if let Some(root_clip) = ctx.stage.root_clip()
+                && let Some(movie_clip) = root_clip.as_movie_clip()
+                && !movie_clip.playing()
+            {
+                movie_clip.play();
             }
         });
     }
