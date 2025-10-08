@@ -252,7 +252,7 @@ pub trait Context3D: Any {
     fn disposed_vertex_buffer_handle(&self) -> Rc<dyn VertexBuffer>;
 
     fn create_index_buffer(&mut self, usage: BufferUsage, num_indices: u32)
-        -> Box<dyn IndexBuffer>;
+    -> Box<dyn IndexBuffer>;
     fn create_vertex_buffer(
         &mut self,
         usage: BufferUsage,
