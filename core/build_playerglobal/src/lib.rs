@@ -1,3 +1,5 @@
+#![allow(clippy::collapsible_if)] // TODO: remove
+
 //! An internal Ruffle utility to build our playerglobal
 //! `library.swf`
 
@@ -458,7 +460,9 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
             TraitKind::Slot { slot_id, .. } | TraitKind::Const { slot_id, .. } => {
                 if trait_has_metadata(&abc, trait_, METADATA_NATIVE_ACCESSIBLE) {
                     if slot_id == 0 {
-                        panic!("ASC should calculate slot ids for all slots; cannot apply NativeAccessible without a compiler-calculated slot id")
+                        panic!(
+                            "ASC should calculate slot ids for all slots; cannot apply NativeAccessible without a compiler-calculated slot id"
+                        )
                     } else {
                         // Slots are 1-indexed!
                         let slot_id = slot_id - 1;
@@ -482,7 +486,9 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
             | TraitKind::Setter { disp_id, method } => {
                 if trait_has_metadata(&abc, trait_, METADATA_NATIVE_CALLABLE) {
                     if disp_id == 0 {
-                        panic!("ASC should calculate disp ids for all methods; cannot apply NativeCallable without a compiler-calculated disp id")
+                        panic!(
+                            "ASC should calculate disp ids for all methods; cannot apply NativeCallable without a compiler-calculated disp id"
+                        )
                     } else {
                         // Disp-ids are 1-indexed, but ASC generates them two disp-ids
                         // too low for class methods and one disp-id too high for
