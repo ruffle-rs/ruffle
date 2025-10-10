@@ -232,6 +232,7 @@ jobs:
             --exclude ruffle_scanner
             --exclude ruffle_frontend_utils
             --exclude ruffle_render_canvas
+            --exclude ruffle_render_webgl
             --exclude ruffle_web
             --exclude ruffle_web_common
             --exclude ruffle_web_safari
