@@ -476,6 +476,10 @@ impl RuffleHandle {
     pub fn is_wasm_simd_used() -> bool {
         cfg!(target_feature = "simd128")
     }
+
+    pub fn tick_pub(&self, timestamp:f64) {
+        self.tick(timestamp);
+    }
 }
 
 impl RuffleHandle {
@@ -551,11 +555,13 @@ impl RuffleHandle {
         let shadow_host = Self::get_shadow_host(&parent);
         Self::set_up_focus_management(ruffle, shadow_host.unwrap_or(parent))?;
 
-        // Create the animation frame closure.
         ruffle.with_instance_mut(|instance| {
-            instance.animation_handler = Some(Closure::new(move |timestamp| {
-                ruffle.tick(timestamp);
-            }));
+            // Create the animation frame closure.
+            if config.tick_automatically {
+                instance.animation_handler = Some(Closure::new(move |timestamp| {
+                    ruffle.tick(timestamp);
+                }));
+            }
 
             // Create mouse move handler.
             instance.mouse_move_callback = Some(JsCallback::register(
@@ -852,8 +858,10 @@ impl RuffleHandle {
             ));
         })?;
 
-        // Set initial timestamp and do initial tick to start animation loop.
-        ruffle.tick(0.0);
+        if config.tick_automatically {
+            // Set initial timestamp and do initial tick to start animation loop.
+            ruffle.tick(0.0);
+        }
 
         Ok(ruffle)
     }
