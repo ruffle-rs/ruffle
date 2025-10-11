@@ -545,14 +545,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn stack_push(&mut self, mut value: Value<'gc>) {
         if let Value::Object(obj) = value {
-            // Note that there currently exists a subtle issue with this logic:
-            // If the cached `Object` in a `MovieClipReference` becomes invalidated, causing it to switch back to path-based object resolution,
-            // it should *never* switch back to cache-based resolution
-            // However, currently if a `MovieClipReference` in this invalidated-cache state is converted back to an `Object`, such as when passed as an argument to a function,
-            // if it pushed back onto the stack then it will be converted into a new `MovieClipReference`, causing it to switch back to cache-based resolution
-            // Fixing this will require a thorough refactor of AVM1 to store `Either<MovieClipReference, Object>
-            // can refer to a MovieClip
-            // There is a ignored test for this issue of "reference laundering" at "avm1/string_paths_reference_launder"
             if let Some(mcr) = MovieClipReference::try_from_stage_object(self, obj) {
                 value = Value::MovieClip(mcr);
             }
@@ -747,12 +739,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
-            let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
-                args.push(Value::Object(arg.coerce_to_object(self)));
-            } else {
-                args.push(arg);
-            }
+            args.push(self.context.avm1.pop());
         }
 
         let variable = self.get_variable(fn_name)?;
@@ -777,12 +764,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
-            let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
-                args.push(Value::Object(arg.coerce_to_object(self)));
-            } else {
-                args.push(arg);
-            }
+            args.push(self.context.avm1.pop());
         }
 
         // Can not call method on undefined/null.
@@ -1679,12 +1661,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
-            let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
-                args.push(Value::Object(arg.coerce_to_object(self)));
-            } else {
-                args.push(arg);
-            }
+            args.push(self.context.avm1.pop());
         }
 
         // Can not call method on undefined/null.
@@ -1731,12 +1708,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_args = num_args.min(self.context.avm1.stack_len());
         let mut args = Vec::with_capacity(num_args);
         for _ in 0..num_args {
-            let arg = self.context.avm1.pop();
-            if let Value::MovieClip(_) = arg {
-                args.push(Value::Object(arg.coerce_to_object(self)));
-            } else {
-                args.push(arg);
-            }
+            args.push(self.context.avm1.pop());
         }
 
         let name_value: Value<'gc> = self.resolve(fn_name)?.into();

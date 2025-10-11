@@ -16,7 +16,7 @@ mod flv;
 mod fscommand;
 pub(crate) mod globals;
 mod object;
-mod object_reference;
+pub(crate) mod object_reference;
 mod property;
 mod property_map;
 mod runtime;

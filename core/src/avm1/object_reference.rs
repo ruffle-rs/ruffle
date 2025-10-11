@@ -1,4 +1,4 @@
-use super::{object::ObjectWeak, Activation, Object, Value};
+use super::{object::ObjectWeak, Activation, NativeObject, Object, Value};
 use crate::{
     display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer},
     string::{AvmString, WStr, WString},
@@ -71,6 +71,14 @@ impl<'gc> MovieClipReference<'gc> {
         activation: &mut Activation<'_, 'gc>,
         object: Object<'gc>,
     ) -> Option<Self> {
+        // If we are creating a reference to a clip which itself was formed by resolving a reference
+        // then return that original reference
+        if let NativeObject::MovieClip(mc) = object.native() {
+            if let Some(mcr) = mc.original_reference() {
+                return Some(mcr);
+            }
+        }
+
         // We can't use as_display_object here as we explicitly don't want to convert `SuperObjects`
         let display_object = object.as_display_object_no_super()?;
         let (path, cached) = if let DisplayObject::MovieClip(mc) = display_object {
@@ -169,11 +177,14 @@ impl<'gc> MovieClipReference<'gc> {
         if let Some(start) = start {
             let display_object = Self::process_swf5_references(activation, start)?;
 
-            Some((
-                false,
-                display_object.object().coerce_to_object(activation),
-                display_object,
-            ))
+            let obj = display_object.object().coerce_to_object(activation);
+
+            // Track the original reference used to produce this clip, so we can get it back later
+            if let NativeObject::MovieClip(mc) = obj.native() {
+                mc.set_original_reference(activation.context, self);
+            }
+
+            Some((false, obj, display_object))
         } else {
             None
         }
