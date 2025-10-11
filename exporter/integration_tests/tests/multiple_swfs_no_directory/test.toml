@@ -1,0 +1,3 @@
+swf = "swfs"
+
+expect_error = "Output directory is required when exporting multiple files."
