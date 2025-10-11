@@ -1,6 +1,6 @@
 use anyhow::Result;
 use clap::Parser;
-use exporter::{run_main, Opt};
+use exporter::{cli::Opt, run_main};
 
 fn main() -> Result<()> {
     let opt: Opt = Opt::parse();

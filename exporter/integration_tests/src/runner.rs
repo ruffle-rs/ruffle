@@ -2,7 +2,7 @@
 
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
-use exporter::{run_main, Opt};
+use exporter::{cli::Opt, run_main};
 use libtest_mimic::Trial;
 use ruffle_fs_tests_runner::{FsTestsRunner, TestLoaderParams};
 use serde::Deserialize;
