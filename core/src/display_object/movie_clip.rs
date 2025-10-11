@@ -1569,22 +1569,7 @@ impl<'gc> MovieClip<'gc> {
 
             let children: SmallVec<[_; 16]> = self
                 .iter_render_list()
-                .filter(|child| {
-                    let is_candidate_for_removal = if self.movie().is_action_script_3() {
-                        child.place_frame() > frame || child.placed_by_script()
-                    } else {
-                        child.depth() < AVM_DEPTH_BIAS
-                    };
-
-                    if !is_candidate_for_removal && child.as_morph_shape().is_none() {
-                        return false;
-                    }
-                    if let Some(final_placement) = final_placements.get(&child.depth()) {
-                        !self.survives_rewind(*child, &final_placement.place_object)
-                    } else {
-                        true
-                    }
-                })
+                .filter(|child| !self.survives_rewind(*child, &final_placements, frame))
                 .collect();
 
             for child in children {
@@ -1711,9 +1696,29 @@ impl<'gc> MovieClip<'gc> {
         self.assert_expected_tag_end(hit_target_frame);
     }
 
-    fn survives_rewind(self, old_object: DisplayObject<'_>, new_params: &swf::PlaceObject) -> bool {
+    fn survives_rewind(
+        self,
+        old_object: DisplayObject<'_>,
+        final_placements: &HashMap<Depth, &GotoPlaceObject<'_>>,
+        frame: FrameNumber,
+    ) -> bool {
         // TODO [KJ] This logic is not 100% tested. It's possible it's a bit
         //    different in reality, but the spirit is there :)
+
+        let is_candidate_for_removal = if self.movie().is_action_script_3() {
+            old_object.place_frame() > frame || old_object.placed_by_script()
+        } else {
+            old_object.depth() < AVM_DEPTH_BIAS
+        };
+
+        if !is_candidate_for_removal && old_object.as_morph_shape().is_none() {
+            return true;
+        }
+        let Some(final_placement) = final_placements.get(&old_object.depth()) else {
+            return false;
+        };
+
+        let new_params = &final_placement.place_object;
 
         if !old_object.movie().is_action_script_3()
             && old_object.placed_by_avm1_script()
@@ -1721,12 +1726,14 @@ impl<'gc> MovieClip<'gc> {
         {
             return false;
         }
+
         let id_equals = match new_params.action {
             swf::PlaceObjectAction::Place(id) | swf::PlaceObjectAction::Replace(id) => {
                 old_object.id() == id
             }
             _ => false,
         };
+
         let ratio_equals = match new_params.ratio {
             Some(ratio) => old_object.ratio() == ratio,
             None => true,
