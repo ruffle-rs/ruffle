@@ -1,9 +1,10 @@
-mod cli;
+pub mod cli;
 mod player_ext;
+mod progress;
 
 use anyhow::{anyhow, Result};
 use image::RgbaImage;
-use indicatif::{ProgressBar, ProgressStyle};
+use indicatif::ProgressBar;
 use player_ext::PlayerExporterExt;
 use rayon::prelude::*;
 use ruffle_core::limits::ExecutionLimit;
@@ -21,6 +22,7 @@ use std::sync::Arc;
 use walkdir::{DirEntry, WalkDir};
 
 use crate::cli::{FrameSelection, Opt, SizeOpt};
+use crate::progress::ExporterProgress;
 
 /// Captures a screenshot. The resulting image uses straight alpha
 fn take_screenshot(
@@ -28,7 +30,7 @@ fn take_screenshot(
     swf_path: &Path,
     frames: FrameSelection, // TODO Figure out a way to get framecount before calling take_screenshot, so that we can have accurate progress bars when using --frames all
     skipframes: u32,
-    progress: &Option<ProgressBar>,
+    progress: &ExporterProgress,
     size: SizeOpt,
     force_play: bool,
 ) -> Result<Vec<RgbaImage>> {
@@ -60,13 +62,11 @@ fn take_screenshot(
     let totalframes = frames.total_frames(&player, skipframes);
 
     for i in 0..totalframes {
-        if let Some(progress) = &progress {
-            progress.set_message(format!(
-                "{} frame {}",
-                swf_path.file_stem().unwrap().to_string_lossy(),
-                i
-            ));
-        }
+        progress.set_message(format!(
+            "{} frame {}",
+            swf_path.file_stem().unwrap().to_string_lossy(),
+            i
+        ));
 
         if force_play {
             player.force_root_clip_play();
@@ -95,9 +95,7 @@ fn take_screenshot(
         }
 
         if !matches!(frames, FrameSelection::All) {
-            if let Some(progress) = &progress {
-                progress.inc(1);
-            }
+            progress.inc(1);
         }
     }
     Ok(result)
@@ -148,22 +146,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
         let _ = create_dir_all(&output);
     }
 
-    let progress = if !opt.silent {
-        let progress = match opt.frames {
-            FrameSelection::Count(n) => ProgressBar::new(n.get() as u64),
-            _ => ProgressBar::new_spinner(), // TODO Once we figure out a way to get framecount before calling take_screenshot, then this can be changed back to a progress bar when using --frames all
-        };
-        progress.set_style(
-            ProgressStyle::with_template(
-                "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
-            )
-            .unwrap()
-            .progress_chars("##-"),
-        );
-        Some(progress)
-    } else {
-        None
-    };
+    let progress = ExporterProgress::new(opt, 1);
 
     let frames = take_screenshot(
         descriptors,
@@ -175,9 +158,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
         opt.force_play,
     )?;
 
-    if let Some(progress) = &progress {
-        progress.set_message(opt.swf.file_stem().unwrap().to_string_lossy().into_owned());
-    }
+    progress.set_message(opt.swf.file_stem().unwrap().to_string_lossy().into_owned());
 
     if is_single_frame {
         let image = frames.first().unwrap();
@@ -221,11 +202,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     };
 
     if let Some(message) = message {
-        if let Some(progress) = progress {
-            progress.finish_with_message(message);
-        } else {
-            println!("{message}");
-        }
+        progress.finish_with_message(message);
     }
 
     Ok(())
@@ -235,33 +212,16 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
     let output = opt.output_path.clone().unwrap();
     let files = find_files(&opt.swf, !opt.silent);
 
-    let progress = if !opt.silent {
-        let progress = match opt.frames {
-            FrameSelection::Count(n) => ProgressBar::new((files.len() as u64) * (n.get() as u64)),
-            _ => ProgressBar::new(files.len() as u64),
-        };
-        progress.set_style(
-            ProgressStyle::with_template(
-                "[{elapsed_precise}] {bar:40.cyan/blue} [{eta_precise}] {pos:>7}/{len:7} {msg}",
-            )
-            .unwrap()
-            .progress_chars("##-"),
-        );
-        Some(progress)
-    } else {
-        None
-    };
+    let progress = ExporterProgress::new(opt, files.len() as u64);
 
     files.par_iter().try_for_each(|file| -> Result<()> {
-        if let Some(progress) = &progress {
-            progress.set_message(
-                file.path()
-                    .file_stem()
-                    .unwrap()
-                    .to_string_lossy()
-                    .into_owned(),
-            );
-        }
+        progress.set_message(
+            file.path()
+                .file_stem()
+                .unwrap()
+                .to_string_lossy()
+                .into_owned(),
+        );
         if let Ok(frames) = take_screenshot(
             descriptors.clone(),
             file.path(),
@@ -321,11 +281,7 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
         ),
     };
 
-    if let Some(progress) = progress {
-        progress.finish_with_message(message);
-    } else {
-        println!("{message}");
-    }
+    progress.finish_with_message(message);
 
     Ok(())
 }
