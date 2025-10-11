@@ -1,65 +1,33 @@
 pub mod cli;
+mod exporter;
 mod player_ext;
 mod progress;
 
 use anyhow::{anyhow, Result};
 use image::RgbaImage;
 use indicatif::ProgressBar;
-use player_ext::PlayerExporterExt;
 use rayon::prelude::*;
-use ruffle_core::limits::ExecutionLimit;
-use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::PlayerBuilder;
-use ruffle_render_wgpu::backend::{request_adapter_and_device, WgpuRenderBackend};
-use ruffle_render_wgpu::descriptors::Descriptors;
-use ruffle_render_wgpu::target::TextureTarget;
-use ruffle_render_wgpu::wgpu;
 use std::fs::create_dir_all;
 use std::io::{self, Write};
-use std::panic::catch_unwind;
 use std::path::{Path, PathBuf};
-use std::sync::Arc;
 use walkdir::{DirEntry, WalkDir};
 
-use crate::cli::{FrameSelection, Opt, SizeOpt};
+use crate::cli::{FrameSelection, Opt};
+use crate::exporter::Exporter;
 use crate::progress::ExporterProgress;
 
 /// Captures a screenshot. The resulting image uses straight alpha
 fn take_screenshot(
-    descriptors: Arc<Descriptors>,
+    exporter: &Exporter,
     swf_path: &Path,
     frames: FrameSelection, // TODO Figure out a way to get framecount before calling take_screenshot, so that we can have accurate progress bars when using --frames all
     skipframes: u32,
     progress: &ExporterProgress,
-    size: SizeOpt,
-    force_play: bool,
 ) -> Result<Vec<RgbaImage>> {
-    let movie = SwfMovie::from_path(swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
-
-    let width = size
-        .width
-        .map(f64::from)
-        .unwrap_or_else(|| movie.width().to_pixels());
-    let width = (width * size.scale).round() as u32;
-
-    let height = size
-        .height
-        .map(f64::from)
-        .unwrap_or_else(|| movie.height().to_pixels());
-    let height = (height * size.scale).round() as u32;
-
-    let target = TextureTarget::new(&descriptors.device, (width, height))
-        .map_err(|e| anyhow!(e.to_string()))?;
-    let player = PlayerBuilder::new()
-        .with_renderer(
-            WgpuRenderBackend::new(descriptors, target).map_err(|e| anyhow!(e.to_string()))?,
-        )
-        .with_movie(movie)
-        .with_viewport_dimensions(width, height, size.scale)
-        .build();
+    let movie_export = exporter.start_exporting_movie(swf_path)?;
 
     let mut result = Vec::new();
-    let totalframes = frames.total_frames(&player, skipframes);
+    let totalframes = movie_export.total_frames();
 
     for i in 0..totalframes {
         progress.set_message(format!(
@@ -68,21 +36,11 @@ fn take_screenshot(
             i
         ));
 
-        if force_play {
-            player.force_root_clip_play();
-        }
+        movie_export.run_frame();
 
-        player.lock().unwrap().preload(&mut ExecutionLimit::none());
-
-        player.lock().unwrap().run_frame();
         if i >= skipframes {
-            let image = || {
-                player.lock().unwrap().render();
-                player.capture_frame()
-            };
-            match catch_unwind(image) {
-                Ok(Some(image)) => result.push(image),
-                Ok(None) => return Err(anyhow!("Unable to capture frame {} of {:?}", i, swf_path)),
+            match movie_export.capture_frame() {
+                Ok(image) => result.push(image),
                 Err(e) => {
                     return Err(anyhow!(
                         "Unable to capture frame {} of {:?}: {:?}",
@@ -131,7 +89,7 @@ fn find_files(root: &Path, with_progress: bool) -> Vec<DirEntry> {
     results
 }
 
-fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
+fn capture_single_swf(exporter: &Exporter, opt: &Opt) -> Result<()> {
     let is_single_frame = opt.frames.is_single_frame();
     let output = opt.output_path.clone().unwrap_or_else(|| {
         let mut result = PathBuf::new();
@@ -148,15 +106,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
 
     let progress = ExporterProgress::new(opt, 1);
 
-    let frames = take_screenshot(
-        descriptors,
-        &opt.swf,
-        opt.frames,
-        opt.skipframes,
-        &progress,
-        opt.size,
-        opt.force_play,
-    )?;
+    let frames = take_screenshot(exporter, &opt.swf, opt.frames, opt.skipframes, &progress)?;
 
     progress.set_message(opt.swf.file_stem().unwrap().to_string_lossy().into_owned());
 
@@ -208,7 +158,7 @@ fn capture_single_swf(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
     Ok(())
 }
 
-fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()> {
+fn capture_multiple_swfs(exporter: &Exporter, opt: &Opt) -> Result<()> {
     let output = opt.output_path.clone().unwrap();
     let files = find_files(&opt.swf, !opt.silent);
 
@@ -222,15 +172,9 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
                 .to_string_lossy()
                 .into_owned(),
         );
-        if let Ok(frames) = take_screenshot(
-            descriptors.clone(),
-            file.path(),
-            opt.frames,
-            opt.skipframes,
-            &progress,
-            opt.size,
-            opt.force_play,
-        ) {
+        if let Ok(frames) =
+            take_screenshot(exporter, file.path(), opt.frames, opt.skipframes, &progress)
+        {
             let mut relative_path = file
                 .path()
                 .strip_prefix(&opt.swf)
@@ -287,29 +231,17 @@ fn capture_multiple_swfs(descriptors: Arc<Descriptors>, opt: &Opt) -> Result<()>
 }
 
 pub fn run_main(opt: Opt) -> Result<()> {
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-        backends: opt.graphics.into(),
-        ..Default::default()
-    });
-    let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
-        opt.graphics.into(),
-        &instance,
-        None,
-        opt.power.into(),
-    ))
-    .map_err(|e| anyhow!(e.to_string()))?;
-
-    let descriptors = Arc::new(Descriptors::new(instance, adapter, device, queue));
+    let exporter = Exporter::new(&opt)?;
 
     if opt.swf.is_file() {
-        capture_single_swf(descriptors, &opt)?;
+        capture_single_swf(&exporter, &opt)?;
     } else if !opt.swf.is_dir() {
         return Err(anyhow!(
             "Not a file or directory: {}",
             opt.swf.to_string_lossy()
         ));
     } else if opt.output_path.is_some() {
-        capture_multiple_swfs(descriptors, &opt)?;
+        capture_multiple_swfs(&exporter, &opt)?;
     } else {
         return Err(anyhow!(
             "Output directory is required when exporting multiple files."
