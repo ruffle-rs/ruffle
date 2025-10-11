@@ -1,7 +1,6 @@
 use crate::backends::TestAudioBackend;
 use crate::environment::{Environment, RenderInterface};
 use crate::options::RenderOptions;
-use anyhow::anyhow;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{PlayerBuilder, PlayerMode, PlayerRuntime};
 use ruffle_render::backend::{RenderBackend, ViewportDimensions};
@@ -58,7 +57,7 @@ impl PlayerOptions {
                     backend::ExternalVideoBackend, decoder::openh264::OpenH264Codec,
                 };
                 let openh264 = OpenH264Codec::load(directory)
-                    .map_err(|e| anyhow!("Couldn't load OpenH264: {}", e))?;
+                    .map_err(|e| anyhow::anyhow!("Couldn't load OpenH264: {}", e))?;
 
                 player_builder =
                     player_builder.with_video(ExternalVideoBackend::new_with_openh264(openh264));
