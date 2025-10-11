@@ -1,9 +1,11 @@
 use crate::environment::RenderInterface;
 use crate::options::image_comparison::ImageComparison;
-use crate::util::{read_bytes, write_image};
+use crate::util::{read_bytes, write_bytes};
 use anyhow::anyhow;
-use image::ImageFormat;
+use image::{EncodableLayout, ImageBuffer, ImageFormat, Pixel, PixelWithColorType};
 use ruffle_core::Player;
+use std::io::Cursor;
+use std::ops::Deref;
 use std::sync::{Arc, Mutex};
 use vfs::VfsPath;
 
@@ -235,4 +237,20 @@ fn calculate_max_difference(difference_data: &[u8]) -> u8 {
 
 fn calc_difference(lhs: u8, rhs: u8) -> u8 {
     (lhs as i16 - rhs as i16).unsigned_abs() as u8
+}
+
+fn write_image<P, Container>(
+    path: &VfsPath,
+    image: &ImageBuffer<P, Container>,
+    format: ImageFormat,
+) -> anyhow::Result<()>
+where
+    P: Pixel + PixelWithColorType,
+    [P::Subpixel]: EncodableLayout,
+    Container: Deref<Target = [P::Subpixel]>,
+{
+    let mut buffer = vec![];
+    image.write_to(&mut Cursor::new(&mut buffer), format)?;
+    write_bytes(path, &buffer)?;
+    Ok(())
 }
