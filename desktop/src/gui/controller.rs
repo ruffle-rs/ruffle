@@ -120,8 +120,16 @@ impl GuiController {
             size.height,
             window.scale_factor(),
         ));
-        let egui_renderer =
-            egui_wgpu::Renderer::new(&descriptors.device, surface_format, None, 1, true);
+        let egui_renderer = egui_wgpu::Renderer::new(
+            &descriptors.device,
+            surface_format,
+            egui_wgpu::RendererOptions {
+                msaa_samples: 1,
+                depth_stencil_format: None,
+                dithering: false,
+                predictable_texture_filtering: false,
+            },
+        );
         let descriptors = Arc::new(descriptors);
         let gui = RuffleGui::new(
             Arc::downgrade(&window),
@@ -396,6 +404,7 @@ impl GuiController {
                             load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
                             store: wgpu::StoreOp::Store,
                         },
+                        depth_slice: None,
                     })],
                     label: Some("egui_render"),
                     ..Default::default()
