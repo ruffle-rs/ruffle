@@ -1,17 +1,16 @@
+pub mod font;
 pub mod image_comparison;
 
 use crate::backends::TestAudioBackend;
 use crate::environment::{Environment, RenderInterface};
 use crate::image_trigger::ImageTrigger;
+use crate::options::font::{DefaultFontsOptions, FontOptions, FontSortOptions};
 use crate::options::image_comparison::ImageComparison;
 use anyhow::{anyhow, Result};
 use approx::relative_eq;
 use regex::Regex;
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{
-    DefaultFont, FontQuery, FontType, Player, PlayerBuilder, PlayerMode, PlayerRuntime,
-    ViewportDimensions,
-};
+use ruffle_core::{PlayerBuilder, PlayerMode, PlayerRuntime, ViewportDimensions};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
@@ -266,35 +265,6 @@ impl Default for RenderOptions {
     }
 }
 
-#[derive(Deserialize, Default, Clone)]
-#[serde(default, deny_unknown_fields)]
-pub struct FontOptions {
-    pub family: String,
-    pub path: String,
-    pub bold: bool,
-    pub italic: bool,
-}
-
-impl FontOptions {
-    pub fn to_font_query(&self) -> FontQuery {
-        FontQuery::new(
-            FontType::Device,
-            self.family.clone(),
-            self.bold,
-            self.italic,
-        )
-    }
-}
-
-#[derive(Deserialize, Default, Clone)]
-#[serde(default, deny_unknown_fields)]
-pub struct FontSortOptions {
-    pub family: String,
-    pub bold: bool,
-    pub italic: bool,
-    pub sort: Vec<String>,
-}
-
 /// Test expression is a cfg-like expression that evaluates to a boolean
 /// and can be used in test configuration.
 ///
@@ -335,37 +305,5 @@ impl TestExpression {
             return Err(anyhow!("Unknown predicate used in expression: {pred}"));
         }
         Ok(cfg_matches)
-    }
-}
-
-#[derive(Clone, Default, Deserialize)]
-#[serde(default, deny_unknown_fields)]
-pub struct DefaultFontsOptions {
-    pub sans: Vec<String>,
-    pub serif: Vec<String>,
-    pub typewriter: Vec<String>,
-    pub japanese_gothic: Vec<String>,
-    pub japanese_gothic_mono: Vec<String>,
-    pub japanese_mincho: Vec<String>,
-}
-
-impl DefaultFontsOptions {
-    pub fn apply(&self, player: &mut Player) {
-        self.apply_default_font(player, DefaultFont::Sans, &self.sans);
-        self.apply_default_font(player, DefaultFont::Serif, &self.serif);
-        self.apply_default_font(player, DefaultFont::Typewriter, &self.typewriter);
-        self.apply_default_font(player, DefaultFont::JapaneseGothic, &self.japanese_gothic);
-        self.apply_default_font(
-            player,
-            DefaultFont::JapaneseGothicMono,
-            &self.japanese_gothic_mono,
-        );
-        self.apply_default_font(player, DefaultFont::JapaneseMincho, &self.japanese_mincho);
-    }
-
-    fn apply_default_font(&self, player: &mut Player, font: DefaultFont, names: &[String]) {
-        if !names.is_empty() {
-            player.set_default_font(font, names.to_owned());
-        }
     }
 }
