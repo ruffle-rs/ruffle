@@ -1217,6 +1217,32 @@ impl<'gc> Value<'gc> {
         )
     }
 
+    /// Get a property and use it as a constructor
+    ///
+    /// This method will panic if called on null or undefined.
+    pub fn construct_property(
+        &self,
+        multiname: &Multiname<'gc>,
+        arguments: FunctionArgs<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let ctor = match self {
+            Value::Object(obj) if obj.as_namespace_object().is_none() => {
+                self.get_property(multiname, activation)?
+            }
+            _ => self
+                .get_property(multiname, activation)
+                .unwrap_or_else(|_| {
+                    // This can only ever run for primitives and namespaces objects, so it should never panic
+                    let proto = self.proto(activation).unwrap();
+
+                    Value::from(proto)
+                }),
+        };
+
+        ctor.construct(activation, arguments)
+    }
+
     /// Call a method by its index.
     ///
     /// This directly corresponds with the AVM2 operation `callmethod`.
