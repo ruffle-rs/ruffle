@@ -172,8 +172,8 @@ mod tests {
 
     fn setup<'gc>(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
         create(&mut DeclContext {
-            object_proto: activation.context.avm1.prototypes().object,
-            fn_proto: activation.context.avm1.prototypes().function,
+            object_proto: activation.prototypes().object,
+            fn_proto: activation.prototypes().function,
             strings: activation.strings(),
         })
     }

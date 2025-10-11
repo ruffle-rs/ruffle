@@ -16,6 +16,40 @@ use std::borrow::Cow;
 use swf::avm1::read::Reader;
 use tracing::instrument;
 
+/// The global environment.
+///
+/// Because SWFs v6 and v7+ use different case-sensitivity rules, Flash
+/// keeps two environments, one case-sensitive, the other not (for an
+/// example, see the `global_swf6_7_8` test).
+#[derive(Collect)]
+#[collect(no_drop)]
+struct GlobalEnv<'gc> {
+    /// The global scope (pre-allocated so that it can be reused by fresh `Activation`s).
+    global_scope: Gc<'gc, Scope<'gc>>,
+
+    /// System built-ins that we use internally to construct new objects.
+    prototypes: avm1::globals::SystemPrototypes<'gc>,
+
+    /// Cached functions for the AsBroadcaster.
+    broadcaster_functions: BroadcasterFunctions<'gc>,
+
+    /// The mappings between symbol names and constructors registered
+    /// with `Object.registerClass()`. This is either case-sensitive or case-insensitive.
+    constructor_registry: PropertyMap<'gc, Object<'gc>>,
+}
+
+impl<'gc> GlobalEnv<'gc> {
+    fn create(context: &mut StringContext<'gc>) -> Self {
+        let (prototypes, globals, broadcaster_functions) = create_globals(context);
+        Self {
+            global_scope: Gc::new(context.gc(), Scope::from_global_object(globals)),
+            prototypes,
+            broadcaster_functions,
+            constructor_registry: PropertyMap::new(),
+        }
+    }
+}
+
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct Avm1<'gc> {
@@ -26,14 +60,9 @@ pub struct Avm1<'gc> {
     /// don't close over the constant pool they were defined with.
     constant_pool: Gc<'gc, Vec<Value<'gc>>>,
 
-    /// The global scope (pre-allocated so that it can be reused by fresh `Activation`s).
-    global_scope: Gc<'gc, Scope<'gc>>,
-
-    /// System built-ins that we use internally to construct new objects.
-    prototypes: avm1::globals::SystemPrototypes<'gc>,
-
-    /// Cached functions for the AsBroadcaster
-    broadcaster_functions: BroadcasterFunctions<'gc>,
+    /// The global environment, dependent on the ambient SWF version.
+    env_case_sensitive: GlobalEnv<'gc>,
+    env_case_insensitive: GlobalEnv<'gc>,
 
     /// DisplayObject property map.
     display_properties: stage_object::DisplayPropertyMap<'gc>,
@@ -60,13 +89,6 @@ pub struct Avm1<'gc> {
     /// The list of all movie clips in execution order.
     clip_exec_list: Option<MovieClip<'gc>>,
 
-    /// The mappings between symbol names and constructors registered
-    /// with `Object.registerClass()`.
-    /// Because SWFs v6 and v7+ use different case-sensitivity rules, Flash
-    /// keeps two separate registries, one case-sensitive, the other not.
-    constructor_registry_case_insensitive: PropertyMap<'gc, Object<'gc>>,
-    constructor_registry_case_sensitive: PropertyMap<'gc, Object<'gc>>,
-
     /// If getBounds / getRect is called on a MovieClip with invalid bounds and the
     /// target space is identical to the origin space, but the target is not the
     /// MovieClip itself, the call can return either the default invalid rectangle
@@ -91,14 +113,12 @@ pub struct Avm1<'gc> {
 impl<'gc> Avm1<'gc> {
     pub fn new(context: &mut StringContext<'gc>, player_version: u8) -> Self {
         let gc_context = context.gc();
-        let (prototypes, globals, broadcaster_functions) = create_globals(context);
 
         Self {
             player_version,
             constant_pool: Gc::new(gc_context, vec![]),
-            global_scope: Gc::new(gc_context, Scope::from_global_object(globals)),
-            prototypes,
-            broadcaster_functions,
+            env_case_insensitive: GlobalEnv::create(context),
+            env_case_sensitive: GlobalEnv::create(context),
             display_properties: stage_object::DisplayPropertyMap::new(context),
             stack: vec![],
             registers: [
@@ -111,8 +131,6 @@ impl<'gc> Avm1<'gc> {
             max_recursion_depth: 255,
             has_mouse_listener: false,
             clip_exec_list: None,
-            constructor_registry_case_insensitive: PropertyMap::new(),
-            constructor_registry_case_sensitive: PropertyMap::new(),
 
             #[cfg(feature = "avm_debug")]
             debug_output: false,
@@ -186,7 +204,7 @@ impl<'gc> Avm1<'gc> {
         let child_scope = Gc::new(
             action_context.gc(),
             Scope::new(
-                action_context.avm1.global_scope,
+                action_context.avm1.global_scope(active_clip.swf_version()),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
@@ -292,8 +310,6 @@ impl<'gc> Avm1<'gc> {
         );
 
         let broadcaster = activation
-            .context
-            .avm1
             .global_object()
             .get(broadcaster_name, &mut activation)
             .unwrap()
@@ -352,19 +368,27 @@ impl<'gc> Avm1<'gc> {
         value
     }
 
-    /// Obtain a reference to `_global`.
-    pub fn global_object(&self) -> Object<'gc> {
-        self.global_scope.locals_cell()
+    #[inline(always)]
+    pub fn is_case_sensitive(swf_version: u8) -> bool {
+        swf_version >= 7
     }
 
     /// Obtain a reference to the global scope.
-    pub fn global_scope(&self) -> Gc<'gc, Scope<'gc>> {
-        self.global_scope
+    pub fn global_scope(&self, swf_version: u8) -> Gc<'gc, Scope<'gc>> {
+        if Self::is_case_sensitive(swf_version) {
+            self.env_case_sensitive.global_scope
+        } else {
+            self.env_case_insensitive.global_scope
+        }
     }
 
     /// Obtain system built-in prototypes for this instance.
-    pub fn prototypes(&self) -> &avm1::globals::SystemPrototypes<'gc> {
-        &self.prototypes
+    pub fn prototypes(&self, swf_version: u8) -> &avm1::globals::SystemPrototypes<'gc> {
+        if Self::is_case_sensitive(swf_version) {
+            &self.env_case_sensitive.prototypes
+        } else {
+            &self.env_case_insensitive.prototypes
+        }
     }
 
     /// Obtains the constant pool to use for new activations from code sources that
@@ -392,8 +416,12 @@ impl<'gc> Avm1<'gc> {
         self.max_recursion_depth = max_recursion_depth
     }
 
-    pub fn broadcaster_functions(&self) -> BroadcasterFunctions<'gc> {
-        self.broadcaster_functions
+    pub fn broadcaster_functions(&self, swf_version: u8) -> BroadcasterFunctions<'gc> {
+        if Self::is_case_sensitive(swf_version) {
+            self.env_case_sensitive.broadcaster_functions
+        } else {
+            self.env_case_insensitive.broadcaster_functions
+        }
     }
 
     /// The Flash Player version we're emulating.
@@ -514,11 +542,11 @@ impl<'gc> Avm1<'gc> {
         swf_version: u8,
         symbol: AvmString<'gc>,
     ) -> Option<Object<'gc>> {
-        let is_case_sensitive = swf_version >= 7;
+        let is_case_sensitive = Self::is_case_sensitive(swf_version);
         let registry = if is_case_sensitive {
-            &self.constructor_registry_case_sensitive
+            &self.env_case_sensitive.constructor_registry
         } else {
-            &self.constructor_registry_case_insensitive
+            &self.env_case_insensitive.constructor_registry
         };
         registry.get(symbol, is_case_sensitive).copied()
     }
@@ -529,11 +557,11 @@ impl<'gc> Avm1<'gc> {
         symbol: AvmString<'gc>,
         constructor: Option<Object<'gc>>,
     ) {
-        let is_case_sensitive = swf_version >= 7;
+        let is_case_sensitive = Self::is_case_sensitive(swf_version);
         let registry = if is_case_sensitive {
-            &mut self.constructor_registry_case_sensitive
+            &mut self.env_case_sensitive.constructor_registry
         } else {
-            &mut self.constructor_registry_case_insensitive
+            &mut self.env_case_insensitive.constructor_registry
         };
         if let Some(constructor) = constructor {
             registry.insert(symbol, constructor, is_case_sensitive);

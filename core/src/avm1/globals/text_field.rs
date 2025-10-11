@@ -129,7 +129,7 @@ fn new_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     text_format: TextFormat,
 ) -> Object<'gc> {
-    let proto = activation.context.avm1.prototypes().text_format;
+    let proto = activation.prototypes().text_format;
     let object = Object::new(&activation.context.strings, Some(proto));
     object.set_native(
         activation.gc(),

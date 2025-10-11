@@ -274,7 +274,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         if self.0.object.get().is_none() {
             let object = Object::new_with_native(
                 &context.strings,
-                Some(context.avm1.prototypes().button),
+                Some(context.avm1.prototypes(self.swf_version()).button),
                 NativeObject::Button(self),
             );
             let obj = unlock!(Gc::write(context.gc(), self.0), Avm1ButtonData, object);

@@ -37,7 +37,7 @@ impl<'gc> FileReferenceObject<'gc> {
 
         self.0.is_initialised.set(true);
 
-        let date_proto = activation.context.avm1.prototypes().date_constructor;
+        let date_proto = activation.prototypes().date_constructor;
         if let Some(creation_time) = result.creation_time() {
             if let Ok(Value::Object(obj)) = date_proto.construct(
                 activation,

@@ -171,7 +171,7 @@ impl Value {
             Value::Object(values) => {
                 let object = Avm1Object::new(
                     &activation.context.strings,
-                    Some(activation.context.avm1.prototypes().object),
+                    Some(activation.prototypes().object),
                 );
                 for (key, value) in values {
                     let key = AvmString::new_utf8(activation.gc(), key);

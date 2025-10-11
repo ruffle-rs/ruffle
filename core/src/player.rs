@@ -1084,7 +1084,7 @@ impl Player {
                         dumper.print_variables(
                             "Global Variables:",
                             "_global",
-                            activation.context.avm1.global_object(),
+                            activation.global_object(),
                             &mut activation,
                         );
 

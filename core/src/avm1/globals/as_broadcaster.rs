@@ -169,8 +169,11 @@ fn initialize<'gc>(
         initialize_internal(
             &activation.context.strings,
             broadcaster,
-            activation.context.avm1.broadcaster_functions(),
-            activation.context.avm1.prototypes().array,
+            activation
+                .context
+                .avm1
+                .broadcaster_functions(activation.swf_version()),
+            activation.prototypes().array,
         );
     }
     Ok(Value::Undefined)

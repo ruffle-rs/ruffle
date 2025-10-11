@@ -76,11 +76,11 @@ impl<'gc> DisplacementMapFilter<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone()))
     }
 
-    fn map_bitmap(self, context: &mut UpdateContext<'gc>) -> Option<Object<'gc>> {
+    fn map_bitmap(self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
         if let Some(map_bitmap) = self.0.map_bitmap.get() {
-            let proto = context.avm1.prototypes().bitmap_data;
-            let result = Object::new(&context.strings, Some(proto));
-            result.set_native(context.gc(), NativeObject::BitmapData(map_bitmap));
+            let proto = activation.prototypes().bitmap_data;
+            let result = Object::new(activation.strings(), Some(proto));
+            result.set_native(activation.gc(), NativeObject::BitmapData(map_bitmap));
             Some(result)
         } else {
             None
@@ -108,7 +108,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
     fn map_point(self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
         let map_point = self.0.map_point.get();
         let args = &[map_point.x.into(), map_point.y.into()];
-        let constructor = activation.context.avm1.prototypes().point_constructor;
+        let constructor = activation.prototypes().point_constructor;
         constructor.construct(activation, args)
     }
 
@@ -353,7 +353,7 @@ fn method<'gc>(
 
     Ok(match index {
         GET_MAP_BITMAP => this
-            .map_bitmap(activation.context)
+            .map_bitmap(activation)
             .map_or(Value::Undefined, Value::from),
         SET_MAP_BITMAP => {
             this.set_map_bitmap(activation, args.get(0))?;

@@ -168,7 +168,7 @@ fn method<'gc>(
             };
 
             // Return Rectangle object.
-            let constructor = activation.context.avm1.prototypes().rectangle_constructor;
+            let constructor = activation.prototypes().rectangle_constructor;
             constructor.construct(
                 activation,
                 &[
