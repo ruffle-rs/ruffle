@@ -1,15 +1,15 @@
+pub mod approximations;
 pub mod expression;
 pub mod font;
 pub mod image_comparison;
 pub mod player;
 
 use crate::image_trigger::ImageTrigger;
+use crate::options::approximations::Approximations;
 use crate::options::font::{DefaultFontsOptions, FontOptions, FontSortOptions};
 use crate::options::image_comparison::ImageComparison;
 use crate::options::player::PlayerOptions;
 use anyhow::{anyhow, Result};
-use approx::relative_eq;
-use regex::Regex;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use vfs::VfsPath;
@@ -83,51 +83,6 @@ impl TestOptions {
 
     pub fn output_path(&self, test_directory: &VfsPath) -> Result<VfsPath> {
         Ok(test_directory.join(&self.output_path)?)
-    }
-}
-
-#[derive(Clone, Deserialize, Default)]
-#[serde(default, deny_unknown_fields)]
-pub struct Approximations {
-    number_patterns: Vec<String>,
-    epsilon: Option<f64>,
-    max_relative: Option<f64>,
-}
-
-impl Approximations {
-    pub fn compare(&self, actual: f64, expected: f64) -> Result<()> {
-        let result = match (self.epsilon, self.max_relative) {
-            (Some(epsilon), Some(max_relative)) => relative_eq!(
-                actual,
-                expected,
-                epsilon = epsilon,
-                max_relative = max_relative
-            ),
-            (Some(epsilon), None) => relative_eq!(actual, expected, epsilon = epsilon),
-            (None, Some(max_relative)) => {
-                relative_eq!(actual, expected, max_relative = max_relative)
-            }
-            (None, None) => relative_eq!(actual, expected),
-        };
-
-        if result {
-            Ok(())
-        } else {
-            Err(anyhow!(
-                "Approximation failed: expected {}, found {}. Episilon = {:?}, Max Relative = {:?}",
-                expected,
-                actual,
-                self.epsilon,
-                self.max_relative
-            ))
-        }
-    }
-
-    pub fn number_patterns(&self) -> Vec<Regex> {
-        self.number_patterns
-            .iter()
-            .map(|p| Regex::new(p).unwrap())
-            .collect()
     }
 }
 
