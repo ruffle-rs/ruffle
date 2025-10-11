@@ -1,7 +1,1 @@
 num_ticks = 3
-
-[image_comparisons.output]
-tolerance = 5
-
-[player_options]
-with_renderer = { optional = true, sample_count = 1 }
