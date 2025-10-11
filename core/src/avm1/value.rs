@@ -411,7 +411,7 @@ impl<'gc> Value<'gc> {
                     )? {
                         Value::String(s) => s,
                         _ => {
-                            if object.as_executable().is_some() {
+                            if object.as_function().is_some() {
                                 AvmString::new_ascii_static(activation.gc(), b"[type Function]")
                             } else {
                                 AvmString::new_ascii_static(activation.gc(), b"[type Object]")
@@ -454,7 +454,7 @@ impl<'gc> Value<'gc> {
             Value::Number(_) => istr!("number"),
             Value::Bool(_) => istr!("boolean"),
             Value::String(_) => istr!("string"),
-            Value::Object(object) if object.as_executable().is_some() => istr!("function"),
+            Value::Object(object) if object.as_function().is_some() => istr!("function"),
             Value::MovieClip(_) => istr!("movieclip"),
             Value::Object(_) => istr!("object"),
         }
@@ -891,7 +891,6 @@ fn string_to_f64(mut s: &WStr, swf_version: u8) -> f64 {
 #[cfg(test)]
 #[expect(clippy::unreadable_literal)] // Large numeric literals in tests
 mod test {
-    use crate::avm1::activation::Activation;
     use crate::avm1::error::Error;
     use crate::avm1::function::FunctionObject;
     use crate::avm1::globals::create_globals;
@@ -923,19 +922,10 @@ mod test {
 
             assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);
 
-            fn value_of_impl<'gc>(
-                _activation: &mut Activation<'_, 'gc>,
-                _: Object<'gc>,
-                _: &[Value<'gc>],
-            ) -> Result<Value<'gc>, Error<'gc>> {
-                Ok(5.into())
-            }
-
-            let valueof = FunctionObject::native(
+            let valueof = FunctionObject::native(|_, _, _| Ok(5.into())).build(
                 &activation.context.strings,
-                value_of_impl,
                 protos.function,
-                protos.function,
+                Some(protos.function),
             );
 
             let o = Object::new(&activation.context.strings, Some(protos.object));

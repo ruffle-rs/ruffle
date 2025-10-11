@@ -124,7 +124,7 @@ fn to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if this.as_executable().is_some() {
+    if this.as_function().is_some() {
         Ok(AvmString::new_ascii_static(activation.gc(), b"[type Function]").into())
     } else {
         Ok(AvmString::new_ascii_static(activation.gc(), b"[object Object]").into())
@@ -183,7 +183,7 @@ pub fn register_class<'gc>(
 
     let constructor = match constructor {
         Value::Null | Value::Undefined => None,
-        Value::Object(obj) if obj.as_executable().is_some() => Some(*obj),
+        Value::Object(obj) if obj.as_function().is_some() => Some(*obj),
         _ => return Ok(false.into()),
     };
 
@@ -212,7 +212,7 @@ fn watch<'gc>(
         .get(1)
         .unwrap_or(&Value::Undefined)
         .coerce_to_object(activation);
-    if callback.as_executable().is_none() {
+    if callback.as_function().is_none() {
         return Ok(false.into());
     }
     let user_data = args.get(2).cloned().unwrap_or(Value::Undefined);

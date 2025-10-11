@@ -297,7 +297,7 @@ pub fn create_timer<'gc>(
     use crate::timer::TimerCallback;
 
     let (callback, interval) = match args.get(0) {
-        Some(Value::Object(o)) if o.as_executable().is_some() => (
+        Some(Value::Object(o)) if o.as_function().is_some() => (
             TimerCallback::Avm1Function {
                 func: *o,
                 params: args.get(2..).unwrap_or_default().to_vec(),

@@ -454,9 +454,8 @@ fn method<'gc>(
         _ => {}
     }
 
-    let date_ref = match this.native() {
-        NativeObject::Date(date) => date,
-        _ => return Ok(Value::Undefined),
+    let NativeObject::Date(date_ref) = this.native() else {
+        return Ok(Value::Undefined);
     };
     let date = date_ref.get();
 

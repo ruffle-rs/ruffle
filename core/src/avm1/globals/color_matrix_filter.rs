@@ -145,9 +145,8 @@ fn method<'gc>(
         return Ok(this.into());
     }
 
-    let this = match this.native() {
-        NativeObject::ColorMatrixFilter(color_matrix_filter) => color_matrix_filter,
-        _ => return Ok(Value::Undefined),
+    let NativeObject::ColorMatrixFilter(this) = this.native() else {
+        return Ok(Value::Undefined);
     };
 
     Ok(match index {
