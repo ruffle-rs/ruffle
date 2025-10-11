@@ -1,5 +1,5 @@
 use crate::image_trigger::ImageTrigger;
-use crate::options::TestExpression;
+use crate::options::expression::TestExpression;
 use crate::util::write_image;
 use anyhow::anyhow;
 use image::ImageFormat;
