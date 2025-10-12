@@ -891,10 +891,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             MovieClipReference::try_from_stage_object(self, bc).unwrap(),
         );
         let name = func.name();
-        let prototype = Object::new(
-            &self.context.strings,
-            Some(self.prototypes().object),
-        );
+        let prototype = Object::new(&self.context.strings, Some(self.prototypes().object));
         let func_obj = FunctionObject::bytecode(Gc::new(self.gc(), func)).build(
             &self.context.strings,
             self.prototypes().function,
