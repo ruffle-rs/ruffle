@@ -1,3 +1,4 @@
 swf = "swfs"
 
-expect_error = "Output directory is required when exporting multiple files."
+expected_status = 1
+expected_stderr = "Error: Output directory is required when exporting multiple files.\n"
