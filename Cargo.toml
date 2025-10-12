@@ -55,7 +55,7 @@ naga = { version = "26.0.0", features = ["wgsl-out"] }
 wgpu = "26.0.1"
 egui = { git = "https://github.com/emilk/egui.git", branch = "main" }
 clap = { version = "4.5.48", features = ["derive"] }
-cpal = "0.15.3"
+cpal = "0.16.0"
 anyhow = "1.0"
 gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "08e08414249d5914dfc3b402d7eadc133e00ce56" }
 slotmap = "1.0.7"
