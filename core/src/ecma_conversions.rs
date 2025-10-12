@@ -40,7 +40,49 @@ pub fn f64_to_wrapping_u32(n: f64) -> u32 {
 /// Converts an `f64` to an `i32` with ECMAScript `ToInt32` wrapping behavior.
 /// The value will be wrapped in the range [-2^31, 2^31).
 pub fn f64_to_wrapping_i32(n: f64) -> i32 {
+    // TODO: use core intrinsic when https://github.com/rust-lang/rust/issues/147555 is stabilized.
+    #[cfg(target_arch = "aarch64")]
+    {
+        if std::arch::is_aarch64_feature_detected!("jsconv") {
+            // SAFETY: `jsconv` feature is checked in both compile time and runtime to be existed, so it's safe to call.
+            unsafe { f64_to_wrapping_int32_aarch64(n) }
+        } else {
+            f64_to_wrapping_i32_generic(n)
+        }
+    }
+    #[cfg(not(target_arch = "aarch64"))]
+    f64_to_wrapping_i32_generic(n)
+}
+
+#[allow(unused)]
+fn f64_to_wrapping_i32_generic(n: f64) -> i32 {
     f64_to_wrapping_u32(n) as i32
+}
+
+/// Converts an `f64` to an `i32` with ECMAScript `ToInt32` wrapping behavior.
+/// The value will be wrapped in the range [-2^31, 2^31).
+/// Optimized for aarch64 cpu with the fjcvtzs instruction.
+///
+/// # Safety
+///
+/// The caller must ensure either:
+/// - The target platform is aarch64 with `jsconv` feature enabled, or
+/// - Runtime feature detection has been performed to verify `jsconv` support
+#[allow(unused)]
+#[cfg(target_arch = "aarch64")]
+#[target_feature(enable = "jsconv")]
+unsafe fn f64_to_wrapping_int32_aarch64(number: f64) -> i32 {
+    let ret: i32;
+    // SAFETY: fjcvtzs instruction is available under jsconv feature.
+    unsafe {
+        std::arch::asm!(
+            "fjcvtzs {dst:w}, {src:d}",
+            src = in(vreg) number,
+            dst = out(reg) ret,
+            options(nostack, nomem, pure)
+        );
+    }
+    ret
 }
 
 /// Implements the IEEE-754 "Round to nearest, ties to even" rounding rule.
