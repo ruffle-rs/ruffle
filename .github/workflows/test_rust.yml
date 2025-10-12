@@ -272,6 +272,10 @@ jobs:
         if: always()
         run: cat target/diff-cover/report.md >> $GITHUB_STEP_SUMMARY
 
+      - name: Warnings
+        if: always()
+        run: $COVERAGE_SCRIPT raise_warnings "target/diff-cover/report.json"
+
   dependencies:
     needs: changes
     if: needs.changes.outputs.should_run == 'true'
