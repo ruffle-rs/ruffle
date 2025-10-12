@@ -1082,7 +1082,7 @@ impl Player {
                         );
 
                         dumper.print_variables(
-                            "Global Variables:",
+                            "Global Variables 2:",
                             "_global",
                             activation.global_object(),
                             &mut activation,
