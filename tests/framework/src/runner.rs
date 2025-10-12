@@ -1,4 +1,5 @@
 mod image_test;
+mod trace;
 
 use crate::backends::{TestLogBackend, TestNavigatorBackend, TestUiBackend};
 use crate::environment::RenderInterface;
@@ -7,9 +8,9 @@ use crate::image_trigger::ImageTrigger;
 use crate::options::image_comparison::ImageComparison;
 use crate::options::TestOptions;
 use crate::runner::image_test::capture_and_compare_image;
+use crate::runner::trace::compare_trace_output;
 use crate::test::Test;
-use anyhow::{anyhow, Error, Result};
-use pretty_assertions::Comparison;
+use anyhow::{anyhow, Result};
 use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::events::{
     ImeEvent, KeyDescriptor, KeyLocation, LogicalKey, NamedKey, PhysicalKey,
@@ -387,7 +388,7 @@ impl TestRunner {
             // the expected output.txt file. Any tests dealing with null
             // bytes should explicitly test for them in ActionScript.
             let normalized_trace = trace.replace('\0', "");
-            self.compare_output(&normalized_trace)?;
+            compare_trace_output(&self.output_path, &self.options, &normalized_trace)?;
         }
 
         Ok(match self.remaining_iterations {
@@ -410,132 +411,6 @@ impl TestRunner {
             }
             _ => TestStatus::Continue,
         })
-    }
-
-    pub fn compare_output(&self, actual_output: &str) -> Result<()> {
-        let expected_output = self.output_path.read_to_string()?.replace("\r\n", "\n");
-
-        if let Some(approximations) = &self.options.approximations {
-            let add_comparison_to_err = |err: Error| -> Error {
-                let left_pretty = PrettyString(actual_output);
-                let right_pretty = PrettyString(&expected_output);
-                let comparison = Comparison::new(&left_pretty, &right_pretty);
-
-                anyhow!("{}\n\n{}\n", err, comparison)
-            };
-
-            if actual_output.lines().count() != expected_output.lines().count() {
-                return Err(anyhow!(
-                    "# of lines of output didn't match (expected {} from Flash, got {} from Ruffle",
-                    expected_output.lines().count(),
-                    actual_output.lines().count()
-                ));
-            }
-
-            for (actual, expected) in actual_output.lines().zip(expected_output.lines()) {
-                // If these are numbers, compare using approx_eq.
-                if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>())
-                {
-                    // NaNs should be able to pass in an approx test.
-                    if actual.is_nan() && expected.is_nan() {
-                        continue;
-                    }
-
-                    approximations
-                        .compare(actual, expected)
-                        .map_err(add_comparison_to_err)?;
-                } else {
-                    let mut found = false;
-
-                    // Check each of the user-provided regexes for a match
-                    for pattern in approximations.number_patterns() {
-                        if let (Some(actual_captures), Some(expected_captures)) =
-                            (pattern.captures(actual), pattern.captures(expected))
-                        {
-                            found = true;
-                            if expected_captures.len() != actual_captures.len() {
-                                return Err(anyhow!(
-                                    "Differing numbers of regex captures (expected {}, actually {})",
-                                    expected_captures.len(),
-                                    actual_captures.len(),
-                                ));
-                            }
-
-                            // Each capture group (other than group 0, which is always the entire regex
-                            // match) represents a floating-point value
-                            for (actual_val, expected_val) in actual_captures
-                                .iter()
-                                .skip(1)
-                                .zip(expected_captures.iter().skip(1))
-                            {
-                                let actual_num = actual_val
-                                    .expect("Missing capture group value for 'actual'")
-                                    .as_str()
-                                    .parse::<f64>()
-                                    .expect("Failed to parse 'actual' capture group as float");
-                                let expected_num = expected_val
-                                    .expect("Missing capture group value for 'expected'")
-                                    .as_str()
-                                    .parse::<f64>()
-                                    .expect("Failed to parse 'expected' capture group as float");
-                                approximations
-                                    .compare(actual_num, expected_num)
-                                    .map_err(add_comparison_to_err)?;
-                            }
-                            let modified_actual = pattern.replace_all(actual, "");
-                            let modified_expected = pattern.replace_all(expected, "");
-
-                            assert_text_matches(
-                                modified_actual.as_ref(),
-                                modified_expected.as_ref(),
-                            )?;
-                            break;
-                        }
-                    }
-
-                    if !found {
-                        assert_text_matches(actual, expected)?;
-                    }
-                }
-            }
-        } else {
-            assert_text_matches(actual_output, &expected_output)?;
-        }
-
-        Ok(())
-    }
-}
-
-/// Wrapper around string slice that makes debug output `{:?}` to print string same way as `{}`.
-/// Used in different `assert*!` macros in combination with `pretty_assertions` crate to make
-/// test failures to show nice diffs.
-/// Courtesy of https://github.com/colin-kiegel/rust-pretty-assertions/issues/24
-#[derive(PartialEq, Eq)]
-#[doc(hidden)]
-struct PrettyString<'a>(pub &'a str);
-
-/// Make diff to display string as multi-line string
-impl std::fmt::Debug for PrettyString<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        f.write_str(self.0)
-    }
-}
-
-fn assert_text_matches(ruffle: &str, flash: &str) -> Result<()> {
-    if flash != ruffle {
-        let left_pretty = PrettyString(ruffle);
-        let right_pretty = PrettyString(flash);
-        let comparison = Comparison::new(&left_pretty, &right_pretty);
-
-        Err(anyhow!(
-            "assertion failed: `(flash_expected == ruffle_actual)`\
-                       \n\
-                       \n{}\
-                       \n",
-            comparison
-        ))
-    } else {
-        Ok(())
     }
 }
 
