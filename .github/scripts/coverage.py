@@ -91,6 +91,41 @@ for more info.
     else:
         print(report)
 
+def raise_warnings(diff_cover_report):
+    """
+    Raise warnings about missing coverage.
+    """
+
+    def print_warning(file, block_start, block_end):
+        if block_start == block_end:
+            message = f"Uncovered line ({block_start})"
+        else:
+            message = f"Uncovered lines ({block_start}–{block_end})"
+        print(f"::warning file={file},line={block_start},endLine={block_end},title=Coverage::{message}")
+
+    with open(diff_cover_report) as f:
+        report_json = json.load(f)
+    src_stats = report_json["src_stats"]
+
+    for file, file_stats in src_stats.items():
+        violation_lines = sorted(file_stats["violation_lines"])
+
+        block_start = None
+        block_end = None
+        for line in violation_lines:
+            if block_start is None:
+                block_start = line
+                block_end = line
+            elif block_end == line - 1:
+                block_end = line
+            else:
+                print_warning(file, block_start, block_end)
+                block_start = line
+                block_end = line
+
+        if block_start is not None:
+            print_warning(file, block_start, block_end)
+
 def main():
     cmd = sys.argv[1]
     log(f'Running command {cmd}')
@@ -99,6 +134,9 @@ def main():
         pr_number = sys.argv[3] if len(sys.argv) > 3 else ""
         job_url = sys.argv[4] if len(sys.argv) > 4 else ""
         comment_report(diff_cover_report, pr_number, job_url)
+    elif cmd == 'raise_warnings':
+        diff_cover_report = sys.argv[2]
+        raise_warnings(diff_cover_report)
 
 
 if __name__ == '__main__':
