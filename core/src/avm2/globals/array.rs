@@ -11,8 +11,10 @@ use crate::avm2::Error;
 use crate::string::AvmString;
 use bitflags::bitflags;
 use ruffle_macros::istr;
+use std::cell::RefMut;
 use std::cmp::{min, Ordering};
 use std::mem::swap;
+use std::ops::{DerefMut, RangeBounds};
 
 pub use crate::avm2::object::array_allocator;
 
@@ -635,6 +637,31 @@ pub fn slice<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn splice_internal<'gc, R: RangeBounds<usize>, I: IntoIterator<Item = Value<'gc>>, T>(
+    this: Object<'gc>,
+    mut array_storage: RefMut<'_, ArrayStorage<'gc>>,
+    range: R,
+    replace_with: I,
+    activation: &mut Activation<'_, 'gc>,
+    f: impl FnOnce(std::vec::Splice<'_, <I as IntoIterator>::IntoIter>) -> T,
+) -> Result<T, Error<'gc>> {
+    let mut resolved = array_storage
+        .iter()
+        .enumerate()
+        .map(|(i, v)| resolve_array_hole(activation, this, i, v))
+        .collect::<Result<Vec<_>, Error<'gc>>>()?;
+
+    let removed = resolved.splice(range, replace_with);
+
+    let result = f(removed);
+
+    let mut resolved_array = ArrayStorage::from_args(&resolved[..]);
+
+    swap(array_storage.deref_mut(), &mut resolved_array);
+
+    Ok(result)
+}
+
 /// Implements `Array.splice`
 pub fn splice<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -643,43 +670,26 @@ pub fn splice<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let array_length = this.as_array_storage().map(|a| a.length());
-
-    if let Some(array_length) = array_length {
+    if let Some(array_storage) = this.as_array_storage_mut(activation.gc()) {
         if let Some(start) = args.get_optional(0) {
+            let array_length = array_storage.length();
             let actual_start = resolve_index(activation, start, array_length)?;
             let delete_count = args
                 .get_optional(1)
                 .unwrap_or_else(|| array_length.into())
-                .coerce_to_i32(activation)?;
+                .coerce_to_i32(activation)? as usize;
 
-            let actual_end = min(array_length, actual_start + delete_count as usize);
-            let args_slice = if args.len() > 2 {
-                args[2..].iter().cloned()
-            } else {
-                [].iter().cloned()
-            };
+            let actual_end = min(array_length, actual_start + delete_count);
+            let replace_with = args.get(2..).unwrap_or(&[]).iter().cloned();
 
-            let contents = this
-                .as_array_storage()
-                .map(|a| a.iter().collect::<Vec<Option<Value<'gc>>>>())
-                .unwrap();
-
-            let mut resolved = Vec::with_capacity(contents.len());
-            for (i, v) in contents.iter().enumerate() {
-                resolved.push(resolve_array_hole(activation, this, i, *v)?);
-            }
-
-            let removed = resolved
-                .splice(actual_start..actual_end, args_slice)
-                .collect::<Vec<Value<'gc>>>();
-            let removed_array = ArrayStorage::from_args(&removed[..]);
-
-            let mut resolved_array = ArrayStorage::from_args(&resolved[..]);
-
-            if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-                swap(&mut *array, &mut resolved_array)
-            }
+            let removed_array = splice_internal(
+                this,
+                array_storage,
+                actual_start..actual_end,
+                replace_with,
+                activation,
+                |removed| removed.collect(),
+            )?;
 
             return Ok(build_array(activation, removed_array));
         }
@@ -694,11 +704,24 @@ pub fn insert_at<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    splice(
-        activation,
-        this,
-        &[args.get_value(0), 0.into(), args.get_value(1)],
-    )
+    let this = this.as_object().unwrap();
+
+    if let Some(array_storage) = this.as_array_storage_mut(activation.gc()) {
+        let array_length = array_storage.length();
+        let index = resolve_index(activation, args.get_value(0), array_length)?;
+        let element = args.get_value(1);
+
+        splice_internal(
+            this,
+            array_storage,
+            index..index,
+            std::iter::once(element),
+            activation,
+            |removed| removed.for_each(drop),
+        )?;
+    }
+
+    Ok(Value::Undefined)
 }
 
 bitflags! {
@@ -1266,10 +1289,22 @@ pub fn remove_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-        let index = args.get_i32(0);
+    if let Some(array_storage) = this.as_array_storage_mut(activation.gc()) {
+        let array_length = array_storage.length();
+        let index = resolve_index(activation, args.get_value(0), array_length)?;
 
-        return Ok(array.remove(index).unwrap_or(Value::Undefined));
+        if index < array_length {
+            let removed_value = splice_internal(
+                this,
+                array_storage,
+                index..=index,
+                std::iter::empty(),
+                activation,
+                |mut removed| removed.next().unwrap_or(Value::Undefined),
+            )?;
+
+            return Ok(removed_value);
+        }
     }
 
     Ok(Value::Undefined)
