@@ -54,7 +54,7 @@ tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 naga = { version = "26.0.0", features = ["wgsl-out"] }
 wgpu = "26.0.1"
 egui = { git = "https://github.com/emilk/egui.git", branch = "main" }
-clap = { version = "4.5.48", features = ["derive"] }
+clap = { version = "4.5.49", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
 gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "08e08414249d5914dfc3b402d7eadc133e00ce56" }
@@ -83,7 +83,7 @@ tokio = "1.47.1"
 rfd = { version = "0.15.4", default-features = false, features = ["tokio", "xdg-portal"] }
 memmap2 = "0.9.8"
 libtest-mimic = "0.8.1"
-regex = "1.11.3"
+regex = "1.12.2"
 toml = "0.9.7"
 vfs = "0.12.2"
 smallvec = { version = "1.15.1", features = ["const_new", "union"] }
