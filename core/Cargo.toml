@@ -45,7 +45,7 @@ regress = { git = "https://github.com/ruffle-rs/regras3", rev = "5fcb02513c5ab4e
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "998f47c926b9986aabd518fbb7394ff56936d0b0" }
 lzma-rs = { workspace = true, optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
-symphonia = { version = "0.5.4", default-features = false, optional = true }
+symphonia = { version = "0.5.5", default-features = false, optional = true }
 enumset = "1.1.10"
 bytemuck = { workspace = true, features = ["derive"] }
 clap = { workspace = true, optional=true }
