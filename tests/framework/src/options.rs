@@ -197,11 +197,17 @@ impl PlayerOptions {
                 use ruffle_video_external::{
                     backend::ExternalVideoBackend, decoder::openh264::OpenH264Codec,
                 };
-                let openh264 = OpenH264Codec::load(directory)
-                    .map_err(|e| anyhow!("Couldn't load OpenH264: {}", e))?;
+                let openh264 = OpenH264Codec::load(directory);
 
-                player_builder =
-                    player_builder.with_video(ExternalVideoBackend::new_with_openh264(openh264));
+                let backend = match openh264 {
+                    Ok(codec) => ExternalVideoBackend::new_with_openh264(codec),
+                    Err(e) => {
+                        println!("Failed to load OpenH264: {e}");
+                        ExternalVideoBackend::new()
+                    }
+                };
+
+                player_builder = player_builder.with_video(backend);
             }
 
             #[cfg(all(
