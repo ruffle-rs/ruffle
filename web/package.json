@@ -30,7 +30,7 @@
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-jsdoc": "^61.1.2",
         "eslint-plugin-prettier": "^5.5.4",
-        "eslint-plugin-react-hooks": "^6.1.1",
+        "eslint-plugin-react-hooks": "^7.0.0",
         "eslint-plugin-react-refresh": "^0.4.23",
         "globals": "^16.4.0",
         "mocha": "^11.7.4",

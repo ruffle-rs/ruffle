@@ -1,12 +1,5 @@
 import ruffleLogo from "/logo.svg";
-import {
-    ChangeEvent,
-    FormEvent,
-    useEffect,
-    useRef,
-    useState,
-    DragEvent,
-} from "react";
+import { ChangeEvent, FormEvent, useRef, useState, DragEvent } from "react";
 import type { Config } from "ruffle-core";
 import { DemoSwf, SampleSelection } from "./navbar/samples.tsx";
 
@@ -104,15 +97,6 @@ export function Navbar({
         navigator.userAgent.match(/iPhone/i) ||
         (navigator.platform === "MacIntel" &&
             typeof navigator.standalone !== "undefined");
-
-    useEffect(() => {
-        if (selectedFilename !== null) {
-            setSelectedSample(null);
-            if (sampleSelectionInput.current) {
-                sampleSelectionInput.current.selectedIndex = -1;
-            }
-        }
-    }, [selectedFilename]);
 
     return (
         <div id="nav">
