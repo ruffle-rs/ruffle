@@ -910,7 +910,7 @@ pub fn compare_numeric<'gc, const COMPAT: bool>(
     if COMPAT {
         // See <https://bugzilla.mozilla.org/show_bug.cgi?id=524122>
         // See <https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/ArrayClass.cpp#L498>
-        if let (Value::Integer(a), Value::Integer(b)) = (a, b) {
+        if let (Value::Integer(a), Value::Integer(b)) = (a.normalize(), b.normalize()) {
             // The following expression corresponds to atomFromIntptrValue,
             // see <https://github.com/adobe-flash/avmplus/blob/master/core/atom-inlines.h#L82>
             let a = (a << 3) | 6;

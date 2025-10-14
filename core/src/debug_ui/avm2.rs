@@ -433,7 +433,7 @@ enum ValueWidget {
 
 impl ValueWidget {
     fn new<'gc>(context: &mut UpdateContext<'gc>, value: Value<'gc>) -> Self {
-        match value {
+        match value.normalize() {
             Value::Undefined => ValueWidget::Other(Cow::Borrowed("Undefined")),
             Value::Null => ValueWidget::Other(Cow::Borrowed("Null")),
             Value::Bool(value) => ValueWidget::Other(Cow::Owned(value.to_string())),
