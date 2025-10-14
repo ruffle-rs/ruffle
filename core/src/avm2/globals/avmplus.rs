@@ -499,10 +499,10 @@ pub fn instance_class_describe_type<'gc>(
 ) -> Class<'gc> {
     let class_defs = activation.avm2().class_defs();
 
-    match value {
+    match value.normalize() {
         Value::Null => class_defs.null,
         Value::Undefined => class_defs.void,
         Value::Integer(_) => class_defs.int,
-        _ => value.instance_class(activation),
+        value => value.instance_class(activation),
     }
 }
