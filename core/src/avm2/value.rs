@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{self};
-use crate::avm2::error::{make_error_1006, type_error};
+use crate::avm2::error::{make_error_1006, make_error_1034, type_error};
 use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
@@ -1504,13 +1504,7 @@ impl<'gc> Value<'gc> {
 
         let name = class.name().to_qualified_name_err_message(activation.gc());
 
-        let debug_str = self.as_debug_string(activation)?;
-
-        Err(Error::avm_error(type_error(
-            activation,
-            &format!("Error #1034: Type Coercion failed: cannot convert {debug_str} to {name}."),
-            1034,
-        )?))
+        Err(make_error_1034(activation, *self, name))
     }
 
     /// Determine if this value is any kind of number.

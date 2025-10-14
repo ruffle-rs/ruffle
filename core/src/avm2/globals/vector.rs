@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::error::{argument_error, type_error};
+use crate::avm2::error::{argument_error, make_error_1034, type_error};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::{
     compare_numeric_slow, compare_string_case_insensitive, compare_string_case_sensitive,
@@ -87,15 +87,7 @@ pub fn call_handler<'gc>(
             .name()
             .to_qualified_name_err_message(activation.gc());
 
-        let debug_string = arg.as_debug_string(activation)?;
-
-        return Err(Error::avm_error(type_error(
-            activation,
-            &format!(
-                "Error #1034: Type Coercion failed: cannot convert {debug_string} to {vector_name}.",
-            ),
-            1034,
-        )?));
+        return Err(make_error_1034(activation, arg, vector_name));
     };
 
     let length = arg
@@ -210,15 +202,7 @@ pub fn concat_helper<'gc>(
                 .name()
                 .to_qualified_name_err_message(activation.gc());
 
-            let instance_of_class_name = arg.instance_of_class_name(activation);
-
-            return Err(Error::avm_error(type_error(
-                activation,
-                &format!(
-                    "Error #1034: Type Coercion failed: cannot convert {instance_of_class_name}@00000000000 to {base_vector_name}.",
-                ),
-                1034,
-            )?));
+            return Err(make_error_1034(activation, arg, base_vector_name));
         }
 
         let old_vec = arg.as_object().expect("Type was just checked");
