@@ -118,20 +118,20 @@ impl From<u16> for Value<'_> {
 
 impl From<i32> for Value<'_> {
     fn from(value: i32) -> Self {
-        if value >= (1 << 28) || value < -(1 << 28) {
-            Value::Number(value as f64)
-        } else {
+        if fits_in_value_integer_i32(value) {
             Value::Integer(value)
+        } else {
+            Value::Number(value as f64)
         }
     }
 }
 
 impl From<u32> for Value<'_> {
     fn from(value: u32) -> Self {
-        if value >= (1 << 28) {
-            Value::Number(value as f64)
-        } else {
+        if fits_in_value_integer_u32(value) {
             Value::Integer(value as i32)
+        } else {
+            Value::Number(value as f64)
         }
     }
 }
@@ -157,6 +157,14 @@ impl PartialEq for Value<'_> {
             _ => false,
         }
     }
+}
+
+fn fits_in_value_integer_i32(value: i32) -> bool {
+    value < (1 << 28) && value >= -(1 << 28)
+}
+
+fn fits_in_value_integer_u32(value: u32) -> bool {
+    value < (1 << 28)
 }
 
 /// Strips leading whitespace.
@@ -536,6 +544,36 @@ impl<'gc> Value<'gc> {
                 .as_namespace()
                 .ok_or_else(|| "Expected Namespace, found Object".into()),
             _ => Err(format!("Expected Namespace, found {self:?}").into()),
+        }
+    }
+
+    /// Normalize this value to an equivalent, normal value.
+    ///
+    /// It should be fine to call this method whenever, it does not change
+    /// semantics, but has an effect on performance only.
+    ///
+    /// Flash Player does this normalization on every atom instantiation,
+    /// but for Ruffle it's too inefficient (we aren't doing any allocs).
+    /// However, there are some observable behaviors that result from it, and
+    /// that's why this method is provided in order to cover such cases.
+    pub fn normalize(self) -> Self {
+        match self {
+            Value::Number(n) => {
+                let i = n as i32;
+                if n.to_bits() == (i as f64).to_bits() && fits_in_value_integer_i32(i) {
+                    Value::Integer(i)
+                } else {
+                    self
+                }
+            }
+            Value::Integer(i) => {
+                if !fits_in_value_integer_i32(i) {
+                    Value::Number(i as f64)
+                } else {
+                    self
+                }
+            }
+            _ => self,
         }
     }
 
