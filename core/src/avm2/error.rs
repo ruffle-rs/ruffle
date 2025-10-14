@@ -295,12 +295,16 @@ pub fn make_error_1033<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 pub fn make_error_1034<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
-    class_name: AvmString<'gc>,
+    target_class: Class<'gc>,
 ) -> Error<'gc> {
     let debug_str = match value.as_debug_string(activation) {
         Ok(string) => string,
         Err(err) => return err,
     };
+
+    let class_name = target_class
+        .name()
+        .to_qualified_name_err_message(activation.gc());
 
     let err = type_error(
         activation,

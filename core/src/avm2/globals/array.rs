@@ -239,19 +239,25 @@ impl<'gc> ArrayIter<'gc> {
         &mut self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<(u32, Value<'gc>)>, Error<'gc>> {
+        let array_object = self.array_object;
+
         if self.index < self.rev_index {
             let i = self.index;
 
             self.index += 1;
 
-            let val = self.array_object.get_index_property(i as usize);
-
-            let val = if let Some(storage) = self.array_object.as_vector_storage() {
+            let val = if let Some(val) = array_object.get_index_property(i as usize) {
+                val
+            } else if let Some(storage) = array_object.as_vector_storage() {
                 // Special case for Vector- it throws an error if trying to access
                 // an element that was removed
-                val.ok_or_else(|| make_error_1125(activation, i as f64, storage.length()))?
+                return Err(make_error_1125(activation, i as f64, storage.length()));
             } else {
-                val.unwrap_or(Value::Undefined)
+                // Fallback to a slower full property lookup on the object
+                let array_object = Value::from(array_object);
+                let key = AvmString::new_utf8(activation.gc(), i.to_string());
+
+                array_object.get_public_property(key, activation)?
             };
 
             Ok(Some((i, val)))
