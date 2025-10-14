@@ -48,7 +48,7 @@ fn escape_string(string: AvmString) -> String {
 }
 
 fn format_value(value: &Value) -> Option<String> {
-    match *value {
+    match value.normalize() {
         Value::Undefined => None,
         Value::Null => Some("null".to_string()),
         Value::Bool(value) => Some(value.to_string()),
@@ -117,7 +117,7 @@ struct VariableInfo {
 impl VariableInfo {
     pub fn from_value<'gc>(value: Value<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
         Self {
-            type_info: match value {
+            type_info: match value.normalize() {
                 Value::Bool(_) => Some("Boolean".to_string()),
                 Value::Number(_) => Some("Number".to_string()),
                 Value::Integer(_) => Some("int".to_string()),

@@ -556,6 +556,10 @@ impl<'gc> Value<'gc> {
     /// but for Ruffle it's too inefficient (we aren't doing any allocs).
     /// However, there are some observable behaviors that result from it, and
     /// that's why this method is provided in order to cover such cases.
+    ///
+    /// The rule of thumb is to normalize the value before differentiating
+    /// between a [`Value::Number`] and [`Value::Integer`]. If there's no need
+    /// to differentiate between those variants, no normalization is needed.
     pub fn normalize(self) -> Self {
         match self {
             Value::Number(n) => {

@@ -402,7 +402,7 @@ pub fn goto_frame<'gc>(
     }
     .unwrap_or(0) as i32;
 
-    let frame = match frame_or_label {
+    let frame = match frame_or_label.normalize() {
         Value::Integer(i) => i + scene,
         frame_or_label => {
             let frame_or_label = frame_or_label.coerce_to_string(activation)?;
