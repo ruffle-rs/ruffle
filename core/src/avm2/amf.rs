@@ -25,23 +25,15 @@ pub fn serialize_value<'gc>(
     amf_version: AMFVersion,
     object_table: &mut ObjectTable<'gc>,
 ) -> Option<AmfValue> {
-    match elem {
+    match elem.normalize() {
         Value::Undefined => Some(AmfValue::Undefined),
         Value::Null => Some(AmfValue::Null),
         Value::Bool(b) => Some(AmfValue::Bool(b)),
         Value::Number(f) => Some(AmfValue::Number(f)),
-        Value::Integer(num) => {
-            // NOTE - we should really be converting `Value::Integer` to `Value::Number`
-            // whenever it's outside this range, instead of performing this during AMF serialization.
-            // Integers are unsupported in AMF0, and must be converted to Number regardless of whether
-            // it can be represented as an integer.
-            // FIXME - handle coercion floats like '1.0' to integers
-            if amf_version == AMFVersion::AMF0 || num >= (1 << 28) || num < -(1 << 28) {
-                Some(AmfValue::Number(num as f64))
-            } else {
-                Some(AmfValue::Integer(num))
-            }
-        }
+        // Integers are unsupported in AMF0, and must be converted to Number regardless of whether
+        // it can be represented as an integer.
+        Value::Integer(i) if amf_version == AMFVersion::AMF0 => Some(AmfValue::Number(i as f64)),
+        Value::Integer(i) => Some(AmfValue::Integer(i)),
         Value::String(s) => Some(AmfValue::String(s.to_string())),
         Value::Object(o) => {
             // TODO: Find a more general rule for which object types should be skipped,
