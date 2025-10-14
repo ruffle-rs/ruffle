@@ -296,7 +296,13 @@ jobs:
         # So the previous step failing doesn't prevent this one from running.
         if: always()
 
-  check-required:
+  # The rest is needed only because otherwise the real jobs couldn't be made required for merging PRs,
+  # as they would fail the entire workflow run if skipped - this makes GitHub happy instead.
+  # See:
+  #  - https://github.com/orgs/community/discussions/13690
+  #  - https://github.com/orgs/community/discussions/44490
+
+  build-dummy:
     needs: changes
     if: needs.changes.outputs.should_run == 'false'
     name: Test Rust ${{ matrix.rust_version }} / ${{ matrix.os }}
@@ -310,6 +316,19 @@ jobs:
             os: ubuntu-24.04
           - rust_version: beta
             os: ubuntu-24.04
+
+    steps:
+      - name: No-op
+        run: echo noop
+
+  lints-dummy:
+    needs: changes
+    if: needs.changes.outputs.should_run == 'false'
+    name: Lints with Rust ${{ matrix.rust_version }}
+    runs-on: ubuntu-24.04
+    strategy:
+      matrix:
+        rust_version: [stable, beta, nightly]
 
     steps:
       - name: No-op
