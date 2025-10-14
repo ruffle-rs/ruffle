@@ -81,18 +81,33 @@ pub fn call_handler<'gc>(
         return Ok(arg);
     }
 
+    // If the argument isn't an object, FP throws error #1034
+    let Some(arg_obj) = arg.as_object() else {
+        let vector_name = this_class
+            .name()
+            .to_qualified_name_err_message(activation.gc());
+
+        let debug_string = arg.as_debug_string(activation)?;
+
+        return Err(Error::avm_error(type_error(
+            activation,
+            &format!(
+                "Error #1034: Type Coercion failed: cannot convert {debug_string} to {vector_name}.",
+            ),
+            1034,
+        )?));
+    };
+
     let length = arg
         .get_public_property(istr!("length"), activation)?
         .coerce_to_i32(activation)?;
-
-    let arg = arg.as_object().ok_or("Cannot convert to Vector")?;
 
     let mut new_storage = VectorStorage::new(0, false, value_type);
     new_storage.reserve_exact(length as usize);
 
     let value_type_for_coercion = new_storage.value_type_for_coercion(activation);
 
-    let mut iter = ArrayIter::new(activation, arg)?;
+    let mut iter = ArrayIter::new(activation, arg_obj)?;
 
     while let Some((_, item)) = iter.next(activation)? {
         let coerced_item = item.coerce_to_type(activation, value_type_for_coercion)?;
