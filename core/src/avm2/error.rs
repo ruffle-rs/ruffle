@@ -292,6 +292,29 @@ pub fn make_error_1033<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1034<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    value: Value<'gc>,
+    class_name: AvmString<'gc>,
+) -> Error<'gc> {
+    let debug_str = match value.as_debug_string(activation) {
+        Ok(string) => string,
+        Err(err) => return err,
+    };
+
+    let err = type_error(
+        activation,
+        &format!("Error #1034: Type Coercion failed: cannot convert {debug_str} to {class_name}."),
+        1034,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1035<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,
@@ -318,6 +341,8 @@ pub fn make_error_1051<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     }
 }
 
+#[inline(never)]
+#[cold]
 pub fn make_error_1052<'gc>(activation: &mut Activation<'_, 'gc>, func_name: &str) -> Error<'gc> {
     let err = uri_error(
         activation,
@@ -330,6 +355,8 @@ pub fn make_error_1052<'gc>(activation: &mut Activation<'_, 'gc>, func_name: &st
     }
 }
 
+#[inline(never)]
+#[cold]
 pub fn make_error_1053<'gc>(
     activation: &mut Activation<'_, 'gc>,
     trait_name: AvmString<'gc>,
