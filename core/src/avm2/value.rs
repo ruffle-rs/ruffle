@@ -1502,9 +1502,7 @@ impl<'gc> Value<'gc> {
             }
         }
 
-        let name = class.name().to_qualified_name_err_message(activation.gc());
-
-        Err(make_error_1034(activation, *self, name))
+        Err(make_error_1034(activation, *self, class))
     }
 
     /// Determine if this value is any kind of number.

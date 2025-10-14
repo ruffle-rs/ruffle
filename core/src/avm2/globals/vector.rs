@@ -77,18 +77,14 @@ pub fn call_handler<'gc>(
 
     let arg = args.get_value(0);
 
-    if arg.instance_class(activation) == this_class {
-        return Ok(arg);
-    }
-
     // If the argument isn't an object, FP throws error #1034
     let Some(arg_obj) = arg.as_object() else {
-        let vector_name = this_class
-            .name()
-            .to_qualified_name_err_message(activation.gc());
-
-        return Err(make_error_1034(activation, arg, vector_name));
+        return Err(make_error_1034(activation, arg, this_class));
     };
+
+    if arg_obj.instance_class() == this_class {
+        return Ok(arg);
+    }
 
     let length = arg
         .get_public_property(istr!("length"), activation)?
@@ -195,15 +191,9 @@ pub fn concat_helper<'gc>(
     let val_class = new_vector_storage.value_type_for_coercion(activation);
 
     for arg in args {
-        let arg = arg.null_check(activation, None)?;
-
-        if !arg.is_of_type(my_base_vector_class) {
-            let base_vector_name = my_base_vector_class
-                .name()
-                .to_qualified_name_err_message(activation.gc());
-
-            return Err(make_error_1034(activation, arg, base_vector_name));
-        }
+        let arg = arg
+            .null_check(activation, None)?
+            .coerce_to_type(activation, my_base_vector_class)?;
 
         let old_vec = arg.as_object().expect("Type was just checked");
         let old_vec = old_vec.as_vector_storage().expect("Type was just checked");
