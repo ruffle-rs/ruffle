@@ -31,7 +31,7 @@ impl Approximations {
             Ok(())
         } else {
             Err(anyhow!(
-                "Approximation failed: expected {}, found {}. Episilon = {:?}, Max Relative = {:?}",
+                "Approximation failed: expected {}, found {}. Epsilon = {:?}, Max Relative = {:?}",
                 expected,
                 actual,
                 self.epsilon,
