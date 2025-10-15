@@ -6,12 +6,11 @@ are based around running a SWF and seeing what happens.
 To create a test, make a directory that looks like the following, at minimum:
 
 - `directory/`
-  - `test.swf`
-  - `test.toml`
-  - `output.txt`
+    - `test.swf`
+    - `test.toml`
+    - `output.txt`
 
 As best practice, please also include any source used to make the SWF, such as `test.fla` and/or any ActionScript files.
-
 
 # Test Structure
 
@@ -84,6 +83,9 @@ with_video = false
 
 # The runtime to emulate ("FlashPlayer" or "AIR"). Defaults to "FlashPlayer".
 runtime = "AIR"
+
+# The version of the player to emulate. If not set, it uses the newest one ruffle knows about.
+version = 32
 
 # Whether Ruffle's default font should be available.
 # It's not recommended to enable this option, as it will introduce differences
@@ -199,4 +201,5 @@ sleep_to_meet_frame_rate = false
 
 `fscommand("quit")` is enabled for tests, and will end the test at the end of this frame or tick.
 
-You can use this to end a test prematurely before the set number of iterations elapses, which may be useful for timer tests.
+You can use this to end a test prematurely before the set number of iterations elapses, which may be useful for timer
+tests.
