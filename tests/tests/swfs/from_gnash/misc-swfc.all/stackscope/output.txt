@@ -1,0 +1,11 @@
+doaction1 in frame1
+doaction2 in frame1
+mc1 placed in frame1
+doaction1 in frame2
+PASSED: var1 == val1  [stackscope.sc:83]
+PASSED: var2 == val2  [stackscope.sc:84]
+PASSED: typeof(var3) == undefined  [stackscope.sc:85]
+Total tests run: 3 typeof expected: number
+#passed: 3
+#failed: 0
+__END_OF_TEST__

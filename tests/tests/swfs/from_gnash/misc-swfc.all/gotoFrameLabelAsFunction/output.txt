@@ -1,0 +1,6 @@
+reached label 5 (correct)
+PASSED: _root._currentframe == 5  [gotoFrameLabelAsFunction.sc:17]
+Total tests run: 1 typeof expected: number
+#passed: 1
+#failed: 0
+__END_OF_TEST__

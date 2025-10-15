@@ -1,0 +1,31 @@
+ - Testing button stuff -  [button_test1.sc:81]
+PASSED: typeof(button3) == object  [button_test1.sc:82]
+PASSED: button3['_root'] == _level0  [button_test1.sc:83]
+PASSED: button3['_global'] ==   [button_test1.sc:84]
+PASSED: button3['_level0'] == _level0  [button_test1.sc:85]
+PASSED: button3['_target'] == /button3  [button_test1.sc:86]
+PASSED: button3['_parent'] == _level0  [button_test1.sc:87]
+PASSED: typeof(button3.instance1) == movieclip  [button_test1.sc:88]
+PASSED: typeof(button3.instANce1) == movieclip  [button_test1.sc:89]
+PASSED: typeof(button3.instance1.button1) == object  [button_test1.sc:90]
+PASSED: typeof(button3.instance1.button2) == object  [button_test1.sc:91]
+PASSED: button3.instance1['_target'] == /button3/instance1  [button_test1.sc:92]
+PASSED: button3.instance1['_parent'] == _level0.button3  [button_test1.sc:93]
+PASSED: button3.instance1.button1._height == 300  [button_test1.sc:94]
+PASSED: button3.instance1.button1['_target'] == /button3/instance1/button1  [button_test1.sc:95]
+PASSED: button3.instance1.button1['_parent'] == _level0.button3.instance1  [button_test1.sc:96]
+PASSED: button3.instance1.button2._height == 200  [button_test1.sc:97]
+PASSED: button3.instance1.button2['_target'] == /button3/instance1/button2  [button_test1.sc:98]
+PASSED: button3.instance1.button2['_parent'] == _level0.button3.instance1  [button_test1.sc:99]
+1. Click on the visible part of the green box. [button_test1.sc:107]
+green box
+PASSED: button3.instance1.button1._height == 300  [button_test1.sc:114]
+PASSED: button3.instance1.button2._height == 400  [button_test1.sc:115]
+2. Now move your mouse on the top-left area of the red box (the box will become yellow), and click where it overlaps with the green one. [button_test1.sc:116]
+red box
+PASSED: button3.instance1.button1._height == 600  [button_test1.sc:122]
+PASSED: button3.instance1.button2._height == 200  [button_test1.sc:123]
+Total tests run: 22 typeof expected: number
+#passed: 22
+#failed: 0
+__END_OF_TEST__
