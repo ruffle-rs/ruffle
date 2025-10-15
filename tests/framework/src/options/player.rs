@@ -17,6 +17,7 @@ pub struct PlayerOptions {
     with_audio: bool,
     with_video: bool,
     runtime: PlayerRuntime,
+    version: Option<u8>,
     mode: Option<PlayerMode>,
     with_default_font: bool,
 }
@@ -43,6 +44,7 @@ impl PlayerOptions {
 
         player_builder = player_builder
             .with_player_runtime(self.runtime)
+            .with_player_version(self.version)
             // Assume flashplayerdebugger is used in tests
             .with_player_mode(self.mode.unwrap_or(PlayerMode::Debug))
             .with_default_font(self.with_default_font);
