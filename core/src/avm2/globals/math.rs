@@ -6,6 +6,7 @@ use crate::avm2::object::Object;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ClassObject, Error};
+use num_traits::ToPrimitive;
 use rand::Rng;
 
 macro_rules! wrap_std {
@@ -122,8 +123,16 @@ pub fn pow<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let n = args.get_f64(0);
     let p = args.get_f64(1);
-
-    Ok(f64::powf(n, p).into())
+    match (n, p) {
+        (_, _) if p.is_nan() => Ok(f64::NAN.into()),
+        // Special case: If p is ±Infinity and n is ±1, the result is NaN.
+        (1.0, _) | (-1.0, _) if p.is_infinite() => Ok(f64::NAN.into()),
+        // Special case: If n is -Infinity and p < 0 and p is a negative even integer, Flash Player returns -0.
+        (f64::NEG_INFINITY, _) if p.to_i64().is_some_and(|i| i % 2 == 0 && i < 0) => {
+            Ok(Value::Number(-0.0))
+        }
+        (_, _) => Ok(f64::powf(n, p).into()),
+    }
 }
 
 pub fn random<'gc>(
