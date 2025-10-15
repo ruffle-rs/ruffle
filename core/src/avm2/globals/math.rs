@@ -123,16 +123,32 @@ pub fn pow<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let n = args.get_f64(0);
     let p = args.get_f64(1);
-    match (n, p) {
-        (_, _) if p.is_nan() => Ok(f64::NAN.into()),
-        // Special case: If p is ±Infinity and n is ±1, the result is NaN.
-        (1.0, _) | (-1.0, _) if p.is_infinite() => Ok(f64::NAN.into()),
-        // Special case: If n is -Infinity and p < 0 and p is a negative even integer, Flash Player returns -0.
-        (f64::NEG_INFINITY, _) if p.to_i64().is_some_and(|i| i % 2 == 0 && i < 0) => {
-            Ok(Value::Number(-0.0))
+
+    // This condition is the simplest one that covers all special cases,
+    // so use it in order to create a fast path for finite n and p, which is
+    // the most common configuration.
+    if !n.is_finite() || !p.is_finite() {
+        match (n, p) {
+            // Special case: If p is NaN, the result is NaN.
+            (_, _) if p.is_nan() => return Ok(f64::NAN.into()),
+            // Special case: If p is ±Infinity and n is ±1, the result is NaN.
+            (1.0, _) | (-1.0, _) => {
+                // If (1) n or p is not finite, (2) p is not NaN, (3) n is finite,
+                // p has to be infinite.
+                debug_assert!(p.is_infinite());
+                return Ok(f64::NAN.into());
+            }
+            // Special case: If n is -Infinity and p < 0 and p is a negative even integer, Flash Player returns -0.
+            (f64::NEG_INFINITY, _) if p.to_i64().is_some_and(|i| i % 2 == 0 && i < 0) => {
+                return Ok(Value::Number(-0.0))
+            }
+            _ => {
+                // Fall back to regular powf
+            }
         }
-        (_, _) => Ok(f64::powf(n, p).into()),
     }
+
+    Ok(f64::powf(n, p).into())
 }
 
 pub fn random<'gc>(
