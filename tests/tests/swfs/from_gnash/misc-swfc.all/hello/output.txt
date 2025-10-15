@@ -1,0 +1,4 @@
+Hello World!
+PASSED: abc == 123  [hello.sc:11]
+PASSED:  [hello.sc:14]
+__END_OF_TEST__
