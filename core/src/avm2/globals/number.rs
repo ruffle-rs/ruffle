@@ -66,14 +66,18 @@ pub fn to_exponential<'gc>(
 
     let digits = digits as usize;
 
-    Ok(AvmString::new_utf8(
-        activation.gc(),
-        format!("{number:.digits$e}")
+    let string = match (number, digits) {
+        (0.0, 0) => "1e-15".to_owned(),
+        (0.0, _) => format!("0.{}e-16", "0".repeat(digits)),
+        (f64::INFINITY, _) => "Infinity".to_owned(),
+        (f64::NEG_INFINITY, _) => "-Infinity".to_owned(),
+        _ => format!("{number:.digits$e}")
             .replace('e', "e+")
             .replace("e+-", "e-")
             .replace("e+0", ""),
-    )
-    .into())
+    };
+
+    Ok(AvmString::new_utf8(activation.gc(), string).into())
 }
 
 /// Implements `Number.toFixed`
