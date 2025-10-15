@@ -1,0 +1,17 @@
+PASSED: true == true  [super_test1.as:62]
+PASSED: true == true  [super_test1.as:63]
+PASSED: true == true  [super_test1.as:64]
+PASSED: true == true  [super_test1.as:68]
+PASSED: true == true  [super_test1.as:69]
+PASSED: true == true  [super_test1.as:70]
+PASSED: true == true  [super_test1.as:76]
+PASSED: true == true  [super_test1.as:77]
+PASSED: true == true  [super_test1.as:78]
+PASSED: [object Object] == [object Object]  [super_test1.as:81]
+PASSED: [object Object] == [object Object]  [super_test1.as:82]
+PASSED: [object Object] == [object Object]  [super_test1.as:83]
+PASSED: Test run 12 [ [super_test1.as:85]]
+#passed: 13
+#failed: 0
+#total tests run: 13
+__END_OF_TEST__
