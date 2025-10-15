@@ -2,7 +2,7 @@
     <compiler>
         <source-path>
             <path-element>.</path-element>
-            <path-element>../../../../lib</path-element>
+            <path-element>../../../../../lib</path-element>
         </source-path>
         <debug>false</debug>
         <omit-trace-statements>false</omit-trace-statements>
@@ -10,4 +10,5 @@
         <strict>false</strict>
     </compiler>
     <output>test.swf</output>
+    <swf-version>15</swf-version>
 </flex-config>

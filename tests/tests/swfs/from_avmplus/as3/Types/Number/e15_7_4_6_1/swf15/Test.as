@@ -27,7 +27,7 @@ import com.adobe.test.Utils;
 function getTestCases() {
     var array = new Array();
     var item = 0;
-    
+
     var UBound = 0;
 
     var cnIsRangeError = 'instanceof RangeError';
@@ -127,42 +127,42 @@ function getTestCases() {
 
     status = 'Section R-1 of test: no error intended!';
     actual = (-0.1).toFixed(0);
-    expect = System.swfVersion >= 15 ? '-0' : '-0.';
+    expect = true ? '-0' : '-0.';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     status = 'Section R-2 of test: no error intended!';
     actual = (-0.05).toFixed(0);
-    expect = System.swfVersion >= 15 ? '-0' : '-1.';
+    expect = true ? '-0' : '-1.';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     status = 'Section R-3 of test: no error intended!';
     actual = (0).toFixed(0);
-    expect = System.swfVersion >= 15 ? '0' : '0.';
+    expect = true ? '0' : '0.';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     status = 'Section R-4 of test: no error intended!';
     actual = (0.05).toFixed(0);
-    expect = System.swfVersion >= 15 ? '0' : '1.';
+    expect = true ? '0' : '1.';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     status = 'Section R-5 of test: no error intended!';
     actual = (0.1).toFixed(0);
-    expect = System.swfVersion >= 15 ? '0' : '0.';
+    expect = true ? '0' : '0.';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     status = 'Section R-6 of test: no error intended!';
     actual = (0.00005).toFixed(2);
-    expect = System.swfVersion >= 15 ? '0.00' : '0.01';
+    expect = true ? '0.00' : '0.01';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     status = 'Section R-7 of test: no error intended!';
     actual = (0.00007).toFixed(2);
-    expect = System.swfVersion >= 15 ? '0.00' : '0.01';
+    expect = true ? '0.00' : '0.01';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     status = 'Section R-8 of test: no error intended!';
     actual = (0.00009).toFixed(2);
-    expect = System.swfVersion >= 15 ? '0.00' : '0.01';
+    expect = true ? '0.00' : '0.01';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     status = 'Section R-9 of test: no error intended!';
@@ -172,27 +172,27 @@ function getTestCases() {
 
     status = 'Section R-10 of test: no error intended!';
     actual = (7e-7).toFixed(2);
-    expect = System.swfVersion >= 15 ? '0.00' : '0.01';
+    expect = true ? '0.00' : '0.01';
     array[item++] = Assert.expectEq( status, expect, actual);
-    
+
     status = 'Section R-11 of test: no error intended!';
     actual = (9e-7).toFixed(2);
-    expect = System.swfVersion >= 15 ? '0.00' : '0.01';
+    expect = true ? '0.00' : '0.01';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     status = 'Section R-12 of test: no error intended!';
     actual = (0.00005).toFixed(3);
-    expect = System.swfVersion >= 15 ? '0.000' : '0.001';
+    expect = true ? '0.000' : '0.001';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     status = 'Section R-13 of test: no error intended!';
     actual = (0.00007).toFixed(3);
-    expect = System.swfVersion >= 15 ? '0.000' : '0.001';
+    expect = true ? '0.000' : '0.001';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     status = 'Section R-14 of test: no error intended!';
     actual = (0.00009).toFixed(3);
-    expect = System.swfVersion >= 15 ? '0.000' : '0.001';
+    expect = true ? '0.000' : '0.001';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     status = 'Section R-15 of test: no error intended!';
@@ -202,12 +202,12 @@ function getTestCases() {
 
     status = 'Section R-16 of test: no error intended!';
     actual = (7e-7).toFixed(3);
-    expect = System.swfVersion >= 15 ? '0.000' : '0.001';
+    expect = true ? '0.000' : '0.001';
     array[item++] = Assert.expectEq( status, expect, actual);
-    
+
     status = 'Section R-17 of test: no error intended!';
     actual = (9e-7).toFixed(3);
-    expect = System.swfVersion >= 15 ? '0.000' : '0.001';
+    expect = true ? '0.000' : '0.001';
     array[item++] = Assert.expectEq( status, expect, actual);
 
     // Bugzilla 478796
@@ -244,7 +244,7 @@ function test()
   enterFunc ('test');
   printBugNumber (bug);
   printStatus (summary);
- 
+
   for (var i = 0; i < UBound; i++)
   {
     reportCompare(expectedvalues[i], actualvalues[i], statusitems[i]);
