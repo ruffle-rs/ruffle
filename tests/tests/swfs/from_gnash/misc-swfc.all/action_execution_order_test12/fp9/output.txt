@@ -1,0 +1,22 @@
+PASSED: typeof(mc2) == movieclip  [action_execution_order_test12.sc:107]
+PASSED: typeof(mc2) == movieclip  [action_execution_order_test12.sc:108]
+PASSED: typeof(mc1.mc11) == undefined  [action_execution_order_test12.sc:109]
+PASSED: typeof(mc1.mc12) == undefined  [action_execution_order_test12.sc:110]
+PASSED: typeof(mc1.mc21) == undefined  [action_execution_order_test12.sc:111]
+PASSED: typeof(mc1.mc11) == movieclip  [action_execution_order_test12.sc:129]
+PASSED: typeof(mc1.mc12) == undefined  [action_execution_order_test12.sc:130]
+PASSED: typeof(mc2.mc21) == movieclip  [action_execution_order_test12.sc:147]
+PASSED: typeof(mc1.mc12) == undefined  [action_execution_order_test12.sc:148]
+mc2.mc21 unloaded [action_execution_order_test12.sc:143]
+PASSED: typeof(mc1.mc12) == movieclip  [action_execution_order_test12.sc:164]
+mc1.mc11 unloaded [action_execution_order_test12.sc:125]
+mc1.mc12 unloaded [action_execution_order_test12.sc:160]
+mc1 unloaded [action_execution_order_test12.sc:92]
+mc2 unloaded [action_execution_order_test12.sc:103]
+PASSED: _root.loadOrder == 0+  [action_execution_order_test12.sc:172]
+PASSED: _root.enterFrameOrder == 0+1+2+3+1+2+3+1+2+1+2+  [action_execution_order_test12.sc:173]
+PASSED: _root.unloadOrder == 0+1+2+3+4+5+  [action_execution_order_test12.sc:176]
+PASSED: asOrder == 0+1+2+3+4+  [action_execution_order_test12.sc:202]
+#passed: 14
+#failed: 0
+__END_OF_TEST__

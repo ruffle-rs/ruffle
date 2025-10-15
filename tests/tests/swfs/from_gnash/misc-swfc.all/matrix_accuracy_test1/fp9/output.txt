@@ -1,0 +1,18 @@
+PASSED: mc1._xscale == 100  [matrix_accuracy_test1.sc:38]
+PASSED: mc1._yscale == 100  [matrix_accuracy_test1.sc:39]
+PASSED: mc1._xscale == 100  [matrix_accuracy_test1.sc:41]
+PASSED: mc1._yscale == 100  [matrix_accuracy_test1.sc:42]
+PASSED: mc1._xscale == 100  [matrix_accuracy_test1.sc:44]
+PASSED: mc1._yscale == 100  [matrix_accuracy_test1.sc:45]
+PASSED: mc1._rotation == 60  [matrix_accuracy_test1.sc:47]
+PASSED: mc1._x == -1  [matrix_accuracy_test1.sc:57]
+PASSED: mc1._y == -256  [matrix_accuracy_test1.sc:59]
+PASSED: mc1._xscale == -1  [matrix_accuracy_test1.sc:63]
+PASSED: mc1._xscale == 4294967295  [matrix_accuracy_test1.sc:65]
+PASSED: mc1._width == 2359295  [matrix_accuracy_test1.sc:66]
+PASSED: mc1._height == 30  [matrix_accuracy_test1.sc:67]
+PASSED: mc1._height == 0  [matrix_accuracy_test1.sc:69]
+PASSED: mc1._height == 180  [matrix_accuracy_test1.sc:71]
+#passed: 15
+#failed: 0
+__END_OF_TEST__

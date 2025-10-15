@@ -1,0 +1,23 @@
+jumping...
+Entering frame 6
+_level0.clip1
+_level0.clip1 --> 1 =
+_level0.clip1 --> 2 ==
+_level0.clip1 --> 3 ===
+_level0.clip1 --> 4 ====
+_level0.clip2
+_level0.clip2 --> 1 =
+_level0.clip2 --> 2 ==
+_level0.clip2 --> 3 ===
+_level0.clip2 --> 4 ====
+_level0.clip3
+_level0.clip3 --> 1 =
+_level0.clip3 --> 2 ==
+_level0.clip3 --> 3 ===
+_level0.clip3 --> 4 ====
+PASSED: asOrder == 0+1+2+3+4+1+2+3+4+1+2+3+4+  [gotoFrameFromInterval2.sc:74]
+PASSED: _root._currentframe == 6  [gotoFrameFromInterval2.sc:32]
+Total tests run: 2 typeof expected: number
+#passed: 2
+#failed: 0
+__END_OF_TEST__
