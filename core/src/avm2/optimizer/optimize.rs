@@ -1197,6 +1197,9 @@ fn abstract_interpret_ops<'gc>(
                 let local_type = locals.at(index as usize);
                 stack.push(activation, local_type)?;
             }
+            Op::StoreLocal { .. } => {
+                unreachable!("Only the peephole optimizer emits StoreLocal")
+            }
             Op::FindPropStrict { multiname } | Op::FindProperty { multiname } => {
                 let outer_scope = activation.outer();
                 if outer_scope.is_empty() && scope_stack.is_empty() {

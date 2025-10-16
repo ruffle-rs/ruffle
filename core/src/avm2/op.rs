@@ -319,6 +319,9 @@ pub enum Op<'gc> {
     Si32,
     Si8,
     StrictEquals,
+    StoreLocal {
+        index: u32,
+    },
     Subtract,
     SubtractI,
     Swap,
@@ -365,6 +368,7 @@ impl Op<'_> {
                 | Op::PushUndefined
                 | Op::SetLocal { .. }
                 | Op::StrictEquals
+                | Op::StoreLocal { .. }
                 | Op::Swap
                 | Op::Timestamp
                 | Op::TypeOf

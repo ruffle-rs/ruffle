@@ -630,6 +630,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Dup => self.op_dup(),
                 Op::GetLocal { index } => self.op_get_local(*index),
                 Op::SetLocal { index } => self.op_set_local(*index),
+                Op::StoreLocal { index } => self.op_store_local(*index),
                 Op::Kill { index } => self.op_kill(*index),
                 Op::Call { num_args } => self.op_call(*num_args),
                 Op::CallMethod {
@@ -976,6 +977,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_local(&mut self, register_index: u32) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
+
+        self.set_local_register(register_index, value);
+
+        Ok(())
+    }
+
+    fn op_store_local(&mut self, register_index: u32) -> Result<(), Error<'gc>> {
+        let value = self.stack.peek(0);
 
         self.set_local_register(register_index, value);
 
