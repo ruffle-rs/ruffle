@@ -599,6 +599,14 @@ pub fn optimize<'gc>(
         }
     }
 
+    if method.is_variadic() {
+        // Set the local variable holding restargs/arguments to the `Array` type
+        let mut array_type = OptValue::of_type(types.array);
+        array_type.null_state = NullState::NotNull;
+
+        initial_local_types.set(resolved_parameters.len() + 1, array_type);
+    }
+
     let empty_stack = Stack::new(method_body.max_stack as usize);
     let empty_scope_stack =
         ScopeStack::new((method_body.max_scope_depth - method_body.init_scope_depth) as usize);
