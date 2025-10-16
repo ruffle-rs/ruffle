@@ -299,7 +299,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         let url = match self.resolve_url(request.url()) {
             Ok(url) => url,
             Err(e) => {
-                return async_return(create_fetch_error(request.url(), e));
+                return async_return(Err(create_fetch_error(request.url(), e)));
             }
         };
 
@@ -346,11 +346,11 @@ impl NavigatorBackend for WebNavigatorBackend {
             let web_request = match WebRequest::new_with_str_and_init(url.as_str(), &init) {
                 Ok(web_request) => web_request,
                 Err(_) => {
-                    return create_specific_fetch_error(
+                    return Err(create_specific_fetch_error(
                         "Unable to create request for",
                         url.as_str(),
                         "",
-                    );
+                    ));
                 }
             };
 
@@ -370,14 +370,11 @@ impl NavigatorBackend for WebNavigatorBackend {
                 .await
                 .map_err(|_| {
                     if url.scheme() == "file" {
-                        match create_specific_fetch_error(
+                        create_specific_fetch_error(
                             "WASM target can't fetch local URL",
                             url.as_str(),
                             "",
-                        ) {
-                            Err(e) => e,
-                            Ok(_) => unreachable!("create_specific_fetch_error never returns Ok"),
-                        }
+                        )
                     } else {
                         ErrorResponse {
                             url: url.to_string(),

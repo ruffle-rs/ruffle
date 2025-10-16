@@ -186,7 +186,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
         let mut processed_url = match self.resolve_url(request.url()) {
             Ok(url) => url,
             Err(e) => {
-                return async_return(create_fetch_error(request.url(), e));
+                return async_return(Err(create_fetch_error(request.url(), e)));
             }
         };
 
