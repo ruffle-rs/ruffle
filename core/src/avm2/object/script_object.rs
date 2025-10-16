@@ -49,7 +49,7 @@ pub struct ScriptObjectData<'gc> {
     values: RefLock<DynamicMap<DynamicKey<'gc>, Value<'gc>>>,
 
     /// Slots stored on this object.
-    slots: Vec<Lock<Value<'gc>>>,
+    slots: Box<[Lock<Value<'gc>>]>,
 
     /// Methods stored on this object.
     bound_methods: RefLock<Vec<Option<FunctionObject<'gc>>>>,
@@ -141,13 +141,21 @@ impl<'gc> ScriptObjectData<'gc> {
         vtable: VTable<'gc>,
     ) -> Self {
         let default_slots = vtable.default_slots();
-        let mut slots = vec![Lock::new(Value::Undefined); default_slots.len()];
 
-        for (i, value) in default_slots.iter().enumerate() {
-            if let Some(value) = value {
-                slots[i] = Lock::new(*value);
-            }
-        }
+        // We use `iter` and `collect` rather than setting elements of a Box<[]>
+        // or pushing to a Vec for better performance
+        let slots = default_slots
+            .iter()
+            .map(|value| {
+                if let Some(value) = value {
+                    Lock::new(*value)
+                } else {
+                    // FIXME this case throws a VerifyError during vtable
+                    // construction in Flash Player
+                    Lock::new(Value::Undefined)
+                }
+            })
+            .collect::<Box<_>>();
 
         ScriptObjectData {
             values: RefLock::new(Default::default()),
