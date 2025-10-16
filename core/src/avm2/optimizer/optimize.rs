@@ -1382,7 +1382,7 @@ fn abstract_interpret_ops<'gc>(
                 }
             }
             Op::SetSlot { index: slot_id } => {
-                let _set_value = stack.pop(activation)?;
+                let set_value = stack.pop(activation)?;
                 let stack_value = stack.pop(activation)?;
 
                 // The value must have a vtable
@@ -1391,7 +1391,7 @@ fn abstract_interpret_ops<'gc>(
                 };
 
                 // The slot must be a valid slot
-                let Some(_value_class) = vtable.slot_class(slot_id) else {
+                let Some(mut value_class) = vtable.slot_class(slot_id) else {
                     // We store slots 0-indexed, but FP stores them 1-indexed; add
                     // 1 to the slot id to make the error message match FP
                     return Err(make_error_1026(
@@ -1401,7 +1401,14 @@ fn abstract_interpret_ops<'gc>(
                     ));
                 };
 
-                // TODO: Optimize the op to SetSlotNoCoerce when possible
+                let resolved_value_class = value_class.get_class(activation)?;
+
+                vtable.set_slot_class(activation.gc(), slot_id, value_class);
+
+                // Skip the coercion when possible
+                if set_value.matches_type(resolved_value_class) {
+                    optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
+                }
             }
             Op::GetPropertyStatic { multiname } => {
                 // Verifier only emits this op when the multiname is static
@@ -1498,6 +1505,8 @@ fn abstract_interpret_ops<'gc>(
                                     vtable.slot_class(slot_id).expect("Slot should exist");
                                 let resolved_value_class = value_class.get_class(activation)?;
 
+                                vtable.set_slot_class(activation.gc(), slot_id, value_class);
+
                                 if set_value.matches_type(resolved_value_class) {
                                     optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
                                 } else {
@@ -1550,6 +1559,8 @@ fn abstract_interpret_ops<'gc>(
                             let mut value_class =
                                 vtable.slot_class(slot_id).expect("Slot should exist");
                             let resolved_value_class = value_class.get_class(activation)?;
+
+                            vtable.set_slot_class(activation.gc(), slot_id, value_class);
 
                             if set_value.matches_type(resolved_value_class) {
                                 optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
