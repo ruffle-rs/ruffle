@@ -21,7 +21,8 @@ use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::Color;
 use crate::context::{ActionQueue, ActionType, UpdateContext};
 use crate::display_object::{
-    DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+    DisplayObject, MovieClip, MovieClipHandle, TDisplayObject, TDisplayObjectContainer,
+    TInteractiveObject,
 };
 use crate::events::ClipEvent;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
@@ -367,13 +368,16 @@ impl<'gc> LoadManager<'gc> {
     }
 
     pub fn load_asset_movie(
-        player: Weak<Mutex<Player>>,
+        uc: &UpdateContext<'gc>,
         request: Request,
-        importer_movie: Arc<SwfMovie>,
+        importer_movie: MovieClip<'gc>,
     ) -> OwnedFuture<(), Error> {
-        let player = player
+        let player = uc
+            .player
             .upgrade()
             .expect("Could not upgrade weak reference to player");
+
+        let importer_movie = MovieClipHandle::stash(uc, importer_movie);
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
@@ -390,6 +394,7 @@ impl<'gc> LoadManager<'gc> {
                             let movie = Arc::new(movie);
 
                             player.lock().unwrap().mutate_with_update_context(|uc| {
+                                let importer_movie = importer_movie.fetch(uc);
                                 let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
 
                                 clip.set_cur_preload_frame(0);
