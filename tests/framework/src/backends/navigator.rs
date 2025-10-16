@@ -177,7 +177,7 @@ impl NavigatorBackend for TestNavigatorBackend {
 
         let url = match self.resolve_url(request.url()) {
             Ok(url) => url,
-            Err(e) => return async_return(create_fetch_error(request.url(), e)),
+            Err(e) => return async_return(Err(create_fetch_error(request.url(), e))),
         };
 
         let base_path = self.relative_base_path.clone();

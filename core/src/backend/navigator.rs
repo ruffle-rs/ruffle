@@ -459,10 +459,7 @@ pub fn async_return<SuccessType: 'static, ErrorType: 'static>(
 
 /// This creates and returns the generic ErrorResponse for an invalid URL
 /// used in the NavigatorBackend fetch methods.
-pub fn create_fetch_error<ErrorType: Display>(
-    url: &str,
-    error: ErrorType,
-) -> Result<Box<dyn SuccessResponse>, ErrorResponse> {
+pub fn create_fetch_error<ErrorType: Display>(url: &str, error: ErrorType) -> ErrorResponse {
     create_specific_fetch_error("Invalid URL", url, error)
 }
 
@@ -472,17 +469,17 @@ pub fn create_specific_fetch_error<ErrorType: Display>(
     reason: &str,
     url: &str,
     error: ErrorType,
-) -> Result<Box<dyn SuccessResponse>, ErrorResponse> {
+) -> ErrorResponse {
     let message = if error.to_string() == "" {
         format!("{reason} {url}")
     } else {
         format!("{reason} {url}: {error}")
     };
     let error = Error::FetchError(message);
-    Err(ErrorResponse {
+    ErrorResponse {
         url: url.to_string(),
         error,
-    })
+    }
 }
 
 // Url doesn't implement from_file_path and to_file_path for WASM targets.
@@ -624,7 +621,7 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
 
     let url = match navigator.resolve_url(url) {
         Ok(url) => url,
-        Err(e) => return async_return(create_fetch_error(url, e)),
+        Err(e) => return async_return(Err(create_fetch_error(url, e))),
     };
     let path = if url.scheme() == "file" {
         // Flash supports query parameters with local urls.
@@ -636,11 +633,11 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
         match url_to_file_path(&filesystem_url) {
             Ok(path) => path,
             Err(_) => {
-                return async_return(create_specific_fetch_error(
+                return async_return(Err(create_specific_fetch_error(
                     "Unable to create path out of URL",
                     url.as_str(),
                     "",
-                ))
+                )))
             }
         }
     } else if let Some(base_path) = base_path {
@@ -654,11 +651,11 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
         }
         path
     } else {
-        return async_return(create_specific_fetch_error(
+        return async_return(Err(create_specific_fetch_error(
             &format!("{navigator_name} can't fetch non-local URL"),
             url.as_str(),
             "",
-        ));
+        )));
     };
 
     Box::pin(async move {
