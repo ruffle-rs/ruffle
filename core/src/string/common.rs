@@ -253,6 +253,7 @@ define_common_strings! {
     str_rollOut: b"rollOut",
     str_rollOver: b"rollOver",
     str_rr: b"rr",
+    str_sampleData: b"sampleData",
     str_save: b"save",
     str_Selection: b"Selection",
     str_separatorBefore: b"separatorBefore",
