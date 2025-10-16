@@ -3,7 +3,6 @@ use crate::avm1::error::Error;
 use crate::avm1::property_decl::{DeclContext, Declaration};
 use crate::avm1::{Object, Value};
 
-use rand::Rng;
 use std::f64::consts;
 
 macro_rules! wrap_std {
@@ -161,7 +160,7 @@ pub fn random<'gc>(
     // See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/MathUtils.cpp#L1731C24-L1731C44
     // This generated a restricted set of 'f64' values, which some SWFs implicitly rely on.
     const MAX_VAL: u32 = 0x7FFFFFFF;
-    let rand = activation.context.rng.random_range(0..MAX_VAL);
+    let rand = activation.context.rng.generate_random_number();
     Ok(((rand as f64) / (MAX_VAL as f64 + 1f64)).into())
 }
 

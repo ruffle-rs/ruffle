@@ -8,6 +8,7 @@ use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{Avm2, LoaderInfoObject, Object as Avm2Object, SoundChannelObject};
+use crate::avm_rng::AvmRng;
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     log::LogBackend,
@@ -43,7 +44,6 @@ use crate::PlayerMode;
 use async_channel::Sender;
 use core::fmt;
 use gc_arena::{Collect, Mutation};
-use rand::rngs::SmallRng;
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::transform::TransformStack;
@@ -119,7 +119,7 @@ pub struct UpdateContext<'gc> {
     pub video: &'gc mut dyn VideoBackend,
 
     /// The RNG, used by the AVM `RandomNumber` opcode, `Math.random(),` and `random()`.
-    pub rng: &'gc mut SmallRng,
+    pub rng: &'gc mut AvmRng,
 
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
