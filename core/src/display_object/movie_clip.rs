@@ -583,15 +583,29 @@ impl<'gc> MovieClip<'gc> {
         reader: &mut SwfStream<'_>,
         tag_len: usize,
     ) -> Result<(), Error> {
-        if self.movie().is_action_script_3() {
-            tracing::warn!("DoInitAction tag in AVM2 movie");
-            return Ok(());
+        let mut target = self;
+        loop {
+            let shared = target.0.shared.get();
+            if shared.movie().is_action_script_3() {
+                tracing::warn!("DoInitAction tag in AVM2 movie");
+                return Ok(());
+            }
+
+            // `DoInitAction`s always execute in the context of their importer movie.
+            let Some(parent) = shared.importer_movie else {
+                break;
+            };
+
+            target = parent;
         }
 
         let start = reader.as_slice();
-        // Queue the init actions.
+
         // TODO: Init actions are supposed to be executed once, and it gives a
         // sprite ID... how does that work?
+        // TODO: what happens with `DoInitAction` blocks nested in a `DefineSprite`?
+        // The SWF spec forbids this, but Ruffle will currently execute them in the context
+        // of the character itself, which is probably nonsense.
         let _sprite_id = reader.read_u16()?;
         let num_read = reader.pos(start);
 
@@ -603,7 +617,7 @@ impl<'gc> MovieClip<'gc> {
             .resize_to_reader(reader, tag_len - num_read);
 
         if !slice.is_empty() {
-            Avm1::run_stack_frame_for_init_action(self.into(), slice, context);
+            Avm1::run_stack_frame_for_init_action(target.into(), slice, context);
         }
 
         Ok(())
