@@ -217,9 +217,6 @@ pub enum Error {
     #[error("Non-file save dialog loader spawned as file save dialog loader")]
     NotFileSaveDialogLoader,
 
-    #[error("Non-file download dialog loader spawned as file download dialog loader")]
-    NotFileDownloadDialogLoader,
-
     #[error("Could not fetch: {0:?}")]
     FetchError(String),
 
@@ -289,7 +286,6 @@ impl<'gc> LoadManager<'gc> {
             | Loader::FileDialog { self_handle, .. }
             | Loader::FileDialogAvm2 { self_handle, .. }
             | Loader::SaveFileDialog { self_handle, .. }
-            | Loader::DownloadFileDialog { self_handle, .. }
             | Loader::StyleSheet { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
@@ -712,26 +708,6 @@ impl<'gc> LoadManager<'gc> {
         let loader = self.get_loader_mut(handle).unwrap();
         loader.file_save_dialog_loader(player, dialog, data)
     }
-
-    /// Display a dialog allowing a user to download a file
-    ///
-    /// Returns a future that will be resolved when a file is selected and the download has completed
-    #[must_use]
-    pub fn download_file_dialog(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        target_object: Object<'gc>,
-        dialog: DialogResultFuture,
-        url: String,
-    ) -> OwnedFuture<(), Error> {
-        let loader = Loader::DownloadFileDialog {
-            self_handle: None,
-            target_object,
-        };
-        let handle = self.add_loader(loader);
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.file_download_dialog_loader(player, dialog, url)
-    }
 }
 
 impl Default for LoadManager<'_> {
@@ -914,16 +890,6 @@ pub enum Loader<'gc> {
 
         /// The target AVM2 object to select a save location for.
         target_object: FileReferenceObject<'gc>,
-    },
-
-    /// Loader that is downloading a file from an AVM1 object scope.
-    DownloadFileDialog {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
-
-        /// The target AVM1 object to select a file path from.
-        target_object: Object<'gc>,
     },
 
     /// Loader that is downloading a stylesheet
@@ -2902,26 +2868,26 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
+}
 
-    /// Loader to handle a file download dialog
+mod ops {
+    use super::*;
+
+    /// Display a dialog allowing a user to download a file.
     ///
     /// Fetches the data from `url`, saves the data to the selected destination and processes callbacks
-    pub fn file_download_dialog_loader(
-        &mut self,
-        player: Weak<Mutex<Player>>,
+    /// by calling methods on the provided AVM1 `FileReference` object.
+    ///
+    /// Returns a future that will be resolved when a file is selected and the download has completed.
+    #[must_use]
+    pub fn download_file_dialog<'gc>(
+        uc: &UpdateContext<'gc>,
+        target_object: Object<'gc>,
         dialog: DialogResultFuture,
         url: String,
     ) -> OwnedFuture<(), Error> {
-        let handle = match self {
-            Loader::DownloadFileDialog { self_handle, .. } => {
-                self_handle.expect("Loader not self-introduced")
-            }
-            _ => return Box::pin(async { Err(Error::NotFileDownloadDialogLoader) }),
-        };
-
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
+        let player = uc.player_handle();
+        let target_object = ObjectHandle::stash(uc, target_object);
 
         Box::pin(async move {
             let dialog_result = dialog.await;
@@ -2933,16 +2899,11 @@ impl<'gc> Loader<'gc> {
             let req = Request::get(url.clone());
             // Doing this in two steps to prevent holding the player lock during fetch
             let future = player.lock().unwrap().navigator().fetch(req);
-            let download_res = Self::wait_for_full_response(future).await;
+            let download_res = Loader::wait_for_full_response(future).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
-                let loader = uc.load_manager.get_loader(handle);
-                let target_object = match loader {
-                    Some(&Loader::DownloadFileDialog { target_object, .. }) => target_object,
-                    None => return Err(Error::Cancelled),
-                    _ => return Err(Error::NotFileDownloadDialogLoader),
-                };
+                let target_object = target_object.fetch(uc);
 
                 let file_ref = match target_object.native() {
                     NativeObject::FileReference(fr) => fr,
@@ -3104,10 +3065,6 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
-}
-
-mod ops {
-    use super::*;
 
     /// Uploads the given `data` to the provided `url`.
     /// `file_name` is sent along with the data, as part of the multipart/form-data body.
