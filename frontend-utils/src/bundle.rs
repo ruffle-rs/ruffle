@@ -5,6 +5,7 @@ use crate::bundle::source::BundleSource;
 use crate::parse::ParseWarning;
 use std::path::Path;
 
+pub mod exporter;
 pub mod info;
 pub mod source;
 
