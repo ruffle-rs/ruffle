@@ -1,5 +1,10 @@
+use std::io::Write;
+
 use crate::parse::{DocumentHolder, ParseContext, ParseDetails, ReadExt};
-use crate::player_options::{read_player_options, PlayerOptions};
+use crate::player_options::read_player_options;
+use crate::player_options::write_player_options;
+use crate::player_options::PlayerOptions;
+use crate::player_options::PlayerOptionsWriter;
 use toml_edit::DocumentMut;
 use url::Url;
 
@@ -64,6 +69,21 @@ impl BundleInformation {
                 document,
             ),
         })
+    }
+
+    pub fn serialize<W: Write>(&self, writer: &mut W) -> Result<(), std::io::Error> {
+        let mut document = DocumentMut::new();
+        document["bundle"]["name"] = self.name.to_string().into();
+        document["bundle"]["url"] = self.url.to_string().into();
+
+        let mut player_document: DocumentHolder<PlayerOptions> = Default::default();
+        let mut pw = PlayerOptionsWriter::new(&mut player_document);
+        write_player_options(&mut pw, &self.player);
+
+        document["player"] = player_document.document().as_item().clone();
+
+        write!(writer, "{}", document)?;
+        Ok(())
     }
 }
 

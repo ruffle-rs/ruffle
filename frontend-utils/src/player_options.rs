@@ -1,5 +1,8 @@
 mod read;
+mod write;
 pub use read::read_player_options;
+pub use write::write_player_options;
+pub use write::PlayerOptionsWriter;
 
 use ruffle_core::config::Letterbox;
 use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};

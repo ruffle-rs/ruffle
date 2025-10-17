@@ -1128,6 +1128,34 @@ impl FromStr for StageAlign {
     }
 }
 
+impl Display for StageAlign {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(match *self {
+            StageAlign::BOTTOM => "bottom",
+            StageAlign::LEFT => "left",
+            StageAlign::RIGHT => "right",
+            StageAlign::TOP => "top",
+            _ => {
+                if self.contains(StageAlign::BOTTOM) {
+                    match self.difference(StageAlign::BOTTOM) {
+                        StageAlign::LEFT => "bottom_left",
+                        StageAlign::RIGHT => "bottom_right",
+                        _ => "center",
+                    }
+                } else if self.contains(StageAlign::TOP) {
+                    match self.difference(StageAlign::TOP) {
+                        StageAlign::LEFT => "top_left",
+                        StageAlign::RIGHT => "top_right",
+                        _ => "center",
+                    }
+                } else {
+                    "center"
+                }
+            }
+        })
+    }
+}
+
 impl FromWStr for StageAlign {
     type Err = std::convert::Infallible;
 

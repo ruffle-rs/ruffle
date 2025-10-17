@@ -63,6 +63,7 @@ use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::cell::RefCell;
 use std::collections::{HashMap, HashSet, VecDeque};
+use std::fmt;
 use std::ops::{Deref, DerefMut};
 use std::rc::{Rc, Weak as RcWeak};
 use std::str::FromStr;
@@ -3131,6 +3132,15 @@ pub enum PlayerRuntime {
     #[default]
     FlashPlayer,
     AIR,
+}
+
+impl fmt::Display for PlayerRuntime {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            PlayerRuntime::AIR => "air",
+            PlayerRuntime::FlashPlayer => "flash_player",
+        })
+    }
 }
 
 pub struct ParseEnumError;

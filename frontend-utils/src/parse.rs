@@ -71,6 +71,10 @@ impl<T> DocumentHolder<T> {
     pub fn serialize(&self) -> String {
         self.toml_document.to_string()
     }
+
+    pub fn document(&self) -> &DocumentMut {
+        &self.toml_document
+    }
 }
 
 pub struct ParseDetails<T> {
