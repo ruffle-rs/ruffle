@@ -519,8 +519,14 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::SoundStreamHead2 => shared.sound_stream_head(reader, 2),
                 TagCode::VideoFrame => shared.preload_video_frame(context, reader),
                 TagCode::DefineBinaryData => shared.define_binary_data(context, reader),
-                TagCode::ImportAssets => shared.import_assets(context, reader, chunk_limit),
-                TagCode::ImportAssets2 => shared.import_assets_2(context, reader, chunk_limit),
+                TagCode::ImportAssets => {
+                    shared.import_assets(context, reader, chunk_limit)?;
+                    return Ok(ControlFlow::Exit);
+                }
+                TagCode::ImportAssets2 => {
+                    shared.import_assets_2(context, reader, chunk_limit)?;
+                    return Ok(ControlFlow::Exit);
+                }
                 TagCode::DoAbc | TagCode::DoAbc2 => shared.preload_bytecode_tag(tag_code, reader),
                 TagCode::SymbolClass => shared.preload_symbol_class(reader),
                 TagCode::End => {
@@ -3817,6 +3823,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
             tracing::debug!("Importing asset: {} (ID: {})", name, id);
 
             library.register_import(name, id);
+            self.preload_progress.cur_preload_symbol.set(Some(id));
         }
 
         let player = context.player.clone();

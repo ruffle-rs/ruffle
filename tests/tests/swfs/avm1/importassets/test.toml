@@ -1,0 +1,3 @@
+# Ticks is such an arbitrary unit of time, the preloading mechanism may take up a different amount depending on what it's doing
+# This may need to be increased if that code gets even more complex in the future
+num_ticks = 20

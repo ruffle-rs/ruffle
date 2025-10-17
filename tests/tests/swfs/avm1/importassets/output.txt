@@ -1,0 +1,3 @@
+Main movie ran!
+import.swf ran! _root.canSeeMainMovie = true
+From main movie: _root.canSeeImport = true
