@@ -81,6 +81,16 @@ pub enum LoadBehavior {
     Blocking,
 }
 
+impl fmt::Display for LoadBehavior {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            LoadBehavior::Streaming => "streaming",
+            LoadBehavior::Delayed => "delayed",
+            LoadBehavior::Blocking => "blocking",
+        })
+    }
+}
+
 pub struct ParseEnumError;
 
 impl FromStr for LoadBehavior {
