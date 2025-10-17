@@ -477,6 +477,13 @@ impl<'gc> UpdateContext<'gc> {
     pub fn avm_warning(&self, message: &str) {
         self.log.avm_warning(message);
     }
+
+    /// Obtain a strong reference to the current `Player`.
+    pub fn player_handle(&self) -> Arc<Mutex<Player>> {
+        self.player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player")
+    }
 }
 
 /// A queued ActionScript call.
