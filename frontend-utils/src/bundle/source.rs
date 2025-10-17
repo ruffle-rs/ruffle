@@ -2,11 +2,14 @@ use crate::bundle::info::BUNDLE_INFORMATION_FILENAME;
 use crate::bundle::source::zip::ZipSource;
 use std::ffi::OsStr;
 use std::fs::File;
-use std::io::{Error, Read};
+use std::io::{Error, Read, Seek};
 use std::path::{Path, PathBuf};
 
 pub mod directory;
 mod zip;
+
+pub trait BundleSourceData: Read + Seek {}
+impl<T: Read + Seek> BundleSourceData for T {}
 
 trait BundleSourceImpl {
     type Read: Read;
@@ -20,7 +23,7 @@ trait BundleSourceImpl {
 
 pub enum BundleSource {
     Directory(PathBuf),
-    ZipFile(ZipSource<File>),
+    ZipFile(ZipSource<Box<dyn BundleSourceData>>),
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -54,15 +57,19 @@ impl BundleSource {
 
             // Opening a .ruf file, the bundle is that file viewed as a zip
             if path.extension() == Some(OsStr::new("ruf")) {
-                return if let Ok(zip) = ZipSource::open(File::open(path)?) {
-                    Ok(Self::ZipFile(zip))
-                } else {
-                    Err(BundleSourceError::InvalidZip)
-                };
+                return Self::from_reader(File::open(path)?);
             }
         }
 
         Err(BundleSourceError::UnknownSource)
+    }
+
+    pub fn from_reader<R: Read + Seek + 'static>(reader: R) -> Result<Self, BundleSourceError> {
+        return if let Ok(zip) = ZipSource::<Box<dyn BundleSourceData>>::open(Box::new(reader)) {
+            Ok(Self::ZipFile(zip))
+        } else {
+            Err(BundleSourceError::InvalidZip)
+        };
     }
 
     /// Reads any file from the bundle.

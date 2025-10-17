@@ -35,7 +35,10 @@ impl Bundle {
         if !path.exists() {
             return Err(BundleError::BundleDoesntExist);
         }
-        let source = BundleSource::from_path(path)?;
+        Self::from_source(BundleSource::from_path(path)?)
+    }
+
+    pub fn from_source(source: BundleSource) -> Result<Bundle, BundleError> {
         let info_file = source
             .read_file(BUNDLE_INFORMATION_FILENAME)
             .map_err(|_| BundleError::MissingBundleInformation)?;
