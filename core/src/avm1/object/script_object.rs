@@ -5,11 +5,13 @@ use crate::avm1::object::{stage_object, NativeObject};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{ObjectPtr, Value};
+use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject as _};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use core::{fmt, mem};
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::lock::RefLock;
+use gc_arena::{Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable};
 use ruffle_macros::istr;
 
 use super::super_object::SuperObject;
@@ -70,6 +72,20 @@ impl fmt::Debug for ObjectWeak<'_> {
         f.debug_struct("ObjectWeak")
             .field("ptr", &GcWeak::as_ptr(self.0))
             .finish()
+    }
+}
+
+#[derive(Clone)]
+#[expect(clippy::type_complexity)]
+pub struct ObjectHandle(DynamicRoot<Rootable![RefLock<ObjectData<'_>>]>);
+
+impl ObjectHandle {
+    pub fn stash<'gc>(context: &UpdateContext<'gc>, this: Object<'gc>) -> Self {
+        Self(context.dynamic_root.stash(context.gc(), this.0))
+    }
+
+    pub fn fetch<'gc>(&self, context: &UpdateContext<'gc>) -> Object<'gc> {
+        Object(context.dynamic_root.fetch(&self.0))
     }
 }
 
