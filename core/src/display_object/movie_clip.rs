@@ -2600,7 +2600,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn object(self) -> Avm1Value<'gc> {
+    fn object1(self) -> Avm1Value<'gc> {
         self.0
             .object1
             .get()
