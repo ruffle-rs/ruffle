@@ -1,0 +1,18 @@
+num_ticks = 1
+
+# FIXME We're badly decoding JPEG images with 4:2:0 and 4:4:0 chroma subsampling
+
+[[image_comparisons.output.checks]]
+tolerance = 0
+max_outliers = 1500
+
+[[image_comparisons.output.checks]]
+tolerance = 24
+max_outliers = 50
+
+[[image_comparisons.output.checks]]
+tolerance = 64
+max_outliers = 0
+
+[player_options]
+with_renderer = { optional = false, sample_count = 4 }
