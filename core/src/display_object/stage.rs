@@ -972,12 +972,11 @@ pub enum StageScaleMode {
 
 impl Display for StageScaleMode {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        // Match string values returned by AS.
         let s = match *self {
-            StageScaleMode::ExactFit => "exactFit",
-            StageScaleMode::NoBorder => "noBorder",
-            StageScaleMode::NoScale => "noScale",
-            StageScaleMode::ShowAll => "showAll",
+            StageScaleMode::ExactFit => "exact_fit",
+            StageScaleMode::NoBorder => "no_border",
+            StageScaleMode::NoScale => "no_scale",
+            StageScaleMode::ShowAll => "show_all",
         };
         f.write_str(s)
     }
@@ -1012,6 +1011,17 @@ impl FromWStr for StageScaleMode {
             Ok(StageScaleMode::ShowAll)
         } else {
             Err(ParseEnumError)
+        }
+    }
+}
+
+impl StageScaleMode {
+    pub fn to_avm_string(self) -> &'static str {
+        match self {
+            Self::ExactFit => "exactFit",
+            Self::NoBorder => "noBorder",
+            Self::NoScale => "noScale",
+            Self::ShowAll => "showAll",
         }
     }
 }
