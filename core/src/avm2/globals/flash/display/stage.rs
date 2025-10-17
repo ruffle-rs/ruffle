@@ -266,7 +266,7 @@ pub fn get_scale_mode<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let scale_mode = AvmString::new_utf8(
         activation.gc(),
-        activation.context.stage.scale_mode().to_string(),
+        activation.context.stage.scale_mode().to_avm_string(),
     );
     Ok(scale_mode.into())
 }
