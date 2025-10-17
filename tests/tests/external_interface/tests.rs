@@ -1,5 +1,6 @@
 use crate::external_interface::ExternalInterfaceTestProvider;
 use ruffle_core::external::Value as ExternalValue;
+use ruffle_core::limits::ExecutionLimit;
 use ruffle_test_framework::environment::Environment;
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::runner::TestStatus;
@@ -26,6 +27,11 @@ pub fn external_interface_avm1(
         .lock()
         .unwrap()
         .set_external_interface_provider(Some(Box::new(ExternalInterfaceTestProvider::new())));
+    runner
+        .player()
+        .lock()
+        .unwrap()
+        .preload(&mut ExecutionLimit::none());
 
     let mut first = true;
 
@@ -94,6 +100,11 @@ pub fn external_interface_avm2(
         .lock()
         .unwrap()
         .set_external_interface_provider(Some(Box::new(ExternalInterfaceTestProvider::new())));
+    runner
+        .player()
+        .lock()
+        .unwrap()
+        .preload(&mut ExecutionLimit::none());
 
     let mut first = true;
 
