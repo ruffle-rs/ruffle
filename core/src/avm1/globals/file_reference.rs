@@ -349,8 +349,8 @@ pub fn download<'gc>(
         );
         let result = match dialog {
             Some(dialog) => {
-                let process = activation.context.load_manager.download_file_dialog(
-                    activation.context.player.clone(),
+                let process = crate::loader::download_file_dialog(
+                    activation.context,
                     this,
                     dialog,
                     url_string,
