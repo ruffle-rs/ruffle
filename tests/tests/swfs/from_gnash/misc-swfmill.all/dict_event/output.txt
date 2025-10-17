@@ -1,0 +1,5 @@
+A
+B
+ABB
+XPASSED: dict/clip event interaction ok
+END OF TEST
