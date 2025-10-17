@@ -399,8 +399,8 @@ pub fn upload<'gc>(
                 None => "file".to_string(),
             };
 
-            let process = activation.context.load_manager.upload_file(
-                activation.context.player.clone(),
+            let process = crate::loader::upload_file(
+                activation.context,
                 this,
                 url_string,
                 file_reference.0.data.borrow().clone(),

@@ -39,7 +39,7 @@ mod script_object;
 pub mod stage_object;
 pub mod super_object;
 
-pub use script_object::{Object, ObjectWeak};
+pub use script_object::{Object, ObjectHandle, ObjectWeak};
 
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]

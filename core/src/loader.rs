@@ -3,7 +3,7 @@
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm1::{Attribute, Avm1};
 use crate::avm1::{ExecutionReason, NativeObject};
-use crate::avm1::{Object, Value};
+use crate::avm1::{Object, ObjectHandle, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::globals::flash::utils::byte_array::strip_bom;
 use crate::avm2::object::{
@@ -48,6 +48,8 @@ use std::time::Duration;
 use swf::read::{extract_swz, read_compression_type};
 use thiserror::Error;
 use url::{form_urlencoded, ParseError, Url};
+
+pub use ops::*;
 
 new_key_type! {
     pub struct LoaderHandle;
@@ -218,9 +220,6 @@ pub enum Error {
     #[error("Non-file download dialog loader spawned as file download dialog loader")]
     NotFileDownloadDialogLoader,
 
-    #[error("Non-file upload loader spawned as file upload loader")]
-    NotFileUploadLoader,
-
     #[error("Could not fetch: {0:?}")]
     FetchError(String),
 
@@ -291,7 +290,6 @@ impl<'gc> LoadManager<'gc> {
             | Loader::FileDialogAvm2 { self_handle, .. }
             | Loader::SaveFileDialog { self_handle, .. }
             | Loader::DownloadFileDialog { self_handle, .. }
-            | Loader::UploadFile { self_handle, .. }
             | Loader::StyleSheet { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
@@ -734,27 +732,6 @@ impl<'gc> LoadManager<'gc> {
         let loader = self.get_loader_mut(handle).unwrap();
         loader.file_download_dialog_loader(player, dialog, url)
     }
-
-    /// Upload a file
-    ///
-    /// Returns a future that will be resolved when the file upload has completed
-    #[must_use]
-    pub fn upload_file(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        target_object: Object<'gc>,
-        url: String,
-        data: Vec<u8>,
-        file_name: String,
-    ) -> OwnedFuture<(), Error> {
-        let loader = Loader::UploadFile {
-            self_handle: None,
-            target_object,
-        };
-        let handle = self.add_loader(loader);
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.file_upload_loader(player, url, data, file_name)
-    }
 }
 
 impl Default for LoadManager<'_> {
@@ -941,16 +918,6 @@ pub enum Loader<'gc> {
 
     /// Loader that is downloading a file from an AVM1 object scope.
     DownloadFileDialog {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
-
-        /// The target AVM1 object to select a file path from.
-        target_object: Object<'gc>,
-    },
-
-    /// Loader that is uploading a file from an AVM1 object scope.
-    UploadFile {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
         self_handle: Option<LoaderHandle>,
@@ -3137,28 +3104,27 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
+}
 
-    /// Loader to handle a file upload task
-    ///
+mod ops {
+    use super::*;
+
     /// Uploads the given `data` to the provided `url`.
-    /// `file_name` is sent along with the data, as part of the multipart/form-data body
-    pub fn file_upload_loader(
-        &mut self,
-        player: Weak<Mutex<Player>>,
+    /// `file_name` is sent along with the data, as part of the multipart/form-data body.
+    ///
+    /// `target_object` is the AVM1 `FileReference` object which initialized the upload.
+    ///
+    /// Returns a future that will be resolved when the file upload has completed.
+    #[must_use]
+    pub fn upload_file<'gc>(
+        uc: &UpdateContext<'gc>,
+        target_object: Object<'gc>,
         url: String,
         data: Vec<u8>,
         file_name: String,
     ) -> OwnedFuture<(), Error> {
-        let handle = match self {
-            Loader::UploadFile { self_handle, .. } => {
-                self_handle.expect("Loader not self-introduced")
-            }
-            _ => return Box::pin(async { Err(Error::NotFileUploadLoader) }),
-        };
-
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
+        let player = uc.player_handle();
+        let target_object = ObjectHandle::stash(uc, target_object);
 
         Box::pin(async move {
             let total_size_bytes = data.len();
@@ -3205,14 +3171,7 @@ impl<'gc> Loader<'gc> {
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
-                let loader = uc.load_manager.get_loader(handle);
-
-                // Get the file reference
-                let target_object = match loader {
-                    Some(&Loader::UploadFile { target_object, .. }) => target_object,
-                    None => return Err(Error::Cancelled),
-                    _ => return Err(Error::NotFileUploadLoader),
-                };
+                let target_object = target_object.fetch(uc);
 
                 let mut activation =
                     Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
