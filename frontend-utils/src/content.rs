@@ -1,7 +1,5 @@
-use crate::backends::navigator::NavigatorInterface;
 use crate::bundle::Bundle;
 use std::fmt::{Debug, Formatter};
-use std::io::{ErrorKind, Read};
 use url::Url;
 
 pub enum PlayingContent {
@@ -40,11 +38,14 @@ impl PlayingContent {
         }
     }
 
+    #[cfg(feature = "navigator")]
     pub async fn get_local_file(
         &self,
         url: &Url,
-        interface: impl NavigatorInterface,
+        interface: impl crate::backends::navigator::NavigatorInterface,
     ) -> Result<Vec<u8>, std::io::Error> {
+        use std::io::{ErrorKind, Read};
+
         match self {
             PlayingContent::DirectFile(_) => {
                 let path = url
