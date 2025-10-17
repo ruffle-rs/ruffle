@@ -2574,8 +2574,8 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.object.get().and_then(|o| o.as_avm2_object())
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
-        self.set_object(Some(to.into()), context.gc());
+    fn set_object2(self, mc: &Mutation<'gc>, to: Avm2StageObject<'gc>) {
+        self.set_object(Some(to.into()), mc);
     }
 
     fn self_bounds(self) -> Rectangle<Twips> {

@@ -158,7 +158,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 self.into(),
                 class_object,
             ) {
-                Ok(object) => self.set_object2(activation.context, object),
+                Ok(object) => self.set_object2(activation.gc(), object),
                 Err(e) => {
                     tracing::error!("Got error when constructing AVM2 side of shape: {}", e)
                 }
@@ -249,8 +249,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.0.avm2_object.get()
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
-        let mc = context.gc();
+    fn set_object2(self, mc: &Mutation<'gc>, to: Avm2StageObject<'gc>) {
         unlock!(Gc::write(mc, self.0), GraphicData, avm2_object).set(Some(to));
     }
 

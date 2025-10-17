@@ -90,8 +90,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         self.0.object.get()
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
-        let mc = context.gc();
+    fn set_object2(self, mc: &Mutation<'gc>, to: Avm2StageObject<'gc>) {
         unlock!(Gc::write(mc, self.0), MorphShapeData, object).set(Some(to))
     }
 
@@ -103,7 +102,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             // We don't need to call the initializer method, as AVM2 can't link
             // a custom class to a MorphShape, and the initializer method for
             // MorphShape itself is a no-op
-            self.set_object2(context, object);
+            self.set_object2(context.gc(), object);
 
             self.on_construction_complete(context);
         }

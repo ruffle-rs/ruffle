@@ -391,8 +391,8 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         self.0.avm2_object.get()
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
-        self.set_avm2_object(context.gc(), Some(to));
+    fn set_object2(self, mc: &Mutation<'gc>, to: Avm2StageObject<'gc>) {
+        self.set_avm2_object(mc, Some(to));
     }
 
     fn movie(self) -> Arc<SwfMovie> {

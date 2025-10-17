@@ -658,8 +658,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         self.0.object.get()
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
-        let write = Gc::write(context.gc(), self.0);
+    fn set_object2(self, mc: &Mutation<'gc>, to: Avm2StageObject<'gc>) {
+        let write = Gc::write(mc, self.0);
         unlock!(write, Avm2ButtonData, object).set(Some(to));
     }
 

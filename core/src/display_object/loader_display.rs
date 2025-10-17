@@ -94,8 +94,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         self.0.avm2_object.get()
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
-        let mc = context.gc();
+    fn set_object2(self, mc: &Mutation<'gc>, to: Avm2StageObject<'gc>) {
         unlock!(Gc::write(mc, self.0), LoaderDisplayData, avm2_object).set(Some(to))
     }
 

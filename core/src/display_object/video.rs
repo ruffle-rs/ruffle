@@ -179,8 +179,7 @@ impl<'gc> Video<'gc> {
         ))
     }
 
-    fn set_object(&self, context: &mut UpdateContext<'gc>, to: AvmObject<'gc>) {
-        let mc = context.gc();
+    fn set_object(&self, mc: &Mutation<'gc>, to: AvmObject<'gc>) {
         unlock!(Gc::write(mc, self.0), VideoData, object).set(Some(to));
     }
 
@@ -432,7 +431,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                 Some(context.avm1.prototypes(self.swf_version()).video),
                 Avm1NativeObject::Video(self),
             );
-            self.set_object(context, object.into());
+            self.set_object(context.gc(), object.into());
         }
 
         self.seek(context, starting_seek);
@@ -448,7 +447,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             // itself only sets the size of the Video- the Video already has the
             // correct size at this point.
 
-            self.set_object2(context, object);
+            self.set_object2(context.gc(), object);
 
             self.on_construction_complete(context);
         }
@@ -552,8 +551,8 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         self.0.object.get().and_then(|o| o.as_avm2_object())
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
-        self.set_object(context, to.into());
+    fn set_object2(self, mc: &Mutation<'gc>, to: Avm2StageObject<'gc>) {
+        self.set_object(mc, to.into());
     }
 
     fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {

@@ -109,7 +109,7 @@ fn valid_orphan<'gc>(
     mc: &Mutation<'gc>,
 ) -> Option<DisplayObject<'gc>> {
     if let Some(dobj) = dobj.upgrade(mc) {
-        if dobj.parent().is_none() {
+        if dobj.is_avm2_orphan() {
             return Some(dobj);
         }
     }

@@ -1995,7 +1995,11 @@ impl<'gc> MovieClip<'gc> {
         let object =
             Avm2StageObject::for_display_object(context.gc(), display_object, class_object);
 
-        self.set_object2(context, object);
+        self.set_object2(context.gc(), object);
+
+        if self.parent().is_none() {
+            context.orphan_manager.add_orphan_obj(self.into());
+        }
     }
 
     /// Construct the AVM2 side of this object.
@@ -2032,7 +2036,10 @@ impl<'gc> MovieClip<'gc> {
         let class_object = context.avm2.classes().avm1movie;
         let object = Avm2StageObject::for_display_object(context.gc(), self.into(), class_object);
 
-        self.set_object2(context, object);
+        self.set_object2(context.gc(), object);
+
+        // No need to mark `self` as an orphan, as it's about to be adopted by
+        // the AVM2 `Loader` object
     }
 
     pub fn register_frame_script(
@@ -2617,12 +2624,9 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.0.object2.get()
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
-        let write = Gc::write(context.gc(), self.0);
+    fn set_object2(self, mc: &Mutation<'gc>, to: Avm2StageObject<'gc>) {
+        let write = Gc::write(mc, self.0);
         unlock!(write, MovieClipData, object2).set(Some(to));
-        if self.parent().is_none() {
-            context.orphan_manager.add_orphan_obj(self.into());
-        }
     }
 
     fn set_perspective_projection(self, mut perspective_projection: Option<PerspectiveProjection>) {

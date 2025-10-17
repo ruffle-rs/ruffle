@@ -37,7 +37,7 @@ pub fn initialize_for_allocator<'gc>(
 ) -> Object<'gc> {
     let obj = StageObject::for_display_object(context.gc(), dobj, class);
     dobj.set_placed_by_avm2_script(true);
-    dobj.set_object2(context, obj);
+    dobj.set_object2(context.gc(), obj);
 
     // [NA] Should these run for everything?
     dobj.post_instantiation(context, None, Instantiator::Avm2, false);
@@ -50,6 +50,14 @@ pub fn initialize_for_allocator<'gc>(
     // both placed in the same frame to begin with).
     dobj.base().set_skip_next_enter_frame(true);
     dobj.on_construction_complete(context);
+
+    // All MovieClips constructed from ActionScript start out as orphans. If,
+    // at the end of a frame, this MovieClip is no longer an orphan, it will
+    // automatically be removed from the orphan list by
+    // `OrphanManager::cleanup_dead_orphans`.
+    if let Some(movie_clip) = dobj.as_movie_clip() {
+        context.orphan_manager.add_orphan_obj(movie_clip.into());
+    }
 
     obj.into()
 }
