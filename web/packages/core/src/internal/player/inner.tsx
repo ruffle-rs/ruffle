@@ -190,6 +190,10 @@ export class InnerPlayer {
     // The effective config loaded upon `.load()`.
     public loadedConfig?: URLLoadOptions | DataLoadOptions;
 
+    // Whether content should tick automatically or
+    // require manual calls to tick().
+    public tickAutomatically: boolean = true;
+
     private swfUrl?: URL;
     private instance: RuffleHandle | null;
     private newZipWriter: (() => ZipWriter) | null;
@@ -652,6 +656,7 @@ export class InnerPlayer {
         this.newZipWriter = zipWriterClass;
         configureBuilder(builder, this.loadedConfig || {});
         builder.setVolume(this.volumeSettings.get_volume());
+        builder.setTickAutomatically(this.tickAutomatically);
 
         if (this.loadedConfig?.fontSources) {
             for (const url of this.loadedConfig.fontSources) {
@@ -935,6 +940,11 @@ export class InnerPlayer {
                     this.loadedConfig.backgroundColor;
             }
 
+            this.tickAutomatically =
+                "__tickAutomatically" in options
+                    ? options["__tickAutomatically"] === true
+                    : true;
+
             await this.ensureFreshInstance();
 
             if ("url" in options) {
@@ -969,6 +979,12 @@ export class InnerPlayer {
         if (this.instance) {
             this.instance.play();
             this.playButton.style.display = "none";
+        }
+    }
+
+    tick(timestamp: number): void {
+        if (this.instance) {
+            this.instance.tick_pub(timestamp);
         }
     }
 

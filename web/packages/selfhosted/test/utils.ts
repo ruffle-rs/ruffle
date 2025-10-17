@@ -146,6 +146,16 @@ export async function getTraceOutput(
     );
 }
 
+export async function getAllTraceOutput(
+    browser: WebdriverIO.Browser,
+    player: ChainablePromiseElement,
+): Promise<string[]> {
+    return await browser.execute((playerElement) => {
+        const player = playerElement as Player.PlayerElement;
+        return player.__ruffle_log__;
+    }, player);
+}
+
 export async function expectTraceOutput(
     browser: WebdriverIO.Browser,
     player: ChainablePromiseElement,
