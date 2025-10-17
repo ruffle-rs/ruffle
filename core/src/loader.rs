@@ -382,11 +382,7 @@ impl<'gc> LoadManager<'gc> {
         request: Request,
         importer_movie: MovieClip<'gc>,
     ) -> OwnedFuture<(), Error> {
-        let player = uc
-            .player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
-
+        let player = uc.player_handle();
         let importer_movie = MovieClipHandle::stash(uc, importer_movie);
 
         Box::pin(async move {

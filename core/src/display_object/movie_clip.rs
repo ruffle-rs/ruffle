@@ -2262,11 +2262,7 @@ impl<'gc> MovieClip<'gc> {
             };
             let handle = context.load_manager.add_loader(unloader);
 
-            let player = context
-                .player
-                .clone()
-                .upgrade()
-                .expect("Could not upgrade weak reference to player");
+            let player = context.player_handle();
             let future = Box::pin(async move {
                 player
                     .lock()

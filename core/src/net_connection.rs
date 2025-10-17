@@ -15,7 +15,7 @@ use gc_arena::{Collect, DynamicRoot, Gc, Rootable};
 use slotmap::{new_key_type, SlotMap};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
-use std::sync::{Mutex, Weak};
+use std::sync::{Arc, Mutex};
 
 new_key_type! {
     pub struct NetConnectionHandle;
@@ -240,8 +240,9 @@ impl<'gc> NetConnections<'gc> {
     }
 
     pub fn update_connections(context: &mut UpdateContext<'gc>) {
+        let player = context.player_handle();
         for (handle, connection) in context.net_connections.connections.iter_mut() {
-            connection.update(handle, context.navigator, context.player.clone());
+            connection.update(handle, context.navigator, &player);
         }
     }
 
@@ -431,13 +432,13 @@ impl NetConnection<'_> {
         &mut self,
         self_handle: NetConnectionHandle,
         navigator: &mut dyn NavigatorBackend,
-        player: Weak<Mutex<Player>>,
+        player: &Arc<Mutex<Player>>,
     ) {
         match &mut self.protocol {
             NetConnectionProtocol::Local => {}
             NetConnectionProtocol::FlashRemoting(remoting) => {
                 if remoting.has_pending_packet() {
-                    navigator.spawn_future(remoting.flush_queue(self_handle, player));
+                    navigator.spawn_future(remoting.flush_queue(self_handle, player.clone()));
                 }
             }
         }
@@ -501,7 +502,7 @@ impl FlashRemoting {
     pub fn flush_queue(
         &mut self,
         self_handle: NetConnectionHandle,
-        player: Weak<Mutex<Player>>,
+        player: Arc<Mutex<Player>>,
     ) -> OwnedFuture<(), Error> {
         let queue = std::mem::take(&mut self.outgoing_queue);
         let (messages, responder_handles): (Vec<_>, Vec<_>) = queue.into_iter().unzip();
@@ -513,9 +514,6 @@ impl FlashRemoting {
         let url = self.url.clone();
 
         Box::pin(async move {
-            let player = player
-                .upgrade()
-                .expect("Could not upgrade weak reference to player");
             let bytes = flash_lso::packet::write::write_to_bytes(&packet, true)
                 .expect("Must be able to serialize a packet");
             let request = Request::post(url, Some((bytes, "application/x-amf".to_string())));
