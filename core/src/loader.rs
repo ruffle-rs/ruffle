@@ -171,12 +171,6 @@ pub enum Error {
     #[error("Load cancelled")]
     Cancelled,
 
-    #[error("Non-root-movie loader spawned as root movie loader")]
-    NotRootMovieLoader,
-
-    #[error("Non-movie loader spawned as movie loader")]
-    NotMovieLoader,
-
     #[error("HTTP Status is not OK: {0} status: {1} redirected: {2} length: {3}")]
     HttpNotOk(String, u16, bool, u64),
 
@@ -254,9 +248,7 @@ impl<'gc> LoadManager<'gc> {
     pub fn add_loader(&mut self, loader: Loader<'gc>) -> LoaderHandle {
         let handle = self.0.insert(loader);
         match self.get_loader_mut(handle).unwrap() {
-            Loader::RootMovie { self_handle, .. } | Loader::Movie { self_handle, .. } => {
-                *self_handle = Some(handle)
-            }
+            Loader::Movie { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
     }
@@ -275,25 +267,6 @@ impl<'gc> LoadManager<'gc> {
     /// Retrieve a loader by handle for mutation.
     pub fn get_loader_mut(&mut self, handle: LoaderHandle) -> Option<&mut Loader<'gc>> {
         self.0.get_mut(handle)
-    }
-
-    /// Kick off the root movie load.
-    ///
-    /// The root movie is special because it determines a few bits of player
-    /// state, such as the size of the stage and the current frame rate. Ergo,
-    /// this method should only be called once, by the player that is trying to
-    /// kick off its root movie load.
-    pub fn load_root_movie(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        request: Request,
-        parameters: Vec<(String, String)>,
-        on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
-    ) -> OwnedFuture<(), Error> {
-        let loader = Loader::RootMovie { self_handle: None };
-        let handle = self.add_loader(loader);
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.root_movie_loader(player, request, parameters, on_metadata)
     }
 
     /// Kick off a movie clip load.
@@ -541,13 +514,6 @@ pub enum MovieLoaderVMData<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 pub enum Loader<'gc> {
-    /// Loader that is loading the root movie of a player.
-    RootMovie {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
-    },
-
     /// Loader that is loading a new movie into a MovieClip.
     Movie {
         /// The handle to refer to this loader instance.
@@ -627,7 +593,6 @@ impl<'gc> Loader<'gc> {
                 *target_clip
             }
             None => return Err(Error::Cancelled),
-            Some(_) => panic!("Attempted to preload a non-SWF loader"),
         };
 
         let mc = mc.as_movie_clip().unwrap();
@@ -663,74 +628,6 @@ impl<'gc> Loader<'gc> {
         }
     }
 
-    /// Construct a future for the root movie loader.
-    fn root_movie_loader(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        request: Request,
-        parameters: Vec<(String, String)>,
-        on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
-    ) -> OwnedFuture<(), Error> {
-        let _handle = match self {
-            Loader::RootMovie { self_handle, .. } => {
-                self_handle.expect("Loader not self-introduced")
-            }
-            _ => return Box::pin(async { Err(Error::NotMovieLoader) }),
-        };
-
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
-
-        Box::pin(async move {
-            let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = fetch.await.map_err(|error| {
-                player
-                    .lock()
-                    .unwrap()
-                    .ui()
-                    .display_root_movie_download_failed_message(false, error.error.to_string());
-                error.error
-            })?;
-            let url = response.url().into_owned();
-            let body = response.body().await.inspect_err(|error| {
-                player
-                    .lock()
-                    .unwrap()
-                    .ui()
-                    .display_root_movie_download_failed_message(true, error.to_string());
-            })?;
-
-            // The spoofed root movie URL takes precedence over the actual URL.
-            let swf_url = player
-                .lock()
-                .unwrap()
-                .compatibility_rules()
-                .rewrite_swf_url(url);
-            let spoofed_or_swf_url = player
-                .lock()
-                .unwrap()
-                .spoofed_url()
-                .map(|u| u.to_string())
-                .unwrap_or(swf_url);
-
-            let mut movie =
-                SwfMovie::from_data(&body, spoofed_or_swf_url, None).inspect_err(|error| {
-                    player
-                        .lock()
-                        .unwrap()
-                        .ui()
-                        .display_root_movie_download_failed_message(true, error.to_string());
-                })?;
-            on_metadata(movie.header());
-            movie.append_parameters(parameters);
-            player.lock().unwrap().mutate_with_update_context(|uc| {
-                uc.set_root_movie(movie);
-            });
-            Ok(())
-        })
-    }
-
     /// Construct a future for the given movie loader.
     ///
     /// The given future should be passed immediately to an executor; it will
@@ -746,7 +643,6 @@ impl<'gc> Loader<'gc> {
     ) -> OwnedFuture<(), Error> {
         let handle = match self {
             Loader::Movie { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
-            _ => return Box::pin(async { Err(Error::NotMovieLoader) }),
         };
 
         let player = player
@@ -764,7 +660,6 @@ impl<'gc> Loader<'gc> {
                 let clip = match uc.load_manager.get_loader(handle) {
                     Some(Loader::Movie { target_clip, .. }) => *target_clip,
                     None => return Err(Error::Cancelled),
-                    _ => unreachable!(),
                 };
 
                 replacing_root_movie = uc
@@ -899,7 +794,6 @@ impl<'gc> Loader<'gc> {
         let clip = match uc.load_manager.get_loader(handle) {
             Some(Loader::Movie { target_clip, .. }) => *target_clip,
             None => return Err(Error::Cancelled),
-            _ => unreachable!(),
         };
 
         let replacing_root_movie = uc
@@ -939,6 +833,70 @@ impl<'gc> Loader<'gc> {
 // (the functions defined here were previously in an `impl` block)
 mod ops {
     use super::*;
+
+    /// Kick off the root movie load.
+    ///
+    /// The root movie is special because it determines a few bits of player
+    /// state, such as the size of the stage and the current frame rate. Ergo,
+    /// this method should only be called once, by the player that is trying to
+    /// kick off its root movie load.
+    #[must_use]
+    pub fn load_root_movie<'gc>(
+        uc: &UpdateContext<'gc>,
+        request: Request,
+        parameters: Vec<(String, String)>,
+        on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
+    ) -> OwnedFuture<(), Error> {
+        let player = uc.player_handle();
+
+        Box::pin(async move {
+            let fetch = player.lock().unwrap().navigator().fetch(request);
+            let response = fetch.await.map_err(|error| {
+                player
+                    .lock()
+                    .unwrap()
+                    .ui()
+                    .display_root_movie_download_failed_message(false, error.error.to_string());
+                error.error
+            })?;
+            let url = response.url().into_owned();
+            let body = response.body().await.inspect_err(|error| {
+                player
+                    .lock()
+                    .unwrap()
+                    .ui()
+                    .display_root_movie_download_failed_message(true, error.to_string());
+            })?;
+
+            // The spoofed root movie URL takes precedence over the actual URL.
+            let swf_url = player
+                .lock()
+                .unwrap()
+                .compatibility_rules()
+                .rewrite_swf_url(url);
+            let spoofed_or_swf_url = player
+                .lock()
+                .unwrap()
+                .spoofed_url()
+                .map(|u| u.to_string())
+                .unwrap_or(swf_url);
+
+            let mut movie =
+                SwfMovie::from_data(&body, spoofed_or_swf_url, None).inspect_err(|error| {
+                    player
+                        .lock()
+                        .unwrap()
+                        .ui()
+                        .display_root_movie_download_failed_message(true, error.to_string());
+                })?;
+            on_metadata(movie.header());
+            movie.append_parameters(parameters);
+            player.lock().unwrap().mutate_with_update_context(|uc| {
+                uc.set_root_movie(movie);
+            });
+            Ok(())
+        })
+    }
 
     /// Kick off a form data load into an AVM1 object.
     ///
@@ -1525,7 +1483,6 @@ impl<'gc> Loader<'gc> {
                 vm_data,
                 ..
             } => (*target_clip, *vm_data),
-            _ => unreachable!(),
         };
 
         match vm_data {
@@ -1579,7 +1536,6 @@ impl<'gc> Loader<'gc> {
                 ..
             }) => (*target_clip, *vm_data, *from_bytes),
             None => return Err(Error::Cancelled),
-            _ => unreachable!(),
         };
 
         let mut activation = Avm2Activation::from_nothing(uc);
@@ -1895,7 +1851,6 @@ impl<'gc> Loader<'gc> {
                 vm_data,
                 ..
             } => (*target_clip, *vm_data),
-            _ => unreachable!(),
         };
 
         match vm_data {
@@ -1948,7 +1903,6 @@ impl<'gc> Loader<'gc> {
                 ..
             }) => (*target_clip, *vm_data, movie.clone()),
             None => return Err(Error::Cancelled),
-            _ => unreachable!(),
         };
 
         let loader_info = if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
@@ -2078,10 +2032,8 @@ impl<'gc> Loader<'gc> {
             }
         }
 
-        if let Loader::Movie { loader_status, .. } = uc.load_manager.get_loader_mut(handle).unwrap()
-        {
-            *loader_status = LoaderStatus::Succeeded;
-        };
+        let Loader::Movie { loader_status, .. } = uc.load_manager.get_loader_mut(handle).unwrap();
+        *loader_status = LoaderStatus::Succeeded;
 
         Ok(())
     }
@@ -2110,7 +2062,6 @@ impl<'gc> Loader<'gc> {
                 ..
             }) => (*target_clip, *vm_data),
             None => return Err(Error::Cancelled),
-            _ => unreachable!(),
         };
 
         // If the SWF can't be loaded, the MovieClip enters the error state
@@ -2151,10 +2102,8 @@ impl<'gc> Loader<'gc> {
             }
         }
 
-        if let Loader::Movie { loader_status, .. } = uc.load_manager.get_loader_mut(handle).unwrap()
-        {
-            *loader_status = LoaderStatus::Failed;
-        };
+        let Loader::Movie { loader_status, .. } = uc.load_manager.get_loader_mut(handle).unwrap();
+        *loader_status = LoaderStatus::Failed;
 
         Ok(())
     }
@@ -2242,7 +2191,6 @@ impl<'gc> Loader<'gc> {
                 loader_status,
                 ..
             } => (*target_clip, *vm_data, *loader_status),
-            _ => return false,
         };
 
         match loader_status {
