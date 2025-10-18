@@ -191,11 +191,7 @@ pub fn browse<'gc>(
     let dialog = activation.context.ui.display_file_open_dialog(filters);
     let result = match dialog {
         Some(dialog) => {
-            let process = activation.context.load_manager.select_file_dialog_avm2(
-                activation.context.player.clone(),
-                this,
-                dialog,
-            );
+            let process = crate::loader::select_file_dialog_avm2(activation.context, this, dialog);
 
             activation.context.navigator.spawn_future(process);
             true
@@ -286,8 +282,8 @@ pub fn save<'gc>(
 
     match dialog {
         Some(dialog) => {
-            let process = activation.context.load_manager.save_file_dialog(
-                activation.context.player.clone(),
+            let process = crate::loader::save_file_dialog(
+                activation.context,
                 this,
                 dialog,
                 data,

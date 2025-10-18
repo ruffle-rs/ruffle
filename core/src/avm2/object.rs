@@ -93,7 +93,8 @@ pub use crate::avm2::object::domain_object::{
 pub use crate::avm2::object::error_object::{error_allocator, ErrorObject, ErrorObjectWeak};
 pub use crate::avm2::object::event_object::{event_allocator, EventObject, EventObjectWeak};
 pub use crate::avm2::object::file_reference_object::{
-    file_reference_allocator, FileReference, FileReferenceObject, FileReferenceObjectWeak,
+    file_reference_allocator, FileReference, FileReferenceObject, FileReferenceObjectHandle,
+    FileReferenceObjectWeak,
 };
 pub use crate::avm2::object::font_object::{font_allocator, FontObject, FontObjectWeak};
 pub use crate::avm2::object::function_object::{FunctionObject, FunctionObjectWeak};
@@ -124,8 +125,8 @@ pub use crate::avm2::object::responder_object::{
     responder_allocator, ResponderObject, ResponderObjectWeak,
 };
 pub use crate::avm2::object::script_object::{
-    get_dynamic_property, scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak,
-    ScriptObjectWrapper,
+    get_dynamic_property, scriptobject_allocator, ScriptObject, ScriptObjectData,
+    ScriptObjectHandle, ScriptObjectWeak, ScriptObjectWrapper,
 };
 pub use crate::avm2::object::security_domain_object::{
     SecurityDomainObject, SecurityDomainObjectWeak,
@@ -136,7 +137,7 @@ pub use crate::avm2::object::shader_data_object::{
 pub use crate::avm2::object::shared_object_object::{SharedObjectObject, SharedObjectObjectWeak};
 pub use crate::avm2::object::socket_object::{socket_allocator, SocketObject, SocketObjectWeak};
 pub use crate::avm2::object::sound_object::{
-    sound_allocator, QueuedPlay, SoundLoadingState, SoundObject, SoundObjectWeak,
+    sound_allocator, QueuedPlay, SoundLoadingState, SoundObject, SoundObjectHandle, SoundObjectWeak,
 };
 pub use crate::avm2::object::soundchannel_object::{
     sound_channel_allocator, SoundChannelObject, SoundChannelObjectWeak,
@@ -748,6 +749,7 @@ impl<'gc> Object<'gc> {
     }
 
     impl_downcast_methods! {
+        pub fn as_script_object for ScriptObject;
         pub fn as_class_object for ClassObject;
         pub fn as_function_object for FunctionObject;
         pub fn as_namespace_object for NamespaceObject;

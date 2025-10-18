@@ -291,11 +291,7 @@ pub fn browse<'gc>(
 
     let result = match dialog {
         Some(dialog) => {
-            let process = activation.context.load_manager.select_file_dialog(
-                activation.context.player.clone(),
-                this,
-                dialog,
-            );
+            let process = crate::loader::select_file_dialog_avm1(activation.context, this, dialog);
 
             activation.context.navigator.spawn_future(process);
             true
@@ -349,8 +345,8 @@ pub fn download<'gc>(
         );
         let result = match dialog {
             Some(dialog) => {
-                let process = activation.context.load_manager.download_file_dialog(
-                    activation.context.player.clone(),
+                let process = crate::loader::download_file_dialog(
+                    activation.context,
                     this,
                     dialog,
                     url_string,
@@ -399,8 +395,8 @@ pub fn upload<'gc>(
                 None => "file".to_string(),
             };
 
-            let process = activation.context.load_manager.upload_file(
-                activation.context.player.clone(),
+            let process = crate::loader::upload_file(
+                activation.context,
                 this,
                 url_string,
                 file_reference.0.data.borrow().clone(),

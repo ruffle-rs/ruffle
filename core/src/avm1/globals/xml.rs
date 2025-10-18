@@ -570,11 +570,8 @@ fn spawn_xml_fetch<'gc>(
         this.set(loaded_string, false.into(), activation)?;
     }
 
-    let future = activation.context.load_manager.load_form_into_load_vars(
-        activation.context.player.clone(),
-        loader_object,
-        request,
-    );
+    let future =
+        crate::loader::load_form_into_load_vars(activation.context, loader_object, request);
     activation.context.navigator.spawn_future(future);
 
     Ok(true.into())

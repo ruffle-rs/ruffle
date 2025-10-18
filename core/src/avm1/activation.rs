@@ -1187,7 +1187,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     } else {
                         let level = self.get_or_create_level(level_id);
                         let future = self.context.load_manager.load_movie_into_clip(
-                            self.context.player.clone(),
+                            self.context.player_handle(),
                             level,
                             Request::get(url.to_string()),
                             None,
@@ -1289,11 +1289,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         url,
                         NavigationMethod::from_send_vars_method(action.send_vars_method()),
                     );
-                    let future = self.context.load_manager.load_form_into_object(
-                        self.context.player.clone(),
-                        target_obj,
-                        request,
-                    );
+                    let future =
+                        crate::loader::load_form_into_object(self.context, target_obj, request);
                     self.context.navigator.spawn_future(future);
                 }
                 return Ok(FrameControl::Continue);
@@ -1317,7 +1314,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         NavigationMethod::from_send_vars_method(action.send_vars_method()),
                     );
                     let future = self.context.load_manager.load_movie_into_clip(
-                        self.context.player.clone(),
+                        self.context.player_handle(),
                         clip_target,
                         request,
                         None,
@@ -1342,7 +1339,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     }
                 } else {
                     let future = self.context.load_manager.load_movie_into_clip(
-                        self.context.player.clone(),
+                        self.context.player_handle(),
                         clip_target,
                         Request::get(url.to_utf8_lossy().into_owned()),
                         None,

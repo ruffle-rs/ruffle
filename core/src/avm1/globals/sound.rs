@@ -431,8 +431,8 @@ fn load_sound<'gc>(
             }
             sound.set_is_streaming(is_streaming);
             sound.set_is_loading(activation.context);
-            let future = activation.context.load_manager.load_sound_avm1(
-                activation.context.player.clone(),
+            let future = crate::loader::load_sound_avm1(
+                activation.context,
                 this,
                 Request::get(url.to_utf8_lossy().into_owned()),
                 is_streaming,

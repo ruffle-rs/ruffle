@@ -252,11 +252,8 @@ fn spawn_load_var_fetch<'gc>(
         Request::get(url.to_utf8_lossy().into_owned())
     };
 
-    let future = activation.context.load_manager.load_form_into_load_vars(
-        activation.context.player.clone(),
-        loader_object,
-        request,
-    );
+    let future =
+        crate::loader::load_form_into_load_vars(activation.context, loader_object, request);
     activation.context.navigator.spawn_future(future);
 
     // Create hidden properties on object.
