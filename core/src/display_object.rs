@@ -2228,6 +2228,7 @@ pub trait TDisplayObject<'gc>:
     fn set_has_explicit_name(self, value: bool) {
         self.base().set_has_explicit_name(value);
     }
+
     fn state(&self) -> Option<ButtonState> {
         None
     }
@@ -2249,6 +2250,20 @@ pub trait TDisplayObject<'gc>:
     /// 2. That newly created children have been instantiated and are present
     ///    as properties on the class
     fn construct_frame(self, _context: &mut UpdateContext<'gc>) {}
+
+    /// Whether this DisplayObject is an AVM2 orphan object. Objects that are
+    /// no longer AVM2 orphans (e.g. they have been adopted) will be
+    /// automatically removed from the global orphan list by
+    /// `OrphanManager::cleanup_dead_orphans`.
+    ///
+    /// There are two ways a DisplayObject can become an AVM2 orphan:
+    /// 1 - The clip has no parent
+    /// 2 - The clip has a parent, but the parent is from an AVM1 movie
+    #[no_dynamic]
+    fn is_avm2_orphan(self) -> bool {
+        self.parent()
+            .is_none_or(|p| !p.movie().is_action_script_3())
+    }
 
     /// To be called when an AVM2 display object has finished being constructed.
     ///
@@ -2526,7 +2541,7 @@ pub trait TDisplayObject<'gc>:
 
     fn object2(self) -> Option<Avm2StageObject<'gc>>;
 
-    fn set_object2(self, _context: &mut UpdateContext<'gc>, _to: Avm2StageObject<'gc>) {}
+    fn set_object2(self, _mc: &Mutation<'gc>, _to: Avm2StageObject<'gc>) {}
 
     #[no_dynamic]
     fn object2_or_null(self) -> Avm2Value<'gc> {

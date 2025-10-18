@@ -72,9 +72,8 @@ pub enum FramePhase {
 pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
     let stage = context.stage;
 
-    if !stage.movie().is_action_script_3() {
-        return;
-    }
+    // We may still have AVM2 orphans that we need to run frames for even though
+    // the root movie is AVM1 (TODO: is that correct?)
 
     *context.frame_phase = FramePhase::Enter;
     OrphanManager::each_orphan_obj(context, |orphan, context| {

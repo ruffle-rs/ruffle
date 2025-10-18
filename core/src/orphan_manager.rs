@@ -65,6 +65,10 @@ impl<'gc> OrphanManager<'gc> {
     pub fn cleanup_dead_orphans(&mut self, mc: &Mutation<'gc>) {
         self.orphans_mut().retain(|d| {
             if let Some(dobj) = valid_orphan(*d, mc) {
+                let has_avm1_parent = dobj
+                    .parent()
+                    .is_some_and(|p| !p.movie().is_action_script_3());
+
                 // All clips that become orphaned (have their parent removed, or start out with no parent)
                 // get added to the orphan list. However, there's a distinction between clips
                 // that are removed from a RemoveObject tag, and clips that are removed from ActionScript.
@@ -85,7 +89,10 @@ impl<'gc> OrphanManager<'gc> {
                 // which have not been moved in the displaylist by ActionScript. Therefore,
                 // any orphan we see that has 'placed_by_script()' should stay on the orphan
                 // list, because it was not removed by a RemoveObject tag.
-                dobj.placed_by_script()
+                //
+                // Also, AVM2 MovieClips with an AVM1 parent are always orphans, since they
+                // would not run their frames if they weren't.
+                dobj.placed_by_script() || has_avm1_parent
             } else {
                 false
             }
@@ -109,7 +116,7 @@ fn valid_orphan<'gc>(
     mc: &Mutation<'gc>,
 ) -> Option<DisplayObject<'gc>> {
     if let Some(dobj) = dobj.upgrade(mc) {
-        if dobj.parent().is_none() {
+        if dobj.is_avm2_orphan() {
             return Some(dobj);
         }
     }
