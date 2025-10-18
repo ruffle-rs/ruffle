@@ -286,8 +286,8 @@ pub fn save<'gc>(
 
     match dialog {
         Some(dialog) => {
-            let process = activation.context.load_manager.save_file_dialog(
-                activation.context.player.clone(),
+            let process = crate::loader::save_file_dialog(
+                activation.context,
                 this,
                 dialog,
                 data,

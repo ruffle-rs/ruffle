@@ -7,8 +7,8 @@ use crate::avm1::{Object, ObjectHandle, Value};
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::globals::flash::utils::byte_array::strip_bom;
 use crate::avm2::object::{
-    ByteArrayObject, EventObject as Avm2EventObject, FileReferenceObject, LoaderInfoObject,
-    LoaderStream, SoundLoadingState, TObject as _,
+    ByteArrayObject, EventObject as Avm2EventObject, FileReferenceObject,
+    FileReferenceObjectHandle, LoaderInfoObject, LoaderStream, SoundLoadingState, TObject as _,
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
@@ -214,9 +214,6 @@ pub enum Error {
     #[error("Non-file dialog loader spawned as file dialog loader")]
     NotFileDialogLoader,
 
-    #[error("Non-file save dialog loader spawned as file save dialog loader")]
-    NotFileSaveDialogLoader,
-
     #[error("Could not fetch: {0:?}")]
     FetchError(String),
 
@@ -285,7 +282,6 @@ impl<'gc> LoadManager<'gc> {
             | Loader::NetStream { self_handle, .. }
             | Loader::FileDialog { self_handle, .. }
             | Loader::FileDialogAvm2 { self_handle, .. }
-            | Loader::SaveFileDialog { self_handle, .. }
             | Loader::StyleSheet { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
@@ -690,24 +686,6 @@ impl<'gc> LoadManager<'gc> {
         let loader = self.get_loader_mut(handle).unwrap();
         loader.file_dialog_loader(player, dialog)
     }
-
-    /// Display a dialog allowing a user to save a file
-    #[must_use]
-    pub fn save_file_dialog(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        target_object: FileReferenceObject<'gc>,
-        dialog: DialogResultFuture,
-        data: Vec<u8>,
-    ) -> OwnedFuture<(), Error> {
-        let loader = Loader::SaveFileDialog {
-            self_handle: None,
-            target_object,
-        };
-        let handle = self.add_loader(loader);
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.file_save_dialog_loader(player, dialog, data)
-    }
 }
 
 impl Default for LoadManager<'_> {
@@ -879,16 +857,6 @@ pub enum Loader<'gc> {
         self_handle: Option<LoaderHandle>,
 
         /// The target AVM2 object to set to the selected file path.
-        target_object: FileReferenceObject<'gc>,
-    },
-
-    /// Loader that is saving a file to disk from an AVM2 scope.
-    SaveFileDialog {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
-
-        /// The target AVM2 object to select a save location for.
         target_object: FileReferenceObject<'gc>,
     },
 
@@ -2771,25 +2739,21 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
+}
 
-    /// Loader to handle saving a file to disk.
-    pub fn file_save_dialog_loader(
-        &mut self,
-        player: Weak<Mutex<Player>>,
+mod ops {
+    use super::*;
+
+    /// Display a dialog allowing a user to save a file to disk from an AVM2 scope.
+    #[must_use]
+    pub fn save_file_dialog<'gc>(
+        uc: &UpdateContext<'gc>,
+        target_object: FileReferenceObject<'gc>,
         dialog: DialogResultFuture,
         data: Vec<u8>,
     ) -> OwnedFuture<(), Error> {
-        let handle = match self {
-            Loader::SaveFileDialog { self_handle, .. } => {
-                self_handle.expect("Loader not self-introduced")
-            }
-            _ => return Box::pin(async { Err(Error::NotFileSaveDialogLoader) }),
-        };
-
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
-
+        let player = uc.player_handle();
+        let target_object = FileReferenceObjectHandle::stash(uc, target_object);
         Box::pin(async move {
             let dialog_result = dialog.await;
 
@@ -2798,12 +2762,7 @@ impl<'gc> Loader<'gc> {
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
-                let loader = uc.load_manager.get_loader(handle);
-                let target_object = match loader {
-                    Some(&Loader::SaveFileDialog { target_object, .. }) => target_object,
-                    None => return Err(Error::Cancelled),
-                    _ => return Err(Error::NotFileSaveDialogLoader),
-                };
+                let target_object = target_object.fetch(uc);
 
                 match dialog_result {
                     Ok(mut dialog_result) => {
@@ -2868,10 +2827,6 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
-}
-
-mod ops {
-    use super::*;
 
     /// Display a dialog allowing a user to download a file.
     ///
