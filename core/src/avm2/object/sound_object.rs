@@ -16,7 +16,7 @@ use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
     lock::{Lock, RefLock},
-    Collect, Gc, GcWeak, Mutation,
+    Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable,
 };
 use id3::{Tag, TagLike};
 use std::cell::Cell;
@@ -59,6 +59,19 @@ impl fmt::Debug for SoundObject<'_> {
         f.debug_struct("SoundObject")
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
+    }
+}
+
+#[derive(Clone)]
+pub struct SoundObjectHandle(DynamicRoot<Rootable![SoundObjectData<'_>]>);
+
+impl SoundObjectHandle {
+    pub fn stash<'gc>(context: &UpdateContext<'gc>, this: SoundObject<'gc>) -> Self {
+        Self(context.dynamic_root.stash(context.gc(), this.0))
+    }
+
+    pub fn fetch<'gc>(&self, context: &UpdateContext<'gc>) -> SoundObject<'gc> {
+        SoundObject(context.dynamic_root.fetch(&self.0))
     }
 }
 
