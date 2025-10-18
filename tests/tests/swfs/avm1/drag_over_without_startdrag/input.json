@@ -1,0 +1,6 @@
+[
+  { "type": "MouseMove", "pos": [20, 20] },
+  { "type": "MouseDown", "pos": [20, 20], "btn": "Left" },
+  { "type": "MouseMove", "pos": [100, 20] },
+  { "type": "Wait" }
+]
