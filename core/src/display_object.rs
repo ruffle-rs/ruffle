@@ -1765,6 +1765,9 @@ pub trait TDisplayObject<'gc>:
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
     #[no_dynamic]
     fn path(self) -> WString {
+        // FIXME this method doesn't work correclty when this DO is from an
+        // AVM2 movie that was loaded into AVM1
+
         if let Some(parent) = self.avm1_parent() {
             let mut path = parent.path();
             path.push_byte(b'.');
@@ -2255,10 +2258,15 @@ pub trait TDisplayObject<'gc>:
     /// Whether this DisplayObject is an AVM2 orphan object. Objects that are
     /// no longer AVM2 orphans (e.g. they have been adopted) will be
     /// automatically removed from the global orphan list by
-    /// `OrphanManager::cleanup_dead_orphans`
+    /// `OrphanManager::cleanup_dead_orphans`.
+    ///
+    /// There are two ways a DisplayObject can become an AVM2 orphan:
+    /// 1 - The clip has no parent
+    /// 2 - The clip has a parent, but the parent is from an AVM1 movie
     #[no_dynamic]
     fn is_avm2_orphan(self) -> bool {
-        self.parent().is_none()
+        self.parent()
+            .is_none_or(|p| !p.movie().is_action_script_3())
     }
 
     /// To be called when an AVM2 display object has finished being constructed.

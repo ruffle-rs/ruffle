@@ -187,8 +187,6 @@ pub struct MovieClipData<'gc> {
     attached_audio: Lock<Option<NetStream<'gc>>>,
 
     /// The next MovieClip in the AVM1 execution list.
-    ///
-    /// `None` in an AVM2 movie.
     next_avm1_clip: Lock<Option<MovieClip<'gc>>>,
 
     audio_stream: Cell<Option<SoundInstanceHandle>>,
@@ -421,8 +419,8 @@ impl<'gc> MovieClip<'gc> {
 
     /// Execute all other timeline actions on this object.
     pub fn run_frame_avm1(self, context: &mut UpdateContext<'gc>) {
-        if !self.movie().is_action_script_3() {
-            // Run my load/enterFrame clip event.
+        // Run my load/enterFrame clip event.
+        if !self.movie().is_action_script_3() || !context.root_swf.is_action_script_3() {
             let is_load_frame = !self.0.contains_flag(MovieClipFlags::INITIALIZED);
             if is_load_frame {
                 self.event_dispatch(context, ClipEvent::Load);
@@ -1997,7 +1995,7 @@ impl<'gc> MovieClip<'gc> {
 
         self.set_object2(context.gc(), object);
 
-        if self.parent().is_none() {
+        if self.is_avm2_orphan() {
             context.orphan_manager.add_orphan_obj(self.into());
         }
     }
@@ -2609,7 +2607,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
 
         self.set_default_instance_name(context);
 
-        if !self.movie().is_action_script_3() {
+        if !self.movie().is_action_script_3() || !context.root_swf.is_action_script_3() {
             context.avm1.add_to_exec_list(context.gc(), self);
 
             self.construct_as_avm1_object(context, init_object, instantiated_by, run_frame);

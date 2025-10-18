@@ -72,32 +72,41 @@ pub enum FramePhase {
 pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
     let stage = context.stage;
 
-    if !stage.movie().is_action_script_3() {
-        return;
-    }
+    // We may still have AVM2 orphans that we need to run frames for even though
+    // the root movie is AVM1. However, we don't run any stage phases if the
+    // root movie is AVM1.
+    let is_root_movie_as3 = stage.movie().is_action_script_3();
 
     *context.frame_phase = FramePhase::Enter;
     OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.enter_frame(context);
     });
-    stage.enter_frame(context);
+    if is_root_movie_as3 {
+        stage.enter_frame(context);
+    }
 
     *context.frame_phase = FramePhase::Construct;
     OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.construct_frame(context);
     });
-    stage.construct_frame(context);
-    stage.frame_constructed(context);
+    if is_root_movie_as3 {
+        stage.construct_frame(context);
+        stage.frame_constructed(context);
+    }
 
     *context.frame_phase = FramePhase::FrameScripts;
     OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.run_frame_scripts(context);
     });
-    stage.run_frame_scripts(context);
+    if is_root_movie_as3 {
+        stage.run_frame_scripts(context);
+    }
     MovieClip::run_frame_script_cleanup(context);
 
     *context.frame_phase = FramePhase::Exit;
-    stage.exit_frame(context);
+    if is_root_movie_as3 {
+        stage.exit_frame(context);
+    }
 
     // We cannot easily remove dead `GcWeak` instances from the orphan list
     // inside `each_orphan_movie`, since the callback may modify the orphan list.

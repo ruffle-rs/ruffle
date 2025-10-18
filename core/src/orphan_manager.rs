@@ -65,6 +65,10 @@ impl<'gc> OrphanManager<'gc> {
     pub fn cleanup_dead_orphans(&mut self, mc: &Mutation<'gc>) {
         self.orphans_mut().retain(|d| {
             if let Some(dobj) = valid_orphan(*d, mc) {
+                let has_avm1_parent = dobj
+                    .parent()
+                    .is_some_and(|p| !p.movie().is_action_script_3());
+
                 // All clips that become orphaned (have their parent removed, or start out with no parent)
                 // get added to the orphan list. However, there's a distinction between clips
                 // that are removed from a RemoveObject tag, and clips that are removed from ActionScript.
@@ -78,14 +82,18 @@ impl<'gc> OrphanManager<'gc> {
                 // indefinitely (if there are no remaining strong references, they will eventually
                 // be garbage collected).
                 //
-                // To detect this, we check 'placed_by_avm2_script'. This flag get set to 'true'
+                // To detect this, we check 'placed_by_script'. This flag get set to 'true'
                 // for objects constructed from ActionScript, and for objects moved around
                 // in the timeline (add/remove child, swap depths) by ActionScript. A
                 // RemoveObject tag will only affect objects instantiated by the timeline,
                 // which have not been moved in the displaylist by ActionScript. Therefore,
-                // any orphan we see that has 'placed_by_avm2_script()' should stay on the orphan
+                // any orphan we see that has 'placed_by_script()' should stay on the orphan
                 // list, because it was not removed by a RemoveObject tag.
-                dobj.placed_by_avm2_script()
+                //
+                // Also, we consider AVM2 MovieClips loaded into an AVM1 parent to always
+                // be orphans, since we know they were placed by AVM1 code and not by
+                // the timeline.
+                dobj.placed_by_avm2_script() || has_avm1_parent
             } else {
                 false
             }
