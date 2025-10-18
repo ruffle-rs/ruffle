@@ -2,9 +2,9 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error};
 use crate::backend::ui::FileDialogResult;
+use crate::context::UpdateContext;
 use crate::utils::HasPrefixField;
-use gc_arena::GcWeak;
-use gc_arena::{Collect, Gc};
+use gc_arena::{Collect, DynamicRoot, Gc, GcWeak, Rootable};
 use std::cell::{Cell, Ref, RefCell};
 use std::fmt;
 
@@ -32,6 +32,19 @@ pub struct FileReferenceObject<'gc>(pub Gc<'gc, FileReferenceObjectData<'gc>>);
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
 pub struct FileReferenceObjectWeak<'gc>(pub GcWeak<'gc, FileReferenceObjectData<'gc>>);
+
+#[derive(Clone)]
+pub struct FileReferenceObjectHandle(DynamicRoot<Rootable![FileReferenceObjectData<'_>]>);
+
+impl FileReferenceObjectHandle {
+    pub fn stash<'gc>(context: &UpdateContext<'gc>, this: FileReferenceObject<'gc>) -> Self {
+        Self(context.dynamic_root.stash(context.gc(), this.0))
+    }
+
+    pub fn fetch<'gc>(&self, context: &UpdateContext<'gc>) -> FileReferenceObject<'gc> {
+        FileReferenceObject(context.dynamic_root.fetch(&self.0))
+    }
+}
 
 impl<'gc> TObject<'gc> for FileReferenceObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
