@@ -8,11 +8,12 @@ use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Error, Multiname, QName};
+use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::barrier::{unlock, Write};
 use gc_arena::{
     lock::{Lock, RefLock},
-    Collect, Gc, GcWeak, Mutation,
+    Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable,
 };
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -35,6 +36,19 @@ pub struct ScriptObject<'gc>(pub Gc<'gc, ScriptObjectData<'gc>>);
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
 pub struct ScriptObjectWeak<'gc>(pub GcWeak<'gc, ScriptObjectData<'gc>>);
+
+#[derive(Clone)]
+pub struct ScriptObjectHandle(DynamicRoot<Rootable![ScriptObjectData<'_>]>);
+
+impl ScriptObjectHandle {
+    pub fn stash<'gc>(context: &UpdateContext<'gc>, this: ScriptObject<'gc>) -> Self {
+        Self(context.dynamic_root.stash(context.gc(), this.0))
+    }
+
+    pub fn fetch<'gc>(&self, context: &UpdateContext<'gc>) -> ScriptObject<'gc> {
+        ScriptObject(context.dynamic_root.fetch(&self.0))
+    }
+}
 
 /// Base data common to all `TObject` implementations.
 ///
