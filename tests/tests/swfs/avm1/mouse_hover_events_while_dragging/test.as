@@ -20,16 +20,24 @@ class Test {
         target.endFill();
         target._x = 110; target._y = 30;
 
-        target.onRollOver = function() { trace("OVER"); };
-        target.onRollOut  = function() { trace("OUT");  };
+        // Do not emit any events while an object is being dragged
+        target.onDragOver = function() {
+            trace("DRAG_OVER");
+        };
+        target.onDragOut  = function() {
+            trace("DRAG_OUT");
+        };
+
+        target.onRollOver = function() {
+            trace("ROLL_OVER");
+        };
+        target.onRollOut  = function() {
+            trace("ROLL_OUT");
+        };
 
         dragger.onPress = function() {
             this.startDrag(false);
             trace("startDrag");
-        };
-        dragger.onRelease = dragger.onReleaseOutside = function() {
-            this.stopDrag();
-            trace("stopDrag");
         };
     }
 }
