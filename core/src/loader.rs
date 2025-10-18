@@ -45,7 +45,7 @@ use slotmap::{new_key_type, SlotMap};
 use std::borrow::Borrow;
 use std::fmt;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex, Weak};
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use swf::read::{extract_swz, read_compression_type};
 use thiserror::Error;
@@ -247,9 +247,8 @@ impl<'gc> LoadManager<'gc> {
     /// accordingly.
     pub fn add_loader(&mut self, loader: Loader<'gc>) -> LoaderHandle {
         let handle = self.0.insert(loader);
-        match self.get_loader_mut(handle).unwrap() {
-            Loader::Movie { self_handle, .. } => *self_handle = Some(handle),
-        }
+        let loader = self.get_loader_mut(handle).unwrap();
+        loader.self_handle = Some(handle);
         handle
     }
 
@@ -274,7 +273,7 @@ impl<'gc> LoadManager<'gc> {
     /// Returns the loader's async process, which you will need to spawn.
     pub fn load_movie_into_clip(
         &mut self,
-        player: Weak<Mutex<Player>>,
+        player: Arc<Mutex<Player>>,
         target_clip: DisplayObject<'gc>,
         request: Request,
         loader_url: Option<String>,
@@ -300,7 +299,7 @@ impl<'gc> LoadManager<'gc> {
             }
         }
 
-        let loader = Loader::Movie {
+        let loader = Loader {
             self_handle: None,
             target_clip,
             vm_data,
@@ -382,7 +381,7 @@ impl<'gc> LoadManager<'gc> {
         bytes: Vec<u8>,
         vm_data: MovieLoaderVMData<'gc>,
     ) -> Result<(), Error> {
-        let loader = Loader::Movie {
+        let loader = Loader {
             self_handle: None,
             target_clip,
             vm_data,
@@ -434,7 +433,7 @@ impl<'gc> LoadManager<'gc> {
 
         for handle in handles {
             let status = match context.load_manager.get_loader(handle) {
-                Some(Loader::Movie { loader_status, .. }) => Some(loader_status),
+                Some(Loader { loader_status, .. }) => Some(loader_status),
                 _ => None,
             };
 
@@ -461,8 +460,7 @@ impl<'gc> LoadManager<'gc> {
         }
         let handles: Vec<_> = context.load_manager.0.iter().map(|(h, _)| h).collect();
         for handle in handles {
-            let Some(Loader::Movie { target_clip, .. }) = context.load_manager.get_loader(handle)
-            else {
+            let Some(Loader { target_clip, .. }) = context.load_manager.get_loader(handle) else {
                 continue;
             };
             if let Some(movie) = target_clip.as_movie_clip() {
@@ -510,43 +508,40 @@ pub enum MovieLoaderVMData<'gc> {
     },
 }
 
-/// A struct that holds garbage-collected pointers for asynchronous code.
+/// A struct that holds the state for asynchronous movie loads.
 #[derive(Collect)]
 #[collect(no_drop)]
-pub enum Loader<'gc> {
-    /// Loader that is loading a new movie into a MovieClip.
-    Movie {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
+pub struct Loader<'gc> {
+    /// The handle to refer to this loader instance.
+    #[collect(require_static)]
+    self_handle: Option<LoaderHandle>,
 
-        /// The target movie clip to load the movie into.
-        target_clip: DisplayObject<'gc>,
+    /// The target movie clip to load the movie into.
+    target_clip: DisplayObject<'gc>,
 
-        // Virtual-machine specific data (AVM1 or AVM2)
-        vm_data: MovieLoaderVMData<'gc>,
+    // Virtual-machine specific data (AVM1 or AVM2)
+    vm_data: MovieLoaderVMData<'gc>,
 
-        /// Indicates the completion status of this loader.
-        ///
-        /// This flag exists to prevent a situation in which loading a movie
-        /// into a clip that has not yet fired its Load event causes the
-        /// loader to be prematurely removed. This flag is only set when either
-        /// the movie has been replaced (and thus Load events can be trusted)
-        /// or an error has occurred (in which case we don't care about the
-        /// loader anymore).
-        #[collect(require_static)]
-        loader_status: LoaderStatus,
+    /// Indicates the completion status of this loader.
+    ///
+    /// This flag exists to prevent a situation in which loading a movie
+    /// into a clip that has not yet fired its Load event causes the
+    /// loader to be prematurely removed. This flag is only set when either
+    /// the movie has been replaced (and thus Load events can be trusted)
+    /// or an error has occurred (in which case we don't care about the
+    /// loader anymore).
+    #[collect(require_static)]
+    loader_status: LoaderStatus,
 
-        /// The SWF being loaded.
-        ///
-        /// This is only available if the asynchronous loader path has
-        /// completed and we expect the Player to periodically tick preload
-        /// until loading completes.
-        movie: Option<Arc<SwfMovie>>,
+    /// The SWF being loaded.
+    ///
+    /// This is only available if the asynchronous loader path has
+    /// completed and we expect the Player to periodically tick preload
+    /// until loading completes.
+    movie: Option<Arc<SwfMovie>>,
 
-        /// Whether or not this was loaded as a result of a `Loader.loadBytes` call
-        from_bytes: bool,
-    },
+    /// Whether or not this was loaded as a result of a `Loader.loadBytes` call
+    from_bytes: bool,
 }
 
 impl<'gc> Loader<'gc> {
@@ -568,7 +563,7 @@ impl<'gc> Loader<'gc> {
         redirected: bool,
     ) -> Result<bool, Error> {
         let mc = match context.load_manager.get_loader_mut(handle) {
-            Some(Self::Movie {
+            Some(Self {
                 target_clip,
                 movie,
                 from_bytes,
@@ -637,17 +632,11 @@ impl<'gc> Loader<'gc> {
     /// error immediately once spawned.
     fn movie_loader(
         &mut self,
-        player: Weak<Mutex<Player>>,
+        player: Arc<Mutex<Player>>,
         request: Request,
         loader_url: Option<String>,
     ) -> OwnedFuture<(), Error> {
-        let handle = match self {
-            Loader::Movie { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
-        };
-
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
+        let handle = self.self_handle.expect("Loader not self-introduced");
 
         Box::pin(async move {
             let request_url = request.url().to_string();
@@ -658,7 +647,7 @@ impl<'gc> Loader<'gc> {
             let mut replacing_root_movie = false;
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
                 let clip = match uc.load_manager.get_loader(handle) {
-                    Some(Loader::Movie { target_clip, .. }) => *target_clip,
+                    Some(Loader { target_clip, .. }) => *target_clip,
                     None => return Err(Error::Cancelled),
                 };
 
@@ -792,7 +781,7 @@ impl<'gc> Loader<'gc> {
         bytes: Vec<u8>,
     ) -> Result<(), Error> {
         let clip = match uc.load_manager.get_loader(handle) {
-            Some(Loader::Movie { target_clip, .. }) => *target_clip,
+            Some(Self { target_clip, .. }) => *target_clip,
             None => return Err(Error::Cancelled),
         };
 
@@ -1470,19 +1459,13 @@ mod ops {
 impl<'gc> Loader<'gc> {
     /// Report a movie loader start event to script code.
     fn movie_loader_start(handle: LoaderHandle, uc: &mut UpdateContext<'gc>) -> Result<(), Error> {
-        let me = uc.load_manager.get_loader_mut(handle);
-        if me.is_none() {
-            return Err(Error::Cancelled);
-        }
-
-        let me = me.unwrap();
-
-        let (clip, vm_data) = match me {
-            Loader::Movie {
+        let (clip, vm_data) = match uc.load_manager.get_loader_mut(handle) {
+            Some(Self {
                 target_clip,
                 vm_data,
                 ..
-            } => (*target_clip, *vm_data),
+            }) => (*target_clip, *vm_data),
+            None => return Err(Error::Cancelled),
         };
 
         match vm_data {
@@ -1529,7 +1512,7 @@ impl<'gc> Loader<'gc> {
             }
         }
         let (clip, vm_data, from_bytes) = match uc.load_manager.get_loader(handle) {
-            Some(Loader::Movie {
+            Some(Self {
                 target_clip,
                 vm_data,
                 from_bytes,
@@ -1574,7 +1557,7 @@ impl<'gc> Loader<'gc> {
         };
 
         match activation.context.load_manager.get_loader_mut(handle) {
-            Some(Loader::Movie {
+            Some(Self {
                 movie: old,
                 loader_status,
                 ..
@@ -1838,31 +1821,25 @@ impl<'gc> Loader<'gc> {
         cur_len: usize,
         total_len: usize,
     ) -> Result<(), Error> {
-        let me = uc.load_manager.get_loader_mut(handle);
-        if me.is_none() {
-            return Err(Error::Cancelled);
-        }
-
-        let me = me.unwrap();
-
-        let (clip, vm_data) = match me {
-            Loader::Movie {
+        let (target_clip, vm_data) = match uc.load_manager.get_loader_mut(handle) {
+            Some(Self {
                 target_clip,
                 vm_data,
                 ..
-            } => (*target_clip, *vm_data),
+            }) => (*target_clip, *vm_data),
+            None => return Err(Error::Cancelled),
         };
 
         match vm_data {
             MovieLoaderVMData::Avm1 { broadcaster } => {
                 if let Some(broadcaster) = broadcaster {
                     Avm1::run_stack_frame_for_method(
-                        clip,
+                        target_clip,
                         broadcaster,
                         istr!(uc, "broadcastMessage"),
                         &[
                             istr!(uc, "onLoadProgress").into(),
-                            clip.object1(),
+                            target_clip.object1(),
                             cur_len.into(),
                             total_len.into(),
                         ],
@@ -1896,7 +1873,7 @@ impl<'gc> Loader<'gc> {
         redirected: bool,
     ) -> Result<(), Error> {
         let (target_clip, vm_data, movie) = match uc.load_manager.get_loader_mut(handle) {
-            Some(Loader::Movie {
+            Some(Self {
                 target_clip,
                 movie,
                 vm_data,
@@ -2032,8 +2009,8 @@ impl<'gc> Loader<'gc> {
             }
         }
 
-        let Loader::Movie { loader_status, .. } = uc.load_manager.get_loader_mut(handle).unwrap();
-        *loader_status = LoaderStatus::Succeeded;
+        let loader = uc.load_manager.get_loader_mut(handle).unwrap();
+        loader.loader_status = LoaderStatus::Succeeded;
 
         Ok(())
     }
@@ -2056,7 +2033,7 @@ impl<'gc> Loader<'gc> {
         //This also can get errors from decoding an invalid SWF file,
         //too. We should distinguish those to player code.
         let (clip, vm_data) = match uc.load_manager.get_loader_mut(handle) {
-            Some(Loader::Movie {
+            Some(Self {
                 target_clip,
                 vm_data,
                 ..
@@ -2102,8 +2079,8 @@ impl<'gc> Loader<'gc> {
             }
         }
 
-        let Loader::Movie { loader_status, .. } = uc.load_manager.get_loader_mut(handle).unwrap();
-        *loader_status = LoaderStatus::Failed;
+        let loader = uc.load_manager.get_loader_mut(handle).unwrap();
+        loader.loader_status = LoaderStatus::Failed;
 
         Ok(())
     }
@@ -2184,16 +2161,7 @@ impl<'gc> Loader<'gc> {
         queue: &mut ActionQueue<'gc>,
         strings: &StringContext<'gc>,
     ) -> bool {
-        let (clip, vm_data, loader_status) = match self {
-            Loader::Movie {
-                target_clip,
-                vm_data,
-                loader_status,
-                ..
-            } => (*target_clip, *vm_data, *loader_status),
-        };
-
-        match loader_status {
+        match self.loader_status {
             LoaderStatus::Pending => false,
             LoaderStatus::Parsing => false,
             LoaderStatus::Failed => true,
@@ -2201,14 +2169,17 @@ impl<'gc> Loader<'gc> {
                 // AVM2 is handled separately
                 if let MovieLoaderVMData::Avm1 {
                     broadcaster: Some(broadcaster),
-                } = vm_data
+                } = self.vm_data
                 {
                     queue.queue_action(
-                        clip,
+                        self.target_clip,
                         ActionType::Method {
                             object: broadcaster,
                             name: istr!(strings, "broadcastMessage"),
-                            args: vec![istr!(strings, "onLoadInit").into(), clip.object1()],
+                            args: vec![
+                                istr!(strings, "onLoadInit").into(),
+                                self.target_clip.object1(),
+                            ],
                         },
                         false,
                     );
@@ -2216,7 +2187,7 @@ impl<'gc> Loader<'gc> {
                 // If the movie was loaded from avm1, clean it up now. If a movie (including an AVM1 movie)
                 // was loaded from avm2, clean it up in `run_exit_frame`, after we have a chance to fire
                 // the AVM2-side events
-                matches!(vm_data, MovieLoaderVMData::Avm1 { .. })
+                matches!(self.vm_data, MovieLoaderVMData::Avm1 { .. })
             }
         }
     }
