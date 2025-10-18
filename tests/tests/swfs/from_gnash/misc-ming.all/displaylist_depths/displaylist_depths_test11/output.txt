@@ -1,0 +1,15 @@
+_level0.static1 onClipConstruct
+PASSED: movieclip == movieclip
+_root.depth3Constructed set to 1
+PASSED: undefined == undefined
+_level0.static2 onClipConstruct
+PASSED: movieclip == movieclip
+_root.depth3Constructed set to 2
+PASSED: undefined == undefined
+PASSED: movieclip == movieclip
+PASSED: 2 == 2
+PASSED: undefined == undefined
+PASSED: movieclip == movieclip
+#passed: 8
+#failed: 0
+#total tests run: 8

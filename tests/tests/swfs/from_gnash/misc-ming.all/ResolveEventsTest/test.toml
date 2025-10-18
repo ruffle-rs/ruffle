@@ -1,0 +1,4 @@
+num_frames = 30
+known_failure = true
+# [NA] The input.json _may_ have wrong "Wait"s here, but we're so wrong that it's hard to be sure.
+# It's definitely failing in Ruffle at the time of writing, but the full extent will need to be investigated once the initial failure is fixed

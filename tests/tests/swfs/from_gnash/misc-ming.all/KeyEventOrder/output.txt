@@ -1,0 +1,26 @@
+Press "a" then "b"
+Do not press any other keys!
+mc2
+mc1
+o1
+o2
+button1
+mc2
+mc1
+o1
+o2
+button3
+PASSED: _root.order  ==  'mc2,mc1,o1,o2,button1,mc2,mc1,o1,o2,button3,' [KeyEventOrder.c:199]
+Press "a" then "b" again
+Do not press any other keys!
+mc2
+mc1
+o1
+o2
+button1
+mc2
+mc1
+o1
+o2
+button3
+PASSED: _root.order  ==  'mc2,mc1,o1,o2,button1,mc2,mc1,o1,o2,button3,' [KeyEventOrder.c:217]

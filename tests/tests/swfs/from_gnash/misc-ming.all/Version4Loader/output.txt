@@ -1,0 +1,11 @@
+[ debug-22403-05c7ba106]
+SWF
+
+PASSED: typeof(unescape) == "function" [./Version5Loaded.as:5]
+PASSED: typeof(escape) == "function" [./Version5Loaded.as:6]
+PASSED: typeof(isNaN) == "function" [./Version5Loaded.as:7]
+PASSED: typeof(isFinite) == "function" [./Version5Loaded.as:8]
+PASSED: typeof(parseFloat) == "function" [./Version5Loaded.as:9]
+PASSED: typeof(parseInt) == "function" [./Version5Loaded.as:10]
+PASSED: typeof(NaN) == "number" [./Version5Loaded.as:11]
+PASSED: typeof(Infinity) == "number" [./Version5Loaded.as:12]

@@ -1,0 +1,8 @@
+PASSED: _root.mc._x  ==  300 [reverse_execute_PlaceObject2_test1.c:80]
+PASSED: _root.mc._x  ==  300 [reverse_execute_PlaceObject2_test1.c:83]
+PASSED: _root.mc._x  ==  900 [reverse_execute_PlaceObject2_test1.c:87]
+PASSED: _root.mc._x  ==  300 [reverse_execute_PlaceObject2_test1.c:83]
+PASSED: _root.mc._x  ==  900 [reverse_execute_PlaceObject2_test1.c:87]
+#passed: 5
+#failed: 0
+#total tests run: 5

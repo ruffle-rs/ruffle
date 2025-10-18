@@ -1,0 +1,3 @@
+# This test has been edited after compilation to remove absolute paths and rename the expected swf name to 'test.swf'
+num_frames = 30
+known_failure = true

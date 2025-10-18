@@ -1,0 +1,5 @@
+PASSED: _root.x1  ==  'depth10+depth12+depth11+' [action_execution_order_test2.c:113]
+PASSED: _root.x2  ==  'depth11+depth12+depth10+depth9+depth13+' [action_execution_order_test2.c:141]
+#passed: 2
+#failed: 0
+#total tests run: 2

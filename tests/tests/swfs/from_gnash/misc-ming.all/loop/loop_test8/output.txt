@@ -1,0 +1,38 @@
+_level0.mc1 constructed
+_level0.mc2 constructed
+_level0.mc3 constructed
+_level0.mc2 unloaded
+_level0.mc3 unloaded
+_level0.mc4 constructed
+_level0.mc5 constructed
+PASSED: typeof(mc1)  ==  'movieclip' [loop_test8.c:206]
+PASSED: typeof(mc2)  ==  'undefined' [loop_test8.c:207]
+PASSED: typeof(mc3)  ==  'undefined' [loop_test8.c:208]
+PASSED: typeof(mc4)  ==  'movieclip' [loop_test8.c:209]
+PASSED: typeof(mc5)  ==  'movieclip' [loop_test8.c:210]
+PASSED: mc1Constructed  ==  1 [loop_test8.c:211]
+PASSED: mc2Constructed  ==  1 [loop_test8.c:212]
+PASSED: mc3Constructed  ==  1 [loop_test8.c:213]
+PASSED: mc4Constructed  ==  1 [loop_test8.c:214]
+PASSED: mc5Constructed  ==  1 [loop_test8.c:215]
+PASSED: mc1Unloaded  ==  0 [loop_test8.c:216]
+PASSED: mc2Unloaded  ==  1 [loop_test8.c:217]
+PASSED: mc3Unloaded  ==  1 [loop_test8.c:218]
+_level0.mc3 constructed
+PASSED: typeof(mc1)  ==  'movieclip' [loop_test8.c:222]
+PASSED: typeof(mc2)  ==  'undefined' [loop_test8.c:223]
+PASSED: typeof(mc3)  ==  'movieclip' [loop_test8.c:224]
+PASSED: typeof(mc4)  ==  'movieclip' [loop_test8.c:225]
+PASSED: typeof(mc5)  ==  'movieclip' [loop_test8.c:226]
+PASSED: mc1Constructed  ==  1 [loop_test8.c:227]
+PASSED: mc2Constructed  ==  1 [loop_test8.c:228]
+PASSED: mc3Constructed  ==  2 [loop_test8.c:229]
+PASSED: mc4Constructed  ==  1 [loop_test8.c:230]
+PASSED: mc5Constructed  ==  1 [loop_test8.c:231]
+PASSED: mc1Unloaded  ==  0 [loop_test8.c:232]
+PASSED: mc2Unloaded  ==  1 [loop_test8.c:233]
+PASSED: mc3Unloaded  ==  1 [loop_test8.c:234]
+#passed: 26
+#failed: 0
+#total tests run: 26
+_level0.mc5unloaded

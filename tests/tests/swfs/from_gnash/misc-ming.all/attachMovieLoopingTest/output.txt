@@ -1,0 +1,41 @@
+hello redsquare
+PASSED: 0 == 0
+PASSED: 100 == 100
+PASSED: 60.1 == 60.1
+PASSED: undefined == undefined
+PASSED: 0 == 0
+Depth is 0
+Next counter is 1
+hello redsquare
+PASSED: 70 == 70
+PASSED: 99 == 99
+PASSED: 25 == 25
+PASSED: 15 == 15
+PASSED: 6 == 6
+PASSED: 70 == 70
+PASSED: 15 == 15
+Depth is 70
+Next counter is 2
+hello redsquare
+PASSED: 140 == 140
+PASSED: 99 == 99
+PASSED: 42 == 42
+PASSED: 25 == 25
+PASSED: 6 == 6
+PASSED: 140 == 140
+PASSED: 25 == 25
+Depth is 140
+Next counter is 3
+hello redsquare
+PASSED: 210 == 210
+PASSED: 99 == 99
+PASSED: 58 == 58
+PASSED: 35 == 35
+PASSED: 6 == 6
+PASSED: 210 == 210
+PASSED: 35 == 35
+Depth is 210
+Next counter is 4
+#passed: 26
+#failed: 0
+#total tests run: 26

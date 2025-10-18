@@ -1,0 +1,57 @@
+[
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [
+      61.0,
+      61.0
+    ]
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      61.0,
+      61.0
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      61.0,
+      61.0
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [
+      80.0,
+      120.0
+    ]
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [
+      80.0,
+      270.0
+    ]
+  },
+  {
+    "type": "Wait"
+  }
+]

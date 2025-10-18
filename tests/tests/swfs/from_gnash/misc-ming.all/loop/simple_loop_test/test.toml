@@ -1,0 +1,32 @@
+num_frames = 30
+
+[image_comparisons.frame1]
+tolerance = 1
+trigger = 2
+
+[image_comparisons.frame2]
+tolerance = 1
+trigger = 3
+
+[image_comparisons.frame3]
+tolerance = 1
+trigger = 4
+
+[image_comparisons.frame4]
+tolerance = 1
+trigger = 5
+
+[image_comparisons.frame5]
+tolerance = 1
+trigger = 6
+
+[image_comparisons.frame6]
+tolerance = 1
+trigger = 7
+
+[image_comparisons.frame7]
+tolerance = 1
+trigger = 8
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

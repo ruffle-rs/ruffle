@@ -1,0 +1,83 @@
+[
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  }
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+]
