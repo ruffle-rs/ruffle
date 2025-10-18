@@ -1,0 +1,3 @@
+ab
+PASSED: callframe with dicts is fine  
+END OF TEST
