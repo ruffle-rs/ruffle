@@ -30,8 +30,8 @@ use crate::font::{Font, FontType};
 use crate::frame_lifecycle::{run_inner_goto_frame, FramePhase};
 use crate::library::MovieLibrary;
 use crate::limits::ExecutionLimit;
+use crate::loader::LoadManager;
 use crate::loader::{self, ContentType};
-use crate::loader::{LoadManager, Loader};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
@@ -2256,30 +2256,16 @@ impl<'gc> MovieClip<'gc> {
         // introducing these regressions when trying to emulate that delay.
 
         if self.is_root() {
-            let unloader = Loader::MovieUnloader {
-                self_handle: None,
-                target_clip: DisplayObject::MovieClip(self),
-            };
-            let handle = context.load_manager.add_loader(unloader);
-
             let player = context.player_handle();
+            let mc = MovieClipHandle::stash(context, self);
             let future = Box::pin(async move {
                 player
                     .lock()
                     .unwrap()
                     .update(|uc| -> Result<(), loader::Error> {
-                        let clip = match uc.load_manager.get_loader(handle) {
-                            Some(Loader::MovieUnloader { target_clip, .. }) => *target_clip,
-                            None => return Err(loader::Error::Cancelled),
-                            _ => unreachable!(),
-                        };
-                        if let Some(mc) = clip.as_movie_clip() {
-                            mc.avm1_unload(uc);
-                            mc.transform_to_unloaded_state(uc);
-                        }
-
-                        uc.load_manager.remove_loader(handle);
-
+                        let mc = mc.fetch(uc);
+                        mc.avm1_unload(uc);
+                        mc.transform_to_unloaded_state(uc);
                         Ok(())
                     })?;
                 Ok(())
