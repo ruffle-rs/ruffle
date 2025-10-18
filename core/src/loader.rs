@@ -28,7 +28,7 @@ use crate::events::ClipEvent;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::limits::ExecutionLimit;
 use crate::player::{Player, PostFrameCallback};
-use crate::streams::NetStream;
+use crate::streams::{NetStream, NetStreamHandle};
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
@@ -50,6 +50,7 @@ use thiserror::Error;
 use url::{form_urlencoded, ParseError, Url};
 
 pub use ops::*;
+pub use ops2::*;
 
 new_key_type! {
     pub struct LoaderHandle;
@@ -186,9 +187,6 @@ pub enum Error {
     #[error("Non-sound loader spawned as sound loader")]
     NotSoundLoader,
 
-    #[error("Non-NetStream loader spawned as NetStream loader")]
-    NotNetStreamLoader,
-
     #[error("Other Loader spawned as Movie unloader")]
     NotMovieUnloader,
 
@@ -276,7 +274,6 @@ impl<'gc> LoadManager<'gc> {
             | Loader::LoadURLLoader { self_handle, .. }
             | Loader::SoundAvm1 { self_handle, .. }
             | Loader::SoundAvm2 { self_handle, .. }
-            | Loader::NetStream { self_handle, .. }
             | Loader::StyleSheet { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
@@ -584,21 +581,6 @@ impl<'gc> LoadManager<'gc> {
         loader.sound_loader_avm2(player, request)
     }
 
-    pub fn load_netstream(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        target_stream: NetStream<'gc>,
-        request: Request,
-    ) -> OwnedFuture<(), Error> {
-        let loader = Loader::NetStream {
-            self_handle: None,
-            target_stream,
-        };
-        let handle = self.add_loader(loader);
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.stream_loader(player, request)
-    }
-
     /// Process tags on all loaders in the Parsing phase.
     ///
     /// Returns true if *all* loaders finished preloading.
@@ -778,16 +760,6 @@ pub enum Loader<'gc> {
 
         /// The target AVM2 object to load the audio into.
         target_object: Avm2Object<'gc>,
-    },
-
-    /// Loader that is buffering video or audio into a NetStream.
-    NetStream {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
-
-        /// The stream to buffer data into.
-        target_stream: NetStream<'gc>,
     },
 
     /// Loader that is unloading a MovieClip.
@@ -1728,22 +1700,22 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
+}
 
-    fn stream_loader(
-        &mut self,
-        player: Weak<Mutex<Player>>,
+// NOTE: this module only exists to avoid large diffs with previous versions of the code.
+// (the functions defined here were previously in an `impl` block)
+mod ops {
+    use super::*;
+
+    /// Buffer video or audio into a NetStream.
+    #[must_use]
+    pub fn load_netstream<'gc>(
+        uc: &UpdateContext<'gc>,
+        stream: NetStream<'gc>,
         request: Request,
     ) -> OwnedFuture<(), Error> {
-        let handle = match self {
-            Loader::NetStream { self_handle, .. } => {
-                self_handle.expect("Loader not self-introduced")
-            }
-            _ => return Box::pin(async { Err(Error::NotNetStreamLoader) }),
-        };
-
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
+        let player = uc.player_handle();
+        let stream = NetStreamHandle::stash(uc, stream);
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
@@ -1751,13 +1723,8 @@ impl<'gc> Loader<'gc> {
                 Ok(mut response) => {
                     let expected_length = response.expected_length();
 
-                    player.lock().unwrap().update(|uc| {
-                        let loader = uc.load_manager.get_loader(handle);
-                        let stream = match loader {
-                            Some(&Loader::NetStream { target_stream, .. }) => target_stream,
-                            None => return Err(Error::Cancelled),
-                            _ => return Err(Error::NotNetStreamLoader),
-                        };
+                    player.lock().unwrap().update(|uc| -> Result<(), Error> {
+                        let stream = stream.fetch(uc);
 
                         stream.reset_buffer(uc);
                         if let Ok(Some(len)) = expected_length {
@@ -1770,13 +1737,8 @@ impl<'gc> Loader<'gc> {
                     loop {
                         let chunk = response.next_chunk().await;
                         let is_end = matches!(chunk, Ok(None));
-                        player.lock().unwrap().update(|uc| {
-                            let loader = uc.load_manager.get_loader(handle);
-                            let stream = match loader {
-                                Some(&Loader::NetStream { target_stream, .. }) => target_stream,
-                                None => return Err(Error::Cancelled),
-                                _ => return Err(Error::NotNetStreamLoader),
-                            };
+                        player.lock().unwrap().update(|uc| -> Result<(), Error> {
+                            let stream = stream.fetch(uc);
 
                             match chunk {
                                 Ok(Some(mut data)) => stream.load_buffer(uc, &mut data),
@@ -1794,12 +1756,7 @@ impl<'gc> Loader<'gc> {
                     Ok(())
                 }
                 Err(response) => player.lock().unwrap().update(|uc| {
-                    let loader = uc.load_manager.get_loader(handle);
-                    let stream = match loader {
-                        Some(&Loader::NetStream { target_stream, .. }) => target_stream,
-                        None => return Err(Error::Cancelled),
-                        _ => return Err(Error::NotNetStreamLoader),
-                    };
+                    let stream = stream.fetch(uc);
 
                     stream.report_error(response.error);
                     Ok(())
@@ -1807,7 +1764,9 @@ impl<'gc> Loader<'gc> {
             }
         })
     }
+}
 
+impl<'gc> Loader<'gc> {
     /// Report a movie loader start event to script code.
     fn movie_loader_start(handle: LoaderHandle, uc: &mut UpdateContext<'gc>) -> Result<(), Error> {
         let me = uc.load_manager.get_loader_mut(handle);
@@ -2572,7 +2531,9 @@ impl<'gc> Loader<'gc> {
     }
 }
 
-mod ops {
+// NOTE: this module only exists to avoid large diffs with previous versions of the code
+// (the functions defined here were previously in an `impl` block)
+mod ops2 {
     use super::*;
 
     /// Display a dialog allowing a user to select a file from an AVM1 scope.
