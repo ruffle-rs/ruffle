@@ -1596,7 +1596,7 @@ fn load_movie<'gc>(
     let target_obj = target.object1().coerce_to_object(activation);
     let request = activation.object_into_request(target_obj, url, method);
     let future = activation.context.load_manager.load_movie_into_clip(
-        activation.context.player.clone(),
+        activation.context.player_handle(),
         DisplayObject::MovieClip(target),
         request,
         None,

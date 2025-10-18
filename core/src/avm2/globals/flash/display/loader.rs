@@ -109,7 +109,7 @@ pub fn load<'gc>(
 
     let url = request.url().to_string();
     let future = activation.context.load_manager.load_movie_into_clip(
-        activation.context.player.clone(),
+        activation.context.player_handle(),
         content.into(),
         request,
         Some(url),

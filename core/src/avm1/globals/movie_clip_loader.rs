@@ -67,7 +67,7 @@ fn load_clip<'gc>(
             };
             if let Some(target) = target {
                 let future = activation.context.load_manager.load_movie_into_clip(
-                    activation.context.player.clone(),
+                    activation.context.player_handle(),
                     target,
                     Request::get(url.to_utf8_lossy().into_owned()),
                     None,
