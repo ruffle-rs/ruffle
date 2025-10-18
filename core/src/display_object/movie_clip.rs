@@ -1978,7 +1978,7 @@ impl<'gc> MovieClip<'gc> {
 
         self.set_object2(context.gc(), object);
 
-        if self.parent().is_none() {
+        if self.is_avm2_orphan() {
             self.add_as_orphan(context);
         }
     }
