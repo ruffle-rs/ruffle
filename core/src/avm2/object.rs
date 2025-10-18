@@ -125,8 +125,8 @@ pub use crate::avm2::object::responder_object::{
     responder_allocator, ResponderObject, ResponderObjectWeak,
 };
 pub use crate::avm2::object::script_object::{
-    get_dynamic_property, scriptobject_allocator, ScriptObject, ScriptObjectData, ScriptObjectWeak,
-    ScriptObjectWrapper,
+    get_dynamic_property, scriptobject_allocator, ScriptObject, ScriptObjectData,
+    ScriptObjectHandle, ScriptObjectWeak, ScriptObjectWrapper,
 };
 pub use crate::avm2::object::security_domain_object::{
     SecurityDomainObject, SecurityDomainObjectWeak,
@@ -749,6 +749,7 @@ impl<'gc> Object<'gc> {
     }
 
     impl_downcast_methods! {
+        pub fn as_script_object for ScriptObject;
         pub fn as_class_object for ClassObject;
         pub fn as_function_object for FunctionObject;
         pub fn as_namespace_object for NamespaceObject;

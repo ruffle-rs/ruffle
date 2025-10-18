@@ -8,7 +8,8 @@ use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::globals::flash::utils::byte_array::strip_bom;
 use crate::avm2::object::{
     ByteArrayObject, EventObject as Avm2EventObject, FileReferenceObject,
-    FileReferenceObjectHandle, LoaderInfoObject, LoaderStream, SoundLoadingState, SoundObject,
+    FileReferenceObjectHandle, LoaderInfoObject, LoaderStream, ScriptObject as Avm2ScriptObject,
+    ScriptObjectHandle as Avm2ScriptObjectHandle, SoundLoadingState, SoundObject,
     SoundObjectHandle, TObject as _,
 };
 use crate::avm2::{
@@ -182,9 +183,6 @@ pub enum Error {
     #[error("Non-load vars loader spawned as load vars loader")]
     NotLoadVarsLoader,
 
-    #[error("Non-data loader spawned as data loader")]
-    NotLoadDataLoader,
-
     #[error("Other Loader spawned as Movie unloader")]
     NotMovieUnloader,
 
@@ -269,7 +267,6 @@ impl<'gc> LoadManager<'gc> {
             | Loader::Movie { self_handle, .. }
             | Loader::Form { self_handle, .. }
             | Loader::LoadVars { self_handle, .. }
-            | Loader::LoadURLLoader { self_handle, .. }
             | Loader::StyleSheet { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
@@ -521,25 +518,6 @@ impl<'gc> LoadManager<'gc> {
         loader.load_stylesheet_loader(player, request)
     }
 
-    /// Kick off a data load into a `URLLoader`, updating
-    /// its `data` property when the load completes.
-    ///
-    /// Returns the loader's async process, which you will need to spawn.
-    pub fn load_data_into_url_loader(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        target_object: Avm2Object<'gc>,
-        request: Request,
-    ) -> OwnedFuture<(), Error> {
-        let loader = Loader::LoadURLLoader {
-            self_handle: None,
-            target_object,
-        };
-        let handle = self.add_loader(loader);
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.load_url_loader(player, request)
-    }
-
     /// Process tags on all loaders in the Parsing phase.
     ///
     /// Returns true if *all* loaders finished preloading.
@@ -688,17 +666,6 @@ pub enum Loader<'gc> {
 
         /// The target AVM1 object to load form data into.
         target_object: Object<'gc>,
-    },
-
-    /// Loader that is loading data into a `URLLoader`'s `data` property
-    /// The `data` property is only updated after the data is loaded completely
-    LoadURLLoader {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
-
-        /// The target `URLLoader` to load data into.
-        target_object: Avm2Object<'gc>,
     },
 
     /// Loader that is unloading a MovieClip.
@@ -1318,35 +1285,32 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
+}
 
-    /// Creates a future for a LoadURLLoader load call.
-    fn load_url_loader(
-        &mut self,
-        player: Weak<Mutex<Player>>,
+// NOTE: this module only exists to avoid large diffs with previous versions of the code.
+// (the functions defined here were previously in an `impl` block)
+mod ops {
+    use super::*;
+
+    /// Kick off a data load into a `URLLoader`, updating
+    /// its `data` property when the load completes.
+    ///
+    /// Returns the loader's async process, which you will need to spawn.
+    #[must_use]
+    pub fn load_data_into_url_loader<'gc>(
+        uc: &UpdateContext<'gc>,
+        target: Avm2ScriptObject<'gc>,
         request: Request,
     ) -> OwnedFuture<(), Error> {
-        let handle = match self {
-            Loader::LoadURLLoader { self_handle, .. } => {
-                self_handle.expect("Loader not self-introduced")
-            }
-            _ => return Box::pin(async { Err(Error::NotLoadDataLoader) }),
-        };
-
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
+        let player = uc.player_handle();
+        let target = Avm2ScriptObjectHandle::stash(uc, target);
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = Self::wait_for_full_response(fetch).await;
+            let response = Loader::wait_for_full_response(fetch).await;
 
             player.lock().unwrap().update(|uc| {
-                let loader = uc.load_manager.get_loader(handle);
-                let target = match loader {
-                    Some(&Loader::LoadURLLoader { target_object, .. }) => target_object,
-                    // We would have already returned after the previous 'update' call
-                    _ => unreachable!(),
-                };
+                let target = Avm2Object::from(target.fetch(uc));
 
                 let mut activation = Avm2Activation::from_nothing(uc);
 
@@ -1485,12 +1449,6 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
-}
-
-// NOTE: this module only exists to avoid large diffs with previous versions of the code.
-// (the functions defined here were previously in an `impl` block)
-mod ops {
-    use super::*;
 
     /// Kick off an AVM1 audio load.
     ///
