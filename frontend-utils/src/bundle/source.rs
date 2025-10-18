@@ -1,3 +1,5 @@
+use ::zip::result::ZipError;
+
 use crate::bundle::info::BUNDLE_INFORMATION_FILENAME;
 use crate::bundle::source::zip::ZipSource;
 use std::ffi::OsStr;
@@ -31,8 +33,8 @@ pub enum BundleSourceError {
     #[error("Unknown bundle source")]
     UnknownSource,
 
-    #[error("Invalid or corrupt zip")]
-    InvalidZip,
+    #[error("Invalid or corrupt archive: {0}")]
+    InvalidArchive(#[from] ZipError),
 
     #[error("IO error opening file: {0}")]
     Io(#[from] Error),
@@ -65,11 +67,8 @@ impl BundleSource {
     }
 
     pub fn from_reader<R: Read + Seek + 'static>(reader: R) -> Result<Self, BundleSourceError> {
-        return if let Ok(zip) = ZipSource::<Box<dyn BundleSourceData>>::open(Box::new(reader)) {
-            Ok(Self::ZipFile(zip))
-        } else {
-            Err(BundleSourceError::InvalidZip)
-        };
+        let zip_source = ZipSource::<Box<dyn BundleSourceData>>::open(Box::new(reader))?;
+        Ok(Self::ZipFile(zip_source))
     }
 
     /// Reads any file from the bundle.
