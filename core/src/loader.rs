@@ -177,9 +177,6 @@ pub enum Error {
     #[error("Non-movie loader spawned as movie loader")]
     NotMovieLoader,
 
-    #[error("Non-form loader spawned as form loader")]
-    NotFormLoader,
-
     #[error("Other Loader spawned as Movie unloader")]
     NotMovieUnloader,
 
@@ -262,7 +259,6 @@ impl<'gc> LoadManager<'gc> {
         match self.get_loader_mut(handle).unwrap() {
             Loader::RootMovie { self_handle, .. }
             | Loader::Movie { self_handle, .. }
-            | Loader::Form { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
@@ -459,24 +455,6 @@ impl<'gc> LoadManager<'gc> {
         }
     }
 
-    /// Kick off a form data load into an AVM1 object.
-    ///
-    /// Returns the loader's async process, which you will need to spawn.
-    pub fn load_form_into_object(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        target_object: Object<'gc>,
-        request: Request,
-    ) -> OwnedFuture<(), Error> {
-        let loader = Loader::Form {
-            self_handle: None,
-            target_object,
-        };
-        let handle = self.add_loader(loader);
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.form_loader(player, request)
-    }
-
     /// Process tags on all loaders in the Parsing phase.
     ///
     /// Returns true if *all* loaders finished preloading.
@@ -605,16 +583,6 @@ pub enum Loader<'gc> {
 
         /// Whether or not this was loaded as a result of a `Loader.loadBytes` call
         from_bytes: bool,
-    },
-
-    /// Loader that is loading form data into an AVM1 object scope.
-    Form {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
-
-        /// The target AVM1 object to load form data into.
-        target_object: Object<'gc>,
     },
 
     /// Loader that is unloading a MovieClip.
@@ -978,20 +946,24 @@ impl<'gc> Loader<'gc> {
 
         Loader::movie_loader_data(handle, uc, &bytes, "file:///".into(), 0, false, loader_url)
     }
+}
 
-    fn form_loader(
-        &mut self,
-        player: Weak<Mutex<Player>>,
+// NOTE: this module only exists to avoid large diffs with previous versions of the code.
+// (the functions defined here were previously in an `impl` block)
+mod ops {
+    use super::*;
+
+    /// Kick off a form data load into an AVM1 object.
+    ///
+    /// Returns the loader's async process, which you will need to spawn.
+    #[must_use]
+    pub fn load_form_into_object<'gc>(
+        uc: &UpdateContext<'gc>,
+        target_object: Object<'gc>,
         request: Request,
     ) -> OwnedFuture<(), Error> {
-        let handle = match self {
-            Loader::Form { self_handle, .. } => self_handle.expect("Loader not self-introduced"),
-            _ => return Box::pin(async { Err(Error::NotFormLoader) }),
-        };
-
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
+        let player = uc.player_handle();
+        let target_object = ObjectHandle::stash(uc, target_object);
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
@@ -1002,12 +974,7 @@ impl<'gc> Loader<'gc> {
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
-                let loader = uc.load_manager.get_loader(handle);
-                let that = match loader {
-                    Some(&Loader::Form { target_object, .. }) => target_object,
-                    None => return Err(Error::Cancelled),
-                    _ => return Err(Error::NotFormLoader),
-                };
+                let that = target_object.fetch(uc);
 
                 let mut activation =
                     Activation::from_stub(uc, ActivationIdentifier::root("[Form Loader]"));
@@ -1059,12 +1026,6 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
-}
-
-// NOTE: this module only exists to avoid large diffs with previous versions of the code.
-// (the functions defined here were previously in an `impl` block)
-mod ops {
-    use super::*;
 
     /// Kick off a form data load into an `LoadVars` AVM1 object.
     ///

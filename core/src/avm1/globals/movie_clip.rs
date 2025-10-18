@@ -1618,11 +1618,7 @@ fn load_variables<'gc>(
     let method = NavigationMethod::from_method_str(&method.coerce_to_string(activation)?);
     let target = target.object1().coerce_to_object(activation);
     let request = activation.object_into_request(target, url, method);
-    let future = activation.context.load_manager.load_form_into_object(
-        activation.context.player.clone(),
-        target,
-        request,
-    );
+    let future = crate::loader::load_form_into_object(activation.context, target, request);
     activation.context.navigator.spawn_future(future);
 
     Ok(Value::Undefined)

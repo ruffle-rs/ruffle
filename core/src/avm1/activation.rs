@@ -1289,11 +1289,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         url,
                         NavigationMethod::from_send_vars_method(action.send_vars_method()),
                     );
-                    let future = self.context.load_manager.load_form_into_object(
-                        self.context.player.clone(),
-                        target_obj,
-                        request,
-                    );
+                    let future =
+                        crate::loader::load_form_into_object(self.context, target_obj, request);
                     self.context.navigator.spawn_future(future);
                 }
                 return Ok(FrameControl::Continue);
