@@ -459,8 +459,8 @@ impl Player {
         on_metadata: Box<dyn FnOnce(&swf::HeaderExt)>,
     ) {
         self.mutate_with_update_context(|context| {
-            let future = context.load_manager.load_root_movie(
-                context.player.clone(),
+            let future = crate::loader::load_root_movie(
+                context,
                 Request::get(movie_url),
                 parameters,
                 on_metadata,
