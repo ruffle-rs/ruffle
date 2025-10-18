@@ -211,9 +211,6 @@ pub enum Error {
     #[error("Unexpected content of type {1}, expected {0}")]
     UnexpectedData(ContentType, ContentType),
 
-    #[error("Non-file dialog loader spawned as file dialog loader")]
-    NotFileDialogLoader,
-
     #[error("Could not fetch: {0:?}")]
     FetchError(String),
 
@@ -280,8 +277,6 @@ impl<'gc> LoadManager<'gc> {
             | Loader::SoundAvm1 { self_handle, .. }
             | Loader::SoundAvm2 { self_handle, .. }
             | Loader::NetStream { self_handle, .. }
-            | Loader::FileDialog { self_handle, .. }
-            | Loader::FileDialogAvm2 { self_handle, .. }
             | Loader::StyleSheet { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
@@ -651,41 +646,6 @@ impl<'gc> LoadManager<'gc> {
             }
         }
     }
-
-    /// Display a dialog allowing a user to select a file
-    ///
-    /// Returns a future that will be resolved when a file is selected
-    #[must_use]
-    pub fn select_file_dialog(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        target_object: Object<'gc>,
-        dialog: DialogResultFuture,
-    ) -> OwnedFuture<(), Error> {
-        let loader = Loader::FileDialog {
-            self_handle: None,
-            target_object,
-        };
-        let handle = self.add_loader(loader);
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.file_dialog_loader(player, dialog)
-    }
-
-    #[must_use]
-    pub fn select_file_dialog_avm2(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        target_object: FileReferenceObject<'gc>,
-        dialog: DialogResultFuture,
-    ) -> OwnedFuture<(), Error> {
-        let loader = Loader::FileDialogAvm2 {
-            self_handle: None,
-            target_object,
-        };
-        let handle = self.add_loader(loader);
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.file_dialog_loader(player, dialog)
-    }
 }
 
 impl Default for LoadManager<'_> {
@@ -838,26 +798,6 @@ pub enum Loader<'gc> {
 
         /// The target MovieClip to unload.
         target_clip: DisplayObject<'gc>,
-    },
-
-    /// Loader that is choosing a file from an AVM1 object scope.
-    FileDialog {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
-
-        /// The target AVM1 object to select a file path from.
-        target_object: Object<'gc>,
-    },
-
-    /// Loader that is choosing a file from an AVM2 scope.
-    FileDialogAvm2 {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
-
-        /// The target AVM2 object to set to the selected file path.
-        target_object: FileReferenceObject<'gc>,
     },
 
     /// Loader that is downloading a stylesheet
@@ -2630,23 +2570,48 @@ impl<'gc> Loader<'gc> {
             }
         }
     }
+}
 
-    /// Loader to process callbacks for a file selection dialog
-    pub fn file_dialog_loader(
-        &mut self,
-        player: Weak<Mutex<Player>>,
+mod ops {
+    use super::*;
+
+    /// Display a dialog allowing a user to select a file from an AVM1 scope.
+    ///
+    /// Returns a future that will be resolved when a file is selected.
+    #[must_use]
+    pub fn select_file_dialog_avm1<'gc>(
+        uc: &UpdateContext<'gc>,
+        target_object: Object<'gc>,
         dialog: DialogResultFuture,
     ) -> OwnedFuture<(), Error> {
-        let handle = match self {
-            Loader::FileDialog { self_handle, .. } | Loader::FileDialogAvm2 { self_handle, .. } => {
-                self_handle.expect("Loader not self-introduced")
-            }
-            _ => return Box::pin(async { Err(Error::NotFileDialogLoader) }),
-        };
+        let handle = ObjectHandle::stash(uc, target_object);
+        select_file_dialog(uc, FileReferenceHandle::Avm1(handle), dialog)
+    }
 
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
+    /// Display a dialog allowing a user to select a file from an AVM2 scope.
+    ///
+    /// Returns a future that will be resolved when a file is selected.
+    #[must_use]
+    pub fn select_file_dialog_avm2<'gc>(
+        uc: &UpdateContext<'gc>,
+        target_object: FileReferenceObject<'gc>,
+        dialog: DialogResultFuture,
+    ) -> OwnedFuture<(), Error> {
+        let handle = FileReferenceObjectHandle::stash(uc, target_object);
+        select_file_dialog(uc, FileReferenceHandle::Avm2(handle), dialog)
+    }
+
+    enum FileReferenceHandle {
+        Avm1(ObjectHandle),
+        Avm2(FileReferenceObjectHandle),
+    }
+
+    fn select_file_dialog<'gc>(
+        uc: &UpdateContext<'gc>,
+        target_object: FileReferenceHandle,
+        dialog: DialogResultFuture,
+    ) -> OwnedFuture<(), Error> {
+        let player = uc.player_handle();
 
         Box::pin(async move {
             let dialog_result = dialog.await;
@@ -2656,9 +2621,10 @@ impl<'gc> Loader<'gc> {
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
-                let loader = uc.load_manager.get_loader(handle);
-                match loader {
-                    Some(&Loader::FileDialog { target_object, .. }) => {
+                match target_object {
+                    FileReferenceHandle::Avm1(target_object) => {
+                        let target_object = target_object.fetch(uc);
+
                         let file_ref = match target_object.native() {
                             NativeObject::FileReference(fr) => fr,
                             _ => panic!("NativeObject must be FileReference"),
@@ -2697,7 +2663,8 @@ impl<'gc> Loader<'gc> {
                         }
                         Ok(())
                     }
-                    Some(&Loader::FileDialogAvm2 { target_object, .. }) => {
+                    FileReferenceHandle::Avm2(target_object) => {
+                        let target_object = target_object.fetch(uc);
                         match dialog_result {
                             Ok(dialog_result) => {
                                 if !dialog_result.is_cancelled() {
@@ -2733,16 +2700,10 @@ impl<'gc> Loader<'gc> {
 
                         Ok(())
                     }
-                    None => Err(Error::Cancelled),
-                    _ => Err(Error::NotFileDialogLoader),
                 }
             })
         })
     }
-}
-
-mod ops {
-    use super::*;
 
     /// Display a dialog allowing a user to save a file to disk from an AVM2 scope.
     #[must_use]
