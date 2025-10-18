@@ -1,0 +1,4 @@
+PASSED:  [submoviegetvar.sc:46]
+PASSED:  [submoviegetvar.sc:52]
+PASSED:  [submoviegetvar.sc:58]
+ENDOFTEST

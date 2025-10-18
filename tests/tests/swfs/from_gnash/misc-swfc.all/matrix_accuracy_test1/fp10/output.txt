@@ -1,0 +1,18 @@
+PASSED: mc1._xscale == 100  [matrix_accuracy_test1.sc:38]
+PASSED: mc1._yscale == 100  [matrix_accuracy_test1.sc:39]
+PASSED: mc1._xscale == 100  [matrix_accuracy_test1.sc:41]
+PASSED: mc1._yscale == 100  [matrix_accuracy_test1.sc:42]
+PASSED: mc1._xscale == 100  [matrix_accuracy_test1.sc:44]
+PASSED: mc1._yscale == 100  [matrix_accuracy_test1.sc:45]
+PASSED: mc1._rotation == 60  [matrix_accuracy_test1.sc:47]
+FAILED: mc1._x: expected: "-1" , obtained: "-107374182.4"  [matrix_accuracy_test1.sc:57]
+FAILED: mc1._y: expected: "-256" , obtained: "-107374182.4"  [matrix_accuracy_test1.sc:59]
+PASSED: mc1._xscale == -1  [matrix_accuracy_test1.sc:63]
+PASSED: mc1._xscale == 4294967295  [matrix_accuracy_test1.sc:65]
+FAILED: mc1._width: expected: "2359295" , obtained: "3276800"  [matrix_accuracy_test1.sc:66]
+PASSED: mc1._height == 30  [matrix_accuracy_test1.sc:67]
+FAILED: mc1._height: expected: "0" , obtained: "983040"  [matrix_accuracy_test1.sc:69]
+FAILED: mc1._height: expected: "180" , obtained: "983040"  [matrix_accuracy_test1.sc:71]
+#passed: 10
+#failed: 5
+__END_OF_TEST__
