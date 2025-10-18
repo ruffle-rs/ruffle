@@ -599,6 +599,14 @@ pub fn optimize<'gc>(
         }
     }
 
+    if method.is_variadic() {
+        // Set the local variable holding restargs/arguments to the `Array` type
+        let mut array_type = OptValue::of_type(types.array);
+        array_type.null_state = NullState::NotNull;
+
+        initial_local_types.set(resolved_parameters.len() + 1, array_type);
+    }
+
     let empty_stack = Stack::new(method_body.max_stack as usize);
     let empty_scope_stack =
         ScopeStack::new((method_body.max_scope_depth - method_body.init_scope_depth) as usize);
@@ -1197,6 +1205,9 @@ fn abstract_interpret_ops<'gc>(
                 let local_type = locals.at(index as usize);
                 stack.push(activation, local_type)?;
             }
+            Op::StoreLocal { .. } => {
+                unreachable!("Only the peephole optimizer emits StoreLocal")
+            }
             Op::FindPropStrict { multiname } | Op::FindProperty { multiname } => {
                 let outer_scope = activation.outer();
                 if outer_scope.is_empty() && scope_stack.is_empty() {
@@ -1371,7 +1382,7 @@ fn abstract_interpret_ops<'gc>(
                 }
             }
             Op::SetSlot { index: slot_id } => {
-                let _set_value = stack.pop(activation)?;
+                let set_value = stack.pop(activation)?;
                 let stack_value = stack.pop(activation)?;
 
                 // The value must have a vtable
@@ -1380,7 +1391,7 @@ fn abstract_interpret_ops<'gc>(
                 };
 
                 // The slot must be a valid slot
-                let Some(_value_class) = vtable.slot_class(slot_id) else {
+                let Some(mut value_class) = vtable.slot_class(slot_id) else {
                     // We store slots 0-indexed, but FP stores them 1-indexed; add
                     // 1 to the slot id to make the error message match FP
                     return Err(make_error_1026(
@@ -1390,7 +1401,14 @@ fn abstract_interpret_ops<'gc>(
                     ));
                 };
 
-                // TODO: Optimize the op to SetSlotNoCoerce when possible
+                let resolved_value_class = value_class.get_class(activation)?;
+
+                vtable.set_slot_class(activation.gc(), slot_id, value_class);
+
+                // Skip the coercion when possible
+                if set_value.matches_type(resolved_value_class) {
+                    optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
+                }
             }
             Op::GetPropertyStatic { multiname } => {
                 // Verifier only emits this op when the multiname is static
@@ -1487,6 +1505,8 @@ fn abstract_interpret_ops<'gc>(
                                     vtable.slot_class(slot_id).expect("Slot should exist");
                                 let resolved_value_class = value_class.get_class(activation)?;
 
+                                vtable.set_slot_class(activation.gc(), slot_id, value_class);
+
                                 if set_value.matches_type(resolved_value_class) {
                                     optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
                                 } else {
@@ -1539,6 +1559,8 @@ fn abstract_interpret_ops<'gc>(
                             let mut value_class =
                                 vtable.slot_class(slot_id).expect("Slot should exist");
                             let resolved_value_class = value_class.get_class(activation)?;
+
+                            vtable.set_slot_class(activation.gc(), slot_id, value_class);
 
                             if set_value.matches_type(resolved_value_class) {
                                 optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });

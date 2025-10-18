@@ -92,6 +92,20 @@ pub fn postprocess_peephole(
                     current_op.set(Op::GetLocal { index: 0 })
                 }
             }
+            (Some(last_op), Some(Op::Dup), Op::SetLocal { index }) => {
+                // Dup+SetLocal becomes Nop+StoreLocal
+                last_op.set(Op::Nop);
+                current_op.set(Op::StoreLocal { index });
+            }
+            (
+                Some(last_op),
+                Some(Op::SetLocal { index: index1 }),
+                Op::GetLocal { index: index2 },
+            ) if index1 == index2 => {
+                // SetLocal+GetLocal becomes Nop+StoreLocal
+                last_op.set(Op::Nop);
+                current_op.set(Op::StoreLocal { index: index1 });
+            }
             _ => {}
         }
 
