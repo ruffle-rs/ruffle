@@ -1654,33 +1654,64 @@ impl Player {
                         }
                     }
 
-                    // While dragging, dispatch hover roll events only for AVM2 targets.
-                    if let Some(cur_over_object) = cur_over_object {
-                        if cur_over_object
-                            .as_displayobject()
-                            .movie()
-                            .is_action_script_3()
-                        {
-                            events.push((
-                                cur_over_object,
-                                ClipEvent::RollOut {
-                                    to: new_over_object,
-                                },
-                            ));
+                    // While dragging, dispatch hover roll/drag events.
+                    // Suppress RollOver/RollOut and DragOver/DragOut events to hovered objects while AVM1 startDrag is active
+                    let suppress_hover_events = context.drag_object.is_some()
+                        && !context.stage.movie().is_action_script_3();
+
+                    if !suppress_hover_events {
+                        // For AVM1, avoid roll events while dragging; only drag events should be emitted.
+                        let allow_roll_while_dragging = context.stage.movie().is_action_script_3();
+
+                        if let Some(cur_over_object) = cur_over_object {
+                            if allow_roll_while_dragging {
+                                events.push((
+                                    cur_over_object,
+                                    ClipEvent::RollOut {
+                                        to: new_over_object,
+                                    },
+                                ));
+                            }
+                            if !InteractiveObject::option_ptr_eq(
+                                context.mouse_data.pressed,
+                                Some(cur_over_object),
+                            ) && !cur_over_object
+                                .as_displayobject()
+                                .movie()
+                                .is_action_script_3()
+                            {
+                                events.push((
+                                    cur_over_object,
+                                    ClipEvent::DragOut {
+                                        to: new_over_object,
+                                    },
+                                ));
+                            }
                         }
-                    }
-                    if let Some(new_over_object) = new_over_object {
-                        if new_over_object
-                            .as_displayobject()
-                            .movie()
-                            .is_action_script_3()
-                        {
-                            events.push((
-                                new_over_object,
-                                ClipEvent::RollOver {
-                                    from: cur_over_object,
-                                },
-                            ));
+                        if let Some(new_over_object) = new_over_object {
+                            if allow_roll_while_dragging {
+                                events.push((
+                                    new_over_object,
+                                    ClipEvent::RollOver {
+                                        from: cur_over_object,
+                                    },
+                                ));
+                            }
+                            if !InteractiveObject::option_ptr_eq(
+                                context.mouse_data.pressed,
+                                Some(new_over_object),
+                            ) && !new_over_object
+                                .as_displayobject()
+                                .movie()
+                                .is_action_script_3()
+                            {
+                                events.push((
+                                    new_over_object,
+                                    ClipEvent::DragOver {
+                                        from: cur_over_object,
+                                    },
+                                ));
+                            }
                         }
                     }
                 } else {
