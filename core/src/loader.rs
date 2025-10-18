@@ -180,9 +180,6 @@ pub enum Error {
     #[error("Non-form loader spawned as form loader")]
     NotFormLoader,
 
-    #[error("Non-load vars loader spawned as load vars loader")]
-    NotLoadVarsLoader,
-
     #[error("Other Loader spawned as Movie unloader")]
     NotMovieUnloader,
 
@@ -266,7 +263,6 @@ impl<'gc> LoadManager<'gc> {
             Loader::RootMovie { self_handle, .. }
             | Loader::Movie { self_handle, .. }
             | Loader::Form { self_handle, .. }
-            | Loader::LoadVars { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
         handle
@@ -481,24 +477,6 @@ impl<'gc> LoadManager<'gc> {
         loader.form_loader(player, request)
     }
 
-    /// Kick off a form data load into an AVM1 object.
-    ///
-    /// Returns the loader's async process, which you will need to spawn.
-    pub fn load_form_into_load_vars(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        target_object: Object<'gc>,
-        request: Request,
-    ) -> OwnedFuture<(), Error> {
-        let loader = Loader::LoadVars {
-            self_handle: None,
-            target_object,
-        };
-        let handle = self.add_loader(loader);
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.load_vars_loader(player, request)
-    }
-
     /// Process tags on all loaders in the Parsing phase.
     ///
     /// Returns true if *all* loaders finished preloading.
@@ -631,16 +609,6 @@ pub enum Loader<'gc> {
 
     /// Loader that is loading form data into an AVM1 object scope.
     Form {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
-
-        /// The target AVM1 object to load form data into.
-        target_object: Object<'gc>,
-    },
-
-    /// Loader that is loading form data into an AVM1 LoadVars object.
-    LoadVars {
         /// The handle to refer to this loader instance.
         #[collect(require_static)]
         self_handle: Option<LoaderHandle>,
@@ -1091,36 +1059,32 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
+}
 
-    /// Creates a future for a LoadVars load call.
-    fn load_vars_loader(
-        &mut self,
-        player: Weak<Mutex<Player>>,
+// NOTE: this module only exists to avoid large diffs with previous versions of the code.
+// (the functions defined here were previously in an `impl` block)
+mod ops {
+    use super::*;
+
+    /// Kick off a form data load into an `LoadVars` AVM1 object.
+    ///
+    /// Returns the loader's async process, which you will need to spawn.
+    #[must_use]
+    pub fn load_form_into_load_vars<'gc>(
+        uc: &UpdateContext<'gc>,
+        target_object: Object<'gc>,
         request: Request,
     ) -> OwnedFuture<(), Error> {
-        let handle = match self {
-            Loader::LoadVars { self_handle, .. } => {
-                self_handle.expect("Loader not self-introduced")
-            }
-            _ => return Box::pin(async { Err(Error::NotLoadVarsLoader) }),
-        };
-
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
+        let player = uc.player_handle();
+        let target_object = ObjectHandle::stash(uc, target_object);
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = Self::wait_for_full_response(fetch).await;
+            let response = Loader::wait_for_full_response(fetch).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
-                let loader = uc.load_manager.get_loader(handle);
-                let that = match loader {
-                    Some(&Loader::LoadVars { target_object, .. }) => target_object,
-                    None => return Err(Error::Cancelled),
-                    _ => return Err(Error::NotLoadVarsLoader),
-                };
+                let that = target_object.fetch(uc);
 
                 let mut activation =
                     Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
@@ -1187,12 +1151,6 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
-}
-
-// NOTE: this module only exists to avoid large diffs with previous versions of the code.
-// (the functions defined here were previously in an `impl` block)
-mod ops {
-    use super::*;
 
     /// Kick off an AVM1 StyleSheet load.
     ///
