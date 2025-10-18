@@ -177,9 +177,6 @@ pub enum Error {
     #[error("Non-movie loader spawned as movie loader")]
     NotMovieLoader,
 
-    #[error("Other Loader spawned as Movie unloader")]
-    NotMovieUnloader,
-
     #[error("HTTP Status is not OK: {0} status: {1} redirected: {2} length: {3}")]
     HttpNotOk(String, u16, bool, u64),
 
@@ -257,9 +254,9 @@ impl<'gc> LoadManager<'gc> {
     pub fn add_loader(&mut self, loader: Loader<'gc>) -> LoaderHandle {
         let handle = self.0.insert(loader);
         match self.get_loader_mut(handle).unwrap() {
-            Loader::RootMovie { self_handle, .. }
-            | Loader::Movie { self_handle, .. }
-            | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
+            Loader::RootMovie { self_handle, .. } | Loader::Movie { self_handle, .. } => {
+                *self_handle = Some(handle)
+            }
         }
         handle
     }
@@ -583,16 +580,6 @@ pub enum Loader<'gc> {
 
         /// Whether or not this was loaded as a result of a `Loader.loadBytes` call
         from_bytes: bool,
-    },
-
-    /// Loader that is unloading a MovieClip.
-    MovieUnloader {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
-
-        /// The target MovieClip to unload.
-        target_clip: DisplayObject<'gc>,
     },
 }
 
