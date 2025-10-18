@@ -1,0 +1,29 @@
+num_ticks = 30
+
+
+[image_comparisons.frame1]
+tolerance = 5
+trigger = 2
+
+[image_comparisons.frame2]
+tolerance = 5
+trigger = 3
+
+[image_comparisons.frame3]
+tolerance = 5
+trigger = 4
+
+[image_comparisons.frame4]
+tolerance = 5
+trigger = 5
+
+[image_comparisons.frame5]
+tolerance = 5
+trigger = 6
+
+[image_comparisons.frame6]
+tolerance = 5
+trigger = 7
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

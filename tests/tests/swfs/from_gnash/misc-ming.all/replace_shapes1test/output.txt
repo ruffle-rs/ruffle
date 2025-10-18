@@ -1,0 +1,23 @@
+PASSED: typeof(static1)  ==  'movieclip' [replace_shapes1test.c:153]
+PASSED: static1  ==  _root [replace_shapes1test.c:154]
+PASSED: static1.name  ==  'static1' [replace_shapes1test.c:155]
+PASSED: _root.name  ==  'static1' [replace_shapes1test.c:156]
+PASSED: static1.name  ==  'static1' [replace_shapes1test.c:160]
+PASSED: static1._target  ==  '/' [replace_shapes1test.c:162]
+PASSED: typeof(static1)  ==  'movieclip' [replace_shapes1test.c:185]
+PASSED: static1  ==  _root [replace_shapes1test.c:186]
+PASSED: static1.name  ==  'static1' [replace_shapes1test.c:187]
+PASSED: _root.name  ==  'static1' [replace_shapes1test.c:188]
+PASSED: typeof(static2)  ==  'undefined' [replace_shapes1test.c:191]
+PASSED: undefined == undefined
+PASSED: movieclip == movieclip
+PASSED: static1 == static1
+#passed: 14
+#failed: 0
+#total tests run: 14
+PASSED: typeof(static1)  ==  'movieclip' [replace_shapes1test.c:153]
+PASSED: static1  ==  _root [replace_shapes1test.c:154]
+PASSED: static1.name  ==  'static1' [replace_shapes1test.c:155]
+PASSED: _root.name  ==  'static1' [replace_shapes1test.c:156]
+PASSED: static1.name  ==  'static1' [replace_shapes1test.c:160]
+PASSED: static1._target  ==  '/' [replace_shapes1test.c:162]

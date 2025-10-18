@@ -1,0 +1,18 @@
+PASSED: typeof(static1)  ==  'object' [replace_buttons1test.c:166]
+PASSED: static1._target  ==  '/static1' [replace_buttons1test.c:167]
+PASSED: static1.name  ==  'static1' [replace_buttons1test.c:168]
+PASSED: typeof(static2)  ==  'undefined' [replace_buttons1test.c:192]
+PASSED: typeof(static1)  ==  'object' [replace_buttons1test.c:193]
+PASSED: static1._target  ==  '/static1' [replace_buttons1test.c:194]
+PASSED: static1.name  ==  'static1' [replace_buttons1test.c:195]
+PASSED: static1._x  ==  130 [replace_buttons1test.c:196]
+PASSED: typeof(static2)  ==  'undefined' [replace_buttons1test.c:199]
+PASSED: undefined == undefined
+PASSED: object == object
+PASSED: undefined == undefined
+#passed: 12
+#failed: 0
+#total tests run: 12
+PASSED: typeof(static1)  ==  'object' [replace_buttons1test.c:166]
+PASSED: static1._target  ==  '/static1' [replace_buttons1test.c:167]
+PASSED: static1.name  ==  'static1' [replace_buttons1test.c:168]

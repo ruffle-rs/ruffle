@@ -1,0 +1,10 @@
+PASSED: mc1.hitTest(28, 28, true) [masks_test2.c:107]
+PASSED: mc2.hitTest(58, 58, true) [masks_test2.c:108]
+PASSED: mc3.hitTest(88, 88, true) [masks_test2.c:109]
+PASSED: mc4.hitTest(118, 118, true) [masks_test2.c:110]
+PASSED: mc5.hitTest(148, 148, true) [masks_test2.c:111]
+PASSED: mc6.hitTest(178, 178, true) [masks_test2.c:112]
+PASSED: mc7.hitTest(208, 208, true) [masks_test2.c:125]
+#passed: 7
+#failed: 0
+#total tests run: 7

@@ -1,0 +1,12 @@
+frm2 of root - gotoAndStop(3)
+frm1 of mc_red - gotoAndStop(2)
+PASSED: as_in_frm1_of_mc_red == as_in_frm1_of_mc_red
+frm3 of root - gotoAndStop(4)
+frm2 of mc_red - gotoAndStop(3)
+PASSED: as_in_frm2_of_mc_red == as_in_frm2_of_mc_red
+frm4 of root - gotoAndStop(5)
+frm3 of mc_red - gotoAndStop(4)
+PASSED: mc_red.x  ==  'as_in_frm3_of_mc_red' [consecutive_goto_frame_test.c:114]
+#passed: 3
+#failed: 0
+#total tests run: 3

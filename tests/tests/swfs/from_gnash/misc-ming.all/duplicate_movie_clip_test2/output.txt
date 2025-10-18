@@ -1,0 +1,21 @@
+PASSED: movieclip == movieclip
+PASSED: movieclip == movieclip
+PASSED: movieclip == movieclip
+PASSED: undefined == undefined
+PASSED: undefined == undefined
+PASSED: typeof(dup1)  ==  'movieclip' [duplicate_movie_clip_test2.c:116]
+PASSED: typeof(dup1)  ==  'undefined' [duplicate_movie_clip_test2.c:118]
+PASSED: typeof(dup2)  ==  'movieclip' [duplicate_movie_clip_test2.c:121]
+PASSED: typeof(dup2)  ==  'undefined' [duplicate_movie_clip_test2.c:123]
+PASSED: typeof(dup3)  ==  'movieclip' [duplicate_movie_clip_test2.c:126]
+PASSED: typeof(dup3)  ==  'undefined' [duplicate_movie_clip_test2.c:128]
+PASSED: typeof(dup4)  ==  'movieclip' [duplicate_movie_clip_test2.c:131]
+PASSED: typeof(dup4)  ==  'undefined' [duplicate_movie_clip_test2.c:133]
+PASSED: typeof(dup5)  ==  'movieclip' [duplicate_movie_clip_test2.c:136]
+PASSED: typeof(dup5)  ==  'undefined' [duplicate_movie_clip_test2.c:138]
+PASSED: typeof(dup6)  ==  'undefined' [duplicate_movie_clip_test2.c:142]
+PASSED: typeof(dup7)  ==  'undefined' [duplicate_movie_clip_test2.c:146]
+PASSED: typeof(dup8)  ==  'undefined' [duplicate_movie_clip_test2.c:150]
+#passed: 18
+#failed: 0
+#total tests run: 18

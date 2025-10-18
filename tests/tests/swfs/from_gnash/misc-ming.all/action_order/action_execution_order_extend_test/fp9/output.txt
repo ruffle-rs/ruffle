@@ -1,0 +1,31 @@
+as in frame1 of root
+PASSED: typeOf(_root.mc_red.onLoad)  ==  'undefined' [action_execution_order_extend_test.c:107]
+as in frame2 of root
+PASSED: typeOf(_root.mc_red)  ==  'movieclip' [action_execution_order_extend_test.c:144]
+PASSED: typeOf(_root.mc_red.func)  ==  'undefined' [action_execution_order_extend_test.c:145]
+PASSED: typeOf(_root.mc_red.mc_blu)  ==  'movieclip' [action_execution_order_extend_test.c:146]
+mc_red clip load executed
+mc_red load executed
+as in frame1 of mc_red
+as in frame1 of mc_blu
+mc_blu enterFrame executed
+as in frame2 of mc_blu
+mc_red enterFrame executed
+as in frame2 of mc_red
+as in frame3 of root
+PASSED: typeOf(_root.mc_red.func)  ==  'function' [action_execution_order_extend_test.c:154]
+as in frame4 of root
+PASSED: _root.x1  ==  'as_in_mc_blu' [action_execution_order_extend_test.c:163]
+PASSED: _root.x2  ==  'as_in_root' [action_execution_order_extend_test.c:165]
+mc_blu user-defined UNLOAD executed
+mc_red unload executed
+PASSED: _root.y1  ==  'mc_red onLoad called' [action_execution_order_extend_test.c:169]
+PASSED: _root.y1bis  ==  'mc_red onClipLoad called' [action_execution_order_extend_test.c:170]
+PASSED: _root.y2  ==  'as_in_root' [action_execution_order_extend_test.c:172]
+PASSED: _root.y3  ==  'mc_red onUnload called' [action_execution_order_extend_test.c:178]
+PASSED: _root.y4  ==  undefined [action_execution_order_extend_test.c:180]
+PASSED: _root.y5  ==  'as_in_root' [action_execution_order_extend_test.c:182]
+PASSED: _root.y6  ==  'mc_blu onUnload called' [action_execution_order_extend_test.c:184]
+#passed: 14
+#failed: 0
+#total tests run: 14
