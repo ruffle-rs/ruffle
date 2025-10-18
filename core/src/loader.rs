@@ -185,9 +185,6 @@ pub enum Error {
     #[error("Non-data loader spawned as data loader")]
     NotLoadDataLoader,
 
-    #[error("Non-sound loader spawned as sound loader")]
-    NotSoundLoader,
-
     #[error("Other Loader spawned as Movie unloader")]
     NotMovieUnloader,
 
@@ -273,7 +270,6 @@ impl<'gc> LoadManager<'gc> {
             | Loader::Form { self_handle, .. }
             | Loader::LoadVars { self_handle, .. }
             | Loader::LoadURLLoader { self_handle, .. }
-            | Loader::SoundAvm1 { self_handle, .. }
             | Loader::StyleSheet { self_handle, .. }
             | Loader::MovieUnloader { self_handle, .. } => *self_handle = Some(handle),
         }
@@ -544,25 +540,6 @@ impl<'gc> LoadManager<'gc> {
         loader.load_url_loader(player, request)
     }
 
-    /// Kick off an AVM1 audio load.
-    ///
-    /// Returns the loader's async process, which you will need to spawn.
-    pub fn load_sound_avm1(
-        &mut self,
-        player: Weak<Mutex<Player>>,
-        target_object: Object<'gc>,
-        request: Request,
-        is_streaming: bool,
-    ) -> OwnedFuture<(), Error> {
-        let loader = Loader::SoundAvm1 {
-            self_handle: None,
-            target_object,
-        };
-        let handle = self.add_loader(loader);
-        let loader = self.get_loader_mut(handle).unwrap();
-        loader.sound_loader_avm1(player, request, is_streaming)
-    }
-
     /// Process tags on all loaders in the Parsing phase.
     ///
     /// Returns true if *all* loaders finished preloading.
@@ -722,16 +699,6 @@ pub enum Loader<'gc> {
 
         /// The target `URLLoader` to load data into.
         target_object: Avm2Object<'gc>,
-    },
-
-    /// Loader that is loading an MP3 into an AVM1 Sound object.
-    SoundAvm1 {
-        /// The handle to refer to this loader instance.
-        #[collect(require_static)]
-        self_handle: Option<LoaderHandle>,
-
-        /// The target AVM1 object to load the audio into.
-        target_object: Object<'gc>,
     },
 
     /// Loader that is unloading a MovieClip.
@@ -1518,40 +1485,36 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
+}
 
-    /// Creates a future for a Sound load call.
-    fn sound_loader_avm1(
-        &mut self,
-        player: Weak<Mutex<Player>>,
+// NOTE: this module only exists to avoid large diffs with previous versions of the code.
+// (the functions defined here were previously in an `impl` block)
+mod ops {
+    use super::*;
+
+    /// Kick off an AVM1 audio load.
+    ///
+    /// Returns the loader's async process, which you will need to spawn.
+    #[must_use]
+    pub fn load_sound_avm1<'gc>(
+        uc: &UpdateContext<'gc>,
+        sound_object: Object<'gc>,
         request: Request,
         is_streaming: bool,
     ) -> OwnedFuture<(), Error> {
-        let handle = match self {
-            Loader::SoundAvm1 { self_handle, .. } => {
-                self_handle.expect("Loader not self-introduced")
-            }
-            _ => return Box::pin(async { Err(Error::NotSoundLoader) }),
-        };
-
-        let player = player
-            .upgrade()
-            .expect("Could not upgrade weak reference to player");
+        let player = uc.player_handle();
+        let sound_object = ObjectHandle::stash(uc, sound_object);
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = Self::wait_for_full_response(fetch).await;
+            let response = Loader::wait_for_full_response(fetch).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
-                let loader = uc.load_manager.get_loader(handle);
-                let sound_object = match loader {
-                    Some(&Loader::SoundAvm1 { target_object, .. }) => target_object,
-                    None => return Err(Error::Cancelled),
-                    _ => return Err(Error::NotSoundLoader),
-                };
+                let sound_object = sound_object.fetch(uc);
 
                 let NativeObject::Sound(sound) = sound_object.native() else {
-                    return Err(Error::NotSoundLoader);
+                    panic!("NativeObject must be Sound");
                 };
 
                 let success = response
@@ -1586,12 +1549,6 @@ impl<'gc> Loader<'gc> {
             })
         })
     }
-}
-
-// NOTE: this module only exists to avoid large diffs with previous versions of the code.
-// (the functions defined here were previously in an `impl` block)
-mod ops {
-    use super::*;
 
     /// Kick off an AVM2 audio load.
     ///
