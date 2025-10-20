@@ -610,7 +610,7 @@ jobs:
 
       - name: Publish npm package
         # npm scoped packages are private by default, explicitly make public
-        run: npm publish --access public --provenance
+        run: npm publish --tag latest --access public --provenance
         continue-on-error: true
         working-directory: web/packages/selfhosted/dist
         env:
