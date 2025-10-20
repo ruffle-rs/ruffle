@@ -1765,9 +1765,6 @@ pub trait TDisplayObject<'gc>:
     /// Returns the dot-syntax path to this display object, e.g. `_level0.foo.clip`
     #[no_dynamic]
     fn path(self) -> WString {
-        // FIXME this method doesn't work correclty when this DO is from an
-        // AVM2 movie that was loaded into AVM1
-
         if let Some(parent) = self.avm1_parent() {
             let mut path = parent.path();
             path.push_byte(b'.');
@@ -1855,14 +1852,14 @@ pub trait TDisplayObject<'gc>:
     /// Retrieve the parent of this display object.
     ///
     /// This version of the function implements the concept of parenthood as
-    /// seen in AVM1. Notably, it disallows access to the `Stage` and to
-    /// non-AVM1 DisplayObjects; for an unfiltered concept of parent,
-    /// use the `parent` method.
+    /// seen in AVM1. Notably, it disallows access to the `Stage` and to a
+    /// `LoaderDisplay`; for an unfiltered concept of parent, use the `parent`
+    /// method.
     #[no_dynamic]
     fn avm1_parent(self) -> Option<DisplayObject<'gc>> {
         self.parent()
             .filter(|p| p.as_stage().is_none())
-            .filter(|p| !p.movie().is_action_script_3())
+            .filter(|p| p.as_loader_display().is_none())
     }
 
     /// Retrieve the parent of this display object.
@@ -2868,6 +2865,7 @@ impl<'gc> DisplayObject<'gc> {
         pub fn as_morph_shape for MorphShape;
         pub fn as_video for Video;
         pub fn as_bitmap for Bitmap;
+        pub fn as_loader_display for LoaderDisplay;
     }
 
     pub fn as_interactive(self) -> Option<InteractiveObject<'gc>> {
