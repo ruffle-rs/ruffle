@@ -220,7 +220,7 @@ impl From<crate::avm1::Error<'_>> for Error {
 }
 
 /// Holds all in-progress loads for the player.
-pub struct LoadManager<'gc>(SlotMap<LoaderHandle, Loader<'gc>>);
+pub struct LoadManager<'gc>(SlotMap<LoaderHandle, MovieLoader<'gc>>);
 
 unsafe impl<'gc> Collect<'gc> for LoadManager<'gc> {
     fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
@@ -245,7 +245,7 @@ impl<'gc> LoadManager<'gc> {
     /// invalidated). This can be done with remove_loader.
     /// Movie loaders are removed automatically after the loader status is set
     /// accordingly.
-    pub fn add_loader(&mut self, loader: Loader<'gc>) -> LoaderHandle {
+    pub fn add_loader(&mut self, loader: MovieLoader<'gc>) -> LoaderHandle {
         let handle = self.0.insert(loader);
         let loader = self.get_loader_mut(handle).unwrap();
         loader.self_handle = Some(handle);
@@ -259,12 +259,12 @@ impl<'gc> LoadManager<'gc> {
     }
 
     /// Retrieve a loader by handle.
-    pub fn get_loader(&self, handle: LoaderHandle) -> Option<&Loader<'gc>> {
+    pub fn get_loader(&self, handle: LoaderHandle) -> Option<&MovieLoader<'gc>> {
         self.0.get(handle)
     }
 
     /// Retrieve a loader by handle for mutation.
-    pub fn get_loader_mut(&mut self, handle: LoaderHandle) -> Option<&mut Loader<'gc>> {
+    pub fn get_loader_mut(&mut self, handle: LoaderHandle) -> Option<&mut MovieLoader<'gc>> {
         self.0.get_mut(handle)
     }
 
@@ -299,7 +299,7 @@ impl<'gc> LoadManager<'gc> {
             }
         }
 
-        let loader = Loader {
+        let loader = MovieLoader {
             self_handle: None,
             target_clip,
             vm_data,
@@ -323,7 +323,7 @@ impl<'gc> LoadManager<'gc> {
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
 
-            match Loader::wait_for_full_response(fetch).await {
+            match wait_for_full_response(fetch).await {
                 Ok((body, url, _status, _redirected)) => {
                     let content_type = ContentType::sniff(&body);
                     tracing::info!("Loading imported movie: {:?}", url);
@@ -381,7 +381,7 @@ impl<'gc> LoadManager<'gc> {
         bytes: Vec<u8>,
         vm_data: MovieLoaderVMData<'gc>,
     ) -> Result<(), Error> {
-        let loader = Loader {
+        let loader = MovieLoader {
             self_handle: None,
             target_clip,
             vm_data,
@@ -390,7 +390,7 @@ impl<'gc> LoadManager<'gc> {
             from_bytes: true,
         };
         let handle = context.load_manager.add_loader(loader);
-        Loader::movie_loader_bytes(handle, context, bytes)
+        MovieLoader::movie_loader_bytes(handle, context, bytes)
     }
 
     /// Fires the `onLoad` listener event for every MovieClip that has been
@@ -433,12 +433,12 @@ impl<'gc> LoadManager<'gc> {
 
         for handle in handles {
             let status = match context.load_manager.get_loader(handle) {
-                Some(Loader { loader_status, .. }) => Some(loader_status),
+                Some(MovieLoader { loader_status, .. }) => Some(loader_status),
                 _ => None,
             };
 
             if matches!(status, Some(LoaderStatus::Parsing)) {
-                match Loader::preload_tick(handle, context, limit, 0, false) {
+                match MovieLoader::preload_tick(handle, context, limit, 0, false) {
                     Ok(f) => did_finish = did_finish && f,
                     Err(e) => tracing::error!("Error encountered while preloading movie: {}", e),
                 }
@@ -460,7 +460,8 @@ impl<'gc> LoadManager<'gc> {
         }
         let handles: Vec<_> = context.load_manager.0.iter().map(|(h, _)| h).collect();
         for handle in handles {
-            let Some(Loader { target_clip, .. }) = context.load_manager.get_loader(handle) else {
+            let Some(MovieLoader { target_clip, .. }) = context.load_manager.get_loader(handle)
+            else {
                 continue;
             };
             if let Some(movie) = target_clip.as_movie_clip() {
@@ -475,6 +476,21 @@ impl<'gc> LoadManager<'gc> {
 impl Default for LoadManager<'_> {
     fn default() -> Self {
         Self::new()
+    }
+}
+
+async fn wait_for_full_response(
+    response: OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse>,
+) -> Result<(Vec<u8>, String, u16, bool), ErrorResponse> {
+    let response = response.await?;
+    let url = response.url().to_string();
+    let status = response.status();
+    let redirected = response.redirected();
+    let body = response.body().await;
+
+    match body {
+        Ok(body) => Ok((body, url, status, redirected)),
+        Err(error) => Err(ErrorResponse { url, error }),
     }
 }
 
@@ -511,7 +527,7 @@ pub enum MovieLoaderVMData<'gc> {
 /// A struct that holds the state for asynchronous movie loads.
 #[derive(Collect)]
 #[collect(no_drop)]
-pub struct Loader<'gc> {
+pub struct MovieLoader<'gc> {
     /// The handle to refer to this loader instance.
     #[collect(require_static)]
     self_handle: Option<LoaderHandle>,
@@ -544,7 +560,7 @@ pub struct Loader<'gc> {
     from_bytes: bool,
 }
 
-impl<'gc> Loader<'gc> {
+impl<'gc> MovieLoader<'gc> {
     /// Process tags on a loaded movie.
     ///
     /// Is only callable on Movie loaders, panics otherwise. Will
@@ -594,7 +610,7 @@ impl<'gc> Loader<'gc> {
 
         let did_finish = mc.preload(context, limit);
 
-        Loader::movie_loader_progress(
+        MovieLoader::movie_loader_progress(
             handle,
             context,
             mc.compressed_loaded_bytes() as usize,
@@ -602,25 +618,16 @@ impl<'gc> Loader<'gc> {
         )?;
 
         if did_finish {
-            Loader::movie_loader_complete(handle, context, Some(mc.into()), status, redirected)?;
+            MovieLoader::movie_loader_complete(
+                handle,
+                context,
+                Some(mc.into()),
+                status,
+                redirected,
+            )?;
         }
 
         Ok(did_finish)
-    }
-
-    async fn wait_for_full_response(
-        response: OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse>,
-    ) -> Result<(Vec<u8>, String, u16, bool), ErrorResponse> {
-        let response = response.await?;
-        let url = response.url().to_string();
-        let status = response.status();
-        let redirected = response.redirected();
-        let body = response.body().await;
-
-        match body {
-            Ok(body) => Ok((body, url, status, redirected)),
-            Err(error) => Err(ErrorResponse { url, error }),
-        }
     }
 
     /// Construct a future for the given movie loader.
@@ -647,7 +654,7 @@ impl<'gc> Loader<'gc> {
             let mut replacing_root_movie = false;
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
                 let clip = match uc.load_manager.get_loader(handle) {
-                    Some(Loader { target_clip, .. }) => *target_clip,
+                    Some(MovieLoader { target_clip, .. }) => *target_clip,
                     None => return Err(Error::Cancelled),
                 };
 
@@ -678,13 +685,13 @@ impl<'gc> Loader<'gc> {
                     }
 
                     // Before the actual SWF is loaded, an initial loading state is entered.
-                    Loader::load_initial_loading_swf(&mut mc, uc, &request_url, resolved_url);
+                    MovieLoader::load_initial_loading_swf(&mut mc, uc, &request_url, resolved_url);
                 }
 
-                Loader::movie_loader_start(handle, uc)
+                MovieLoader::movie_loader_start(handle, uc)
             })?;
 
-            match Self::wait_for_full_response(fetch).await {
+            match wait_for_full_response(fetch).await {
                 Ok((body, url, _status, _redirected)) if replacing_root_movie => {
                     ContentType::sniff(&body).expect(ContentType::Swf)?;
 
@@ -732,7 +739,7 @@ impl<'gc> Loader<'gc> {
                 }
                 Ok((body, url, status, redirected)) => {
                     player.lock().unwrap().mutate_with_update_context(|uc| {
-                        Loader::movie_loader_data(
+                        MovieLoader::movie_loader_data(
                             handle,
                             uc,
                             &body,
@@ -759,7 +766,7 @@ impl<'gc> Loader<'gc> {
                             } else {
                                 (0, false)
                             };
-                        Loader::movie_loader_error(
+                        MovieLoader::movie_loader_error(
                             handle,
                             uc,
                             "Movie loader error",
@@ -814,7 +821,7 @@ impl<'gc> Loader<'gc> {
             return Ok(());
         }
 
-        Loader::movie_loader_data(handle, uc, &bytes, "file:///".into(), 0, false, loader_url)
+        MovieLoader::movie_loader_data(handle, uc, &bytes, "file:///".into(), 0, false, loader_url)
     }
 }
 
@@ -975,7 +982,7 @@ mod ops {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = Loader::wait_for_full_response(fetch).await;
+            let response = wait_for_full_response(fetch).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
@@ -1060,7 +1067,7 @@ mod ops {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = Loader::wait_for_full_response(fetch).await;
+            let response = wait_for_full_response(fetch).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
@@ -1120,7 +1127,7 @@ mod ops {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = Loader::wait_for_full_response(fetch).await;
+            let response = wait_for_full_response(fetch).await;
 
             player.lock().unwrap().update(|uc| {
                 let target = Avm2Object::from(target.fetch(uc));
@@ -1278,7 +1285,7 @@ mod ops {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = Loader::wait_for_full_response(fetch).await;
+            let response = wait_for_full_response(fetch).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| {
@@ -1335,7 +1342,7 @@ mod ops {
 
         Box::pin(async move {
             let fetch = player.lock().unwrap().navigator().fetch(request);
-            let response = Loader::wait_for_full_response(fetch).await;
+            let response = wait_for_full_response(fetch).await;
 
             player.lock().unwrap().update(|uc| {
                 let sound = sound.fetch(uc);
@@ -1456,7 +1463,7 @@ mod ops {
     }
 }
 
-impl<'gc> Loader<'gc> {
+impl<'gc> MovieLoader<'gc> {
     /// Report a movie loader start event to script code.
     fn movie_loader_start(handle: LoaderHandle, uc: &mut UpdateContext<'gc>) -> Result<(), Error> {
         let (clip, vm_data) = match uc.load_manager.get_loader_mut(handle) {
@@ -1587,7 +1594,7 @@ impl<'gc> Loader<'gc> {
             // Flash always fires an initial 'progress' event with
             // bytesLoaded=0 and bytesTotal set to the proper value.
             // This only seems to happen for an AVM2 event handler
-            Loader::movie_loader_progress(handle, activation.context, 0, length)?;
+            MovieLoader::movie_loader_progress(handle, activation.context, 0, length)?;
 
             // Update the LoaderStream - we now have a real SWF movie and a real target clip
             // This is intentionally set *after* the first 'progress' event, to match Flash's behavior
@@ -1638,7 +1645,7 @@ impl<'gc> Loader<'gc> {
 
                     if from_bytes {
                         mc.preload(uc, &mut ExecutionLimit::none());
-                        Loader::movie_loader_progress(
+                        MovieLoader::movie_loader_progress(
                             handle,
                             uc,
                             mc.compressed_loaded_bytes() as usize,
@@ -1647,7 +1654,7 @@ impl<'gc> Loader<'gc> {
                         uc.post_frame_callbacks.push(PostFrameCallback {
                             callback: Box::new(move |uc, dobj: DisplayObject<'_>| {
                                 if let Err(e) =
-                                    Loader::movie_loader_complete(handle, uc, Some(dobj), 0, false)
+                                    MovieLoader::movie_loader_complete(handle, uc, Some(dobj), 0, false)
                                 {
                                     tracing::error!("Error finishing loading of Loader.loadBytes movie {dobj:?}: {e:?}");
                                 }
@@ -1659,7 +1666,7 @@ impl<'gc> Loader<'gc> {
 
                 // NOTE: Certain tests specifically expect small files to preload immediately
                 if !from_bytes {
-                    Loader::preload_tick(
+                    MovieLoader::preload_tick(
                         handle,
                         uc,
                         &mut ExecutionLimit::with_max_ops_and_time(10000, Duration::from_millis(1)),
@@ -1718,7 +1725,7 @@ impl<'gc> Loader<'gc> {
                     );
                 }
 
-                Loader::movie_loader_progress(handle, activation.context, length, length)?;
+                MovieLoader::movie_loader_progress(handle, activation.context, length, length)?;
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
                     let fake_movie = Arc::new(SwfMovie::fake_with_compressed_data(
@@ -1739,7 +1746,7 @@ impl<'gc> Loader<'gc> {
                         callback: Box::new(move |uc, bitmap_obj| {
                             uc.post_frame_callbacks.push(PostFrameCallback {
                                 callback: Box::new(move |uc, bitmap_obj| {
-                                    if let Err(e) = Loader::movie_loader_complete(
+                                    if let Err(e) = MovieLoader::movie_loader_complete(
                                         handle,
                                         uc,
                                         Some(bitmap_obj),
@@ -1755,7 +1762,7 @@ impl<'gc> Loader<'gc> {
                         data: bitmap_dobj,
                     });
                 } else {
-                    Loader::movie_loader_complete(
+                    MovieLoader::movie_loader_complete(
                         handle,
                         activation.context,
                         Some(bitmap_dobj),
@@ -1769,12 +1776,12 @@ impl<'gc> Loader<'gc> {
                     MovieLoaderVMData::Avm1 { .. } => {
                         // If the file is no valid supported file, the MovieClip enters the error state
                         if let Some(mut mc) = clip.as_movie_clip() {
-                            Loader::load_error_swf(&mut mc, activation.context, url.clone());
+                            MovieLoader::load_error_swf(&mut mc, activation.context, url.clone());
                         }
 
                         // AVM1 fires the event with the current and total length as 0
-                        Loader::movie_loader_progress(handle, activation.context, 0, 0)?;
-                        Loader::movie_loader_complete(
+                        MovieLoader::movie_loader_progress(handle, activation.context, 0, 0)?;
+                        MovieLoader::movie_loader_complete(
                             handle,
                             activation.context,
                             None,
@@ -1796,13 +1803,20 @@ impl<'gc> Loader<'gc> {
                             activation.gc(),
                         );
 
-                        Loader::movie_loader_progress(handle, activation.context, length, length)?;
+                        MovieLoader::movie_loader_progress(
+                            handle,
+                            activation.context,
+                            length,
+                            length,
+                        )?;
                         let mut error = "Error #2124: Loaded file is an unknown type.".to_string();
                         if !from_bytes {
                             error += &format!(" URL: {url}");
                         }
 
-                        Loader::movie_loader_error(handle, uc, &error, status, redirected, url)?;
+                        MovieLoader::movie_loader_error(
+                            handle, uc, &error, status, redirected, url,
+                        )?;
                     }
                 }
             }
@@ -2043,7 +2057,7 @@ impl<'gc> Loader<'gc> {
 
         // If the SWF can't be loaded, the MovieClip enters the error state
         if let Some(mut mc) = clip.as_movie_clip() {
-            Loader::load_error_swf(&mut mc, uc, swf_url);
+            MovieLoader::load_error_swf(&mut mc, uc, swf_url);
         }
 
         match vm_data {
@@ -2097,12 +2111,12 @@ impl<'gc> Loader<'gc> {
     ) {
         match resolved_url {
             Err(_) => {
-                Loader::load_error_swf(mc, uc, request_url.to_string());
+                MovieLoader::load_error_swf(mc, uc, request_url.to_string());
             }
             Ok(url) => {
                 // If the loaded SWF is a local file, the initial loading state equals the error state.
                 if url.scheme() == "file" {
-                    Loader::load_error_swf(mc, uc, url.to_string());
+                    MovieLoader::load_error_swf(mc, uc, url.to_string());
                 } else {
                     // Replacing the movie sets total_frames and frames_loaded correctly.
                     // The movie just needs to be the default empty movie with the correct URL.
@@ -2438,7 +2452,7 @@ mod ops2 {
             let req = Request::get(url.clone());
             // Doing this in two steps to prevent holding the player lock during fetch
             let future = player.lock().unwrap().navigator().fetch(req);
-            let download_res = Loader::wait_for_full_response(future).await;
+            let download_res = wait_for_full_response(future).await;
 
             // Fire the load handler.
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
