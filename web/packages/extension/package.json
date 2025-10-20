@@ -20,7 +20,7 @@
         "@types/archiver": "^6.0.3",
         "@types/chrome": "^0.1.24",
         "@types/common-tags": "^1.8.4",
-        "@types/firefox-webext-browser": "^120.0.5",
+        "@types/firefox-webext-browser": "^143.0.0",
         "@types/jsonwebtoken": "^9.0.10",
         "archiver": "^7.0.1",
         "json5": "^2.2.3",
