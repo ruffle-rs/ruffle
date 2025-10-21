@@ -46,7 +46,7 @@ use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use swf::ColorTransform;
-use unic_segment::WordBoundIndices;
+use unicode_segmentation::UnicodeSegmentation;
 
 use super::interactive::Avm2MousePick;
 
@@ -1968,7 +1968,9 @@ impl<'gc> EditText<'gc> {
             return pos;
         }
         let to_utf8 = WStrToUtf8::new(head);
-        WordBoundIndices::new(&to_utf8.to_utf8_lossy())
+        to_utf8
+            .to_utf8_lossy()
+            .split_word_bound_indices()
             .rev()
             .find(|(_, span)| !span.trim().is_empty())
             .map(|(position, _)| position)
@@ -1988,7 +1990,9 @@ impl<'gc> EditText<'gc> {
             return pos;
         }
         let to_utf8 = WStrToUtf8::new(tail);
-        WordBoundIndices::new(&to_utf8.to_utf8_lossy())
+        to_utf8
+            .to_utf8_lossy()
+            .split_word_bound_indices()
             .skip_while(|(_, span)| span.trim().is_empty())
             .nth(1)
             .map(|p| p.0)
