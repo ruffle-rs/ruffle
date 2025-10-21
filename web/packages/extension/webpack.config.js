@@ -48,7 +48,7 @@ function transformManifest(content, env) {
             gecko: {
                 id: firefoxExtensionId,
                 data_collection_permissions: {
-                    required: ["none"]
+                    required: ["none"],
                 },
             },
         };
