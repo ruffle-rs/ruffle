@@ -1,3 +1,5 @@
+pub mod helpers;
+
 use super::info::{BundleInformation, BUNDLE_INFORMATION_FILENAME};
 use std::{
     io::{Read, Seek, Write},
