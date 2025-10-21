@@ -49,7 +49,7 @@ function transformManifest(content, env) {
                 id: firefoxExtensionId,
                 data_collection_permissions: {
                     required: ["none"]
-                }
+                },
             },
         };
         manifest.background = {
