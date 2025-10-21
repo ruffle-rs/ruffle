@@ -4,6 +4,7 @@ use crate::backend::audio::{DecodeError, RegisterError};
 use crate::buffer::Substream;
 use crate::tag_utils::SwfSlice;
 use slotmap::SlotMap;
+use std::collections::VecDeque;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
 use swf::AudioCompression;
@@ -213,7 +214,7 @@ impl SoundInstance {
 
     /// Creates a new `SoundInstance` from a `Stream`, for stream sounds.
     ///
-    /// Substream-backed sounds also use this.
+    /// Substream-backed sounds and generated sounds also use this.
     fn new_stream(stream: Box<dyn Stream>) -> Self {
         SoundInstance {
             handle: None,
@@ -570,6 +571,24 @@ impl AudioMixer {
         Ok(handle)
     }
 
+    /// Starts a generated sound stream.
+    pub fn start_generated_sound(
+        &mut self,
+        deque: Arc<RwLock<VecDeque<f32>>>,
+    ) -> SoundInstanceHandle {
+        // The audio data for stream sounds is distributed among the frames of a
+        // movie clip. The stream tag reader will parse through the SWF and
+        // feed the decoder audio data on the fly.
+        let stream = GeneratedSoundStream::new(deque);
+        // TODO resampler...?
+
+        let mut sound_instances = self
+            .sound_instances
+            .lock()
+            .expect("Cannot be called reentrant");
+        sound_instances.insert(SoundInstance::new_stream(Box::new(stream)))
+    }
+
     /// Starts a sound.
     ///
     /// The sound must have been registered using `AudioMixer::register_sound`.
@@ -874,6 +893,66 @@ impl Stream for EventSoundStream {
     }
 }
 
+/// A stream for generated sound instances.
+struct GeneratedSoundStream {
+    position: u32,
+    /// Contents of the shared `next_samples` are periodically moved into
+    /// this to reduce lock contention while yielding audio frames.
+    playout_buffer: VecDeque<f32>,
+    next_samples: Arc<RwLock<VecDeque<f32>>>,
+}
+
+impl GeneratedSoundStream {
+    fn new(stream: Arc<RwLock<VecDeque<f32>>>) -> Self {
+        Self {
+            position: 0,
+            playout_buffer: VecDeque::new(),
+            next_samples: stream,
+        }
+    }
+}
+
+impl dasp::signal::Signal for GeneratedSoundStream {
+    type Frame = [i16; 2];
+
+    #[inline]
+    fn next(&mut self) -> Self::Frame {
+        use dasp::Sample;
+
+        if self.playout_buffer.len() < 128 {
+            let mut w = self.next_samples.write().unwrap();
+            self.playout_buffer.append(&mut w);
+        }
+
+        self.position += 1;
+
+        if let Some(left) = self.playout_buffer.pop_front() {
+            if let Some(right) = self.playout_buffer.pop_front() {
+                return [left.to_sample(), right.to_sample()];
+            }
+        }
+
+        Default::default()
+    }
+
+    #[inline]
+    fn is_exhausted(&self) -> bool {
+        false
+    }
+}
+
+impl Stream for GeneratedSoundStream {
+    #[inline]
+    fn source_position(&self) -> u32 {
+        self.position
+    }
+
+    #[inline]
+    fn source_sample_rate(&self) -> u16 {
+        44100
+    }
+}
+
 /// A stream that converts a source stream to a different sample rate.
 struct ConverterStream<S, I>(dasp::signal::interpolate::Converter<S, I>)
 where
@@ -1103,6 +1182,14 @@ macro_rules! impl_audio_mixer_backend {
             stream_info: &SoundStreamInfo,
         ) -> Result<SoundInstanceHandle, DecodeError> {
             self.$mixer.start_substream(stream_data, stream_info)
+        }
+
+        #[inline]
+        fn start_generated_sound(
+            &mut self,
+            deque: std::sync::Arc<std::sync::RwLock<std::collections::VecDeque<f32>>>,
+        ) -> SoundInstanceHandle {
+            self.$mixer.start_generated_sound(deque)
         }
 
         #[inline]

@@ -170,6 +170,12 @@ pub fn play<'gc>(
             None
         };
 
+        let _handle = activation
+            .context
+            .audio_manager
+            .start_generated_sound(activation.context.audio, sound_object)
+            .expect("not too many sounds");
+
         let sound_channel = SoundChannelObject::empty(activation);
 
         let queued_play = QueuedPlay {
@@ -249,6 +255,8 @@ pub fn load<'gc>(
     if sound_context.is_some() {
         avm2_stub_method!(activation, "flash.media.Sound", "load", "with context");
     }
+
+    this.load_called(activation.context);
 
     let future = activation.context.load_manager.load_sound_avm2(
         activation.context.player.clone(),
