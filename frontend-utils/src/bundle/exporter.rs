@@ -8,14 +8,17 @@ use zip::{result::ZipError, write::FileOptions, ZipWriter};
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
 pub enum BundleExportError {
-    #[error("Error writing ZIP stream")]
+    #[error("Error writing ZIP stream: {0}")]
     ZipError(#[from] ZipError),
+
+    #[error("IO error: {0}")]
+    IoError(#[from] std::io::Error),
 
     #[error("Missing bundle information")]
     MissingBundleInfo,
 }
 
-pub type BundleExportResult<T> = Result<T, ZipError>;
+pub type BundleExportResult<T> = Result<T, BundleExportError>;
 
 pub struct BundleExporter<W: Write + Seek> {
     writer: ZipWriter<W>,
