@@ -1,4 +1,5 @@
 mod blocks;
+mod dce;
 mod nop_remover;
 mod peephole;
 mod type_aware;
@@ -13,8 +14,9 @@ use std::cell::Cell;
 use std::collections::HashSet;
 
 /// Run all the optimizer passes on the given code. This method should be
-/// run regardless of whether or not the AVM2 optimizer is enabled. It will not
-/// perform observable optimizations if the AVM2 optimizer is disabled.
+/// run regardless of whether or not the "disable AVM2 optimizer" player option
+/// is on. It will not perform observable optimizations if the "disable
+/// AVM2 optimizer" player option is off.
 pub fn optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
@@ -40,6 +42,8 @@ pub fn optimize<'gc>(
     )?;
 
     peephole::postprocess_peephole(code_slice, jump_targets, !method_exceptions.is_empty());
+
+    dce::eliminate_dead_code(code_slice, jump_targets);
 
     nop_remover::remove_nops(code, method_exceptions);
 
