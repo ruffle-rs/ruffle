@@ -839,10 +839,8 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                         value = value.coerce_to_string(activation)?.into();
                     }
 
-                    // NOTE: Get x[i] for future operations. Also we need to drop ref to the children as we need to borrow as mutable later.
-                    let children = self.children();
-                    let child = children[index].node();
-                    drop(children);
+                    // NOTE: Get x[i] for future operations.
+                    let child = self.children()[index].node();
 
                     // 2.e. If x[i].[[Class]] == "attribute"
                     if child.is_attribute() {

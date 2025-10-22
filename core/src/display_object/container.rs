@@ -369,9 +369,8 @@ pub trait TDisplayObjectContainer<'gc>:
     fn remove_child_directly(&self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
         dispatch_removed_event(child, context);
         let this: DisplayObjectContainer<'gc> = *self;
-        let mut write = self.raw_container_mut(context.gc());
-        write.remove_child_from_depth_list(child);
-        drop(write);
+        self.raw_container_mut(context.gc())
+            .remove_child_from_depth_list(child);
 
         let removed_from_render_list =
             ChildContainer::remove_child_from_render_list(this, child, context);
@@ -447,14 +446,12 @@ pub trait TDisplayObjectContainer<'gc>:
             dispatch_removed_event(*removed, context);
         }
 
-        let mut write = self.raw_container_mut(context.gc());
-
         for removed in removed_list {
             // The `remove_range` method is only ever called as a result of an ActionScript
             // call
             removed.set_placed_by_script(true);
-            write.remove_child_from_depth_list(removed);
-            drop(write);
+            self.raw_container_mut(context.gc())
+                .remove_child_from_depth_list(removed);
 
             let this: DisplayObjectContainer<'gc> = *self;
             ChildContainer::remove_child_from_render_list(this, removed, context);
@@ -464,11 +461,8 @@ pub trait TDisplayObjectContainer<'gc>:
             } else if removed.object2().is_some() {
                 removed.set_parent(context, None);
             }
-
-            write = self.raw_container_mut(context.gc());
         }
 
-        drop(write);
         let this: DisplayObject<'_> = (*self).into();
         this.invalidate_cached_bitmap();
     }
