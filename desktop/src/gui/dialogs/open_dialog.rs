@@ -281,6 +281,14 @@ impl OpenDialog {
         }
     }
 
+    pub fn url(&self) -> Option<&Url> {
+        self.path.result()
+    }
+
+    pub fn options(&self) -> &LaunchOptions {
+        &self.options
+    }
+
     fn start(&mut self) -> bool {
         if self.framerate_enabled {
             self.options.player.frame_rate = Some(self.framerate);
