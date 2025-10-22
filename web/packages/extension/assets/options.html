@@ -9,6 +9,7 @@
         <link rel="stylesheet" href="css/common.css" />
         <link rel="stylesheet" href="css/form.css" />
         <link rel="stylesheet" href="css/options.css" />
+        <link rel="stylesheet" href="css/modal.css" />
     </head>
     <body>
         <div class="header">
@@ -117,7 +118,7 @@
             <button id="reset-settings">Reset settings</button>
         </div>
 
-        <div id="site-settings-modal" class="modal-overlay">
+        <div id="site-settings-modal" class="modal fade">
             <div class="modal-content">
                 <div class="modal-header">
                     <div>
@@ -174,7 +175,8 @@
                 </div>
 
                 <div class="modal-footer">
-                    <button id="modal-cancel-btn">Close</button>
+                    <button id="modal-save-btn">Save</button>
+                    <button data-ruffle-modal-dismiss>Close</button>
                 </div>
             </div>
         </div>

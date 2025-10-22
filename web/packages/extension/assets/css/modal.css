@@ -1,0 +1,101 @@
+/* Modal  */
+
+.modal-open {
+    overflow: hidden;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgb(0 0 0 / 70%);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: var(--ruffle-blue);
+    border: 2px solid var(--ruffle-light-blue);
+    padding: 25px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 800px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 5px 15px rgb(0 0 0 / 50%);
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: var(--ruffle-orange);
+}
+
+.modal-close-btn {
+    font-size: 1.5rem;
+    cursor: pointer;
+    border: none;
+    background: none;
+    color: #aaa;
+}
+
+.modal-body {
+    margin-top: 20px;
+}
+
+.modal-footer {
+    margin-top: 25px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+/* Modal Scrollbar */
+
+:root {
+    --scrollbar-width: 8px;
+    --scrollbar-track: rgb(255 255 255 / 10%);
+    --scrollbar-thumb: rgb(255 255 255 / 30%);
+    --scrollbar-thumb-hover: rgb(255 255 255 / 50%);
+    --scrollbar-border-radius: 4px;
+}
+
+/* Webkit browsers (Chrome, Safari, Edge) */
+.modal-content::-webkit-scrollbar {
+    width: var(--scrollbar-width);
+    height: var(--scrollbar-width);
+}
+
+.modal-content::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: var(--scrollbar-border-radius);
+}
+
+.modal-content::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: var(--scrollbar-border-radius);
+    transition: background-color 0.2s ease;
+}
+
+.modal-content::-webkit-scrollbar-thumb:hover {
+    background: var(--scrollbar-thumb-hover);
+}
+
+.modal-content::-webkit-scrollbar-corner {
+    background: var(--scrollbar-track);
+}
+
+.modal-content::-webkit-scrollbar-button {
+    display: none;
+}
