@@ -257,6 +257,11 @@ impl<'gc> OptValue<'gc> {
     }
 }
 
+// This type is used throughout the abstract interpreter, make sure it doesn't
+// grow too much
+#[cfg(target_pointer_width = "64")]
+const _: () = assert!(std::mem::size_of::<OptValue>() == 16);
+
 impl std::fmt::Debug for OptValue<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("OptValue")
