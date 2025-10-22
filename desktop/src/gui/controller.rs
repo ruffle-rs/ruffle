@@ -475,7 +475,6 @@ impl GuiController {
         );
     }
 
-    #[expect(unused)]
     pub fn export_bundle(&mut self) {
         let Some(movie_url) = self.gui.dialogs.saved_movie_url() else {
             return;

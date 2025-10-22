@@ -280,8 +280,16 @@ impl MenuBar {
                 None if self.cached_recents.is_some() => self.cached_recents = None,
                 _ => {}
             }
-
             ui.separator();
+
+            if ui
+                .add_enabled(player_exists, Button::new(text(locale, "file-menu-export")))
+                .clicked()
+            {
+                self.export_bundle(ui);
+            }
+            ui.separator();
+
             if Button::new(text(locale, "file-menu-preferences"))
                 .ui(ui)
                 .clicked()
@@ -503,6 +511,11 @@ impl MenuBar {
 
     fn launch_website(&mut self, ui: &mut egui::Ui, url: &str) {
         let _ = webbrowser::open(url);
+        ui.close();
+    }
+
+    fn export_bundle(&mut self, ui: &mut egui::Ui) {
+        let _ = self.event_loop.send_event(RuffleEvent::ExportBundle);
         ui.close();
     }
 }
