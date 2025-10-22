@@ -1,6 +1,7 @@
 import * as utils from "./utils";
 import { bindOptions, resetOptions } from "./common";
 import { buildInfo } from "ruffle-core";
+import { Modal } from "./modal";
 
 type SettingForm = {
     id: string;
@@ -646,28 +647,23 @@ window.addEventListener("DOMContentLoaded", async () => {
         });
     }
 
-    const modal = document.getElementById("site-settings-modal")!;
-    const addNewBtn = document.getElementById("site-entry-new")!;
-    const closeBtns = document.querySelectorAll(
-        ".modal-close-btn, #modal-cancel-btn",
-    );
+    const modal = new Modal(document.getElementById("site-settings-modal")!);
 
-    const openModal = () => {
-        modal.style.display = "flex";
-        document.body.classList.add("modal-open");
-    };
+    modal.element.addEventListener(Modal.MODAL_SHOW, () => {
+        console.log("MODAL_SHOW");
+    });
 
-    const closeModal = () => {
-        modal.style.display = "none";
-        document.body.classList.remove("modal-open");
-    };
+    modal.element.addEventListener(Modal.MODAL_HIDE, () => {
+        console.log("MODAL_HIDE");
+    });
 
-    addNewBtn.addEventListener("click", openModal);
-
-    closeBtns.forEach((btn) => btn.addEventListener("click", closeModal));
+    // const addNewBtn = document.getElementById("site-entry-new")!;
+    // const modalSaveBtn = document.getElementById("modal-save-btn")!;
 
     document.querySelectorAll(".edit-site-btn").forEach((btn) => {
-        btn.addEventListener("click", openModal);
+        btn.addEventListener("click", () => {
+            modal.show();
+        });
     });
 
     document.querySelectorAll(".settings-option").forEach((option) => {
