@@ -73,10 +73,15 @@ pub fn postprocess_peephole(
         }
 
         match (last_op, last_op.map(Cell::get), current_op.get()) {
-            (Some(last_op), Some(Op::GetLocal { .. }), Op::Pop) => {
-                // Eliminate GetLocal+Pop
+            (Some(last_op), Some(push_op), Op::Pop) if push_op.is_pure_push() => {
+                // Eliminate PushXXX+Pop and GetLocal+Pop
                 last_op.set(Op::Nop);
                 current_op.set(Op::Nop);
+            }
+            (Some(last_op), Some(push_op), Op::PopJump { offset }) if push_op.is_pure_push() => {
+                // PushXXX+PopJump becomes Nop+Jump
+                last_op.set(Op::Nop);
+                current_op.set(Op::Jump { offset });
             }
             (
                 Some(last_op),

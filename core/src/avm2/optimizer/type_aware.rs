@@ -22,6 +22,22 @@ enum NullState {
     IsNull,
 }
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum ConstantValue {
+    True,
+    False,
+    Null,
+}
+impl ConstantValue {
+    pub fn is_truthy(self) -> bool {
+        matches!(self, ConstantValue::True)
+    }
+
+    pub fn is_falsey(self) -> bool {
+        matches!(self, ConstantValue::False | ConstantValue::Null)
+    }
+}
+
 #[derive(Clone, Copy, PartialEq)]
 struct OptValue<'gc> {
     // This corresponds to the compile-time assumptions about the type:
@@ -45,6 +61,11 @@ struct OptValue<'gc> {
     // TODO: FP actually has a separate `null` type just for this, this can be observed in VerifyErrors
     // (a separate type would also prevent accidental "null int" values)
     pub null_state: NullState,
+
+    // The constant that this value represents, if we know it. For example, we
+    // know that a `pushtrue` call will push `true`, represented by
+    // `ConstantValue::True`.
+    pub constant_value: Option<ConstantValue>,
 }
 impl<'gc> OptValue<'gc> {
     pub fn any() -> Self {
@@ -53,6 +74,7 @@ impl<'gc> OptValue<'gc> {
             contains_valid_integer: false,
             contains_valid_unsigned: false,
             null_state: NullState::MaybeNull,
+            constant_value: None,
         }
     }
 
@@ -60,6 +82,7 @@ impl<'gc> OptValue<'gc> {
         Self {
             class: None,
             null_state: NullState::IsNull,
+            constant_value: Some(ConstantValue::Null),
             ..Self::any()
         }
     }
@@ -148,6 +171,10 @@ impl<'gc> OptValue<'gc> {
             created_value.null_state = self.null_state;
         }
 
+        if self.constant_value == other.constant_value {
+            created_value.constant_value = self.constant_value;
+        }
+
         created_value
     }
 
@@ -183,6 +210,49 @@ impl<'gc> OptValue<'gc> {
         } else {
             // All values match the Any type
             true
+        }
+    }
+
+    // Whether this value is known not to represent a primitive type (Boolean,
+    // String, int, uint, Object, void, or String)
+    pub fn is_not_primitive(self) -> bool {
+        self.class.is_some_and(|c| {
+            !c.is_builtin_boolean()
+                && !c.is_builtin_string()
+                && !c.is_builtin_int()
+                && !c.is_builtin_uint()
+                && !c.is_builtin_object()
+                && !c.is_builtin_void()
+                && !c.is_builtin_string()
+        })
+    }
+
+    // Whether this value is known to be truthy.
+    pub fn known_truthy(self) -> bool {
+        if self.constant_value.is_some_and(|v| v.is_truthy()) {
+            // If this value is known to be a constant value, and that value is
+            // truthy, then return true
+            true
+        } else if self.is_not_primitive() && matches!(self.null_state, NullState::NotNull) {
+            // Otherwise, if this value is an object type that isn't null, also
+            // return true
+            true
+        } else {
+            false
+        }
+    }
+
+    // Whether this value is known to be falsey.
+    pub fn known_falsey(self) -> bool {
+        if self.constant_value.is_some_and(|v| v.is_falsey()) {
+            // If this value is known to be a constant value, and that value is
+            // truthy, then return true
+            true
+        } else if matches!(self.null_state, NullState::IsNull) {
+            // If this value is null, return true
+            true
+        } else {
+            false
         }
     }
 }
@@ -534,9 +604,10 @@ struct Types<'gc> {
 }
 
 /// Run the type-aware optimizer pass on the ops. This optimizer pass also
-/// performs type verification, so it must be run regardless of whether the AVM2
-/// optimizer is enabled or not. If the AVM2 optimizer is disabled, this method
-/// will not actually optimize the resulting code.
+/// performs type verification, so it must be run regardless of whether the
+/// "disable AVM2 optimizer" player option is on or not. If the "disable AVM2
+// optimizer" player option is on, this method will not actually optimize the
+// resulting code.
 pub fn type_aware_optimize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
@@ -545,11 +616,6 @@ pub fn type_aware_optimize<'gc>(
     resolved_parameters: &[ResolvedParamConfig<'gc>],
     jump_targets: &HashSet<usize>,
 ) -> Result<(), Error<'gc>> {
-    // These make the code less readable
-    #![allow(clippy::collapsible_if)]
-    #![allow(clippy::manual_filter)]
-    #![allow(clippy::single_match)]
-
     let (block_list, op_index_to_block_index_table) = assemble_blocks(code_slice, jump_targets);
 
     let types = Types {
@@ -571,12 +637,9 @@ pub fn type_aware_optimize<'gc>(
 
     let this_class = method.bound_class();
 
-    let this_value = OptValue {
-        class: this_class,
-        contains_valid_integer: false,
-        contains_valid_unsigned: false,
-        null_state: NullState::NotNull,
-    };
+    let mut this_value = OptValue::any();
+    this_value.class = this_class;
+    this_value.null_state = NullState::NotNull;
 
     let argument_types = resolved_parameters
         .iter()
@@ -699,6 +762,7 @@ fn process_jump<'gc>(
     Ok(())
 }
 
+#[expect(clippy::too_many_arguments)]
 fn abstract_interpret_ops<'gc>(
     activation: &mut Activation<'_, 'gc>,
     start_index: usize,
@@ -711,11 +775,6 @@ fn abstract_interpret_ops<'gc>(
     worklist: &mut Vec<usize>,
     do_optimize: bool,
 ) -> Result<(), Error<'gc>> {
-    // These make the code less readable
-    #![allow(clippy::collapsible_if)]
-    #![allow(clippy::single_match)]
-    #![allow(clippy::too_many_arguments)]
-
     let mut locals = initial_state.locals;
     let mut stack = initial_state.stack;
     let mut scope_stack = initial_state.scope_stack;
@@ -773,7 +832,18 @@ fn abstract_interpret_ops<'gc>(
                 if stack_value.class == Some(types.boolean) {
                     optimize_op_to!(Op::Nop);
                 }
-                stack.push_class(activation, types.boolean)?;
+
+                let mut value = OptValue::of_type(types.boolean);
+
+                // If we know whether the value on the stack was truthy or
+                // falsey, we know what this `CoerceB` will push
+                if stack_value.known_truthy() {
+                    value.constant_value = Some(ConstantValue::True);
+                } else if stack_value.known_falsey() {
+                    value.constant_value = Some(ConstantValue::False);
+                }
+
+                stack.push(activation, value)?;
             }
             Op::CoerceD => {
                 let stack_value = stack.pop(activation)?;
@@ -833,8 +903,15 @@ fn abstract_interpret_ops<'gc>(
                 stack.pop(activation)?;
                 stack.push_class(activation, types.boolean)?;
             }
-            Op::PushTrue | Op::PushFalse => {
-                stack.push_class(activation, types.boolean)?;
+            Op::PushTrue => {
+                let mut new_value = OptValue::of_type(types.boolean);
+                new_value.constant_value = Some(ConstantValue::True);
+                stack.push(activation, new_value)?;
+            }
+            Op::PushFalse => {
+                let mut new_value = OptValue::of_type(types.boolean);
+                new_value.constant_value = Some(ConstantValue::False);
+                stack.push(activation, new_value)?;
             }
             Op::PushNull => {
                 // TODO: we should push null type here
@@ -1977,8 +2054,42 @@ fn abstract_interpret_ops<'gc>(
                 )?;
                 return Ok(());
             }
-            Op::IfTrue { offset } | Op::IfFalse { offset } => {
-                stack.pop(activation)?;
+            Op::IfTrue { offset } => {
+                let stack_value = stack.pop(activation)?;
+
+                if stack_value.known_falsey() {
+                    // We know the branch will never be taken
+                    optimize_op_to!(Op::Pop);
+                } else if stack_value.known_truthy() {
+                    // We know the branch will always be taken
+                    optimize_op_to!(Op::PopJump { offset });
+                }
+
+                let current_state = AbstractStateRef {
+                    locals: &locals,
+                    stack: &stack,
+                    scope_stack: &scope_stack,
+                };
+                process_jump(
+                    activation,
+                    offset,
+                    abstract_states,
+                    &current_state,
+                    op_index_to_block_index_table,
+                    worklist,
+                    do_optimize,
+                )?;
+            }
+            Op::IfFalse { offset } => {
+                let stack_value = stack.pop(activation)?;
+
+                if stack_value.known_truthy() {
+                    // We know the branch will never be taken
+                    optimize_op_to!(Op::Pop);
+                } else if stack_value.known_falsey() {
+                    // We know the branch will always be taken
+                    optimize_op_to!(Op::PopJump { offset });
+                }
 
                 let current_state = AbstractStateRef {
                     locals: &locals,
@@ -2038,6 +2149,7 @@ fn abstract_interpret_ops<'gc>(
             | Op::CoerceUSwapPop
             | Op::ConstructSlot { .. }
             | Op::GetScriptGlobals { .. }
+            | Op::PopJump { .. }
             | Op::SetSlotNoCoerce { .. } => unreachable!("Custom ops should not be encountered"),
         }
     }
