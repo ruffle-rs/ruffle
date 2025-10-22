@@ -19,16 +19,15 @@ async function scroll(
     lines: number,
 ) {
     const canvas = await player.shadow$("canvas");
+    const canvasSize = await canvas.getSize();
+
+    const xOffset = x - canvasSize.width / 2;
+    const yOffset = y - canvasSize.height / 2;
+    await canvas.moveTo({ xOffset, yOffset });
 
     return await browser.execute(
-        (element, x, y, lines) => {
+        (element, lines) => {
             const el = element as unknown as HTMLElement;
-            el.dispatchEvent(
-                new PointerEvent("pointermove", {
-                    clientX: x as unknown as number,
-                    clientY: y as unknown as number,
-                }),
-            );
             return el.dispatchEvent(
                 new WheelEvent("wheel", {
                     deltaY: lines as unknown as number,
@@ -38,8 +37,6 @@ async function scroll(
             );
         },
         canvas,
-        x,
-        y,
         lines,
     );
 }
