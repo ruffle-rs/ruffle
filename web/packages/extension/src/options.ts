@@ -90,10 +90,10 @@ const settingData: SettingGroup = {
         },
         {
             id: "preloader",
-            type: "select",
+            type: "switch",
             label: "Preloader",
             description:
-                "Whether or not to show a splash screen before the SWF has loaded.",
+                "Whether or not to show a splash screen before the SWF has loaded.", // TODO: Update with better description to match switch
         },
         {
             id: "parameters",
@@ -573,8 +573,6 @@ function addSettingGroup(
     for (const settingForm of settingsForm) {
         htmlElements.push(addElement(settingForm));
     }
-
-    console.log(...htmlElements);
 
     targetGroup.append(...htmlElements);
 }
