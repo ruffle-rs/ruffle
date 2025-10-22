@@ -444,11 +444,9 @@ pub fn dispatch_event<'gc>(
         parent = parent_dobj.parent();
     }
 
-    let mut evtmut = event.event_mut(activation.gc());
-
-    evtmut.set_phase(EventPhase::Capturing);
-
-    drop(evtmut);
+    event
+        .event_mut(activation.gc())
+        .set_phase(EventPhase::Capturing);
 
     for ancestor in ancestor_list.iter().rev() {
         if event.event().is_propagation_stopped() {
