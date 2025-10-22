@@ -577,6 +577,10 @@ impl ApplicationHandler<RuffleEvent> for App {
                 main_window.gui.close_movie(&mut main_window.player);
             }
 
+            (Some(main_window), RuffleEvent::ExportBundle) => {
+                main_window.gui.export_bundle();
+            }
+
             (Some(main_window), RuffleEvent::EnterFullScreen) => {
                 if let Some(mut player) = main_window.player.get() {
                     if player.is_playing() {
