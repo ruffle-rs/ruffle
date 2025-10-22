@@ -1,13 +1,10 @@
-/* Modal  */
-
 .modal-open {
     overflow: hidden;
 }
 
 .modal {
     position: fixed;
-    top: 0;
-    left: 0;
+    inset: 0;
     width: 100%;
     height: 100%;
     background: rgb(0 0 0 / 70%);
@@ -15,6 +12,12 @@
     justify-content: center;
     align-items: center;
     z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.modal.show {
+    opacity: 1;
 }
 
 .modal-content {
@@ -29,6 +32,19 @@
     box-shadow: 0 5px 15px rgb(0 0 0 / 50%);
     scrollbar-width: thin;
     scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+.modal.fade .modal-content {
+    transform: translateY(40px);
+    opacity: 0;
+    transition:
+        transform 0.35s cubic-bezier(0.22, 0.9, 0.26, 1),
+        opacity 0.3s ease;
+}
+
+.modal.show .modal-content {
+    transform: translateY(0);
+    opacity: 1;
 }
 
 .modal-header {
@@ -98,4 +114,14 @@
 
 .modal-content::-webkit-scrollbar-button {
     display: none;
+}
+
+/* prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .modal,
+    .modal.fade .modal-content {
+        transition: none !important;
+        transform: none !important;
+        opacity: 1 !important;
+    }
 }
