@@ -2,17 +2,16 @@ use std::{num::NonZeroU32, sync::LazyLock, vec};
 
 use anyhow::Result;
 use naga::{
-    valid::{Capabilities, ValidationFlags, Validator},
     AddressSpace, ArraySize, BinaryOperator, Binding, Block, BuiltIn, EntryPoint, Expression,
     Function, FunctionArgument, FunctionResult, GlobalVariable, Handle, ImageClass, ImageDimension,
     ImageQuery, Literal, LocalVariable, MathFunction, Module, RelationalFunction, ResourceBinding,
     ScalarKind, ShaderStage, Span, Statement, SwizzleComponent, Type, TypeInner, UnaryOperator,
     VectorSize,
+    valid::{Capabilities, ValidationFlags, Validator},
 };
 use ruffle_render::pixel_bender::{
-    Opcode, Operation, PixelBenderParam, PixelBenderParamQualifier, PixelBenderReg,
+    OUT_COORD_NAME, Opcode, Operation, PixelBenderParam, PixelBenderParamQualifier, PixelBenderReg,
     PixelBenderRegChannel, PixelBenderRegKind, PixelBenderShader, PixelBenderTypeOpcode,
-    OUT_COORD_NAME,
 };
 
 pub const VERTEX_SHADER_ENTRYPOINT: &str = "filter__vertex_entry_point";
@@ -1581,7 +1580,7 @@ impl ShaderBuilder<'_> {
                     return self.evaluate_expr(Expression::AccessIndex {
                         base: reg_value,
                         index: swizzle_components[0] as u32,
-                    })
+                    });
                 }
                 2 => VectorSize::Bi,
                 3 => VectorSize::Tri,
