@@ -53,6 +53,11 @@ export function Navbar({
         onSelectUrl(url, {});
         setSelectedFilename(null);
         setSelectedSample(null);
+        window.history.replaceState(
+            null,
+            "",
+            `${window.location.pathname}${window.location.hash}`,
+        );
         if (sampleSelectionInput.current) {
             sampleSelectionInput.current.selectedIndex = -1;
         }
@@ -62,6 +67,7 @@ export function Navbar({
         onSelectFile(file);
         setSelectedSample(null);
         setSelectedFilename(file.name);
+        window.history.replaceState(null, "", window.location.pathname);
         if (sampleSelectionInput.current) {
             sampleSelectionInput.current.selectedIndex = -1;
         }
