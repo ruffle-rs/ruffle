@@ -2193,9 +2193,8 @@ impl Player {
                 }
             }
 
-            // AVM1 bytecode may leave the stack unbalanced, so do not let garbage values accumulate
-            // across multiple executions and/or frames.
-            context.avm1.clear_stack();
+            // Do not let garbage values accumulate across multiple executions and/or frames.
+            context.avm1.clear();
         }
     }
 

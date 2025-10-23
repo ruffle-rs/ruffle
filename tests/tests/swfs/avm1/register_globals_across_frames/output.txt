@@ -1,0 +1,15 @@
+FRAME 1
+r:0 = undefined
+r:1 = undefined
+r:2 = undefined
+r:3 = undefined
+// r:0 = r:1 = r:2 = r:3 = 42
+r:0 = 42
+r:1 = 42
+r:2 = 42
+r:3 = 42
+FRAME 2
+r:0 = undefined
+r:1 = undefined
+r:2 = undefined
+r:3 = undefined
