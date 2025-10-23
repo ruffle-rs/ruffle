@@ -1,8 +1,8 @@
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
+use crate::filters::FilterSource;
 use crate::filters::blur::BlurFilter;
 use crate::filters::glow::GlowFilter;
-use crate::filters::FilterSource;
 use crate::surface::target::CommandTarget;
 use swf::DropShadowFilter as DropShadowFilterArgs;
 use wgpu::util::StagingBelt;

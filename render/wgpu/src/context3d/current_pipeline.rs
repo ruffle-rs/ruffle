@@ -16,11 +16,11 @@ use std::num::NonZeroU64;
 use std::rc::Rc;
 
 use crate::bitmaps::WgpuSamplerConfig;
-use crate::context3d::shader_pair::{ShaderCompileData, ShaderTextureInfo};
 use crate::context3d::VertexBufferWrapper;
+use crate::context3d::shader_pair::{ShaderCompileData, ShaderTextureInfo};
 use crate::descriptors::Descriptors;
 
-use super::{ShaderPairAgal, VertexAttributeInfo, MAX_VERTEX_ATTRIBUTES};
+use super::{MAX_VERTEX_ATTRIBUTES, ShaderPairAgal, VertexAttributeInfo};
 
 const AGAL_NUM_VERTEX_CONSTANTS: u64 = 128;
 const AGAL_NUM_FRAGMENT_CONSTANTS: u64 = 28;

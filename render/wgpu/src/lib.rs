@@ -3,6 +3,7 @@
 // This lint is helpful, but right now we have too many instances of it.
 // TODO: Remove this once all instances are fixed.
 #![allow(clippy::needless_pass_by_ref_mut)]
+#![allow(clippy::collapsible_if)] // TODO: remove
 
 use crate::backend::ActiveFrame;
 use crate::bitmaps::BitmapSamplers;
@@ -12,7 +13,7 @@ use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, SwapChainTarget};
 use crate::utils::{
-    capture_image, create_buffer_with_data, format_list, get_backend_names, BufferDimensions,
+    BufferDimensions, capture_image, create_buffer_with_data, format_list, get_backend_names,
 };
 use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;

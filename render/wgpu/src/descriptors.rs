@@ -3,8 +3,8 @@ use crate::layouts::BindLayouts;
 use crate::pipelines::VERTEX_BUFFERS_DESCRIPTION_POS;
 use crate::shaders::Shaders;
 use crate::{
-    create_buffer_with_data, BitmapSamplers, Pipelines, PosColorVertex, PosVertex,
-    TextureTransforms,
+    BitmapSamplers, Pipelines, PosColorVertex, PosVertex, TextureTransforms,
+    create_buffer_with_data,
 };
 use fnv::FnvHashMap;
 use std::fmt::Debug;

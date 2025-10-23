@@ -10,16 +10,16 @@ use swf::{Rectangle, Twips};
 
 use wgpu::util::StagingBelt;
 use wgpu::{
-    BindGroup, BufferDescriptor, BufferUsages, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureUsages, TextureView, TextureViewDescriptor, COPY_BUFFER_ALIGNMENT,
-    COPY_BYTES_PER_ROW_ALIGNMENT,
+    BindGroup, BufferDescriptor, BufferUsages, COPY_BUFFER_ALIGNMENT, COPY_BYTES_PER_ROW_ALIGNMENT,
+    TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
+    TextureViewDescriptor,
 };
 use wgpu::{CommandEncoder, Extent3d, RenderPass};
 
-use crate::context3d::current_pipeline::{BoundTextureData, AGAL_FLOATS_PER_REGISTER};
+use crate::Texture;
+use crate::context3d::current_pipeline::{AGAL_FLOATS_PER_REGISTER, BoundTextureData};
 use crate::descriptors::Descriptors;
 use crate::utils::supported_sample_count;
-use crate::Texture;
 
 use std::num::NonZeroU64;
 use std::rc::Rc;
@@ -744,7 +744,9 @@ impl Context3D for WgpuContext3D {
                             wgpu::Backend::Gl
                         )
                     {
-                        tracing::warn!("Context.setRenderToTexture with antiAlias > 1 is not yet supported on WebGL");
+                        tracing::warn!(
+                            "Context.setRenderToTexture with antiAlias > 1 is not yet supported on WebGL"
+                        );
                         sample_count = 1;
                     }
                 }

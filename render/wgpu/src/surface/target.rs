@@ -1,10 +1,10 @@
+use crate::Transforms;
 use crate::backend::RenderTargetMode;
 use crate::buffer_pool::{AlwaysCompatible, PoolEntry, TexturePool};
 use crate::descriptors::Descriptors;
 use crate::globals::Globals;
 use crate::utils::create_buffer_with_data;
 use crate::utils::run_copy_pipeline;
-use crate::Transforms;
 use std::cell::OnceCell;
 use std::sync::Arc;
 
@@ -74,14 +74,14 @@ pub enum PoolOrArcTexture {
 impl PoolOrArcTexture {
     pub fn texture(&self) -> &wgpu::Texture {
         match self {
-            PoolOrArcTexture::Pool(ref texture) => &texture.0,
-            PoolOrArcTexture::Manual(ref texture) => &texture.0,
+            PoolOrArcTexture::Pool(texture) => &texture.0,
+            PoolOrArcTexture::Manual(texture) => &texture.0,
         }
     }
     pub fn view(&self) -> &wgpu::TextureView {
         match self {
-            PoolOrArcTexture::Pool(ref texture) => &texture.1,
-            PoolOrArcTexture::Manual(ref texture) => &texture.1,
+            PoolOrArcTexture::Pool(texture) => &texture.1,
+            PoolOrArcTexture::Manual(texture) => &texture.1,
         }
     }
 }
