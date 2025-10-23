@@ -156,11 +156,7 @@ pub enum PixelBenderParamQualifier {
 
 impl PixelBenderParamQualifier {
     pub fn from_u8(v: u8) -> Self {
-        if v == 2 {
-            Self::Output
-        } else {
-            Self::Input
-        }
+        if v == 2 { Self::Output } else { Self::Input }
     }
 }
 

@@ -3,8 +3,8 @@ use std::{collections::HashMap, fmt::Display, io::Write, sync::LazyLock};
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 use num_traits::Num;
 use pest::{
-    iterators::{Pair, Pairs},
     Parser,
+    iterators::{Pair, Pairs},
 };
 use pest_derive::Parser;
 use thiserror::Error;
