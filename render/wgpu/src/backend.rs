@@ -4,14 +4,14 @@ use crate::context3d::WgpuContext3D;
 use crate::dynamic_transforms::DynamicTransforms;
 use crate::filters::FilterSource;
 use crate::mesh::{CommonGradient, Mesh, PendingDraw};
-use crate::pixel_bender::{run_pixelbender_shader_impl, ShaderMode};
+use crate::pixel_bender::{ShaderMode, run_pixelbender_shader_impl};
 use crate::surface::{LayerRef, Surface};
 use crate::target::{MaybeOwnedBuffer, TextureTarget};
 use crate::target::{RenderTargetFrame, TextureBufferInfo};
-use crate::utils::{run_copy_pipeline, BufferDimensions};
+use crate::utils::{BufferDimensions, run_copy_pipeline};
 use crate::{
-    as_texture, format_list, get_backend_names, Descriptors, Error, QueueSyncHandle, RenderTarget,
-    SwapChainTarget, Texture,
+    Descriptors, Error, QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, as_texture,
+    format_list, get_backend_names,
 };
 use image::imageops::FilterType;
 use ruffle_render::backend::{
@@ -109,7 +109,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
             backends: backend,
             ..Default::default()
         });
-        let surface = instance.create_surface_unsafe(window)?;
+        let surface = unsafe { instance.create_surface_unsafe(window)? };
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             &instance,
@@ -130,7 +130,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         size: (u32, u32),
     ) -> Result<(), Error> {
         let descriptors = &self.descriptors;
-        let surface = descriptors.wgpu_instance.create_surface_unsafe(window)?;
+        let surface = unsafe { descriptors.wgpu_instance.create_surface_unsafe(window)? };
         self.target =
             SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
         Ok(())

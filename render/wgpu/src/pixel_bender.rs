@@ -8,11 +8,11 @@ use indexmap::IndexMap;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::pixel_bender::{
-    PixelBenderParam, PixelBenderShader, PixelBenderShaderHandle, PixelBenderShaderImpl,
-    PixelBenderType, OUT_COORD_NAME,
+    OUT_COORD_NAME, PixelBenderParam, PixelBenderShader, PixelBenderShaderHandle,
+    PixelBenderShaderImpl, PixelBenderType,
 };
 use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
-use smallvec::{smallvec_inline, SmallVec};
+use smallvec::{SmallVec, smallvec_inline};
 use wgpu::util::{DeviceExt, StagingBelt};
 use wgpu::{
     BindGroupEntry, BindingResource, BlendComponent, BufferDescriptor, BufferUsages,
@@ -24,7 +24,7 @@ use wgpu::{
 use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::raw_texture_as_texture;
 use crate::{
-    as_texture, backend::WgpuRenderBackend, descriptors::Descriptors, target::RenderTarget, Texture,
+    Texture, as_texture, backend::WgpuRenderBackend, descriptors::Descriptors, target::RenderTarget,
 };
 
 #[derive(Debug)]

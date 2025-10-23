@@ -2,8 +2,8 @@ use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
 use crate::{MaskState, PosColorVertex, PosVertex};
-use enum_map::{enum_map, Enum, EnumMap};
-use wgpu::{vertex_attr_array, BlendState, PrimitiveTopology};
+use enum_map::{Enum, EnumMap, enum_map};
+use wgpu::{BlendState, PrimitiveTopology, vertex_attr_array};
 
 pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
     [wgpu::VertexBufferLayout {
