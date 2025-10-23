@@ -121,12 +121,7 @@ impl<'gc> Avm1<'gc> {
             env_case_sensitive: GlobalEnv::create(context),
             display_properties: stage_object::DisplayPropertyMap::new(context),
             stack: vec![],
-            registers: [
-                Value::Undefined,
-                Value::Undefined,
-                Value::Undefined,
-                Value::Undefined,
-            ],
+            registers: [Value::Undefined; 4],
             halted: false,
             max_recursion_depth: 255,
             has_mouse_listener: false,
@@ -348,8 +343,14 @@ impl<'gc> Avm1<'gc> {
         self.stack.len()
     }
 
-    pub fn clear_stack(&mut self) {
-        self.stack.clear()
+    /// Resets the operand stack and the global registers.
+    ///
+    /// AVM1 bytecode may leave the stack unbalanced, or access global registers
+    /// without initializing them, so this method should be called after executing
+    /// bytecode to clear any left-overs.
+    pub fn clear(&mut self) {
+        self.stack.clear();
+        self.registers = [Value::Undefined; 4];
     }
 
     pub fn push(&mut self, value: Value<'gc>) {
