@@ -2400,6 +2400,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(local_registers) = &self.local_registers {
             if let Some(reg) = local_registers.get(id) {
                 return reg.get();
+            } else if self.context.player_version <= 10 {
+                // Old FP versions do not fall back to the global register set.
+                return Value::Undefined;
             }
         }
 
@@ -2428,10 +2431,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(local_registers) = &self.local_registers {
             if let Some(reg) = local_registers.get(id as usize) {
                 reg.set(value);
-                return true;
+                true
+            } else {
+                // Old FP versions do not fall back to the global register set.
+                self.context.player_version <= 10
             }
+        } else {
+            false
         }
-        false
     }
 
     /// Convert the enumerable properties of an object into a set of form values.
