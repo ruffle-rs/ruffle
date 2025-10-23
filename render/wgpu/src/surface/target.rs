@@ -356,10 +356,10 @@ impl CommandTarget {
 
     pub fn color_attachments(&self) -> Option<wgpu::RenderPassColorAttachment<'_>> {
         let mut load = wgpu::LoadOp::Load;
-        if self.color_needs_clear.set(false).is_ok() {
-            if let Some(clear_color) = self.render_target_mode.color() {
-                load = wgpu::LoadOp::Clear(clear_color);
-            }
+        if self.color_needs_clear.set(false).is_ok()
+            && let Some(clear_color) = self.render_target_mode.color()
+        {
+            load = wgpu::LoadOp::Clear(clear_color);
         }
         Some(wgpu::RenderPassColorAttachment {
             view: self.frame_buffer.view(),
