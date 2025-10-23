@@ -1,6 +1,6 @@
 //! Pixel Bender assembly tests runner.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use libtest_mimic::Trial;
 use pixel_bender::assembly::PixelBenderShaderAssembly;
 use pixel_bender::disassembly::PixelBenderShaderDisassembly;
