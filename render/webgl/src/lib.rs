@@ -816,7 +816,7 @@ impl WebGlRenderBackend {
 
     fn end_frame(&mut self) {
         // Resolve MSAA, if we're using it (WebGL2).
-        if let (Some(ref gl), Some(ref msaa_buffers)) = (&self.gl2, &self.msaa_buffers) {
+        if let (Some(gl), Some(msaa_buffers)) = (&self.gl2, &self.msaa_buffers) {
             // Disable any remaining masking state.
             self.gl.disable(Gl::STENCIL_TEST);
             self.gl.color_mask(true, true, true, true);
