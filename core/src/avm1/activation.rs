@@ -766,9 +766,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let variable = self.get_variable(fn_name)?;
 
         let result = variable.call_with_default_this(
-            self.target_clip_or_root()
-                .object1_or_undef()
-                .coerce_to_object(self),
+            self.target_clip_or_root().object1_or_undef(),
             fn_name,
             self,
             &args,
