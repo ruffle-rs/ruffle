@@ -667,8 +667,7 @@ impl<'gc> MovieLoader<'gc> {
 
                         // Clear deletable properties on the target before loading
                         // Properties written during the subsequent onLoad events will persist
-                        let clip_value = mc.object1();
-                        if let Value::Object(clip_object) = clip_value {
+                        if let Some(clip_object) = mc.object1() {
                             let mut activation = Activation::from_nothing(
                                 uc,
                                 ActivationIdentifier::root("unknown"),
@@ -697,8 +696,7 @@ impl<'gc> MovieLoader<'gc> {
                         // Make a copy of the properties on the root, so we can put them back after replacing it
                         let mut root_properties: IndexMap<AvmString, Value> = IndexMap::new();
                         if let Some(root) = uc.stage.root_clip() {
-                            let root_val = root.object1();
-                            if let Value::Object(root_object) = root_val {
+                            if let Some(root_object) = root.object1() {
                                 let mut activation = Activation::from_nothing(
                                     uc,
                                     ActivationIdentifier::root("unknown"),
@@ -718,8 +716,7 @@ impl<'gc> MovieLoader<'gc> {
                         // Add the copied properties back onto the new root
                         if !root_properties.is_empty() {
                             if let Some(root) = uc.stage.root_clip() {
-                                let val = root.object1();
-                                if let Value::Object(clip_object) = val {
+                                if let Some(clip_object) = root.object1() {
                                     let mut activation = Activation::from_nothing(
                                         uc,
                                         ActivationIdentifier::root("unknown"),
@@ -1467,7 +1464,7 @@ impl<'gc> MovieLoader<'gc> {
                         clip,
                         broadcaster,
                         istr!(uc, "broadcastMessage"),
-                        &[istr!(uc, "onLoadStart").into(), clip.object1()],
+                        &[istr!(uc, "onLoadStart").into(), clip.object1_or_undef()],
                         uc,
                     );
                 }
@@ -1838,7 +1835,7 @@ impl<'gc> MovieLoader<'gc> {
                         istr!(uc, "broadcastMessage"),
                         &[
                             istr!(uc, "onLoadProgress").into(),
-                            target_clip.object1(),
+                            target_clip.object1_or_undef(),
                             cur_len.into(),
                             total_len.into(),
                         ],
@@ -1917,7 +1914,7 @@ impl<'gc> MovieLoader<'gc> {
                 if !flashvars.is_empty() {
                     let mut activation =
                         Activation::from_nothing(uc, ActivationIdentifier::root("[Loader]"), dobj);
-                    let object = dobj.object1().coerce_to_object(&mut activation);
+                    let object = dobj.object1_or_undef().coerce_to_object(&mut activation);
                     for (key, value) in flashvars.iter() {
                         object.define_value(
                             activation.gc(),
@@ -1986,7 +1983,7 @@ impl<'gc> MovieLoader<'gc> {
                         // TODO: Pass an actual httpStatus argument instead of 0.
                         &[
                             istr!(uc, "onLoadComplete").into(),
-                            target_clip.object1(),
+                            target_clip.object1_or_undef(),
                             status.into(),
                         ],
                         uc,
@@ -2056,7 +2053,7 @@ impl<'gc> MovieLoader<'gc> {
                         istr!(uc, "broadcastMessage"),
                         &[
                             istr!(uc, "onLoadError").into(),
-                            clip.object1(),
+                            clip.object1_or_undef(),
                             error_message.into(),
                         ],
                         uc,
@@ -2177,7 +2174,7 @@ impl<'gc> MovieLoader<'gc> {
                             name: istr!(strings, "broadcastMessage"),
                             args: vec![
                                 istr!(strings, "onLoadInit").into(),
-                                self.target_clip.object1(),
+                                self.target_clip.object1_or_undef(),
                             ],
                         },
                         false,

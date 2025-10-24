@@ -809,7 +809,10 @@ fn attach_movie<'gc>(
         };
         new_clip.post_instantiation(activation.context, init_object, Instantiator::Avm1, true);
 
-        Ok(new_clip.object1().coerce_to_object(activation).into())
+        Ok(new_clip
+            .object1_or_undef()
+            .coerce_to_object(activation)
+            .into())
     } else {
         avm_warn!(activation, "Unable to attach '{}'", export_name);
         Ok(Value::Undefined)
@@ -847,7 +850,7 @@ fn create_empty_movie_clip<'gc>(
     movie_clip.replace_at_depth(activation.context, new_clip.into(), depth);
     new_clip.post_instantiation(activation.context, None, Instantiator::Avm1, true);
 
-    Ok(new_clip.object1())
+    Ok(new_clip.object1_or_undef())
 }
 
 fn create_text_field<'gc>(
@@ -897,7 +900,7 @@ fn create_text_field<'gc>(
 
     if activation.swf_version() >= 8 {
         //SWF8+ returns the `TextField` instance here
-        Ok(text_field.object1())
+        Ok(text_field.object1_or_undef())
     } else {
         Ok(Value::Undefined)
     }
@@ -936,7 +939,9 @@ fn duplicate_movie_clip<'gc>(
         return Ok(Value::Undefined);
     }
 
-    Ok(new_clip.map_or(Value::Undefined, |clip| clip.object1()))
+    Ok(new_clip
+        .and_then(|clip| clip.object1())
+        .map_or(Value::Undefined, |o| o.into()))
 }
 
 pub fn clone_sprite<'gc>(
@@ -1033,8 +1038,8 @@ fn get_instance_at_depth<'gc>(
                 // I didn't test other variants like Bitmap, MorphSpahe, Video
                 // or objects that weren't fully initialized yet.
                 match child.object1() {
-                    Value::Undefined => Ok(movie_clip.object1()),
-                    obj => Ok(obj),
+                    None => Ok(movie_clip.object1_or_undef()),
+                    Some(obj) => Ok(obj.into()),
                 }
             }
             None => Ok(Value::Undefined),
@@ -1593,7 +1598,7 @@ fn load_movie<'gc>(
     let url = url_val.coerce_to_string(activation)?;
     let method = args.get(1).cloned().unwrap_or(Value::Undefined);
     let method = NavigationMethod::from_method_str(&method.coerce_to_string(activation)?);
-    let target_obj = target.object1().coerce_to_object(activation);
+    let target_obj = target.object1_or_undef().coerce_to_object(activation);
     let request = activation.object_into_request(target_obj, url, method);
     let future = activation.context.load_manager.load_movie_into_clip(
         activation.context.player_handle(),
@@ -1616,7 +1621,7 @@ fn load_variables<'gc>(
     let url = url_val.coerce_to_string(activation)?;
     let method = args.get(1).cloned().unwrap_or(Value::Undefined);
     let method = NavigationMethod::from_method_str(&method.coerce_to_string(activation)?);
-    let target = target.object1().coerce_to_object(activation);
+    let target = target.object1_or_undef().coerce_to_object(activation);
     let request = activation.object_into_request(target, url, method);
     let future = crate::loader::load_form_into_object(activation.context, target, request);
     activation.context.navigator.spawn_future(future);
@@ -1639,7 +1644,7 @@ fn transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let constructor = activation.prototypes().transform_constructor;
-    let cloned = constructor.construct(activation, &[this.object1()])?;
+    let cloned = constructor.construct(activation, &[this.object1_or_undef()])?;
     Ok(cloned)
 }
 

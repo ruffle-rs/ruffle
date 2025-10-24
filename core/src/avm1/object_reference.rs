@@ -1,4 +1,4 @@
-use super::{object::ObjectWeak, Activation, Object, Value};
+use super::{object::ObjectWeak, Activation, Object};
 use crate::{
     display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer},
     string::{AvmString, WStr, WString},
@@ -74,16 +74,12 @@ impl<'gc> MovieClipReference<'gc> {
         // We can't use as_display_object here as we explicitly don't want to convert `SuperObjects`
         let display_object = object.as_display_object_no_super()?;
         let (path, cached) = if let DisplayObject::MovieClip(mc) = display_object {
-            (mc.path(), display_object.object1())
+            (mc.path(), display_object.object1()?)
         } else if activation.swf_version() <= 5 {
             let display_object = Self::process_swf5_references(activation, display_object)?;
 
-            (display_object.path(), display_object.object1())
+            (display_object.path(), display_object.object1()?)
         } else {
-            return None;
-        };
-
-        let Value::Object(cached) = cached else {
             return None;
         };
 
@@ -171,7 +167,9 @@ impl<'gc> MovieClipReference<'gc> {
 
             Some((
                 false,
-                display_object.object1().coerce_to_object(activation),
+                display_object
+                    .object1_or_undef()
+                    .coerce_to_object(activation),
                 display_object,
             ))
         } else {
