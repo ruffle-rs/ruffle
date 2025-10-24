@@ -192,10 +192,10 @@ impl<'gc> FocusTracker<'gc> {
                     istr!(context, "onSetFocus"),
                     &[
                         old.map(|o| o.as_displayobject())
-                            .map(|v| v.object1())
+                            .map(|v| v.object1_or_undef())
                             .unwrap_or(Value::Null),
                         new.map(|o| o.as_displayobject())
-                            .map(|v| v.object1())
+                            .map(|v| v.object1_or_undef())
                             .unwrap_or(Value::Null),
                     ],
                     context,

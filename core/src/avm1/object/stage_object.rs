@@ -38,13 +38,13 @@ pub fn get_property<'gc>(
         .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
     {
         return if is_slash_path {
-            Some(child.object1())
+            Some(child.object1_or_undef())
         // If an object doesn't have an object representation, e.g. Graphic, then trying to access it
         // Returns the parent instead
         } else if let crate::display_object::DisplayObject::Graphic(_) = child {
-            child.parent().map(|p| p.object1())
+            child.parent().map(|p| p.object1_or_undef())
         } else {
-            Some(child.object1())
+            Some(child.object1_or_undef())
         };
     }
 
@@ -150,11 +150,11 @@ fn resolve_path_property<'gc>(
 ) -> Option<Value<'gc>> {
     let case_sensitive = activation.is_case_sensitive();
     if name.eq_with_case(b"_root", case_sensitive) {
-        return Some(dobj.avm1_root().object1());
+        return Some(dobj.avm1_root().object1_or_undef());
     } else if name.eq_with_case(b"_parent", case_sensitive) {
         return Some(
             dobj.avm1_parent()
-                .map(|dn| dn.object1().coerce_to_object(activation))
+                .map(|dn| dn.object1_or_undef().coerce_to_object(activation))
                 .map(Value::Object)
                 .unwrap_or(Value::Undefined),
         );
@@ -171,7 +171,7 @@ fn resolve_path_property<'gc>(
             let level_id = parse_level_id(&name[6..]);
             let level = activation
                 .get_level(level_id)
-                .map(|o| o.object1())
+                .map(|o| o.object1_or_undef())
                 .unwrap_or(Value::Undefined);
             return Some(level);
         }

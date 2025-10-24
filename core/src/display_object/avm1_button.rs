@@ -216,7 +216,7 @@ impl<'gc> Avm1Button<'gc> {
         default: bool,
         context: &mut UpdateContext<'gc>,
     ) -> bool {
-        if let Value::Object(object) = self.object1() {
+        if let Some(object) = self.object1() {
             let mut activation = Activation::from_nothing(
                 context,
                 ActivationIdentifier::root("[AVM1 Boolean Property]"),
@@ -346,12 +346,8 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         false
     }
 
-    fn object1(self) -> Value<'gc> {
-        self.0
-            .object
-            .get()
-            .map(Value::from)
-            .unwrap_or(Value::Undefined)
+    fn object1(self) -> Option<Object<'gc>> {
+        self.0.object.get()
     }
 
     fn object2(self) -> Option<Avm2StageObject<'gc>> {

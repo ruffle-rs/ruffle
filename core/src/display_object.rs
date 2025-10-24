@@ -2520,8 +2520,13 @@ pub trait TDisplayObject<'gc>:
         // Noop for most symbols; only shapes can replace their innards with another Graphic.
     }
 
-    fn object1(self) -> Avm1Value<'gc> {
-        Avm1Value::Undefined // TODO: Implement for every type and delete this fallback.
+    fn object1(self) -> Option<Avm1Object<'gc>>;
+
+    #[no_dynamic]
+    fn object1_or_undef(self) -> Avm1Value<'gc> {
+        self.object1()
+            .map(|o| o.into())
+            .unwrap_or(Avm1Value::Undefined)
     }
 
     fn object2(self) -> Option<Avm2StageObject<'gc>>;
@@ -2755,7 +2760,7 @@ pub trait TDisplayObject<'gc>:
     where
         F: FnOnce(&mut UpdateContext<'gc>) -> bool,
     {
-        if let Avm1Value::Object(object) = self.object1() {
+        if let Some(object) = self.object1() {
             let mut activation = Activation::from_nothing(
                 context,
                 Avm1ActivationIdentifier::root("[AVM1 Boolean Property]"),
@@ -2781,7 +2786,7 @@ pub trait TDisplayObject<'gc>:
         value: Avm1Value<'gc>,
         context: &mut UpdateContext<'gc>,
     ) {
-        if let Avm1Value::Object(object) = self.object1() {
+        if let Some(object) = self.object1() {
             let mut activation = Activation::from_nothing(
                 context,
                 Avm1ActivationIdentifier::root("[AVM1 Property Set]"),

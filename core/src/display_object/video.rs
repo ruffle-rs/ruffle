@@ -1,6 +1,6 @@
 //! Video player display object
 
-use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
+use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase, RenderOptions};
@@ -544,13 +544,8 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         self.0.movie.clone()
     }
 
-    fn object1(self) -> Avm1Value<'gc> {
-        self.0
-            .object
-            .get()
-            .and_then(|o| o.as_avm1_object())
-            .map(Avm1Value::from)
-            .unwrap_or(Avm1Value::Undefined)
+    fn object1(self) -> Option<Avm1Object<'gc>> {
+        self.0.object.get().and_then(|o| o.as_avm1_object())
     }
 
     fn object2(self) -> Option<Avm2StageObject<'gc>> {

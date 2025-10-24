@@ -2,7 +2,7 @@
 use crate::avm1::globals::AVM_DEPTH_BIAS;
 use crate::avm1::Avm1;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
-use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
+use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
 use crate::avm2::object::LoaderStream;
 use crate::avm2::script::Script;
 use crate::avm2::Activation as Avm2Activation;
@@ -2609,12 +2609,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn object1(self) -> Avm1Value<'gc> {
-        self.0
-            .object1
-            .get()
-            .map(Avm1Value::from)
-            .unwrap_or(Avm1Value::Undefined)
+    fn object1(self) -> Option<Avm1Object<'gc>> {
+        self.0.object1.get()
     }
 
     fn object2(self) -> Option<Avm2StageObject<'gc>> {
