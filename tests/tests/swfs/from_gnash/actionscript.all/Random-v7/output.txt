@@ -1,0 +1,30 @@
+SWF7
+
+[Random.as debug-22405-0e18b8076]
+PASSED: tally[0] > (max / 10) [./Random.as:56]
+PASSED: tally[1] > (max / 10) [./Random.as:57]
+PASSED: tally[2] > (max / 10) [./Random.as:58]
+PASSED: tally[3] > (max / 10) [./Random.as:59]
+PASSED: typeof(tally[4]) == "undefined" [./Random.as:61]
+PASSED: tally[0] > (max / 10) [./Random.as:75]
+PASSED: tally[1] > (max / 10) [./Random.as:76]
+PASSED: tally[2] > (max / 10) [./Random.as:77]
+PASSED: tally[3] > (max / 10) [./Random.as:78]
+PASSED: typeof(tally[4]) == "undefined" [./Random.as:80]
+PASSED: tally[0] == max / 5 [./Random.as:92]
+PASSED: typeof(tally[1]) == "undefined" [./Random.as:93]
+PASSED: typeof(tally[0]) == "undefined" [./Random.as:114]
+PASSED: tally[1] > (max / 20) [./Random.as:116]
+PASSED: tally[2] > (max / 20) [./Random.as:118]
+PASSED: tally[3] > (max / 20) [./Random.as:120]
+PASSED: tally[4] > (max / 20) [./Random.as:122]
+PASSED: tally[5] > (max / 20) [./Random.as:124]
+PASSED: tally[6] > (max / 20) [./Random.as:126]
+PASSED: tally[7] > (max / 20) [./Random.as:128]
+PASSED: tally[8] > (max / 20) [./Random.as:130]
+PASSED: tally[9] > (max / 20) [./Random.as:132]
+PASSED: tally[10] > (max / 20) [./Random.as:134]
+PASSED: typeof(tally[11]) == "undefined" [./Random.as:136]
+#passed: 24
+#failed: 0
+#total tests run: 24

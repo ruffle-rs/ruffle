@@ -1,0 +1,12 @@
+num_frames = 30
+known_failure = true
+
+[player_options]
+version = 17
+
+[default_fonts]
+serif = ["Noto Sans"]
+
+[fonts.noto_sans]
+family = "Noto Sans"
+path = "NotoSans.ttf"
