@@ -24,7 +24,6 @@ use std::borrow::Cow;
 use std::cell::Cell;
 use std::cmp::min;
 use std::fmt;
-use std::rc::Rc;
 use swf::avm1::read::Reader;
 use swf::avm1::types::*;
 use url::form_urlencoded;
@@ -168,10 +167,7 @@ pub struct Activation<'a, 'gc: 'a> {
     ///
     /// Registers are numbered from 1; r0 does not exist. Therefore this vec,
     /// while nominally starting from zero, actually starts from r1.
-    ///
-    /// Registers are stored in a `Rc` so that rescopes (e.g. with) use the
-    /// same register set.
-    local_registers: Option<Rc<[Cell<Value<'gc>>]>>,
+    local_registers: Option<&'a [Cell<Value<'gc>>]>,
 
     /// The base clip of this stack frame.
     /// This will be the MovieClip that contains the bytecode.
@@ -238,6 +234,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         base_clip: DisplayObject<'gc>,
         this: Value<'gc>,
         callee: Option<Object<'gc>>,
+        registers: &'a [Cell<Value<'gc>>],
     ) -> Self {
         avm_debug!(context.avm1, "START {id}");
         Self {
@@ -250,7 +247,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             target_clip: Some(base_clip),
             this,
             callee,
-            local_registers: None,
+            local_registers: Some(registers).filter(|r| !r.is_empty()),
         }
     }
 
@@ -272,7 +269,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             target_clip: self.target_clip,
             this: self.this,
             callee: self.callee,
-            local_registers: self.local_registers.clone(),
+            local_registers: self.local_registers,
         }
     }
 
@@ -367,6 +364,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             active_clip,
             clip_obj.into(),
             None,
+            &[],
         );
         child_activation.run_actions(code)
     }
@@ -403,6 +401,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             active_clip,
             clip_obj.into(),
             None,
+            &[],
         );
         function(&mut activation)
     }
@@ -2245,9 +2244,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     self.base_clip,
                     self.this,
                     self.callee,
+                    &[],
                 );
 
-                activation.local_registers = self.local_registers.clone();
+                activation.local_registers = self.local_registers;
 
                 match catch_vars {
                     CatchVar::Var(name) => {
@@ -3051,13 +3051,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Returns value of `this` as a reference.
     pub fn this_cell(&self) -> Value<'gc> {
         self.this
-    }
-
-    pub fn allocate_local_registers(&mut self, num: u8) {
-        self.local_registers = match num {
-            0 => None,
-            num => Some((0..num).map(|_| Cell::new(Value::Undefined)).collect()),
-        };
     }
 
     pub fn constant_pool(&self) -> Gc<'gc, Vec<Value<'gc>>> {
