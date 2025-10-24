@@ -1910,16 +1910,13 @@ impl<'gc> MovieLoader<'gc> {
                 // both placed in the same frame to begin with).
                 dobj.base().set_skip_next_enter_frame(true);
 
-                let flashvars = movie.clone().unwrap().parameters().to_owned();
-                if !flashvars.is_empty() {
-                    let mut activation =
-                        Activation::from_nothing(uc, ActivationIdentifier::root("[Loader]"), dobj);
-                    let object = dobj.object1_or_undef().coerce_to_object(&mut activation);
-                    for (key, value) in flashvars.iter() {
+                let flashvars = movie.as_ref().unwrap().parameters();
+                if let Some(object) = dobj.object1() {
+                    for (key, value) in flashvars {
                         object.define_value(
-                            activation.gc(),
-                            AvmString::new_utf8(activation.gc(), key),
-                            AvmString::new_utf8(activation.gc(), value).into(),
+                            uc.gc(),
+                            AvmString::new_utf8(uc.gc(), key),
+                            AvmString::new_utf8(uc.gc(), value).into(),
                             Attribute::empty(),
                         );
                     }
