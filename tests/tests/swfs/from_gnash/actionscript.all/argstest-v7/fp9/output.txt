@@ -1,0 +1,1996 @@
+SWF7
+
+[array.as debug-22403-05c7ba106]
+testing _global.TextSnapshot(function)
+Trying to construct _global.TextSnapshot
+Object was constructed
+Testing getTextRunInfo()
+Testing setSelectColor()
+Testing findText()
+Testing hitTestTextNearPos()
+Testing getSelectedText()
+Testing getText()
+Testing getSelected()
+Testing setSelected()
+Testing getCount()
+Testing constructor()
+Testing __constructor__()
+testing _global.TextSnapshot.__constructor__(undefined)
+Testing __proto__()
+testing _global.PrintJob(function)
+Trying to construct _global.PrintJob
+Object was constructed
+Testing orientation()
+Testing pageWidth()
+Testing pageHeight()
+Testing paperWidth()
+Testing paperHeight()
+Testing send()
+Testing addPage()
+Testing start()
+Testing constructor()
+Testing __constructor__()
+testing _global.PrintJob.__constructor__(undefined)
+Testing __proto__()
+testing _global.MovieClipLoader(function)
+Trying to construct _global.MovieClipLoader
+Object was constructed
+Testing removeListener()
+Testing addListener()
+Testing broadcastMessage()
+Testing unloadClip()
+Testing getProgress()
+Testing loadClip()
+Testing constructor()
+Testing _listeners()
+testing _global.MovieClipLoader._listeners(undefined)
+Testing __constructor__()
+testing _global.MovieClipLoader.__constructor__(undefined)
+Testing __proto__()
+testing _global.textRenderer(function)
+Trying to construct _global.textRenderer
+testing _global.flash(undefined)
+testing _global.System(object)
+testing _global.System.IME(object)
+testing _global.System.IME._listeners(object)
+testing _global.System.IME._listeners.length(number)
+testing _global.System.IME.removeListener(function)
+Trying to construct _global.System.IME.removeListener
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+testing _global.System.IME.removeListener.__constructor__(undefined)
+Testing __proto__()
+testing _global.System.IME.addListener(function)
+Trying to construct _global.System.IME.addListener
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+testing _global.System.IME.addListener.__constructor__(undefined)
+Testing __proto__()
+testing _global.System.IME.broadcastMessage(function)
+Trying to construct _global.System.IME.broadcastMessage
+Object was constructed
+Testing __constructor__()
+testing _global.System.IME.doConversion(undefined)
+testing _global.System.IME.setCompositionString(undefined)
+testing _global.System.IME.setConversionMode(undefined)
+testing _global.System.IME.getConversionMode(undefined)
+testing _global.System.IME.setEnabled(undefined)
+testing _global.System.IME.getEnabled(undefined)
+testing _global.System.IME.ALPHANUMERIC_FULL(string)
+testing _global.System.IME.ALPHANUMERIC_HALF(string)
+testing _global.System.IME.CHINESE(string)
+testing _global.System.IME.JAPANESE_HIRAGANA(string)
+testing _global.System.IME.JAPANESE_KATAKANA_FULL(string)
+testing _global.System.IME.JAPANESE_KATAKANA_HALF(string)
+testing _global.System.IME.KOREAN(string)
+testing _global.System.IME.UNKNOWN(string)
+testing _global.System.setClipboard(function)
+Trying to construct _global.System.setClipboard
+Object was constructed
+Testing __constructor__()
+testing _global.System.security(object)
+testing _global.System.security.PolicyFileResolver(function)
+Trying to construct _global.System.security.PolicyFileResolver
+Object was constructed
+Testing _listeners()
+Testing removeListener()
+Testing addListener()
+Testing broadcastMessage()
+Testing resolve()
+Testing constructor()
+Testing __constructor__()
+testing _global.System.security.PolicyFileResolver.__constructor__(undefined)
+Testing __proto__()
+testing _global.System.security.sandboxType(string)
+testing _global.System.security.escapeDomain(function)
+Trying to construct _global.System.security.escapeDomain
+Object was constructed
+Testing __constructor__()
+testing _global.System.security.chooseLocalSwfPath(function)
+Trying to construct _global.System.security.chooseLocalSwfPath
+Object was constructed
+Testing __constructor__()
+testing _global.System.security.loadPolicyFile(function)
+Trying to construct _global.System.security.loadPolicyFile
+Object was constructed
+Testing __constructor__()
+testing _global.System.security.allowInsecureDomain(function)
+Trying to construct _global.System.security.allowInsecureDomain
+Object was constructed
+Testing __constructor__()
+testing _global.System.security.allowDomain(function)
+Trying to construct _global.System.security.allowDomain
+Object was constructed
+Testing __constructor__()
+testing _global.System.security.__constructor__(function)
+Trying to construct _global.System.security.__constructor__
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.System.security.__constructor__.__constructor__(undefined)
+Testing __proto__()
+testing _global.System.useCodepage(boolean)
+testing _global.System.exactSettings(boolean)
+testing _global.System.showSettings(function)
+Trying to construct _global.System.showSettings
+Object was constructed
+Testing __constructor__()
+testing _global.System.Product(function)
+Trying to construct undefined
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing installedVersion()
+Testing validate()
+Testing download()
+Testing launch()
+Testing isInstalled()
+Testing isRunning()
+Testing constructor()
+Testing name()
+testing undefined.name(undefined)
+Testing __constructor__()
+testing undefined.__constructor__(undefined)
+Testing __proto__()
+testing _global.System.capabilities(object)
+testing _global.System.capabilities.toLocaleString(function)
+Trying to construct _global.System.capabilities.toLocaleString
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.System.capabilities.toLocaleString.__constructor__(undefined)
+Testing __proto__()
+testing _global.System.capabilities.isPropertyEnumerable(function)
+Trying to construct _global.System.capabilities.isPropertyEnumerable
+Object was constructed
+Testing __constructor__()
+testing _global.System.capabilities.isPrototypeOf(function)
+Trying to construct _global.System.capabilities.isPrototypeOf
+Object was constructed
+Testing __constructor__()
+testing _global.System.capabilities.hasOwnProperty(function)
+Trying to construct _global.System.capabilities.hasOwnProperty
+Object was constructed
+Testing __constructor__()
+testing _global.System.capabilities.toString(function)
+Trying to construct _global.System.capabilities.toString
+Object was constructed
+Testing __constructor__()
+testing _global.System.capabilities.valueOf(function)
+Trying to construct _global.System.capabilities.valueOf
+Object was constructed
+Testing __constructor__()
+testing _global.System.capabilities.addProperty(function)
+Trying to construct _global.System.capabilities.addProperty
+Object was constructed
+Testing __constructor__()
+testing _global.System.capabilities.unwatch(function)
+Trying to construct _global.System.capabilities.unwatch
+Object was constructed
+Testing __constructor__()
+testing _global.System.capabilities.watch(function)
+Trying to construct _global.System.capabilities.watch
+Object was constructed
+Testing __constructor__()
+testing _global.System.capabilities._internal(number)
+testing _global.System.capabilities.hasIME(boolean)
+testing _global.System.capabilities.language(string)
+testing _global.System.capabilities.os(string)
+testing _global.System.capabilities.manufacturer(string)
+testing _global.System.capabilities.isEmbeddedInAcrobat(boolean)
+testing _global.System.capabilities.windowlessDisable(boolean)
+testing _global.System.capabilities.localFileReadDisable(boolean)
+testing _global.System.capabilities.avHardwareDisable(boolean)
+testing _global.System.capabilities.playerType(string)
+testing _global.System.capabilities.isDebugger(boolean)
+testing _global.System.capabilities.hasScreenBroadcast(boolean)
+testing _global.System.capabilities.hasScreenPlayback(boolean)
+testing _global.System.capabilities.hasPrinting(boolean)
+testing _global.System.capabilities.hasEmbeddedVideo(boolean)
+testing _global.System.capabilities.hasStreamingVideo(boolean)
+testing _global.System.capabilities.hasStreamingAudio(boolean)
+testing _global.System.capabilities.version(string)
+testing _global.System.capabilities.serverString(string)
+testing _global.System.capabilities.hasAudio(boolean)
+testing _global.System.capabilities.hasMP3(boolean)
+testing _global.System.capabilities.hasAudioEncoder(boolean)
+testing _global.System.capabilities.hasVideoEncoder(boolean)
+testing _global.System.capabilities.hasTLS(boolean)
+testing _global.System.capabilities.screenResolutionX(number)
+testing _global.System.capabilities.screenResolutionY(number)
+testing _global.System.capabilities.screenDPI(number)
+testing _global.System.capabilities.screenColor(string)
+testing _global.System.capabilities.pixelAspectRatio(number)
+testing _global.System.capabilities.hasAccessibility(boolean)
+testing _global.Accessibility(object)
+testing _global.Accessibility.toLocaleString(function)
+Trying to construct _global.Accessibility.toLocaleString
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Accessibility.toLocaleString.__constructor__(undefined)
+Testing __proto__()
+testing _global.Accessibility.isPropertyEnumerable(function)
+Trying to construct _global.Accessibility.isPropertyEnumerable
+Object was constructed
+Testing __constructor__()
+testing _global.Accessibility.isPrototypeOf(function)
+Trying to construct _global.Accessibility.isPrototypeOf
+Object was constructed
+Testing __constructor__()
+testing _global.Accessibility.hasOwnProperty(function)
+Trying to construct _global.Accessibility.hasOwnProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Accessibility.toString(function)
+Trying to construct _global.Accessibility.toString
+Object was constructed
+Testing __constructor__()
+testing _global.Accessibility.valueOf(function)
+Trying to construct _global.Accessibility.valueOf
+Object was constructed
+Testing __constructor__()
+testing _global.Accessibility.addProperty(function)
+Trying to construct _global.Accessibility.addProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Accessibility.unwatch(function)
+Trying to construct _global.Accessibility.unwatch
+Object was constructed
+Testing __constructor__()
+testing _global.Accessibility.watch(function)
+Trying to construct _global.Accessibility.watch
+Object was constructed
+Testing __constructor__()
+testing _global.Accessibility.updateProperties(function)
+Trying to construct _global.Accessibility.updateProperties
+Object was constructed
+Testing __constructor__()
+testing _global.Accessibility.sendEvent(function)
+Trying to construct _global.Accessibility.sendEvent
+Object was constructed
+Testing __constructor__()
+testing _global.Accessibility.isActive(function)
+Trying to construct _global.Accessibility.isActive
+Object was constructed
+Testing __constructor__()
+testing _global.Video(function)
+Trying to construct _global.Video
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing clear()
+Testing attachVideo()
+Testing constructor()
+Testing __constructor__()
+testing _global.Video.__constructor__(undefined)
+Testing __proto__()
+testing _global.Stage(object)
+testing _global.Stage.toLocaleString(function)
+Trying to construct _global.Stage.toLocaleString
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Stage.toLocaleString.__constructor__(undefined)
+Testing __proto__()
+testing _global.Stage.isPropertyEnumerable(function)
+Trying to construct _global.Stage.isPropertyEnumerable
+Object was constructed
+Testing __constructor__()
+testing _global.Stage.isPrototypeOf(function)
+Trying to construct _global.Stage.isPrototypeOf
+Object was constructed
+Testing __constructor__()
+testing _global.Stage.hasOwnProperty(function)
+Trying to construct _global.Stage.hasOwnProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Stage.toString(function)
+Trying to construct _global.Stage.toString
+Object was constructed
+Testing __constructor__()
+testing _global.Stage.valueOf(function)
+Trying to construct _global.Stage.valueOf
+Object was constructed
+Testing __constructor__()
+testing _global.Stage.addProperty(function)
+Trying to construct _global.Stage.addProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Stage.unwatch(function)
+Trying to construct _global.Stage.unwatch
+Object was constructed
+Testing __constructor__()
+testing _global.Stage.watch(function)
+Trying to construct _global.Stage.watch
+Object was constructed
+Testing __constructor__()
+testing _global.Stage._listeners(object)
+testing _global.Stage._listeners.toLocaleString(function)
+Trying to construct _global.Stage._listeners.toLocaleString
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Stage._listeners.toLocaleString.__constructor__(undefined)
+Testing __proto__()
+testing _global.Stage._listeners.isPropertyEnumerable(function)
+Trying to construct _global.Stage._listeners.isPropertyEnumerable
+Object was constructed
+Testing __constructor__()
+testing _global.Stage._listeners.isPrototypeOf(function)
+Trying to construct _global.Stage._listeners.isPrototypeOf
+Object was constructed
+Testing __constructor__()
+testing _global.Stage._listeners.hasOwnProperty(function)
+Trying to construct _global.Stage._listeners.hasOwnProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Stage._listeners.toString(function)
+Trying to construct _global.Stage._listeners.toString
+Object was constructed
+Testing __constructor__()
+testing _global.Stage._listeners.valueOf(function)
+Trying to construct _global.Stage._listeners.valueOf
+Object was constructed
+Testing __constructor__()
+testing _global.Stage._listeners.addProperty(function)
+Trying to construct _global.Stage._listeners.addProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Stage._listeners.unwatch(function)
+Trying to construct _global.Stage._listeners.unwatch
+Object was constructed
+Testing __constructor__()
+testing _global.Stage._listeners.watch(function)
+Trying to construct _global.Stage._listeners.watch
+Object was constructed
+Testing __constructor__()
+testing _global.Stage._listeners.length(number)
+testing _global.Stage.removeListener(function)
+Trying to construct _global.Stage.removeListener
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Stage.removeListener.__constructor__(undefined)
+Testing __proto__()
+testing _global.Stage.addListener(function)
+Trying to construct _global.Stage.addListener
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Stage.addListener.__constructor__(undefined)
+Testing __proto__()
+testing _global.Stage.broadcastMessage(function)
+Trying to construct _global.Stage.broadcastMessage
+Object was constructed
+Testing __constructor__()
+testing _global.Stage.fullScreenWidth(undefined)
+testing _global.Stage.fullScreenHeight(undefined)
+testing _global.Stage.fullScreenSourceRect(undefined)
+testing _global.Stage.displayState(string)
+testing _global.Stage.showMenu(boolean)
+testing _global.Stage.width(number)
+testing _global.Stage.height(number)
+testing _global.Stage.scaleMode(string)
+testing _global.Stage.align(string)
+testing _global.TextFormat(function)
+Trying to construct _global.TextFormat
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing display()
+Testing bullet()
+Testing tabStops()
+Testing blockIndent()
+Testing leading()
+Testing indent()
+Testing rightMargin()
+Testing leftMargin()
+Testing align()
+Testing underline()
+Testing italic()
+Testing bold()
+Testing target()
+Testing url()
+Testing color()
+Testing size()
+Testing font()
+Testing constructor()
+Testing getTextExtent()
+testing _global.TextFormat.getTextExtent(undefined)
+Testing __constructor__()
+testing _global.TextFormat.__constructor__(undefined)
+Testing __proto__()
+testing _global.TextField(function)
+Trying to construct _global.TextField
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing styleSheet()
+Testing mouseWheelEnabled()
+Testing condenseWhite()
+Testing restrict()
+Testing textHeight()
+Testing textWidth()
+Testing bottomScroll()
+Testing length()
+Testing selectable()
+Testing multiline()
+Testing password()
+Testing wordWrap()
+Testing background()
+Testing border()
+Testing html()
+Testing embedFonts()
+Testing maxChars()
+Testing maxhscroll()
+Testing hscroll()
+Testing variable()
+Testing htmlText()
+Testing type()
+Testing text()
+Testing autoSize()
+Testing tabIndex()
+Testing textColor()
+Testing backgroundColor()
+Testing borderColor()
+Testing maxscroll()
+Testing scroll()
+Testing filters()
+Testing sharpness()
+Testing thickness()
+Testing antiAliasType()
+Testing gridFitType()
+Testing removeListener()
+Testing addListener()
+Testing broadcastMessage()
+Testing replaceText()
+Testing getDepth()
+Testing setNewTextFormat()
+Testing getNewTextFormat()
+Testing removeTextField()
+Testing setTextFormat()
+Testing getTextFormat()
+Testing replaceSel()
+Testing constructor()
+Testing _listeners()
+testing _global.TextField._listeners(undefined)
+Testing __constructor__()
+testing _global.TextField.__constructor__(undefined)
+Testing __proto__()
+testing _global.Button(function)
+Trying to construct _global.Button
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing tabIndex()
+Testing blendMode()
+Testing cacheAsBitmap()
+Testing filters()
+Testing scale9Grid()
+Testing getDepth()
+Testing enabled()
+Testing useHandCursor()
+Testing constructor()
+Testing __constructor__()
+testing _global.Button.__constructor__(undefined)
+Testing __proto__()
+testing _global.Key(object)
+testing _global.Key.toLocaleString(function)
+Trying to construct _global.Key.toLocaleString
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Key.toLocaleString.__constructor__(undefined)
+Testing __proto__()
+testing _global.Key.isPropertyEnumerable(function)
+Trying to construct _global.Key.isPropertyEnumerable
+Object was constructed
+Testing __constructor__()
+testing _global.Key.isPrototypeOf(function)
+Trying to construct _global.Key.isPrototypeOf
+Object was constructed
+Testing __constructor__()
+testing _global.Key.hasOwnProperty(function)
+Trying to construct _global.Key.hasOwnProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Key.toString(function)
+Trying to construct _global.Key.toString
+Object was constructed
+Testing __constructor__()
+testing _global.Key.valueOf(function)
+Trying to construct _global.Key.valueOf
+Object was constructed
+Testing __constructor__()
+testing _global.Key.addProperty(function)
+Trying to construct _global.Key.addProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Key.unwatch(function)
+Trying to construct _global.Key.unwatch
+Object was constructed
+Testing __constructor__()
+testing _global.Key.watch(function)
+Trying to construct _global.Key.watch
+Object was constructed
+Testing __constructor__()
+testing _global.Key._listeners(object)
+testing _global.Key._listeners.toLocaleString(function)
+Trying to construct _global.Key._listeners.toLocaleString
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Key._listeners.toLocaleString.__constructor__(undefined)
+Testing __proto__()
+testing _global.Key._listeners.isPropertyEnumerable(function)
+Trying to construct _global.Key._listeners.isPropertyEnumerable
+Object was constructed
+Testing __constructor__()
+testing _global.Key._listeners.isPrototypeOf(function)
+Trying to construct _global.Key._listeners.isPrototypeOf
+Object was constructed
+Testing __constructor__()
+testing _global.Key._listeners.hasOwnProperty(function)
+Trying to construct _global.Key._listeners.hasOwnProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Key._listeners.toString(function)
+Trying to construct _global.Key._listeners.toString
+Object was constructed
+Testing __constructor__()
+testing _global.Key._listeners.valueOf(function)
+Trying to construct _global.Key._listeners.valueOf
+Object was constructed
+Testing __constructor__()
+testing _global.Key._listeners.addProperty(function)
+Trying to construct _global.Key._listeners.addProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Key._listeners.unwatch(function)
+Trying to construct _global.Key._listeners.unwatch
+Object was constructed
+Testing __constructor__()
+testing _global.Key._listeners.watch(function)
+Trying to construct _global.Key._listeners.watch
+Object was constructed
+Testing __constructor__()
+testing _global.Key._listeners.length(number)
+testing _global.Key.removeListener(function)
+Trying to construct _global.Key.removeListener
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Key.removeListener.__constructor__(undefined)
+Testing __proto__()
+testing _global.Key.addListener(function)
+Trying to construct _global.Key.addListener
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Key.addListener.__constructor__(undefined)
+Testing __proto__()
+testing _global.Key.broadcastMessage(function)
+Trying to construct _global.Key.broadcastMessage
+Object was constructed
+Testing __constructor__()
+testing _global.Key.isAccessible(function)
+Trying to construct _global.Key.isAccessible
+Object was constructed
+Testing __constructor__()
+testing _global.Key.isToggled(function)
+Trying to construct _global.Key.isToggled
+Object was constructed
+Testing __constructor__()
+testing _global.Key.isDown(function)
+Trying to construct _global.Key.isDown
+Object was constructed
+Testing __constructor__()
+testing _global.Key.getCode(function)
+Trying to construct _global.Key.getCode
+Object was constructed
+Testing __constructor__()
+testing _global.Key.getAscii(function)
+Trying to construct _global.Key.getAscii
+Object was constructed
+Testing __constructor__()
+testing _global.Key.ALT(number)
+testing _global.Key.ENTER(number)
+testing _global.Key.SPACE(number)
+testing _global.Key.UP(number)
+testing _global.Key.DOWN(number)
+testing _global.Key.LEFT(number)
+testing _global.Key.RIGHT(number)
+testing _global.Key.PGUP(number)
+testing _global.Key.PGDN(number)
+testing _global.Key.HOME(number)
+testing _global.Key.END(number)
+testing _global.Key.TAB(number)
+testing _global.Key.CONTROL(number)
+testing _global.Key.SHIFT(number)
+testing _global.Key.ESCAPE(number)
+testing _global.Key.INSERT(number)
+testing _global.Key.DELETEKEY(number)
+testing _global.Key.BACKSPACE(number)
+testing _global.Key.CAPSLOCK(number)
+testing _global.Mouse(object)
+testing _global.Mouse.toLocaleString(function)
+Trying to construct _global.Mouse.toLocaleString
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Mouse.toLocaleString.__constructor__(undefined)
+Testing __proto__()
+testing _global.Mouse.isPropertyEnumerable(function)
+Trying to construct _global.Mouse.isPropertyEnumerable
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse.isPrototypeOf(function)
+Trying to construct _global.Mouse.isPrototypeOf
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse.hasOwnProperty(function)
+Trying to construct _global.Mouse.hasOwnProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse.toString(function)
+Trying to construct _global.Mouse.toString
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse.valueOf(function)
+Trying to construct _global.Mouse.valueOf
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse.addProperty(function)
+Trying to construct _global.Mouse.addProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse.unwatch(function)
+Trying to construct _global.Mouse.unwatch
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse.watch(function)
+Trying to construct _global.Mouse.watch
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse._listeners(object)
+testing _global.Mouse._listeners.toLocaleString(function)
+Trying to construct _global.Mouse._listeners.toLocaleString
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Mouse._listeners.toLocaleString.__constructor__(undefined)
+Testing __proto__()
+testing _global.Mouse._listeners.isPropertyEnumerable(function)
+Trying to construct _global.Mouse._listeners.isPropertyEnumerable
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse._listeners.isPrototypeOf(function)
+Trying to construct _global.Mouse._listeners.isPrototypeOf
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse._listeners.hasOwnProperty(function)
+Trying to construct _global.Mouse._listeners.hasOwnProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse._listeners.toString(function)
+Trying to construct _global.Mouse._listeners.toString
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse._listeners.valueOf(function)
+Trying to construct _global.Mouse._listeners.valueOf
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse._listeners.addProperty(function)
+Trying to construct _global.Mouse._listeners.addProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse._listeners.unwatch(function)
+Trying to construct _global.Mouse._listeners.unwatch
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse._listeners.watch(function)
+Trying to construct _global.Mouse._listeners.watch
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse._listeners.length(number)
+testing _global.Mouse.removeListener(function)
+Trying to construct _global.Mouse.removeListener
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Mouse.removeListener.__constructor__(undefined)
+Testing __proto__()
+testing _global.Mouse.addListener(function)
+Trying to construct _global.Mouse.addListener
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Mouse.addListener.__constructor__(undefined)
+Testing __proto__()
+testing _global.Mouse.broadcastMessage(function)
+Trying to construct _global.Mouse.broadcastMessage
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse.hide(function)
+Trying to construct _global.Mouse.hide
+Object was constructed
+Testing __constructor__()
+testing _global.Mouse.show(function)
+Trying to construct _global.Mouse.show
+Object was constructed
+Testing __constructor__()
+testing _global.Selection(object)
+testing _global.Selection.toLocaleString(function)
+Trying to construct _global.Selection.toLocaleString
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Selection.toLocaleString.__constructor__(undefined)
+Testing __proto__()
+testing _global.Selection.isPropertyEnumerable(function)
+Trying to construct _global.Selection.isPropertyEnumerable
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.isPrototypeOf(function)
+Trying to construct _global.Selection.isPrototypeOf
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.hasOwnProperty(function)
+Trying to construct _global.Selection.hasOwnProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.toString(function)
+Trying to construct _global.Selection.toString
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.valueOf(function)
+Trying to construct _global.Selection.valueOf
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.addProperty(function)
+Trying to construct _global.Selection.addProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.unwatch(function)
+Trying to construct _global.Selection.unwatch
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.watch(function)
+Trying to construct _global.Selection.watch
+Object was constructed
+Testing __constructor__()
+testing _global.Selection._listeners(object)
+testing _global.Selection._listeners.toLocaleString(function)
+Trying to construct _global.Selection._listeners.toLocaleString
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Selection._listeners.toLocaleString.__constructor__(undefined)
+Testing __proto__()
+testing _global.Selection._listeners.isPropertyEnumerable(function)
+Trying to construct _global.Selection._listeners.isPropertyEnumerable
+Object was constructed
+Testing __constructor__()
+testing _global.Selection._listeners.isPrototypeOf(function)
+Trying to construct _global.Selection._listeners.isPrototypeOf
+Object was constructed
+Testing __constructor__()
+testing _global.Selection._listeners.hasOwnProperty(function)
+Trying to construct _global.Selection._listeners.hasOwnProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Selection._listeners.toString(function)
+Trying to construct _global.Selection._listeners.toString
+Object was constructed
+Testing __constructor__()
+testing _global.Selection._listeners.valueOf(function)
+Trying to construct _global.Selection._listeners.valueOf
+Object was constructed
+Testing __constructor__()
+testing _global.Selection._listeners.addProperty(function)
+Trying to construct _global.Selection._listeners.addProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Selection._listeners.unwatch(function)
+Trying to construct _global.Selection._listeners.unwatch
+Object was constructed
+Testing __constructor__()
+testing _global.Selection._listeners.watch(function)
+Trying to construct _global.Selection._listeners.watch
+Object was constructed
+Testing __constructor__()
+testing _global.Selection._listeners.length(number)
+testing _global.Selection.removeListener(function)
+Trying to construct _global.Selection.removeListener
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Selection.removeListener.__constructor__(undefined)
+Testing __proto__()
+testing _global.Selection.addListener(function)
+Trying to construct _global.Selection.addListener
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Selection.addListener.__constructor__(undefined)
+Testing __proto__()
+testing _global.Selection.broadcastMessage(function)
+Trying to construct _global.Selection.broadcastMessage
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.setSelection(function)
+Trying to construct _global.Selection.setSelection
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.setFocus(function)
+Trying to construct _global.Selection.setFocus
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.getFocus(function)
+Trying to construct _global.Selection.getFocus
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.getCaretIndex(function)
+Trying to construct _global.Selection.getCaretIndex
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.getEndIndex(function)
+Trying to construct _global.Selection.getEndIndex
+Object was constructed
+Testing __constructor__()
+testing _global.Selection.getBeginIndex(function)
+Trying to construct _global.Selection.getBeginIndex
+Object was constructed
+Testing __constructor__()
+testing _global.LoadVars(function)
+Trying to construct _global.LoadVars
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing addRequestHeader()
+Testing onData()
+Testing onLoad()
+Testing contentType()
+Testing toString()
+Testing getBytesTotal()
+Testing getBytesLoaded()
+Testing decode()
+Testing sendAndLoad()
+Testing send()
+Testing load()
+Testing constructor()
+Testing __constructor__()
+testing _global.LoadVars.__constructor__(undefined)
+Testing __proto__()
+testing _global.XML(function)
+Trying to construct _global.XML
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing namespaceURI()
+Testing localName()
+Testing prefix()
+Testing previousSibling()
+Testing parentNode()
+Testing nodeValue()
+Testing nodeType()
+Testing nodeName()
+Testing nextSibling()
+Testing lastChild()
+Testing firstChild()
+Testing childNodes()
+Testing attributes()
+Testing getPrefixForNamespace()
+Testing getNamespaceForPrefix()
+Testing toString()
+Testing hasChildNodes()
+Testing appendChild()
+Testing insertBefore()
+Testing removeNode()
+Testing cloneNode()
+Testing xmlDecl()
+Testing status()
+Testing loaded()
+Testing ignoreWhite()
+Testing docTypeDecl()
+Testing contentType()
+Testing addRequestHeader()
+Testing getBytesTotal()
+Testing getBytesLoaded()
+Testing onData()
+Testing onLoad()
+Testing sendAndLoad()
+Testing send()
+Testing load()
+Testing parseXML()
+Testing createTextNode()
+Testing createElement()
+Testing __constructor__()
+testing _global.XML.__constructor__(undefined)
+Testing __proto__()
+testing _global.XMLNode(function)
+Trying to construct _global.XMLNode
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing namespaceURI()
+Testing localName()
+Testing prefix()
+Testing previousSibling()
+Testing parentNode()
+Testing nodeValue()
+Testing nodeType()
+Testing nodeName()
+Testing nextSibling()
+Testing lastChild()
+Testing firstChild()
+Testing childNodes()
+Testing attributes()
+Testing getPrefixForNamespace()
+Testing getNamespaceForPrefix()
+Testing toString()
+Testing hasChildNodes()
+Testing appendChild()
+Testing insertBefore()
+Testing removeNode()
+Testing cloneNode()
+Testing constructor()
+Testing __constructor__()
+testing _global.XMLNode.__constructor__(undefined)
+Testing __proto__()
+testing _global.Sound(function)
+Trying to construct _global.Sound
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing checkPolicyFile()
+Testing areSoundsInaccessible()
+Testing getBytesTotal()
+Testing getBytesLoaded()
+Testing loadSound()
+Testing setPosition()
+Testing getPosition()
+Testing setDuration()
+Testing getDuration()
+Testing start()
+Testing attachSound()
+Testing stop()
+Testing setVolume()
+Testing setTransform()
+Testing setPan()
+Testing getVolume()
+Testing getTransform()
+Testing getPan()
+Testing constructor()
+Testing __constructor__()
+testing _global.Sound.__constructor__(undefined)
+Testing __proto__()
+testing _global.Math(object)
+testing _global.Math.toLocaleString(function)
+Trying to construct _global.Math.toLocaleString
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Math.toLocaleString.__constructor__(undefined)
+Testing __proto__()
+testing _global.Math.isPropertyEnumerable(function)
+Trying to construct _global.Math.isPropertyEnumerable
+Object was constructed
+Testing __constructor__()
+testing _global.Math.isPrototypeOf(function)
+Trying to construct _global.Math.isPrototypeOf
+Object was constructed
+Testing __constructor__()
+testing _global.Math.hasOwnProperty(function)
+Trying to construct _global.Math.hasOwnProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Math.toString(function)
+Trying to construct _global.Math.toString
+Object was constructed
+Testing __constructor__()
+testing _global.Math.valueOf(function)
+Trying to construct _global.Math.valueOf
+Object was constructed
+Testing __constructor__()
+testing _global.Math.addProperty(function)
+Trying to construct _global.Math.addProperty
+Object was constructed
+Testing __constructor__()
+testing _global.Math.unwatch(function)
+Trying to construct _global.Math.unwatch
+Object was constructed
+Testing __constructor__()
+testing _global.Math.watch(function)
+Trying to construct _global.Math.watch
+Object was constructed
+Testing __constructor__()
+testing _global.Math.pow(function)
+Trying to construct _global.Math.pow
+Object was constructed
+Testing __constructor__()
+testing _global.Math.acos(function)
+Trying to construct _global.Math.acos
+Object was constructed
+Testing __constructor__()
+testing _global.Math.asin(function)
+Trying to construct _global.Math.asin
+Object was constructed
+Testing __constructor__()
+testing _global.Math.atan(function)
+Trying to construct _global.Math.atan
+Object was constructed
+Testing __constructor__()
+testing _global.Math.ceil(function)
+Trying to construct _global.Math.ceil
+Object was constructed
+Testing __constructor__()
+testing _global.Math.floor(function)
+Trying to construct _global.Math.floor
+Object was constructed
+Testing __constructor__()
+testing _global.Math.random(function)
+Trying to construct _global.Math.random
+Object was constructed
+Testing __constructor__()
+testing _global.Math.round(function)
+Trying to construct _global.Math.round
+Object was constructed
+Testing __constructor__()
+testing _global.Math.sqrt(function)
+Trying to construct _global.Math.sqrt
+Object was constructed
+Testing __constructor__()
+testing _global.Math.log(function)
+Trying to construct _global.Math.log
+Object was constructed
+Testing __constructor__()
+testing _global.Math.exp(function)
+Trying to construct _global.Math.exp
+Object was constructed
+Testing __constructor__()
+testing _global.Math.tan(function)
+Trying to construct _global.Math.tan
+Object was constructed
+Testing __constructor__()
+testing _global.Math.atan2(function)
+Trying to construct _global.Math.atan2
+Object was constructed
+Testing __constructor__()
+testing _global.Math.cos(function)
+Trying to construct _global.Math.cos
+Object was constructed
+Testing __constructor__()
+testing _global.Math.sin(function)
+Trying to construct _global.Math.sin
+Object was constructed
+Testing __constructor__()
+testing _global.Math.max(function)
+Trying to construct _global.Math.max
+Object was constructed
+Testing __constructor__()
+testing _global.Math.min(function)
+Trying to construct _global.Math.min
+Object was constructed
+Testing __constructor__()
+testing _global.Math.abs(function)
+Trying to construct _global.Math.abs
+Object was constructed
+Testing __constructor__()
+testing _global.Math.E(number)
+testing _global.Math.LN10(number)
+testing _global.Math.LN2(number)
+testing _global.Math.LOG10E(number)
+testing _global.Math.LOG2E(number)
+testing _global.Math.PI(number)
+testing _global.Math.SQRT1_2(number)
+testing _global.Math.SQRT2(number)
+testing _global.Array(function)
+Trying to construct _global.Array
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing sortOn()
+Testing reverse()
+Testing sort()
+Testing toString()
+Testing splice()
+Testing join()
+Testing slice()
+Testing unshift()
+Testing shift()
+Testing concat()
+Testing pop()
+Testing push()
+Testing constructor()
+Testing length()
+testing _global.Array.length(undefined)
+Testing __constructor__()
+testing _global.Array.__constructor__(undefined)
+Testing __proto__()
+testing _global.String(function)
+Trying to construct _global.String
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing substr()
+Testing split()
+Testing substring()
+Testing slice()
+Testing lastIndexOf()
+Testing indexOf()
+Testing concat()
+Testing charCodeAt()
+Testing charAt()
+Testing toLowerCase()
+Testing toUpperCase()
+Testing toString()
+Testing valueOf()
+Testing constructor()
+Testing length()
+testing _global.String.length(undefined)
+Testing __constructor__()
+testing _global.String.__constructor__(undefined)
+Testing __proto__()
+testing _global.Date(function)
+Trying to construct _global.Date
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing valueOf()
+Testing setUTCMilliseconds()
+Testing setUTCSeconds()
+Testing setUTCMinutes()
+Testing setUTCHours()
+Testing setUTCDate()
+Testing setUTCMonth()
+Testing setUTCFullYear()
+Testing getUTCMilliseconds()
+Testing getUTCSeconds()
+Testing getUTCMinutes()
+Testing getUTCHours()
+Testing getUTCDay()
+Testing getUTCDate()
+Testing getUTCMonth()
+Testing getUTCYear()
+Testing getUTCFullYear()
+Testing setYear()
+Testing toString()
+Testing getTimezoneOffset()
+Testing setTime()
+Testing getTime()
+Testing setMilliseconds()
+Testing setSeconds()
+Testing setMinutes()
+Testing setHours()
+Testing setDate()
+Testing setMonth()
+Testing setFullYear()
+Testing getMilliseconds()
+Testing getSeconds()
+Testing getMinutes()
+Testing getHours()
+Testing getDay()
+Testing getDate()
+Testing getMonth()
+Testing getYear()
+Testing getFullYear()
+Testing constructor()
+Testing __constructor__()
+testing _global.Date.__constructor__(undefined)
+Testing __proto__()
+testing _global.Boolean(function)
+Trying to construct _global.Boolean
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing toString()
+Testing valueOf()
+Testing constructor()
+Testing __constructor__()
+testing _global.Boolean.__constructor__(undefined)
+Testing __proto__()
+testing _global.Number(function)
+Trying to construct _global.Number
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing toString()
+Testing valueOf()
+Testing constructor()
+Testing __constructor__()
+testing _global.Number.__constructor__(undefined)
+Testing __proto__()
+testing _global.o(null)
+testing _global.showRedrawRegions(function)
+Trying to construct _global.showRedrawRegions
+Object was constructed
+Testing __constructor__()
+testing _global.setTimeout(function)
+Trying to construct _global.setTimeout
+Object was constructed
+Testing __constructor__()
+testing _global.clearInterval(function)
+Trying to construct _global.clearInterval
+Object was constructed
+Testing __constructor__()
+testing _global.clearTimeout(function)
+Trying to construct _global.clearTimeout
+Object was constructed
+Testing __constructor__()
+testing _global.setInterval(function)
+Trying to construct _global.setInterval
+Object was constructed
+Testing __constructor__()
+testing _global.isFinite(function)
+Trying to construct _global.isFinite
+Object was constructed
+Testing __constructor__()
+testing _global.isNaN(function)
+Trying to construct _global.isNaN
+Object was constructed
+Testing __constructor__()
+testing _global.updateAfterEvent(function)
+Trying to construct _global.updateAfterEvent
+Object was constructed
+Testing __constructor__()
+testing _global.trace(function)
+Trying to construct _global.trace
+Object was constructed
+Testing __constructor__()
+testing _global.parseFloat(function)
+Trying to construct _global.parseFloat
+Object was constructed
+Testing __constructor__()
+testing _global.parseInt(function)
+Trying to construct _global.parseInt
+Object was constructed
+Testing __constructor__()
+testing _global.unescape(function)
+Trying to construct _global.unescape
+Object was constructed
+Testing __constructor__()
+testing _global.escape(function)
+Trying to construct _global.escape
+Object was constructed
+Testing __constructor__()
+testing _global.ASSetNativeAccessor(function)
+Trying to construct _global.ASSetNativeAccessor
+Object was constructed
+Testing __constructor__()
+testing _global.ASSetNative(function)
+Trying to construct _global.ASSetNative
+Object was constructed
+Testing __constructor__()
+testing _global.ASSetPropFlags(function)
+Trying to construct _global.ASSetPropFlags
+Object was constructed
+Testing __constructor__()
+testing _global.RemoteLSOUsage(function)
+Trying to construct _global.RemoteLSOUsage
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.RemoteLSOUsage.__constructor__(undefined)
+Testing __proto__()
+testing _global.AssetCache(function)
+Trying to construct _global.AssetCache
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.AssetCache.__constructor__(undefined)
+Testing __proto__()
+testing _global.AsSetupError(function)
+Trying to construct _global.AsSetupError
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.AsSetupError.__constructor__(undefined)
+Testing __proto__()
+testing _global.Error(function)
+Trying to construct _global.Error
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing toString()
+Testing name()
+Testing message()
+Testing constructor()
+Testing __constructor__()
+testing _global.Error.__constructor__(undefined)
+Testing __proto__()
+testing _global.ContextMenu(function)
+Trying to construct _global.ContextMenu
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing hideBuiltInItems()
+Testing copy()
+Testing constructor()
+Testing customItems()
+testing _global.ContextMenu.customItems(undefined)
+Testing builtInItems()
+testing _global.ContextMenu.builtInItems(undefined)
+Testing onSelect()
+testing _global.ContextMenu.onSelect(undefined)
+Testing __constructor__()
+testing _global.ContextMenu.__constructor__(undefined)
+Testing __proto__()
+testing _global.ContextMenuItem(function)
+Trying to construct _global.ContextMenuItem
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing copy()
+Testing constructor()
+Testing visible()
+testing _global.ContextMenuItem.visible(undefined)
+Testing enabled()
+testing _global.ContextMenuItem.enabled(undefined)
+Testing separatorBefore()
+testing _global.ContextMenuItem.separatorBefore(undefined)
+Testing onSelect()
+testing _global.ContextMenuItem.onSelect(undefined)
+Testing caption()
+testing _global.ContextMenuItem.caption(undefined)
+Testing __constructor__()
+testing _global.ContextMenuItem.__constructor__(undefined)
+Testing __proto__()
+testing _global.LocalConnection(function)
+Trying to construct _global.LocalConnection
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing domain()
+Testing close()
+Testing send()
+Testing connect()
+Testing constructor()
+Testing __constructor__()
+testing _global.LocalConnection.__constructor__(undefined)
+Testing __proto__()
+testing _global.SharedObject(function)
+Trying to construct _global.SharedObject
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing clear()
+Testing setFps()
+Testing getSize()
+Testing close()
+Testing flush()
+Testing send()
+Testing connect()
+Testing constructor()
+Testing __constructor__()
+testing _global.SharedObject.__constructor__(undefined)
+Testing __proto__()
+testing _global.Microphone(function)
+Trying to construct _global.Microphone
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing setUseEchoSuppression()
+Testing setGain()
+Testing setRate()
+Testing setSilenceLevel()
+Testing constructor()
+Testing __constructor__()
+testing _global.Microphone.__constructor__(undefined)
+Testing __proto__()
+testing _global.Camera(function)
+Trying to construct _global.Camera
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing setCursor()
+Testing setLoopback()
+Testing setMotionLevel()
+Testing setKeyFrameInterval()
+Testing setQuality()
+Testing setMode()
+Testing constructor()
+Testing __constructor__()
+testing _global.Camera.__constructor__(undefined)
+Testing __proto__()
+testing _global.NetStream(function)
+Trying to construct _global.NetStream
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing checkPolicyFile()
+Testing setBufferTime()
+Testing send()
+Testing attachVideo()
+Testing attachAudio()
+Testing close()
+Testing seek()
+Testing pause()
+Testing receiveVideo()
+Testing receiveAudio()
+Testing play()
+Testing publish()
+Testing constructor()
+Testing __constructor__()
+testing _global.NetStream.__constructor__(undefined)
+Testing __proto__()
+testing _global.NetConnection(function)
+Trying to construct _global.NetConnection
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing addHeader()
+Testing call()
+Testing close()
+Testing connect()
+Testing usingTLS()
+Testing connectedProxyType()
+Testing proxyType()
+Testing constructor()
+Testing contentType()
+testing _global.NetConnection.contentType(undefined)
+Testing isConnected()
+testing _global.NetConnection.isConnected(undefined)
+Testing __constructor__()
+testing _global.NetConnection.__constructor__(undefined)
+Testing __proto__()
+testing _global.Color(function)
+Trying to construct _global.Color
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing getTransform()
+Testing getRGB()
+Testing setTransform()
+Testing setRGB()
+Testing constructor()
+Testing target()
+testing _global.Color.target(undefined)
+Testing __constructor__()
+testing _global.Color.__constructor__(undefined)
+Testing __proto__()
+testing _global.AsBroadcaster(function)
+Trying to construct _global.AsBroadcaster
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.AsBroadcaster.__constructor__(undefined)
+Testing __proto__()
+testing _global.XMLSocket(function)
+Trying to construct _global.XMLSocket
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing onData()
+Testing close()
+Testing send()
+Testing connect()
+Testing constructor()
+Testing __constructor__()
+testing _global.XMLSocket.__constructor__(undefined)
+Testing __proto__()
+testing _global.MovieClip(function)
+Trying to construct _global.MovieClip
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing getTextSnapshot()
+Testing createTextField()
+Testing beginBitmapFill()
+Testing beginMeshFill()
+Testing lineGradientStyle()
+Testing clear()
+Testing endFill()
+Testing lineStyle()
+Testing curveTo()
+Testing lineTo()
+Testing moveTo()
+Testing beginGradientFill()
+Testing beginFill()
+Testing createEmptyMovieClip()
+Testing getRect()
+Testing attachBitmap()
+Testing getSWFVersion()
+Testing getInstanceAtDepth()
+Testing getNextHighestDepth()
+Testing stopDrag()
+Testing startDrag()
+Testing removeMovieClip()
+Testing duplicateMovieClip()
+Testing gotoAndStop()
+Testing gotoAndPlay()
+Testing prevFrame()
+Testing nextFrame()
+Testing stop()
+Testing play()
+Testing setMask()
+Testing getDepth()
+Testing attachVideo()
+Testing attachAudio()
+Testing getBytesLoaded()
+Testing getBytesTotal()
+Testing getBounds()
+Testing hitTest()
+Testing globalToLocal()
+Testing localToGlobal()
+Testing swapDepths()
+Testing attachMovie()
+Testing loadMovie()
+Testing loadVariables()
+Testing unloadMovie()
+Testing getURL()
+Testing meth()
+Testing scale9Grid()
+Testing forceSmoothing()
+Testing blendMode()
+Testing transform()
+Testing filters()
+Testing scrollRect()
+Testing opaqueBackground()
+Testing cacheAsBitmap()
+Testing _lockroot()
+Testing tabIndex()
+Testing enabled()
+Testing useHandCursor()
+Testing constructor()
+Testing __constructor__()
+testing _global.MovieClip.__constructor__(undefined)
+Testing __proto__()
+testing _global.Infinity(number)
+testing _global.NaN(number)
+testing _global.enableDebugConsole(function)
+Trying to construct _global.enableDebugConsole
+Object was constructed
+Testing __constructor__()
+testing _global.Function(function)
+Trying to construct _global.Function
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing apply()
+Testing call()
+Testing constructor()
+Testing __constructor__()
+testing _global.Function.__constructor__(undefined)
+Testing __proto__()
+testing _global.Object(function)
+Trying to construct _global.Object
+Object was constructed
+Testing toLocaleString()
+Testing isPropertyEnumerable()
+Testing isPrototypeOf()
+Testing hasOwnProperty()
+Testing toString()
+Testing valueOf()
+Testing addProperty()
+Testing unwatch()
+Testing watch()
+Testing constructor()
+Testing __constructor__()
+testing _global.Object.__constructor__(undefined)
+Testing __proto__()
+testing _global.ASconstructor(function)
+Trying to construct _global.ASconstructor
+Object was constructed
+Testing __constructor__()
+testing _global.ASnative(function)
+Trying to construct _global.ASnative
+Object was constructed
+Testing __constructor__()
+PASSED: Nothing crashed gnash

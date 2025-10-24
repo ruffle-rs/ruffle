@@ -1,0 +1,7 @@
+SWF5
+
+[Matrix.as debug-22403-05c7ba106]
+PASSED: typeof(flash) == 'undefined' [./Matrix.as:39]
+#passed: 1
+#failed: 0
+#total tests run: 1

@@ -1,0 +1,7 @@
+SWF5
+
+[Video.as debug-22405-0e18b8076]
+PASSED: Video == undefined [./Video.as:30]
+#passed: 1
+#failed: 0
+#total tests run: 1

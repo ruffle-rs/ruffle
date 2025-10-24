@@ -1,0 +1,11 @@
+SWF5
+
+[AsBroadcaster.as debug-22403-05c7ba106]
+undefined
+AsBroadcaster exists but doesn't provide any 'prototype' or 'initialize' for SWF < 6
+PASSED: typeof(AsBroadcaster) == 'function' [./AsBroadcaster.as:31]
+PASSED: typeof(AsBroadcaster.prototype) == 'undefined' [./AsBroadcaster.as:32]
+PASSED: typeof(AsBroadcaster.initialize) == 'undefined' [./AsBroadcaster.as:33]
+#passed: 3
+#failed: 0
+#total tests run: 3
