@@ -11,7 +11,7 @@ pub fn eliminate_dead_code(ops: &[Cell<Op<'_>>], jump_targets: &HashSet<usize>) 
             Op::Jump { offset } => {
                 let is_reachable = (i..offset).any(|pos| jump_targets.contains(&pos));
 
-                if !is_reachable {
+                if !is_reachable && i < offset {
                     for op in &ops[i..offset] {
                         // Set all unreachable ops to Nop, including the Jump op
                         op.set(Op::Nop);
@@ -23,7 +23,7 @@ pub fn eliminate_dead_code(ops: &[Cell<Op<'_>>], jump_targets: &HashSet<usize>) 
                 // (`PopJump` in this case) to `Pop` instead of `Nop`.
                 let is_reachable = (i..offset).any(|pos| jump_targets.contains(&pos));
 
-                if !is_reachable {
+                if !is_reachable && i < offset {
                     for op in &ops[i..offset] {
                         // Set all unreachable ops to Nop, including the Jump op
                         op.set(Op::Nop);

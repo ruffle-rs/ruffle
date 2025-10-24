@@ -28,6 +28,8 @@ pub fn optimize<'gc>(
     let code_slice = Cell::from_mut(code.as_mut_slice());
     let code_slice = code_slice.as_slice_of_cells();
 
+    let mut jump_targets = jump_targets.clone();
+
     // We run the preprocess peephole before assembling blocks because it removes
     // zero-length jumps, which usually reduces the number of blocks in obfuscated code.
     peephole::preprocess_peephole(code_slice);
@@ -38,12 +40,12 @@ pub fn optimize<'gc>(
         code_slice,
         method_exceptions,
         resolved_parameters,
-        jump_targets,
+        &mut jump_targets,
     )?;
 
-    peephole::postprocess_peephole(code_slice, jump_targets, !method_exceptions.is_empty());
+    peephole::postprocess_peephole(code_slice, &jump_targets, !method_exceptions.is_empty());
 
-    dce::eliminate_dead_code(code_slice, jump_targets);
+    dce::eliminate_dead_code(code_slice, &jump_targets);
 
     nop_remover::remove_nops(code, method_exceptions);
 
