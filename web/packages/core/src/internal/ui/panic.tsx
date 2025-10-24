@@ -268,13 +268,14 @@ function createPanicError(error: Error | null): {
 
         if (
             error.cause.name === "CompileError" &&
-            message.includes("bad type")
+            (message.includes("bad type") ||
+                message.includes("wasm simd unsupported"))
         ) {
             // Self hosted: User has a browser without support for necessary WebAssembly extensions
             return {
                 body: textAsParagraphs("error-wasm-unsupported-browser"),
                 actions: [
-                    CommonActions.openWiki("#web"),
+                    CommonActions.openWiki("Using-Ruffle#browser-extension"),
                     CommonActions.ShowDetails,
                 ],
             };
