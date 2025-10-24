@@ -229,7 +229,7 @@ jobs:
 
   build-mac-universal-binary:
     name: Build macOS universal binary
-    needs: [create-nightly-release, build, build-browser-extensions]
+    needs: [create-nightly-release, build, build-web]
     runs-on: macos-15
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
@@ -351,11 +351,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # The first couple steps of this and the `build-web-demo-and-selfhosted` job
-  # (tool setup and dependency install) are identical. Hopefully in the future
-  # https://github.com/actions/runner/issues/1182 can help deduplicate them.
-  build-browser-extensions:
-    name: Build browser extensions
+  build-web:
+    # Build browser extensions, web demo, selfhosted package, and docs
+    name: Build web
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.is_active == 'true'
     runs-on: ubuntu-24.04
@@ -420,6 +418,8 @@ jobs:
         env:
           CFG_RELEASE_CHANNEL: nightly
           VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
+          # NOTE: In the future, we might want to enable some features (like `webgpu`) only in
+          # the demo build, for limited testing (like a Chrome origin trial) on ruffle.rs.
           CARGO_FEATURES: jpegxr
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
           WASM_SOURCE: cargo_and_store
@@ -507,102 +507,6 @@ jobs:
         working-directory: web/packages/extension
         shell: bash -l {0}
         run: npm run sign-firefox
-
-  build-web-demo-and-selfhosted:
-    name: Build web demo and selfhosted package with docs, and release assets for dual-wasm extensions
-    needs: create-nightly-release
-    if: needs.create-nightly-release.outputs.is_active == 'true'
-    runs-on: ubuntu-24.04
-    permissions:
-      actions: read
-      attestations: write
-      checks: read
-      contents: write
-      id-token: write
-      pull-requests: read
-      statuses: write
-    steps:
-      - name: Clone Ruffle repo
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          targets: wasm32-unknown-unknown
-          components: rust-src
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version: "24"
-          registry-url: https://registry.npmjs.org
-
-      # wasm-bindgen-cli version must match wasm-bindgen crate version.
-      # Be sure to update in test_web.yml, Cargo.toml, web/docker/Dockerfile,
-      # and web/README.md as well.
-      - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.101
-
-      # Keep the version number in sync in all workflows,
-      # and in the extension builder Dockerfile!
-      - name: Install wasm-opt
-        uses: sigoden/install-binary@v1
-        with:
-          repo: WebAssembly/binaryen
-          tag: version_124
-          name: wasm-opt
-
-      - name: Install node packages
-        working-directory: web
-        shell: bash -l {0}
-        run: npm ci
-
-      - name: Seal version data
-        shell: bash -l {0}
-        working-directory: web
-        env:
-          CFG_RELEASE_CHANNEL: nightly
-          VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
-          ENABLE_VERSION_SEAL: "true"
-          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
-        run: npm run version-seal
-
-      - name: Build web
-        env:
-          CFG_RELEASE_CHANNEL: nightly
-          VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
-          # NOTE: In the future, we might want to enable some features (like `webgpu`) only in
-          # the demo build, for limited testing (like a Chrome origin trial) on ruffle.rs.
-          CARGO_FEATURES: jpegxr
-          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
-          WASM_SOURCE: cargo_and_store
-        working-directory: web
-        shell: bash -l {0}
-        run: npm run build:dual-wasm-repro
-
-      # NOTE: This is done here because the job that builds the extensions for publication doesn't have the vanilla (MVP) WASM modules, but for the selfhosted package we build them both
-      - name: Upload dual-wasm generic extension
-        run: |
-          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-dual-wasm.zip"
-          cp "./web/packages/extension/dist/ruffle_extension.zip" "$package_file"
-          gh release upload "$tag_name" "$package_file"
-          rm "$package_file"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload dual-wasm Firefox extension (unsigned)
-        run: |
-          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-dual-wasm-unsigned.xpi"
-          cp "./web/packages/extension/dist/firefox_unsigned.xpi" "$package_file"
-          gh release upload "$tag_name" "$package_file"
-          rm "$package_file"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build web docs
         working-directory: web
