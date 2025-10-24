@@ -14,7 +14,7 @@ use crate::string::{AvmString, StringContext, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
-use std::{borrow::Cow, num::NonZeroU8};
+use std::{borrow::Cow, cell::Cell, num::NonZeroU8};
 use swf::{avm1::types::FunctionFlags, SwfStr};
 
 /// Represents a function defined in Ruffle's code.
@@ -341,6 +341,10 @@ impl<'gc> Avm1Function<'gc> {
             this
         };
 
+        let local_registers: Box<[_]> = (0..self.register_count())
+            .map(|_| Cell::new(Value::Undefined))
+            .collect();
+
         let max_recursion_depth = activation.context.avm1.max_recursion_depth();
         let mut frame = Activation::from_action(
             activation.context,
@@ -351,9 +355,8 @@ impl<'gc> Avm1Function<'gc> {
             base_clip,
             local_this,
             Some(callee),
+            &local_registers,
         );
-
-        frame.allocate_local_registers(self.register_count());
 
         let mut preload_r = 1;
         self.load_this(&mut frame, this, &mut preload_r);
