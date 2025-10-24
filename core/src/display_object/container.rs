@@ -1104,8 +1104,7 @@ impl<'gc> ChildContainer<'gc> {
             if mc.has_unload_handler() {
                 return true;
             // otherwise, check for a dynamic unload handler
-            } else {
-                let obj = child.object1_or_undef().coerce_to_object(activation);
+            } else if let Some(obj) = child.object1() {
                 if obj.has_property(activation, istr!("onUnload")) {
                     return true;
                 }

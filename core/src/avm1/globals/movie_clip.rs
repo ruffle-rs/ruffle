@@ -809,10 +809,7 @@ fn attach_movie<'gc>(
         };
         new_clip.post_instantiation(activation.context, init_object, Instantiator::Avm1, true);
 
-        Ok(new_clip
-            .object1_or_undef()
-            .coerce_to_object(activation)
-            .into())
+        Ok(new_clip.object1_or_undef())
     } else {
         avm_warn!(activation, "Unable to attach '{}'", export_name);
         Ok(Value::Undefined)

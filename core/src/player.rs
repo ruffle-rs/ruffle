@@ -1091,15 +1091,14 @@ impl Player {
 
                         for display_object in activation.context.stage.iter_render_list() {
                             let level = display_object.depth();
-                            let object = display_object
-                                .object1_or_undef()
-                                .coerce_to_object(&mut activation);
-                            dumper.print_variables(
-                                &format!("Level #{level}:"),
-                                &format!("_level{level}"),
-                                object,
-                                &mut activation,
-                            );
+                            if let Some(object) = display_object.object1() {
+                                dumper.print_variables(
+                                    &format!("Level #{level}:"),
+                                    &format!("_level{level}"),
+                                    object,
+                                    &mut activation,
+                                );
+                            }
                         }
                         tracing::info!("Variable dump:\n{}", dumper.output());
                     });
