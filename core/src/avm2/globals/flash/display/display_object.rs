@@ -411,20 +411,31 @@ pub fn set_y<'gc>(
 }
 
 pub fn get_z<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm2_stub_getter!(activation, "flash.display.DisplayObject", "z");
-    Ok(0.into())
+    let this = this.as_object().unwrap();
+
+    if let Some(dobj) = this.as_display_object() {
+        return Ok(dobj.z().into());
+    }
+    Ok(Value::Undefined)
 }
 
 pub fn set_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    this: Value<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "z");
+    let this = this.as_object().unwrap();
+
+    if let Some(dobj) = this.as_display_object() {
+        let z = args.get_f64(0);
+        dobj.set_z(z);
+        dobj.base().set_has_matrix3d_stub(true);
+    }
     Ok(Value::Undefined)
 }
 
