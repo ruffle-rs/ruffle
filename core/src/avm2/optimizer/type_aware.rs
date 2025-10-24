@@ -614,7 +614,7 @@ pub fn type_aware_optimize<'gc>(
     code_slice: &[Cell<Op<'gc>>],
     method_exceptions: &mut [Exception<'gc>],
     resolved_parameters: &[ResolvedParamConfig<'gc>],
-    jump_targets: &HashSet<usize>,
+    jump_targets: &mut HashSet<usize>,
 ) -> Result<(), Error<'gc>> {
     let (block_list, op_index_to_block_index_table) = assemble_blocks(code_slice, jump_targets);
 
@@ -722,6 +722,11 @@ pub fn type_aware_optimize<'gc>(
             )?;
         }
     }
+
+    // It's possible that an optimization removed some jumps, so let's
+    // recalculate the jump targets. This makes some later optimizations, such
+    // as dead code elimination, more likely to happen.
+    recalculate_jump_targets(code_slice, method_exceptions, jump_targets);
 
     Ok(())
 }
@@ -2356,4 +2361,37 @@ fn optimize_call_property<'gc>(
     }
 
     Ok(None)
+}
+
+fn recalculate_jump_targets<'gc>(
+    ops: &[Cell<Op<'gc>>],
+    exceptions: &[Exception<'gc>],
+    jump_targets: &mut HashSet<usize>,
+) {
+    *jump_targets = HashSet::with_capacity(jump_targets.len());
+
+    for exception in exceptions {
+        jump_targets.insert(exception.target_offset);
+    }
+
+    for op in ops {
+        match op.get() {
+            Op::IfFalse { offset }
+            | Op::IfTrue { offset }
+            | Op::Jump { offset }
+            | Op::PopJump { offset } => {
+                jump_targets.insert(offset);
+            }
+            Op::LookupSwitch(lookup_switch) => {
+                for target in lookup_switch
+                    .case_offsets
+                    .iter()
+                    .chain(std::slice::from_ref(&lookup_switch.default_offset))
+                {
+                    jump_targets.insert(target.get());
+                }
+            }
+            _ => {}
+        }
+    }
 }
