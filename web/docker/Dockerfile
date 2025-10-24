@@ -23,4 +23,4 @@ WORKDIR ruffle/web
 ENV CARGO_FEATURES=jpegxr
 ENV WASM_SOURCE=existing
 RUN npm ci
-RUN npm run build:repro
+RUN npm run build:dual-wasm-repro

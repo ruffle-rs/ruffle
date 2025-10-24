@@ -425,7 +425,7 @@ jobs:
           WASM_SOURCE: cargo_and_store
         working-directory: web
         shell: bash -l {0}
-        run: npm run build:repro
+        run: npm run build:dual-wasm-repro
 
       - name: Produce reproducible source archive
         shell: bash -l {0}
