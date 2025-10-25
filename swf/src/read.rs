@@ -52,6 +52,33 @@ pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
     Err(Error::invalid_data("Invalid ASN1 blob"))
 }
 
+/// Parses an SWF from data in an SWF projector bundle
+/// Returns an `Error` if this is not a valid SWF projector bundle.
+pub fn decompress_projector_bundle(data: &[u8]) -> Result<SwfBuf> {
+    let len = data.len();
+    if len < 8 {
+        return Err(Error::invalid_data("Invalid SWF projector bundle data"));
+    }
+    if data[len - 8..len - 4] != [0x56, 0x34, 0x12, 0xFA] {
+        return Err(Error::invalid_data(
+            "Invalid SWF projector bundle signature",
+        ));
+    }
+
+    let swf_size = u32::from_le_bytes(
+        data[len - 4..]
+            .try_into()
+            .unwrap_or([0xFF, 0xFF, 0xFF, 0xFF]),
+    ) as usize;
+
+    if swf_size > len - 8 {
+        //catch possible overflow
+        return Err(Error::invalid_data("Invalid SWF projector bundle size"));
+    }
+
+    decompress_swf(&data[len - 8 - swf_size..len - 8])
+}
+
 /// Parses an SWF header and returns a `Reader` that can be used
 /// to read the SWF tags inside the SWF file.
 ///
