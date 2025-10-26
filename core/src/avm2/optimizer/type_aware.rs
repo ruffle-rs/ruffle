@@ -14,14 +14,6 @@ use gc_arena::Gc;
 use std::cell::Cell;
 use std::collections::{HashMap, HashSet};
 
-#[expect(clippy::enum_variant_names)]
-#[derive(Clone, Copy, Debug, PartialEq)]
-enum NullState {
-    NotNull,
-    MaybeNull,
-    IsNull,
-}
-
 #[derive(Clone, Copy, Debug, PartialEq)]
 enum ConstantValue {
     True,
@@ -58,9 +50,8 @@ struct OptValue<'gc> {
     // should only be set if class is numeric.
     pub contains_valid_unsigned: bool,
 
-    // TODO: FP actually has a separate `null` type just for this, this can be observed in VerifyErrors
-    // (a separate type would also prevent accidental "null int" values)
-    pub null_state: NullState,
+    // Whether this value is guaranteed to be neither `null` nor `undefined`.
+    pub not_null: bool,
 
     // The constant that this value represents, if we know it. For example, we
     // know that a `pushtrue` call will push `true`, represented by
@@ -73,7 +64,7 @@ impl<'gc> OptValue<'gc> {
             class: None,
             contains_valid_integer: false,
             contains_valid_unsigned: false,
-            null_state: NullState::MaybeNull,
+            not_null: false,
             constant_value: None,
         }
     }
@@ -81,7 +72,7 @@ impl<'gc> OptValue<'gc> {
     pub fn null() -> Self {
         Self {
             class: None,
-            null_state: NullState::IsNull,
+            not_null: false,
             constant_value: Some(ConstantValue::Null),
             ..Self::any()
         }
@@ -99,12 +90,12 @@ impl<'gc> OptValue<'gc> {
     }
 
     pub fn is_null(self) -> bool {
-        matches!(self.null_state, NullState::IsNull)
+        matches!(self.constant_value, Some(ConstantValue::Null))
     }
 
     // Returns true if the value is guaranteed to be neither Null nor Undefined.
     pub fn not_null(self) -> bool {
-        if matches!(self.null_state, NullState::NotNull) {
+        if self.not_null {
             true
         } else if let Some(class) = self.class {
             // Primitives are always not-null. Note that we can't use
@@ -124,7 +115,7 @@ impl<'gc> OptValue<'gc> {
 
         if self.class == other.class {
             created_value.class = self.class;
-        } else if matches!(other.null_state, NullState::IsNull) {
+        } else if other.is_null() {
             // If the other value is guaranteed to be null, we can just use our class.
             // Unless it's a non-null class.
             if let Some(self_class) = self.class {
@@ -132,7 +123,7 @@ impl<'gc> OptValue<'gc> {
                     created_value.class = self.class;
                 }
             }
-        } else if matches!(self.null_state, NullState::IsNull) {
+        } else if self.is_null() {
             // And vice-versa.
             if let Some(other_class) = other.class {
                 if !other_class.is_builtin_non_null() {
@@ -167,8 +158,8 @@ impl<'gc> OptValue<'gc> {
             created_value.contains_valid_unsigned = true;
         }
 
-        if self.null_state == other.null_state {
-            created_value.null_state = self.null_state;
+        if self.not_null == other.not_null {
+            created_value.not_null = self.not_null;
         }
 
         if self.constant_value == other.constant_value {
@@ -205,7 +196,7 @@ impl<'gc> OptValue<'gc> {
                 let is_not_primitive_class = !checked_class.is_builtin_non_null();
 
                 // Null matches every class except the primitive classes
-                matches!(self.null_state, NullState::IsNull) && is_not_primitive_class
+                self.is_null() && is_not_primitive_class
             }
         } else {
             // All values match the Any type
@@ -233,7 +224,7 @@ impl<'gc> OptValue<'gc> {
             // If this value is known to be a constant value, and that value is
             // truthy, then return true
             true
-        } else if self.is_not_primitive() && matches!(self.null_state, NullState::NotNull) {
+        } else if self.is_not_primitive() && self.not_null {
             // Otherwise, if this value is an object type that isn't null, also
             // return true
             true
@@ -247,9 +238,8 @@ impl<'gc> OptValue<'gc> {
         if self.constant_value.is_some_and(|v| v.is_falsey()) {
             // If this value is known to be a constant value, and that value is
             // truthy, then return true
-            true
-        } else if matches!(self.null_state, NullState::IsNull) {
-            // If this value is null, return true
+            // NOTE: This condition is also met if this value is known to be
+            // `null`, since we represent that using `ConstantValue::Null`
             true
         } else {
             false
@@ -268,7 +258,7 @@ impl std::fmt::Debug for OptValue<'_> {
             .field("class", &self.class)
             .field("contains_valid_integer", &self.contains_valid_integer)
             .field("contains_valid_unsigned", &self.contains_valid_unsigned)
-            .field("null_state", &self.null_state)
+            .field("not_null", &self.not_null)
             .finish()
     }
 }
@@ -322,7 +312,7 @@ impl<'gc> Stack<'gc> {
         class: Class<'gc>,
     ) -> Result<(), Error<'gc>> {
         let mut value = OptValue::of_type(class);
-        value.null_state = NullState::NotNull;
+        value.not_null = true;
 
         self.push(activation, value)?;
 
@@ -644,7 +634,7 @@ pub fn type_aware_optimize<'gc>(
 
     let mut this_value = OptValue::any();
     this_value.class = this_class;
-    this_value.null_state = NullState::NotNull;
+    this_value.not_null = true;
 
     let argument_types = resolved_parameters
         .iter()
@@ -665,7 +655,7 @@ pub fn type_aware_optimize<'gc>(
     if method.is_variadic() {
         // Set the local variable holding restargs/arguments to the `Array` type
         let mut array_type = OptValue::of_type(types.array);
-        array_type.null_state = NullState::NotNull;
+        array_type.not_null = true;
 
         initial_local_types.set(resolved_parameters.len() + 1, array_type);
     }
@@ -1202,7 +1192,7 @@ fn abstract_interpret_ops<'gc>(
                 if stack_value.is_null() {
                     // null always turns into null
                     optimize_op_to!(Op::Nop);
-                    new_value.null_state = NullState::IsNull;
+                    new_value.constant_value = Some(ConstantValue::Null);
                 }
                 stack.push(activation, new_value)?;
             }
@@ -1215,13 +1205,13 @@ fn abstract_interpret_ops<'gc>(
                     // isn't one of the special non-null classes.
                     if !class.is_builtin_non_null() {
                         optimize_op_to!(Op::Nop);
-                        new_value.null_state = NullState::IsNull;
+                        new_value.constant_value = Some(ConstantValue::Null);
                     }
                 } else if let Some(stack_class) = stack_value.class {
                     // TODO: this could check for inheritance
                     if class == stack_class {
                         optimize_op_to!(Op::Nop);
-                        new_value.null_state = stack_value.null_state;
+                        new_value.not_null = stack_value.not_null;
                     }
                 }
 
