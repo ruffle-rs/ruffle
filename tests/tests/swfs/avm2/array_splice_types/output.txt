@@ -1,0 +1,48 @@
+splice():
+  returned: null
+  after: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+splice("0"):
+  returned: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+  after: <empty>
+splice("5"):
+  returned: [5,6,7,8,9,10,11,12,13,14,15]
+  after: [0,1,2,3,4]
+splice(true):
+  returned: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+  after: [0]
+splice(false):
+  returned: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+  after: <empty>
+splice(new Object()):
+  returned: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+  after: <empty>
+splice(1, "2"):
+  returned: [1,2]
+  after: [0,3,4,5,6,7,8,9,10,11,12,13,14,15]
+splice(-1, 2):
+  returned: [15]
+  after: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14]
+splice("-5", 3):
+  returned: [11,12,13]
+  after: [0,1,2,3,4,5,6,7,8,9,10,14,15]
+splice(1, -2):
+  returned: <empty>
+  after: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+splice(1, true):
+  returned: [1]
+  after: [0,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+splice(1, false):
+  returned: <empty>
+  after: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+splice(1, "true"):
+  returned: <empty>
+  after: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+splice(1, "false"):
+  returned: <empty>
+  after: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+splice(1, new Object()):
+  returned: <empty>
+  after: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]
+splice(1, "5"):
+  returned: [1,2,3,4,5]
+  after: [0,6,7,8,9,10,11,12,13,14,15]
