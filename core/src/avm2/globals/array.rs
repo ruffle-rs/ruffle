@@ -661,7 +661,8 @@ pub fn splice<'gc>(
     let delete_count = args
         .get_optional(1)
         .unwrap_or_else(|| array_length.into())
-        .as_u32();
+        .coerce_to_i32(activation)?
+        .max(0);
 
     let args_slice = if args.len() > 2 { &args[2..] } else { &[] };
 
