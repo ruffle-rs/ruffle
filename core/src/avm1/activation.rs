@@ -20,7 +20,6 @@ use gc_arena::{Gc, Mutation};
 use indexmap::IndexMap;
 use rand::Rng;
 use ruffle_macros::istr;
-use std::borrow::Cow;
 use std::cell::Cell;
 use std::cmp::min;
 use std::fmt;
@@ -63,7 +62,7 @@ enum FrameControl<'gc> {
 #[derive(Clone)]
 pub struct ActivationIdentifier<'a> {
     parent: Option<&'a ActivationIdentifier<'a>>,
-    name: Cow<'static, str>,
+    name: &'a str,
     depth: u16,
     function_count: u16,
     special_count: u8,
@@ -75,36 +74,36 @@ impl fmt::Display for ActivationIdentifier<'_> {
             write!(f, "{parent} / ")?;
         }
 
-        f.write_str(&self.name)?;
+        f.write_str(self.name)?;
 
         Ok(())
     }
 }
 
 impl<'a> ActivationIdentifier<'a> {
-    pub fn root<S: Into<Cow<'static, str>>>(name: S) -> Self {
+    pub fn root(name: &'a str) -> Self {
         Self {
             parent: None,
-            name: name.into(),
+            name,
             depth: 0,
             function_count: 0,
             special_count: 0,
         }
     }
 
-    pub fn child<S: Into<Cow<'static, str>>>(&'a self, name: S) -> Self {
+    pub fn child(&'a self, name: &'a str) -> Self {
         Self {
             parent: Some(self),
-            name: name.into(),
+            name,
             depth: self.depth + 1,
             function_count: self.function_count,
             special_count: self.special_count,
         }
     }
 
-    pub fn function<'gc, S: Into<Cow<'static, str>>>(
+    pub fn function<'gc>(
         &'a self,
-        name: S,
+        name: &'a str,
         reason: ExecutionReason,
         max_recursion_depth: u16,
     ) -> Result<Self, Error<'gc>> {
@@ -124,7 +123,7 @@ impl<'a> ActivationIdentifier<'a> {
         };
         Ok(Self {
             parent: Some(self),
-            name: name.into(),
+            name,
             depth: self.depth + 1,
             function_count,
             special_count,
@@ -247,9 +246,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Create a new activation to run a block of code with a given scope.
-    pub fn with_new_scope<'b, S: Into<Cow<'static, str>>>(
+    pub fn with_new_scope<'b>(
         &'b mut self,
-        name: S,
+        name: &'b str,
         scope: Gc<'gc, Scope<'gc>>,
     ) -> Activation<'b, 'gc> {
         let id = self.id.child(name);
@@ -329,9 +328,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Add a stack frame that executes code in timeline scope
-    pub fn run_child_frame_for_action<S: Into<Cow<'static, str>>>(
+    pub fn run_child_frame_for_action(
         &mut self,
-        name: S,
+        name: &str,
         active_clip: DisplayObject<'gc>,
         code: SwfSlice,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
@@ -365,9 +364,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Add a stack frame that executes code in initializer scope.
-    pub fn run_with_child_frame_for_display_object<F, R, S: Into<Cow<'static, str>>>(
+    pub fn run_with_child_frame_for_display_object<F, R>(
         &mut self,
-        name: S,
+        name: &str,
         active_clip: DisplayObject<'gc>,
         swf_version: u8,
         function: F,

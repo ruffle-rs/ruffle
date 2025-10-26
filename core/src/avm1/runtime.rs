@@ -12,7 +12,6 @@ use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
 use gc_arena::{Collect, Gc, Mutation};
-use std::borrow::Cow;
 use swf::avm1::read::Reader;
 use tracing::instrument;
 
@@ -136,9 +135,9 @@ impl<'gc> Avm1<'gc> {
     /// Add a stack frame that executes code in timeline scope
     ///
     /// This creates a new frame stack.
-    pub fn run_stack_frame_for_action<S: Into<Cow<'static, str>>>(
+    pub fn run_stack_frame_for_action(
         active_clip: DisplayObject<'gc>,
-        name: S,
+        name: &str,
         code: SwfSlice,
         context: &mut UpdateContext<'gc>,
     ) {
@@ -284,11 +283,9 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let mut activation = Activation::from_nothing(
-            context,
-            ActivationIdentifier::root(name.to_string()),
-            active_clip,
-        );
+        let name_utf8 = &name.to_utf8_lossy();
+        let mut activation =
+            Activation::from_nothing(context, ActivationIdentifier::root(name_utf8), active_clip);
 
         let _ = obj.call_method(name, args, &mut activation, ExecutionReason::Special);
     }
