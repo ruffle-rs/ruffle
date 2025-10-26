@@ -161,13 +161,8 @@ pub struct Activation<'a, 'gc: 'a> {
 
     /// Local registers, if any.
     ///
-    /// None indicates a function executing out of the global register set.
-    /// Some indicates the existence of local registers, even if none exist.
-    /// i.e. None(Vec::new()) means no registers should exist at all.
-    ///
-    /// Registers are numbered from 1; r0 does not exist. Therefore this vec,
-    /// while nominally starting from zero, actually starts from r1.
-    local_registers: Option<&'a [Cell<Value<'gc>>]>,
+    /// An empty slice indicates a function executing out of the global register set.
+    local_registers: &'a [Cell<Value<'gc>>],
 
     /// The base clip of this stack frame.
     /// This will be the MovieClip that contains the bytecode.
@@ -234,7 +229,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         base_clip: DisplayObject<'gc>,
         this: Value<'gc>,
         callee: Option<Object<'gc>>,
-        registers: &'a [Cell<Value<'gc>>],
+        local_registers: &'a [Cell<Value<'gc>>],
     ) -> Self {
         avm_debug!(context.avm1, "START {id}");
         Self {
@@ -247,7 +242,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             target_clip: Some(base_clip),
             this,
             callee,
-            local_registers: Some(registers).filter(|r| !r.is_empty()),
+            local_registers,
         }
     }
 
@@ -298,7 +293,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             target_clip: Some(base_clip),
             this: scope.locals_cell().into(),
             callee: None,
-            local_registers: None,
+            local_registers: &[],
             context,
         }
     }
@@ -2399,13 +2394,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Value::Undefined, which is also a valid register value.
     pub fn current_register(&self, id: u8) -> Value<'gc> {
         let id = id as usize;
-        if let Some(local_registers) = &self.local_registers {
-            if let Some(reg) = local_registers.get(id) {
-                return reg.get();
-            } else if self.context.player_version <= 10 {
-                // Old FP versions do not fall back to the global register set.
-                return Value::Undefined;
-            }
+        if let Some(reg) = self.local_registers.get(id) {
+            return reg.get();
+        } else if !self.local_registers.is_empty() && self.context.player_version <= 10 {
+            // Old FP versions do not fall back to the global register set.
+            return Value::Undefined;
         }
 
         self.context
@@ -2430,16 +2423,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ///
     /// If a given local register does not exist, this function does nothing.
     pub fn set_local_register(&mut self, id: u8, value: Value<'gc>) -> bool {
-        if let Some(local_registers) = &self.local_registers {
-            if let Some(reg) = local_registers.get(id as usize) {
-                reg.set(value);
-                true
-            } else {
-                // Old FP versions do not fall back to the global register set.
-                self.context.player_version <= 10
-            }
+        if let Some(reg) = self.local_registers.get(id as usize) {
+            reg.set(value);
+            true
         } else {
-            false
+            // Old FP versions do not fall back to the global register set.
+            !self.local_registers.is_empty() && self.context.player_version <= 10
         }
     }
 
