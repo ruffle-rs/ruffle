@@ -1661,7 +1661,7 @@ impl<'gc> MovieClip<'gc> {
                 .collect();
 
             for child in children {
-                if !child.placed_by_script() {
+                if !child.placed_by_avm2_script() {
                     self.remove_child(context, child);
                 } else {
                     self.remove_child_from_depth_list(context, child);
@@ -1794,7 +1794,7 @@ impl<'gc> MovieClip<'gc> {
         //    different in reality, but the spirit is there :)
 
         let is_candidate_for_removal = if self.movie().is_action_script_3() {
-            old_object.place_frame() > frame || old_object.placed_by_script()
+            old_object.place_frame() > frame || old_object.placed_by_avm2_script()
         } else {
             old_object.depth() < AVM_DEPTH_BIAS
         };
@@ -2104,7 +2104,7 @@ impl<'gc> MovieClip<'gc> {
 
             let child = self.child_by_depth(depth);
             if let Some(child) = child {
-                if !child.placed_by_script() {
+                if !child.placed_by_avm2_script() {
                     self.remove_child(context, child);
                 } else {
                     self.remove_child_from_depth_list(context, child);
@@ -2481,7 +2481,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 // when we have children placed on the load frame, but 'this.getChildAt(0)'
                 // will return 'null' since the children haven't had their AVM2 objects
                 // constructed by `construct_frame` yet.
-            } else if !(is_load_frame && self.placed_by_script()) {
+            } else if !(is_load_frame && self.placed_by_avm2_script()) {
                 let running_construct_frame = self
                     .0
                     .contains_flag(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
@@ -4315,7 +4315,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         }?;
 
         if let Some(child) = self.child_by_depth(remove_object.depth.into()) {
-            if !child.placed_by_script() {
+            if !child.placed_by_avm2_script() {
                 self.remove_child(context, child);
             } else {
                 self.remove_child_from_depth_list(context, child);

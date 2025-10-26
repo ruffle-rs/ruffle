@@ -449,7 +449,7 @@ pub trait TDisplayObjectContainer<'gc>:
         for removed in removed_list {
             // The `remove_range` method is only ever called as a result of an ActionScript
             // call
-            removed.set_placed_by_script(true);
+            removed.set_placed_by_avm2_script(true);
             self.raw_container_mut(context.gc())
                 .remove_child_from_depth_list(removed);
 
@@ -740,7 +740,7 @@ impl<'gc> ChildContainer<'gc> {
 
             // Only set the parent's field to 'null' if the child was not placed/modified
             // on the render list by AVM2 code.
-            if !child.placed_by_script() {
+            if !child.placed_by_avm2_script() {
                 let parent = child.parent().expect(
                     "Parent must be removed *after* calling `remove_child_from_render_list`",
                 );
@@ -808,7 +808,7 @@ impl<'gc> ChildContainer<'gc> {
                 .iter()
                 .position(|x| DisplayObject::ptr_eq(*x, prev_child))
             {
-                if !prev_child.placed_by_script() {
+                if !prev_child.placed_by_avm2_script() {
                     self.replace_id(position, child);
                     Some(prev_child)
                 } else {

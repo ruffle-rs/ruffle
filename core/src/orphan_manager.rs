@@ -78,14 +78,14 @@ impl<'gc> OrphanManager<'gc> {
                 // indefinitely (if there are no remaining strong references, they will eventually
                 // be garbage collected).
                 //
-                // To detect this, we check 'placed_by_script'. This flag get set to 'true'
+                // To detect this, we check 'placed_by_avm2_script'. This flag get set to 'true'
                 // for objects constructed from ActionScript, and for objects moved around
                 // in the timeline (add/remove child, swap depths) by ActionScript. A
                 // RemoveObject tag will only affect objects instantiated by the timeline,
                 // which have not been moved in the displaylist by ActionScript. Therefore,
-                // any orphan we see that has 'placed_by_script()' should stay on the orphan
+                // any orphan we see that has 'placed_by_avm2_script()' should stay on the orphan
                 // list, because it was not removed by a RemoveObject tag.
-                dobj.placed_by_script()
+                dobj.placed_by_avm2_script()
             } else {
                 false
             }

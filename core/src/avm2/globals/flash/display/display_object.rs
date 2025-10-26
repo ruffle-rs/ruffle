@@ -36,7 +36,7 @@ pub fn initialize_for_allocator<'gc>(
     class: ClassObject<'gc>,
 ) -> Object<'gc> {
     let obj = StageObject::for_display_object(context.gc(), dobj, class);
-    dobj.set_placed_by_script(true);
+    dobj.set_placed_by_avm2_script(true);
     dobj.set_object2(context, obj);
 
     // [NA] Should these run for everything?

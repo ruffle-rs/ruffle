@@ -55,7 +55,7 @@ impl<'gc> LoaderDisplay<'gc> {
             },
         ));
 
-        obj.set_placed_by_script(true);
+        obj.set_placed_by_avm2_script(true);
         activation.context.orphan_manager.add_orphan_obj(obj.into());
         obj
     }
