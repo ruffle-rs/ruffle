@@ -358,6 +358,7 @@ impl<'gc> Avm1Function<'gc> {
             &local_registers,
         );
 
+        // Local register #0 is always left free.
         let mut preload_r = 1;
         self.load_this(&mut frame, this, &mut preload_r);
         self.load_arguments(&mut frame, args, arguments_caller, &mut preload_r);
