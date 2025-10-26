@@ -780,20 +780,20 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_flag(DisplayObjectFlags::TRANSFORMED_BY_SCRIPT, value);
     }
 
-    fn placed_by_script(&self) -> bool {
-        self.contains_flag(DisplayObjectFlags::PLACED_BY_SCRIPT)
-    }
-
-    fn set_placed_by_script(&self, value: bool) {
-        self.set_flag(DisplayObjectFlags::PLACED_BY_SCRIPT, value);
-    }
-
     fn placed_by_avm1_script(&self) -> bool {
         self.contains_flag(DisplayObjectFlags::PLACED_BY_AVM1_SCRIPT)
     }
 
     fn set_placed_by_avm1_script(&self, value: bool) {
         self.set_flag(DisplayObjectFlags::PLACED_BY_AVM1_SCRIPT, value);
+    }
+
+    fn placed_by_avm2_script(&self) -> bool {
+        self.contains_flag(DisplayObjectFlags::PLACED_BY_AVM2_SCRIPT)
+    }
+
+    fn set_placed_by_avm2_script(&self, value: bool) {
+        self.set_flag(DisplayObjectFlags::PLACED_BY_AVM2_SCRIPT, value);
     }
 
     fn is_bitmap_cached_preference(&self) -> bool {
@@ -2167,30 +2167,31 @@ pub trait TDisplayObject<'gc>:
         self.base().set_has_scroll_rect(value)
     }
 
-    /// Whether this display object has been created by ActionScript 3.
-    /// When this flag is set, changes from SWF `RemoveObject` tags are
-    /// ignored.
-    #[no_dynamic]
-    fn placed_by_script(self) -> bool {
-        self.base().placed_by_script()
-    }
-
-    /// Sets whether this display object has been created by ActionScript 3.
-    /// When this flag is set, changes from SWF `RemoveObject` tags are
-    /// ignored.
-    #[no_dynamic]
-    fn set_placed_by_script(self, value: bool) {
-        self.base().set_placed_by_script(value)
-    }
-
+    /// Whether this display object has been created by ActionScript 1/2.
     #[no_dynamic]
     fn placed_by_avm1_script(self) -> bool {
         self.base().placed_by_avm1_script()
     }
 
+    /// Sets whether this display object has been created by ActionScript 1/2.
     #[no_dynamic]
     fn set_placed_by_avm1_script(self, value: bool) {
         self.base().set_placed_by_avm1_script(value);
+    }
+
+    /// Whether this display object has been created by ActionScript 3.
+    /// When this flag is set, changes from SWF `RemoveObject` tags are
+    /// ignored.
+    #[no_dynamic]
+    fn placed_by_avm2_script(self) -> bool {
+        self.base().placed_by_avm2_script()
+    }
+
+    /// When this flag is set, changes from SWF `RemoveObject` tags are
+    /// ignored.
+    #[no_dynamic]
+    fn set_placed_by_avm2_script(self, value: bool) {
+        self.base().set_placed_by_avm2_script(value)
     }
 
     /// Whether this display object has been instantiated by the timeline.
@@ -2269,11 +2270,11 @@ pub trait TDisplayObject<'gc>:
     #[no_dynamic]
     #[inline(never)]
     fn on_construction_complete(self, context: &mut UpdateContext<'gc>) {
-        let placed_by_script = self.placed_by_script();
+        let placed_by_avm2_script = self.placed_by_avm2_script();
         self.fire_added_events(context);
-        // Check `self.placed_by_script()` before we fire events, since those
-        // events might `placed_by_script`
-        if !placed_by_script {
+        // Check `self.placed_by_avm2_script()` before we fire events, since those
+        // events might `placed_by_avm2_script`
+        if !placed_by_avm2_script {
             self.set_on_parent_field(context);
         }
 
@@ -2295,7 +2296,7 @@ pub trait TDisplayObject<'gc>:
 
     #[no_dynamic]
     fn fire_added_events(self, context: &mut UpdateContext<'gc>) {
-        if !self.placed_by_script() {
+        if !self.placed_by_avm2_script() {
             // Since we construct AVM2 display objects after they are
             // allocated and placed on the render list, we have to emit all
             // events after this point.
@@ -2894,7 +2895,7 @@ bitflags! {
         /// Whether this object has been placed in a container by ActionScript 3.
         /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
         // TODO [KJ] Can we repurpose it to cover PLACED_BY_AVM1_SCRIPT too?
-        const PLACED_BY_SCRIPT         = 1 << 4;
+        const PLACED_BY_AVM2_SCRIPT    = 1 << 4;
 
         /// Whether this object has been instantiated by a SWF tag.
         /// When this flag is set, attempts to change the object's name from AVM2 throw an exception.
@@ -2935,7 +2936,7 @@ bitflags! {
 
         /// Whether this object has been placed by an AVM1 method,
         /// i.e. attachMovie, createEmptyMovieClip, duplicateMovieClip.
-        // TODO [KJ] Can this be merged with PLACED_BY_SCRIPT?
+        // TODO [KJ] Can this be merged with PLACED_BY_AVM2_SCRIPT?
         const PLACED_BY_AVM1_SCRIPT    = 1 << 15;
     }
 }
