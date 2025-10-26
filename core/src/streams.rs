@@ -1369,11 +1369,12 @@ impl<'gc> NetStream<'gc> {
         match avm_object {
             Some(NetStreamKind::Avm1(object)) => {
                 let avm_string_name = AvmString::new_utf8_bytes(context.gc(), variable_name);
+                let activation_name = format!("[FLV {avm_string_name}]");
 
                 let root = context.stage.root_clip().expect("root");
                 let mut activation = Avm1Activation::from_nothing(
                     context,
-                    Avm1ActivationIdentifier::root(format!("[FLV {avm_string_name}]")),
+                    Avm1ActivationIdentifier::root(&activation_name),
                     root,
                 );
 

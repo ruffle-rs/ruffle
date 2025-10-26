@@ -348,7 +348,7 @@ impl<'gc> Avm1Function<'gc> {
         let max_recursion_depth = activation.context.avm1.max_recursion_depth();
         let mut frame = Activation::from_action(
             activation.context,
-            activation.id.function(name, reason, max_recursion_depth)?,
+            activation.id.function(&name, reason, max_recursion_depth)?,
             swf_version,
             child_scope,
             self.constant_pool,
