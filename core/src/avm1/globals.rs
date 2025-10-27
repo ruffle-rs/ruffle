@@ -612,57 +612,56 @@ pub fn create_globals<'gc>(
 
     #[rustfmt::skip]
     define_globals(context.strings, &[
+        // Top-level
+        (globals, b"Accessibility", accessibility, Attribute::DONT_ENUM),
         (globals, b"Array", array.constr, Attribute::DONT_ENUM),
         (globals, b"AsBroadcaster", as_broadcaster.constr, Attribute::DONT_ENUM),
+        (globals, b"Boolean", boolean.constr, Attribute::DONT_ENUM),
         (globals, b"Button", button.constr, Attribute::DONT_ENUM),
         (globals, b"Color", color.constr, Attribute::DONT_ENUM),
+        (globals, b"ContextMenu", context_menu.constr, Attribute::DONT_ENUM),
+        (globals, b"ContextMenuItem", context_menu_item.constr, Attribute::DONT_ENUM),
+        (globals, b"Date", date.constr, Attribute::DONT_ENUM),
         (globals, b"Error", error.constr, Attribute::DONT_ENUM),
-        (globals, b"Object", object.constr, Attribute::DONT_ENUM),
+        (globals, b"flash", flash, Attribute::DONT_ENUM),
         (globals, b"Function", function.constr, Attribute::DONT_ENUM),
+        (globals, b"Key", key, Attribute::DONT_ENUM),
         (globals, b"LoadVars", load_vars.constr, Attribute::DONT_ENUM),
         (globals, b"LocalConnection", local_connection.constr, Attribute::DONT_ENUM),
-        (globals, b"MovieClip", movie_clip.constr, Attribute::DONT_ENUM),
-        (globals, b"MovieClipLoader", movie_clip_loader.constr, Attribute::DONT_ENUM),
-        (globals, b"Sound", sound.constr, Attribute::DONT_ENUM),
-        (globals, b"TextField", text_field.constr, Attribute::DONT_ENUM),
-        (globals, b"TextFormat", text_format.constr, Attribute::DONT_ENUM),
-        (globals, b"XMLNode", xmlnode.constr, Attribute::DONT_ENUM),
-        (globals, b"XML", xml.constr, Attribute::DONT_ENUM),
-        (globals, b"String", string.constr, Attribute::DONT_ENUM),
-        (globals, b"Number", number.constr, Attribute::DONT_ENUM),
-        (globals, b"Boolean", boolean.constr, Attribute::DONT_ENUM),
-        (globals, b"Date", date.constr, Attribute::DONT_ENUM),
-        (globals, b"SharedObject", shared_object.constr, Attribute::DONT_ENUM),
-        (globals, b"ContextMenu", context_menu.constr, Attribute::DONT_ENUM),
-        (globals, b"Selection", selection, Attribute::DONT_ENUM),
-        (globals, b"ContextMenuItem", context_menu_item.constr, Attribute::DONT_ENUM),
-        (globals, b"System", system, Attribute::DONT_ENUM),
         (globals, b"Math", math, Attribute::DONT_ENUM),
         (globals, b"Mouse", mouse, Attribute::DONT_ENUM),
-        (globals, b"Key", key, Attribute::DONT_ENUM),
-        (globals, b"Stage", stage, Attribute::DONT_ENUM),
-        (globals, b"Accessibility", accessibility, Attribute::DONT_ENUM),
-        (globals, b"NetStream", netstream.constr, Attribute::DONT_ENUM),
+        (globals, b"MovieClip", movie_clip.constr, Attribute::DONT_ENUM),
+        (globals, b"MovieClipLoader", movie_clip_loader.constr, Attribute::DONT_ENUM),
         (globals, b"NetConnection", netconnection.constr, Attribute::DONT_ENUM),
+        (globals, b"NetStream", netstream.constr, Attribute::DONT_ENUM),
+        (globals, b"Number", number.constr, Attribute::DONT_ENUM),
+        (globals, b"Object", object.constr, Attribute::DONT_ENUM),
+        (globals, b"Selection", selection, Attribute::DONT_ENUM),
+        (globals, b"SharedObject", shared_object.constr, Attribute::DONT_ENUM),
+        (globals, b"Sound", sound.constr, Attribute::DONT_ENUM),
+        (globals, b"Stage", stage, Attribute::DONT_ENUM),
+        (globals, b"String", string.constr, Attribute::DONT_ENUM),
+        (globals, b"System", system, Attribute::DONT_ENUM),
+        (globals, b"TextField", text_field.constr, Attribute::DONT_ENUM),
+        (globals, b"TextFormat", text_format.constr, Attribute::DONT_ENUM),
+        (globals, b"XML", xml.constr, Attribute::DONT_ENUM),
+        (globals, b"XMLNode", xmlnode.constr, Attribute::DONT_ENUM),
         (globals, b"XMLSocket", xml_socket.constr, Attribute::DONT_ENUM),
 
-        (globals, b"flash", flash, Attribute::DONT_ENUM),
+        // flash
         (flash, b"display", display, Attribute::empty()),
         (flash, b"external", external, Attribute::empty()),
         (flash, b"filters", filters, Attribute::empty()),
         (flash, b"geom", geom, Attribute::empty()),
         (flash, b"net", net, Attribute::empty()),
 
+        // flash.display
         (display, b"BitmapData", bitmap_data.constr, Attribute::empty()),
 
+        // flash.external
         (external, b"ExternalInterface", external_interface.constr, Attribute::empty()),
 
-        (geom, b"ColorTransform", color_transform.constr, Attribute::empty()),
-        (geom, b"Matrix", matrix.constr, Attribute::empty()),
-        (geom, b"Point", point.constr, Attribute::empty()),
-        (geom, b"Rectangle", rectangle.constr, Attribute::empty()),
-        (geom, b"Transform", transform.constr, Attribute::empty()),
-
+        // flash.filters
         (filters, b"BevelFilter", bevel_filter.constr, Attribute::empty()),
         (filters, b"BitmapFilter", bitmap_filter.constr, Attribute::empty()),
         (filters, b"BlurFilter", blur_filter.constr, Attribute::empty()),
@@ -670,16 +669,26 @@ pub fn create_globals<'gc>(
         (filters, b"ConvolutionFilter", convolution_filter.constr, Attribute::empty()),
         (filters, b"DisplacementMapFilter", displacement_map_filter.constr, Attribute::empty()),
         (filters, b"DropShadowFilter", drop_shadow_filter.constr, Attribute::empty()),
+        (filters, b"GlowFilter", glow_filter.constr, Attribute::empty()),
         (filters, b"GradientBevelFilter", gradient_bevel_filter.constr, Attribute::empty()),
         (filters, b"GradientGlowFilter", gradient_glow_filter.constr, Attribute::empty()),
-        (filters, b"GlowFilter", glow_filter.constr, Attribute::empty()),
 
+        // flash.geom
+        (geom, b"ColorTransform", color_transform.constr, Attribute::empty()),
+        (geom, b"Matrix", matrix.constr, Attribute::empty()),
+        (geom, b"Point", point.constr, Attribute::empty()),
+        (geom, b"Rectangle", rectangle.constr, Attribute::empty()),
+        (geom, b"Transform", transform.constr, Attribute::empty()),
+
+        // flash.net
         (net, b"FileReference", file_reference.constr, Attribute::empty()),
 
+        // System
+        (system, b"capabilities", system_capabilities, Attribute::empty()),
         (system, b"IME", system_ime, Attribute::empty()),
         (system, b"security", system_security, Attribute::empty()),
-        (system, b"capabilities", system_capabilities, Attribute::empty()),
 
+        // TextField
         (text_field.constr, b"StyleSheet", style_sheet.constr, Attribute::DONT_ENUM | Attribute::VERSION_7),
     ]);
 
