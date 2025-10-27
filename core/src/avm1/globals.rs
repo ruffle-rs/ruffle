@@ -1,5 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::function::NativeFunction;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, Declaration};
 use crate::avm1::{Object, Value};
@@ -11,6 +12,7 @@ use std::str;
 mod accessibility;
 pub(super) mod array;
 pub(crate) mod as_broadcaster;
+mod asnative;
 pub(crate) mod bevel_filter;
 mod bitmap_data;
 mod bitmap_filter;
@@ -77,6 +79,7 @@ const GLOBAL_DECLS: &[Declaration] = declare_properties! {
     "parseInt" => method(parse_int; DONT_ENUM);
     "parseFloat" => method(parse_float; DONT_ENUM);
     "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM);
+    "ASnative" => method(asnative::asnative; DONT_ENUM);
     "clearInterval" => method(clear_interval; DONT_ENUM);
     "setInterval" => method(set_interval; DONT_ENUM);
     "clearTimeout" => method(clear_timeout; DONT_ENUM);
@@ -87,6 +90,17 @@ const GLOBAL_DECLS: &[Declaration] = declare_properties! {
     "NaN" => property(get_nan; DONT_ENUM);
     "Infinity" => property(get_infinity; DONT_ENUM);
 };
+
+pub fn get_native_function(id: u32) -> Option<NativeFunction> {
+    Some(match id {
+        0 => escape,
+        1 => unescape,
+        2 => parse_int,
+        3 => parse_float,
+        4 => trace,
+        _ => return None,
+    })
+}
 
 pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
