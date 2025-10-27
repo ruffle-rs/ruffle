@@ -593,12 +593,23 @@ pub fn set_auto_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let mode = match value {
-        Value::String(s) if s.eq_ignore_case(WStr::from_units(b"left")) => AutoSizeMode::Left,
-        Value::String(s) if s.eq_ignore_case(WStr::from_units(b"center")) => AutoSizeMode::Center,
-        Value::String(s) if s.eq_ignore_case(WStr::from_units(b"right")) => AutoSizeMode::Right,
-        Value::Bool(true) => AutoSizeMode::Left,
-        _ => AutoSizeMode::None,
+    let mode = if let Value::Bool(value) = value {
+        if value {
+            AutoSizeMode::Left
+        } else {
+            AutoSizeMode::None
+        }
+    } else {
+        let mode = value.coerce_to_string(activation)?;
+        if mode.eq_ignore_case(WStr::from_units(b"left")) {
+            AutoSizeMode::Left
+        } else if mode.eq_ignore_case(WStr::from_units(b"center")) {
+            AutoSizeMode::Center
+        } else if mode.eq_ignore_case(WStr::from_units(b"right")) {
+            AutoSizeMode::Right
+        } else {
+            AutoSizeMode::None
+        }
     };
     this.set_autosize(mode, activation.context);
 
