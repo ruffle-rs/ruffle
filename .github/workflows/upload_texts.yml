@@ -28,7 +28,7 @@ jobs:
           make update
 
       - name: Upload intermediate files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           path: desktop/packages/linux/locale
 
