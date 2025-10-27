@@ -2,6 +2,7 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::function::NativeFunction;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Object, Value};
@@ -23,6 +24,13 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "registerClass" => method(register_class; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
+
+pub fn get_native_function(id: u32) -> Option<NativeFunction> {
+    Some(match id {
+        5 => has_own_property,
+        _ => return None,
+    })
+}
 
 /// Constructs the `Object` class.
 ///
