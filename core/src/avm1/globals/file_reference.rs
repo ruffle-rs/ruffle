@@ -1,3 +1,5 @@
+//! flash.net.FileReference object
+
 use std::cell::{Cell, RefCell};
 
 use crate::avm1::activation::Activation;

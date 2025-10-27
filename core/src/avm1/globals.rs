@@ -17,6 +17,7 @@ mod bitmap_filter;
 pub(crate) mod blur_filter;
 pub(crate) mod boolean;
 pub(crate) mod button;
+mod camera;
 mod color;
 pub(crate) mod color_matrix_filter;
 pub(crate) mod color_transform;
@@ -29,6 +30,7 @@ pub(crate) mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
 pub(crate) mod file_reference;
+mod file_reference_list;
 mod function;
 pub(crate) mod glow_filter;
 pub(crate) mod gradient_filter;
@@ -37,6 +39,7 @@ mod load_vars;
 pub(crate) mod local_connection;
 mod math;
 mod matrix;
+mod microphone;
 pub(crate) mod mouse;
 pub(crate) mod movie_clip;
 mod movie_clip_loader;
@@ -45,6 +48,7 @@ pub(crate) mod netstream;
 pub(crate) mod number;
 mod object;
 mod point;
+mod print_job;
 mod rectangle;
 mod selection;
 pub(crate) mod shared_object;
@@ -58,6 +62,8 @@ pub(crate) mod system_ime;
 pub(crate) mod system_security;
 pub(crate) mod text_field;
 mod text_format;
+mod text_renderer;
+mod text_snapshot;
 pub(crate) mod transform;
 mod video;
 pub(crate) mod xml;
@@ -538,6 +544,7 @@ pub fn create_globals<'gc>(
     let filters = Object::new(context.strings, Some(object.proto));
     let display = Object::new(context.strings, Some(object.proto));
     let net = Object::new(context.strings, Some(object.proto));
+    let text = Object::new(context.strings, Some(object.proto));
 
     let button = button::create_class(context, object.proto);
     let movie_clip = movie_clip::create_class(context, object.proto);
@@ -584,8 +591,13 @@ pub fn create_globals<'gc>(
     let bitmap_data = bitmap_data::create_class(context, object.proto);
     let file_reference =
         file_reference::create_class(context, object.proto, broadcaster_fns, array.proto);
+    let file_reference_list = file_reference_list::create_class(context, object.proto);
     let shared_object = shared_object::create_class(context, object.proto);
     let selection = selection::create(context, broadcaster_fns, array.proto);
+    let camera = camera::create_class(context, object.proto);
+    let microphone = microphone::create_class(context, object.proto);
+    let print_job = print_job::create_class(context, object.proto);
+    let text_snapshot = text_snapshot::create_class(context, object.proto);
 
     let system = system::create(context);
     let system_security = system_security::create(context);
@@ -597,6 +609,8 @@ pub fn create_globals<'gc>(
     let key = key::create(context, broadcaster_fns, array.proto);
     let stage = stage::create(context, broadcaster_fns, array.proto);
     let accessibility = accessibility::create(context);
+
+    let text_renderer = text_renderer::create_class(context, object.proto);
 
     let globals = Object::new_without_proto(context.gc());
     context.define_properties_on(globals, GLOBAL_DECLS);
@@ -618,6 +632,7 @@ pub fn create_globals<'gc>(
         (globals, b"AsBroadcaster", as_broadcaster.constr, Attribute::DONT_ENUM),
         (globals, b"Boolean", boolean.constr, Attribute::DONT_ENUM),
         (globals, b"Button", button.constr, Attribute::DONT_ENUM),
+        (globals, b"Camera", camera.constr, Attribute::DONT_ENUM),
         (globals, b"Color", color.constr, Attribute::DONT_ENUM),
         (globals, b"ContextMenu", context_menu.constr, Attribute::DONT_ENUM),
         (globals, b"ContextMenuItem", context_menu_item.constr, Attribute::DONT_ENUM),
@@ -629,6 +644,7 @@ pub fn create_globals<'gc>(
         (globals, b"LoadVars", load_vars.constr, Attribute::DONT_ENUM),
         (globals, b"LocalConnection", local_connection.constr, Attribute::DONT_ENUM),
         (globals, b"Math", math, Attribute::DONT_ENUM),
+        (globals, b"Microphone", microphone.constr, Attribute::DONT_ENUM),
         (globals, b"Mouse", mouse, Attribute::DONT_ENUM),
         (globals, b"MovieClip", movie_clip.constr, Attribute::DONT_ENUM),
         (globals, b"MovieClipLoader", movie_clip_loader.constr, Attribute::DONT_ENUM),
@@ -636,6 +652,7 @@ pub fn create_globals<'gc>(
         (globals, b"NetStream", netstream.constr, Attribute::DONT_ENUM),
         (globals, b"Number", number.constr, Attribute::DONT_ENUM),
         (globals, b"Object", object.constr, Attribute::DONT_ENUM),
+        (globals, b"PrintJob", print_job.constr, Attribute::DONT_ENUM),
         (globals, b"Selection", selection, Attribute::DONT_ENUM),
         (globals, b"SharedObject", shared_object.constr, Attribute::DONT_ENUM),
         (globals, b"Sound", sound.constr, Attribute::DONT_ENUM),
@@ -644,6 +661,8 @@ pub fn create_globals<'gc>(
         (globals, b"System", system, Attribute::DONT_ENUM),
         (globals, b"TextField", text_field.constr, Attribute::DONT_ENUM),
         (globals, b"TextFormat", text_format.constr, Attribute::DONT_ENUM),
+        (globals, b"TextSnapshot", text_snapshot.constr, Attribute::DONT_ENUM),
+        (globals, b"Video", video.constr, Attribute::DONT_ENUM),
         (globals, b"XML", xml.constr, Attribute::DONT_ENUM),
         (globals, b"XMLNode", xmlnode.constr, Attribute::DONT_ENUM),
         (globals, b"XMLSocket", xml_socket.constr, Attribute::DONT_ENUM),
@@ -654,6 +673,7 @@ pub fn create_globals<'gc>(
         (flash, b"filters", filters, Attribute::empty()),
         (flash, b"geom", geom, Attribute::empty()),
         (flash, b"net", net, Attribute::empty()),
+        (flash, b"text", text, Attribute::empty()),
 
         // flash.display
         (display, b"BitmapData", bitmap_data.constr, Attribute::empty()),
@@ -682,6 +702,10 @@ pub fn create_globals<'gc>(
 
         // flash.net
         (net, b"FileReference", file_reference.constr, Attribute::empty()),
+        (net, b"FileReferenceList", file_reference_list.constr, Attribute::empty()),
+
+        // flash.text
+        (text, b"TextRenderer", text_renderer.constr, Attribute::empty()),
 
         // System
         (system, b"capabilities", system_capabilities, Attribute::empty()),
