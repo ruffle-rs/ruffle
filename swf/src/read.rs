@@ -13,7 +13,7 @@ use std::io::{self, Read};
 /// Maximum buffer capacity for reading the SWF.
 ///
 /// Prevents large allocations in case the SWF has a malformed length.
-const MAX_DATA_CAPACITY: u32 = 128 * 1024 * 1024; // 128 MiB
+const MAX_DATA_CAPACITY: usize = 128 * 1024 * 1024; // 128 MiB
 
 /// Parse a decompressed SWF.
 ///
@@ -53,6 +53,23 @@ pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
     Err(Error::invalid_data("Invalid ASN1 blob"))
 }
 
+/// Parses an SWF header from a byte slice; returns the parsed header
+/// along with a `Reader` to the rest of the SWF.
+///
+/// Returns an `Error` if the header is invalid, or if the SWF is compressed.
+pub fn parse_swf_header(mut input: &[u8]) -> Result<(Header, Reader<'_>)> {
+    let (mut header, uncompressed_len) = read_start_of_header(&mut input)?;
+
+    if header.compression != Compression::None {
+        return Err(Error::unsupported(
+            "called `parse_swf_header` on a compressed SWF",
+        ));
+    }
+
+    let reader = read_rest_of_header(input, &mut header, uncompressed_len)?;
+    Ok((header, reader))
+}
+
 /// Parses an SWF header and returns a `Reader` that can be used
 /// to read the SWF tags inside the SWF file.
 ///
@@ -70,24 +87,8 @@ pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
 /// println!("FPS: {}", swf_stream.header.frame_rate());
 /// ```
 pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
-    // Read SWF header.
-    let compression = read_compression_type(&mut input)?;
-
-    let mut raw_header = [0u8; 5];
-    input.read_exact(&mut raw_header)?;
-
-    let version = raw_header[0];
-    let uncompressed_len = u32::from_le_bytes(*raw_header.split_last_chunk::<4>().unwrap().1);
-
-    // Check whether the SWF version is 0.
-    // Note that the behavior should actually vary, depending on the player version:
-    // - Flash Player 9 and later bail out (the behavior we implement).
-    // - Flash Player 8 loops through all the frames, without running any AS code.
-    // - Flash Player 7 and older don't fail and use the player version instead: a
-    // function like `getSWFVersion()` in AVM1 will then return the player version.
-    if version == 0 {
-        return Err(Error::invalid_data("Invalid SWF version"));
-    }
+    let (mut header, uncompressed_len) = read_start_of_header(&mut input)?;
+    let version = header.version;
 
     // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
     // subtract it here.
@@ -96,25 +97,25 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         .ok_or_else(|| Error::invalid_data("Malformed SWF length"))?;
 
     // Now the SWF switches to a compressed stream.
-    let decompress_stream: Box<dyn Read> = match compression {
-        Compression::None => Box::new(input),
+    let decompress_stream: &mut dyn Read = match header.compression {
+        Compression::None => &mut input,
         Compression::Zlib => {
             if version < 6 {
                 log::warn!("zlib compressed SWF is version {version} but minimum version is 6");
             }
-            make_zlib_reader(input)?
+            &mut make_zlib_reader(input)?
         }
         Compression::Lzma => {
             if version < 13 {
                 log::warn!("LZMA compressed SWF is version {version} but minimum version is 13");
             }
-            make_lzma_reader(input, body_len)?
+            &mut make_lzma_reader(input, body_len)?
         }
     };
 
     // Flash Player allocates a fixed buffer based on the header length and
     // never accesses data beyond it. Match that behavior by capping reads here.
-    let mut data = Vec::with_capacity(body_len.min(MAX_DATA_CAPACITY) as usize);
+    let mut data = Vec::with_capacity(body_len.min(MAX_DATA_CAPACITY));
     if let Err(e) = decompress_stream
         .take(body_len as u64)
         .read_to_end(&mut data)
@@ -122,33 +123,13 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         log::error!("Error decompressing SWF: {e}");
     }
 
-    // Some SWF streams may not be compressed correctly,
-    // (e.g. incorrect data length in the stream), so decompressing
-    // may throw an error even though the data otherwise comes
-    // through the stream.
-    // We'll still try to parse what we get if the full decompression fails.
-    // (+ 8 for header size)
-    if data.len() as u64 + 8 != uncompressed_len as u64 {
-        log::warn!("SWF length doesn't match header, may be corrupt");
-    }
-
-    let mut reader = Reader::new(&data, version);
-    let stage_size = reader.read_rectangle()?;
-    let frame_rate = reader.read_fixed8()?;
-    let num_frames = reader.read_u16()?;
-    let header = Header {
-        compression,
-        version,
-        stage_size,
-        frame_rate,
-        num_frames,
-    };
-    let offset = reader.as_slice().as_ptr() as usize - data.as_ptr() as usize;
+    let reader = read_rest_of_header(&data, &mut header, uncompressed_len)?;
+    let offset = reader.as_slice().as_ptr().addr() - data.as_ptr().addr();
     // Remove the header.
     // As an alternative we could return the entire original buffer with header length,
     // but that's a nontrivial API change, probably not worth the effort.
     data.drain(..offset);
-    let mut reader = Reader::new(&data, version);
+    let mut reader = Reader::new(&data, header.version);
 
     // Parse the first two tags, searching for the FileAttributes and SetBackgroundColor tags.
     // This metadata is useful, so we want to return it along with the header.
@@ -185,15 +166,69 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     })
 }
 
+fn read_start_of_header(mut input: &mut impl Read) -> Result<(Header, usize)> {
+    // Read SWF header.
+    let compression = read_compression_type(&mut input)?;
+
+    let mut raw_header = [0u8; 5];
+    input.read_exact(&mut raw_header)?;
+
+    let version = raw_header[0];
+    let uncompressed_len = u32::from_le_bytes(*raw_header.split_last_chunk::<4>().unwrap().1);
+
+    // Check whether the SWF version is 0.
+    // Note that the behavior should actually vary, depending on the player version:
+    // - Flash Player 9 and later bail out (the behavior we implement).
+    // - Flash Player 8 loops through all the frames, without running any AS code.
+    // - Flash Player 7 and older don't fail and use the player version instead: a
+    // function like `getSWFVersion()` in AVM1 will then return the player version.
+    if version == 0 {
+        return Err(Error::invalid_data("Invalid SWF version"));
+    }
+
+    let header = Header {
+        compression,
+        version,
+        // Dummy values, will be filled later.
+        stage_size: Default::default(),
+        frame_rate: Default::default(),
+        num_frames: Default::default(),
+    };
+
+    Ok((header, uncompressed_len as usize))
+}
+
+fn read_rest_of_header<'a>(
+    data: &'a [u8],
+    header: &mut Header,
+    uncompressed_len: usize,
+) -> Result<Reader<'a>> {
+    // Some SWF streams may not be compressed correctly,
+    // (e.g. incorrect data length in the stream), so decompressing
+    // may throw an error even though the data otherwise comes
+    // through the stream.
+    // We'll still try to parse what we get if the full decompression fails.
+    // (+ 8 for header size)
+    if data.len().checked_add(8) != Some(uncompressed_len) {
+        log::warn!("SWF length doesn't match header, may be corrupt");
+    }
+
+    let mut reader = Reader::new(data, header.version);
+    header.stage_size = reader.read_rectangle()?;
+    header.frame_rate = reader.read_fixed8()?;
+    header.num_frames = reader.read_u16()?;
+    Ok(reader)
+}
+
 #[cfg(feature = "flate2")]
-fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
+fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<impl Read + 'a> {
     use flate2::read::ZlibDecoder;
-    Ok(Box::new(ZlibDecoder::new(input)))
+    Ok(ZlibDecoder::new(input))
 }
 
 #[cfg(not(feature = "flate2"))]
-fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
-    Err(Error::unsupported(
+fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<impl Read + 'a> {
+    Err::<R, _>(Error::unsupported(
         "Support for Zlib compressed SWFs is not enabled.",
     ))
 }
@@ -201,8 +236,8 @@ fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
 #[cfg(feature = "lzma")]
 fn make_lzma_reader<'a, R: Read + 'a>(
     mut input: R,
-    unpacked_size: u32,
-) -> Result<Box<dyn Read + 'a>> {
+    unpacked_size: usize,
+) -> Result<impl Read + 'a> {
     use lzma_rs::{
         decompress::{Options, UnpackedSize},
         lzma_decompress_with_options,
@@ -226,7 +261,7 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     input.read_exact(&mut [0; 4])?;
 
     // TODO: Switch to lzma-rs streaming API when stable.
-    let mut output = Vec::with_capacity(unpacked_size.min(MAX_DATA_CAPACITY) as usize);
+    let mut output = Vec::with_capacity(unpacked_size.min(MAX_DATA_CAPACITY));
     lzma_decompress_with_options(
         &mut io::BufReader::new(input),
         &mut output,
@@ -244,11 +279,8 @@ fn make_lzma_reader<'a, R: Read + 'a>(
 }
 
 #[cfg(not(feature = "lzma"))]
-fn make_lzma_reader<'a, R: Read + 'a>(
-    _input: R,
-    _unpacked_size: u32,
-) -> Result<Box<dyn Read + 'a>> {
-    Err(Error::unsupported(
+fn make_lzma_reader<'a, R: Read + 'a>(_input: R, _unpacked_size: usize) -> Result<impl Read + 'a> {
+    Err::<R, _>(Error::unsupported(
         "Support for LZMA compressed SWFs is not enabled.",
     ))
 }
