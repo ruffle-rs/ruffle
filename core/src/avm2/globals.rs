@@ -8,9 +8,7 @@ use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
 use crate::context::UpdateContext;
 use crate::string::WStr;
-use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::Collect;
-use std::sync::Arc;
 use swf::TagCode;
 
 mod __ruffle__;
@@ -824,34 +822,35 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
 /// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
 /// into the environment. See 'core/src/avm2/globals/README.md' for more information
 pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'gc>) {
+    use crate::tag_utils::{ControlFlow, Error, decode_tags};
+    use std::borrow::Cow;
+    use swf::error::Error as SwfError;
+
+    fn extract_abc(data: &[u8]) -> Result<&[u8], Error> {
+        const ERR: SwfError = SwfError::InvalidData(Cow::Borrowed("expected a single DoAbc2 tag"));
+        let (_, mut reader) = swf::read::parse_swf_header(data)?;
+
+        let mut do_abc = None;
+        decode_tags(&mut reader, |reader, code| match code {
+            TagCode::DoAbc2 if do_abc.is_none() => {
+                do_abc = Some(reader.read_do_abc_2()?);
+                Ok(ControlFlow::Continue)
+            }
+            TagCode::End => Ok(ControlFlow::Exit),
+            _ => Err(ERR.into()),
+        })?;
+
+        Ok(do_abc.ok_or(ERR)?.data)
+    }
+
     context.avm2.native_method_table = native::NATIVE_METHOD_TABLE;
     context.avm2.native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
     context.avm2.native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
     context.avm2.native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
     context.avm2.native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
 
-    let movie = Arc::new(
-        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None, None)
-            .expect("playerglobal_avm2.swf should be valid"),
-    );
-
-    let slice = SwfSlice::from(movie);
-
-    let mut reader = slice.read_from(0);
-
-    let tag_callback = |reader: &mut SwfStream<'_>, tag_code| {
-        if tag_code == TagCode::DoAbc2 {
-            let do_abc = reader
-                .read_do_abc_2()
-                .expect("playerglobal_avm2.swf should be valid");
-            Avm2::load_builtin_abc(context, do_abc.data, domain);
-        } else if tag_code != TagCode::End {
-            panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")
-        }
-        Ok(ControlFlow::Continue)
-    };
-
-    let _ = tag_utils::decode_tags(&mut reader, tag_callback);
+    let abc = extract_abc(PLAYERGLOBAL).expect("playerglobal_avm2.swf should be valid");
+    Avm2::load_builtin_abc(context, abc, domain);
 
     // Domain memory must be initialized after playerglobals is loaded because it relies on ByteArray.
     domain.init_default_domain_memory(context);
