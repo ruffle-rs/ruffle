@@ -73,9 +73,9 @@ impl Avm2ClassWindow {
                 ui.text_edit_singleline(&mut name.local_name().to_string().as_str());
                 ui.end_row();
 
-                if let Some(tu) = class.translation_unit() {
+                if let Some(movie) = class.translation_unit().and_then(|tu| tu.movie()) {
                     ui.label("Movie");
-                    open_movie_button(ui, &tu.movie(), messages);
+                    open_movie_button(ui, movie, messages);
                     ui.end_row();
                 }
 

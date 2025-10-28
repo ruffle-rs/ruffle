@@ -350,7 +350,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.num_locals = num_locals;
         self.outer = outer;
         self.caller_domain = Some(outer.domain());
-        self.caller_movie = Some(method.owner_movie());
+        self.caller_movie = method.translation_unit().movie().cloned();
         self.bound_superclass_object = bound_superclass_object;
         self.stack = stack_frame;
         self.scope_depth = self.context.avm2.scope_stack.len();

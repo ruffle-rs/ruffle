@@ -535,7 +535,7 @@ impl<'gc> Avm2<'gc> {
         }
 
         let num_scripts = abc.scripts.len();
-        let tunit = TranslationUnit::from_abc(abc, domain, name, movie, activation.gc());
+        let tunit = TranslationUnit::from_abc(abc, domain, name, Some(movie), activation.gc());
         tunit.load_classes(&mut activation)?;
         for i in 0..num_scripts {
             tunit.load_script(i as u32, &mut activation)?;
@@ -548,12 +548,7 @@ impl<'gc> Avm2<'gc> {
     }
 
     /// Load the playerglobal ABC file.
-    pub fn load_builtin_abc(
-        context: &mut UpdateContext<'gc>,
-        data: &[u8],
-        domain: Domain<'gc>,
-        movie: Arc<SwfMovie>,
-    ) {
+    pub fn load_builtin_abc(context: &mut UpdateContext<'gc>, data: &[u8], domain: Domain<'gc>) {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
             Ok(abc) => abc,
@@ -565,7 +560,7 @@ impl<'gc> Avm2<'gc> {
         // domain using `activation.domain()`
         activation.set_outer(ScopeChain::new(domain));
 
-        let tunit = TranslationUnit::from_abc(abc, domain, None, movie, activation.gc());
+        let tunit = TranslationUnit::from_abc(abc, domain, None, None, activation.gc());
 
         globals::init_early_classes(&mut activation, tunit).expect("Early classes should load");
 

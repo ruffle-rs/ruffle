@@ -322,7 +322,7 @@ pub fn exec<'gc>(
                 let span = option.expect("tracy_client should be running").span_alloc(
                     None,
                     &name.to_utf8_lossy(),
-                    method.owner_movie().url(),
+                    method.translation_unit().debug_name(),
                     line!(),
                     0,
                 );

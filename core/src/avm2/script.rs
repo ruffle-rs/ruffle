@@ -79,7 +79,8 @@ struct TranslationUnitData<'gc> {
     multinames: Box<[OnceLock<Gc<'gc, Multiname<'gc>>>]>,
 
     /// The movie that this TranslationUnit was loaded from.
-    movie: Arc<SwfMovie>,
+    /// If `None`, this is the embedded `playerglobal_avm2.swf`.
+    movie: Option<Arc<SwfMovie>>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
@@ -89,7 +90,7 @@ impl<'gc> TranslationUnit<'gc> {
         abc: AbcFile,
         domain: Domain<'gc>,
         name: Option<AvmString<'gc>>,
-        movie: Arc<SwfMovie>,
+        movie: Option<Arc<SwfMovie>>,
         mc: &Mutation<'gc>,
     ) -> Self {
         use std::iter::repeat_n;
@@ -154,8 +155,12 @@ impl<'gc> TranslationUnit<'gc> {
         Rc::ptr_eq(&self.0.abc, &other.0.abc)
     }
 
-    pub fn movie(self) -> Arc<SwfMovie> {
-        self.0.movie.clone()
+    pub fn movie(self) -> Option<&'gc Arc<SwfMovie>> {
+        Gc::as_ref(self.0).movie.as_ref()
+    }
+
+    pub fn debug_name(self) -> &'gc str {
+        self.movie().map_or("playerglobal_avm2", |m| m.url())
     }
 
     pub fn api_version(self, avm2: &Avm2<'gc>) -> ApiVersion {
