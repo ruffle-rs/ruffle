@@ -1,0 +1,9 @@
+{
+    // Tests are loaded from the //tests/tests/swfs directory.
+    // This file contains web-specific configuration of those tests.
+    // Please order tests alphabetically.
+    "tests": {
+        "visual/edittext/edittext_background_basic": {},
+        "visual/edittext/edittext_border_basic": {},
+    },
+}

@@ -1,0 +1,41 @@
+<!doctype>
+<html>
+
+<head>
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+</head>
+
+<body>
+    <div id="container"></div>
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const swfUrl = urlParams.get('swf');
+        const name = urlParams.get('name');
+        document.title = name;
+        window.RufflePlayer = window.RufflePlayer || {};
+        window.RufflePlayer.config = {
+            autoplay: "off",
+            quality: urlParams.get("config_quality"),
+        };
+
+        window.addEventListener("load", (event) => {
+            const ruffle = window.RufflePlayer.newest();
+            const player = ruffle.createPlayer();
+            const container = document.getElementById("container");
+            container.appendChild(player);
+
+            player.addEventListener("loadedmetadata", () => {
+                player.style.width = `${player.ruffle().metadata.width}px`;
+                player.style.height = `${player.ruffle().metadata.height}px`;
+            });
+
+            player.ruffle().load({
+                url: swfUrl,
+                __tickAutomatically: false,
+            });
+        });
+    </script>
+    <script src="/dist/ruffle.js"></script>
+</body>
+
+</html>
