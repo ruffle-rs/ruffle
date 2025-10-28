@@ -50,6 +50,10 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "loadBitmap" => method(load_bitmap);
+    "RED_CHANNEL" => int(1);
+    "GREEN_CHANNEL" => int(2);
+    "BLUE_CHANNEL" => int(4);
+    "ALPHA_CHANNEL" => int(8);
 };
 
 pub fn create_class<'gc>(
