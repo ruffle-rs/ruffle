@@ -13,7 +13,7 @@ use std::io::{self, Read};
 /// Maximum buffer capacity for reading the SWF.
 ///
 /// Prevents large allocations in case the SWF has a malformed length.
-const MAX_DATA_CAPACITY: u32 = 128 * 1024 * 1024; // 128 MiB
+const MAX_DATA_CAPACITY: usize = 128 * 1024 * 1024; // 128 MiB
 
 /// Parse a decompressed SWF.
 ///
@@ -53,6 +53,24 @@ pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
     Err(Error::invalid_data("Invalid ASN1 blob"))
 }
 
+/// Parses an SWF header from a byte slice; returns the parsed header
+/// along with a `Reader` to the beginning of the SWF's tag stream.
+///
+/// Returns an `Error` if the header is invalid, or if the SWF is compressed.
+pub fn parse_swf_header(mut input: &[u8]) -> Result<(HeaderExt, Reader<'_>)> {
+    let header = BareHeader::read(&mut input)?;
+
+    if header.compression != Compression::None {
+        return Err(Error::unsupported(
+            "called `parse_swf_header` on a compressed SWF",
+        ));
+    }
+
+    let (header, offset) = read_header_ext(input, header)?;
+    let reader = Reader::new(&input[offset..], header.version());
+    Ok((header, reader))
+}
+
 /// Parses an SWF header and returns a `Reader` that can be used
 /// to read the SWF tags inside the SWF file.
 ///
@@ -70,51 +88,35 @@ pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
 /// println!("FPS: {}", swf_stream.header.frame_rate());
 /// ```
 pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
-    // Read SWF header.
-    let compression = read_compression_type(&mut input)?;
-
-    let mut raw_header = [0u8; 5];
-    input.read_exact(&mut raw_header)?;
-
-    let version = raw_header[0];
-    let uncompressed_len = u32::from_le_bytes(*raw_header.split_last_chunk::<4>().unwrap().1);
-
-    // Check whether the SWF version is 0.
-    // Note that the behavior should actually vary, depending on the player version:
-    // - Flash Player 9 and later bail out (the behavior we implement).
-    // - Flash Player 8 loops through all the frames, without running any AS code.
-    // - Flash Player 7 and older don't fail and use the player version instead: a
-    // function like `getSWFVersion()` in AVM1 will then return the player version.
-    if version == 0 {
-        return Err(Error::invalid_data("Invalid SWF version"));
-    }
+    let header = BareHeader::read(&mut input)?;
+    let version = header.version;
 
     // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
     // subtract it here.
-    let body_len = uncompressed_len
+    let body_len = (header.uncompressed_len as usize)
         .checked_sub(8)
         .ok_or_else(|| Error::invalid_data("Malformed SWF length"))?;
 
     // Now the SWF switches to a compressed stream.
-    let decompress_stream: Box<dyn Read> = match compression {
-        Compression::None => Box::new(input),
+    let decompress_stream: &mut dyn Read = match header.compression {
+        Compression::None => &mut input,
         Compression::Zlib => {
             if version < 6 {
                 log::warn!("zlib compressed SWF is version {version} but minimum version is 6");
             }
-            make_zlib_reader(input)?
+            &mut make_zlib_reader(input)?
         }
         Compression::Lzma => {
             if version < 13 {
                 log::warn!("LZMA compressed SWF is version {version} but minimum version is 13");
             }
-            make_lzma_reader(input, body_len)?
+            &mut make_lzma_reader(input, body_len)?
         }
     };
 
     // Flash Player allocates a fixed buffer based on the header length and
     // never accesses data beyond it. Match that behavior by capping reads here.
-    let mut data = Vec::with_capacity(body_len.min(MAX_DATA_CAPACITY) as usize);
+    let mut data = Vec::with_capacity(body_len.min(MAX_DATA_CAPACITY));
     if let Err(e) = decompress_stream
         .take(body_len as u64)
         .read_to_end(&mut data)
@@ -122,88 +124,128 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         log::error!("Error decompressing SWF: {e}");
     }
 
+    let (header, offset) = read_header_ext(&data, header)?;
+    // Remove the header.
+    // As an alternative we could return the entire original buffer with header length,
+    // but that's a nontrivial API change, probably not worth the effort.
+    data.drain(..offset);
+
+    Ok(SwfBuf { header, data })
+}
+
+/// The uncompressed part of a SWF header.
+struct BareHeader {
+    compression: Compression,
+    version: u8,
+    uncompressed_len: u32,
+}
+
+impl BareHeader {
+    const LEN: usize = 8;
+
+    fn parse(bytes: [u8; Self::LEN]) -> Result<Self> {
+        let (signature, rest) = bytes.split_first_chunk::<3>().unwrap();
+        let compression = parse_compression_type(*signature)?;
+
+        let (version, rest) = rest.split_first().unwrap();
+        let uncompressed_len = u32::from_le_bytes(rest.try_into().unwrap());
+
+        // Check whether the SWF version is 0.
+        // Note that the behavior should actually vary, depending on the player version:
+        // - Flash Player 9 and later bail out (the behavior we implement).
+        // - Flash Player 8 loops through all the frames, without running any AS code.
+        // - Flash Player 7 and older don't fail and use the player version instead: a
+        // function like `getSWFVersion()` in AVM1 will then return the player version.
+        if *version == 0 {
+            return Err(Error::invalid_data("Invalid SWF version"));
+        }
+
+        Ok(Self {
+            compression,
+            version: *version,
+            uncompressed_len,
+        })
+    }
+
+    fn read(input: &mut impl Read) -> Result<Self> {
+        let mut raw = [0u8; Self::LEN];
+        input.read_exact(&mut raw)?;
+        Self::parse(raw)
+    }
+}
+
+fn read_header_ext(data: &[u8], header: BareHeader) -> Result<(HeaderExt, usize)> {
     // Some SWF streams may not be compressed correctly,
     // (e.g. incorrect data length in the stream), so decompressing
     // may throw an error even though the data otherwise comes
     // through the stream.
     // We'll still try to parse what we get if the full decompression fails.
     // (+ 8 for header size)
-    if data.len() as u64 + 8 != uncompressed_len as u64 {
+    if data.len().checked_add(8) != Some(header.uncompressed_len as usize) {
         log::warn!("SWF length doesn't match header, may be corrupt");
     }
 
-    let mut reader = Reader::new(&data, version);
-    let stage_size = reader.read_rectangle()?;
-    let frame_rate = reader.read_fixed8()?;
-    let num_frames = reader.read_u16()?;
-    let header = Header {
-        compression,
-        version,
-        stage_size,
-        frame_rate,
-        num_frames,
+    let mut reader = Reader::new(data, header.version);
+
+    let mut header = HeaderExt {
+        header: Header {
+            compression: header.compression,
+            version: header.version,
+            stage_size: reader.read_rectangle()?,
+            frame_rate: reader.read_fixed8()?,
+            num_frames: reader.read_u16()?,
+        },
+        // TODO: what should happen if this is greater than i32::MAX?
+        uncompressed_len: header.uncompressed_len as i32,
+        file_attributes: FileAttributes::default(),
+        background_color: None,
     };
 
-    // Remove the header.
-    // As an alternative we could return the entire original buffer with header length,
-    // but that's a nontrivial API change, probably not worth the effort.
-    let offset = reader.as_slice().as_ptr() as usize - data.as_ptr() as usize;
-    data.drain(..offset);
+    // Remember the offset of the beginning of the tag stream.
+    let offset = data.subslice_range(reader.as_slice()).unwrap().start;
 
     // Parse the first two tags, searching for the FileAttributes and SetBackgroundColor tags.
     // This metadata is useful, so we want to return it along with the header.
     // Note that we don't use `read_tag`, as it would parse tags we may not care about, leading
     // to wasted work.
-    let mut reader = Reader::new(&data, version);
 
     // In SWF8+, FileAttributes should be the first tag in the SWF.
     // FileAttributes anywhere else in the SWF are ignored.
     let mut tag = reader.read_raw_tag();
-    let file_attributes = if let Ok((tag_code, tag_reader)) = &mut tag
+    if let Ok((tag_code, tag_reader)) = &mut tag
         && *tag_code == TagCode::FileAttributes as u16
         && let Ok(attributes) = tag_reader.read_file_attributes()
     {
+        header.file_attributes = attributes;
         tag = reader.read_raw_tag();
-        attributes
-    } else {
-        FileAttributes::default()
-    };
+    }
 
     // In most SWFs, SetBackgroundColor will be the second or third tag after FileAttributes + Metadata.
     // It's possible for the SetBackgroundColor tag to be missing or appear later in wacky SWFs, so let's
     // return `None` in this case.
-    let mut background_color = None;
     for _ in 0..2 {
         if let Ok((tag_code, tag_reader)) = &mut tag
             && *tag_code == TagCode::SetBackgroundColor as u16
             && let Ok(color) = tag_reader.read_rgb()
         {
-            background_color = Some(color);
+            header.background_color = Some(color);
             break;
         };
         tag = reader.read_raw_tag();
     }
 
-    Ok(SwfBuf {
-        header: HeaderExt {
-            header,
-            file_attributes,
-            background_color,
-            uncompressed_len: uncompressed_len as i32,
-        },
-        data,
-    })
+    Ok((header, offset))
 }
 
 #[cfg(feature = "flate2")]
-fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<Box<dyn Read + 'a>> {
+fn make_zlib_reader<'a, R: Read + 'a>(input: R) -> Result<impl Read + 'a> {
     use flate2::read::ZlibDecoder;
-    Ok(Box::new(ZlibDecoder::new(input)))
+    Ok(ZlibDecoder::new(input))
 }
 
 #[cfg(not(feature = "flate2"))]
-fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
-    Err(Error::unsupported(
+fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<impl Read + 'a> {
+    Err::<R, _>(Error::unsupported(
         "Support for Zlib compressed SWFs is not enabled.",
     ))
 }
@@ -211,8 +253,8 @@ fn make_zlib_reader<'a, R: Read + 'a>(_input: R) -> Result<Box<dyn Read + 'a>> {
 #[cfg(feature = "lzma")]
 fn make_lzma_reader<'a, R: Read + 'a>(
     mut input: R,
-    unpacked_size: u32,
-) -> Result<Box<dyn Read + 'a>> {
+    unpacked_size: usize,
+) -> Result<impl Read + 'a> {
     use lzma_rs::{
         decompress::{Options, UnpackedSize},
         lzma_decompress_with_options,
@@ -236,7 +278,7 @@ fn make_lzma_reader<'a, R: Read + 'a>(
     input.read_exact(&mut [0; 4])?;
 
     // TODO: Switch to lzma-rs streaming API when stable.
-    let mut output = Vec::with_capacity(unpacked_size.min(MAX_DATA_CAPACITY) as usize);
+    let mut output = Vec::with_capacity(unpacked_size.min(MAX_DATA_CAPACITY));
     lzma_decompress_with_options(
         &mut io::BufReader::new(input),
         &mut output,
@@ -254,11 +296,8 @@ fn make_lzma_reader<'a, R: Read + 'a>(
 }
 
 #[cfg(not(feature = "lzma"))]
-fn make_lzma_reader<'a, R: Read + 'a>(
-    _input: R,
-    _unpacked_size: u32,
-) -> Result<Box<dyn Read + 'a>> {
-    Err(Error::unsupported(
+fn make_lzma_reader<'a, R: Read + 'a>(_input: R, _unpacked_size: usize) -> Result<impl Read + 'a> {
+    Err::<R, _>(Error::unsupported(
         "Support for LZMA compressed SWFs is not enabled.",
     ))
 }
@@ -2594,16 +2633,19 @@ impl<'a> Reader<'a> {
     }
 }
 
+fn parse_compression_type(signature: [u8; 3]) -> Result<Compression> {
+    match &signature {
+        b"FWS" | b"GFX" => Ok(Compression::None),
+        b"CWS" | b"CFX" => Ok(Compression::Zlib),
+        b"ZWS" => Ok(Compression::Lzma),
+        _ => Err(Error::invalid_data("Invalid SWF")),
+    }
+}
+
 pub fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
     let mut signature = [0u8; 3];
     input.read_exact(&mut signature)?;
-    let compression = match &signature {
-        b"FWS" | b"GFX" => Compression::None,
-        b"CWS" | b"CFX" => Compression::Zlib,
-        b"ZWS" => Compression::Lzma,
-        _ => return Err(Error::invalid_data("Invalid SWF")),
-    };
-    Ok(compression)
+    parse_compression_type(signature)
 }
 
 #[cfg(test)]
