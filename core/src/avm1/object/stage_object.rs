@@ -158,7 +158,8 @@ fn resolve_path_property<'gc>(
                 .map(Value::Object)
                 .unwrap_or(Value::Undefined),
         );
-    } else if name.eq_with_case(b"_global", case_sensitive) {
+    } else if activation.swf_version() > 5 && name.eq_with_case(b"_global", case_sensitive) {
+        // _global is available only in SWF6+
         return Some(activation.global_object().into());
     }
 
