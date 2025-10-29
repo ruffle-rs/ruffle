@@ -36,16 +36,14 @@ impl DomainListWindow {
                 let domain = context.avm2.playerglobals_domain();
                 egui::ScrollArea::both().show(ui, |ui| {
                     ui.push_id("domain_scroll_content", |ui| {
-                        self.show_domain(ui, context, domain, messages, &search, 0)
+                        Self::show_domain(ui, context, domain, messages, &search, 0)
                     });
                 });
             });
         keep_open
     }
 
-    #[expect(clippy::only_used_in_recursion)]
     pub fn show_domain<'gc>(
-        &mut self,
         ui: &mut Ui,
         context: &mut UpdateContext<'gc>,
         domain: Domain<'gc>,
@@ -104,7 +102,7 @@ impl DomainListWindow {
                         domain.children(context.gc()).into_iter().enumerate()
                     {
                         ui.push_id(format!("child_domain_{}_{}", depth, child_index), |ui| {
-                            self.show_domain(
+                            Self::show_domain(
                                 ui,
                                 context,
                                 child_domain,
