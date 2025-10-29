@@ -375,11 +375,8 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                         streamdef.codec,
                         streamdef.deblocking,
                     );
-                    if stream.is_err() {
-                        tracing::error!(
-                            "Got error when post-instantiating video: {}",
-                            stream.unwrap_err()
-                        );
+                    if let Err(err) = stream {
+                        tracing::error!("Got error when post-instantiating video: {err}",);
                         return;
                     }
 
