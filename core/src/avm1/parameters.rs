@@ -9,7 +9,6 @@ pub enum UndefinedAs {
     None,
 
     /// An explicit `undefined` will be treated as if the value did exist - the result will be `Some`.
-    #[expect(dead_code)]
     Some,
 }
 
@@ -60,7 +59,6 @@ pub trait ParametersExt<'gc> {
 
     /// Tries to get the value at the given index as a String.
     /// The value will be coerced to a String if it exists.
-    #[expect(dead_code)]
     fn try_get_string(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -191,7 +189,6 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index as an i32.
     /// The value will be coerced to an i32, even if it's undefined/missing.
-    #[expect(dead_code)]
     fn get_i32(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -202,7 +199,6 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index as an i32.
     /// The value will be coerced to an i32 if it exists.
-    #[expect(dead_code)]
     fn try_get_i32(
         &self,
         activation: &mut Activation<'_, 'gc>,
