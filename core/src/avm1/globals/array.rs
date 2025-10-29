@@ -3,6 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
+use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
@@ -318,11 +319,9 @@ pub fn join<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length(activation)?;
 
-    let separator = if let Some(v) = args.get(0) {
-        v.coerce_to_string(activation)?
-    } else {
-        istr!(",")
-    };
+    let separator = args
+        .try_get_string(activation, 0, UndefinedAs::Some)?
+        .unwrap_or(istr!(","));
 
     if length <= 0 {
         return Ok(istr!("").into());
@@ -356,18 +355,13 @@ pub fn slice<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length(activation)?;
 
-    let start = make_index_absolute(
-        args.get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?,
-        length,
-    );
+    let start = make_index_absolute(args.get_i32(activation, 0)?, length);
 
-    let end = args.get(1).unwrap_or(&Value::Undefined);
-    let end = if end == &Value::Undefined {
-        length
+    let index = args.try_get_i32(activation, 1, UndefinedAs::None)?;
+    let end = if let Some(index) = index {
+        make_index_absolute(index, length)
     } else {
-        make_index_absolute(end.coerce_to_i32(activation)?, length)
+        length
     };
 
     Ok(ArrayBuilder::new(activation)
@@ -380,21 +374,25 @@ pub fn splice<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let Some(start) = args.get(0) else {
+    let Some(start) = args.try_get_i32(activation, 0, UndefinedAs::None)? else {
         return Ok(Value::Undefined);
     };
 
     let length = this.length(activation)?;
-    let start = make_index_absolute(start.coerce_to_i32(activation)?, length);
-    let delete_count = if let Some(arg) = args.get(1) {
-        let delete_count = arg.coerce_to_i32(activation)?;
-        if delete_count < 0 {
+    let start = make_index_absolute(start, length);
+
+    let delete_count = if args.len() > 1 {
+        if let Some(delete_count) = args.try_get_i32(activation, 1, UndefinedAs::None)? {
+            delete_count.min(length - start)
+        } else {
             return Ok(Value::Undefined);
         }
-        delete_count.min(length - start)
     } else {
         length - start
     };
+    if delete_count < 0 {
+        return Ok(Value::Undefined);
+    }
 
     let result = ArrayBuilder::new(activation)
         .with((0..delete_count).map(|i| this.get_element(activation, start + i)));
