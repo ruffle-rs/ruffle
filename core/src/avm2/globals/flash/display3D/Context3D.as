@@ -27,6 +27,8 @@ package flash.display3D {
         public native function setCulling(triangleFaceToCull:String):void;
         public native function createTexture(width:int, height:int, format:String, optimizeForRenderToTexture:Boolean, streamingLevels:int = 0):Texture;
         public native function createCubeTexture(size:int, format:String, optimizeForRenderToTexture:Boolean, streamingLevels:int = 0):CubeTexture;
+
+        [API("690")]
         public native function createRectangleTexture(width:int, height:int, format:String, optimizeForRenderToTexture:Boolean):RectangleTexture;
 
         public function get driverInfo():String {
@@ -55,6 +57,8 @@ package flash.display3D {
 
         public native function setTextureAt(sampler:int, texture:TextureBase):void;
 
+        // NOTE docs say 694, but playerglobals says 692; playerglobals is correct
+        [API("692")]
         public native function get profile():String;
 
         [API("700")]
@@ -73,6 +77,7 @@ package flash.display3D {
             stub_method("flash.display3D.Context3D", "setStencilReferenceValue");
         }
 
+        [API("686")]
         public native function setSamplerStateAt(sampler:int, wrap:String, filter:String, mipfilter:String):void;
 
         public native function setRenderToTexture(texture:TextureBase, enableDepthAndStencil:Boolean = false, antiAlias:int = 0, surfaceSelector:int = 0, colorOutputIndex:int = 0):void;
