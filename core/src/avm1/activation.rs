@@ -2932,7 +2932,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Because scopes are object chains, the same rules for `Object::get`
     /// still apply here.
     pub fn resolve(&mut self, name: AvmString<'gc>) -> Result<CallableValue<'gc>, Error<'gc>> {
-        if &name == b"this" {
+        let this_case_sensitive = if self.swf_version() <= 5 {
+            self.scope().class() == ScopeClass::Local
+        } else {
+            self.is_case_sensitive()
+        };
+
+        if name.eq_with_case(b"this", this_case_sensitive) {
             return Ok(CallableValue::UnCallable(self.this_cell()));
         }
 
