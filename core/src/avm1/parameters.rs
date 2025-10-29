@@ -22,7 +22,6 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index as an Object.
     /// The value will be coerced to an Object, even if it's undefined/missing.
-    #[expect(dead_code)]
     fn get_object(&self, activation: &mut Activation<'_, 'gc>, index: usize) -> Object<'gc> {
         self.get_value(index).coerce_to_object(activation)
     }

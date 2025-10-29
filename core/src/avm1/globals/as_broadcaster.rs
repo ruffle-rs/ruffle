@@ -2,6 +2,7 @@
 
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
+use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Activation, ArrayBuilder, Object, Value};
@@ -67,12 +68,23 @@ fn add_listener<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let new_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
+    let new_listener = args.get_value(0);
     let listeners = this.get(istr!("_listeners"), activation)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length(activation)?;
-        let exists = (0..length).any(|i| listeners.get_element(activation, i) == new_listener);
+        let mut exists = false;
+        for i in 0..length {
+            if listeners
+                .get_element(activation, i)
+                .abstract_eq(new_listener, activation)?
+            {
+                listeners.set_element(activation, i, new_listener)?;
+                exists = true;
+                break;
+            }
+        }
+
         if !exists {
             listeners.call_method(
                 istr!("push"),
@@ -91,21 +103,24 @@ fn remove_listener<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let old_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
+    let old_listener = args.get_value(0);
     let listeners = this.get(istr!("_listeners"), activation)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length(activation)?;
-        if let Some(index) =
-            (0..length).find(|&i| listeners.get_element(activation, i) == old_listener)
-        {
-            listeners.call_method(
-                istr!("splice"),
-                &[index.into(), 1.into()],
-                activation,
-                ExecutionReason::FunctionCall,
-            )?;
-            return Ok(true.into());
+        for i in 0..length {
+            if listeners
+                .get_element(activation, i)
+                .abstract_eq(old_listener, activation)?
+            {
+                listeners.call_method(
+                    istr!("splice"),
+                    &[i.into(), 1.into()],
+                    activation,
+                    ExecutionReason::FunctionCall,
+                )?;
+                return Ok(true.into());
+            }
         }
     }
 
@@ -117,11 +132,12 @@ fn broadcast_message<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(event_name_value) = args.get(0) {
-        let event_name = event_name_value.coerce_to_string(activation)?;
+    let event_name = args.try_get_string(activation, 0, UndefinedAs::Some)?;
+    if let Some(event_name) = event_name {
         let call_args = &args[1..];
-
         broadcast_internal(this, call_args, event_name, activation)?;
+
+        return Ok(true.into());
     }
 
     Ok(Value::Undefined)
@@ -140,13 +156,17 @@ pub fn broadcast_internal<'gc>(
         for i in 0..length {
             let listener = listeners.get_element(activation, i);
 
-            if let Value::Object(listener) = listener {
-                listener.call_method(
-                    method_name,
-                    call_args,
-                    activation,
-                    ExecutionReason::Special,
-                )?;
+            if let Value::Object(listener_obj) = listener {
+                if method_name.is_empty() {
+                    listener_obj.call(method_name, activation, listener, call_args)?;
+                } else {
+                    listener_obj.call_method(
+                        method_name,
+                        call_args,
+                        activation,
+                        ExecutionReason::Special,
+                    )?;
+                }
             } else if let Value::MovieClip(_) = listener {
                 let object = listener.coerce_to_object(activation);
                 object.call_method(method_name, call_args, activation, ExecutionReason::Special)?;
@@ -164,18 +184,16 @@ fn initialize<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(val) = args.get(0) {
-        let broadcaster = val.coerce_to_object(activation);
-        initialize_internal(
-            &activation.context.strings,
-            broadcaster,
-            activation
-                .context
-                .avm1
-                .broadcaster_functions(activation.swf_version()),
-            activation.prototypes().array,
-        );
-    }
+    let broadcaster = args.get_object(activation, 0);
+    initialize_internal(
+        &activation.context.strings,
+        broadcaster,
+        activation
+            .context
+            .avm1
+            .broadcaster_functions(activation.swf_version()),
+        activation.prototypes().array,
+    );
     Ok(Value::Undefined)
 }
 
