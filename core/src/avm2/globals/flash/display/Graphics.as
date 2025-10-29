@@ -36,7 +36,6 @@ package flash.display
         public native function lineTo(x:Number, y:Number): void;
         [Ruffle(FastCall)]
         public native function moveTo(x:Number, y:Number): void;
-        //public native function beginShaderFill(shader:Shader, matrix:Matrix = null):void;
         public native function lineGradientStyle(
             type:String, colors:Array, alphas:Array, ratios:Array, matrix:Matrix = null, spreadMethod:String = "pad", interpolationMethod:String = "rgb", focalPointRatio:Number = 0
         ):void;
@@ -49,7 +48,9 @@ package flash.display
         ):void;
         public native function drawTriangles(vertices:Vector.<Number>, indices:Vector.<int> = null, uvtData:Vector.<Number> = null, culling:String = "none"):void;
         public native function drawGraphicsData(graphicsData:Vector.<IGraphicsData>):void;
-        //public native function lineShaderStyle(shader:Shader, matrix:Matrix = null):void;
+        public function lineShaderStyle(shader:Shader, matrix:Matrix = null):void {
+            stub_method("flash.display.Graphics", "lineShaderStyle");
+        }
         public native function lineBitmapStyle(bitmap:BitmapData, matrix:Matrix = null, repeat:Boolean = true, smooth:Boolean = false):void;
         [API("686")]
         public native function readGraphicsData(recurse:Boolean = true):Vector.<IGraphicsData>;
