@@ -142,6 +142,7 @@ include "flash/display3D/textures/TextureBase.as"
 include "flash/display3D/textures/CubeTexture.as"
 include "flash/display3D/textures/Texture.as"
 include "flash/display3D/textures/RectangleTexture.as"
+include "flash/display3D/textures/VideoTexture.as"
 include "flash/display3D/VertexBuffer3D.as"
 
 include "flash/errors/IOError.as" // IOError is a superclass of EOFError

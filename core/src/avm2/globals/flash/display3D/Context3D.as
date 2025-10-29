@@ -8,6 +8,7 @@ package flash.display3D {
     import flash.display3D.textures.TextureBase;
     import flash.display3D.textures.RectangleTexture;
     import flash.display3D.textures.Texture;
+    import flash.display3D.textures.VideoTexture;
 
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
@@ -29,11 +30,23 @@ package flash.display3D {
         public native function drawTriangles(indexBuffer:IndexBuffer3D, firstIndex:int = 0, numTriangles:int = -1):void;
         public native function present():void;
         public native function setCulling(triangleFaceToCull:String):void;
+
         public native function createTexture(width:int, height:int, format:String, optimizeForRenderToTexture:Boolean, streamingLevels:int = 0):Texture;
         public native function createCubeTexture(size:int, format:String, optimizeForRenderToTexture:Boolean, streamingLevels:int = 0):CubeTexture;
 
         [API("690")]
         public native function createRectangleTexture(width:int, height:int, format:String, optimizeForRenderToTexture:Boolean):RectangleTexture;
+
+        [API("706")]
+        public function createVideoTexture():VideoTexture {
+            stub_method("flash.display3D.Context3D", "createVideoTexture");
+            return null;
+        }
+
+        [API("706")]
+        public static function get supportsVideoTexture():Boolean {
+            return false;
+        }
 
         public function get driverInfo():String {
             stub_getter("flash.display3D.Context3D", "driverInfo");
