@@ -1,13 +1,17 @@
 package flash.display3D {
+    import flash.display.BitmapData;
     import flash.events.EventDispatcher;
     import flash.geom.Matrix3D;
     import flash.geom.Rectangle;
+    import flash.utils.ByteArray;
     import flash.display3D.textures.CubeTexture;
     import flash.display3D.textures.TextureBase;
     import flash.display3D.textures.RectangleTexture;
     import flash.display3D.textures.Texture;
+
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
+    import __ruffle__.stub_setter;
 
     [API("674")]
     [Ruffle(Abstract)]
@@ -47,6 +51,11 @@ package flash.display3D {
         public native function setProgramConstantsFromMatrix(programType:String, firstRegister:int, matrix:Matrix3D, transposedMatrix:Boolean = false):void;
         public native function setProgramConstantsFromVector(programType:String, firstRegister:int, data:Vector.<Number>, numRegisters:int = -1):void;
 
+        [API("676")]
+        public function setProgramConstantsFromByteArray(programType:String, firstRegister:int, numRegisters:int, data:ByteArray, dataOffset:uint):void {
+            stub_method("flash.display3D.Context3D", "setProgramConstantsFromByteArray");
+        }
+
         public native function setColorMask(red:Boolean, green:Boolean, blue:Boolean, alpha:Boolean):void;
 
         public native function setDepthTest(depthMask:Boolean, passCompareMode:String):void;
@@ -62,15 +71,35 @@ package flash.display3D {
         public native function get profile():String;
 
         [API("700")]
+        public function get backBufferWidth():int {
+            stub_getter("flash.display3D.Context3D", "backBufferWidth");
+            return 2048;
+        }
+
+        [API("700")]
+        public function get backBufferHeight():int {
+            stub_getter("flash.display3D.Context3D", "backBufferHeight");
+            return 2048;
+        }
+
+        [API("700")]
         public function get maxBackBufferWidth():int {
             stub_getter("flash.display3D.Context3D", "maxBackBufferWidth");
             return 2048;
+        }
+        [API("700")]
+        public function set maxBackBufferWidth(value:int):void {
+            stub_setter("flash.display3D.Context3D", "maxBackBufferWidth");
         }
 
         [API("700")]
         public function get maxBackBufferHeight():int {
             stub_getter("flash.display3D.Context3D", "maxBackBufferHeight");
             return 2048;
+        }
+        [API("700")]
+        public function set maxBackBufferHeight(value:int):void {
+            stub_setter("flash.display3D.Context3D", "maxBackBufferHeight");
         }
 
         public function setStencilReferenceValue(referenceValue:uint, readMask:uint = 255, writeMask:uint = 255):void {
@@ -90,6 +119,10 @@ package flash.display3D {
             actionOnDepthPassStencilFail:String = "keep"
         ):void {
             stub_method("flash.display3D.Context3D", "setStencilActions");
+        }
+
+        public function drawToBitmapData(destination:BitmapData):void {
+            stub_method("flash.display3D.Context3D", "drawToBitmapData");
         }
 
         public native function dispose(recreate:Boolean = true):void;
