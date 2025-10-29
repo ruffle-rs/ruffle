@@ -60,7 +60,7 @@ pub struct TestLoaderParams<'a> {
     pub test_name: &'a str,
 }
 
-pub type TestLoader = Box<dyn Fn(TestLoaderParams) -> Option<Trial>>;
+pub type TestLoader = Box<dyn Fn(TestLoaderParams, &mut dyn FnMut(Trial))>;
 
 pub struct FsTestsRunner {
     root_dir: PathBuf,
@@ -123,33 +123,34 @@ impl FsTestsRunner {
         let filter_exact = args.exact && args.filter.is_some();
 
         let root = &self.root_dir;
-        let mut tests: Vec<Trial> = if filter_exact {
-            self.look_up_test(&args)
-                .map_or_else(Vec::new, |trial| vec![trial])
+        let mut tests = Vec::new();
+
+        if filter_exact {
+            // Ignore "errors" here.
+            let _ = self.look_up_test(&args, &mut tests);
         } else {
-            walkdir::WalkDir::new(root)
+            let walk = walkdir::WalkDir::new(root)
                 .into_iter()
                 .map(Result::unwrap)
                 .filter(|entry| {
                     entry.file_type().is_file()
                         && entry.file_name() == self.descriptor_name.as_ref()
-                })
-                .filter_map(|file| {
-                    let name = file
-                        .path()
-                        .parent()?
-                        .strip_prefix(root)
-                        .context("Couldn't strip root prefix from test dir")
-                        .unwrap()
-                        .to_string_lossy()
-                        .replace('\\', "/");
-                    if is_candidate(&args, &name) {
-                        self.load_test(&args, file.path(), &name)
-                    } else {
-                        None
-                    }
-                })
-                .collect()
+                });
+
+            for file in walk {
+                let Some(parent) = file.path().parent() else {
+                    continue;
+                };
+                let name = parent
+                    .strip_prefix(root)
+                    .context("Couldn't strip root prefix from test dir")
+                    .unwrap()
+                    .to_string_lossy()
+                    .replace('\\', "/");
+                if is_candidate(&args, &name) {
+                    self.load_test(&args, file.path(), &name, &mut tests)
+                }
+            }
         };
 
         tests.append(&mut self.additional_tests);
@@ -166,7 +167,7 @@ impl FsTestsRunner {
         }
     }
 
-    fn look_up_test(&self, args: &Arguments) -> Option<Trial> {
+    fn look_up_test(&self, args: &Arguments, out: &mut Vec<Trial>) -> anyhow::Result<()> {
         let root = &self.root_dir;
 
         let name = filter_to_test_name(args.filter.as_ref().unwrap());
@@ -174,27 +175,26 @@ impl FsTestsRunner {
         let path = absolute_root
             .join(&name)
             .join(self.descriptor_name.as_ref())
-            .canonicalize()
-            .ok()?;
+            .canonicalize()?;
 
         // Make sure that:
         //   1. There's no path traversal (e.g. `cargo test ../../test`)
         //   2. The path is still exact (e.g. `cargo test avm1/../avm1/test`)
-        if path.strip_prefix(absolute_root).ok()?
-            != Path::new(&name).join(self.descriptor_name.as_ref())
+        if path.strip_prefix(absolute_root)? != Path::new(&name).join(self.descriptor_name.as_ref())
         {
-            return None;
+            return Ok(());
         }
 
         if path.is_file() {
-            self.load_test(args, &path, &name)
-        } else {
-            None
+            self.load_test(args, &path, &name, out)
         }
+        Ok(())
     }
 
-    fn load_test(&self, args: &Arguments, file: &Path, name: &str) -> Option<Trial> {
-        let test_loader = self.test_loader.as_ref()?;
+    fn load_test(&self, args: &Arguments, file: &Path, name: &str, out: &mut Vec<Trial>) {
+        let Some(test_loader) = self.test_loader.as_ref() else {
+            return;
+        };
         let mut test_dir_real = Cow::Borrowed(file.parent().unwrap());
         if self.canonicalize_paths {
             test_dir_real = Cow::Owned(
@@ -204,11 +204,12 @@ impl FsTestsRunner {
             );
         }
         let test_dir = VfsPath::new(PhysicalFS::new(&test_dir_real));
-        test_loader(TestLoaderParams {
+        let params = TestLoaderParams {
             args,
             test_dir,
             test_dir_real,
             test_name: name,
-        })
+        };
+        test_loader(params, &mut |trial| out.push(trial));
     }
 }
