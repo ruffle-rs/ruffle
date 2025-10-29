@@ -76,7 +76,9 @@ fn main() {
 
     runner
         .with_descriptor_name(Cow::Borrowed(TEST_TOML_NAME))
-        .with_test_loader(Box::new(|params| Some(load_test(params))));
+        .with_test_loader(Box::new(|params, register_trial| {
+            register_trial(load_test(params))
+        }));
 
     runner.run()
 }

@@ -179,6 +179,32 @@ typewriter = ["Test Font", "Test Font Fallback"]
 japanese_gothic = ["Test Font", "Test Font Fallback"]
 japanese_gothic_mono = ["Test Font", "Test Font Fallback"]
 japanese_mincho = ["Test Font", "Test Font Fallback"]
+
+# Support for multiple configurations (see the 'Multiple tests' section for more details)
+# Fields specified here will override the 'default' values provided in the rest of the document.
+[subtests.SUBTEST_NAME]
+# ...
+```
+
+## Multiple tests
+
+Sometimes, you may want to test a given `test.swf` several times with different settings.
+For this situation, a `[subtests]` section can be added for each distinct configuration to be tested;
+each configuration will be ran as a separate test.
+
+For example, if `test.swf` has different output depending on the Flash Player version, the following
+`test.toml` could be used:
+```toml
+num_ticks = 1
+# other common settings...
+
+[subtests.fp9]
+output_path = "output.fp9.txt"
+player_options.version = 9
+
+[subtests.fp10]
+output_path = "output.fp10.txt"
+player_options.version = 10
 ```
 
 ## Frame-based tests
