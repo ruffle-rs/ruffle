@@ -1527,7 +1527,7 @@ fn handle_igraphics_data<'gc>(
         } else {
             let caps = {
                 let caps = obj
-                    .get_slot(graphics_stroke_slots::CAPS)
+                    .get_slot(graphics_stroke_slots::_CAPS)
                     .coerce_to_string(activation);
                 caps_to_cap_style(caps.ok())
             };
@@ -1542,7 +1542,7 @@ fn handle_igraphics_data<'gc>(
             };
 
             let joints = obj
-                .get_slot(graphics_stroke_slots::JOINTS)
+                .get_slot(graphics_stroke_slots::_JOINTS)
                 .coerce_to_string(activation)
                 .ok();
             let miter_limit = obj
@@ -1552,7 +1552,7 @@ fn handle_igraphics_data<'gc>(
                 .get_slot(graphics_stroke_slots::PIXEL_HINTING)
                 .coerce_to_boolean();
             let scale_mode = obj
-                .get_slot(graphics_stroke_slots::SCALE_MODE)
+                .get_slot(graphics_stroke_slots::_SCALE_MODE)
                 .coerce_to_string(activation)?;
 
             let width = Twips::from_pixels(thickness.clamp(0.0, 255.0));
