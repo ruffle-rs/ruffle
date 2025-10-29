@@ -7,9 +7,9 @@ use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "isActive" => method(is_active; DONT_DELETE | READ_ONLY);
-    "sendEvent" => method(send_event; DONT_DELETE | READ_ONLY);
-    "updateProperties" => method(update_properties; DONT_DELETE | READ_ONLY);
+    "isActive" => method(is_active; DONT_DELETE | READ_ONLY | VERSION_6);
+    "sendEvent" => method(send_event; DONT_DELETE | READ_ONLY | VERSION_6);
+    "updateProperties" => method(update_properties; DONT_DELETE | READ_ONLY | VERSION_6);
 };
 
 pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
