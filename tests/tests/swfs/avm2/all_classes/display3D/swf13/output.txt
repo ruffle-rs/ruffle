@@ -1,0 +1,326 @@
+<type name="flash.display3D::Context3D" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3D">
+      <accessor name="driverInfo" access="readonly" type="String" declaredBy="flash.display3D::Context3D"/>
+      <accessor name="enableErrorChecking" access="readwrite" type="Boolean" declaredBy="flash.display3D::Context3D"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="clear" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="Number" optional="true"/>
+          <parameter index="2" type="Number" optional="true"/>
+          <parameter index="3" type="Number" optional="true"/>
+          <parameter index="4" type="Number" optional="true"/>
+          <parameter index="5" type="Number" optional="true"/>
+          <parameter index="6" type="uint" optional="true"/>
+          <parameter index="7" type="uint" optional="true"/>
+    </method>
+      <method name="configureBackBuffer" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="int" optional="false"/>
+          <parameter index="4" type="Boolean" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+          <parameter index="6" type="Boolean" optional="true"/>
+    </method>
+      <method name="createCubeTexture" declaredBy="flash.display3D::Context3D" returnType="flash.display3D.textures::CubeTexture">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="String" optional="false"/>
+          <parameter index="3" type="Boolean" optional="false"/>
+          <parameter index="4" type="int" optional="true"/>
+    </method>
+      <method name="createIndexBuffer" declaredBy="flash.display3D::Context3D" returnType="flash.display3D::IndexBuffer3D">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="String" optional="true"/>
+    </method>
+      <method name="createProgram" declaredBy="flash.display3D::Context3D" returnType="flash.display3D::Program3D"/>
+      <method name="createTexture" declaredBy="flash.display3D::Context3D" returnType="flash.display3D.textures::Texture">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="String" optional="false"/>
+          <parameter index="4" type="Boolean" optional="false"/>
+          <parameter index="5" type="int" optional="true"/>
+    </method>
+      <method name="createVertexBuffer" declaredBy="flash.display3D::Context3D" returnType="flash.display3D::VertexBuffer3D">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="String" optional="true"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="dispose" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="Boolean" optional="true"/>
+    </method>
+      <method name="drawToBitmapData" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="flash.display::BitmapData" optional="false"/>
+    </method>
+      <method name="drawTriangles" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="flash.display3D::IndexBuffer3D" optional="false"/>
+          <parameter index="2" type="int" optional="true"/>
+          <parameter index="3" type="int" optional="true"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="present" declaredBy="flash.display3D::Context3D" returnType="void"/>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="setBlendFactors" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="String" optional="false"/>
+    </method>
+      <method name="setColorMask" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="Boolean" optional="false"/>
+          <parameter index="2" type="Boolean" optional="false"/>
+          <parameter index="3" type="Boolean" optional="false"/>
+          <parameter index="4" type="Boolean" optional="false"/>
+    </method>
+      <method name="setCulling" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="setDepthTest" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="Boolean" optional="false"/>
+          <parameter index="2" type="String" optional="false"/>
+    </method>
+      <method name="setProgram" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="flash.display3D::Program3D" optional="false"/>
+    </method>
+      <method name="setProgramConstantsFromMatrix" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="flash.geom::Matrix3D" optional="false"/>
+          <parameter index="4" type="Boolean" optional="true"/>
+    </method>
+      <method name="setProgramConstantsFromVector" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="__AS3__.vec::Vector.<Number>" optional="false"/>
+          <parameter index="4" type="int" optional="true"/>
+    </method>
+      <method name="setRenderToBackBuffer" declaredBy="flash.display3D::Context3D" returnType="void"/>
+      <method name="setRenderToTexture" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="flash.display3D.textures::TextureBase" optional="false"/>
+          <parameter index="2" type="Boolean" optional="true"/>
+          <parameter index="3" type="int" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="int" optional="true"/>
+    </method>
+      <method name="setScissorRectangle" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="flash.geom::Rectangle" optional="false"/>
+    </method>
+      <method name="setStencilActions" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="String" optional="true"/>
+          <parameter index="2" type="String" optional="true"/>
+          <parameter index="3" type="String" optional="true"/>
+          <parameter index="4" type="String" optional="true"/>
+          <parameter index="5" type="String" optional="true"/>
+    </method>
+      <method name="setStencilReferenceValue" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="uint" optional="false"/>
+          <parameter index="2" type="uint" optional="true"/>
+          <parameter index="3" type="uint" optional="true"/>
+    </method>
+      <method name="setTextureAt" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="flash.display3D.textures::TextureBase" optional="false"/>
+    </method>
+      <method name="setVertexBufferAt" declaredBy="flash.display3D::Context3D" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="flash.display3D::VertexBuffer3D" optional="false"/>
+          <parameter index="3" type="int" optional="true"/>
+          <parameter index="4" type="String" optional="true"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display3D::Context3DBlendFactor" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="DESTINATION_ALPHA" type="String"/>
+  <constant name="DESTINATION_COLOR" type="String"/>
+  <constant name="ONE" type="String"/>
+  <constant name="ONE_MINUS_DESTINATION_ALPHA" type="String"/>
+  <constant name="ONE_MINUS_DESTINATION_COLOR" type="String"/>
+  <constant name="ONE_MINUS_SOURCE_ALPHA" type="String"/>
+  <constant name="ONE_MINUS_SOURCE_COLOR" type="String"/>
+  <constant name="SOURCE_ALPHA" type="String"/>
+  <constant name="SOURCE_COLOR" type="String"/>
+  <constant name="ZERO" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3DBlendFactor">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+Context3DBufferUsage not accessible
+<type name="flash.display3D::Context3DClearMask" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="ALL" type="int"/>
+  <constant name="COLOR" type="int"/>
+  <constant name="DEPTH" type="int"/>
+  <constant name="STENCIL" type="int"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3DClearMask">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display3D::Context3DCompareMode" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="ALWAYS" type="String"/>
+  <constant name="EQUAL" type="String"/>
+  <constant name="GREATER" type="String"/>
+  <constant name="GREATER_EQUAL" type="String"/>
+  <constant name="LESS" type="String"/>
+  <constant name="LESS_EQUAL" type="String"/>
+  <constant name="NEVER" type="String"/>
+  <constant name="NOT_EQUAL" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3DCompareMode">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+Context3DMipFilter not accessible
+Context3DProfile not accessible
+<type name="flash.display3D::Context3DProgramType" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="FRAGMENT" type="String"/>
+  <constant name="VERTEX" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3DProgramType">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display3D::Context3DRenderMode" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="AUTO" type="String"/>
+  <constant name="SOFTWARE" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3DRenderMode">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display3D::Context3DStencilAction" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="DECREMENT_SATURATE" type="String"/>
+  <constant name="DECREMENT_WRAP" type="String"/>
+  <constant name="INCREMENT_SATURATE" type="String"/>
+  <constant name="INCREMENT_WRAP" type="String"/>
+  <constant name="INVERT" type="String"/>
+  <constant name="KEEP" type="String"/>
+  <constant name="SET" type="String"/>
+  <constant name="ZERO" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3DStencilAction">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+Context3DTextureFilter not accessible
+<type name="flash.display3D::Context3DTextureFormat" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="BGRA" type="String"/>
+  <constant name="COMPRESSED" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3DTextureFormat">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display3D::Context3DTriangleFace" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="BACK" type="String"/>
+  <constant name="FRONT" type="String"/>
+  <constant name="FRONT_AND_BACK" type="String"/>
+  <constant name="NONE" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3DTriangleFace">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display3D::Context3DVertexBufferFormat" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="BYTES_4" type="String"/>
+  <constant name="FLOAT_1" type="String"/>
+  <constant name="FLOAT_2" type="String"/>
+  <constant name="FLOAT_3" type="String"/>
+  <constant name="FLOAT_4" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3DVertexBufferFormat">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+Context3DWrapMode not accessible
+<type name="flash.display3D::IndexBuffer3D" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::IndexBuffer3D">
+      <extendsClass type="Object"/>
+      <method name="dispose" declaredBy="flash.display3D::IndexBuffer3D" returnType="void"/>
+      <method name="uploadFromByteArray" declaredBy="flash.display3D::IndexBuffer3D" returnType="void">
+          <parameter index="1" type="flash.utils::ByteArray" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="int" optional="false"/>
+          <parameter index="4" type="int" optional="false"/>
+    </method>
+      <method name="uploadFromVector" declaredBy="flash.display3D::IndexBuffer3D" returnType="void">
+          <parameter index="1" type="__AS3__.vec::Vector.<uint>" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="int" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display3D::Program3D" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Program3D">
+      <extendsClass type="Object"/>
+      <method name="dispose" declaredBy="flash.display3D::Program3D" returnType="void"/>
+      <method name="upload" declaredBy="flash.display3D::Program3D" returnType="void">
+          <parameter index="1" type="flash.utils::ByteArray" optional="false"/>
+          <parameter index="2" type="flash.utils::ByteArray" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display3D::VertexBuffer3D" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::VertexBuffer3D">
+      <extendsClass type="Object"/>
+      <method name="dispose" declaredBy="flash.display3D::VertexBuffer3D" returnType="void"/>
+      <method name="uploadFromByteArray" declaredBy="flash.display3D::VertexBuffer3D" returnType="void">
+          <parameter index="1" type="flash.utils::ByteArray" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="int" optional="false"/>
+          <parameter index="4" type="int" optional="false"/>
+    </method>
+      <method name="uploadFromVector" declaredBy="flash.display3D::VertexBuffer3D" returnType="void">
+          <parameter index="1" type="__AS3__.vec::Vector.<Number>" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="int" optional="false"/>
+    </method>
+  </factory>
+</type>

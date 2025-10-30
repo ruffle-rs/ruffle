@@ -1,0 +1,61 @@
+Context3D not accessible
+<type name="flash.display3D::Context3DBlendFactor" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="DESTINATION_ALPHA" type="String"/>
+  <constant name="DESTINATION_COLOR" type="String"/>
+  <constant name="ONE" type="String"/>
+  <constant name="ONE_MINUS_DESTINATION_ALPHA" type="String"/>
+  <constant name="ONE_MINUS_DESTINATION_COLOR" type="String"/>
+  <constant name="ONE_MINUS_SOURCE_ALPHA" type="String"/>
+  <constant name="ONE_MINUS_SOURCE_COLOR" type="String"/>
+  <constant name="SOURCE_ALPHA" type="String"/>
+  <constant name="SOURCE_COLOR" type="String"/>
+  <constant name="ZERO" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3DBlendFactor">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+Context3DBufferUsage not accessible
+<type name="flash.display3D::Context3DClearMask" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="ALL" type="int"/>
+  <constant name="COLOR" type="int"/>
+  <constant name="DEPTH" type="int"/>
+  <constant name="STENCIL" type="int"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3DClearMask">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display3D::Context3DCompareMode" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="ALWAYS" type="String"/>
+  <constant name="EQUAL" type="String"/>
+  <constant name="GREATER" type="String"/>
+  <constant name="GREATER_EQUAL" type="String"/>
+  <constant name="LESS" type="String"/>
+  <constant name="LESS_EQUAL" type="String"/>
+  <constant name="NEVER" type="String"/>
+  <constant name="NOT_EQUAL" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display3D::Context3DCompareMode">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+Context3DMipFilter not accessible
+Context3DProfile not accessible
+Context3DProgramType not accessible
+Context3DRenderMode not accessible
+Context3DStencilAction not accessible
+Context3DTextureFilter not accessible
+Context3DTextureFormat not accessible
+Context3DTriangleFace not accessible
+Context3DVertexBufferFormat not accessible
+Context3DWrapMode not accessible
+IndexBuffer3D not accessible
+Program3D not accessible
+VertexBuffer3D not accessible
