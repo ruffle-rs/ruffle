@@ -216,7 +216,6 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index as an u32.
     /// The value will be coerced to an u32, even if it's undefined/missing.
-    #[expect(dead_code)]
     fn get_u32(
         &self,
         activation: &mut Activation<'_, 'gc>,

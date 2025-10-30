@@ -1,6 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{FunctionObject, NativeFunction};
+use crate::avm1::parameters::ParametersExt;
 use crate::avm1::{Object, Value};
 
 pub fn asnative<'gc>(
@@ -11,12 +12,8 @@ pub fn asnative<'gc>(
     if args.len() != 2 {
         return Ok(Value::Undefined);
     }
-    let Ok(category) = args[0].coerce_to_u32(activation) else {
-        return Ok(Value::Undefined);
-    };
-    let Ok(index) = args[1].coerce_to_u32(activation) else {
-        return Ok(Value::Undefined);
-    };
+    let category = args.get_u32(activation, 0)?;
+    let index = args.get_u32(activation, 1)?;
 
     let category_lookup: Option<fn(u32) -> Option<NativeFunction>> = match category {
         100 => Some(crate::avm1::globals::get_native_function),
