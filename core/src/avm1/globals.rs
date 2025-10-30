@@ -61,6 +61,7 @@ pub(crate) mod style_sheet;
 pub(crate) mod system;
 pub(crate) mod system_capabilities;
 pub(crate) mod system_ime;
+mod system_product;
 pub(crate) mod system_security;
 pub(crate) mod text_field;
 mod text_format;
@@ -617,6 +618,7 @@ pub fn create_globals<'gc>(
     let system_security = system_security::create(context);
     let system_capabilities = system_capabilities::create(context);
     let system_ime = system_ime::create(context, broadcaster_fns, array.proto);
+    let system_product = system_product::create_class(context, object.proto);
 
     let math = math::create(context);
     let mouse = mouse::create(context, broadcaster_fns, array.proto);
@@ -724,6 +726,7 @@ pub fn create_globals<'gc>(
         // System
         (system, b"capabilities", system_capabilities, Attribute::empty()),
         (system, b"IME", system_ime, Attribute::empty()),
+        (system, b"Product", system_product.constr, Attribute::empty()),
         (system, b"security", system_security, Attribute::empty()),
 
         // TextField
