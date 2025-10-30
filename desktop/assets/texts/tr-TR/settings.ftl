@@ -1,5 +1,5 @@
 network-settings = Ağ Ayarları
-player-settings = Oyuncu Ayarları
+player-settings = Oynatıcı ayarları
 movie-parameters = Film Parametreleri
 custom-base-url = Özel Temel URL
 spoof-swf-url = Sahte SWF URL'si
@@ -48,17 +48,17 @@ align-force = Zorla
 scale-mode = Ölçek Modu
 scale-mode-noscale = Ölçeklenmemiş (100%)
 scale-mode-noscale-tooltip =
-    Filmi herhangi bir yakınlaştırma yapmadan orijinal boyutunda görüntüler.
+    Filmi yakınlaştırmadan, orijinal boyutunda görüntüler.
     
     StageScaleMode.NO_SCALE'e karşılık gelir
 scale-mode-showall = Sığacak şekilde yakınlaştır
 scale-mode-showall-tooltip =
-    Filmi kırpmadan pencereyi mümkün olduğunca dolduracak şekilde yakınlaştırır ve en boy oranını korur.
+    Filmi kırpmadan, pencereyi mümkün olduğunca dolduracak şekilde yakınlaştırır ve çerçeve oranını korur.
     
     StageScaleMode.SHOW_ALL'a karşılık gelir
 scale-mode-exactfit = Sığdırmak için Uzat
 scale-mode-exactfit-tooltip =
-    Filmin en boy oranını dikkate almadan tüm pencereyi doldurmasını sağlar.
+    Filmin çerçeve oranını dikkate almadan tüm pencereyi doldurmasını sağlar.
     
     StageScaleMode.EXACT_FIT'e karşılık gelir
 scale-mode-noborder = Sığdırmak için Kırp
@@ -68,8 +68,8 @@ scale-mode-noborder-tooltip =
     StageScaleMode.NO_BORDER'a karşılık gelir
 scale-mode-force = Zorla
 scale-mode-force-tooltip = Filmin ölçekleme modunu değiştirmesini önler ve seçilen ayara kilitler.
-player-version = Oynatma Sürümü
-player-runtime = Oynatma Süresi
+player-version = Oynatıcı Sürümü
+player-runtime = Çalıştıırma Ortamı
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = Özel Kare Hızı
