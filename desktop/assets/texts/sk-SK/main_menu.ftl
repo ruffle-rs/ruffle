@@ -17,6 +17,7 @@ file-menu-recents = Nedávne
 file-menu-recents-empty = Žiadne nedávne položky
 file-menu-preferences = Nastavenia...
 file-menu-exit = Ukončiť
+file-menu-export = Exportovať...
 controls-menu = Ovládanie
 controls-menu-suspend = Pozastaviť
 controls-menu-resume = Pokračovať

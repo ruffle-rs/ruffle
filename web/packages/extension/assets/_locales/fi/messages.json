@@ -53,6 +53,9 @@
     "status_result_running": {
         "message": "Ruffle on valmis toistamaan Flash-sisältöä nykyisellä välilehdellä."
     },
+    "status_result_running_protected": {
+        "message": "Ruffle on valmis toistamaan pyytämääsi Flash-sisältöä."
+    },
     "status_result_disabled": {
         "message": "Ruffle on poistettu käytöstä."
     },

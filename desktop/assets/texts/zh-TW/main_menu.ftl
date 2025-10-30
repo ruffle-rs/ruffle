@@ -17,6 +17,7 @@ file-menu-recents = 最近
 file-menu-recents-empty = 沒有最近條目
 file-menu-preferences = 偏好設定...
 file-menu-exit = 結束
+file-menu-export = 匯出...
 controls-menu = 控制
 controls-menu-suspend = 暫停
 controls-menu-resume = 繼續
