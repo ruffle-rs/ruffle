@@ -26,10 +26,10 @@ pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
 fn allow_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm1_stub!(activation, "System.security", "allowDomain");
-    Ok(Value::Undefined)
+    Ok(Value::Bool(args.get(0).is_some()))
 }
 
 fn allow_insecure_domain<'gc>(
