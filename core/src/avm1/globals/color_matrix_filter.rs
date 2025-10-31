@@ -107,34 +107,33 @@ impl<'gc> ColorMatrixFilter<'gc> {
     }
 }
 
-macro_rules! color_matrix_filter_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "matrix" => property(color_matrix_filter_method!(1), color_matrix_filter_method!(2); VERSION_8);
+    use fn method;
+    "matrix" => property(GET_MATRIX, SET_MATRIX; VERSION_8);
 };
 
 pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(color_matrix_filter_method!(0), None, super_proto);
+    let class = context.native_class(table_constructor!(method), None, super_proto);
     context.define_properties_on(class.proto, PROTO_DECLS);
     class
 }
 
-fn method<'gc>(
+pub mod method {
+    pub const CONSTRUCTOR: u16 = 0;
+    pub const GET_MATRIX: u16 = 1;
+    pub const SET_MATRIX: u16 = 2;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-    index: u8,
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const CONSTRUCTOR: u8 = 0;
-    const GET_MATRIX: u8 = 1;
-    const SET_MATRIX: u8 = 2;
+    use method::*;
 
     if index == CONSTRUCTOR {
         let color_matrix_filter = ColorMatrixFilter::new(activation, args)?;

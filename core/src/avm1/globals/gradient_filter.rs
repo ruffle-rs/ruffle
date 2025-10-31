@@ -385,31 +385,30 @@ impl<'gc> GradientFilter<'gc> {
     }
 }
 
-macro_rules! gradient_filter_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "distance" => property(gradient_filter_method!(1), gradient_filter_method!(2); VERSION_8);
-    "angle" => property(gradient_filter_method!(3), gradient_filter_method!(4); VERSION_8);
-    "colors" => property(gradient_filter_method!(5), gradient_filter_method!(6); VERSION_8);
-    "alphas" => property(gradient_filter_method!(7), gradient_filter_method!(8); VERSION_8);
-    "ratios" => property(gradient_filter_method!(9), gradient_filter_method!(10); VERSION_8);
-    "blurX" => property(gradient_filter_method!(11), gradient_filter_method!(12); VERSION_8);
-    "blurY" => property(gradient_filter_method!(13), gradient_filter_method!(14); VERSION_8);
-    "quality" => property(gradient_filter_method!(15), gradient_filter_method!(16); VERSION_8);
-    "strength" => property(gradient_filter_method!(17), gradient_filter_method!(18); VERSION_8);
-    "knockout" => property(gradient_filter_method!(19), gradient_filter_method!(20); VERSION_8);
-    "type" => property(gradient_filter_method!(21), gradient_filter_method!(22); VERSION_8);
+    use fn method;
+    "distance" => property(GET_DISTANCE, SET_DISTANCE; VERSION_8);
+    "angle" => property(GET_ANGLE, SET_ANGLE; VERSION_8);
+    "colors" => property(GET_COLORS, SET_COLORS; VERSION_8);
+    "alphas" => property(GET_ALPHAS, SET_ALPHAS; VERSION_8);
+    "ratios" => property(GET_RATIOS, SET_RATIOS; VERSION_8);
+    "blurX" => property(GET_BLUR_X, SET_BLUR_X; VERSION_8);
+    "blurY" => property(GET_BLUR_Y, SET_BLUR_Y; VERSION_8);
+    "quality" => property(GET_QUALITY, SET_QUALITY; VERSION_8);
+    "strength" => property(GET_STRENGTH, SET_STRENGTH; VERSION_8);
+    "knockout" => property(GET_KNOCKOUT, SET_KNOCKOUT; VERSION_8);
+    "type" => property(GET_TYPE, SET_TYPE; VERSION_8);
 };
 
 pub fn create_bevel_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(gradient_filter_method!(1000), None, super_proto);
+    let class = context.native_class(
+        table_constructor!(method, BEVEL_CONSTRUCTOR),
+        None,
+        super_proto,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS);
     class
 }
@@ -418,41 +417,49 @@ pub fn create_glow_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(gradient_filter_method!(0), None, super_proto);
+    let class = context.native_class(
+        table_constructor!(method, GLOW_CONSTRUCTOR),
+        None,
+        super_proto,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS);
     class
 }
 
-fn method<'gc>(
+pub mod method {
+    pub const GLOW_CONSTRUCTOR: u16 = 0;
+    pub const GET_DISTANCE: u16 = 1;
+    pub const SET_DISTANCE: u16 = 2;
+    pub const GET_ANGLE: u16 = 3;
+    pub const SET_ANGLE: u16 = 4;
+    pub const GET_COLORS: u16 = 5;
+    pub const SET_COLORS: u16 = 6;
+    pub const GET_ALPHAS: u16 = 7;
+    pub const SET_ALPHAS: u16 = 8;
+    pub const GET_RATIOS: u16 = 9;
+    pub const SET_RATIOS: u16 = 10;
+    pub const GET_BLUR_X: u16 = 11;
+    pub const SET_BLUR_X: u16 = 12;
+    pub const GET_BLUR_Y: u16 = 13;
+    pub const SET_BLUR_Y: u16 = 14;
+    pub const GET_QUALITY: u16 = 15;
+    pub const SET_QUALITY: u16 = 16;
+    pub const GET_STRENGTH: u16 = 17;
+    pub const SET_STRENGTH: u16 = 18;
+    pub const GET_KNOCKOUT: u16 = 19;
+    pub const SET_KNOCKOUT: u16 = 20;
+    pub const GET_TYPE: u16 = 21;
+    pub const SET_TYPE: u16 = 22;
+    pub const BEVEL_CONSTRUCTOR: u16 = 1000;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const GLOW_CONSTRUCTOR: u16 = 0;
-    const GET_DISTANCE: u16 = 1;
-    const SET_DISTANCE: u16 = 2;
-    const GET_ANGLE: u16 = 3;
-    const SET_ANGLE: u16 = 4;
-    const GET_COLORS: u16 = 5;
-    const SET_COLORS: u16 = 6;
-    const GET_ALPHAS: u16 = 7;
-    const SET_ALPHAS: u16 = 8;
-    const GET_RATIOS: u16 = 9;
-    const SET_RATIOS: u16 = 10;
-    const GET_BLUR_X: u16 = 11;
-    const SET_BLUR_X: u16 = 12;
-    const GET_BLUR_Y: u16 = 13;
-    const SET_BLUR_Y: u16 = 14;
-    const GET_QUALITY: u16 = 15;
-    const SET_QUALITY: u16 = 16;
-    const GET_STRENGTH: u16 = 17;
-    const SET_STRENGTH: u16 = 18;
-    const GET_KNOCKOUT: u16 = 19;
-    const SET_KNOCKOUT: u16 = 20;
-    const GET_TYPE: u16 = 21;
-    const SET_TYPE: u16 = 22;
-    const BEVEL_CONSTRUCTOR: u16 = 1000;
+    use method::*;
 
     if index == BEVEL_CONSTRUCTOR {
         let gradient_bevel_filter = GradientFilter::new(activation, args)?;
