@@ -11,18 +11,20 @@ use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "addProperty" => method(add_property; DONT_ENUM | DONT_DELETE | VERSION_6);
-    "hasOwnProperty" => method(has_own_property; DONT_ENUM | DONT_DELETE | VERSION_6);
-    "isPropertyEnumerable" => method(is_property_enumerable; DONT_DELETE | DONT_ENUM | VERSION_6);
-    "isPrototypeOf" => method(is_prototype_of; DONT_ENUM | DONT_DELETE | VERSION_6);
-    "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
-    "valueOf" => method(value_of; DONT_ENUM | DONT_DELETE);
-    "watch" => method(watch; DONT_ENUM | DONT_DELETE | VERSION_6);
-    "unwatch" => method(unwatch; DONT_ENUM | DONT_DELETE | VERSION_6);
+    use fn method;
+    "watch" => method(WATCH; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "unwatch" => method(UNWATCH; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "addProperty" => method(ADD_PROPERTY; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "valueOf" => method(VALUE_OF; DONT_ENUM | DONT_DELETE);
+    "toString" => method(TO_STRING; DONT_ENUM | DONT_DELETE);
+    "hasOwnProperty" => method(HAS_OWN_PROPERTY; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "isPrototypeOf" => method(IS_PROTOTYPE_OF; DONT_ENUM | DONT_DELETE | VERSION_6);
+    "isPropertyEnumerable" => method(IS_PROPERTY_ENUMERABLE; DONT_DELETE | DONT_ENUM | VERSION_6);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "registerClass" => method(register_class; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    use fn method;
+    "registerClass" => method(REGISTER_CLASS; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
 pub fn get_native_function(id: u32) -> Option<NativeFunction> {
@@ -38,10 +40,46 @@ pub fn get_native_function(id: u32) -> Option<NativeFunction> {
 /// not allocate an object to store either proto. Instead, they must be provided
 /// through the `DeclContext`.
 pub fn create_class<'gc>(context: &mut DeclContext<'_, 'gc>) -> SystemClass<'gc> {
-    let class = context.native_class_with_proto(constructor, Some(function), context.object_proto);
+    let class = context.native_class_with_proto(table_constructor!(method), Some(function), context.object_proto);
     context.define_properties_on(class.proto, PROTO_DECLS);
     context.define_properties_on(class.constr, OBJECT_DECLS);
     class
+}
+
+pub mod method {
+    pub const WATCH: u16 = 0;
+    pub const UNWATCH: u16 = 1;
+    pub const ADD_PROPERTY: u16 = 2;
+    pub const VALUE_OF: u16 = 3;
+    pub const TO_STRING: u16 = 4;
+    pub const HAS_OWN_PROPERTY: u16 = 5;
+    pub const IS_PROTOTYPE_OF: u16 = 6;
+    pub const IS_PROPERTY_ENUMERABLE: u16 = 7;
+    pub const REGISTER_CLASS: u16 = 8;
+    pub const CONSTRUCTOR: u16 = 9;
+}
+
+pub fn method<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+    index: u16,
+) -> Result<Value<'gc>, Error<'gc>> {
+    use method::*;
+
+    match index {
+        CONSTRUCTOR => constructor(activation, this, args),
+        WATCH => watch(activation, this, args),
+        UNWATCH => unwatch(activation, this, args),
+        ADD_PROPERTY => add_property(activation, this, args),
+        VALUE_OF => value_of(activation, this, args),
+        TO_STRING => to_string(activation, this, args),
+        HAS_OWN_PROPERTY => has_own_property(activation, this, args),
+        IS_PROTOTYPE_OF => is_prototype_of(activation, this, args),
+        IS_PROPERTY_ENUMERABLE => is_property_enumerable(activation, this, args),
+        REGISTER_CLASS => register_class(activation, this, args),
+        _ => Ok(Value::Undefined),
+    }
 }
 
 /// Implements `Object` constructor
