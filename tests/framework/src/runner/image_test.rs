@@ -152,6 +152,7 @@ pub fn test(
                 &difference_image,
                 ImageFormat::Png,
             )?;
+            print_outlier_table(&difference_data);
         }
 
         if is_alpha_different {
@@ -189,6 +190,36 @@ pub fn test(
     }
 
     Ok(())
+}
+
+fn print_outlier_table(difference_data: &[u8]) {
+    let mut count_per_differences = [0usize; 256];
+    let mut total_differences = 0;
+
+    for difference in difference_data {
+        if *difference > 0 {
+            total_differences += 1;
+            count_per_differences[*difference as usize] += 1;
+        }
+    }
+
+    println!("-- Color Differences --");
+    println!("Total > 0: {total_differences}");
+    println!("difference |     amount | percent | withPriors | remaining");
+    let total = total_differences as f64;
+    let mut prior_count = 0;
+    for (i, count) in count_per_differences.iter().enumerate() {
+        if *count > 0 {
+            prior_count += count;
+            let pct = *count as f64 / total * 100.0;
+            let pct_inc_below = prior_count as f64 / total * 100.0;
+            let remaining = total_differences - prior_count;
+            println!(
+                "{i:>10} | {count:>10} | {pct:>6.2}% | {pct_inc_below:>9.2}% | {remaining:>9}"
+            );
+        }
+    }
+    println!("-----");
 }
 
 fn calculate_difference_data(
