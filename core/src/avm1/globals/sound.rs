@@ -206,23 +206,27 @@ impl<'gc> Sound<'gc> {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "attachSound" => method(attach_sound; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "duration" => property(duration; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getDuration" => method(duration; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setDuration" => method(set_duration; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "id3" => method(id3; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getBytesLoaded" => method(get_bytes_loaded; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getBytesTotal" => method(get_bytes_total; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getPan" => method(get_pan; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getTransform" => method(get_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getVolume" => method(get_volume; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "loadSound" => method(load_sound; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "position" => property(position; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "setPan" => method(set_pan; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "setTransform" => method(set_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "setVolume" => method(set_volume; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "start" => method(start; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "stop" => method(stop; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "attachSound" => method(attach_sound; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "start" => method(start; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getDuration" => method(duration; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
+    "setDuration" => method(set_duration; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
+    "getPosition" => method(get_position; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
+    "setPosition" => method(set_position; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
+    "loadSound" => method(load_sound; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
+    "getBytesLoaded" => method(get_bytes_loaded; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
+    "getBytesTotal" => method(get_bytes_total; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
+
+    // TODO The following 3 probably should not be declared here. See avm1/sound_props_swf*
+    "duration" => property(duration; DONT_ENUM | DONT_DELETE);
+    "id3" => property(id3; DONT_ENUM | DONT_DELETE);
+    "position" => property(position; DONT_ENUM | DONT_DELETE);
 };
 
 pub fn create_class<'gc>(
@@ -320,12 +324,8 @@ fn get_bytes_loaded<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() >= 6 {
-        avm1_stub!(activation, "Sound", "getBytesLoaded");
-        Ok(1.into())
-    } else {
-        Ok(Value::Undefined)
-    }
+    avm1_stub!(activation, "Sound", "getBytesLoaded");
+    Ok(1.into())
 }
 
 fn get_bytes_total<'gc>(
@@ -333,12 +333,8 @@ fn get_bytes_total<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() >= 6 {
-        avm1_stub!(activation, "Sound", "getBytesTotal");
-        Ok(1.into())
-    } else {
-        Ok(Value::Undefined)
-    }
+    avm1_stub!(activation, "Sound", "getBytesTotal");
+    Ok(1.into())
 }
 
 fn get_pan<'gc>(
@@ -623,5 +619,23 @@ fn stop<'gc>(
         avm_warn!(activation, "Sound.stop: this is not a Sound");
     }
 
+    Ok(Value::Undefined)
+}
+
+fn set_position<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "Sound", "setPosition");
+    Ok(Value::Undefined)
+}
+
+fn get_position<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "Sound", "getPosition");
     Ok(Value::Undefined)
 }
