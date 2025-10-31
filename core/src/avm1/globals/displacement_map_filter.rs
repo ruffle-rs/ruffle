@@ -284,58 +284,57 @@ impl<'gc> DisplacementMapFilter<'gc> {
     }
 }
 
-macro_rules! displacement_map_filter_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "mapBitmap" => property(displacement_map_filter_method!(1), displacement_map_filter_method!(2));
-    "mapPoint" => property(displacement_map_filter_method!(3), displacement_map_filter_method!(4));
-    "componentX" => property(displacement_map_filter_method!(5), displacement_map_filter_method!(6));
-    "componentY" => property(displacement_map_filter_method!(7), displacement_map_filter_method!(8));
-    "scaleX" => property(displacement_map_filter_method!(9), displacement_map_filter_method!(10));
-    "scaleY" => property(displacement_map_filter_method!(11), displacement_map_filter_method!(12));
-    "mode" => property(displacement_map_filter_method!(13), displacement_map_filter_method!(14));
-    "color" => property(displacement_map_filter_method!(15), displacement_map_filter_method!(16));
-    "alpha" => property(displacement_map_filter_method!(17), displacement_map_filter_method!(18));
+    use fn method;
+    "mapBitmap" => property(GET_MAP_BITMAP, SET_MAP_BITMAP; VERSION_8);
+    "mapPoint" => property(GET_MAP_POINT, SET_MAP_POINT; VERSION_8);
+    "componentX" => property(GET_COMPONENT_X, SET_COMPONENT_X; VERSION_8);
+    "componentY" => property(GET_COMPONENT_Y, SET_COMPONENT_Y; VERSION_8);
+    "scaleX" => property(GET_SCALE_X, SET_SCALE_X; VERSION_8);
+    "scaleY" => property(GET_SCALE_Y, SET_SCALE_Y; VERSION_8);
+    "mode" => property(GET_MODE, SET_MODE; VERSION_8);
+    "color" => property(GET_COLOR, SET_COLOR; VERSION_8);
+    "alpha" => property(GET_ALPHA, SET_ALPHA; VERSION_8);
 };
 
 pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(displacement_map_filter_method!(0), None, super_proto);
+    let class = context.native_class(table_constructor!(method), None, super_proto);
     context.define_properties_on(class.proto, PROTO_DECLS);
     class
 }
 
-fn method<'gc>(
+pub mod method {
+    pub const CONSTRUCTOR: u16 = 0;
+    pub const GET_MAP_BITMAP: u16 = 1;
+    pub const SET_MAP_BITMAP: u16 = 2;
+    pub const GET_MAP_POINT: u16 = 3;
+    pub const SET_MAP_POINT: u16 = 4;
+    pub const GET_COMPONENT_X: u16 = 5;
+    pub const SET_COMPONENT_X: u16 = 6;
+    pub const GET_COMPONENT_Y: u16 = 7;
+    pub const SET_COMPONENT_Y: u16 = 8;
+    pub const GET_SCALE_X: u16 = 9;
+    pub const SET_SCALE_X: u16 = 10;
+    pub const GET_SCALE_Y: u16 = 11;
+    pub const SET_SCALE_Y: u16 = 12;
+    pub const GET_MODE: u16 = 13;
+    pub const SET_MODE: u16 = 14;
+    pub const GET_COLOR: u16 = 15;
+    pub const SET_COLOR: u16 = 16;
+    pub const GET_ALPHA: u16 = 17;
+    pub const SET_ALPHA: u16 = 18;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-    index: u8,
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const CONSTRUCTOR: u8 = 0;
-    const GET_MAP_BITMAP: u8 = 1;
-    const SET_MAP_BITMAP: u8 = 2;
-    const GET_MAP_POINT: u8 = 3;
-    const SET_MAP_POINT: u8 = 4;
-    const GET_COMPONENT_X: u8 = 5;
-    const SET_COMPONENT_X: u8 = 6;
-    const GET_COMPONENT_Y: u8 = 7;
-    const SET_COMPONENT_Y: u8 = 8;
-    const GET_SCALE_X: u8 = 9;
-    const SET_SCALE_X: u8 = 10;
-    const GET_SCALE_Y: u8 = 11;
-    const SET_SCALE_Y: u8 = 12;
-    const GET_MODE: u8 = 13;
-    const SET_MODE: u8 = 14;
-    const GET_COLOR: u8 = 15;
-    const SET_COLOR: u8 = 16;
-    const GET_ALPHA: u8 = 17;
-    const SET_ALPHA: u8 = 18;
+    use method::*;
 
     if index == CONSTRUCTOR {
         let displacement_map_filter = DisplacementMapFilter::new(activation, args)?;

@@ -164,7 +164,7 @@ impl Declaration {
 ///     "to_string" => method(to_string);
 ///     "to_string2" => function(to_string);
 ///     // switches to 'table mode': function-like definitions will now take
-///     // an ID instead of a function pointer, and will dispatch it to the
+///     // an integer index instead of a function pointer, and will dispatch it to the
 ///     // method provided here.
 ///     use fn method;
 ///     "callme" => function(CALLME);
@@ -177,11 +177,11 @@ impl Declaration {
 ///     // all declarations can also specify attributes
 ///     "hidden" => string("shh!"; DONT_ENUM | DONT_DELETE | READ_ONLY);
 /// };
-/// 
+///
 /// mod method {
 ///   pub const CALLME: u16 = 0;
 /// }
-/// 
+///
 /// fn method(..., id: u16) -> Result<Value<'gc>, Error<'gc>> {
 ///   match id {
 ///     CALLME => { ... }
@@ -267,23 +267,29 @@ macro_rules! __declare_properties {
     // The various kinds of declarations.
 
     // This is a little dumb: we can't take tt's here as it would be ambiguous,
-    // so this case needs to be split in two.
+    // so the next two cases needs to be split in two.
     (@kind [default] property($getter:expr, $setter:expr)) => {
         $crate::avm1::property_decl::DeclKind::Property {
             getter: $getter,
             setter: Some($setter),
         }
     };
+    (@kind [fn $($path:tt)+] property($getter:ident)) => {
+        $crate::avm1::property_decl::DeclKind::Property {
+            getter: __declare_properties!(@fn [fn $($path)+] $getter),
+            setter: None,
+        }
+    };
+    (@kind [default] property($getter:expr)) => {
+        $crate::avm1::property_decl::DeclKind::Property {
+            getter: $getter,
+            setter: None,
+        }
+    };
     (@kind [fn $($path:tt)+] property($getter:ident, $setter:ident)) => {
         $crate::avm1::property_decl::DeclKind::Property {
             getter: __declare_properties!(@fn [fn $($path)+] $getter),
             setter: Some(__declare_properties!(@fn [fn $($path)+] $setter)),
-        }
-    };
-    (@kind [default] property($($getter:tt)*)) => {
-        $crate::avm1::property_decl::DeclKind::Property {
-            getter: __declare_properties!(@fn [default] $($getter)*),
-            setter: None,
         }
     };
     (@kind [$($mode:tt)*] method($($method:tt)*)) => {
@@ -314,5 +320,15 @@ macro_rules! __declare_properties {
     (@fn [fn $($path:ident)::+] $index:ident) => {
         // TODO: add support to ASnative-style table functions to FunctionObject.
         |activation, this, args| $($path)::+(activation, this, args, $($path::)+$index)
+    };
+}
+
+macro_rules! table_constructor {
+    ($($method:ident)::+) => {
+        table_constructor!($($method)::*, CONSTRUCTOR)
+    };
+    ($($method:ident)::+, $index:ident) => {
+        // TODO: add support to ASnative-style table constructors to FunctionObject.
+        |activation, this, args| $($method)::+(activation, this, args, ($($method::)+$index))
     };
 }

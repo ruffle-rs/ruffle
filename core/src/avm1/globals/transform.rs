@@ -35,43 +35,42 @@ impl<'gc> TransformObject<'gc> {
     }
 }
 
-macro_rules! transform_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "matrix" => property(transform_method!(101), transform_method!(102); VERSION_8);
-    "concatenatedMatrix" => property(transform_method!(103), transform_method!(104); VERSION_8);
-    "colorTransform" => property(transform_method!(105), transform_method!(106); VERSION_8);
-    "concatenatedColorTransform" => property(transform_method!(107), transform_method!(108); VERSION_8);
-    "pixelBounds" => property(transform_method!(109), transform_method!(110); VERSION_8);
+    use fn method;
+    "matrix" => property(GET_MATRIX, SET_MATRIX; VERSION_8);
+    "concatenatedMatrix" => property(GET_CONCATENATED_MATRIX; VERSION_8);
+    "colorTransform" => property(GET_COLOR_TRANSFORM, SET_COLOR_TRANSFORM; VERSION_8);
+    "concatenatedColorTransform" => property(GET_CONCATENATED_COLOR_TRANSFORM; VERSION_8);
+    "pixelBounds" => property(GET_PIXEL_BOUNDS; VERSION_8);
 };
 
 pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(transform_method!(0), None, super_proto);
+    let class = context.native_class(table_constructor!(method), None, super_proto);
     context.define_properties_on(class.proto, PROTO_DECLS);
     class
 }
 
-fn method<'gc>(
+pub mod method {
+    pub const CONSTRUCTOR: u16 = 0;
+    pub const GET_MATRIX: u16 = 101;
+    pub const SET_MATRIX: u16 = 102;
+    pub const GET_CONCATENATED_MATRIX: u16 = 103;
+    pub const GET_COLOR_TRANSFORM: u16 = 105;
+    pub const SET_COLOR_TRANSFORM: u16 = 106;
+    pub const GET_CONCATENATED_COLOR_TRANSFORM: u16 = 107;
+    pub const GET_PIXEL_BOUNDS: u16 = 109;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-    index: u8,
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const CONSTRUCTOR: u8 = 0;
-    const GET_MATRIX: u8 = 101;
-    const SET_MATRIX: u8 = 102;
-    const GET_CONCATENATED_MATRIX: u8 = 103;
-    const GET_COLOR_TRANSFORM: u8 = 105;
-    const SET_COLOR_TRANSFORM: u8 = 106;
-    const GET_CONCATENATED_COLOR_TRANSFORM: u8 = 107;
-    const GET_PIXEL_BOUNDS: u8 = 109;
+    use method::*;
 
     if index == CONSTRUCTOR {
         let Some(transform) = TransformObject::new(activation, args) else {

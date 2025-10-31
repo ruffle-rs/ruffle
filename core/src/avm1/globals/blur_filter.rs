@@ -119,40 +119,39 @@ impl<'gc> BlurFilter<'gc> {
     }
 }
 
-macro_rules! blur_filter_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "blurX" => property(blur_filter_method!(1), blur_filter_method!(2); VERSION_8);
-    "blurY" => property(blur_filter_method!(3), blur_filter_method!(4); VERSION_8);
-    "quality" => property(blur_filter_method!(5), blur_filter_method!(6); VERSION_8);
+    use fn method;
+    "blurX" => property(GET_BLUR_X, SET_BLUR_X; VERSION_8);
+    "blurY" => property(GET_BLUR_Y, SET_BLUR_Y; VERSION_8);
+    "quality" => property(GET_QUALITY, SET_QUALITY; VERSION_8);
 };
 
 pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(blur_filter_method!(0), None, super_proto);
+    let class = context.native_class(table_constructor!(method), None, super_proto);
     context.define_properties_on(class.proto, PROTO_DECLS);
     class
+}
+
+pub mod method {
+    pub const CONSTRUCTOR: u16 = 0;
+    pub const GET_BLUR_X: u16 = 1;
+    pub const SET_BLUR_X: u16 = 2;
+    pub const GET_BLUR_Y: u16 = 3;
+    pub const SET_BLUR_Y: u16 = 4;
+    pub const GET_QUALITY: u16 = 5;
+    pub const SET_QUALITY: u16 = 6;
 }
 
 fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-    index: u8,
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const CONSTRUCTOR: u8 = 0;
-    const GET_BLUR_X: u8 = 1;
-    const SET_BLUR_X: u8 = 2;
-    const GET_BLUR_Y: u8 = 3;
-    const SET_BLUR_Y: u8 = 4;
-    const GET_QUALITY: u8 = 5;
-    const SET_QUALITY: u8 = 6;
+    use method::*;
 
     if index == CONSTRUCTOR {
         let blur_filter = BlurFilter::new(activation, args)?;

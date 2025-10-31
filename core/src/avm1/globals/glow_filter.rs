@@ -239,55 +239,54 @@ impl<'gc> GlowFilter<'gc> {
     }
 }
 
-macro_rules! glow_filter_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "color" => property(glow_filter_method!(1), glow_filter_method!(2); VERSION_8);
-    "alpha" => property(glow_filter_method!(3), glow_filter_method!(4); VERSION_8);
-    "quality" => property(glow_filter_method!(5), glow_filter_method!(6); VERSION_8);
-    "inner" => property(glow_filter_method!(7), glow_filter_method!(8); VERSION_8);
-    "knockout" => property(glow_filter_method!(9), glow_filter_method!(10); VERSION_8);
-    "blurX" => property(glow_filter_method!(11), glow_filter_method!(12); VERSION_8);
-    "blurY" => property(glow_filter_method!(13), glow_filter_method!(14); VERSION_8);
-    "strength" => property(glow_filter_method!(15), glow_filter_method!(16); VERSION_8);
+    use fn method;
+    "color" => property(GET_COLOR, SET_COLOR; VERSION_8);
+    "alpha" => property(GET_ALPHA, SET_ALPHA; VERSION_8);
+    "quality" => property(GET_QUALITY, SET_QUALITY; VERSION_8);
+    "inner" => property(GET_INNER, SET_INNER; VERSION_8);
+    "knockout" => property(GET_KNOCKOUT, SET_KNOCKOUT; VERSION_8);
+    "blurX" => property(GET_BLUR_X, SET_BLUR_X; VERSION_8);
+    "blurY" => property(GET_BLUR_Y, SET_BLUR_Y; VERSION_8);
+    "strength" => property(GET_STRENGTH, SET_STRENGTH; VERSION_8);
 };
 
 pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.native_class(glow_filter_method!(0), None, super_proto);
+    let class = context.native_class(table_constructor!(method), None, super_proto);
     context.define_properties_on(class.proto, PROTO_DECLS);
     class
 }
 
-fn method<'gc>(
+pub mod method {
+    pub const CONSTRUCTOR: u16 = 0;
+    pub const GET_COLOR: u16 = 1;
+    pub const SET_COLOR: u16 = 2;
+    pub const GET_ALPHA: u16 = 3;
+    pub const SET_ALPHA: u16 = 4;
+    pub const GET_QUALITY: u16 = 5;
+    pub const SET_QUALITY: u16 = 6;
+    pub const GET_INNER: u16 = 7;
+    pub const SET_INNER: u16 = 8;
+    pub const GET_KNOCKOUT: u16 = 9;
+    pub const SET_KNOCKOUT: u16 = 10;
+    pub const GET_BLUR_X: u16 = 11;
+    pub const SET_BLUR_X: u16 = 12;
+    pub const GET_BLUR_Y: u16 = 13;
+    pub const SET_BLUR_Y: u16 = 14;
+    pub const GET_STRENGTH: u16 = 15;
+    pub const SET_STRENGTH: u16 = 16;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-    index: u8,
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const CONSTRUCTOR: u8 = 0;
-    const GET_COLOR: u8 = 1;
-    const SET_COLOR: u8 = 2;
-    const GET_ALPHA: u8 = 3;
-    const SET_ALPHA: u8 = 4;
-    const GET_QUALITY: u8 = 5;
-    const SET_QUALITY: u8 = 6;
-    const GET_INNER: u8 = 7;
-    const SET_INNER: u8 = 8;
-    const GET_KNOCKOUT: u8 = 9;
-    const SET_KNOCKOUT: u8 = 10;
-    const GET_BLUR_X: u8 = 11;
-    const SET_BLUR_X: u8 = 12;
-    const GET_BLUR_Y: u8 = 13;
-    const SET_BLUR_Y: u8 = 14;
-    const GET_STRENGTH: u8 = 15;
-    const SET_STRENGTH: u8 = 16;
+    use method::*;
 
     if index == CONSTRUCTOR {
         let glow_filter = GlowFilter::new(activation, args)?;
