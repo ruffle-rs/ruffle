@@ -24,6 +24,14 @@ pub type NativeFunction = for<'gc> fn(
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>>;
 
+/// Represents a function defined in Ruffle's code, compatible with ASnative.
+pub type TableNativeFunction = for<'gc> fn(
+    &mut Activation<'_, 'gc>,
+    Object<'gc>,
+    &[Value<'gc>],
+    u16,
+) -> Result<Value<'gc>, Error<'gc>>;
+
 /// Indicates the reason for an execution
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ExecutionReason {
@@ -411,6 +419,12 @@ enum Executable<'gc> {
     /// A function provided by the Ruffle runtime and implemented in Rust.
     Native(#[collect(require_static)] NativeFunction),
 
+    TableNative {
+        #[collect(require_static)]
+        native: TableNativeFunction,
+        index: u16,
+    },
+
     /// ActionScript data defined by a previous `DefineFunction` or
     /// `DefineFunction2` action.
     Action(Gc<'gc, Avm1Function<'gc>>),
@@ -506,6 +520,14 @@ impl<'gc> FunctionObject<'gc> {
         }
     }
 
+    /// A function with a native executable, compatible with ASnative.
+    pub fn table_native(native: TableNativeFunction, index: u16) -> Self {
+        Self {
+            function: Executable::TableNative { native, index },
+            constructor: None,
+        }
+    }
+
     /// A native constructor.
     ///
     /// This differs from [`Self::native`] in two important ways:
@@ -541,6 +563,11 @@ impl<'gc> FunctionObject<'gc> {
                 let this = this.coerce_to_object(activation);
                 nf(activation, this, args)
             }
+            Executable::TableNative { native, index } => {
+                // TODO: Change TableNativeFunction to accept `this: Value`.
+                let this = this.coerce_to_object(activation);
+                native(activation, this, args, index)
+            }
             Executable::Action(af) => af.exec(name, activation, this, depth, args, reason, callee),
         }
     }
@@ -568,6 +595,11 @@ impl<'gc> FunctionObject<'gc> {
                 // TODO: Change NativeFunction to accept `this: Value`.
                 let this = this.coerce_to_object(activation);
                 nf(activation, this, args)
+            }
+            Executable::TableNative { native, index } => {
+                // TODO: Change TableNativeFunction to accept `this: Value`.
+                let this = this.coerce_to_object(activation);
+                native(activation, this, args, index)
             }
             Executable::Action(af) => af.exec(name, activation, this, depth, args, reason, callee),
         }
