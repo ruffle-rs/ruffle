@@ -2,7 +2,7 @@
 
 use gc_arena::Mutation;
 
-use crate::avm1::function::{FunctionObject, NativeFunction};
+use crate::avm1::function::{FunctionObject, NativeFunction, TableNativeFunction};
 use crate::avm1::property::Attribute;
 use crate::avm1::{Object, Value};
 use crate::string::{HasStringContext, StringContext, WStr};
@@ -92,6 +92,11 @@ pub struct Declaration {
 #[derive(Copy, Clone)]
 pub enum DeclKind {
     /// Declares a property with a getter and an optional setter.
+    TableProperty {
+        native: TableNativeFunction,
+        getter: u16,
+        setter: Option<u16>,
+    },
     Property {
         getter: NativeFunction,
         setter: Option<NativeFunction>,
@@ -101,9 +106,12 @@ pub enum DeclKind {
     /// This is intended for use with defining host object prototypes. Notably,
     /// this creates a function object without an explicit `prototype`, which
     /// is only possible when defining host functions.
+    TableMethod(TableNativeFunction, u16),
     Method(NativeFunction),
     /// Declares a native function with a `prototype`.
     /// Prefer using [`Self::Method`] when defining host functions.
+    #[expect(unused)] // kept for symmetry.
+    TableFunction(TableNativeFunction, u16),
     Function(NativeFunction),
     /// Declares a static string value.
     String(&'static [u8]),
@@ -138,9 +146,29 @@ impl Declaration {
                 this.add_property(mc, name.into(), getter, setter, self.attributes);
                 return Value::Undefined;
             }
+            DeclKind::TableProperty {
+                native,
+                getter,
+                setter,
+            } => {
+                // Property objects are unobservable by user code, so a bare function is enough.
+                let getter =
+                    FunctionObject::table_native(native, getter).build(context, fn_proto, None);
+                let setter = setter.map(|setter| {
+                    FunctionObject::table_native(native, setter).build(context, fn_proto, None)
+                });
+                this.add_property(mc, name.into(), getter, setter, self.attributes);
+                return Value::Undefined;
+            }
             DeclKind::Method(f) | DeclKind::Function(f) => {
                 let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto);
                 FunctionObject::native(f).build(context, fn_proto, p).into()
+            }
+            DeclKind::TableMethod(f, index) | DeclKind::TableFunction(f, index) => {
+                let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto);
+                FunctionObject::table_native(f, index)
+                    .build(context, fn_proto, p)
+                    .into()
             }
             DeclKind::String(s) => context.intern_static(WStr::from_units(s)).into(),
             DeclKind::Bool(b) => b.into(),
@@ -265,19 +293,10 @@ macro_rules! __declare_properties {
     };
 
     // The various kinds of declarations.
-
-    // This is a little dumb: we can't take tt's here as it would be ambiguous,
-    // so the next two cases needs to be split in two.
     (@kind [default] property($getter:expr, $setter:expr)) => {
         $crate::avm1::property_decl::DeclKind::Property {
             getter: $getter,
             setter: Some($setter),
-        }
-    };
-    (@kind [fn $($path:tt)+] property($getter:ident)) => {
-        $crate::avm1::property_decl::DeclKind::Property {
-            getter: __declare_properties!(@fn [fn $($path)+] $getter),
-            setter: None,
         }
     };
     (@kind [default] property($getter:expr)) => {
@@ -286,21 +305,31 @@ macro_rules! __declare_properties {
             setter: None,
         }
     };
-    (@kind [fn $($path:tt)+] property($getter:ident, $setter:ident)) => {
-        $crate::avm1::property_decl::DeclKind::Property {
-            getter: __declare_properties!(@fn [fn $($path)+] $getter),
-            setter: Some(__declare_properties!(@fn [fn $($path)+] $setter)),
+    (@kind [fn $($path:ident)::+] property($getter:ident, $setter:ident)) => {
+        $crate::avm1::property_decl::DeclKind::TableProperty {
+            native: $($path)::+,
+            getter: $($path::)+$getter,
+            setter: Some($($path::)+$setter),
         }
     };
-    (@kind [$($mode:tt)*] method($($method:tt)*)) => {
-        $crate::avm1::property_decl::DeclKind::Method(
-            __declare_properties!(@fn [$($mode)*] $($method)*)
-        )
+    (@kind [fn $($path:ident)::+] property($getter:ident)) => {
+        $crate::avm1::property_decl::DeclKind::TableProperty {
+            native: $($path)::+,
+            getter: $($path::)+$getter,
+            setter: None,
+        }
     };
-    (@kind [$($mode:tt)*] function($($function:tt)*)) => {
-        $crate::avm1::property_decl::DeclKind::Function(
-            __declare_properties!(@fn [$($mode)*] $($function)*)
-        )
+    (@kind [default] method($method:expr)) => {
+        $crate::avm1::property_decl::DeclKind::Method($method)
+    };
+    (@kind [fn $($path:ident)::+] method($method:ident)) => {
+        $crate::avm1::property_decl::DeclKind::TableMethod($($path)::+, $($path::)+$method)
+    };
+    (@kind [default] function($function:expr)) => {
+        $crate::avm1::property_decl::DeclKind::Function($function)
+    };
+    (@kind [fn $($path:ident)::+] function($function:ident)) => {
+        $crate::avm1::property_decl::DeclKind::TableFunction($($path)::+, $($path::)+$method)
     };
     (@kind $_mode:tt string($string:expr)) => {
         $crate::avm1::property_decl::DeclKind::String(__assert_ascii($string))
@@ -313,13 +342,6 @@ macro_rules! __declare_properties {
     };
     (@kind $_mode:tt float($float:expr)) => {
         $crate::avm1::property_decl::DeclKind::Float($float)
-    };
-
-    // The two ways of defining functions.
-    (@fn [default] $function:expr) => { $function };
-    (@fn [fn $($path:ident)::+] $index:ident) => {
-        // TODO: add support to ASnative-style table functions to FunctionObject.
-        |activation, this, args| $($path)::+(activation, this, args, $($path::)+$index)
     };
 }
 
