@@ -163,6 +163,13 @@ impl Declaration {
 ///     "filters" => property(get_filters, set_filters);
 ///     "to_string" => method(to_string);
 ///     "to_string2" => function(to_string);
+///     // switches to 'table mode': function-like definitions will now take
+///     // an ID instead of a function pointer, and will dispatch it to the
+///     // method provided here.
+///     use fn method;
+///     "callme" => function(CALLME);
+///     // you can go back to the 'default' mode
+///     use default;
 ///     "locale" => string("en-US");
 ///     "enabled" => bool(true);
 ///     "size" => int(123);
@@ -170,65 +177,142 @@ impl Declaration {
 ///     // all declarations can also specify attributes
 ///     "hidden" => string("shh!"; DONT_ENUM | DONT_DELETE | READ_ONLY);
 /// };
+/// 
+/// mod method {
+///   pub const CALLME: u16 = 0;
+/// }
+/// 
+/// fn method(..., id: u16) -> Result<Value<'gc>, Error<'gc>> {
+///   match id {
+///     CALLME => { ... }
+///     _ => Ok(Value::Undefined)
+///   }
+/// }
 /// ```
-#[allow(unused_macro_rules)]
 macro_rules! declare_properties {
-    ( $($name:literal => $kind:ident($($args:tt)*);)* ) => {
+    ( $($tts:tt)* ) => {
         const {
             const fn __assert_ascii(s: &str) -> &[u8] {
                 assert!(s.is_ascii());
                 s.as_bytes()
             }
 
-            &[ $(
-                declare_properties!(@__prop $kind($name, $($args)*))
-            ),* ]
+            __declare_properties!(@stmt [default] [/* out */] $($tts)*)
         }
     };
-    (@__prop $kind:ident($name:literal $(,$args:expr)*) ) => {
-        crate::avm1::property_decl::Declaration {
-            name: __assert_ascii($name),
-            kind: declare_properties!(@__kind $kind ($($args),*)),
-            attributes: crate::avm1::property::Attribute::empty(),
-        }
+}
+
+// Internal implementation
+macro_rules! __declare_properties {
+    // Main TT-muncher loop for distinguishing between `use ...` and `"name" => ...`
+    // and for threading the current 'use' mode.
+    (@stmt [$($mode:tt)*] [$($out:tt)*] )=> {
+        &[ $($out)* ]
     };
-    (@__prop $kind:ident($name:literal $(,$args:expr)*; $($attributes:ident)|*) ) => {
-        crate::avm1::property_decl::Declaration {
+    (
+        @stmt [$($mode:tt)*]
+        [$($out:tt)*]
+        $name:literal => $kind:ident($($args:tt)*);
+        $($rest:tt)*
+    ) => {
+        __declare_properties!(
+            @stmt [$($mode)*]
+            [ $($out)* __declare_properties!(
+                @prop [$($mode)*] $name $kind [/* args out */] $($args)*
+            ), ]
+            $($rest)*
+        )
+    };
+    (
+        @stmt [$($mode:tt)*]
+        [$($out:tt)*]
+        use default;
+        $($rest:tt)*
+    ) => {
+        __declare_properties!(@stmt [default] [ $($out)* ] $($rest)*)
+    };
+    (
+        @stmt [$($mode:tt)*]
+        [$($out:tt)*]
+        use fn $($path:tt)::+;
+        $($rest:tt)*
+    ) => {
+        __declare_properties!(@stmt [fn $($path)::+] [ $($out)* ] $($rest)*)
+    };
+
+    // Property args TT-muncher loop: we want to parse until the first ';'.
+    // The $args need to be kept as tt's all the way to the end, where they
+    // will be matched as an expr or an ident depending on the $mode.
+    (
+        @prop [$($mode:tt)*] $name:literal $kind:ident
+        [$($args:tt)*] $(; $($attributes:ident)|*)?
+    ) => {
+        $crate::avm1::property_decl::Declaration {
             name: __assert_ascii($name),
-            kind: declare_properties!(@__kind $kind ($($args),*)),
-            attributes: crate::avm1::property::Attribute::from_bits_truncate(
-                0 $(| crate::avm1::property::Attribute::$attributes.bits())*
+            kind: __declare_properties!(@kind [$($mode)*] $kind ($($args)*)),
+            attributes: $crate::avm1::property::Attribute::from_bits_truncate(
+                0 $($(| $crate::avm1::property::Attribute::$attributes.bits())*)?
             ),
         }
     };
-    (@__kind property($getter:expr)) => {
-        crate::avm1::property_decl::DeclKind::Property {
-            getter: $getter,
-            setter: None,
-        }
+    (
+        @prop [$($mode:tt)*] $name:literal $kind:ident
+        [$($args:tt)*] $tt:tt $($rest:tt)*
+    ) => {
+        __declare_properties!(
+            @prop [$($mode)*] $name $kind [$($args)* $tt] $($rest)*
+        )
     };
-    (@__kind property($getter:expr, $setter:expr)) => {
-        crate::avm1::property_decl::DeclKind::Property {
+
+    // The various kinds of declarations.
+
+    // This is a little dumb: we can't take tt's here as it would be ambiguous,
+    // so this case needs to be split in two.
+    (@kind [default] property($getter:expr, $setter:expr)) => {
+        $crate::avm1::property_decl::DeclKind::Property {
             getter: $getter,
             setter: Some($setter),
         }
     };
-    (@__kind method($method:expr)) => {
-        crate::avm1::property_decl::DeclKind::Method($method)
+    (@kind [fn $($path:tt)+] property($getter:ident, $setter:ident)) => {
+        $crate::avm1::property_decl::DeclKind::Property {
+            getter: __declare_properties!(@fn [fn $($path)+] $getter),
+            setter: Some(__declare_properties!(@fn [fn $($path)+] $setter)),
+        }
     };
-    (@__kind function($function:expr)) => {
-        crate::avm1::property_decl::DeclKind::Function($function)
+    (@kind [default] property($($getter:tt)*)) => {
+        $crate::avm1::property_decl::DeclKind::Property {
+            getter: __declare_properties!(@fn [default] $($getter)*),
+            setter: None,
+        }
     };
-    (@__kind string($string:expr)) => {
-        crate::avm1::property_decl::DeclKind::String(__assert_ascii($string))
+    (@kind [$($mode:tt)*] method($($method:tt)*)) => {
+        $crate::avm1::property_decl::DeclKind::Method(
+            __declare_properties!(@fn [$($mode)*] $($method)*)
+        )
     };
-    (@__kind bool($boolean:expr)) => {
-        crate::avm1::property_decl::DeclKind::Bool($boolean)
+    (@kind [$($mode:tt)*] function($($function:tt)*)) => {
+        $crate::avm1::property_decl::DeclKind::Function(
+            __declare_properties!(@fn [$($mode)*] $($function)*)
+        )
     };
-    (@__kind int($int:expr)) => {
-        crate::avm1::property_decl::DeclKind::Int($int)
+    (@kind $_mode:tt string($string:expr)) => {
+        $crate::avm1::property_decl::DeclKind::String(__assert_ascii($string))
     };
-    (@__kind float($float:expr)) => {
-        crate::avm1::property_decl::DeclKind::Float($float)
+    (@kind $_mode:tt bool($boolean:expr)) => {
+        $crate::avm1::property_decl::DeclKind::Bool($boolean)
+    };
+    (@kind $_mode:tt int($int:expr)) => {
+        $crate::avm1::property_decl::DeclKind::Int($int)
+    };
+    (@kind $_mode:tt float($float:expr)) => {
+        $crate::avm1::property_decl::DeclKind::Float($float)
+    };
+
+    // The two ways of defining functions.
+    (@fn [default] $function:expr) => { $function };
+    (@fn [fn $($path:ident)::+] $index:ident) => {
+        // TODO: add support to ASnative-style table functions to FunctionObject.
+        |activation, this, args| $($path)::+(activation, this, args, $($path::)+$index)
     };
 }
