@@ -233,6 +233,10 @@ pub fn browse<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if !matches!(this.native(), NativeObject::FileReference(_)) {
+        return Ok(Value::Undefined);
+    }
+
     let file_filters = match args.get(0) {
         Some(Value::Object(array)) => {
             // Array of filter objects.
