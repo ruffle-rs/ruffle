@@ -3,6 +3,7 @@
 [[profile.ci.overrides]]
 filter = """
 test(pixelbender) or \
+test(from_gnash/misc-ming.all/getTimer_test) or \
 test(avm2/graphics_round_rects) or \
 test(avm2/stage3d_errors_atf) or \
 test(avm1/netstream_play_flv) or \
