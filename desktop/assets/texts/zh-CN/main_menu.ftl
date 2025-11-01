@@ -17,6 +17,7 @@ file-menu-recents = 最近播放
 file-menu-recents-empty = (空)
 file-menu-preferences = 首选项…
 file-menu-exit = 退出
+file-menu-export = 导出...
 controls-menu = 控制
 controls-menu-suspend = 暂停
 controls-menu-resume = 继续
