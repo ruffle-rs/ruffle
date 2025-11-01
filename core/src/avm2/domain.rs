@@ -292,39 +292,33 @@ impl<'gc> Domain<'gc> {
     pub fn get_defined_value_handling_vector(
         self,
         activation: &mut Activation<'_, 'gc>,
-        mut name: AvmString<'gc>,
+        name: AvmString<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Special-case lookups of `Vector.<SomeType>` - these get internally converted
         // to a lookup of `Vector,` a lookup of `SomeType`, and `vector_class.apply(some_type_class)`
-        let mut type_name = None;
         if (name.starts_with(WStr::from_units(b"__AS3__.vec::Vector.<"))
             || name.starts_with(WStr::from_units(b"Vector.<")))
             && name.ends_with(WStr::from_units(b">"))
         {
             let start = name.find(WStr::from_units(b".<")).unwrap();
 
-            type_name = Some(AvmString::new(
-                activation.gc(),
-                &name[(start + 2)..(name.len() - 1)],
-            ));
-            name = AvmString::new_ascii_static(activation.gc(), b"__AS3__.vec::Vector");
+            let type_name = AvmString::new(activation.gc(), &name[(start + 2)..(name.len() - 1)]);
+
+            let vector_class = activation.avm2().classes().generic_vector;
+            let parameter_value = self.get_defined_value_handling_vector(activation, type_name)?;
+
+            return vector_class
+                .apply(activation, &[parameter_value])
+                .map(|obj| obj.into());
         }
+
+        // If we're not hitting the special-case, just call `get_defined_value`
+
         // FIXME - is this the correct api version?
         let api_version = activation.avm2().root_api_version;
         let name = QName::from_qualified_name(name, api_version, activation.context);
 
-        let res = self.get_defined_value(activation, name);
-
-        if let Some(type_name) = type_name {
-            let type_class = self.get_defined_value_handling_vector(activation, type_name)?;
-            if let Ok(res) = res {
-                let class = res.as_object().ok_or_else(|| {
-                    Error::rust_error(format!("Vector type {res:?} was not an object").into())
-                })?;
-                return class.apply(activation, &[type_class]).map(|obj| obj.into());
-            }
-        }
-        res
+        self.get_defined_value(activation, name)
     }
 
     pub fn get_defined_names(self) -> Vec<QName<'gc>> {
