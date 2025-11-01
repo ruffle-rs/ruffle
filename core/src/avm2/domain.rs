@@ -296,14 +296,7 @@ impl<'gc> Domain<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Special-case lookups of `Vector.<SomeType>` - these get internally converted
         // to a lookup of `Vector,` a lookup of `SomeType`, and `vector_class.apply(some_type_class)`
-        if (name.starts_with(WStr::from_units(b"__AS3__.vec::Vector.<"))
-            || name.starts_with(WStr::from_units(b"Vector.<")))
-            && name.ends_with(WStr::from_units(b">"))
-        {
-            let start = name.find(WStr::from_units(b".<")).unwrap();
-
-            let type_name = AvmString::new(activation.gc(), &name[(start + 2)..(name.len() - 1)]);
-
+        if let Some(type_name) = vector_parameter_from_name(activation.gc(), name) {
             let vector_class = activation.avm2().classes().generic_vector;
             let parameter_value = self.get_defined_value_handling_vector(activation, type_name)?;
 
@@ -319,6 +312,22 @@ impl<'gc> Domain<'gc> {
         let name = QName::from_qualified_name(name, api_version, activation.context);
 
         self.get_defined_value(activation, name)
+    }
+
+    pub fn has_defined_value_handling_vector(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: AvmString<'gc>,
+    ) -> bool {
+        if let Some(type_name) = vector_parameter_from_name(activation.gc(), name) {
+            // avmplus just checks if the type parameter exists, so we do the same
+            self.has_defined_value_handling_vector(activation, type_name)
+        } else {
+            let name =
+                QName::from_qualified_name(name, ApiVersion::VM_INTERNAL, activation.context);
+
+            self.get_defining_script(&name.into()).is_some()
+        }
     }
 
     pub fn get_defined_names(self) -> Vec<QName<'gc>> {
@@ -418,6 +427,25 @@ impl<'gc> Domain<'gc> {
 
     pub fn as_ptr(self) -> *const DomainPtr {
         Gc::as_ptr(self.0) as _
+    }
+}
+
+/// Given a class name such as `Vector.<int>`, returns the Vector type
+/// parameter (`int`), or `None` if the class name does not represent a
+/// parametrized Vector class (e.g. `flash.display::MovieClip`).
+fn vector_parameter_from_name<'gc>(
+    mc: &Mutation<'gc>,
+    name: AvmString<'gc>,
+) -> Option<AvmString<'gc>> {
+    if (name.starts_with(WStr::from_units(b"__AS3__.vec::Vector.<"))
+        || name.starts_with(WStr::from_units(b"Vector.<")))
+        && name.ends_with(WStr::from_units(b">"))
+    {
+        let start = name.find(WStr::from_units(b".<")).unwrap();
+
+        Some(AvmString::new(mc, &name[(start + 2)..(name.len() - 1)]))
+    } else {
+        None
     }
 }
 
