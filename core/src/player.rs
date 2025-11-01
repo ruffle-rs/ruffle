@@ -6,6 +6,7 @@ use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm2::object::{EventObject as Avm2EventObject, Object as Avm2Object};
 use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack};
+use crate::avm_rng::AvmRng;
 use crate::backend::ui::FontDefinition;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -38,7 +39,6 @@ use crate::library::Library;
 use crate::limits::ExecutionLimit;
 use crate::loader::{LoadBehavior, LoadManager};
 use crate::local_connection::LocalConnections;
-use crate::locale::get_current_date_time;
 use crate::net_connection::NetConnections;
 use crate::orphan_manager::OrphanManager;
 use crate::prelude::*;
@@ -54,7 +54,6 @@ use crate::DefaultFont;
 use async_channel::Sender;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, DynamicRootSet, Mutation, Rootable};
-use rand::{rngs::SmallRng, SeedableRng};
 use ruffle_macros::istr;
 use ruffle_render::backend::{null::NullRenderer, RenderBackend, ViewportDimensions};
 use ruffle_render::commands::CommandList;
@@ -316,7 +315,7 @@ pub struct Player {
 
     transform_stack: TransformStack,
 
-    rng: SmallRng,
+    rng: AvmRng,
 
     gc_arena: Rc<RefCell<GcArena>>,
 
@@ -2950,7 +2949,9 @@ impl PlayerBuilder {
                 mouse_cursor_needs_check: false,
 
                 // Misc. state
-                rng: SmallRng::seed_from_u64(get_current_date_time().timestamp_millis() as u64),
+                // TODO: AVM1 and AVM2 use separate RNGs (though algorithm is same), so this is technically incorrect.
+                // See: https://github.com/ruffle-rs/ruffle/issues/20244
+                rng: AvmRng::default(),
                 system: SystemProperties::new(language),
                 page_url: self.page_url.clone(),
                 transform_stack: TransformStack::new(),
