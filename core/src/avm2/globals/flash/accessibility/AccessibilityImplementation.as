@@ -46,14 +46,6 @@ package flash.accessibility {
             return null;
         }
 
-        public function get_selectionActiveIndex():* {
-            return this["selectionActiveIndex"];
-        }
-
-        public function get_selectionAnchorIndex():* {
-            return this["selectionAnchorIndex"];
-        }
-
         public function getChildIDArray():Array {
             return null;
         }
