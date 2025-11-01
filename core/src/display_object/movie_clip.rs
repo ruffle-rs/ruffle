@@ -8,7 +8,7 @@ use crate::avm2::script::Script;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, LoaderInfoObject,
-    Object as Avm2Object, QName as Avm2QName, StageObject as Avm2StageObject,
+    Object as Avm2Object, StageObject as Avm2StageObject,
 };
 use crate::backend::audio::{AudioManager, SoundInstanceHandle};
 use crate::backend::navigator::Request;
@@ -4139,12 +4139,9 @@ impl<'gc, 'a> MovieClip<'gc> {
                 .library
                 .library_for_movie_mut(movie.clone());
             let domain = library.avm2_domain();
-            let api_version = activation.context.avm2.root_api_version;
 
             for (class_name, id) in eager_tags.symbolclass_names {
-                let class_name = AvmString::new(activation.gc(), class_name);
-                let name =
-                    Avm2QName::from_qualified_name(class_name, api_version, activation.context);
+                let name = AvmString::new(activation.gc(), class_name);
                 match Avm2::lookup_class_for_character(&mut activation, self, domain, name, id) {
                     Ok(class_object) => {
                         activation
@@ -4225,7 +4222,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                             }
                             _ => {
                                 tracing::warn!(
-                                    "Symbol class {name:?} cannot be assigned to character id {id}",
+                                    "Symbol class {name} cannot be assigned to character id {id}",
                                 );
                             }
                         }
