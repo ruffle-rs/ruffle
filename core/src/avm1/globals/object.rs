@@ -2,7 +2,6 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::NativeFunction;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Object, Value};
@@ -27,20 +26,17 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "registerClass" => method(REGISTER_CLASS; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
-pub fn get_native_function(id: u32) -> Option<NativeFunction> {
-    Some(match id {
-        5 => has_own_property,
-        _ => return None,
-    })
-}
-
 /// Constructs the `Object` class.
 ///
 /// Since Object and Function are so heavily intertwined, this function does
 /// not allocate an object to store either proto. Instead, they must be provided
 /// through the `DeclContext`.
 pub fn create_class<'gc>(context: &mut DeclContext<'_, 'gc>) -> SystemClass<'gc> {
-    let class = context.native_class_with_proto(table_constructor!(method), Some(function), context.object_proto);
+    let class = context.native_class_with_proto(
+        table_constructor!(method),
+        Some(function),
+        context.object_proto,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS);
     context.define_properties_on(class.constr, OBJECT_DECLS);
     class

@@ -145,7 +145,7 @@ pub mod method {
     pub const SET_QUALITY: u16 = 6;
 }
 
-fn method<'gc>(
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
