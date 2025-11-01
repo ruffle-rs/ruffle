@@ -1,6 +1,5 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::NativeFunction;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, Declaration};
 use crate::avm1::{Object, Value};
@@ -74,38 +73,62 @@ mod xml_node;
 pub(crate) mod xml_socket;
 
 const GLOBAL_DECLS: &[Declaration] = declare_properties! {
-    "trace" => method(trace; DONT_ENUM);
-    "isFinite" => method(is_finite; DONT_ENUM);
-    "isNaN" => method(is_nan; DONT_ENUM);
-    "parseInt" => method(parse_int; DONT_ENUM);
-    "parseFloat" => method(parse_float; DONT_ENUM);
-    "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM);
-    "ASnative" => method(asnative::asnative; DONT_ENUM);
-    "clearInterval" => method(clear_interval; DONT_ENUM);
-    "setInterval" => method(set_interval; DONT_ENUM);
-    "clearTimeout" => method(clear_timeout; DONT_ENUM);
-    "setTimeout" => method(set_timeout; DONT_ENUM);
-    "updateAfterEvent" => method(update_after_event; DONT_ENUM);
-    "escape" => method(escape; DONT_ENUM);
-    "unescape" => method(unescape; DONT_ENUM);
+    // 'true' builtins; what are their ordering?
     "NaN" => property(get_nan; DONT_ENUM);
     "Infinity" => property(get_infinity; DONT_ENUM);
+    // Doesn't seem to have an index (searched in `ASnative(0..10000, 0..10000)`).
+    "ASnative" => method(asnative::asnative; DONT_ENUM);
+
+    "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM); // TODO: (1, 0)
+    // TODO: ASSetNative - (4, 0)
+    // TODO: ASSetAccessor - (4, 1)
+
+    use fn method;
+    "escape" => method(ESCAPE; DONT_ENUM);
+    "unescape" => method(UNESCAPE; DONT_ENUM);
+    "parseInt" => method(PARSE_INT; DONT_ENUM);
+    "parseFloat" => method(PARSE_FLOAT; DONT_ENUM);
+    "trace" => method(TRACE; DONT_ENUM);
+
+    use default;
+    "updateAfterEvent" => method(update_after_event; DONT_ENUM); // TODO: (9, 0)
+    "isNaN" => method(is_nan; DONT_ENUM); // TODO: (200, 18)
+    "isFinite" => method(is_finite; DONT_ENUM); // TODO: (200, 19)
+    "setInterval" => method(set_interval; DONT_ENUM); // TODO: (250, 0)
+    "clearTimeout" => method(clear_interval; DONT_ENUM); // TODO: (250, 1)
+    // FIXME: this should the **same** function object as `clearTimeout`, not a copy
+    "clearInterval" => method(clear_interval; DONT_ENUM); // TODO: (250, 1)
+    "setTimeout" => method(set_timeout; DONT_ENUM); // TODO: (1021, 1)
 };
 
-pub fn get_native_function(id: u32) -> Option<NativeFunction> {
-    Some(match id {
-        0 => escape,
-        1 => unescape,
-        2 => parse_int,
-        3 => parse_float,
-        4 => trace,
-        _ => return None,
-    })
+mod method {
+    pub const ESCAPE: u16 = 0;
+    pub const UNESCAPE: u16 = 1;
+    pub const PARSE_INT: u16 = 2;
+    pub const PARSE_FLOAT: u16 = 3;
+    pub const TRACE: u16 = 4;
+}
+
+fn method<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    args: &[Value<'gc>],
+    index: u16,
+) -> Result<Value<'gc>, Error<'gc>> {
+    use method::*;
+
+    match index {
+        ESCAPE => escape(activation, args),
+        UNESCAPE => unescape(activation, args),
+        PARSE_INT => parse_int(activation, args),
+        PARSE_FLOAT => parse_float(activation, args),
+        TRACE => trace(activation, args),
+        _ => Ok(Value::Undefined),
+    }
 }
 
 pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Unlike `Action::Trace`, `_global.trace` always coerces
@@ -145,7 +168,6 @@ pub fn is_nan<'gc>(
 
 pub fn parse_int<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // ECMA-262 violation: parseInt() == undefined // not NaN
@@ -281,7 +303,6 @@ pub fn get_nan<'gc>(
 
 pub fn parse_float<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(value) = args.get(0) {
@@ -372,22 +393,6 @@ pub fn clear_interval<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn clear_timeout<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let id = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?;
-    if !activation.context.timers.remove(id) {
-        tracing::info!("clearTimeout: Timer {} does not exist", id);
-    }
-
-    Ok(Value::Undefined)
-}
-
 pub fn update_after_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
@@ -400,7 +405,6 @@ pub fn update_after_event<'gc>(
 
 pub fn escape<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let s = if let Some(val) = args.get(0) {
@@ -431,7 +435,6 @@ pub fn escape<'gc>(
 
 pub fn unescape<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let s = if let Some(val) = args.get(0) {
