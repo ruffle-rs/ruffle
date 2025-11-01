@@ -17,6 +17,7 @@ file-menu-recents = Viimeisimmät
 file-menu-recents-empty = Ei äskettäin avattuja tiedostoja
 file-menu-preferences = Asetukset...
 file-menu-exit = Lopeta
+file-menu-export = Vie...
 controls-menu = Säätimet
 controls-menu-resume = Jatka
 controls-menu-volume = Äänenvoimakkuuden säätö
