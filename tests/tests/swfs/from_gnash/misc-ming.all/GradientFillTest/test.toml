@@ -1,0 +1,17 @@
+num_frames = 30
+known_failure = true
+
+[image_comparisons.output]
+tolerance = 50
+max_outliers = 200
+
+[player_options]
+with_renderer = { optional = true, sample_count = 1 }
+
+[subtests.fp9]
+output_path = "output.fp9.txt"
+player_options.version = 9
+
+[subtests.fp10]
+output_path = "output.fp10.txt"
+player_options.version = 10
