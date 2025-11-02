@@ -291,6 +291,7 @@ impl<'gc> Sound<'gc> {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
+    // Note: id3 is not a built-in property. See [`Sound::load_id3`].
     "getPan" => method(get_pan; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getTransform" => method(get_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getVolume" => method(get_volume; DONT_ENUM | DONT_DELETE | READ_ONLY);
