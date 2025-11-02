@@ -1280,21 +1280,24 @@ pub fn load_sound_avm1<'gc>(
                 panic!("NativeObject must be Sound");
             };
 
+            let mut activation = Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
+
             let success = response
                 .map_err(|e| e.error)
                 .and_then(|(body, _, _, _)| {
-                    let handle = uc.audio.register_mp3(&body)?;
-                    sound.load_sound(handle, uc);
-                    let duration = uc
+                    let handle = activation.context.audio.register_mp3(&body)?;
+                    sound.load_sound(handle, activation.context);
+                    let duration = activation
+                        .context
                         .audio
                         .get_sound_duration(handle)
                         .map(|d| d.round() as u32);
                     sound.set_duration(duration);
+                    sound.load_id3(&mut activation, sound_object, &body)?;
                     Ok(())
                 })
                 .is_ok();
 
-            let mut activation = Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
             let _ = sound_object.call_method(
                 istr!("onLoad"),
                 &[success.into()],
