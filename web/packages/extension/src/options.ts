@@ -25,18 +25,18 @@ type SelectOption = {
 };
 
 type SettingGroup = {
-    settingsBasicPlayback: SettingForm[];
-    settingsDisplay: SettingForm[];
-    settingsPerformance: SettingForm[];
-    settingsPlayerConfiguration: SettingForm[];
-    settingsSecurityFeatures: SettingForm[];
-    settingsUserInterface: SettingForm[];
-    settingsFullscreenScaling: SettingForm[];
-    settingMiscellaneous: SettingForm[];
+    "settings-basic-playback": SettingForm[];
+    "settings-display": SettingForm[];
+    "settings-performance": SettingForm[];
+    "settings-player-configuration": SettingForm[];
+    "settings-security-features": SettingForm[];
+    "settings-user-interface": SettingForm[];
+    "settings-fullscreen-scaling": SettingForm[];
+    "settings-miscellaneous": SettingForm[];
 };
 
 const settingData: SettingGroup = {
-    settingsBasicPlayback: [
+    "settings-basic-playback": [
         {
             id: "autoplay",
             type: "select",
@@ -105,7 +105,7 @@ const settingData: SettingGroup = {
                 "Values that may be passed to and loaded by the movie.",
         },
     ],
-    settingsDisplay: [
+    "settings-display": [
         {
             id: "wmode",
             type: "select",
@@ -195,7 +195,7 @@ const settingData: SettingGroup = {
             ],
         },
     ],
-    settingsPerformance: [
+    "settings-performance": [
         {
             id: "preferredRenderer",
             type: "select",
@@ -230,7 +230,7 @@ const settingData: SettingGroup = {
             description: "Maximum time a script can run before being disabled.",
         },
     ],
-    settingsPlayerConfiguration: [
+    "settings-player-configuration": [
         {
             id: "playerVersion",
             type: "number",
@@ -293,7 +293,7 @@ const settingData: SettingGroup = {
             description: 'Names of fonts to use for each default Flash device font.',
         }, */
     ],
-    settingsSecurityFeatures: [
+    "settings-security-features": [
         {
             id: "allowNetworking",
             type: "select",
@@ -373,7 +373,7 @@ const settingData: SettingGroup = {
             description: 'Set of rules that rewrite URLs in network requests and links.',
         }, */
     ],
-    settingsUserInterface: [
+    "settings-user-interface": [
         {
             id: "contextMenu",
             type: "select",
@@ -405,7 +405,7 @@ const settingData: SettingGroup = {
             description: "Show splash screen before SWF loads.", // TODO: Update with better description to match switch
         },
     ],
-    settingsFullscreenScaling: [
+    "settings-fullscreen-scaling": [
         {
             id: "allowFullscreen",
             type: "switch",
@@ -431,7 +431,7 @@ const settingData: SettingGroup = {
             description: "Controls orientation on mobile in fullscreen mode.",
         },
     ],
-    settingMiscellaneous: [
+    "settings-miscellaneous": [
         {
             id: "base",
             type: "text",
@@ -565,60 +565,21 @@ function addElement(settingForm: SettingForm): HTMLElement {
     return settingsOption;
 }
 
-function addSettingGroup(
-    targetGroup: HTMLElement,
-    settingsForm: SettingForm[],
-) {
-    const htmlElements: HTMLElement[] = [];
+function addSettingGroups() {
+    for (const [groupId, group] of Object.entries(settingData)) {
+        const htmlElements: HTMLElement[] = [];
 
-    for (const settingForm of settingsForm) {
-        htmlElements.push(addElement(settingForm));
+        const targetGroup = document.getElementById(groupId)!;
+
+        for (const settingForm of group) {
+            htmlElements.push(addElement(settingForm));
+        }
+
+        targetGroup.append(...htmlElements);
     }
-
-    targetGroup.append(...htmlElements);
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
-    addSettingGroup(
-        document.getElementById("settings-basic-playback")!,
-        settingData.settingsBasicPlayback,
-    );
-
-    addSettingGroup(
-        document.getElementById("settings-display")!,
-        settingData.settingsDisplay,
-    );
-
-    addSettingGroup(
-        document.getElementById("settings-performance")!,
-        settingData.settingsPerformance,
-    );
-
-    addSettingGroup(
-        document.getElementById("settings-player-configuration")!,
-        settingData.settingsPlayerConfiguration,
-    );
-
-    addSettingGroup(
-        document.getElementById("settings-security-features")!,
-        settingData.settingsSecurityFeatures,
-    );
-
-    addSettingGroup(
-        document.getElementById("settings-user-interface")!,
-        settingData.settingsUserInterface,
-    );
-
-    addSettingGroup(
-        document.getElementById("settings-fullscreen-scaling")!,
-        settingData.settingsFullscreenScaling,
-    );
-
-    addSettingGroup(
-        document.getElementById("settings-miscellaneous")!,
-        settingData.settingMiscellaneous,
-    );
-
     const data = await utils.storage.sync.get({
         responseHeadersUnsupported: false,
     });
@@ -692,6 +653,8 @@ window.addEventListener("DOMContentLoaded", async () => {
 
         toggleControl();
     });
+
+    addSettingGroups();
 
     bindOptions();
 });
