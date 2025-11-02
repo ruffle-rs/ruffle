@@ -1,0 +1,32 @@
+true
+false
+false
+false
+false
+false
+true
+true
+error: 1107
+error: 1107
+[class JSON]
+[class JSON]
+true
+error: 1065
+error: 1065
+false
+error: 1065
+error: 1065
+false
+[class Math]
+[class Math]
+true
+[class Math]
+[class Math]
+true
+error: 1065
+error: 1065
+false
+error: 1065
+error: 1065
+false
+error: 1065
