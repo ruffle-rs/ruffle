@@ -82,18 +82,19 @@ impl<'gc> QName<'gc> {
     /// NAMESPACE.LOCAL_NAME (Where the LAST dot is used to split the namespace & local_name)
     /// LOCAL_NAME (Use the public namespace)
     ///
+    /// If no namespace is specified, the public namespace with the highest version
+    /// will be used. Otherwise, the namespace with the root API version will be
+    /// used.
+    ///
     /// This does *not* handle `Vector.<SomeTypeParam>` - use `get_defined_value_handling_vector` for that
-    pub fn from_qualified_name(
-        name: AvmString<'gc>,
-        api_version: ApiVersion,
-        context: &mut UpdateContext<'gc>,
-    ) -> Self {
+    pub fn from_qualified_name(name: AvmString<'gc>, context: &mut UpdateContext<'gc>) -> Self {
         let parts = name
             .rsplit_once(WStr::from_units(b"::"))
             .or_else(|| name.rsplit_once(WStr::from_units(b".")));
 
         if let Some((package_name, local_name)) = parts {
             let package_name = context.strings.intern_wstr(package_name);
+            let api_version = context.avm2.root_api_version;
 
             Self {
                 ns: Namespace::package(package_name, api_version, &mut context.strings),
@@ -101,7 +102,7 @@ impl<'gc> QName<'gc> {
             }
         } else {
             Self {
-                ns: context.avm2.namespaces.public_for(api_version),
+                ns: context.avm2.namespaces.public_for(ApiVersion::VM_INTERNAL),
                 name,
             }
         }
