@@ -247,8 +247,8 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
 
         // TODO: Should we return a result for failed opens? Does Flash care?
-        match vars_method {
-            Some((navmethod, formvars)) => {
+        let url = match vars_method {
+            Some((NavigationMethod::Post, formvars)) => {
                 let document = window.document().expect("document()");
                 let body = match document.body() {
                     Some(body) => body,
@@ -261,7 +261,7 @@ impl NavigatorBackend for WebNavigatorBackend {
                     .dyn_into()
                     .expect("create_element(\"form\") didn't give us a form");
 
-                form.set_method(&navmethod.to_string());
+                form.set_method("POST");
                 form.set_action(url.as_str());
 
                 if !target.is_empty() {
@@ -284,15 +284,30 @@ impl NavigatorBackend for WebNavigatorBackend {
 
                 let _ = body.append_child(&form);
                 let _ = form.submit();
+                return;
             }
-            None => {
-                if target.is_empty() {
-                    let _ = window.location().assign(url.as_str());
-                } else {
-                    let _ = window.open_with_url_and_target(url.as_str(), target);
+            Some((NavigationMethod::Get, formvars)) if !formvars.is_empty() => {
+                // The obvious implementation of `Url::parse_with_params(url, formvars.iter())` doesn't work,
+                // because Flash is buggy when the URL already contains query parameters. Instead of appending
+                // the formvars with "&" the URL and vars are just concatenated.
+                let mut url = url.to_string();
+                if let Ok(query_url) =
+                    Url::parse_with_params("http://example.com/", formvars.iter())
+                {
+                    if let Some(query) = query_url.query() {
+                        url.push_str(query);
+                    }
                 }
+                url
             }
+            Some((NavigationMethod::Get, _)) | None => url.to_string(),
         };
+
+        if target.is_empty() {
+            let _ = window.location().assign(&url);
+        } else {
+            let _ = window.open_with_url_and_target(&url, target);
+        }
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
