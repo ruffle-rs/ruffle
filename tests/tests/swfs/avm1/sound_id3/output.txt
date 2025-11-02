@@ -1,0 +1,633 @@
+Load id3, true
+  Testing target undefined
+    Before loading
+      id3 = undefined
+      typeof id3 = undefined
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = true
+      id3 === null = false
+      id3 === 0 = false
+      onID3 called: true, undefined
+      id3 = undefined
+      typeof id3 = object
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = false
+      id3 === null = false
+      id3 === 0 = false
+      id3[TCON] = Some Genre
+      typeof id3[TCON] = string
+      id3[genre] = Some Genre
+      typeof id3[genre] = string
+      id3[TYER] = 2334
+      typeof id3[TYER] = string
+      id3[year] = 2334
+      typeof id3[year] = string
+      id3[TORY] = Some
+      typeof id3[TORY] = string
+      id3[TOFN] = Some Original Filename
+      typeof id3[TOFN] = string
+      id3[TOPE] = Some Original Artist
+      typeof id3[TOPE] = string
+      id3[TOAL] = Some Original Album
+      typeof id3[TOAL] = string
+      id3[TMED] = Some Media
+      typeof id3[TMED] = string
+      id3[TLEN] = Some Length
+      typeof id3[TLEN] = string
+      id3[TIT3] = Some Description
+      typeof id3[TIT3] = string
+      id3[TIT2] = Some Title
+      typeof id3[TIT2] = string
+      id3[songname] = Some Title
+      typeof id3[songname] = string
+      id3[TCOM] = Some Composer
+      typeof id3[TCOM] = string
+      id3[TPE2] = Some Album Artist
+      typeof id3[TPE2] = string
+      id3[TPOS] = 7
+      typeof id3[TPOS] = string
+      id3[TRCK] = 2
+      typeof id3[TRCK] = string
+      id3[track] = 2
+      typeof id3[track] = string
+      id3[COMM] = Some Comment 2,Some Comment,Some Comment 3
+      typeof id3[COMM] = object
+      id3[COMM].length = 3
+      id3[COMM][2] = Some Comment 3
+      typeof id3[COMM][2] = string
+      id3[COMM][1] = Some Comment
+      typeof id3[COMM][1] = string
+      id3[COMM][0] = Some Comment 2
+      typeof id3[COMM][0] = string
+      id3[comment] = Some Comment 3
+      typeof id3[comment] = string
+      id3[TALB] = Some Album
+      typeof id3[TALB] = string
+      id3[album] = Some Album
+      typeof id3[album] = string
+      id3[TPE1] = Some Artist
+      typeof id3[TPE1] = string
+      id3[artist] = Some Artist
+      typeof id3[artist] = string
+    After loading: true, undefined
+      id3 = undefined
+      typeof id3 = object
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = false
+      id3 === null = false
+      id3 === 0 = false
+      id3[TCON] = Some Genre
+      typeof id3[TCON] = string
+      id3[genre] = Some Genre
+      typeof id3[genre] = string
+      id3[TYER] = 2334
+      typeof id3[TYER] = string
+      id3[year] = 2334
+      typeof id3[year] = string
+      id3[TORY] = Some
+      typeof id3[TORY] = string
+      id3[TOFN] = Some Original Filename
+      typeof id3[TOFN] = string
+      id3[TOPE] = Some Original Artist
+      typeof id3[TOPE] = string
+      id3[TOAL] = Some Original Album
+      typeof id3[TOAL] = string
+      id3[TMED] = Some Media
+      typeof id3[TMED] = string
+      id3[TLEN] = Some Length
+      typeof id3[TLEN] = string
+      id3[TIT3] = Some Description
+      typeof id3[TIT3] = string
+      id3[TIT2] = Some Title
+      typeof id3[TIT2] = string
+      id3[songname] = Some Title
+      typeof id3[songname] = string
+      id3[TCOM] = Some Composer
+      typeof id3[TCOM] = string
+      id3[TPE2] = Some Album Artist
+      typeof id3[TPE2] = string
+      id3[TPOS] = 7
+      typeof id3[TPOS] = string
+      id3[TRCK] = 2
+      typeof id3[TRCK] = string
+      id3[track] = 2
+      typeof id3[track] = string
+      id3[COMM] = Some Comment 2,Some Comment,Some Comment 3
+      typeof id3[COMM] = object
+      id3[COMM].length = 3
+      id3[COMM][2] = Some Comment 3
+      typeof id3[COMM][2] = string
+      id3[COMM][1] = Some Comment
+      typeof id3[COMM][1] = string
+      id3[COMM][0] = Some Comment 2
+      typeof id3[COMM][0] = string
+      id3[comment] = Some Comment 3
+      typeof id3[comment] = string
+      id3[TALB] = Some Album
+      typeof id3[TALB] = string
+      id3[album] = Some Album
+      typeof id3[album] = string
+      id3[TPE1] = Some Artist
+      typeof id3[TPE1] = string
+      id3[artist] = Some Artist
+      typeof id3[artist] = string
+  Testing target _level0
+    Before loading
+      id3 = undefined
+      typeof id3 = undefined
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = true
+      id3 === null = false
+      id3 === 0 = false
+      onID3 called: true, undefined
+      id3 = undefined
+      typeof id3 = object
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = false
+      id3 === null = false
+      id3 === 0 = false
+      id3[TCON] = Some Genre
+      typeof id3[TCON] = string
+      id3[genre] = Some Genre
+      typeof id3[genre] = string
+      id3[TYER] = 2334
+      typeof id3[TYER] = string
+      id3[year] = 2334
+      typeof id3[year] = string
+      id3[TORY] = Some
+      typeof id3[TORY] = string
+      id3[TOFN] = Some Original Filename
+      typeof id3[TOFN] = string
+      id3[TOPE] = Some Original Artist
+      typeof id3[TOPE] = string
+      id3[TOAL] = Some Original Album
+      typeof id3[TOAL] = string
+      id3[TMED] = Some Media
+      typeof id3[TMED] = string
+      id3[TLEN] = Some Length
+      typeof id3[TLEN] = string
+      id3[TIT3] = Some Description
+      typeof id3[TIT3] = string
+      id3[TIT2] = Some Title
+      typeof id3[TIT2] = string
+      id3[songname] = Some Title
+      typeof id3[songname] = string
+      id3[TCOM] = Some Composer
+      typeof id3[TCOM] = string
+      id3[TPE2] = Some Album Artist
+      typeof id3[TPE2] = string
+      id3[TPOS] = 7
+      typeof id3[TPOS] = string
+      id3[TRCK] = 2
+      typeof id3[TRCK] = string
+      id3[track] = 2
+      typeof id3[track] = string
+      id3[COMM] = Some Comment 2,Some Comment,Some Comment 3
+      typeof id3[COMM] = object
+      id3[COMM].length = 3
+      id3[COMM][2] = Some Comment 3
+      typeof id3[COMM][2] = string
+      id3[COMM][1] = Some Comment
+      typeof id3[COMM][1] = string
+      id3[COMM][0] = Some Comment 2
+      typeof id3[COMM][0] = string
+      id3[comment] = Some Comment 3
+      typeof id3[comment] = string
+      id3[TALB] = Some Album
+      typeof id3[TALB] = string
+      id3[album] = Some Album
+      typeof id3[album] = string
+      id3[TPE1] = Some Artist
+      typeof id3[TPE1] = string
+      id3[artist] = Some Artist
+      typeof id3[artist] = string
+    After loading: true, undefined
+      id3 = undefined
+      typeof id3 = object
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = false
+      id3 === null = false
+      id3 === 0 = false
+      id3[TCON] = Some Genre
+      typeof id3[TCON] = string
+      id3[genre] = Some Genre
+      typeof id3[genre] = string
+      id3[TYER] = 2334
+      typeof id3[TYER] = string
+      id3[year] = 2334
+      typeof id3[year] = string
+      id3[TORY] = Some
+      typeof id3[TORY] = string
+      id3[TOFN] = Some Original Filename
+      typeof id3[TOFN] = string
+      id3[TOPE] = Some Original Artist
+      typeof id3[TOPE] = string
+      id3[TOAL] = Some Original Album
+      typeof id3[TOAL] = string
+      id3[TMED] = Some Media
+      typeof id3[TMED] = string
+      id3[TLEN] = Some Length
+      typeof id3[TLEN] = string
+      id3[TIT3] = Some Description
+      typeof id3[TIT3] = string
+      id3[TIT2] = Some Title
+      typeof id3[TIT2] = string
+      id3[songname] = Some Title
+      typeof id3[songname] = string
+      id3[TCOM] = Some Composer
+      typeof id3[TCOM] = string
+      id3[TPE2] = Some Album Artist
+      typeof id3[TPE2] = string
+      id3[TPOS] = 7
+      typeof id3[TPOS] = string
+      id3[TRCK] = 2
+      typeof id3[TRCK] = string
+      id3[track] = 2
+      typeof id3[track] = string
+      id3[COMM] = Some Comment 2,Some Comment,Some Comment 3
+      typeof id3[COMM] = object
+      id3[COMM].length = 3
+      id3[COMM][2] = Some Comment 3
+      typeof id3[COMM][2] = string
+      id3[COMM][1] = Some Comment
+      typeof id3[COMM][1] = string
+      id3[COMM][0] = Some Comment 2
+      typeof id3[COMM][0] = string
+      id3[comment] = Some Comment 3
+      typeof id3[comment] = string
+      id3[TALB] = Some Album
+      typeof id3[TALB] = string
+      id3[album] = Some Album
+      typeof id3[album] = string
+      id3[TPE1] = Some Artist
+      typeof id3[TPE1] = string
+      id3[artist] = Some Artist
+      typeof id3[artist] = string
+Load id3, false
+  Testing target undefined
+    Before loading
+      id3 = undefined
+      typeof id3 = undefined
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = true
+      id3 === null = false
+      id3 === 0 = false
+      onID3 called: true, undefined
+      id3 = undefined
+      typeof id3 = object
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = false
+      id3 === null = false
+      id3 === 0 = false
+      id3[TCON] = Some Genre
+      typeof id3[TCON] = string
+      id3[genre] = Some Genre
+      typeof id3[genre] = string
+      id3[TYER] = 2334
+      typeof id3[TYER] = string
+      id3[year] = 2334
+      typeof id3[year] = string
+      id3[TORY] = Some
+      typeof id3[TORY] = string
+      id3[TOFN] = Some Original Filename
+      typeof id3[TOFN] = string
+      id3[TOPE] = Some Original Artist
+      typeof id3[TOPE] = string
+      id3[TOAL] = Some Original Album
+      typeof id3[TOAL] = string
+      id3[TMED] = Some Media
+      typeof id3[TMED] = string
+      id3[TLEN] = Some Length
+      typeof id3[TLEN] = string
+      id3[TIT3] = Some Description
+      typeof id3[TIT3] = string
+      id3[TIT2] = Some Title
+      typeof id3[TIT2] = string
+      id3[songname] = Some Title
+      typeof id3[songname] = string
+      id3[TCOM] = Some Composer
+      typeof id3[TCOM] = string
+      id3[TPE2] = Some Album Artist
+      typeof id3[TPE2] = string
+      id3[TPOS] = 7
+      typeof id3[TPOS] = string
+      id3[TRCK] = 2
+      typeof id3[TRCK] = string
+      id3[track] = 2
+      typeof id3[track] = string
+      id3[COMM] = Some Comment 2,Some Comment,Some Comment 3
+      typeof id3[COMM] = object
+      id3[COMM].length = 3
+      id3[COMM][2] = Some Comment 3
+      typeof id3[COMM][2] = string
+      id3[COMM][1] = Some Comment
+      typeof id3[COMM][1] = string
+      id3[COMM][0] = Some Comment 2
+      typeof id3[COMM][0] = string
+      id3[comment] = Some Comment 3
+      typeof id3[comment] = string
+      id3[TALB] = Some Album
+      typeof id3[TALB] = string
+      id3[album] = Some Album
+      typeof id3[album] = string
+      id3[TPE1] = Some Artist
+      typeof id3[TPE1] = string
+      id3[artist] = Some Artist
+      typeof id3[artist] = string
+    After loading: true, undefined
+      id3 = undefined
+      typeof id3 = object
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = false
+      id3 === null = false
+      id3 === 0 = false
+      id3[TCON] = Some Genre
+      typeof id3[TCON] = string
+      id3[genre] = Some Genre
+      typeof id3[genre] = string
+      id3[TYER] = 2334
+      typeof id3[TYER] = string
+      id3[year] = 2334
+      typeof id3[year] = string
+      id3[TORY] = Some
+      typeof id3[TORY] = string
+      id3[TOFN] = Some Original Filename
+      typeof id3[TOFN] = string
+      id3[TOPE] = Some Original Artist
+      typeof id3[TOPE] = string
+      id3[TOAL] = Some Original Album
+      typeof id3[TOAL] = string
+      id3[TMED] = Some Media
+      typeof id3[TMED] = string
+      id3[TLEN] = Some Length
+      typeof id3[TLEN] = string
+      id3[TIT3] = Some Description
+      typeof id3[TIT3] = string
+      id3[TIT2] = Some Title
+      typeof id3[TIT2] = string
+      id3[songname] = Some Title
+      typeof id3[songname] = string
+      id3[TCOM] = Some Composer
+      typeof id3[TCOM] = string
+      id3[TPE2] = Some Album Artist
+      typeof id3[TPE2] = string
+      id3[TPOS] = 7
+      typeof id3[TPOS] = string
+      id3[TRCK] = 2
+      typeof id3[TRCK] = string
+      id3[track] = 2
+      typeof id3[track] = string
+      id3[COMM] = Some Comment 2,Some Comment,Some Comment 3
+      typeof id3[COMM] = object
+      id3[COMM].length = 3
+      id3[COMM][2] = Some Comment 3
+      typeof id3[COMM][2] = string
+      id3[COMM][1] = Some Comment
+      typeof id3[COMM][1] = string
+      id3[COMM][0] = Some Comment 2
+      typeof id3[COMM][0] = string
+      id3[comment] = Some Comment 3
+      typeof id3[comment] = string
+      id3[TALB] = Some Album
+      typeof id3[TALB] = string
+      id3[album] = Some Album
+      typeof id3[album] = string
+      id3[TPE1] = Some Artist
+      typeof id3[TPE1] = string
+      id3[artist] = Some Artist
+      typeof id3[artist] = string
+  Testing target _level0
+    Before loading
+      id3 = undefined
+      typeof id3 = undefined
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = true
+      id3 === null = false
+      id3 === 0 = false
+      onID3 called: true, undefined
+      id3 = undefined
+      typeof id3 = object
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = false
+      id3 === null = false
+      id3 === 0 = false
+      id3[TCON] = Some Genre
+      typeof id3[TCON] = string
+      id3[genre] = Some Genre
+      typeof id3[genre] = string
+      id3[TYER] = 2334
+      typeof id3[TYER] = string
+      id3[year] = 2334
+      typeof id3[year] = string
+      id3[TORY] = Some
+      typeof id3[TORY] = string
+      id3[TOFN] = Some Original Filename
+      typeof id3[TOFN] = string
+      id3[TOPE] = Some Original Artist
+      typeof id3[TOPE] = string
+      id3[TOAL] = Some Original Album
+      typeof id3[TOAL] = string
+      id3[TMED] = Some Media
+      typeof id3[TMED] = string
+      id3[TLEN] = Some Length
+      typeof id3[TLEN] = string
+      id3[TIT3] = Some Description
+      typeof id3[TIT3] = string
+      id3[TIT2] = Some Title
+      typeof id3[TIT2] = string
+      id3[songname] = Some Title
+      typeof id3[songname] = string
+      id3[TCOM] = Some Composer
+      typeof id3[TCOM] = string
+      id3[TPE2] = Some Album Artist
+      typeof id3[TPE2] = string
+      id3[TPOS] = 7
+      typeof id3[TPOS] = string
+      id3[TRCK] = 2
+      typeof id3[TRCK] = string
+      id3[track] = 2
+      typeof id3[track] = string
+      id3[COMM] = Some Comment 2,Some Comment,Some Comment 3
+      typeof id3[COMM] = object
+      id3[COMM].length = 3
+      id3[COMM][2] = Some Comment 3
+      typeof id3[COMM][2] = string
+      id3[COMM][1] = Some Comment
+      typeof id3[COMM][1] = string
+      id3[COMM][0] = Some Comment 2
+      typeof id3[COMM][0] = string
+      id3[comment] = Some Comment 3
+      typeof id3[comment] = string
+      id3[TALB] = Some Album
+      typeof id3[TALB] = string
+      id3[album] = Some Album
+      typeof id3[album] = string
+      id3[TPE1] = Some Artist
+      typeof id3[TPE1] = string
+      id3[artist] = Some Artist
+      typeof id3[artist] = string
+    After loading: true, undefined
+      id3 = undefined
+      typeof id3 = object
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = false
+      id3 === null = false
+      id3 === 0 = false
+      id3[TCON] = Some Genre
+      typeof id3[TCON] = string
+      id3[genre] = Some Genre
+      typeof id3[genre] = string
+      id3[TYER] = 2334
+      typeof id3[TYER] = string
+      id3[year] = 2334
+      typeof id3[year] = string
+      id3[TORY] = Some
+      typeof id3[TORY] = string
+      id3[TOFN] = Some Original Filename
+      typeof id3[TOFN] = string
+      id3[TOPE] = Some Original Artist
+      typeof id3[TOPE] = string
+      id3[TOAL] = Some Original Album
+      typeof id3[TOAL] = string
+      id3[TMED] = Some Media
+      typeof id3[TMED] = string
+      id3[TLEN] = Some Length
+      typeof id3[TLEN] = string
+      id3[TIT3] = Some Description
+      typeof id3[TIT3] = string
+      id3[TIT2] = Some Title
+      typeof id3[TIT2] = string
+      id3[songname] = Some Title
+      typeof id3[songname] = string
+      id3[TCOM] = Some Composer
+      typeof id3[TCOM] = string
+      id3[TPE2] = Some Album Artist
+      typeof id3[TPE2] = string
+      id3[TPOS] = 7
+      typeof id3[TPOS] = string
+      id3[TRCK] = 2
+      typeof id3[TRCK] = string
+      id3[track] = 2
+      typeof id3[track] = string
+      id3[COMM] = Some Comment 2,Some Comment,Some Comment 3
+      typeof id3[COMM] = object
+      id3[COMM].length = 3
+      id3[COMM][2] = Some Comment 3
+      typeof id3[COMM][2] = string
+      id3[COMM][1] = Some Comment
+      typeof id3[COMM][1] = string
+      id3[COMM][0] = Some Comment 2
+      typeof id3[COMM][0] = string
+      id3[comment] = Some Comment 3
+      typeof id3[comment] = string
+      id3[TALB] = Some Album
+      typeof id3[TALB] = string
+      id3[album] = Some Album
+      typeof id3[album] = string
+      id3[TPE1] = Some Artist
+      typeof id3[TPE1] = string
+      id3[artist] = Some Artist
+      typeof id3[artist] = string
+Load noid3, true
+  Testing target undefined
+    Before loading
+      id3 = undefined
+      typeof id3 = undefined
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = true
+      id3 === null = false
+      id3 === 0 = false
+    After loading: true, undefined
+      id3 = undefined
+      typeof id3 = undefined
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = true
+      id3 === null = false
+      id3 === 0 = false
+  Testing target _level0
+    Before loading
+      id3 = undefined
+      typeof id3 = undefined
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = true
+      id3 === null = false
+      id3 === 0 = false
+    After loading: true, undefined
+      id3 = undefined
+      typeof id3 = undefined
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = true
+      id3 === null = false
+      id3 === 0 = false
+Load noid3, false
+  Testing target undefined
+    Before loading
+      id3 = undefined
+      typeof id3 = undefined
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = true
+      id3 === null = false
+      id3 === 0 = false
+    After loading: true, undefined
+      id3 = undefined
+      typeof id3 = undefined
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = true
+      id3 === null = false
+      id3 === 0 = false
+  Testing target _level0
+    Before loading
+      id3 = undefined
+      typeof id3 = undefined
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = true
+      id3 === null = false
+      id3 === 0 = false
+    After loading: true, undefined
+      id3 = undefined
+      typeof id3 = undefined
+      id3 == undefined = true
+      id3 == null = true
+      id3 == 0 = false
+      id3 === undefined = true
+      id3 === null = false
+      id3 === 0 = false
+Finished
