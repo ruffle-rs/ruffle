@@ -307,10 +307,7 @@ impl<'gc> Domain<'gc> {
 
         // If we're not hitting the special-case, just call `get_defined_value`
 
-        // FIXME - is this the correct api version?
-        let api_version = activation.avm2().root_api_version;
-        let name = QName::from_qualified_name(name, api_version, activation.context);
-
+        let name = QName::from_qualified_name(name, activation.context);
         self.get_defined_value(activation, name)
     }
 
@@ -323,8 +320,7 @@ impl<'gc> Domain<'gc> {
             // avmplus just checks if the type parameter exists, so we do the same
             self.has_defined_value_handling_vector(activation, type_name)
         } else {
-            let name =
-                QName::from_qualified_name(name, ApiVersion::VM_INTERNAL, activation.context);
+            let name = QName::from_qualified_name(name, activation.context);
 
             self.get_defining_script(&name.into()).is_some()
         }
