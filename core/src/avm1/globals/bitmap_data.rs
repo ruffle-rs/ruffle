@@ -4,6 +4,7 @@ use super::matrix::object_to_matrix;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::NativeObject;
+use crate::avm1::parameters::ParametersExt;
 use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, Object, Value};
 use crate::bitmap::bitmap_data::BitmapData;
@@ -132,7 +133,6 @@ fn constructor<'gc>(
 enum BitmapDataResult<'gc> {
     Valid(BitmapData<'gc>),
     Disposed,
-    #[expect(dead_code)]
     NotBitmapData(Object<'gc>),
 }
 
@@ -311,10 +311,11 @@ fn copy_channel<'gc>(
         return Ok((-1).into());
     };
 
-    let source_bitmap = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let source_bitmap = match get_bitmap_data(args.get_object(activation, 0)) {
+        BitmapDataResult::Valid(s) => s,
+        BitmapDataResult::Disposed => return Ok((-3).into()),
+        BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
+    };
 
     let source_rect = args
         .get(1)
@@ -336,39 +337,36 @@ fn copy_channel<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)?;
 
-    if let NativeObject::BitmapData(source_bitmap) = source_bitmap.native() {
-        //TODO: what if source is disposed
-        let min_x = dest_point
-            .get(istr!("x"), activation)?
-            .coerce_to_i32(activation)?;
-        let min_y = dest_point
-            .get(istr!("y"), activation)?
-            .coerce_to_i32(activation)?;
+    let min_x = dest_point
+        .get(istr!("x"), activation)?
+        .coerce_to_i32(activation)?;
+    let min_y = dest_point
+        .get(istr!("y"), activation)?
+        .coerce_to_i32(activation)?;
 
-        let src_min_x = source_rect
-            .get(istr!("x"), activation)?
-            .coerce_to_i32(activation)?;
-        let src_min_y = source_rect
-            .get(istr!("y"), activation)?
-            .coerce_to_i32(activation)?;
-        let src_width = source_rect
-            .get(istr!("width"), activation)?
-            .coerce_to_i32(activation)?;
-        let src_height = source_rect
-            .get(istr!("height"), activation)?
-            .coerce_to_i32(activation)?;
+    let src_min_x = source_rect
+        .get(istr!("x"), activation)?
+        .coerce_to_i32(activation)?;
+    let src_min_y = source_rect
+        .get(istr!("y"), activation)?
+        .coerce_to_i32(activation)?;
+    let src_width = source_rect
+        .get(istr!("width"), activation)?
+        .coerce_to_i32(activation)?;
+    let src_height = source_rect
+        .get(istr!("height"), activation)?
+        .coerce_to_i32(activation)?;
 
-        operations::copy_channel(
-            activation.gc(),
-            activation.context.renderer,
-            bitmap_data,
-            (min_x, min_y),
-            (src_min_x, src_min_y, src_width, src_height),
-            source_bitmap,
-            source_channel,
-            dest_channel,
-        );
-    }
+    operations::copy_channel(
+        activation.gc(),
+        activation.context.renderer,
+        bitmap_data,
+        (min_x, min_y),
+        (src_min_x, src_min_y, src_width, src_height),
+        source_bitmap,
+        source_channel,
+        dest_channel,
+    );
 
     Ok(Value::Undefined)
 }
@@ -555,22 +553,16 @@ fn draw<'gc>(
         .unwrap_or(&false.into())
         .as_bool(activation.swf_version());
 
-    let source = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
-    let source = if let Some(source_object) = source.as_display_object() {
-        IBitmapDrawable::DisplayObject(source_object)
-    } else if let NativeObject::BitmapData(source_bitmap) = source.native() {
-        IBitmapDrawable::BitmapData(source_bitmap)
-    } else {
-        avm_error!(
-            activation,
-            "BitmapData.draw: Unexpected source {:?} {:?}",
-            source,
-            args.get(0)
-        );
-        return Ok(Value::Undefined);
+    let source = match get_bitmap_data(args.get_object(activation, 0)) {
+        BitmapDataResult::Valid(s) => IBitmapDrawable::BitmapData(s),
+        BitmapDataResult::Disposed => return Ok((-3).into()),
+        BitmapDataResult::NotBitmapData(source) => {
+            if let Some(source_object) = source.as_display_object() {
+                IBitmapDrawable::DisplayObject(source_object)
+            } else {
+                return Ok((-2).into());
+            }
+        }
     };
 
     // Do this last, so that we only call `overwrite_cpu_pixels_from_gpu`
@@ -611,18 +603,10 @@ fn apply_filter<'gc>(
         return Ok((-1).into());
     };
 
-    let source = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
-    let source = if let NativeObject::BitmapData(source_bitmap) = source.native() {
-        source_bitmap
-    } else {
-        tracing::warn!(
-            "Invalid bitmapdata source for apply_filter: got {:?}",
-            source
-        );
-        return Ok((-1).into());
+    let source = match get_bitmap_data(args.get_object(activation, 0)) {
+        BitmapDataResult::Valid(s) => s,
+        BitmapDataResult::Disposed => return Ok((-3).into()),
+        BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
     let source_rect = args
@@ -976,11 +960,11 @@ fn copy_pixels<'gc>(
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-
-    let source_bitmap = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let src_bitmap = match get_bitmap_data(args.get_object(activation, 0)) {
+        BitmapDataResult::Valid(s) => s,
+        BitmapDataResult::Disposed => return Ok((-3).into()),
+        BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
+    };
 
     let source_rect = args
         .get(1)
@@ -1012,62 +996,53 @@ fn copy_pixels<'gc>(
         .get(istr!("y"), activation)?
         .coerce_to_f64(activation)? as i32;
 
-    if let NativeObject::BitmapData(src_bitmap) = source_bitmap.native() {
-        if !src_bitmap.disposed() {
-            let merge_alpha = if args.len() >= 6 {
-                Some(
-                    args.get(5)
-                        .unwrap_or(&Value::Undefined)
-                        .as_bool(activation.swf_version()),
-                )
-            } else {
-                None
-            };
-
-            let alpha_bitmap = args
-                .get(3)
+    let merge_alpha = if args.len() >= 6 {
+        Some(
+            args.get(5)
                 .unwrap_or(&Value::Undefined)
-                .coerce_to_object(activation);
+                .as_bool(activation.swf_version()),
+        )
+    } else {
+        None
+    };
 
-            if let NativeObject::BitmapData(alpha_bitmap) = alpha_bitmap.native() {
-                if !alpha_bitmap.disposed() {
-                    let alpha_point = args
-                        .get(4)
-                        .unwrap_or(&Value::Undefined)
-                        .coerce_to_object(activation);
+    // TODO: This needs testing, the method seems to do _something_ with a disposed BMD
+    // It doesn't error out, but it's also not taking the regular `copy_pixels` path...
+    if let BitmapDataResult::Valid(alpha_bitmap) = get_bitmap_data(args.get_object(activation, 3)) {
+        let alpha_point = args
+            .get(4)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_object(activation);
 
-                    let alpha_x = alpha_point
-                        .get(istr!("x"), activation)?
-                        .coerce_to_f64(activation)? as i32;
+        let alpha_x = alpha_point
+            .get(istr!("x"), activation)?
+            .coerce_to_f64(activation)? as i32;
 
-                    let alpha_y = alpha_point
-                        .get(istr!("y"), activation)?
-                        .coerce_to_f64(activation)? as i32;
+        let alpha_y = alpha_point
+            .get(istr!("y"), activation)?
+            .coerce_to_f64(activation)? as i32;
 
-                    operations::copy_pixels_with_alpha_source(
-                        activation.context,
-                        bitmap_data,
-                        src_bitmap,
-                        (src_min_x, src_min_y, src_width, src_height),
-                        (dest_x, dest_y),
-                        alpha_bitmap,
-                        (alpha_x, alpha_y),
-                        merge_alpha.unwrap_or(true),
-                    );
-                }
-            } else {
-                operations::copy_pixels(
-                    activation.context,
-                    bitmap_data,
-                    src_bitmap,
-                    (src_min_x, src_min_y, src_width, src_height),
-                    (dest_x, dest_y),
-                    // Despite what the docs claim, mergeAlpa appears to be treated as 'false'
-                    // when no 'alphaBitmap' is specified (e.g. only 3 args are passed)
-                    merge_alpha.unwrap_or(false),
-                );
-            }
-        }
+        operations::copy_pixels_with_alpha_source(
+            activation.context,
+            bitmap_data,
+            src_bitmap,
+            (src_min_x, src_min_y, src_width, src_height),
+            (dest_x, dest_y),
+            alpha_bitmap,
+            (alpha_x, alpha_y),
+            merge_alpha.unwrap_or(true),
+        );
+    } else {
+        operations::copy_pixels(
+            activation.context,
+            bitmap_data,
+            src_bitmap,
+            (src_min_x, src_min_y, src_width, src_height),
+            (dest_x, dest_y),
+            // Despite what the docs claim, mergeAlpa appears to be treated as 'false'
+            // when no 'alphaBitmap' is specified (e.g. only 3 args are passed)
+            merge_alpha.unwrap_or(false),
+        );
     }
 
     Ok(Value::Undefined)
@@ -1081,11 +1056,11 @@ fn merge<'gc>(
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-
-    let source_bitmap = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let src_bitmap = match get_bitmap_data(args.get_object(activation, 0)) {
+        BitmapDataResult::Valid(s) => s,
+        BitmapDataResult::Disposed => return Ok((-3).into()),
+        BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
+    };
 
     let source_rect = args
         .get(1)
@@ -1137,19 +1112,15 @@ fn merge<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_i32(activation)?;
 
-    if let NativeObject::BitmapData(src_bitmap) = source_bitmap.native() {
-        if !src_bitmap.disposed() {
-            operations::merge(
-                activation.gc(),
-                activation.context.renderer,
-                bitmap_data,
-                src_bitmap,
-                (src_min_x, src_min_y, src_width, src_height),
-                (dest_x, dest_y),
-                (red_mult, green_mult, blue_mult, alpha_mult),
-            );
-        }
-    }
+    operations::merge(
+        activation.gc(),
+        activation.context.renderer,
+        bitmap_data,
+        src_bitmap,
+        (src_min_x, src_min_y, src_width, src_height),
+        (dest_x, dest_y),
+        (red_mult, green_mult, blue_mult, alpha_mult),
+    );
 
     Ok(Value::Undefined)
 }
@@ -1162,11 +1133,11 @@ fn palette_map<'gc>(
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-
-    let source_bitmap = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let src_bitmap = match get_bitmap_data(args.get_object(activation, 0)) {
+        BitmapDataResult::Valid(s) => s,
+        BitmapDataResult::Disposed => return Ok((-3).into()),
+        BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
+    };
 
     let source_rect = args
         .get(1)
@@ -1219,19 +1190,15 @@ fn palette_map<'gc>(
     let blue_array = get_channel(5, 0)?;
     let alpha_array = get_channel(6, 24)?;
 
-    if let NativeObject::BitmapData(src_bitmap) = source_bitmap.native() {
-        if !src_bitmap.disposed() {
-            operations::palette_map(
-                activation.gc(),
-                activation.context.renderer,
-                bitmap_data,
-                src_bitmap,
-                (src_min_x, src_min_y, src_width, src_height),
-                (dest_x, dest_y),
-                (red_array, green_array, blue_array, alpha_array),
-            );
-        }
-    }
+    operations::palette_map(
+        activation.gc(),
+        activation.context.renderer,
+        bitmap_data,
+        src_bitmap,
+        (src_min_x, src_min_y, src_width, src_height),
+        (dest_x, dest_y),
+        (red_array, green_array, blue_array, alpha_array),
+    );
 
     Ok(Value::Undefined)
 }
@@ -1244,11 +1211,10 @@ fn pixel_dissolve<'gc>(
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-
-    let src_bitmap_data = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let BitmapDataResult::Valid(src_bitmap_data) = get_bitmap_data(args.get_object(activation, 0))
+    else {
+        return Ok((-1).into());
+    };
 
     let source_rect = args
         .get(1)
@@ -1272,51 +1238,45 @@ fn pixel_dissolve<'gc>(
             return Ok((-4).into());
         };
 
-    if let NativeObject::BitmapData(src_bitmap_data) = src_bitmap_data.native() {
-        if !src_bitmap_data.disposed() {
-            let dest_point = args
-                .get(2)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_object(activation);
-            let dest_x = dest_point
-                .get(istr!("x"), activation)?
-                .coerce_to_f64(activation)? as i32;
-            let dest_y = dest_point
-                .get(istr!("y"), activation)?
-                .coerce_to_f64(activation)? as i32;
-            let dest_point = (dest_x, dest_y);
+    let dest_point = args
+        .get(2)
+        .unwrap_or(&Value::Undefined)
+        .coerce_to_object(activation);
+    let dest_x = dest_point
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)? as i32;
+    let dest_y = dest_point
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)? as i32;
+    let dest_point = (dest_x, dest_y);
 
-            let random_seed = match args.get(3) {
-                Some(random_seed) => random_seed.coerce_to_i32(activation)?,
-                None => 0,
-            };
+    let random_seed = match args.get(3) {
+        Some(random_seed) => random_seed.coerce_to_i32(activation)?,
+        None => 0,
+    };
 
-            let num_pixels = match args.get(4) {
-                Some(num_pixels) => num_pixels.coerce_to_i32(activation)?,
-                None => return Ok(0.into()),
-            };
+    let num_pixels = match args.get(4) {
+        Some(num_pixels) => num_pixels.coerce_to_i32(activation)?,
+        None => return Ok(0.into()),
+    };
 
-            let fill_color = match args.get(5) {
-                Some(fill_color) => fill_color.coerce_to_u32(activation)?,
-                None => 0,
-            };
+    let fill_color = match args.get(5) {
+        Some(fill_color) => fill_color.coerce_to_u32(activation)?,
+        None => 0,
+    };
 
-            return Ok(operations::pixel_dissolve(
-                activation.gc(),
-                activation.context.renderer,
-                bitmap_data,
-                src_bitmap_data,
-                (src_min_x, src_min_y, src_width, src_height),
-                dest_point,
-                random_seed,
-                num_pixels,
-                fill_color,
-            )
-            .into());
-        }
-    }
-
-    Ok((-1).into())
+    Ok(operations::pixel_dissolve(
+        activation.gc(),
+        activation.context.renderer,
+        bitmap_data,
+        src_bitmap_data,
+        (src_min_x, src_min_y, src_width, src_height),
+        dest_point,
+        random_seed,
+        num_pixels,
+        fill_color,
+    )
+    .into())
 }
 
 fn scroll<'gc>(
@@ -1356,11 +1316,11 @@ fn threshold<'gc>(
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-
-    let source_bitmap = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let src_bitmap = match get_bitmap_data(args.get_object(activation, 0)) {
+        BitmapDataResult::Valid(s) => s,
+        BitmapDataResult::Disposed => return Ok((-3).into()),
+        BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
+    };
 
     let source_rect = args
         .get(1)
@@ -1419,27 +1379,21 @@ fn threshold<'gc>(
         .unwrap_or(&false.into())
         .as_bool(activation.swf_version());
 
-    if let NativeObject::BitmapData(src_bitmap) = source_bitmap.native() {
-        if !src_bitmap.disposed() {
-            let modified_count = operations::threshold(
-                activation.gc(),
-                activation.context.renderer,
-                bitmap_data,
-                src_bitmap,
-                (src_min_x, src_min_y, src_width, src_height),
-                (dest_x, dest_y),
-                operation,
-                threshold,
-                colour,
-                mask,
-                copy_source,
-            );
+    let modified_count = operations::threshold(
+        activation.gc(),
+        activation.context.renderer,
+        bitmap_data,
+        src_bitmap,
+        (src_min_x, src_min_y, src_width, src_height),
+        (dest_x, dest_y),
+        operation,
+        threshold,
+        colour,
+        mask,
+        copy_source,
+    );
 
-            return Ok(modified_count.into());
-        }
-    }
-
-    Ok(Value::Undefined)
+    Ok(modified_count.into())
 }
 
 fn compare<'gc>(
@@ -1457,19 +1411,11 @@ fn compare<'gc>(
         return Ok((NOT_BITMAP).into());
     };
 
-    let other = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
-
-    let NativeObject::BitmapData(other_bitmap_data) = other.native() else {
-        // The documentation says that -1 should be returned here, but -2 is actually returned.
+    let BitmapDataResult::Valid(other_bitmap_data) =
+        get_bitmap_data(args.get_object(activation, 0))
+    else {
         return Ok(BITMAP_DISPOSED.into());
     };
-
-    if other_bitmap_data.disposed() {
-        return Ok(BITMAP_DISPOSED.into());
-    }
 
     if this_bitmap_data.width() != other_bitmap_data.width() {
         return Ok(DIFFERENT_WIDTHS.into());
