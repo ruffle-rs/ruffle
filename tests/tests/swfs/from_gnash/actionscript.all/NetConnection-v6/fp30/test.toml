@@ -1,5 +1,0 @@
-num_frames = 30
-known_failure = true
-
-[player_options]
-version = 30
