@@ -208,19 +208,18 @@ fn get_pixel<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 2 {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
 
-    if let (Some(x_val), Some(y_val)) = (args.get(0), args.get(1)) {
-        let x = x_val.coerce_to_u32(activation)?;
-        let y = y_val.coerce_to_u32(activation)?;
-        // AVM1 returns a signed int, so we need to convert it.
-        let col = operations::get_pixel(bitmap_data, activation.context.renderer, x, y) as i32;
-        return Ok(col.into());
-    }
-
-    Ok((-1).into())
+    let x = args.get_u32(activation, 0)?;
+    let y = args.get_u32(activation, 1)?;
+    // AVM1 returns a signed int, so we need to convert it.
+    let col = operations::get_pixel(bitmap_data, activation.context.renderer, x, y) as i32;
+    Ok(col.into())
 }
 
 fn get_pixel32<'gc>(
