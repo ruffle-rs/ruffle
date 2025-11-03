@@ -1,0 +1,290 @@
+// Place 0
+// Setting both
+  onID3 called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 0
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = x
+  typeof sound.duration = string
+  sound.position = x
+  typeof sound.position = string
+  onLoad called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = x
+  typeof sound.duration = string
+  sound.position = x
+  typeof sound.position = string
+  onSoundComplete called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = x
+  typeof sound.duration = string
+  sound.position = x
+  typeof sound.position = string
+  stopping
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = x
+  typeof sound.duration = string
+  sound.position = x
+  typeof sound.position = string
+// Place 1
+  onID3 called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 0
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 0
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  onLoad called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  onSoundComplete called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+  stopping
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+// Place 2
+  onID3 called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 0
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 0
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  onLoad called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  after set
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  onSoundComplete called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+  stopping
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+// Place 3
+  onID3 called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 0
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 0
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  onLoad called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  onSoundComplete called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+  after set
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+  stopping
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+// Place 4
+  onID3 called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 0
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 0
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  onLoad called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  onSoundComplete called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+  stopping
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+  after set
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+// Place -1
+// Setting only position
+  onID3 called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 0
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 0
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  onLoad called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  onSoundComplete called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+  stopping
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+// Place -2
+// Setting only duration
+  onID3 called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 0
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 0
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  onLoad called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 0
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 0
+  typeof sound.position = number
+  onSoundComplete called
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+  stopping
+  sound.getDuration = [type Function]
+  sound.getDuration() = 1045
+  sound.getPosition = [type Function]
+  sound.getPosition() = 1045
+  sound.duration = 1045
+  typeof sound.duration = number
+  sound.position = 1045
+  typeof sound.position = number
+Finished
