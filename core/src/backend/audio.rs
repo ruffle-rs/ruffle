@@ -454,7 +454,10 @@ impl<'gc> AudioManager<'gc> {
         avm1_object: Option<Avm1Object<'gc>>,
     ) -> Option<SoundInstanceHandle> {
         if self.sounds.len() < Self::MAX_SOUNDS {
-            let handle = audio.start_sound(sound, settings).ok()?;
+            let handle = audio
+                .start_sound(sound, settings)
+                .map_err(|e| tracing::warn!("Cannot start sound: {e}"))
+                .ok()?;
             let mut instance = SoundInstance {
                 sound: Some(sound),
                 instance: handle,
