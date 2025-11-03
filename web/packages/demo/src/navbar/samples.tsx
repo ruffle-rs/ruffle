@@ -79,10 +79,7 @@ export function SampleSelection({
 
                     if (fileParam) {
                         sampleIndex = data.swfs.findIndex(
-                            (swf) =>
-                                swf.location === fileParam ||
-                                swf.location.replace(/^swfs\//, "") ===
-                                    fileParam,
+                            (swf) => swf.location === fileParam,
                         );
                         if (sampleIndex === -1) {
                             sampleIndex = 0;
