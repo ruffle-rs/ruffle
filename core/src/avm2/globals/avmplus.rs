@@ -211,8 +211,6 @@ fn describe_internal_body<'gc>(
                     _ => unreachable!(),
                 };
 
-                let trait_metadata = vtable.get_metadata_for_slot(*slot_id as usize);
-
                 let variable = ScriptObject::new_object(activation);
                 variable.set_dynamic_property(istr!("name"), prop_name.into(), activation.gc());
                 variable.set_dynamic_property(
@@ -231,7 +229,7 @@ fn describe_internal_body<'gc>(
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
                     let metadata_object = ArrayObject::empty(activation);
-                    if let Some(metadata) = trait_metadata {
+                    if let Some(metadata) = vtable.get_metadata_for_slot(*slot_id) {
                         write_metadata(metadata_object, metadata, activation);
                     }
                     variable.set_dynamic_property(
@@ -274,8 +272,6 @@ fn describe_internal_body<'gc>(
 
                 let declared_by_name = declared_by.dollar_removed_name(mc).to_qualified_name(mc);
 
-                let trait_metadata = vtable.get_metadata_for_disp(*disp_id as usize);
-
                 let method_obj = ScriptObject::new_object(activation);
 
                 method_obj.set_dynamic_property(istr!("name"), prop_name.into(), activation.gc());
@@ -307,7 +303,7 @@ fn describe_internal_body<'gc>(
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
                     let metadata_object = ArrayObject::empty(activation);
-                    if let Some(metadata) = trait_metadata {
+                    if let Some(metadata) = vtable.get_metadata_for_disp(*disp_id) {
                         write_metadata(metadata_object, metadata, activation);
                     }
                     method_obj.set_dynamic_property(
@@ -388,13 +384,13 @@ fn describe_internal_body<'gc>(
                 let metadata_object = ArrayObject::empty(activation);
 
                 if let Some(get_disp_id) = get {
-                    if let Some(metadata) = vtable.get_metadata_for_disp(*get_disp_id as usize) {
+                    if let Some(metadata) = vtable.get_metadata_for_disp(*get_disp_id) {
                         write_metadata(metadata_object, metadata, activation);
                     }
                 }
 
                 if let Some(set_disp_id) = set {
-                    if let Some(metadata) = vtable.get_metadata_for_disp(*set_disp_id as usize) {
+                    if let Some(metadata) = vtable.get_metadata_for_disp(*set_disp_id) {
                         write_metadata(metadata_object, metadata, activation);
                     }
                 }
