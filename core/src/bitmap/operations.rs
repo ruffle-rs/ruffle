@@ -903,8 +903,8 @@ pub fn color_bounds_rect(
     renderer: &mut dyn RenderBackend,
     target: BitmapData,
     find_color: bool,
-    mask: u32,
-    color: u32,
+    mut mask: u32,
+    mut color: u32,
 ) -> (u32, u32, u32, u32) {
     let mut min_x = target.width();
     let mut max_x = 0;
@@ -912,6 +912,17 @@ pub fn color_bounds_rect(
     let mut max_y = 0;
 
     let target = target.sync(renderer).borrow();
+
+    // We need to work in the same colorspace (premult) - but that means the color won't always match for opaque BMD
+    // Let's just cheat it by pretending the alpha is part of the mask, that way it'll essentially ignore it (as it's always 0xFF)
+    // For transparent ones, we kinda get this for free. If they specified alpha, they need to add alpha to the mask.
+    // If they didn't specify alpha, it'll premult down to 0, and match everything (in FP too)
+    if !target.transparency() {
+        mask |= 0xFF000000;
+    }
+    color = Color::bgra_u32(color)
+        .to_premultiplied_alpha(target.transparency())
+        .to_bgra_u32();
 
     for x in 0..target.width() {
         for y in 0..target.height() {

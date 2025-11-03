@@ -700,33 +700,30 @@ fn get_color_bounds_rect<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 2 {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
 
+    let mask = args.get_u32(activation, 0)?;
+    let color = args.get_u32(activation, 1)?;
     let find_color = args
-        .get(2)
-        .unwrap_or(&true.into())
-        .as_bool(activation.swf_version());
+        .try_get_bool(activation, 2, UndefinedAs::Some)
+        .unwrap_or(true);
 
-    if let (Some(mask_val), Some(color_val)) = (args.get(0), args.get(1)) {
-        let mask = mask_val.coerce_to_u32(activation)?;
-        let color = color_val.coerce_to_u32(activation)?;
+    let (x, y, w, h) = operations::color_bounds_rect(
+        activation.context.renderer,
+        bitmap_data,
+        find_color,
+        mask,
+        color,
+    );
 
-        let (x, y, w, h) = operations::color_bounds_rect(
-            activation.context.renderer,
-            bitmap_data,
-            find_color,
-            mask,
-            color,
-        );
-
-        let proto = activation.prototypes().rectangle_constructor;
-        let rect = proto.construct(activation, &[x.into(), y.into(), w.into(), h.into()])?;
-        return Ok(rect);
-    }
-
-    Ok((-1).into())
+    let proto = activation.prototypes().rectangle_constructor;
+    let rect = proto.construct(activation, &[x.into(), y.into(), w.into(), h.into()])?;
+    Ok(rect)
 }
 
 fn perlin_noise<'gc>(
