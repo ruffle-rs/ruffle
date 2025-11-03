@@ -838,11 +838,7 @@ fn translate_op<'gc>(
         AbcOp::SetLocal { index } => Op::SetLocal { index },
         AbcOp::Kill { index } => Op::Kill { index },
         AbcOp::Call { num_args } => Op::Call { num_args },
-        AbcOp::CallMethod { index, num_args } => Op::CallMethod {
-            index,
-            num_args,
-            push_return_value: true,
-        },
+        AbcOp::CallMethod { .. } => unreachable!(),
         AbcOp::CallProperty { index, num_args } => {
             let multiname = pool_multiname(activation, translation_unit, index)?;
 
@@ -1011,8 +1007,12 @@ fn translate_op<'gc>(
             Op::GetDescendants { multiname }
         }
         // Turn 1-based representation into 0-based representation
-        AbcOp::GetSlot { index } => Op::GetSlot { index: index - 1 },
-        AbcOp::SetSlot { index } => Op::SetSlot { index: index - 1 },
+        AbcOp::GetSlot { index } => Op::GetSlot {
+            index: index as usize - 1,
+        },
+        AbcOp::SetSlot { index } => Op::SetSlot {
+            index: index as usize - 1,
+        },
         AbcOp::GetGlobalSlot { index } => {
             let first_op = if activation.outer().is_empty() {
                 Op::GetScopeObject { index: 0 }
@@ -1021,9 +1021,16 @@ fn translate_op<'gc>(
             };
 
             // GetGlobalSlot is split into two ops
-            return Ok((first_op, Some(Op::GetSlot { index })));
+            return Ok((
+                first_op,
+                Some(Op::GetSlot {
+                    index: index as usize,
+                }),
+            ));
         }
-        AbcOp::SetGlobalSlot { index } => Op::SetGlobalSlot { index: index - 1 },
+        AbcOp::SetGlobalSlot { index } => Op::SetGlobalSlot {
+            index: index as usize - 1,
+        },
 
         AbcOp::Construct { num_args } => Op::Construct { num_args },
         AbcOp::ConstructProp { index, num_args } => {

@@ -467,7 +467,7 @@ pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) ->
 #[cold]
 pub fn make_error_1026<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    slot_id: u32,
+    slot_id: usize,
     slot_count: Option<usize>,
     class: Option<Class<'gc>>,
 ) -> Error<'gc> {
