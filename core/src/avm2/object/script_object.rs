@@ -150,21 +150,13 @@ impl<'gc> ScriptObjectData<'gc> {
         proto: Option<Object<'gc>>,
         vtable: VTable<'gc>,
     ) -> Self {
-        let default_slots = vtable.default_slots();
+        let slot_table = vtable.slot_table();
 
         // We use `iter` and `collect` rather than setting elements of a Box<[]>
         // or pushing to a Vec for better performance
-        let slots = default_slots
+        let slots = slot_table
             .iter()
-            .map(|value| {
-                if let Some(value) = value {
-                    Lock::new(*value)
-                } else {
-                    // FIXME this case throws a VerifyError during vtable
-                    // construction in Flash Player
-                    Lock::new(Value::Undefined)
-                }
-            })
+            .map(|slot_info| Lock::new(slot_info.default_value))
             .collect::<Box<_>>();
 
         ScriptObjectData {
@@ -406,10 +398,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
 
     pub fn set_vtable(&self, mc: &Mutation<'gc>, vtable: VTable<'gc>) {
         // Make sure both vtables have the same number of slots
-        assert_eq!(
-            self.vtable().default_slots().len(),
-            vtable.default_slots().len()
-        );
+        assert_eq!(self.vtable().slot_count(), vtable.slot_count());
 
         unlock!(Gc::write(mc, self.0), ScriptObjectData, vtable).set(vtable);
     }
