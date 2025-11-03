@@ -14,9 +14,8 @@ pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
     );
     class.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-    // The `void` class has no interfaces, so use `init_vtable_with_interfaces`
-    // and pass an empty list
-    class.init_vtable_with_interfaces(activation.context, Box::new([]));
+    // The `void` class has no interfaces or traits, so use `init_empty_vtable`
+    class.init_empty_vtable(activation.gc());
 
     class
 }
