@@ -1,0 +1,144 @@
+-- Transparent --
+// getPixel()
+-1
+
+// getPixel(1)
+-1
+
+// getPixel(1, 2)
+12307676
+
+// getPixel(null, 2)
+12307676
+
+// getPixel(undefined, 2)
+12307676
+
+// getPixel({}, 2)
+12307676
+
+// getPixel(objLooksLikeNum, 2)
+12307676
+
+// getPixel(10, 2)
+0
+
+// getPixel(-2, 2)
+0
+
+// getPixel(1, null)
+12307676
+
+// getPixel(1, undefined)
+12307676
+
+// getPixel(1, {})
+12307676
+
+// getPixel(1, objLooksLikeNum)
+12307676
+
+// getPixel(1, 10)
+0
+
+// getPixel(1, -2)
+0
+
+
+
+-- Opaque --
+// getPixel()
+-1
+
+// getPixel(1)
+-1
+
+// getPixel(1, 2)
+12307677
+
+// getPixel(null, 2)
+12307677
+
+// getPixel(undefined, 2)
+12307677
+
+// getPixel({}, 2)
+12307677
+
+// getPixel(objLooksLikeNum, 2)
+12307677
+
+// getPixel(10, 2)
+0
+
+// getPixel(-2, 2)
+0
+
+// getPixel(1, null)
+12307677
+
+// getPixel(1, undefined)
+12307677
+
+// getPixel(1, {})
+12307677
+
+// getPixel(1, objLooksLikeNum)
+12307677
+
+// getPixel(1, 10)
+0
+
+// getPixel(1, -2)
+0
+
+
+
+-- Disposed --
+// getPixel()
+-1
+
+// getPixel(1)
+-1
+
+// getPixel(1, 2)
+-1
+
+// getPixel(null, 2)
+-1
+
+// getPixel(undefined, 2)
+-1
+
+// getPixel({}, 2)
+-1
+
+// getPixel(objLooksLikeNum, 2)
+-1
+
+// getPixel(10, 2)
+-1
+
+// getPixel(-2, 2)
+-1
+
+// getPixel(1, null)
+-1
+
+// getPixel(1, undefined)
+-1
+
+// getPixel(1, {})
+-1
+
+// getPixel(1, objLooksLikeNum)
+-1
+
+// getPixel(1, 10)
+-1
+
+// getPixel(1, -2)
+-1
+
+
+
