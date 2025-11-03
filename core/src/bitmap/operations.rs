@@ -137,9 +137,9 @@ pub fn flood_fill<'gc>(
     x: u32,
     y: u32,
     color: u32,
-) {
+) -> bool {
     if x >= target.width() || y >= target.height() {
-        return;
+        return false;
     }
     let target = target.sync(renderer);
     let mut write = target.borrow_mut(mc);
@@ -148,7 +148,7 @@ pub fn flood_fill<'gc>(
 
     if expected_color == replace_color {
         // If we try to replace X with X, we'll infinite loop
-        return;
+        return false;
     }
 
     let mut pending = vec![(x, y)];
@@ -176,6 +176,7 @@ pub fn flood_fill<'gc>(
         }
     }
     write.set_cpu_dirty(mc, dirty_region);
+    true
 }
 
 pub fn noise<'gc>(
