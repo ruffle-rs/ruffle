@@ -83,7 +83,6 @@ pub trait ParametersExt<'gc> {
 
     /// Tries to get the value at the given index as a bool.
     /// The value will be coerced to a bool if it exists.
-    #[expect(dead_code)]
     fn try_get_bool(
         &self,
         activation: &mut Activation<'_, 'gc>,
@@ -226,7 +225,6 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index as an u32.
     /// The value will be coerced to an u32 if it exists.
-    #[expect(dead_code)]
     fn try_get_u32(
         &self,
         activation: &mut Activation<'_, 'gc>,
