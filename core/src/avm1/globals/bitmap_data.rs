@@ -374,43 +374,30 @@ fn fill_rect<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 2 {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
 
-    let rectangle = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let source_rect = args.get_object(activation, 0);
+    let Some((x, y, width, height)) = try_get_rect(activation, source_rect)? else {
+        return Ok((-1).into());
+    };
+    let color = args.get_u32(activation, 1)?;
 
-    if let Some(color_val) = args.get(1) {
-        let color = color_val.coerce_to_u32(activation)?;
-
-        let x = rectangle
-            .get(istr!("x"), activation)?
-            .coerce_to_i32(activation)?;
-        let y = rectangle
-            .get(istr!("y"), activation)?
-            .coerce_to_i32(activation)?;
-        let width = rectangle
-            .get(istr!("width"), activation)?
-            .coerce_to_i32(activation)?;
-        let height = rectangle
-            .get(istr!("height"), activation)?
-            .coerce_to_i32(activation)?;
-
-        operations::fill_rect(
-            activation.gc(),
-            activation.context.renderer,
-            bitmap_data,
-            x,
-            y,
-            width,
-            height,
-            color,
-        );
-    }
-    Ok(Value::Undefined)
+    operations::fill_rect(
+        activation.gc(),
+        activation.context.renderer,
+        bitmap_data,
+        x,
+        y,
+        width,
+        height,
+        color,
+    );
+    Ok(0.into())
 }
 
 fn clone<'gc>(
