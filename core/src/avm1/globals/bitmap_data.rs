@@ -4,7 +4,7 @@ use super::matrix::object_to_matrix;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::NativeObject;
-use crate::avm1::parameters::ParametersExt;
+use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, Object, Value};
 use crate::bitmap::bitmap_data::BitmapData;
@@ -94,21 +94,17 @@ fn constructor<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let (width, height) = match args {
-        [width, height, ..] => (
-            width.coerce_to_u32(activation)?,
-            height.coerce_to_u32(activation)?,
-        ),
-        [] | [_] => return Ok(Value::Undefined),
-    };
-    let transparency = match args.get(2) {
-        Some(transparency) => transparency.as_bool(activation.swf_version()),
-        None => true,
-    };
-    let fill_color = match args.get(3) {
-        Some(fill_color) => fill_color.coerce_to_u32(activation)?,
-        None => u32::MAX,
-    };
+    if args.len() < 2 {
+        return Ok(Value::Undefined);
+    }
+    let width = args.get_u32(activation, 0)?;
+    let height = args.get_u32(activation, 1)?;
+    let transparency = args
+        .try_get_bool(activation, 2, UndefinedAs::Some)
+        .unwrap_or(true);
+    let fill_color = args
+        .try_get_u32(activation, 3, UndefinedAs::Some)?
+        .unwrap_or(u32::MAX);
 
     if !is_size_valid(activation.swf_version(), width, height) {
         tracing::warn!("Invalid BitmapData size: {}x{}", width, height);
