@@ -1,0 +1,144 @@
+-- Transparent --
+// getPixel32()
+-1
+
+// getPixel32(1)
+-1
+
+// getPixel32(1, 2)
+-1430532900
+
+// getPixel32(null, 2)
+-1430532900
+
+// getPixel32(undefined, 2)
+-1430532900
+
+// getPixel32({}, 2)
+-1430532900
+
+// getPixel32(objLooksLikeNum, 2)
+-1430532900
+
+// getPixel32(10, 2)
+0
+
+// getPixel32(-2, 2)
+0
+
+// getPixel32(1, null)
+-1430532900
+
+// getPixel32(1, undefined)
+-1430532900
+
+// getPixel32(1, {})
+-1430532900
+
+// getPixel32(1, objLooksLikeNum)
+-1430532900
+
+// getPixel32(1, 10)
+0
+
+// getPixel32(1, -2)
+0
+
+
+
+-- Opaque --
+// getPixel32()
+-1
+
+// getPixel32(1)
+-1
+
+// getPixel32(1, 2)
+-4469539
+
+// getPixel32(null, 2)
+-4469539
+
+// getPixel32(undefined, 2)
+-4469539
+
+// getPixel32({}, 2)
+-4469539
+
+// getPixel32(objLooksLikeNum, 2)
+-4469539
+
+// getPixel32(10, 2)
+0
+
+// getPixel32(-2, 2)
+0
+
+// getPixel32(1, null)
+-4469539
+
+// getPixel32(1, undefined)
+-4469539
+
+// getPixel32(1, {})
+-4469539
+
+// getPixel32(1, objLooksLikeNum)
+-4469539
+
+// getPixel32(1, 10)
+0
+
+// getPixel32(1, -2)
+0
+
+
+
+-- Disposed --
+// getPixel32()
+-1
+
+// getPixel32(1)
+-1
+
+// getPixel32(1, 2)
+-1
+
+// getPixel32(null, 2)
+-1
+
+// getPixel32(undefined, 2)
+-1
+
+// getPixel32({}, 2)
+-1
+
+// getPixel32(objLooksLikeNum, 2)
+-1
+
+// getPixel32(10, 2)
+-1
+
+// getPixel32(-2, 2)
+-1
+
+// getPixel32(1, null)
+-1
+
+// getPixel32(1, undefined)
+-1
+
+// getPixel32(1, {})
+-1
+
+// getPixel32(1, objLooksLikeNum)
+-1
+
+// getPixel32(1, 10)
+-1
+
+// getPixel32(1, -2)
+-1
+
+
+
