@@ -664,47 +664,33 @@ fn color_transform<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 2 {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
 
-    if let [rectangle, color_transform, ..] = args {
-        // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
-        let rectangle = rectangle.coerce_to_object(activation);
-        let x = rectangle
-            .get(istr!("x"), activation)?
-            .coerce_to_f64(activation)? as i32;
-        let y = rectangle
-            .get(istr!("y"), activation)?
-            .coerce_to_f64(activation)? as i32;
-        let width = rectangle
-            .get(istr!("width"), activation)?
-            .coerce_to_f64(activation)? as i32;
-        let height = rectangle
-            .get(istr!("height"), activation)?
-            .coerce_to_f64(activation)? as i32;
+    let rectangle = args.get_object(activation, 0);
+    let Some((x, y, width, height)) = try_get_rect(activation, rectangle)? else {
+        return Ok((-2).into());
+    };
+    let color_transform = args.get_value(1);
+    let color_transform = match ColorTransformObject::cast(color_transform) {
+        Some(color_transform) => (*color_transform).clone(),
+        None => return Ok((-3).into()),
+    };
 
-        let x_min = x.max(0) as u32;
-        let x_max = (x + width) as u32;
-        let y_min = y.max(0) as u32;
-        let y_max = (y + height) as u32;
-
-        let color_transform = match ColorTransformObject::cast(*color_transform) {
-            Some(color_transform) => (*color_transform).clone(),
-            None => return Ok((-3).into()),
-        };
-
-        operations::color_transform(
-            activation.gc(),
-            activation.context.renderer,
-            bitmap_data,
-            x_min,
-            y_min,
-            x_max,
-            y_max,
-            &color_transform.into(),
-        );
-    }
+    operations::color_transform(
+        activation.gc(),
+        activation.context.renderer,
+        bitmap_data,
+        x.max(0) as u32,
+        y.max(0) as u32,
+        (x + width) as u32,
+        (y + height) as u32,
+        &color_transform.into(),
+    );
 
     Ok((-1).into())
 }
