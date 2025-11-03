@@ -1403,7 +1403,7 @@ fn abstract_interpret_ops<'gc>(
                     return Err(make_error_1026(
                         activation,
                         slot_id + 1,
-                        Some(vtable.default_slots().len()),
+                        Some(vtable.slot_count()),
                         Some(class),
                     ));
                 };
@@ -1434,7 +1434,7 @@ fn abstract_interpret_ops<'gc>(
                     return Err(make_error_1026(
                         activation,
                         slot_id + 1,
-                        Some(vtable.default_slots().len()),
+                        Some(vtable.slot_count()),
                         Some(class),
                     ));
                 };
