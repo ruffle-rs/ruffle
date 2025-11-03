@@ -435,26 +435,28 @@ fn flood_fill<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 3 {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
+    let x = args.get_u32(activation, 0)?;
+    let y = args.get_u32(activation, 1)?;
+    let color = args.get_u32(activation, 2)?;
 
-    if let (Some(x_val), Some(y_val), Some(color_val)) = (args.get(0), args.get(1), args.get(2)) {
-        let x = x_val.coerce_to_u32(activation)?;
-        let y = y_val.coerce_to_u32(activation)?;
-        let color = color_val.coerce_to_u32(activation)?;
-
-        operations::flood_fill(
-            activation.gc(),
-            activation.context.renderer,
-            bitmap_data,
-            x,
-            y,
-            color,
-        );
+    if operations::flood_fill(
+        activation.gc(),
+        activation.context.renderer,
+        bitmap_data,
+        x,
+        y,
+        color,
+    ) {
+        Ok(1.into())
+    } else {
+        Ok(0.into())
     }
-
-    Ok(Value::Undefined)
 }
 
 fn noise<'gc>(
