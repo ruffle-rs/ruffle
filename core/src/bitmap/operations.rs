@@ -375,16 +375,16 @@ pub fn copy_channel<'gc>(
     let (min_x, min_y) = dest_point;
     let (src_min_x, src_min_y, src_width, src_height) = src_rect;
 
-    let channel_shift: u32 = match source_channel {
+    let channel_shift: Option<u32> = match source_channel {
         // red
-        1 => 16,
+        1 => Some(16),
         // green
-        2 => 8,
+        2 => Some(8),
         // blue
-        4 => 0,
+        4 => Some(0),
         // alpha
-        8 => 24,
-        _ => 0,
+        8 => Some(24),
+        _ => None,
     };
     let transparency = target.transparency();
 
@@ -435,7 +435,11 @@ pub fn copy_channel<'gc>(
                     .into()
             };
 
-            let source_part = (source_color >> channel_shift) & 0xFF;
+            let source_part = if let Some(shift) = channel_shift {
+                (source_color >> shift) & 0xFF
+            } else {
+                0
+            };
 
             let result_color: u32 = match dest_channel {
                 // red

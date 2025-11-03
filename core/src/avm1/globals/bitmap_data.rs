@@ -144,6 +144,32 @@ fn get_bitmap_data(object: Object) -> BitmapDataResult {
     }
 }
 
+fn try_get_rect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    object: Object<'gc>,
+) -> Result<Option<(i32, i32, i32, i32)>, Error<'gc>> {
+    if !object.has_property(activation, istr!("x"))
+        || !object.has_property(activation, istr!("y"))
+        || !object.has_property(activation, istr!("width"))
+        || !object.has_property(activation, istr!("height"))
+    {
+        return Ok(None);
+    }
+    let x = object
+        .get(istr!("x"), activation)?
+        .coerce_to_i32(activation)?;
+    let y = object
+        .get(istr!("y"), activation)?
+        .coerce_to_i32(activation)?;
+    let width = object
+        .get(istr!("width"), activation)?
+        .coerce_to_i32(activation)?;
+    let height = object
+        .get(istr!("height"), activation)?
+        .coerce_to_i32(activation)?;
+    Ok(Some((x, y, width, height)))
+}
+
 fn height<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
@@ -298,6 +324,9 @@ fn copy_channel<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 5 {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
@@ -308,44 +337,22 @@ fn copy_channel<'gc>(
         BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
-    let source_rect = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let source_rect = args.get_object(activation, 1);
+    let Some((src_min_x, src_min_y, src_width, src_height)) =
+        try_get_rect(activation, source_rect)?
+    else {
+        return Ok((-4).into());
+    };
 
-    let dest_point = args
-        .get(2)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
-
-    let source_channel = args
-        .get(3)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?;
-
-    let dest_channel = args
-        .get(4)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?;
+    let dest_point = args.get_object(activation, 2);
+    let source_channel = args.get_i32(activation, 3)?;
+    let dest_channel = args.get_i32(activation, 4)?;
 
     let min_x = dest_point
         .get(istr!("x"), activation)?
         .coerce_to_i32(activation)?;
     let min_y = dest_point
         .get(istr!("y"), activation)?
-        .coerce_to_i32(activation)?;
-
-    let src_min_x = source_rect
-        .get(istr!("x"), activation)?
-        .coerce_to_i32(activation)?;
-    let src_min_y = source_rect
-        .get(istr!("y"), activation)?
-        .coerce_to_i32(activation)?;
-    let src_width = source_rect
-        .get(istr!("width"), activation)?
-        .coerce_to_i32(activation)?;
-    let src_height = source_rect
-        .get(istr!("height"), activation)?
         .coerce_to_i32(activation)?;
 
     operations::copy_channel(
@@ -359,7 +366,7 @@ fn copy_channel<'gc>(
         dest_channel,
     );
 
-    Ok(Value::Undefined)
+    Ok((-1).into())
 }
 
 fn fill_rect<'gc>(
