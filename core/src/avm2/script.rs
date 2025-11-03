@@ -468,6 +468,7 @@ impl<'gc> Script<'gc> {
             Some(object_class.instance_vtable()),
             mc,
         );
+        let global_obj_vtable = global_obj_vtable.map_err(|e| e.into_avm(activation))?;
 
         // Script initializers are always run in "interpreter mode"
         let script_init_assoc = MethodAssociation::classbound(global_class, true);

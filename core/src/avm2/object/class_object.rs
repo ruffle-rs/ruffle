@@ -218,6 +218,7 @@ impl<'gc> ClassObject<'gc> {
             self.superclass_object().map(|cls| cls.instance_vtable()),
             activation.context,
         );
+        let vtable = vtable.expect("ClassObject VTable should be valid");
 
         unlock!(Gc::write(mc, self.0), ClassObjectData, instance_vtable).set(vtable);
     }
@@ -254,6 +255,7 @@ impl<'gc> ClassObject<'gc> {
             Some(class_classobject.instance_vtable()),
             activation.gc(),
         );
+        let class_vtable = class_vtable.expect("ClassObject VTable should be valid");
 
         self.set_vtable(activation.gc(), class_vtable);
     }

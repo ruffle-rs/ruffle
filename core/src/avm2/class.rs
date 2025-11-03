@@ -9,7 +9,7 @@ use crate::avm2::object::{scriptobject_allocator, ClassObject, Object};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
-use crate::avm2::vtable::VTable;
+use crate::avm2::vtable::{VTable, VTableInitError};
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
@@ -321,9 +321,13 @@ impl<'gc> Class<'gc> {
         let c_class = Class(Gc::new(mc, c_class));
 
         i_class.link_with_c_class(mc, c_class);
-        i_class.init_vtable_with_interfaces(context, Box::new([]));
+        i_class
+            .init_vtable_with_interfaces(context, Box::new([]))
+            .expect("Specialized vector has no traits on itself");
 
-        c_class.init_vtable_with_interfaces(context, Box::new([]));
+        c_class
+            .init_vtable_with_interfaces(context, Box::new([]))
+            .expect("Specialized vector has no traits on itself");
 
         let write = unlock!(Gc::write(mc, this.0), ClassData, cell);
         write.borrow_mut().applications.insert(Some(param), i_class);
@@ -842,7 +846,8 @@ impl<'gc> Class<'gc> {
     pub fn init_vtable(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         let interfaces = self.gather_interfaces(activation)?;
 
-        self.init_vtable_with_interfaces(activation.context, interfaces);
+        self.init_vtable_with_interfaces(activation.context, interfaces)
+            .map_err(|e| e.into_avm(activation))?;
 
         Ok(())
     }
@@ -854,7 +859,7 @@ impl<'gc> Class<'gc> {
         self,
         context: &mut UpdateContext<'gc>,
         interfaces: Box<[Class<'gc>]>,
-    ) {
+    ) -> Result<(), VTableInitError> {
         if self.0.traits.get().is_none() {
             panic!(
                 "Attempted to initialize vtable on a class that did not have its traits loaded yet"
@@ -873,7 +878,9 @@ impl<'gc> Class<'gc> {
             None,
             self.0.super_class.map(|c| c.vtable()),
             context,
-        ));
+        )?);
+
+        Ok(())
     }
 
     /// Associate all the methods defined on this class with the specified
