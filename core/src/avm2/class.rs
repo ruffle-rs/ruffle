@@ -810,6 +810,16 @@ impl<'gc> Class<'gc> {
         Ok(())
     }
 
+    /// Initialize the vtable and interfaces of this Class with an empty vtable
+    /// and no interfaces. This is useful for classes that are known to not have
+    /// any traits or interfaces.
+    pub fn init_empty_vtable(self, mc: &Mutation<'gc>) {
+        let write = Gc::write(mc, self.0);
+
+        let _ = unlock!(write, ClassData, all_interfaces).set(Box::new([]));
+        let _ = unlock!(write, ClassData, vtable).set(VTable::empty(mc));
+    }
+
     /// Initialize the vtable and interfaces of this Class.
     pub fn init_vtable(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         let interfaces = self.gather_interfaces(activation)?;
