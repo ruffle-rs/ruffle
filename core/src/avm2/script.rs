@@ -468,6 +468,9 @@ impl<'gc> Script<'gc> {
             Some(object_class.instance_vtable()),
             mc,
         );
+        // If the vtable weren't valid, `global_scope::create_class` would have
+        // thrown an error.
+        let global_obj_vtable = global_obj_vtable.expect("Global object vtable should be valid");
 
         // Script initializers are always run in "interpreter mode"
         let script_init_assoc = MethodAssociation::classbound(global_class, true);

@@ -1,4 +1,5 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::error::{Error, make_error_1107};
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
 use crate::avm2::object::{ClassObject, FunctionObject};
@@ -7,7 +8,7 @@ use crate::avm2::property_map::PropertyMap;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
-use crate::avm2::{Class, Error, Multiname, Namespace, QName};
+use crate::avm2::{Class, Multiname, Namespace, QName};
 use crate::context::UpdateContext;
 use crate::string::{AvmString, StringContext};
 use gc_arena::barrier::{field, unlock};
@@ -82,14 +83,14 @@ impl<'gc> VTable<'gc> {
         scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
         mc: &Mutation<'gc>,
-    ) -> Self {
+    ) -> Result<Self, VTableInitError> {
         let this = Self::init_vtable(
             defining_class_def,
             super_class_obj,
             scope,
             superclass_vtable,
-        );
-        VTable(Gc::new(mc, this))
+        )?;
+        Ok(VTable(Gc::new(mc, this)))
     }
 
     /// Like `VTable::new`, but also copies properties from the defining class' interfaces.
@@ -99,15 +100,16 @@ impl<'gc> VTable<'gc> {
         scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
         context: &UpdateContext<'gc>,
-    ) -> Self {
+    ) -> Result<Self, VTableInitError> {
         let mut this = Self::init_vtable(
             defining_class_def,
             super_class_obj,
             scope,
             superclass_vtable,
-        );
+        )?;
         Self::copy_interface_properties(&mut this, defining_class_def, context);
-        VTable(Gc::new(context.gc(), this))
+
+        Ok(VTable(Gc::new(context.gc(), this)))
     }
 
     pub fn resolved_traits(self) -> &'gc PropertyMap<'gc, Property> {
@@ -226,7 +228,7 @@ impl<'gc> VTable<'gc> {
         super_class_obj: Option<ClassObject<'gc>>,
         scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
-    ) -> VTableData<'gc> {
+    ) -> Result<VTableData<'gc>, VTableInitError> {
         // Let's talk about slot_ids and disp_ids.
         // Specification is one thing, but reality is another.
 
@@ -466,7 +468,7 @@ impl<'gc> VTable<'gc> {
                         if slot_id < first_slot_offset {
                             // Conflict: subclass attempted to use slot id of
                             // slot in superclass
-                            todo!()
+                            return Err(VTableInitError::SlotConflict);
                         }
 
                         // now make the slot id relative to the start of this
@@ -476,7 +478,7 @@ impl<'gc> VTable<'gc> {
                         if let Some(Some(_)) = new_slots.get(slot_id) {
                             // Conflict: subclass attempted to use slot id that
                             // it already used
-                            todo!()
+                            return Err(VTableInitError::SlotConflict);
                         } else {
                             if slot_id >= new_slots.len() {
                                 new_slots.resize(slot_id + 1, None);
@@ -513,11 +515,11 @@ impl<'gc> VTable<'gc> {
                 slot_table.push(slot);
             } else {
                 // Holes in the slot table throw an error in Flash Player
-                todo!()
+                return Err(VTableInitError::SlotHole);
             }
         }
 
-        VTableData {
+        Ok(VTableData {
             scope,
             protected_namespace: defining_class_def.protected_namespace(),
             resolved_traits,
@@ -525,7 +527,7 @@ impl<'gc> VTable<'gc> {
             disp_metadata_table,
             slot_table: slot_table.into_boxed_slice(),
             method_table: method_table.into_boxed_slice(),
-        }
+        })
     }
 
     fn copy_interface_properties(
@@ -597,6 +599,22 @@ impl<'gc> VTable<'gc> {
             .iter()
             .filter(|(_, ns, _)| ns.is_public())
             .map(|(name, _, prop)| (name, *prop))
+    }
+}
+
+#[derive(Debug)]
+pub enum VTableInitError {
+    SlotConflict,
+    SlotHole,
+}
+
+impl VTableInitError {
+    pub fn into_avm<'gc>(self, activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+        match self {
+            VTableInitError::SlotConflict | VTableInitError::SlotHole => {
+                make_error_1107(activation)
+            }
+        }
     }
 }
 
