@@ -212,7 +212,7 @@ fn describe_internal_body<'gc>(
                     _ => unreachable!(),
                 };
 
-                let trait_metadata = vtable.get_metadata_for_slot(*slot_id);
+                let trait_metadata = vtable.get_metadata_for_slot(*slot_id as usize);
 
                 let variable = ScriptObject::new_object(context);
                 variable.set_dynamic_property(istr!(context, "name"), prop_name.into(), mc);
@@ -271,7 +271,7 @@ fn describe_internal_body<'gc>(
 
                 let declared_by_name = declared_by.dollar_removed_name(mc).to_qualified_name(mc);
 
-                let trait_metadata = vtable.get_metadata_for_disp(*disp_id);
+                let trait_metadata = vtable.get_metadata_for_disp(*disp_id as usize);
 
                 let method_obj = ScriptObject::new_object(context);
 
@@ -377,13 +377,13 @@ fn describe_internal_body<'gc>(
                 let metadata_object = ArrayObject::empty(context);
 
                 if let Some(get_disp_id) = get {
-                    if let Some(metadata) = vtable.get_metadata_for_disp(*get_disp_id) {
+                    if let Some(metadata) = vtable.get_metadata_for_disp(*get_disp_id as usize) {
                         write_metadata(metadata_object, metadata, context);
                     }
                 }
 
                 if let Some(set_disp_id) = set {
-                    if let Some(metadata) = vtable.get_metadata_for_disp(*set_disp_id) {
+                    if let Some(metadata) = vtable.get_metadata_for_disp(*set_disp_id as usize) {
                         write_metadata(metadata_object, metadata, context);
                     }
                 }
