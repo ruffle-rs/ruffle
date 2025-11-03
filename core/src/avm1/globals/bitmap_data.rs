@@ -464,42 +464,40 @@ fn noise<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.is_empty() {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
 
-    let low = args.get(1).unwrap_or(&0.into()).coerce_to_u32(activation)? as u8;
-
+    let random_seed = args.get_i32(activation, 0)?;
+    // Normal u8 coercion would see negative numbers as 255, but here it allows and clamps them
+    let low = args.get_i32(activation, 1)?.clamp(0, 255) as u8;
     let high = args
-        .get(2)
-        .unwrap_or(&0xFF.into())
-        .coerce_to_u32(activation)? as u8;
+        .try_get_i32(activation, 2, UndefinedAs::Some)?
+        .unwrap_or(0xFF)
+        .clamp(0, 255) as u8;
 
-    let channel_options = if let Some(c) = args.get(3) {
-        ChannelOptions::from_bits_truncate(c.coerce_to_u32(activation)? as u8)
+    let channel_options = if let Some(c) = args.try_get_u8(activation, 3, UndefinedAs::Some)? {
+        ChannelOptions::from_bits_truncate(c)
     } else {
         ChannelOptions::RGB
     };
 
-    let gray_scale = args
-        .get(4)
-        .unwrap_or(&false.into())
-        .as_bool(activation.swf_version());
+    let gray_scale = args.get_bool(activation, 4);
 
-    if let Some(random_seed_val) = args.get(0) {
-        let random_seed = random_seed_val.coerce_to_i32(activation)?;
-        operations::noise(
-            activation.gc(),
-            bitmap_data,
-            random_seed,
-            low,
-            high.max(low),
-            channel_options,
-            gray_scale,
-        )
-    }
+    operations::noise(
+        activation.gc(),
+        bitmap_data,
+        random_seed,
+        low,
+        high.max(low),
+        channel_options,
+        gray_scale,
+    );
 
-    Ok(Value::Undefined)
+    Ok(0.into())
 }
 
 fn draw<'gc>(

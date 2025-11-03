@@ -190,6 +190,7 @@ pub fn noise<'gc>(
 ) {
     let (target, _) = target.overwrite_cpu_pixels_from_gpu(mc);
     let mut write = target.borrow_mut(mc);
+    let transparency = write.transparency();
 
     let true_seed = if seed <= 0 {
         (-seed + 1) as u32
@@ -203,7 +204,7 @@ pub fn noise<'gc>(
         for x in 0..write.width() {
             let pixel_color = if gray_scale {
                 let gray = rng.random_range(low..high);
-                let alpha = if channel_options.contains(ChannelOptions::ALPHA) {
+                let alpha = if transparency && channel_options.contains(ChannelOptions::ALPHA) {
                     rng.random_range(low..high)
                 } else {
                     255
@@ -229,7 +230,7 @@ pub fn noise<'gc>(
                     0
                 };
 
-                let a = if channel_options.contains(ChannelOptions::ALPHA) {
+                let a = if transparency && channel_options.contains(ChannelOptions::ALPHA) {
                     rng.random_range(low..high)
                 } else {
                     255
@@ -238,7 +239,7 @@ pub fn noise<'gc>(
                 Color::rgba(r, g, b, a)
             };
 
-            write.set_pixel32_raw(x, y, pixel_color);
+            write.set_pixel32_raw(x, y, pixel_color.to_premultiplied_alpha(transparency));
         }
     }
     let region = PixelRegion::for_whole_size(write.width(), write.height());
