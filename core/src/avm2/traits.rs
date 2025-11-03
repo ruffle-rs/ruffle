@@ -74,29 +74,29 @@ pub enum TraitKind<'gc> {
     /// A data field on an object instance that can be read from and written
     /// to.
     Slot {
-        slot_id: u32,
+        slot_id: usize,
         type_name: Option<Gc<'gc, Multiname<'gc>>>,
         default_value: Value<'gc>,
         domain: Domain<'gc>,
     },
 
     /// A method on an object that can be called.
-    Method { disp_id: u32, method: Method<'gc> },
+    Method { disp_id: usize, method: Method<'gc> },
 
     /// A getter property on an object that can be read.
-    Getter { disp_id: u32, method: Method<'gc> },
+    Getter { disp_id: usize, method: Method<'gc> },
 
     /// A setter property on an object that can be written.
-    Setter { disp_id: u32, method: Method<'gc> },
+    Setter { disp_id: usize, method: Method<'gc> },
 
     /// A class property on an object that can be used to construct more
     /// objects.
-    Class { slot_id: u32, class: Class<'gc> },
+    Class { slot_id: usize, class: Class<'gc> },
 
     /// A data field on an object that is always a particular value, and cannot
     /// be overridden.
     Const {
-        slot_id: u32,
+        slot_id: usize,
         type_name: Option<Gc<'gc, Multiname<'gc>>>,
         default_value: Value<'gc>,
         domain: Domain<'gc>,
@@ -143,7 +143,7 @@ impl<'gc> Trait<'gc> {
                     name,
                     attributes: trait_attribs_from_abc_traits(abc_trait),
                     kind: TraitKind::Slot {
-                        slot_id,
+                        slot_id: slot_id as usize,
                         type_name,
                         default_value,
                         domain: unit.domain(),
@@ -155,7 +155,7 @@ impl<'gc> Trait<'gc> {
                 name,
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Method {
-                    disp_id,
+                    disp_id: disp_id as usize,
                     method: unit.load_method(method, false, activation)?,
                 },
                 metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
@@ -164,7 +164,7 @@ impl<'gc> Trait<'gc> {
                 name,
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Getter {
-                    disp_id,
+                    disp_id: disp_id as usize,
                     method: unit.load_method(method, false, activation)?,
                 },
                 metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
@@ -173,7 +173,7 @@ impl<'gc> Trait<'gc> {
                 name,
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Setter {
-                    disp_id,
+                    disp_id: disp_id as usize,
                     method: unit.load_method(method, false, activation)?,
                 },
                 metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
@@ -182,7 +182,7 @@ impl<'gc> Trait<'gc> {
                 name,
                 attributes: trait_attribs_from_abc_traits(abc_trait),
                 kind: TraitKind::Class {
-                    slot_id,
+                    slot_id: slot_id as usize,
                     class: unit.load_class(class.0, activation)?,
                 },
                 metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
@@ -199,7 +199,7 @@ impl<'gc> Trait<'gc> {
                     name,
                     attributes: trait_attribs_from_abc_traits(abc_trait),
                     kind: TraitKind::Const {
-                        slot_id,
+                        slot_id: slot_id as usize,
                         type_name,
                         default_value,
                         domain: unit.domain(),
@@ -242,7 +242,7 @@ impl<'gc> Trait<'gc> {
     }
 
     /// Get the slot ID of this trait.
-    pub fn slot_id(&self) -> Option<u32> {
+    pub fn slot_id(&self) -> Option<usize> {
         match self.kind {
             TraitKind::Slot { slot_id, .. } => Some(slot_id),
             TraitKind::Method { .. } => None,
@@ -253,20 +253,8 @@ impl<'gc> Trait<'gc> {
         }
     }
 
-    /// Set the slot ID of this trait.
-    pub fn set_slot_id(&mut self, id: u32) {
-        match &mut self.kind {
-            TraitKind::Slot { slot_id, .. } => *slot_id = id,
-            TraitKind::Method { .. } => {}
-            TraitKind::Getter { .. } => {}
-            TraitKind::Setter { .. } => {}
-            TraitKind::Class { slot_id, .. } => *slot_id = id,
-            TraitKind::Const { slot_id, .. } => *slot_id = id,
-        }
-    }
-
     /// Get the dispatch ID of this trait.
-    pub fn disp_id(&self) -> Option<u32> {
+    pub fn disp_id(&self) -> Option<usize> {
         match self.kind {
             TraitKind::Slot { .. } => None,
             TraitKind::Method { disp_id, .. } => Some(disp_id),
@@ -274,18 +262,6 @@ impl<'gc> Trait<'gc> {
             TraitKind::Setter { disp_id, .. } => Some(disp_id),
             TraitKind::Class { .. } => None,
             TraitKind::Const { .. } => None,
-        }
-    }
-
-    /// Set the dispatch ID of this trait.
-    pub fn set_disp_id(&mut self, id: u32) {
-        match &mut self.kind {
-            TraitKind::Slot { .. } => {}
-            TraitKind::Method { disp_id, .. } => *disp_id = id,
-            TraitKind::Getter { disp_id, .. } => *disp_id = id,
-            TraitKind::Setter { disp_id, .. } => *disp_id = id,
-            TraitKind::Class { .. } => {}
-            TraitKind::Const { .. } => {}
         }
     }
 

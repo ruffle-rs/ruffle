@@ -604,7 +604,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc>,
         receiver: Object<'gc>,
-        disp_id: u32,
+        disp_id: usize,
         arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();

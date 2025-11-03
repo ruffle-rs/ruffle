@@ -898,7 +898,7 @@ pub fn object_to_rectangle<'gc>(
     activation: &mut Activation<'_, 'gc>,
     object: Object<'gc>,
 ) -> Result<Rectangle<Twips>, Error<'gc>> {
-    const SLOTS: &[u32] = &[
+    const SLOTS: &[usize] = &[
         rectangle_slots::X,
         rectangle_slots::Y,
         rectangle_slots::WIDTH,
