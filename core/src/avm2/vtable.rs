@@ -315,7 +315,7 @@ impl<'gc> VTable<'gc> {
                         }
                         // note: ideally overwriting other property types
                         // should be a VerifyError
-                        _ => {
+                        None => {
                             let disp_id = method_table.len() as u32;
                             method_table.push(entry);
                             resolved_traits
@@ -325,6 +325,9 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(disp_id as usize, metadata);
                             }
                         }
+                        _ => unreachable!(
+                            "`Class::validate_class` ensures overridden trait is correct"
+                        ),
                     }
                 }
                 TraitKind::Getter { method, .. } => {
@@ -354,7 +357,7 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(disp_id as usize, metadata);
                             }
                         }
-                        _ => {
+                        None => {
                             let disp_id = method_table.len() as u32;
                             method_table.push(entry);
                             resolved_traits
@@ -364,6 +367,9 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(disp_id as usize, metadata);
                             }
                         }
+                        _ => unreachable!(
+                            "`Class::validate_class` ensures overridden trait is correct"
+                        ),
                     }
                 }
                 TraitKind::Setter { method, .. } => {
@@ -393,7 +399,7 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(disp_id as usize, metadata);
                             }
                         }
-                        _ => {
+                        None => {
                             let disp_id = method_table.len() as u32;
                             method_table.push(entry);
                             resolved_traits
@@ -403,6 +409,9 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(disp_id as usize, metadata);
                             }
                         }
+                        _ => unreachable!(
+                            "`Class::validate_class` ensures overridden trait is correct"
+                        ),
                     }
                 }
                 TraitKind::Slot { slot_id, .. }
