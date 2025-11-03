@@ -1,0 +1,5 @@
+num_frames = 30
+known_failure = true
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

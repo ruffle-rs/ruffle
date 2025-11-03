@@ -292,39 +292,38 @@ impl<'gc> Domain<'gc> {
     pub fn get_defined_value_handling_vector(
         self,
         activation: &mut Activation<'_, 'gc>,
-        mut name: AvmString<'gc>,
+        name: AvmString<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Special-case lookups of `Vector.<SomeType>` - these get internally converted
         // to a lookup of `Vector,` a lookup of `SomeType`, and `vector_class.apply(some_type_class)`
-        let mut type_name = None;
-        if (name.starts_with(WStr::from_units(b"__AS3__.vec::Vector.<"))
-            || name.starts_with(WStr::from_units(b"Vector.<")))
-            && name.ends_with(WStr::from_units(b">"))
-        {
-            let start = name.find(WStr::from_units(b".<")).unwrap();
+        if let Some(type_name) = vector_parameter_from_name(activation.gc(), name) {
+            let vector_class = activation.avm2().classes().generic_vector;
+            let parameter_value = self.get_defined_value_handling_vector(activation, type_name)?;
 
-            type_name = Some(AvmString::new(
-                activation.gc(),
-                &name[(start + 2)..(name.len() - 1)],
-            ));
-            name = AvmString::new_ascii_static(activation.gc(), b"__AS3__.vec::Vector");
+            return vector_class
+                .apply(activation, &[parameter_value])
+                .map(|obj| obj.into());
         }
-        // FIXME - is this the correct api version?
-        let api_version = activation.avm2().root_api_version;
-        let name = QName::from_qualified_name(name, api_version, activation.context);
 
-        let res = self.get_defined_value(activation, name);
+        // If we're not hitting the special-case, just call `get_defined_value`
 
-        if let Some(type_name) = type_name {
-            let type_class = self.get_defined_value_handling_vector(activation, type_name)?;
-            if let Ok(res) = res {
-                let class = res.as_object().ok_or_else(|| {
-                    Error::rust_error(format!("Vector type {res:?} was not an object").into())
-                })?;
-                return class.apply(activation, &[type_class]).map(|obj| obj.into());
-            }
+        let name = QName::from_qualified_name(name, activation.context);
+        self.get_defined_value(activation, name)
+    }
+
+    pub fn has_defined_value_handling_vector(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: AvmString<'gc>,
+    ) -> bool {
+        if let Some(type_name) = vector_parameter_from_name(activation.gc(), name) {
+            // avmplus just checks if the type parameter exists, so we do the same
+            self.has_defined_value_handling_vector(activation, type_name)
+        } else {
+            let name = QName::from_qualified_name(name, activation.context);
+
+            self.get_defining_script(&name.into()).is_some()
         }
-        res
     }
 
     pub fn get_defined_names(self) -> Vec<QName<'gc>> {
@@ -424,6 +423,25 @@ impl<'gc> Domain<'gc> {
 
     pub fn as_ptr(self) -> *const DomainPtr {
         Gc::as_ptr(self.0) as _
+    }
+}
+
+/// Given a class name such as `Vector.<int>`, returns the Vector type
+/// parameter (`int`), or `None` if the class name does not represent a
+/// parametrized Vector class (e.g. `flash.display::MovieClip`).
+fn vector_parameter_from_name<'gc>(
+    mc: &Mutation<'gc>,
+    name: AvmString<'gc>,
+) -> Option<AvmString<'gc>> {
+    if (name.starts_with(WStr::from_units(b"__AS3__.vec::Vector.<"))
+        || name.starts_with(WStr::from_units(b"Vector.<")))
+        && name.ends_with(WStr::from_units(b">"))
+    {
+        let start = name.find(WStr::from_units(b".<")).unwrap();
+
+        Some(AvmString::new(mc, &name[(start + 2)..(name.len() - 1)]))
+    } else {
+        None
     }
 }
 

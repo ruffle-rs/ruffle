@@ -1,0 +1,20 @@
+PASSED: d  ==  -16 [DepthLimitsTest.c:111]
+PASSED: d  ==  -16384 [DepthLimitsTest.c:116]
+PASSED: d  ==  undefined [DepthLimitsTest.c:121]
+PASSED: d  ==  undefined [DepthLimitsTest.c:126]
+PASSED: d  ==  1147483648 [DepthLimitsTest.c:131]
+PASSED: d  ==  2130690044 [DepthLimitsTest.c:136]
+PASSED: d  ==  undefined [DepthLimitsTest.c:141]
+PASSED: d  ==  -1 [DepthLimitsTest.c:150]
+PASSED: d  ==  -1 [DepthLimitsTest.c:154]
+PASSED: d  ==  -16384 [DepthLimitsTest.c:158]
+PASSED: d  ==  -16384 [DepthLimitsTest.c:162]
+PASSED: d  ==  undefined [DepthLimitsTest.c:166]
+PASSED: d  ==  undefined [DepthLimitsTest.c:170]
+PASSED: d  ==  2130690044 [DepthLimitsTest.c:174]
+PASSED: d  ==  2130690044 [DepthLimitsTest.c:178]
+PASSED: d  ==  undefined [DepthLimitsTest.c:182]
+PASSED: d  ==  undefined [DepthLimitsTest.c:186]
+#passed: 17
+#failed: 0
+#total tests run: 17

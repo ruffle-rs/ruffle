@@ -1,0 +1,22 @@
+PASSED: typeof(_root.mc_red)  ==  'undefined' [place_and_remove_object_insane_test.c:144]
+PASSED: typeof(_root.mc_blue)  ==  'undefined' [place_and_remove_object_insane_test.c:145]
+PASSED: typeof(_root.mc_black)  ==  'undefined' [place_and_remove_object_insane_test.c:146]
+PASSED: typeof(_root.mc_green)  ==  'undefined' [place_and_remove_object_insane_test.c:147]
+PASSED: typeof(_root.mc_red)  ==  'movieclip' [place_and_remove_object_insane_test.c:169]
+PASSED: typeof(_root.mc_blue)  ==  'movieclip' [place_and_remove_object_insane_test.c:170]
+PASSED: typeof(_root.mc_red)  ==  'movieclip' [place_and_remove_object_insane_test.c:118]
+PASSED: typeof(_root.mc_blue)  ==  'movieclip' [place_and_remove_object_insane_test.c:119]
+PASSED: _root.mc_green  ==  undefined [place_and_remove_object_insane_test.c:121]
+PASSED: 60 == 60
+PASSED: undefined == undefined
+PASSED: movieclip == movieclip
+PASSED:  _root.mc_red._x  ==  10 [place_and_remove_object_insane_test.c:136]
+PASSED: typeof(_root.mc_red)  ==  'undefined' [place_and_remove_object_insane_test.c:144]
+PASSED: typeof(_root.mc_blue)  ==  'undefined' [place_and_remove_object_insane_test.c:145]
+PASSED: typeof(_root.mc_black)  ==  'undefined' [place_and_remove_object_insane_test.c:146]
+PASSED: typeof(_root.mc_green)  ==  'undefined' [place_and_remove_object_insane_test.c:147]
+PASSED: typeof(_root.mc_red)  ==  'movieclip' [place_and_remove_object_insane_test.c:169]
+PASSED: typeof(_root.mc_blue)  ==  'movieclip' [place_and_remove_object_insane_test.c:170]
+#passed: 19
+#failed: 0
+#total tests run: 19

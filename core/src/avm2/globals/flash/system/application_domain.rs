@@ -97,12 +97,8 @@ pub fn has_definition<'gc>(
             None => return Ok(false.into()),
         };
 
-        // FIXME: Getting the defined value may error even if the value is
-        // defined (e.g. when calling a getter to get the value)
-        return Ok(appdomain
-            .get_defined_value_handling_vector(activation, name)
-            .is_ok()
-            .into());
+        let result = appdomain.has_defined_value_handling_vector(activation, name);
+        return Ok(result.into());
     }
 
     Ok(Value::Undefined)

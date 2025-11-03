@@ -9,14 +9,14 @@ use anyhow::Context;
 use anyhow::Result;
 use clap::Parser;
 use libtest_mimic::Trial;
-use ruffle_fs_tests_runner::{FsTestsRunner, TestLoaderParams};
+use ruffle_fs_tests_runner::FsTestsRunner;
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
+use ruffle_test_framework::vfs::VfsPath;
 use std::borrow::Cow;
 use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
 use std::path::PathBuf;
-use std::sync::Arc;
 use std::thread::sleep;
 
 mod environment;
@@ -52,20 +52,23 @@ fn main() {
         Err(std::env::VarError::NotPresent) => "".to_owned(),
         e @ Err(_) => panic!("{e:?}"),
     };
-    let ruffle_test_opts = Arc::new(RuffleTestOpts::parse_from(
+    let ruffle_test_opts = RuffleTestOpts::parse_from(
         // The first argument is the name of the executable, in our case pass
         // the variable name in order to show the proper help message.
         std::iter::once("RUFFLE_TEST_OPTS=")
             .chain(ruffle_test_opts.split(" ").filter(|s| !s.is_empty())),
-    ));
+    );
 
     let mut runner = FsTestsRunner::new();
 
     runner
         .with_descriptor_name(Cow::Borrowed(TEST_TOML_NAME))
         .with_root_dir(PathBuf::from("tests/swfs"))
-        .with_test_loader(Box::new(move |params| {
-            Some(load_test(ruffle_test_opts.clone(), params))
+        .with_test_loader(Box::new(move |params, register_trial| {
+            for test in load_test_dir(&params.test_dir, params.test_name) {
+                let trial = trial_for_test(&ruffle_test_opts, test, params.args.list);
+                register_trial(trial);
+            }
         }));
 
     // Manual tests here, since #[test] doesn't work once we use our own test harness
@@ -88,24 +91,22 @@ fn main() {
     runner.run()
 }
 
-fn load_test(opts: Arc<RuffleTestOpts>, params: TestLoaderParams) -> Trial {
-    let args = params.args;
-    let root = params.test_dir;
-    let name = params.test_name;
+fn load_test_dir<'a>(test_dir: &'a VfsPath, name: &'a str) -> impl Iterator<Item = Test> + 'a {
+    let options = TestOptions::read_with_subtests(&test_dir.join("test.toml").unwrap())
+        .context("Couldn't load test options")
+        .unwrap();
+    options.into_iter().map(move |opts| {
+        Test::from_options(opts, test_dir.to_owned(), name.to_owned())
+            .with_context(|| format!("Couldn't create test {name}"))
+            .unwrap()
+    })
+}
 
-    let test = Test::from_options(
-        TestOptions::read(&root.join("test.toml").unwrap())
-            .context("Couldn't load test options")
-            .unwrap(),
-        root,
-        name.to_string(),
-    )
-    .with_context(|| format!("Couldn't create test {name}"))
-    .unwrap();
+fn trial_for_test(opts: &RuffleTestOpts, test: Test, list_only: bool) -> Trial {
+    let ignore = !test.should_run(opts.ignore_known_failures, !list_only, &NativeEnvironment);
+    let subtest_name = test.options.subtest_name.clone();
 
-    let ignore = !test.should_run(opts.ignore_known_failures, !args.list, &NativeEnvironment);
-
-    let mut trial = Trial::test(test.name.to_string(), move || {
+    let mut trial = Trial::test(test.name.clone(), move || {
         let test = AssertUnwindSafe(test);
         let unwind_result = catch_unwind(|| {
             let mut runner = test.create_test_runner(&NativeEnvironment)?;
@@ -137,6 +138,11 @@ fn load_test(opts: Arc<RuffleTestOpts>, params: TestLoaderParams) -> Trial {
     });
     if ignore {
         trial = trial.with_ignored_flag(true);
+    }
+    if let Some(name) = subtest_name {
+        // Put the subtest name as the test 'kind' instead of appending it to the test name,
+        // to not break `cargo test some/test -- --exact` and `cargo test -- --list`.
+        trial = trial.with_kind(name);
     }
     trial
 }

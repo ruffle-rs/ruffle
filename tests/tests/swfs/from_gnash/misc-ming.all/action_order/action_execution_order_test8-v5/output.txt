@@ -1,0 +1,11 @@
+root frame 2
+root frame 3. About to call gotoAndPlay(2).
+root frame 2. About to call gotoAndPlay(4)
+root frame 4
+PASSED: typeof(_root.x)  ==  'undefined' [action_execution_order_test8.c:115]
+about to invoke _root.gotoAndStop(6)
+PASSED: _root.x  ==  200 [action_execution_order_test8.c:144]
+root frame 6
+#passed: 2
+#failed: 0
+#total tests run: 2

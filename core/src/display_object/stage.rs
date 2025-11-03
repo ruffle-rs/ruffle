@@ -871,6 +871,10 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
     }
 
+    fn object1(self) -> Option<Avm1Object<'gc>> {
+        None
+    }
+
     fn object2(self) -> Option<Avm2StageObject<'gc>> {
         self.0.avm2_object.get()
     }

@@ -1,0 +1,9 @@
+PASSED: Mc1.getDepth()  ==  0 [PlaceObject2Test.c:96]
+PASSED: Mc2.getDepth()  ==  49151 [PlaceObject2Test.c:97]
+PASSED: Mc1._y  ==  100 [PlaceObject2Test.c:103]
+PASSED: Mc2._y  ==  200 [PlaceObject2Test.c:104]
+PASSED: Mc1  ==  undefined [PlaceObject2Test.c:110]
+PASSED: Mc2  ==  undefined [PlaceObject2Test.c:111]
+#passed: 6
+#failed: 0
+#total tests run: 6

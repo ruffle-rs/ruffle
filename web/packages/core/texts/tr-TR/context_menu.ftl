@@ -1,4 +1,4 @@
-context-menu-download-swf = İndir .swf
+context-menu-download-swf = .swf'i indir
 context-menu-copy-debug-info = Hata ayıklama bilgisini kopyala
 context-menu-open-save-manager = Kayıt Yöneticisini Aç
 context-menu-about-ruffle =

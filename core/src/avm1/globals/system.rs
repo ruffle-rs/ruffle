@@ -5,7 +5,7 @@ use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "exactSettings" => property(get_exact_settings, set_exact_settings);
+    "exactSettings" => property(get_exact_settings, set_exact_settings; VERSION_6);
     "useCodepage" => property(get_use_code_page, set_use_code_page);
     "setClipboard" => method(set_clipboard);
     "showSettings" => method(show_settings);

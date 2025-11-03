@@ -1,0 +1,17 @@
+PASSED: undefined == undefined
+PASSED: undefined == undefined
+PASSED: undefined == undefined
+PASSED: undefined == undefined
+PASSED: -16382 == -16382
+PASSED: -16381 == -16381
+PASSED: 1 == 1
+PASSED: 2 == 2
+PASSED: 10 == 10
+PASSED: -10 == -10
+PASSED: movieclip == movieclip
+PASSED: undefined == undefined
+PASSED: undefined == undefined
+PASSED: movieclip == movieclip
+#passed: 14
+#failed: 0
+#total tests run: 14

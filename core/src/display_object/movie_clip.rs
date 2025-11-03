@@ -2,13 +2,13 @@
 use crate::avm1::globals::AVM_DEPTH_BIAS;
 use crate::avm1::Avm1;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
-use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
+use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
 use crate::avm2::object::LoaderStream;
 use crate::avm2::script::Script;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, LoaderInfoObject,
-    Object as Avm2Object, QName as Avm2QName, StageObject as Avm2StageObject,
+    Object as Avm2Object, StageObject as Avm2StageObject,
 };
 use crate::backend::audio::{AudioManager, SoundInstanceHandle};
 use crate::backend::navigator::Request;
@@ -1661,7 +1661,7 @@ impl<'gc> MovieClip<'gc> {
                 .collect();
 
             for child in children {
-                if !child.placed_by_script() {
+                if !child.placed_by_avm2_script() {
                     self.remove_child(context, child);
                 } else {
                     self.remove_child_from_depth_list(context, child);
@@ -1794,7 +1794,7 @@ impl<'gc> MovieClip<'gc> {
         //    different in reality, but the spirit is there :)
 
         let is_candidate_for_removal = if self.movie().is_action_script_3() {
-            old_object.place_frame() > frame || old_object.placed_by_script()
+            old_object.place_frame() > frame || old_object.placed_by_avm2_script()
         } else {
             old_object.depth() < AVM_DEPTH_BIAS
         };
@@ -2104,7 +2104,7 @@ impl<'gc> MovieClip<'gc> {
 
             let child = self.child_by_depth(depth);
             if let Some(child) = child {
-                if !child.placed_by_script() {
+                if !child.placed_by_avm2_script() {
                     self.remove_child(context, child);
                 } else {
                     self.remove_child_from_depth_list(context, child);
@@ -2481,7 +2481,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 // when we have children placed on the load frame, but 'this.getChildAt(0)'
                 // will return 'null' since the children haven't had their AVM2 objects
                 // constructed by `construct_frame` yet.
-            } else if !(is_load_frame && self.placed_by_script()) {
+            } else if !(is_load_frame && self.placed_by_avm2_script()) {
                 let running_construct_frame = self
                     .0
                     .contains_flag(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
@@ -2609,12 +2609,8 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         }
     }
 
-    fn object1(self) -> Avm1Value<'gc> {
-        self.0
-            .object1
-            .get()
-            .map(Avm1Value::from)
-            .unwrap_or(Avm1Value::Undefined)
+    fn object1(self) -> Option<Avm1Object<'gc>> {
+        self.0.object1.get()
     }
 
     fn object2(self) -> Option<Avm2StageObject<'gc>> {
@@ -4143,12 +4139,9 @@ impl<'gc, 'a> MovieClip<'gc> {
                 .library
                 .library_for_movie_mut(movie.clone());
             let domain = library.avm2_domain();
-            let api_version = activation.context.avm2.root_api_version;
 
             for (class_name, id) in eager_tags.symbolclass_names {
-                let class_name = AvmString::new(activation.gc(), class_name);
-                let name =
-                    Avm2QName::from_qualified_name(class_name, api_version, activation.context);
+                let name = AvmString::new(activation.gc(), class_name);
                 match Avm2::lookup_class_for_character(&mut activation, self, domain, name, id) {
                     Ok(class_object) => {
                         activation
@@ -4229,7 +4222,7 @@ impl<'gc, 'a> MovieClip<'gc> {
                             }
                             _ => {
                                 tracing::warn!(
-                                    "Symbol class {name:?} cannot be assigned to character id {id}",
+                                    "Symbol class {name} cannot be assigned to character id {id}",
                                 );
                             }
                         }
@@ -4319,7 +4312,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         }?;
 
         if let Some(child) = self.child_by_depth(remove_object.depth.into()) {
-            if !child.placed_by_script() {
+            if !child.placed_by_avm2_script() {
                 self.remove_child(context, child);
             } else {
                 self.remove_child_from_depth_list(context, child);

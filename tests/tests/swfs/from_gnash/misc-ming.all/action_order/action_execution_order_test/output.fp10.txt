@@ -1,0 +1,19 @@
+as in frame0 of root
+as in frame1 of root
+PASSED: typeOf(_root.mc_red)  ==  'movieclip' [action_execution_order_test.c:107]
+PASSED: typeOf(_root.mc_red.func)  ==  'undefined' [action_execution_order_test.c:108]
+PASSED: typeOf(_root.mc_red.mc_blu)  ==  'movieclip' [action_execution_order_test.c:109]
+as in frame1 of mc_red
+as in frame1 of mc_blu
+as in frame2 of mc_blu
+as in frame2 of mc_red
+onUnload of mc_blu
+as in frame2 of root
+PASSED: typeOf(_root.mc_red.func)  ==  'function' [action_execution_order_test.c:112]
+PASSED: _root.x1  ==  'as_in_mc_blu' [action_execution_order_test.c:116]
+PASSED: _root.x2  ==  'as_in_root' [action_execution_order_test.c:118]
+PASSED: _root.x3  ==  'as_in_mc_blu_unload' [action_execution_order_test.c:119]
+PASSED: _root.mc_unload_executed  ==  1 [action_execution_order_test.c:120]
+#passed: 8
+#failed: 0
+#total tests run: 8

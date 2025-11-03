@@ -1,7 +1,0 @@
-# Note that this swf has been edited after compilation to remove the System.capabilities.version, as the source is difficult to edit
-
-num_frames = 30
-known_failure = true
-
-[player_options]
-version = 10

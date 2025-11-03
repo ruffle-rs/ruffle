@@ -488,22 +488,16 @@ impl<'gc> Avm2<'gc> {
         activation: &mut Activation<'_, 'gc>,
         movie_clip: MovieClip<'gc>,
         domain: Domain<'gc>,
-        name: QName<'gc>,
+        name: AvmString<'gc>,
         id: u16,
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
         let movie = movie_clip.movie().clone();
 
         let class_object = domain
-            .get_defined_value(activation, name)?
+            .get_defined_value_handling_vector(activation, name)?
             .as_object()
             .and_then(|o| o.as_class_object())
-            .ok_or_else(|| {
-                make_error_1014(
-                    activation,
-                    Error1014Type::ReferenceError,
-                    name.to_qualified_name(activation.gc()),
-                )
-            })?;
+            .ok_or_else(|| make_error_1014(activation, Error1014Type::ReferenceError, name))?;
 
         let class = class_object.inner_class_definition();
 
@@ -523,7 +517,7 @@ impl<'gc> Avm2<'gc> {
                 if !class.has_class_in_chain(activation.avm2().class_defs().display_object) {
                     return Err(Error::avm_error(type_error(
                         activation,
-                        &format!("Error #2022: Class {}$ must inherit from DisplayObject to link to a symbol.", name.to_qualified_name(activation.gc())),
+                        &format!("Error #2022: Class {}$ must inherit from DisplayObject to link to a symbol.", class.name().local_name()),
                         2022,
                     )?));
                 }
@@ -538,7 +532,7 @@ impl<'gc> Avm2<'gc> {
                     activation,
                     &format!(
                         "Error #2023: Class {}$ must inherit from Sprite to link to the root.",
-                        name.to_qualified_name(activation.gc())
+                        class.name().local_name(),
                     ),
                     2023,
                 )?));

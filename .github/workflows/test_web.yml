@@ -145,7 +145,7 @@ jobs:
           npm run build --workspace=ruffle-selfhosted
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: selfhosted-dist
           path: web/packages/selfhosted/dist
@@ -172,7 +172,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Download artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: selfhosted-dist
           path: web/packages/selfhosted/dist

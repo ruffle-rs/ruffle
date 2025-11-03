@@ -55,7 +55,7 @@ impl<'gc> LoaderDisplay<'gc> {
             },
         ));
 
-        obj.set_placed_by_script(true);
+        obj.set_placed_by_avm2_script(true);
         activation.context.orphan_manager.add_orphan_obj(obj.into());
         obj
     }
@@ -84,6 +84,10 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
 
     fn self_bounds(self) -> Rectangle<Twips> {
         Default::default()
+    }
+
+    fn object1(self) -> Option<crate::avm1::Object<'gc>> {
+        None
     }
 
     fn object2(self) -> Option<Avm2StageObject<'gc>> {

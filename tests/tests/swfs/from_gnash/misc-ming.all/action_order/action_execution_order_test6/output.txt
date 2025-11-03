@@ -1,0 +1,24 @@
+mc1 Construct called
+mc2 Construct called
+mc3 Construct called
+mc1 Load called
+mc2 Load called
+mc1 Unload called
+mc2 Unload called
+mc3 Load called
+mc3 Unload called
+mc1 Construct called
+mc2 Construct called
+mc1 Load called
+actions in 1st frame of mc1
+mc2 Load called
+actions in 1st frame of mc2
+mc3 Construct called
+mc1 Unload called
+mc2 Unload called
+mc3 Load called
+mc3 Unload called
+PASSED: _root.check_result  ==  '1+2+3+4+5+6+7+8+9+1+2+4+x+5+xx+' [action_execution_order_test6.c:229]
+#passed: 1
+#failed: 0
+#total tests run: 1

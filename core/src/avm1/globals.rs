@@ -1,5 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::function::NativeFunction;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, Declaration};
 use crate::avm1::{Object, Value};
@@ -11,12 +12,14 @@ use std::str;
 mod accessibility;
 pub(super) mod array;
 pub(crate) mod as_broadcaster;
+mod asnative;
 pub(crate) mod bevel_filter;
 mod bitmap_data;
 mod bitmap_filter;
 pub(crate) mod blur_filter;
 pub(crate) mod boolean;
 pub(crate) mod button;
+mod camera;
 mod color;
 pub(crate) mod color_matrix_filter;
 pub(crate) mod color_transform;
@@ -29,6 +32,7 @@ pub(crate) mod drop_shadow_filter;
 pub(crate) mod error;
 mod external_interface;
 pub(crate) mod file_reference;
+mod file_reference_list;
 mod function;
 pub(crate) mod glow_filter;
 pub(crate) mod gradient_filter;
@@ -37,6 +41,7 @@ mod load_vars;
 pub(crate) mod local_connection;
 mod math;
 mod matrix;
+mod microphone;
 pub(crate) mod mouse;
 pub(crate) mod movie_clip;
 mod movie_clip_loader;
@@ -45,6 +50,7 @@ pub(crate) mod netstream;
 pub(crate) mod number;
 mod object;
 mod point;
+mod print_job;
 mod rectangle;
 mod selection;
 pub(crate) mod shared_object;
@@ -55,9 +61,12 @@ pub(crate) mod style_sheet;
 pub(crate) mod system;
 pub(crate) mod system_capabilities;
 pub(crate) mod system_ime;
+mod system_product;
 pub(crate) mod system_security;
 pub(crate) mod text_field;
 mod text_format;
+mod text_renderer;
+mod text_snapshot;
 pub(crate) mod transform;
 mod video;
 pub(crate) mod xml;
@@ -71,6 +80,7 @@ const GLOBAL_DECLS: &[Declaration] = declare_properties! {
     "parseInt" => method(parse_int; DONT_ENUM);
     "parseFloat" => method(parse_float; DONT_ENUM);
     "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM);
+    "ASnative" => method(asnative::asnative; DONT_ENUM);
     "clearInterval" => method(clear_interval; DONT_ENUM);
     "setInterval" => method(set_interval; DONT_ENUM);
     "clearTimeout" => method(clear_timeout; DONT_ENUM);
@@ -81,6 +91,17 @@ const GLOBAL_DECLS: &[Declaration] = declare_properties! {
     "NaN" => property(get_nan; DONT_ENUM);
     "Infinity" => property(get_infinity; DONT_ENUM);
 };
+
+pub fn get_native_function(id: u32) -> Option<NativeFunction> {
+    Some(match id {
+        0 => escape,
+        1 => unescape,
+        2 => parse_int,
+        3 => parse_float,
+        4 => trace,
+        _ => return None,
+    })
+}
 
 pub fn trace<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -538,6 +559,7 @@ pub fn create_globals<'gc>(
     let filters = Object::new(context.strings, Some(object.proto));
     let display = Object::new(context.strings, Some(object.proto));
     let net = Object::new(context.strings, Some(object.proto));
+    let text = Object::new(context.strings, Some(object.proto));
 
     let button = button::create_class(context, object.proto);
     let movie_clip = movie_clip::create_class(context, object.proto);
@@ -584,19 +606,27 @@ pub fn create_globals<'gc>(
     let bitmap_data = bitmap_data::create_class(context, object.proto);
     let file_reference =
         file_reference::create_class(context, object.proto, broadcaster_fns, array.proto);
+    let file_reference_list = file_reference_list::create_class(context, object.proto);
     let shared_object = shared_object::create_class(context, object.proto);
     let selection = selection::create(context, broadcaster_fns, array.proto);
+    let camera = camera::create_class(context, object.proto);
+    let microphone = microphone::create_class(context, object.proto);
+    let print_job = print_job::create_class(context, object.proto);
+    let text_snapshot = text_snapshot::create_class(context, object.proto);
 
     let system = system::create(context);
     let system_security = system_security::create(context);
     let system_capabilities = system_capabilities::create(context);
     let system_ime = system_ime::create(context, broadcaster_fns, array.proto);
+    let system_product = system_product::create_class(context, object.proto);
 
     let math = math::create(context);
     let mouse = mouse::create(context, broadcaster_fns, array.proto);
     let key = key::create(context, broadcaster_fns, array.proto);
     let stage = stage::create(context, broadcaster_fns, array.proto);
     let accessibility = accessibility::create(context);
+
+    let text_renderer = text_renderer::create_class(context, object.proto);
 
     let globals = Object::new_without_proto(context.gc());
     context.define_properties_on(globals, GLOBAL_DECLS);
@@ -612,57 +642,62 @@ pub fn create_globals<'gc>(
 
     #[rustfmt::skip]
     define_globals(context.strings, &[
+        // Top-level
+        (globals, b"Accessibility", accessibility, Attribute::DONT_ENUM),
         (globals, b"Array", array.constr, Attribute::DONT_ENUM),
         (globals, b"AsBroadcaster", as_broadcaster.constr, Attribute::DONT_ENUM),
+        (globals, b"Boolean", boolean.constr, Attribute::DONT_ENUM),
         (globals, b"Button", button.constr, Attribute::DONT_ENUM),
+        (globals, b"Camera", camera.constr, Attribute::DONT_ENUM),
         (globals, b"Color", color.constr, Attribute::DONT_ENUM),
+        (globals, b"ContextMenu", context_menu.constr, Attribute::DONT_ENUM),
+        (globals, b"ContextMenuItem", context_menu_item.constr, Attribute::DONT_ENUM),
+        (globals, b"Date", date.constr, Attribute::DONT_ENUM),
         (globals, b"Error", error.constr, Attribute::DONT_ENUM),
-        (globals, b"Object", object.constr, Attribute::DONT_ENUM),
-        (globals, b"Function", function.constr, Attribute::DONT_ENUM),
+        (globals, b"flash", flash, Attribute::DONT_ENUM | Attribute::VERSION_8),
+        (globals, b"Function", function.constr, Attribute::DONT_ENUM | Attribute::VERSION_6),
+        (globals, b"Key", key, Attribute::DONT_ENUM),
         (globals, b"LoadVars", load_vars.constr, Attribute::DONT_ENUM),
         (globals, b"LocalConnection", local_connection.constr, Attribute::DONT_ENUM),
+        (globals, b"Math", math, Attribute::DONT_ENUM),
+        (globals, b"Microphone", microphone.constr, Attribute::DONT_ENUM),
+        (globals, b"Mouse", mouse, Attribute::DONT_ENUM),
         (globals, b"MovieClip", movie_clip.constr, Attribute::DONT_ENUM),
         (globals, b"MovieClipLoader", movie_clip_loader.constr, Attribute::DONT_ENUM),
+        (globals, b"NetConnection", netconnection.constr, Attribute::DONT_ENUM),
+        (globals, b"NetStream", netstream.constr, Attribute::DONT_ENUM),
+        (globals, b"Number", number.constr, Attribute::DONT_ENUM),
+        (globals, b"Object", object.constr, Attribute::DONT_ENUM),
+        (globals, b"PrintJob", print_job.constr, Attribute::DONT_ENUM),
+        (globals, b"Selection", selection, Attribute::DONT_ENUM),
+        (globals, b"SharedObject", shared_object.constr, Attribute::DONT_ENUM),
         (globals, b"Sound", sound.constr, Attribute::DONT_ENUM),
+        (globals, b"Stage", stage, Attribute::DONT_ENUM),
+        (globals, b"String", string.constr, Attribute::DONT_ENUM),
+        (globals, b"System", system, Attribute::DONT_ENUM),
         (globals, b"TextField", text_field.constr, Attribute::DONT_ENUM),
         (globals, b"TextFormat", text_format.constr, Attribute::DONT_ENUM),
-        (globals, b"XMLNode", xmlnode.constr, Attribute::DONT_ENUM),
+        (globals, b"TextSnapshot", text_snapshot.constr, Attribute::DONT_ENUM),
+        (globals, b"Video", video.constr, Attribute::DONT_ENUM),
         (globals, b"XML", xml.constr, Attribute::DONT_ENUM),
-        (globals, b"String", string.constr, Attribute::DONT_ENUM),
-        (globals, b"Number", number.constr, Attribute::DONT_ENUM),
-        (globals, b"Boolean", boolean.constr, Attribute::DONT_ENUM),
-        (globals, b"Date", date.constr, Attribute::DONT_ENUM),
-        (globals, b"SharedObject", shared_object.constr, Attribute::DONT_ENUM),
-        (globals, b"ContextMenu", context_menu.constr, Attribute::DONT_ENUM),
-        (globals, b"Selection", selection, Attribute::DONT_ENUM),
-        (globals, b"ContextMenuItem", context_menu_item.constr, Attribute::DONT_ENUM),
-        (globals, b"System", system, Attribute::DONT_ENUM),
-        (globals, b"Math", math, Attribute::DONT_ENUM),
-        (globals, b"Mouse", mouse, Attribute::DONT_ENUM),
-        (globals, b"Key", key, Attribute::DONT_ENUM),
-        (globals, b"Stage", stage, Attribute::DONT_ENUM),
-        (globals, b"Accessibility", accessibility, Attribute::DONT_ENUM),
-        (globals, b"NetStream", netstream.constr, Attribute::DONT_ENUM),
-        (globals, b"NetConnection", netconnection.constr, Attribute::DONT_ENUM),
+        (globals, b"XMLNode", xmlnode.constr, Attribute::DONT_ENUM),
         (globals, b"XMLSocket", xml_socket.constr, Attribute::DONT_ENUM),
 
-        (globals, b"flash", flash, Attribute::DONT_ENUM),
+        // flash
         (flash, b"display", display, Attribute::empty()),
         (flash, b"external", external, Attribute::empty()),
         (flash, b"filters", filters, Attribute::empty()),
         (flash, b"geom", geom, Attribute::empty()),
         (flash, b"net", net, Attribute::empty()),
+        (flash, b"text", text, Attribute::empty()),
 
+        // flash.display
         (display, b"BitmapData", bitmap_data.constr, Attribute::empty()),
 
+        // flash.external
         (external, b"ExternalInterface", external_interface.constr, Attribute::empty()),
 
-        (geom, b"ColorTransform", color_transform.constr, Attribute::empty()),
-        (geom, b"Matrix", matrix.constr, Attribute::empty()),
-        (geom, b"Point", point.constr, Attribute::empty()),
-        (geom, b"Rectangle", rectangle.constr, Attribute::empty()),
-        (geom, b"Transform", transform.constr, Attribute::empty()),
-
+        // flash.filters
         (filters, b"BevelFilter", bevel_filter.constr, Attribute::empty()),
         (filters, b"BitmapFilter", bitmap_filter.constr, Attribute::empty()),
         (filters, b"BlurFilter", blur_filter.constr, Attribute::empty()),
@@ -670,16 +705,31 @@ pub fn create_globals<'gc>(
         (filters, b"ConvolutionFilter", convolution_filter.constr, Attribute::empty()),
         (filters, b"DisplacementMapFilter", displacement_map_filter.constr, Attribute::empty()),
         (filters, b"DropShadowFilter", drop_shadow_filter.constr, Attribute::empty()),
+        (filters, b"GlowFilter", glow_filter.constr, Attribute::empty()),
         (filters, b"GradientBevelFilter", gradient_bevel_filter.constr, Attribute::empty()),
         (filters, b"GradientGlowFilter", gradient_glow_filter.constr, Attribute::empty()),
-        (filters, b"GlowFilter", glow_filter.constr, Attribute::empty()),
 
+        // flash.geom
+        (geom, b"ColorTransform", color_transform.constr, Attribute::empty()),
+        (geom, b"Matrix", matrix.constr, Attribute::empty()),
+        (geom, b"Point", point.constr, Attribute::empty()),
+        (geom, b"Rectangle", rectangle.constr, Attribute::empty()),
+        (geom, b"Transform", transform.constr, Attribute::empty()),
+
+        // flash.net
         (net, b"FileReference", file_reference.constr, Attribute::empty()),
+        (net, b"FileReferenceList", file_reference_list.constr, Attribute::empty()),
 
-        (system, b"IME", system_ime, Attribute::empty()),
-        (system, b"security", system_security, Attribute::empty()),
+        // flash.text
+        (text, b"TextRenderer", text_renderer.constr, Attribute::empty()),
+
+        // System
         (system, b"capabilities", system_capabilities, Attribute::empty()),
+        (system, b"IME", system_ime, Attribute::empty()),
+        (system, b"Product", system_product.constr, Attribute::empty()),
+        (system, b"security", system_security, Attribute::empty()),
 
+        // TextField
         (text_field.constr, b"StyleSheet", style_sheet.constr, Attribute::DONT_ENUM | Attribute::VERSION_7),
     ]);
 

@@ -1,0 +1,18 @@
+PASSED: -16382 == -16382
+PASSED: 1 == 1
+PASSED: 1 == 1
+PASSED: -16382 == -16382
+PASSED: 0 == 0
+PASSED: 0 == 0
+PASSED: mc1._x  ==  0 [static_vs_dynamic2.c:87]
+PASSED: dup._x  ==  0 [static_vs_dynamic2.c:88]
+PASSED: mc1._x  ==  0 [static_vs_dynamic2.c:93]
+PASSED: dup._x  ==  0 [static_vs_dynamic2.c:94]
+PASSED: typeof(mc1)  ==  'movieclip' [static_vs_dynamic2.c:100]
+PASSED: typeof(dup)  ==  'undefined' [static_vs_dynamic2.c:102]
+PASSED: typeof(mc2)  ==  'movieclip' [static_vs_dynamic2.c:119]
+PASSED: typeof(mc2)  ==  'movieclip' [static_vs_dynamic2.c:122]
+PASSED: typeof(mc2)  ==  'undefined' [static_vs_dynamic2.c:126]
+#passed: 15
+#failed: 0
+#total tests run: 15

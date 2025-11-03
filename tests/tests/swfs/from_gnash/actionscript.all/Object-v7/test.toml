@@ -1,0 +1,19 @@
+num_frames = 30
+known_failure = true
+
+[subtests.fp9]
+output_path = "output.fp9-19.txt"
+player_options.version = 9
+
+[subtests.fp18]
+output_path = "output.fp18-20.txt"
+player_options.version = 18
+
+[subtests.fp19]
+output_path = "output.fp9-19.txt"
+player_options.version = 19
+
+[subtests.fp20]
+output_path = "output.fp18-20.txt"
+player_options.version = 20
+

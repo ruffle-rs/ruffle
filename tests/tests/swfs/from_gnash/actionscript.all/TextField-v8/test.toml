@@ -1,0 +1,29 @@
+num_frames = 30
+known_failure = true
+
+[default_fonts]
+serif = ["Noto Sans"]
+
+[fonts.noto_sans]
+family = "Noto Sans"
+path = "NotoSans.ttf"
+
+[subtests.fp9]
+output_path = "output.fp9-14.txt"
+player_options.version = 9
+
+[subtests.fp13]
+output_path = "output.fp13-17.txt"
+player_options.version = 13
+
+[subtests.fp14]
+output_path = "output.fp9-14.txt"
+player_options.version = 14
+
+[subtests.fp16]
+output_path = "output.fp16.txt"
+player_options.version = 16
+
+[subtests.fp17]
+output_path = "output.fp13-17.txt"
+player_options.version = 17

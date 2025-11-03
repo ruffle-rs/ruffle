@@ -1,3 +1,4 @@
 args = ["custom_output"]
 
-expect_error = "The image format could not be determined"
+expected_status = 1
+expected_stderr = "Error: The image format could not be determined\n"

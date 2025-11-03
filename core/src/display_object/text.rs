@@ -273,6 +273,10 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         }
     }
 
+    fn object1(self) -> Option<crate::avm1::Object<'gc>> {
+        None
+    }
+
     fn object2(self) -> Option<Avm2StageObject<'gc>> {
         self.0.avm2_object.get()
     }

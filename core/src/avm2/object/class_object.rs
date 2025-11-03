@@ -2,7 +2,9 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{AllocatorFn, Class, CustomConstructorFn};
-use crate::avm2::error::{self, argument_error, make_error_1127, reference_error, type_error};
+use crate::avm2::error::{
+    self, argument_error, make_error_1107, make_error_1127, reference_error, type_error,
+};
 use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::function_object::FunctionObject;
@@ -833,13 +835,7 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             Some(cls) => Some(
                 cls.as_object()
                     .and_then(|c| c.as_class_object())
-                    .ok_or_else(|| {
-                        // Note: FP throws VerifyError #1107 here
-                        format!(
-                            "Cannot apply class {:?} with non-class parameter",
-                            self_class.name()
-                        )
-                    })?
+                    .ok_or_else(|| make_error_1107(activation))?
                     .inner_class_definition(),
             ),
         };

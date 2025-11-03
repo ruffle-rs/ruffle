@@ -634,9 +634,9 @@ pub trait TInteractiveObject<'gc>:
         other: Option<InteractiveObject<'gc>>,
     ) {
         let self_do = self.as_displayobject();
-        if let Avm1Value::Object(object) = self_do.object1() {
+        if let Some(object) = self_do.object1() {
             let other = other
-                .map(|d| d.as_displayobject().object1())
+                .map(|d| d.as_displayobject().object1_or_undef())
                 .unwrap_or(Avm1Value::Null);
 
             let method_name = if focused {

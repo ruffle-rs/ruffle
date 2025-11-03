@@ -62,7 +62,7 @@ jobs:
         env:
           CARGO_FEATURES: jpegxr
           WASM_SOURCE: cargo_and_store
-        run: npm run build:repro
+        run: npm run build:dual-wasm-repro
 
       - name: Build Docker image with Ruffle in it
         run: docker build --tag ruffle-web-docker -f web/docker/Dockerfile .
@@ -88,7 +88,7 @@ jobs:
         run: test ! -s result.txt
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: ${{ always() }}
         with:
           name: result

@@ -1,0 +1,19 @@
+SWF8
+
+[Accessibility.as debug-22403-05c7ba106]
+PASSED: typeof(Accessibility) == 'object' [./Accessibility.as:28]
+PASSED: accObj == undefined [./Accessibility.as:32]
+PASSED: typeof(Accessibility.__proto__) == 'object' [./Accessibility.as:34]
+PASSED: Accessibility.__proto__ == Object.prototype [./Accessibility.as:35]
+PASSED: typeof(Accessibility.isActive) == 'function' [./Accessibility.as:39]
+PASSED: typeof(Accessibility.updateProperties) == 'function' [./Accessibility.as:40]
+PASSED: typeof(Accessibility.sendEvent) == 'function' [./Accessibility.as:41]
+PASSED: Accessibility.hasOwnProperty("isActive") [./Accessibility.as:43]
+PASSED: Accessibility.hasOwnProperty("updateProperties") [./Accessibility.as:44]
+PASSED: Accessibility.hasOwnProperty("sendEvent") [./Accessibility.as:45]
+PASSED: typeof(Accessibility.isActive()) == 'boolean' [./Accessibility.as:47]
+PASSED: typeof(Accessibility.updateProperties()) == 'undefined' [./Accessibility.as:59]
+PASSED: typeof(Accessibility.sendEvent()) == 'undefined' [./Accessibility.as:60]
+#passed: 13
+#failed: 0
+#total tests run: 13

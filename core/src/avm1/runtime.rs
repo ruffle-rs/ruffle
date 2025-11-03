@@ -12,7 +12,6 @@ use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfSlice;
 use crate::{avm1, avm_debug};
 use gc_arena::{Collect, Gc, Mutation};
-use std::borrow::Cow;
 use swf::avm1::read::Reader;
 use tracing::instrument;
 
@@ -121,12 +120,7 @@ impl<'gc> Avm1<'gc> {
             env_case_sensitive: GlobalEnv::create(context),
             display_properties: stage_object::DisplayPropertyMap::new(context),
             stack: vec![],
-            registers: [
-                Value::Undefined,
-                Value::Undefined,
-                Value::Undefined,
-                Value::Undefined,
-            ],
+            registers: [Value::Undefined; 4],
             halted: false,
             max_recursion_depth: 255,
             has_mouse_listener: false,
@@ -141,9 +135,9 @@ impl<'gc> Avm1<'gc> {
     /// Add a stack frame that executes code in timeline scope
     ///
     /// This creates a new frame stack.
-    pub fn run_stack_frame_for_action<S: Into<Cow<'static, str>>>(
+    pub fn run_stack_frame_for_action(
         active_clip: DisplayObject<'gc>,
-        name: S,
+        name: &str,
         code: SwfSlice,
         context: &mut UpdateContext<'gc>,
     ) {
@@ -159,7 +153,7 @@ impl<'gc> Avm1<'gc> {
         );
 
         let clip_obj = active_clip
-            .object1()
+            .object1_or_undef()
             .coerce_to_object(&mut parent_activation);
         let child_scope = Gc::new(
             parent_activation.gc(),
@@ -180,6 +174,7 @@ impl<'gc> Avm1<'gc> {
             active_clip,
             clip_obj.into(),
             None,
+            &[],
         );
         if let Err(e) = child_activation.run_actions(code) {
             root_error_handler(&mut child_activation, e);
@@ -197,10 +192,9 @@ impl<'gc> Avm1<'gc> {
     where
         for<'b> F: FnOnce(&mut Activation<'b, 'gc>) -> R,
     {
-        let clip_obj = match active_clip.object1() {
-            Value::Object(o) => o,
-            _ => panic!("No script object for display object"),
-        };
+        let clip_obj = active_clip
+            .object1()
+            .expect("No script object for display object");
         let child_scope = Gc::new(
             action_context.gc(),
             Scope::new(
@@ -219,6 +213,7 @@ impl<'gc> Avm1<'gc> {
             active_clip,
             clip_obj.into(),
             None,
+            &[],
         );
         function(&mut activation)
     }
@@ -243,7 +238,7 @@ impl<'gc> Avm1<'gc> {
         );
 
         let clip_obj = active_clip
-            .object1()
+            .object1_or_undef()
             .coerce_to_object(&mut parent_activation);
         let child_scope = Gc::new(
             parent_activation.gc(),
@@ -265,6 +260,7 @@ impl<'gc> Avm1<'gc> {
             active_clip,
             clip_obj.into(),
             None,
+            &[],
         );
         if let Err(e) = child_activation.run_actions(code) {
             root_error_handler(&mut child_activation, e);
@@ -287,11 +283,9 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let mut activation = Activation::from_nothing(
-            context,
-            ActivationIdentifier::root(name.to_string()),
-            active_clip,
-        );
+        let name_utf8 = &name.to_utf8_lossy();
+        let mut activation =
+            Activation::from_nothing(context, ActivationIdentifier::root(name_utf8), active_clip);
 
         let _ = obj.call_method(name, args, &mut activation, ExecutionReason::Special);
     }
@@ -348,8 +342,14 @@ impl<'gc> Avm1<'gc> {
         self.stack.len()
     }
 
-    pub fn clear_stack(&mut self) {
-        self.stack.clear()
+    /// Resets the operand stack and the global registers.
+    ///
+    /// AVM1 bytecode may leave the stack unbalanced, or access global registers
+    /// without initializing them, so this method should be called after executing
+    /// bytecode to clear any left-overs.
+    pub fn clear(&mut self) {
+        self.stack.clear();
+        self.registers = [Value::Undefined; 4];
     }
 
     pub fn push(&mut self, value: Value<'gc>) {

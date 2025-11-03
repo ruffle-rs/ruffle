@@ -455,7 +455,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
                 let object = Avm2StageObject::for_display_object(context.gc(), self.into(), class);
                 object_cell.set(Some(object));
 
-                if !self.placed_by_script() {
+                if !self.placed_by_avm2_script() {
                     // This is run before we actually call the constructor - the un-constructed object
                     // is exposed to ActionScript via `parent.<childName>`.
                     self.set_on_parent_field(context);
@@ -648,6 +648,10 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
 
         false
+    }
+
+    fn object1(self) -> Option<Avm1Object<'gc>> {
+        None
     }
 
     fn object2(self) -> Option<Avm2StageObject<'gc>> {

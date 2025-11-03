@@ -1,0 +1,12 @@
+Placed red shape sh1 and black shape sh2 at the same depth 3. Should both be visible, red on top.
+PASSED: sh1  ==  sh2 [place_object_test.c:83]
+PASSED: typeof(sh1)  ==  'movieclip' [place_object_test.c:84]
+PASSED: typeof(sh2)  ==  'movieclip' [place_object_test.c:85]
+Placed red sprite mc1 and black sprite mc2 at the same depth 4. Should both be visible, black on top.
+PASSED: typeof(mc1)  ==  'movieclip' [place_object_test.c:111]
+PASSED: typeof(mc2)  ==  'movieclip' [place_object_test.c:112]
+PASSED: mc1._name != mc2._name [place_object_test.c:113]
+PASSED: mc1.getDepth()  ==  mc2.getDepth() [place_object_test.c:114]
+#passed: 7
+#failed: 0
+#total tests run: 7

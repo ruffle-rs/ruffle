@@ -16,6 +16,7 @@ file-menu-recents = Recents
 file-menu-recents-empty = No recent entries
 file-menu-preferences = Preferences...
 file-menu-exit = Exit
+file-menu-export = Export...
 
 controls-menu = Controls
 controls-menu-suspend = Suspend

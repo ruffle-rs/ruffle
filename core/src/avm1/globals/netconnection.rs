@@ -271,8 +271,10 @@ fn call<'gc>(
         .coerce_to_string(activation)?;
     let mut arguments = Vec::new();
 
-    for arg in &args[2..] {
-        arguments.push(Rc::new(serialize(activation, *arg)));
+    if args.len() > 2 {
+        for arg in &args[2..] {
+            arguments.push(Rc::new(serialize(activation, *arg)));
+        }
     }
 
     if let Some(handle) = net_connection.handle() {

@@ -9,14 +9,58 @@ use crate::options::approximations::Approximations;
 use crate::options::font::{DefaultFontsOptions, FontOptions, FontSortOptions};
 use crate::options::image_comparison::ImageComparison;
 use crate::options::player::PlayerOptions;
-use anyhow::{anyhow, Result};
+use anyhow::{bail, Result};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
+use toml::de::{DeTable, DeValue};
+use toml::Spanned;
 use vfs::VfsPath;
+
+fn merge_into_subtest<'a>(
+    base: &Spanned<DeValue<'a>>,
+    config: &mut Spanned<DeValue<'a>>,
+    path: &mut String,
+) -> Result<(), toml::de::Error> {
+    use serde::de::Error as _;
+    let err_msg = match (base.get_ref(), config.get_mut()) {
+        // Table into table, recurse into fields
+        (DeValue::Table(tbase), DeValue::Table(tconfig)) => {
+            let old_path_len = path.len();
+            for (k, vbase) in tbase {
+                if let Some(vconfig) = tconfig.get_mut(k) {
+                    path.push('.');
+                    path.push_str(k.get_ref());
+                    merge_into_subtest(vbase, vconfig, path)?;
+                    path.truncate(old_path_len);
+                } else {
+                    tconfig.insert(k.clone(), vbase.clone());
+                }
+            }
+            return Ok(());
+        }
+        (DeValue::Table(_), DeValue::Array(_)) => "cannot merge table into array",
+        (DeValue::Array(_), DeValue::Table(_)) => "cannot merge array into table",
+        (DeValue::Array(_), DeValue::Array(_)) => "merging arrays isn't supported",
+        // Otherwise, overwrite the whole value.
+        _ => {
+            *config = base.clone();
+            return Ok(());
+        }
+    };
+
+    Err(toml::de::Error::custom(format_args!(
+        "{err_msg} (path = {path})"
+    )))
+}
 
 #[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TestOptions {
+    // Only set when the `test.toml` file has multiple configs,
+    // which we handle manually.
+    #[serde(skip)]
+    pub subtest_name: Option<String>,
+
     pub num_frames: Option<u32>,
     pub num_ticks: Option<u32>,
     pub tick_rate: Option<f64>,
@@ -37,6 +81,7 @@ pub struct TestOptions {
 impl Default for TestOptions {
     fn default() -> Self {
         Self {
+            subtest_name: None,
             num_frames: None,
             num_ticks: None,
             tick_rate: None,
@@ -57,6 +102,58 @@ impl Default for TestOptions {
 }
 
 impl TestOptions {
+    pub fn read_with_subtests(path: &VfsPath) -> Result<Vec<Self>> {
+        use serde::de::{Error, IntoDeserializer};
+
+        let contents = path.read_to_string()?;
+
+        // This improves TOML error messages.
+        let err_with_input = |mut e: toml::de::Error| {
+            e.set_input(Some(&contents));
+            e
+        };
+
+        let mut raw = DeTable::parse(&contents)?;
+        // `TestOptions` doesn't actually have this field, so remove it.
+        let raw_subtests = raw.get_mut().remove("subtests");
+
+        let subtests = match raw_subtests.map(|spanned| spanned.into_inner()) {
+            // This is a single test, parse and return it.
+            None => {
+                let parsed = Self::deserialize(raw.into_deserializer()).map_err(err_with_input)?;
+                parsed.validate()?;
+                return Ok(vec![parsed]);
+            }
+            Some(DeValue::Table(table)) => table,
+            Some(_) => bail!(err_with_input(Error::custom(
+                "'configs' field should be a table"
+            ))),
+        };
+
+        if subtests.len() < 2 {
+            bail!("If present, the [subtests] table must have at least two entries.");
+        }
+
+        // Merge default values into each subtest, and deserialize the result.
+        let raw = Spanned::new(0..contents.len(), DeValue::Table(raw.into_inner()));
+        subtests
+            .into_iter()
+            .map(|(name, mut raw_config)| {
+                let mut name = name.into_inner().into_owned();
+
+                // Note: when this returns, `name` will be restored to its original value.
+                merge_into_subtest(&raw, &mut raw_config, &mut name).map_err(err_with_input)?;
+
+                let mut parsed =
+                    Self::deserialize(raw_config.into_deserializer()).map_err(err_with_input)?;
+
+                parsed.subtest_name = Some(name);
+                parsed.validate()?;
+                Ok(parsed)
+            })
+            .collect()
+    }
+
     pub fn read(path: &VfsPath) -> Result<Self> {
         let result: Self = toml::from_str(&path.read_to_string()?)?;
         result.validate()?;
@@ -70,10 +167,10 @@ impl TestOptions {
                 if comparison.trigger != ImageTrigger::FsCommand
                     && !seen_triggers.insert(comparison.trigger)
                 {
-                    return Err(anyhow!(
+                    bail!(
                         "Multiple captures are set to trigger {:?}. This likely isn't intended!",
                         comparison.trigger
-                    ));
+                    );
                 }
             }
         }

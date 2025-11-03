@@ -1,0 +1,7 @@
+SWF6
+
+[Transform.as debug-22403-05c7ba106]
+PASSED: typeOf(flash.geom.Transform) == "function" [./Transform.as:33]
+#passed: 1
+#failed: 0
+#total tests run: 1

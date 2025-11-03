@@ -1,0 +1,20 @@
+SWF5
+
+[Try.as debug-22403-05c7ba106]
+PASSED: r == "1: try body finally ." [./Try.as:67]
+PASSED: r == "2: try catch thrown finally ." [./Try.as:74]
+PASSED: r == "3: try body finally ." [./Try.as:80]
+thrown
+PASSED: r == "4: try finally thrown ." [./Try.as:90]
+PASSED: r == "5: try body . pre-existing variable d" [./Try.as:100]
+PASSED: r == "6: try catch thrown ." [./Try.as:106]
+PASSED: r == "7: try finally finally2 thrown ." [./Try.as:118]
+PASSED: r == "8: try finally finally2 try2 thrown ." [./Try.as:137]
+PASSED: r == "9: try finally catch thrown finally2 try2 ." [./Try.as:156]
+PASSED: r == "10: catch finally." [./Try.as:166]
+PASSED: r == "11: catch finally." [./Try.as:176]
+PASSED: r == "12: try throw finally." [./Try.as:196]
+PASSED: r == "13: try finally." [./Try.as:207]
+#passed: 13
+#failed: 0
+#total tests run: 13

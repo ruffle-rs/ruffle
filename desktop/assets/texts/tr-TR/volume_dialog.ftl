@@ -1,3 +1,3 @@
 volume-controls = Ses kontrolleri
-volume-controls-mute = Sustur
+volume-controls-mute = Sesi kapat
 volume-controls-volume = Ses

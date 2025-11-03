@@ -111,7 +111,7 @@ jobs:
 
       - name: Upload images
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: swf_images_${{ matrix.rust_version }}_${{ matrix.os }}
           path: |
@@ -247,7 +247,7 @@ jobs:
 
       - name: Upload llvm-cov reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: llvm-cov
           path: target/llvm-cov
@@ -263,7 +263,7 @@ jobs:
 
       - name: Upload diff-cover reports
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: diff-cover
           path: target/diff-cover

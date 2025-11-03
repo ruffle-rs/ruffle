@@ -38,4 +38,7 @@ pub enum RuffleEvent {
 
     /// Ruffle core has a notification to handle.
     PlayerNotification(PlayerNotification),
+
+    /// Export Ruffle Bundle from currently playing content and open save dialog.
+    ExportBundle,
 }

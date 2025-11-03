@@ -2,16 +2,20 @@
 
 use anyhow::{anyhow, Context, Result};
 use clap::Parser;
-use exporter::{cli::Opt, run_main};
+use exporter::cli::Opt;
 use libtest_mimic::Trial;
 use ruffle_fs_tests_runner::{FsTestsRunner, TestLoaderParams};
 use serde::Deserialize;
+use std::borrow::Cow;
 use std::io::Read;
-use std::{borrow::Cow, sync::Mutex};
+use std::process::Stdio;
 use vfs::{VfsError, VfsPath};
 
 const TEST_TOML_NAME: &str = "test.toml";
-static CWD_MUTEX: Mutex<()> = Mutex::new(());
+
+/// This environment variable is set for child processes.
+/// If it's defined, it means that it's the child process.
+const CHILD_PROCESS_ENV_NAME: &str = "__RUFFLE_EXPORTER_TEST_CHILD_PROCESS__";
 
 #[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
@@ -21,7 +25,9 @@ struct TestOptions {
     pub ignore: bool,
     pub input_dir: Option<String>,
     pub output_dir: Option<String>,
-    pub expect_error: Option<String>,
+    pub expected_status: Option<i32>,
+    pub expected_stdout: Option<String>,
+    pub expected_stderr: Option<String>,
 }
 
 impl Default for TestOptions {
@@ -32,7 +38,9 @@ impl Default for TestOptions {
             ignore: false,
             input_dir: None,
             output_dir: None,
-            expect_error: None,
+            expected_status: None,
+            expected_stdout: None,
+            expected_stderr: None,
         }
     }
 }
@@ -66,14 +74,21 @@ impl TestOptions {
     }
 }
 
-fn main() {
+fn main() -> Result<()> {
+    if std::env::var(CHILD_PROCESS_ENV_NAME).is_ok() {
+        let opt: Opt = Opt::parse();
+        return exporter::run_main(opt);
+    }
+
     let mut runner = FsTestsRunner::new();
 
     runner
         // We're switching directories, so we cannot use relative paths.
         .with_canonicalize_paths(true)
         .with_descriptor_name(Cow::Borrowed(TEST_TOML_NAME))
-        .with_test_loader(Box::new(|params| Some(load_test(params))));
+        .with_test_loader(Box::new(|params, register_trial| {
+            register_trial(load_test(params))
+        }));
 
     runner.run()
 }
@@ -119,43 +134,65 @@ fn load_test(params: TestLoaderParams) -> Trial {
         let swf_path_real = test_dir_real.join(swf_path.as_str().trim_start_matches(['/']));
         let swf_path_real_str = swf_path_real.to_string_lossy();
 
-        // We need a global mutex for the current working directory,
-        // as we don't want it being set concurrently.
-        let _cwd_guard = CWD_MUTEX.lock().unwrap_or_else(|e| e.into_inner());
-        std::env::set_current_dir(&actual_dir_real)
-            .map_err(|e| anyhow!("Failed to change working directory: {e}"))?;
-
-        let mut args = Vec::new();
-        args.push("exporter");
+        let mut args: Vec<&str> = Vec::new();
         args.push(&swf_path_real_str);
         for arg in &options.args {
             args.push(arg);
         }
-        let opt = Opt::try_parse_from(&args)
-            .map_err(|e| anyhow!("Error parsing args {:?}:\n{e}", &args))?;
 
-        let result = run_main(opt);
-        match (result, &options.expect_error) {
-            (Ok(()), None) => {
+        // Spawn a child process with a different working directory.
+        let mut child = std::process::Command::new(std::env::current_exe().unwrap())
+            .args(args)
+            .current_dir(actual_dir_real)
+            .env(CHILD_PROCESS_ENV_NAME, "")
+            .stdout(Stdio::piped())
+            .stderr(Stdio::piped())
+            .spawn()
+            .expect("Failed to spawn child process");
+
+        let exist_status = child.wait().expect("Failed to wait for child process");
+
+        let stdout = std::io::read_to_string(child.stdout.take().expect("handle present"))?;
+        let stderr = std::io::read_to_string(child.stderr.take().expect("handle present"))?;
+
+        match (exist_status.code(), options.expected_status) {
+            (Some(0), None) => {
                 // Works as expected!
             }
-            (Ok(()), Some(_)) => {
+            (Some(actual), None) => {
                 return Err(
-                    anyhow!("Expected exporter to return an error, but it succeeded").into(),
+                    anyhow!("Expected exporter to succeed, but it returned {actual}, stderr:\n{stderr}\nstdout:\n{stdout}").into(),
                 );
             }
-            (Err(actual), None) => {
-                return Err(anyhow!("Failed executing exporter:\n{actual}").into());
+            (Some(actual), Some(expected)) if actual == expected => {
+                // Works as expected!
             }
-            (Err(actual), Some(expected)) => {
-                let actual_string = actual.to_string();
-                if &actual_string != expected {
-                    return Err(anyhow!(
-                        "Unexpected error reported by exporter ({}):\n{actual_string}",
-                        actual_string.len()
-                    )
-                    .into());
-                }
+            (Some(actual), Some(expected)) => {
+                return Err(anyhow!(
+                    "Expected exporter to return {expected}, but it returned {actual}, stderr:\n{stderr}\nstdout:\n{stdout}"
+                )
+                .into());
+            }
+            (None, _) => {
+                return Err(anyhow!("Child process was terminated by a signal").into());
+            }
+        }
+
+        if let Some(expected_stdout) = &options.expected_stdout {
+            if &stdout != expected_stdout {
+                return Err(anyhow!(
+                    "Unexpected stdout. Expected:\n{expected_stdout}\nActual:\n{stdout}"
+                )
+                .into());
+            }
+        }
+
+        if let Some(expected_stderr) = &options.expected_stderr {
+            if &stderr != expected_stderr {
+                return Err(anyhow!(
+                    "Unexpected stderr. Expected:\n{expected_stderr}\nActual:\n{stderr}"
+                )
+                .into());
             }
         }
 

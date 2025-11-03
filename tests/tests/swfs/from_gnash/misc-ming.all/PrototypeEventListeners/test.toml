@@ -1,0 +1,8 @@
+num_frames = 30
+known_failure = true
+
+[subtests.fp10]
+player_options.version = 10
+
+[subtests.fp11]
+player_options.version = 11

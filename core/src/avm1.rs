@@ -17,6 +17,7 @@ mod fscommand;
 pub(crate) mod globals;
 mod object;
 mod object_reference;
+mod parameters;
 mod property;
 mod property_map;
 mod runtime;

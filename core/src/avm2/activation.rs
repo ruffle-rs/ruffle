@@ -816,6 +816,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                     continue;
                 }
+                Op::PopJump { offset } => {
+                    self.timeout_check()?;
+
+                    let _ = self.pop_stack();
+                    ip = *offset;
+
+                    continue;
+                }
                 Op::LookupSwitch(lookup_switch) => {
                     self.timeout_check()?;
 

@@ -26,6 +26,7 @@ use winit::event_loop::EventLoopProxy;
 use winit::keyboard::{Key, NamedKey};
 use winit::window::{ImePurpose as WinitImePurpose, Theme, Window};
 
+use super::dialogs::export_bundle_dialog::ExportBundleDialogConfiguration;
 use super::{DialogDescriptor, FilePicker};
 
 /// Integration layer connecting wgpu+winit to egui.
@@ -472,6 +473,20 @@ impl GuiController {
             self.movie_to_window_position(cursor_area.x, cursor_area.y),
             PhysicalSize::new(cursor_area.width, cursor_area.height),
         );
+    }
+
+    pub fn export_bundle(&mut self) {
+        let Some(movie_url) = self.gui.dialogs.saved_movie_url() else {
+            return;
+        };
+
+        let player_options = self.gui.dialogs.saved_launch_options().player.clone();
+        self.gui
+            .dialogs
+            .open_dialog(DialogDescriptor::ExportBundle(Box::new(
+                ExportBundleDialogConfiguration::new(movie_url.clone(), player_options),
+            )));
+        self.gui.on_player_destroyed();
     }
 }
 
