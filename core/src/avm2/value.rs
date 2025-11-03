@@ -1257,7 +1257,7 @@ impl<'gc> Value<'gc> {
     /// This method will panic if called on null or undefined.
     pub fn call_method(
         &self,
-        id: u32,
+        id: usize,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1266,7 +1266,7 @@ impl<'gc> Value<'gc> {
 
     pub fn call_method_with_args(
         &self,
-        id: u32,
+        id: usize,
         arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {

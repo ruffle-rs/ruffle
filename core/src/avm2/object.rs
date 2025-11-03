@@ -399,7 +399,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     /// Retrieve a slot by its index.
     #[no_dynamic]
     #[inline(always)]
-    fn get_slot(self, id: u32) -> Value<'gc> {
+    fn get_slot(self, id: usize) -> Value<'gc> {
         let base = self.base();
 
         base.get_slot(id)
@@ -409,7 +409,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     #[no_dynamic]
     fn set_slot(
         self,
-        id: u32,
+        id: usize,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
@@ -422,7 +422,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     }
 
     #[no_dynamic]
-    fn set_slot_no_coerce(self, id: u32, value: Value<'gc>, mc: &Mutation<'gc>) {
+    fn set_slot_no_coerce(self, id: usize, value: Value<'gc>, mc: &Mutation<'gc>) {
         let base = self.base();
 
         base.set_slot(id, value, mc);
@@ -580,7 +580,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     fn install_bound_method(
         &self,
         mc: &Mutation<'gc>,
-        disp_id: u32,
+        disp_id: usize,
         function: FunctionObject<'gc>,
     ) {
         let base = self.base();
@@ -691,7 +691,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
     }
 
     #[no_dynamic]
-    fn get_bound_method(&self, id: u32) -> Option<FunctionObject<'gc>> {
+    fn get_bound_method(&self, id: usize) -> Option<FunctionObject<'gc>> {
         let base = self.base();
         base.get_bound_method(id)
     }
