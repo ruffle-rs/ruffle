@@ -40,21 +40,21 @@ mat3D.rawData 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
 // sprite3D: update mat3D
 sprite3D.transform.matrix null
 sprite3D.transform.matrix3D [object Matrix3D]
-mat3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1
+mat3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,8,1
 // sprite3D: .matrix3D = mat3D
 sprite3D.transform.matrix null
 sprite3D.transform.matrix3D [object Matrix3D]
-sprite3D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1
-mat3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1
+sprite3D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,8,1
+mat3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,8,1
 // sprite3D: .matrix = null
 sprite3D.transform.matrix null
 sprite3D.transform.matrix3D [object Matrix3D]
-sprite3D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1
-mat3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,0,1
+sprite3D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,8,1
+mat3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,6,7,8,1
 // sprite3D: set x = 30, y = 50
 sprite3D.transform.matrix null
 sprite3D.transform.matrix3D [object Matrix3D]
-sprite3D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,30,50,0,1
+sprite3D.transform.matrix3D.rawData 2,3,0,0,4,5,0,0,0,0,1,0,30,50,8,1
 // sprite3D: .matrix3D = null
 sprite3D.transform.matrix (a=1, b=0, c=0, d=1, tx=0, ty=0)
 sprite3D.transform.matrix3D null
