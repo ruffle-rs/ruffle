@@ -707,10 +707,12 @@ fn set_position<'gc>(
 }
 
 fn get_position<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Sound", "getPosition");
+    if let NativeObject::Sound(sound) = this.native() {
+        return Ok(sound.position().into());
+    }
     Ok(Value::Undefined)
 }
