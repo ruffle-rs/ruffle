@@ -1,0 +1,1206 @@
+-- Transparent --
+// copyPixels()
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, rect)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, rect, point)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// copyPixels(null, rect, point)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(undefined, rect, point)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels({}, rect, point)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, rect, point)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff345678 0xff345678
+0xaabbccdc 0xff345678 0xff345678
+--
+
+// copyPixels(disposedBmd, rect, point)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, null, point)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, undefined, point)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, {}, point)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, zeroSizedRect, point)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, rectAsObj, point)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// copyPixels(transparentBmd, rectWithoutWidth, point)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, rect, null)
+0
+--
+0x12395571 0x12395571 0xaabbccdc
+0x12395571 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, rect, undefined)
+0
+--
+0x12395571 0x12395571 0xaabbccdc
+0x12395571 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, rect, {})
+0
+--
+0x12395571 0x12395571 0xaabbccdc
+0x12395571 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, rect, pointOutsideBmd)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, rect, pointAsObj)
+0
+--
+0x12395571 0x12395571 0xaabbccdc
+0x12395571 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, rect, pointWithoutY)
+0
+--
+0x12395571 0x12395571 0xaabbccdc
+0x12395571 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, rect)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff345678 0xff345678
+0xaabbccdc 0xff345678 0xff345678
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x112d5a78 0x112d5a78
+0xaabbccdc 0x112d5a78 0x112d5a78
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+--
+
+// copyPixels(null, rect, point, transparentBmd, point, true)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(undefined, rect, point, transparentBmd, point, true)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels({}, rect, point, transparentBmd, point, true)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(transparentBmd, rect, point, transparentBmd, point, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabacadb 0xaabacadb
+0xaabbccdc 0xaabacadb 0xaabacadb
+--
+
+// copyPixels(disposedBmd, rect, point, transparentBmd, point, true)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, null, point, transparentBmd, point, true)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, undefined, point, transparentBmd, point, true)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, {}, point, transparentBmd, point, true)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, zeroSizedRect, point, transparentBmd, point, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, rectAsObj, point, transparentBmd, point, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+--
+
+// copyPixels(opaqueBmd, rectWithoutWidth, point, transparentBmd, point, true)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, rect, null, transparentBmd, point, true)
+0
+--
+0xafadc0d3 0xafadc0d3 0xaabbccdc
+0xafadc0d3 0xafadc0d3 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, rect, undefined, transparentBmd, point, true)
+0
+--
+0xafadc0d3 0xafadc0d3 0xaabbccdc
+0xafadc0d3 0xafadc0d3 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, rect, {}, transparentBmd, point, true)
+0
+--
+0xafadc0d3 0xafadc0d3 0xaabbccdc
+0xafadc0d3 0xafadc0d3 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, rect, pointOutsideBmd, transparentBmd, point, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, rect, pointAsObj, transparentBmd, point, true)
+0
+--
+0xafadc0d3 0xafadc0d3 0xaabbccdc
+0xafadc0d3 0xafadc0d3 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, rect, pointWithoutY, transparentBmd, point, true)
+0
+--
+0xafadc0d3 0xafadc0d3 0xaabbccdc
+0xafadc0d3 0xafadc0d3 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, rect, point, null, point, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff345678 0xff345678
+0xaabbccdc 0xff345678 0xff345678
+--
+
+// copyPixels(opaqueBmd, rect, point, undefined, point, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff345678 0xff345678
+0xaabbccdc 0xff345678 0xff345678
+--
+
+// copyPixels(opaqueBmd, rect, point, {}, point, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff345678 0xff345678
+0xaabbccdc 0xff345678 0xff345678
+--
+
+// copyPixels(opaqueBmd, rect, point, opaqueBmd, point, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff345678 0xff345678
+0xaabbccdc 0xff345678 0xff345678
+--
+
+// copyPixels(opaqueBmd, rect, point, disposedBmd, point, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff345678 0xff345678
+0xaabbccdc 0xff345678 0xff345678
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, null, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, undefined, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, {}, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, pointOutsideBmd, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, pointAsObj, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, pointWithoutY, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point, null)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x112d5a78 0x112d5a78
+0xaabbccdc 0x112d5a78 0x112d5a78
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point, undefined)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x112d5a78 0x112d5a78
+0xaabbccdc 0x112d5a78 0x112d5a78
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point, {})
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+0xaabbccdc 0xafadc0d3 0xafadc0d3
+--
+
+
+
+-- Opaque --
+// copyPixels()
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, rect)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, rect, point)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c3d5 0xffb1c3d5
+0xffbbccdd 0xffb1c3d5 0xffb1c3d5
+--
+
+// copyPixels(null, rect, point)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(undefined, rect, point)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels({}, rect, point)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, rect, point)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff345678 0xff345678
+0xffbbccdd 0xff345678 0xff345678
+--
+
+// copyPixels(disposedBmd, rect, point)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, null, point)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, undefined, point)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, {}, point)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, zeroSizedRect, point)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, rectAsObj, point)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c3d5 0xffb1c3d5
+0xffbbccdd 0xffb1c3d5 0xffb1c3d5
+--
+
+// copyPixels(transparentBmd, rectWithoutWidth, point)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, rect, null)
+0
+--
+0xffb1c3d5 0xffb1c3d5 0xffbbccdd
+0xffb1c3d5 0xffb1c3d5 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, rect, undefined)
+0
+--
+0xffb1c3d5 0xffb1c3d5 0xffbbccdd
+0xffb1c3d5 0xffb1c3d5 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, rect, {})
+0
+--
+0xffb1c3d5 0xffb1c3d5 0xffbbccdd
+0xffb1c3d5 0xffb1c3d5 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, rect, pointOutsideBmd)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, rect, pointAsObj)
+0
+--
+0xffb1c3d5 0xffb1c3d5 0xffbbccdd
+0xffb1c3d5 0xffb1c3d5 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, rect, pointWithoutY)
+0
+--
+0xffb1c3d5 0xffb1c3d5 0xffbbccdd
+0xffb1c3d5 0xffb1c3d5 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, rect)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff345678 0xff345678
+0xffbbccdd 0xff345678 0xff345678
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+--
+
+// copyPixels(null, rect, point, transparentBmd, point, true)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(undefined, rect, point, transparentBmd, point, true)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels({}, rect, point, transparentBmd, point, true)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(transparentBmd, rect, point, transparentBmd, point, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbacbdc 0xffbacbdc
+0xffbbccdd 0xffbacbdc 0xffbacbdc
+--
+
+// copyPixels(disposedBmd, rect, point, transparentBmd, point, true)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, null, point, transparentBmd, point, true)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, undefined, point, transparentBmd, point, true)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, {}, point, transparentBmd, point, true)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, zeroSizedRect, point, transparentBmd, point, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, rectAsObj, point, transparentBmd, point, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+--
+
+// copyPixels(opaqueBmd, rectWithoutWidth, point, transparentBmd, point, true)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, rect, null, transparentBmd, point, true)
+0
+--
+0xffb1c4d6 0xffb1c4d6 0xffbbccdd
+0xffb1c4d6 0xffb1c4d6 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, rect, undefined, transparentBmd, point, true)
+0
+--
+0xffb1c4d6 0xffb1c4d6 0xffbbccdd
+0xffb1c4d6 0xffb1c4d6 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, rect, {}, transparentBmd, point, true)
+0
+--
+0xffb1c4d6 0xffb1c4d6 0xffbbccdd
+0xffb1c4d6 0xffb1c4d6 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, rect, pointOutsideBmd, transparentBmd, point, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, rect, pointAsObj, transparentBmd, point, true)
+0
+--
+0xffb1c4d6 0xffb1c4d6 0xffbbccdd
+0xffb1c4d6 0xffb1c4d6 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, rect, pointWithoutY, transparentBmd, point, true)
+0
+--
+0xffb1c4d6 0xffb1c4d6 0xffbbccdd
+0xffb1c4d6 0xffb1c4d6 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, rect, point, null, point, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff345678 0xff345678
+0xffbbccdd 0xff345678 0xff345678
+--
+
+// copyPixels(opaqueBmd, rect, point, undefined, point, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff345678 0xff345678
+0xffbbccdd 0xff345678 0xff345678
+--
+
+// copyPixels(opaqueBmd, rect, point, {}, point, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff345678 0xff345678
+0xffbbccdd 0xff345678 0xff345678
+--
+
+// copyPixels(opaqueBmd, rect, point, opaqueBmd, point, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff345678 0xff345678
+0xffbbccdd 0xff345678 0xff345678
+--
+
+// copyPixels(opaqueBmd, rect, point, disposedBmd, point, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff345678 0xff345678
+0xffbbccdd 0xff345678 0xff345678
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, null, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, undefined, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, {}, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, pointOutsideBmd, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, pointAsObj, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, pointWithoutY, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point, null)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point, undefined)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point, {})
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+0xffbbccdd 0xffb1c4d6 0xffb1c4d6
+--
+
+
+
+-- Disposed --
+// copyPixels()
+-1
+--
+--
+
+// copyPixels(transparentBmd)
+-1
+--
+--
+
+// copyPixels(transparentBmd, rect)
+-1
+--
+--
+
+// copyPixels(transparentBmd, rect, point)
+-1
+--
+--
+
+// copyPixels(null, rect, point)
+-1
+--
+--
+
+// copyPixels(undefined, rect, point)
+-1
+--
+--
+
+// copyPixels({}, rect, point)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point)
+-1
+--
+--
+
+// copyPixels(disposedBmd, rect, point)
+-1
+--
+--
+
+// copyPixels(transparentBmd, null, point)
+-1
+--
+--
+
+// copyPixels(transparentBmd, undefined, point)
+-1
+--
+--
+
+// copyPixels(transparentBmd, {}, point)
+-1
+--
+--
+
+// copyPixels(transparentBmd, zeroSizedRect, point)
+-1
+--
+--
+
+// copyPixels(transparentBmd, rectAsObj, point)
+-1
+--
+--
+
+// copyPixels(transparentBmd, rectWithoutWidth, point)
+-1
+--
+--
+
+// copyPixels(transparentBmd, rect, null)
+-1
+--
+--
+
+// copyPixels(transparentBmd, rect, undefined)
+-1
+--
+--
+
+// copyPixels(transparentBmd, rect, {})
+-1
+--
+--
+
+// copyPixels(transparentBmd, rect, pointOutsideBmd)
+-1
+--
+--
+
+// copyPixels(transparentBmd, rect, pointAsObj)
+-1
+--
+--
+
+// copyPixels(transparentBmd, rect, pointWithoutY)
+-1
+--
+--
+
+// copyPixels(opaqueBmd)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(null, rect, point, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(undefined, rect, point, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels({}, rect, point, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(transparentBmd, rect, point, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(disposedBmd, rect, point, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, null, point, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, undefined, point, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, {}, point, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, zeroSizedRect, point, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rectAsObj, point, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rectWithoutWidth, point, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, null, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, undefined, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, {}, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, pointOutsideBmd, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, pointAsObj, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, pointWithoutY, transparentBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, null, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, undefined, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, {}, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, opaqueBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, disposedBmd, point, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, null, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, undefined, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, {}, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, pointOutsideBmd, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, pointAsObj, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, pointWithoutY, true)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point, null)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point, undefined)
+-1
+--
+--
+
+// copyPixels(opaqueBmd, rect, point, transparentBmd, point, {})
+-1
+--
+--
+
+
+

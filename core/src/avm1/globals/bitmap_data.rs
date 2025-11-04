@@ -892,6 +892,9 @@ fn copy_pixels<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 3 {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
@@ -901,28 +904,14 @@ fn copy_pixels<'gc>(
         BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
-    let source_rect = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let source_rect = args.get_object(activation, 1);
+    let Some((src_min_x, src_min_y, src_width, src_height)) =
+        try_get_rect(activation, source_rect)?
+    else {
+        return Ok((-4).into());
+    };
 
-    let src_min_x = source_rect
-        .get(istr!("x"), activation)?
-        .coerce_to_f64(activation)? as i32;
-    let src_min_y = source_rect
-        .get(istr!("y"), activation)?
-        .coerce_to_f64(activation)? as i32;
-    let src_width = source_rect
-        .get(istr!("width"), activation)?
-        .coerce_to_f64(activation)? as i32;
-    let src_height = source_rect
-        .get(istr!("height"), activation)?
-        .coerce_to_f64(activation)? as i32;
-
-    let dest_point = args
-        .get(2)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let dest_point = args.get_object(activation, 2);
 
     let dest_x = dest_point
         .get(istr!("x"), activation)?
@@ -932,11 +921,7 @@ fn copy_pixels<'gc>(
         .coerce_to_f64(activation)? as i32;
 
     let merge_alpha = if args.len() >= 6 {
-        Some(
-            args.get(5)
-                .unwrap_or(&Value::Undefined)
-                .as_bool(activation.swf_version()),
-        )
+        Some(args.get_bool(activation, 5))
     } else {
         None
     };
@@ -944,10 +929,7 @@ fn copy_pixels<'gc>(
     // TODO: This needs testing, the method seems to do _something_ with a disposed BMD
     // It doesn't error out, but it's also not taking the regular `copy_pixels` path...
     if let BitmapDataResult::Valid(alpha_bitmap) = get_bitmap_data(args.get_object(activation, 3)) {
-        let alpha_point = args
-            .get(4)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation);
+        let alpha_point = args.get_object(activation, 4);
 
         let alpha_x = alpha_point
             .get(istr!("x"), activation)?
@@ -980,7 +962,7 @@ fn copy_pixels<'gc>(
         );
     }
 
-    Ok(Value::Undefined)
+    Ok(0.into())
 }
 
 fn merge<'gc>(
