@@ -786,14 +786,14 @@ fn hit_test<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 3 {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
 
-    let first_point = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let first_point = args.get_object(activation, 0);
     let top_left = if let (Some(x), Some(y)) = (
         first_point.get_local_stored(istr!("x"), activation, false),
         first_point.get_local_stored(istr!("y"), activation, false),
@@ -804,15 +804,8 @@ fn hit_test<'gc>(
         // Invalid `firstPoint`.
         return Ok((-2).into());
     };
-    let source_threshold = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?
-        .clamp(0, u8::MAX.into()) as u8;
-    let compare_object = args
-        .get(2)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let source_threshold = args.get_i32(activation, 1)?.clamp(0, u8::MAX.into()) as u8;
+    let compare_object = args.get_object(activation, 2);
 
     // Overload based on the object we are hit-testing against.
     // BitmapData vs. BitmapData
@@ -821,24 +814,19 @@ fn hit_test<'gc>(
             return Ok((-3).into());
         }
 
-        let second_point = args
-            .get(3)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation);
+        let second_point = args.get_object(activation, 3);
         let second_point = if let (Some(x), Some(y)) = (
             second_point.get_local_stored(istr!("x"), activation, false),
             second_point.get_local_stored(istr!("y"), activation, false),
         ) {
             (x.coerce_to_i32(activation)?, y.coerce_to_i32(activation)?)
-        } else {
-            // Invalid `secondPoint`.
+        } else if args.len() > 3 {
+            // Invalid `secondPoint`, but only if it's specified at all
             return Ok((-4).into());
+        } else {
+            (0, 0)
         };
-        let second_threshold = args
-            .get(4)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?
-            .clamp(0, u8::MAX.into()) as u8;
+        let second_threshold = args.get_i32(activation, 4)?.clamp(0, u8::MAX.into()) as u8;
 
         let result = operations::hit_test_bitmapdata(
             activation.context.renderer,
