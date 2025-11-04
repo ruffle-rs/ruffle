@@ -241,7 +241,6 @@ pub trait ParametersExt<'gc> {
 
     /// Gets the value at the given index as an f64.
     /// The value will be coerced to an f64, even if it's undefined/missing.
-    #[expect(dead_code)]
     fn get_f64(
         &self,
         activation: &mut Activation<'_, 'gc>,

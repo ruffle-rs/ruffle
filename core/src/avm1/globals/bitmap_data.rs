@@ -731,47 +731,26 @@ fn perlin_noise<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 6 {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
 
-    let base_x = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(activation)?;
-    let base_y = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_f64(activation)?;
-    let num_octaves = args
-        .get(2)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_u32(activation)? as usize;
-    let seed = args
-        .get(3)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)? as i64;
-    let stitch = args
-        .get(4)
-        .unwrap_or(&Value::Undefined)
-        .as_bool(activation.swf_version());
-    let fractal_noise = args
-        .get(5)
-        .unwrap_or(&Value::Undefined)
-        .as_bool(activation.swf_version());
-    let channel_options = if let Some(c) = args.get(6) {
-        ChannelOptions::from_bits_truncate(c.coerce_to_i16(activation)? as u8)
+    let base_x = args.get_f64(activation, 0)?;
+    let base_y = args.get_f64(activation, 1)?;
+    let num_octaves = args.get_i32(activation, 2)?.max(0) as usize;
+    let seed = args.get_i32(activation, 3)? as i64;
+    let stitch = args.get_bool(activation, 4);
+    let fractal_noise = args.get_bool(activation, 5);
+    let channel_options = if let Some(c) = args.try_get_u8(activation, 6, UndefinedAs::Some)? {
+        ChannelOptions::from_bits_truncate(c)
     } else {
         ChannelOptions::RGB
     };
-    let grayscale = args
-        .get(7)
-        .unwrap_or(&Value::Undefined)
-        .as_bool(activation.swf_version());
-    let offsets = args
-        .get(8)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let grayscale = args.get_bool(activation, 7);
+    let offsets = args.get_object(activation, 8);
 
     let octave_offsets: Result<Vec<_>, Error<'gc>> = (0..num_octaves)
         .map(|i| {
@@ -799,7 +778,7 @@ fn perlin_noise<'gc>(
         octave_offsets,
     );
 
-    Ok((-1).into())
+    Ok(0.into())
 }
 
 fn hit_test<'gc>(
