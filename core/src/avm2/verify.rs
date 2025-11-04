@@ -1024,7 +1024,7 @@ fn translate_op<'gc>(
             return Ok((
                 first_op,
                 Some(Op::GetSlot {
-                    index: index as usize,
+                    index: index as usize - 1,
                 }),
             ));
         }
