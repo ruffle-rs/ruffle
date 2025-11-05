@@ -1156,18 +1156,15 @@ fn scroll<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 2 {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
 
-    let x = args
-        .get(0)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?;
-    let y = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?;
+    let x = args.get_i32(activation, 0)?;
+    let y = args.get_i32(activation, 1)?;
 
     operations::scroll(
         activation.gc(),
@@ -1177,7 +1174,7 @@ fn scroll<'gc>(
         y,
     );
 
-    Ok(Value::Undefined)
+    Ok(0.into())
 }
 
 fn threshold<'gc>(
