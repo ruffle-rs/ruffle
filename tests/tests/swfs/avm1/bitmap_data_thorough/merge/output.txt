@@ -1,0 +1,1206 @@
+-- Transparent --
+// merge()
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rect)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rect, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rect, point, 32)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rect, point, 32, 64)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aaaaaa 0x12aaaaaa
+0xaabbccdc 0x12aaaaaa 0x12aaaaaa
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aaaaaa 0x12aaaaaa
+0xaabbccdc 0x12aaaaaa 0x12aaaaaa
+--
+
+// merge(null, rect, point, 32, 64, 128, 256)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(undefined, rect, point, 32, 64, 128, 256)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge({}, rect, point, 32, 64, 128, 256)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(opaqueBmd, rect, point, 32, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffaaaeaa 0xffaaaeaa
+0xaabbccdc 0xffaaaeaa 0xffaaaeaa
+--
+
+// merge(disposedBmd, rect, point, 32, 64, 128, 256)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, null, point, 32, 64, 128, 256)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, undefined, point, 32, 64, 128, 256)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, {}, point, 32, 64, 128, 256)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, zeroSizedRect, point, 32, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rectAsObj, point, 32, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aaaaaa 0x12aaaaaa
+0xaabbccdc 0x12aaaaaa 0x12aaaaaa
+--
+
+// merge(transparentBmd, rectWithoutWidth, point, 32, 64, 128, 256)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rect, null, 32, 64, 128, 256)
+-1
+--
+0x12aaaaaa 0x12aaaaaa 0xaabbccdc
+0x12aaaaaa 0x12aaaaaa 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rect, undefined, 32, 64, 128, 256)
+-1
+--
+0x12aaaaaa 0x12aaaaaa 0xaabbccdc
+0x12aaaaaa 0x12aaaaaa 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rect, {}, 32, 64, 128, 256)
+-1
+--
+0x12aaaaaa 0x12aaaaaa 0xaabbccdc
+0x12aaaaaa 0x12aaaaaa 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rect, pointOutsideBmd, 32, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rect, pointAsObj, 32, 64, 128, 256)
+-1
+--
+0x12aaaaaa 0x12aaaaaa 0xaabbccdc
+0x12aaaaaa 0x12aaaaaa 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rect, pointWithoutY, 32, 64, 128, 256)
+-1
+--
+0x12aaaaaa 0x12aaaaaa 0xaabbccdc
+0x12aaaaaa 0x12aaaaaa 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// merge(transparentBmd, rect, point, null, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+--
+
+// merge(transparentBmd, rect, point, undefined, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+--
+
+// merge(transparentBmd, rect, point, {}, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+--
+
+// merge(transparentBmd, rect, point, objLooksLikeNum, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+--
+
+// merge(transparentBmd, rect, point, -1, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+--
+
+// merge(transparentBmd, rect, point, -2, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+--
+
+// merge(transparentBmd, rect, point, 0, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+--
+
+// merge(transparentBmd, rect, point, 10, 64, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+0xaabbccdc 0x12b8aaaa 0x12b8aaaa
+--
+
+// merge(transparentBmd, rect, point, 32, null, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+--
+
+// merge(transparentBmd, rect, point, 32, undefined, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+--
+
+// merge(transparentBmd, rect, point, 32, {}, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+--
+
+// merge(transparentBmd, rect, point, 32, objLooksLikeNum, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+--
+
+// merge(transparentBmd, rect, point, 32, -1, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+--
+
+// merge(transparentBmd, rect, point, 32, -2, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+--
+
+// merge(transparentBmd, rect, point, 32, 0, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+--
+
+// merge(transparentBmd, rect, point, 32, 10, 128, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+0xaabbccdc 0x12aac6aa 0x12aac6aa
+--
+
+// merge(transparentBmd, rect, point, 32, 64, null, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aaaae3 0x12aaaae3
+0xaabbccdc 0x12aaaae3 0x12aaaae3
+--
+
+// merge(transparentBmd, rect, point, 32, 64, undefined, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aaaae3 0x12aaaae3
+0xaabbccdc 0x12aaaae3 0x12aaaae3
+--
+
+// merge(transparentBmd, rect, point, 32, 64, {}, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aaaae3 0x12aaaae3
+0xaabbccdc 0x12aaaae3 0x12aaaae3
+--
+
+// merge(transparentBmd, rect, point, 32, 64, objLooksLikeNum, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aaaad4 0x12aaaad4
+0xaabbccdc 0x12aaaad4 0x12aaaad4
+--
+
+// merge(transparentBmd, rect, point, 32, 64, -1, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aaaae3 0x12aaaae3
+0xaabbccdc 0x12aaaae3 0x12aaaae3
+--
+
+// merge(transparentBmd, rect, point, 32, 64, -2, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aaaae3 0x12aaaae3
+0xaabbccdc 0x12aaaae3 0x12aaaae3
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 0, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aaaae3 0x12aaaae3
+0xaabbccdc 0x12aaaae3 0x12aaaae3
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 10, 256)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12aaaad4 0x12aaaad4
+0xaabbccdc 0x12aaaad4 0x12aaaad4
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, null)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9aea6 0xaaa9aea6
+0xaabbccdc 0xaaa9aea6 0xaaa9aea6
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, undefined)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9aea6 0xaaa9aea6
+0xaabbccdc 0xaaa9aea6 0xaaa9aea6
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, {})
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9aea6 0xaaa9aea6
+0xaabbccdc 0xaaa9aea6 0xaaa9aea6
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, objLooksLikeNum)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xa8aaaea5 0xa8aaaea5
+0xaabbccdc 0xa8aaaea5 0xa8aaaea5
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, -1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9aea6 0xaaa9aea6
+0xaabbccdc 0xaaa9aea6 0xaaa9aea6
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, -2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9aea6 0xaaa9aea6
+0xaabbccdc 0xaaa9aea6 0xaaa9aea6
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, 0)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9aea6 0xaaa9aea6
+0xaabbccdc 0xaaa9aea6 0xaaa9aea6
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, 10)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xa4a9aea6 0xa4a9aea6
+0xaabbccdc 0xa4a9aea6 0xa4a9aea6
+--
+
+
+
+-- Opaque --
+// merge()
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rect)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rect, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rect, point, 32)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rect, point, 32, 64)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+--
+
+// merge(null, rect, point, 32, 64, 128, 256)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(undefined, rect, point, 32, 64, 128, 256)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge({}, rect, point, 32, 64, 128, 256)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(opaqueBmd, rect, point, 32, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaeaa 0xffaaaeaa
+0xffbbccdd 0xffaaaeaa 0xffaaaeaa
+--
+
+// merge(disposedBmd, rect, point, 32, 64, 128, 256)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, null, point, 32, 64, 128, 256)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, undefined, point, 32, 64, 128, 256)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, {}, point, 32, 64, 128, 256)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, zeroSizedRect, point, 32, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rectAsObj, point, 32, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+--
+
+// merge(transparentBmd, rectWithoutWidth, point, 32, 64, 128, 256)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rect, null, 32, 64, 128, 256)
+-1
+--
+0xffaaaea7 0xffaaaea7 0xffbbccdd
+0xffaaaea7 0xffaaaea7 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rect, undefined, 32, 64, 128, 256)
+-1
+--
+0xffaaaea7 0xffaaaea7 0xffbbccdd
+0xffaaaea7 0xffaaaea7 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rect, {}, 32, 64, 128, 256)
+-1
+--
+0xffaaaea7 0xffaaaea7 0xffbbccdd
+0xffaaaea7 0xffaaaea7 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rect, pointOutsideBmd, 32, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rect, pointAsObj, 32, 64, 128, 256)
+-1
+--
+0xffaaaea7 0xffaaaea7 0xffbbccdd
+0xffaaaea7 0xffaaaea7 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rect, pointWithoutY, 32, 64, 128, 256)
+-1
+--
+0xffaaaea7 0xffaaaea7 0xffbbccdd
+0xffaaaea7 0xffaaaea7 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// merge(transparentBmd, rect, point, null, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbaea7 0xffbbaea7
+0xffbbccdd 0xffbbaea7 0xffbbaea7
+--
+
+// merge(transparentBmd, rect, point, undefined, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbaea7 0xffbbaea7
+0xffbbccdd 0xffbbaea7 0xffbbaea7
+--
+
+// merge(transparentBmd, rect, point, {}, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbaea7 0xffbbaea7
+0xffbbccdd 0xffbbaea7 0xffbbaea7
+--
+
+// merge(transparentBmd, rect, point, objLooksLikeNum, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb9aea7 0xffb9aea7
+0xffbbccdd 0xffb9aea7 0xffb9aea7
+--
+
+// merge(transparentBmd, rect, point, -1, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbaea7 0xffbbaea7
+0xffbbccdd 0xffbbaea7 0xffbbaea7
+--
+
+// merge(transparentBmd, rect, point, -2, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbaea7 0xffbbaea7
+0xffbbccdd 0xffbbaea7 0xffbbaea7
+--
+
+// merge(transparentBmd, rect, point, 0, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbaea7 0xffbbaea7
+0xffbbccdd 0xffbbaea7 0xffbbaea7
+--
+
+// merge(transparentBmd, rect, point, 10, 64, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffb5aea7 0xffb5aea7
+0xffbbccdd 0xffb5aea7 0xffb5aea7
+--
+
+// merge(transparentBmd, rect, point, 32, null, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaacca7 0xffaacca7
+0xffbbccdd 0xffaacca7 0xffaacca7
+--
+
+// merge(transparentBmd, rect, point, 32, undefined, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaacca7 0xffaacca7
+0xffbbccdd 0xffaacca7 0xffaacca7
+--
+
+// merge(transparentBmd, rect, point, 32, {}, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaacca7 0xffaacca7
+0xffbbccdd 0xffaacca7 0xffaacca7
+--
+
+// merge(transparentBmd, rect, point, 32, objLooksLikeNum, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaacba7 0xffaacba7
+0xffbbccdd 0xffaacba7 0xffaacba7
+--
+
+// merge(transparentBmd, rect, point, 32, -1, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaacca7 0xffaacca7
+0xffbbccdd 0xffaacca7 0xffaacca7
+--
+
+// merge(transparentBmd, rect, point, 32, -2, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaacca7 0xffaacca7
+0xffbbccdd 0xffaacca7 0xffaacca7
+--
+
+// merge(transparentBmd, rect, point, 32, 0, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaacca7 0xffaacca7
+0xffbbccdd 0xffaacca7 0xffaacca7
+--
+
+// merge(transparentBmd, rect, point, 32, 10, 128, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaac7a7 0xffaac7a7
+0xffbbccdd 0xffaac7a7 0xffaac7a7
+--
+
+// merge(transparentBmd, rect, point, 32, 64, null, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaedd 0xffaaaedd
+0xffbbccdd 0xffaaaedd 0xffaaaedd
+--
+
+// merge(transparentBmd, rect, point, 32, 64, undefined, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaedd 0xffaaaedd
+0xffbbccdd 0xffaaaedd 0xffaaaedd
+--
+
+// merge(transparentBmd, rect, point, 32, 64, {}, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaedd 0xffaaaedd
+0xffbbccdd 0xffaaaedd 0xffaaaedd
+--
+
+// merge(transparentBmd, rect, point, 32, 64, objLooksLikeNum, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaedc 0xffaaaedc
+0xffbbccdd 0xffaaaedc 0xffaaaedc
+--
+
+// merge(transparentBmd, rect, point, 32, 64, -1, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaedd 0xffaaaedd
+0xffbbccdd 0xffaaaedd 0xffaaaedd
+--
+
+// merge(transparentBmd, rect, point, 32, 64, -2, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaedd 0xffaaaedd
+0xffbbccdd 0xffaaaedd 0xffaaaedd
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 0, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaedd 0xffaaaedd
+0xffbbccdd 0xffaaaedd 0xffaaaedd
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 10, 256)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaed8 0xffaaaed8
+0xffbbccdd 0xffaaaed8 0xffaaaed8
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, null)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, undefined)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, {})
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, objLooksLikeNum)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, -1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, -2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, 0)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, 10)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+0xffbbccdd 0xffaaaea7 0xffaaaea7
+--
+
+
+
+-- Disposed --
+// merge()
+-1
+--
+--
+
+// merge(transparentBmd)
+-1
+--
+--
+
+// merge(transparentBmd, rect)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(null, rect, point, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(undefined, rect, point, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge({}, rect, point, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(opaqueBmd, rect, point, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(disposedBmd, rect, point, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, null, point, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, undefined, point, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, {}, point, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, zeroSizedRect, point, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rectAsObj, point, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rectWithoutWidth, point, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, null, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, undefined, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, {}, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, pointOutsideBmd, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, pointAsObj, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, pointWithoutY, 32, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, null, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, undefined, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, {}, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, objLooksLikeNum, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, -1, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, -2, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 0, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 10, 64, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, null, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, undefined, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, {}, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, objLooksLikeNum, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, -1, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, -2, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 0, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 10, 128, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, null, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, undefined, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, {}, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, objLooksLikeNum, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, -1, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, -2, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 0, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 10, 256)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, null)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, undefined)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, {})
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, objLooksLikeNum)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, -1)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, -2)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, 0)
+-1
+--
+--
+
+// merge(transparentBmd, rect, point, 32, 64, 128, 10)
+-1
+--
+--
+
+
+
