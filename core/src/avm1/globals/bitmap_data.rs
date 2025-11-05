@@ -1024,6 +1024,10 @@ fn palette_map<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 4 {
+        // Flash claims that only 3 arguments are required, but it doesn't do anything without redArray
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
@@ -1033,28 +1037,14 @@ fn palette_map<'gc>(
         BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
-    let source_rect = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let source_rect = args.get_object(activation, 1);
+    let Some((src_min_x, src_min_y, src_width, src_height)) =
+        try_get_rect(activation, source_rect)?
+    else {
+        return Ok((-4).into());
+    };
 
-    let src_min_x = source_rect
-        .get(istr!("x"), activation)?
-        .coerce_to_f64(activation)? as i32;
-    let src_min_y = source_rect
-        .get(istr!("y"), activation)?
-        .coerce_to_f64(activation)? as i32;
-    let src_width = source_rect
-        .get(istr!("width"), activation)?
-        .coerce_to_f64(activation)? as i32;
-    let src_height = source_rect
-        .get(istr!("height"), activation)?
-        .coerce_to_f64(activation)? as i32;
-
-    let dest_point = args
-        .get(2)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let dest_point = args.get_object(activation, 2);
 
     let dest_x = dest_point
         .get(istr!("x"), activation)?
@@ -1070,6 +1060,7 @@ fn palette_map<'gc>(
             *item = if let Value::Object(arg) = arg {
                 arg.get_element(activation, i as i32)
                     .coerce_to_u32(activation)?
+                    & 0xFF
             } else {
                 // This is an "identity mapping", fulfilling the part of the spec that
                 // says that channels which have no array provided are simply copied.
@@ -1094,7 +1085,7 @@ fn palette_map<'gc>(
         (red_array, green_array, blue_array, alpha_array),
     );
 
-    Ok(Value::Undefined)
+    Ok((-1).into())
 }
 
 fn pixel_dissolve<'gc>(
