@@ -47,7 +47,6 @@ pub trait ParametersExt<'gc> {
 
     /// Get the value at the given index as a String.
     /// The value will be coerced to a String, even if it's undefined/missing.
-    #[expect(dead_code)]
     fn get_string(
         &self,
         activation: &mut Activation<'_, 'gc>,
