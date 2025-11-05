@@ -1247,6 +1247,9 @@ fn compare<'gc>(
     const BITMAP_DISPOSED: i32 = -2;
     const DIFFERENT_WIDTHS: i32 = -3;
     const DIFFERENT_HEIGHTS: i32 = -4;
+    if args.is_empty() {
+        return Ok((NOT_BITMAP).into());
+    }
 
     let BitmapDataResult::Valid(this_bitmap_data) = get_bitmap_data(this) else {
         return Ok((NOT_BITMAP).into());
