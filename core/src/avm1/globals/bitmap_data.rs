@@ -1182,6 +1182,9 @@ fn threshold<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 5 {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
@@ -1191,28 +1194,14 @@ fn threshold<'gc>(
         BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
-    let source_rect = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let source_rect = args.get_object(activation, 1);
+    let Some((src_min_x, src_min_y, src_width, src_height)) =
+        try_get_rect(activation, source_rect)?
+    else {
+        return Ok((-4).into());
+    };
 
-    let src_min_x = source_rect
-        .get(istr!("x"), activation)?
-        .coerce_to_f64(activation)? as i32;
-    let src_min_y = source_rect
-        .get(istr!("y"), activation)?
-        .coerce_to_f64(activation)? as i32;
-    let src_width = source_rect
-        .get(istr!("width"), activation)?
-        .coerce_to_f64(activation)? as i32;
-    let src_height = source_rect
-        .get(istr!("height"), activation)?
-        .coerce_to_f64(activation)? as i32;
-
-    let dest_point = args
-        .get(2)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let dest_point = args.get_object(activation, 2);
 
     let dest_x = dest_point
         .get(istr!("x"), activation)?
@@ -1221,32 +1210,14 @@ fn threshold<'gc>(
         .get(istr!("y"), activation)?
         .coerce_to_f64(activation)? as i32;
 
-    let operation = args.get(3);
-    let operation = match ThresholdOperation::from_wstr(
-        &operation
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_string(activation)?,
-    ) {
-        Some(operation) => operation,
-        None => return Ok(0.into()),
-    };
-
-    let threshold = args
-        .get(4)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_u32(activation)?;
-
-    let colour = args.get(5).unwrap_or(&0.into()).coerce_to_u32(activation)?;
-
+    let operation = ThresholdOperation::from_wstr(&args.get_string(activation, 3)?)
+        .unwrap_or(ThresholdOperation::LessThan);
+    let threshold = args.get_u32(activation, 4)?;
+    let colour = args.get_u32(activation, 5)?;
     let mask = args
-        .get(6)
-        .unwrap_or(&0xFFFFFFFFu32.into())
-        .coerce_to_u32(activation)?;
-
-    let copy_source = args
-        .get(7)
-        .unwrap_or(&false.into())
-        .as_bool(activation.swf_version());
+        .try_get_u32(activation, 6, UndefinedAs::Some)?
+        .unwrap_or(0xFFFFFFFF);
+    let copy_source = args.get_bool(activation, 7);
 
     let modified_count = operations::threshold(
         activation.gc(),

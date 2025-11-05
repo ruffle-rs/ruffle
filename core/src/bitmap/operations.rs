@@ -93,7 +93,11 @@ pub fn get_pixel32(target: BitmapData, renderer: &mut dyn RenderBackend, x: u32,
         return 0;
     }
     let read = target.read_area(PixelRegion::for_pixel(x, y), renderer);
-    read.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
+    if read.transparency() {
+        read.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
+    } else {
+        read.get_pixel32_raw(x, y).into()
+    }
 }
 
 pub fn set_pixel<'gc>(
@@ -582,31 +586,25 @@ pub fn threshold<'gc>(
 
             // Extract source colour
             let source_color = if let Some(source) = &source {
-                source
-                    .get_pixel32_raw(src_x, src_y)
-                    .to_un_multiplied_alpha()
+                source.get_pixel32_raw(src_x, src_y)
             } else {
-                write.get_pixel32_raw(src_x, src_y).to_un_multiplied_alpha()
+                write.get_pixel32_raw(src_x, src_y)
             };
 
             // If the test, as defined by the operation pass then set to input colour
             if operation.matches(u32::from(source_color) & mask, masked_threshold) {
                 modified_count += 1;
-                write.set_pixel32_raw(dest_x, dest_y, Color::from(colour));
+                // [NA] Spot the bug? We don't set the alpha to 0xFF for opaque BMDs. Yay flash.
+                write.set_pixel32_raw(
+                    dest_x,
+                    dest_y,
+                    Color::from(colour).to_premultiplied_alpha(true),
+                );
             } else {
                 // If the test fails, but copy_source is true then take the colour from the source
                 if copy_source {
-                    let new_color = if let Some(source) = &source {
-                        source
-                            .get_pixel32_raw(dest_x, dest_y)
-                            .to_un_multiplied_alpha()
-                    } else {
-                        write
-                            .get_pixel32_raw(dest_x, dest_y)
-                            .to_un_multiplied_alpha()
-                    };
-
-                    write.set_pixel32_raw(dest_x, dest_y, new_color);
+                    // [NA] Spot the bug? We don't set the alpha to 0xFF for opaque BMDs. Yay flash.
+                    write.set_pixel32_raw(dest_x, dest_y, source_color);
                 }
             }
             if let Some(dirty_area) = &mut dirty_area {
