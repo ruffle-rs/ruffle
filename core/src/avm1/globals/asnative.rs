@@ -18,6 +18,7 @@ pub fn asnative<'gc>(
     let index = args.get_u32(activation, 1)?;
 
     let category: Option<TableNativeFunction> = match category {
+        2 => Some(asnew_method),
         100 => Some(globals::method),
         101 => Some(globals::object::method),
         103 => Some(globals::date::method),
@@ -47,4 +48,22 @@ pub fn asnative<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Undocumented internal `ASnew` function: returns a boolean indicating whether or not the
+/// enclosing function has been called as a constructor. Note that this 'sees through' any
+/// native calls; see the `avm1/asnew` test for examples.
+///
+/// TODO: It should be exported as `_global.ASnew` when `player_version == 5`, but we don't
+/// have a good way of having player-specific definitions so this isn't implemented.
+fn asnew_method<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+    id: u16,
+) -> Result<Value<'gc>, Error<'gc>> {
+    match id {
+        0 => Ok(activation.in_bytecode_constructor().into()),
+        _ => Ok(Value::Undefined),
+    }
 }

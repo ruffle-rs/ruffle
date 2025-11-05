@@ -89,7 +89,7 @@ impl<'gc> SuperObject<'gc> {
             self.this().into(),
             self.depth() + 1,
             args,
-            ExecutionReason::FunctionCall,
+            ExecutionReason::ConstructorCall,
             constructor,
         )
     }

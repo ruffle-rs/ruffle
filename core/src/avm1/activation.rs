@@ -61,6 +61,7 @@ enum FrameControl<'gc> {
 #[derive(Clone)]
 pub struct ActivationIdentifier<'a> {
     parent: Option<&'a ActivationIdentifier<'a>>,
+    reason: ExecutionReason,
     name: &'a str,
     depth: u16,
     function_count: u16,
@@ -83,6 +84,7 @@ impl<'a> ActivationIdentifier<'a> {
     pub fn root(name: &'a str) -> Self {
         Self {
             parent: None,
+            reason: ExecutionReason::Special,
             name,
             depth: 0,
             function_count: 0,
@@ -93,6 +95,7 @@ impl<'a> ActivationIdentifier<'a> {
     pub fn child(&'a self, name: &'a str) -> Self {
         Self {
             parent: Some(self),
+            reason: self.reason,
             name,
             depth: self.depth + 1,
             function_count: self.function_count,
@@ -107,7 +110,7 @@ impl<'a> ActivationIdentifier<'a> {
         max_recursion_depth: u16,
     ) -> Result<Self, Error<'gc>> {
         let (function_count, special_count) = match reason {
-            ExecutionReason::FunctionCall => {
+            ExecutionReason::FunctionCall | ExecutionReason::ConstructorCall => {
                 if self.function_count >= max_recursion_depth - 1 {
                     return Err(Error::FunctionRecursionLimit(max_recursion_depth));
                 }
@@ -122,6 +125,7 @@ impl<'a> ActivationIdentifier<'a> {
         };
         Ok(Self {
             parent: Some(self),
+            reason,
             name,
             depth: self.depth + 1,
             function_count,
@@ -215,6 +219,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Obtain a reference to `_global`.
     pub fn global_object(&self) -> Object<'gc> {
         self.global_scope().locals_cell()
+    }
+
+    /// Was this activation created by a constructor call? Note that native calls don't
+    /// create activations, and so aren't taken into account for this check.
+    pub fn in_bytecode_constructor(&self) -> bool {
+        self.id.reason == ExecutionReason::ConstructorCall
     }
 
     #[expect(clippy::too_many_arguments)]

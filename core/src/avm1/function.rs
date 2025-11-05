@@ -38,6 +38,9 @@ pub enum ExecutionReason {
     /// This execution is a "normal" function call from ActionScript bytecode.
     FunctionCall,
 
+    /// This execution is a "normal" constructor call from ActionScript bytecode.
+    ConstructorCall,
+
     /// This execution is a "special" internal function call from the player,
     /// such as getters, setters, `toString`, or event handlers.
     Special,
@@ -640,7 +643,7 @@ impl<'gc> FunctionObject<'gc> {
             this.into(),
             1,
             args,
-            ExecutionReason::FunctionCall,
+            ExecutionReason::ConstructorCall,
             callee,
         )?;
 
@@ -668,7 +671,7 @@ impl<'gc> FunctionObject<'gc> {
             this.into(),
             1,
             args,
-            ExecutionReason::FunctionCall,
+            ExecutionReason::ConstructorCall,
             callee,
         )?;
         Ok(if propagate { ret } else { this.into() })
