@@ -1093,40 +1093,27 @@ fn pixel_dissolve<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 4 {
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-    let BitmapDataResult::Valid(src_bitmap_data) = get_bitmap_data(args.get_object(activation, 0))
-    else {
-        return Ok((-1).into());
+    let src_bitmap_data = match get_bitmap_data(args.get_object(activation, 0)) {
+        BitmapDataResult::Valid(s) => s,
+        BitmapDataResult::Disposed => return Ok((-3).into()),
+        BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
-    let source_rect = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
-    let (src_min_x, src_min_y, src_width, src_height) =
-        if let (Some(x), Some(y), Some(width), Some(height)) = (
-            source_rect.get_local_stored(istr!("x"), activation, false),
-            source_rect.get_local_stored(istr!("y"), activation, false),
-            source_rect.get_local_stored(istr!("width"), activation, false),
-            source_rect.get_local_stored(istr!("height"), activation, false),
-        ) {
-            (
-                x.coerce_to_f64(activation)? as i32,
-                y.coerce_to_f64(activation)? as i32,
-                width.coerce_to_f64(activation)? as i32,
-                height.coerce_to_f64(activation)? as i32,
-            )
-        } else {
-            // Invalid `sourceRect`.
-            return Ok((-4).into());
-        };
+    let source_rect = args.get_object(activation, 1);
+    let Some((src_min_x, src_min_y, src_width, src_height)) =
+        try_get_rect(activation, source_rect)?
+    else {
+        // Invalid `sourceRect`.
+        return Ok((-4).into());
+    };
 
-    let dest_point = args
-        .get(2)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let dest_point = args.get_object(activation, 2);
     let dest_x = dest_point
         .get(istr!("x"), activation)?
         .coerce_to_f64(activation)? as i32;
