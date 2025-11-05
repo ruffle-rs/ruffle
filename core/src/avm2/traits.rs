@@ -230,17 +230,6 @@ impl<'gc> Trait<'gc> {
         self.attributes.contains(TraitAttributes::OVERRIDE)
     }
 
-    pub fn set_attributes(&mut self, attribs: TraitAttributes) {
-        self.attributes = attribs;
-    }
-
-    /// Convenience chaining method that adds the override flag to a trait.
-    pub fn with_override(mut self) -> Self {
-        self.attributes |= TraitAttributes::OVERRIDE;
-
-        self
-    }
-
     /// Get the slot ID of this trait.
     pub fn slot_id(&self) -> Option<usize> {
         match self.kind {
