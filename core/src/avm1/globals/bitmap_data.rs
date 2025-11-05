@@ -970,6 +970,10 @@ fn merge<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() < 6 {
+        // Docs say 7 args is required, but alpha seems to be optional
+        return Ok((-1).into());
+    }
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
@@ -979,28 +983,14 @@ fn merge<'gc>(
         BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
-    let source_rect = args
-        .get(1)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let source_rect = args.get_object(activation, 1);
+    let Some((src_min_x, src_min_y, src_width, src_height)) =
+        try_get_rect(activation, source_rect)?
+    else {
+        return Ok((-4).into());
+    };
 
-    let src_min_x = source_rect
-        .get(istr!("x"), activation)?
-        .coerce_to_f64(activation)? as i32;
-    let src_min_y = source_rect
-        .get(istr!("y"), activation)?
-        .coerce_to_f64(activation)? as i32;
-    let src_width = source_rect
-        .get(istr!("width"), activation)?
-        .coerce_to_f64(activation)? as i32;
-    let src_height = source_rect
-        .get(istr!("height"), activation)?
-        .coerce_to_f64(activation)? as i32;
-
-    let dest_point = args
-        .get(2)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+    let dest_point = args.get_object(activation, 2);
 
     let dest_x = dest_point
         .get(istr!("x"), activation)?
@@ -1009,25 +999,12 @@ fn merge<'gc>(
         .get(istr!("y"), activation)?
         .coerce_to_f64(activation)? as i32;
 
-    let red_mult = args
-        .get(3)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?;
-
-    let green_mult = args
-        .get(4)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?;
-
-    let blue_mult = args
-        .get(5)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?;
-
+    let red_mult = args.get_i32(activation, 3)?;
+    let green_mult = args.get_i32(activation, 4)?;
+    let blue_mult = args.get_i32(activation, 5)?;
     let alpha_mult = args
-        .get(6)
-        .unwrap_or(&Value::Undefined)
-        .coerce_to_i32(activation)?;
+        .try_get_i32(activation, 6, UndefinedAs::Some)?
+        .unwrap_or(0xFF);
 
     operations::merge(
         activation.gc(),
@@ -1039,7 +1016,7 @@ fn merge<'gc>(
         (red_mult, green_mult, blue_mult, alpha_mult),
     );
 
-    Ok(Value::Undefined)
+    Ok((-1).into())
 }
 
 fn palette_map<'gc>(
