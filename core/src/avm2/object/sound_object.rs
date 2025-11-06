@@ -292,16 +292,13 @@ fn play_queued<'gc>(
         }
     }
 
-    if let Some(instance) = activation
-        .context
-        .start_sound(sound, &queued.sound_info, None, None)
-    {
-        if let Some(sound_transform) = queued.sound_transform {
-            activation
-                .context
-                .set_local_sound_transform(instance, sound_transform);
-        }
-
+    if let Some(instance) = activation.context.start_sound(
+        sound,
+        &queued.sound_info,
+        queued.sound_transform,
+        None,
+        None,
+    ) {
         queued
             .sound_channel
             .set_sound_instance(activation, instance);

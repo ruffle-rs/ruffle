@@ -178,6 +178,7 @@ impl<'gc> Sound<'gc> {
                 num_loops: play.loops,
                 envelope: None,
             },
+            None,
             self.owner(),
             Some(play.sound_object),
         );
