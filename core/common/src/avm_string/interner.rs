@@ -1,14 +1,16 @@
+use super::avm_string::AvmString;
+use super::common::CommonStrings;
+use super::repr::AvmStringRepr;
+
 use core::fmt;
+use gc_arena::collect::Trace;
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use hashbrown::HashSet;
+use ruffle_wstr::WStr;
 use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::hash::{BuildHasher, Hash, Hasher};
 use std::ops::Deref;
-
-use gc_arena::collect::Trace;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
-use hashbrown::HashSet;
-
-use crate::string::{AvmString, AvmStringRepr, CommonStrings, WStr};
 
 // An interned `AvmString`, with fast by-pointer equality and hashing.
 #[derive(Copy, Clone, Collect)]

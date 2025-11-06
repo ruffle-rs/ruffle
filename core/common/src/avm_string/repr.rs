@@ -1,8 +1,7 @@
-use std::cell::Cell;
-use std::ops::Deref;
-
 use gc_arena::{Collect, Gc};
 use ruffle_wstr::{panic_on_invalid_length, ptr as wptr, wstr_impl_traits, WStr, WString};
+use std::cell::Cell;
+use std::ops::Deref;
 
 /// Internal representation of `AvmAtom`s and (owned) `AvmString`s.
 ///
