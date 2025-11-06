@@ -7,8 +7,8 @@ use std::path::{Path, PathBuf};
 use std::ptr;
 use std::sync::Arc;
 
-use crate::decoder::openh264_sys::{self, videoFormatI420, ISVCDecoder, OpenH264};
 use crate::decoder::VideoDecoder;
+use crate::decoder::openh264_sys::{self, ISVCDecoder, OpenH264, videoFormatI420};
 
 use ruffle_render::bitmap::BitmapFormat;
 use ruffle_video::error::Error;
