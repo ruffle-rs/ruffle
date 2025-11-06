@@ -16,3 +16,6 @@ fnv = { workspace = true }
 gc-arena = { workspace = true }
 ruffle_macros = { path = "../macros" }
 ruffle_wstr = { path = "../../wstr" }
+swf = { path = "../../swf" }
+tracing = { workspace = true }
+url = { workspace = true }
