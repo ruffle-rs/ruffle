@@ -17,8 +17,8 @@ pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
 
 use crate::backend::audio::{SoundStreamInfo, SoundStreamWrapping};
-use crate::buffer::{Slice, Substream, SubstreamChunksIter};
 use crate::tag_utils::{ControlFlow, SwfSlice};
+use ruffle_common::buffer::{Slice, Substream, SubstreamChunksIter};
 use std::io::{Cursor, Read};
 use swf::{AudioCompression, SoundFormat, TagCode};
 use thiserror::Error;

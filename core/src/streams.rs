@@ -14,7 +14,6 @@ use crate::backend::audio::{
     DecodeError, SoundInstanceHandle, SoundStreamInfo, SoundStreamWrapping,
 };
 use crate::backend::navigator::Request;
-use crate::buffer::{Buffer, Slice, Substream, SubstreamError};
 use crate::context::UpdateContext;
 use crate::display_object::{MovieClip, TDisplayObject};
 use crate::loader::Error;
@@ -28,6 +27,7 @@ use flv_rs::{
 };
 use gc_arena::barrier::unlock;
 use gc_arena::{Collect, DynamicRoot, Gc, Lock, Mutation, Rootable};
+use ruffle_common::buffer::{Buffer, Slice, Substream, SubstreamError};
 use ruffle_macros::istr;
 use ruffle_render::bitmap::BitmapInfo;
 use ruffle_video::frame::EncodedFrame;

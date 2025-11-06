@@ -3,12 +3,12 @@ use std::any::Any;
 use crate::{
     avm1::{NativeObject, Object as Avm1Object},
     avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
-    buffer::Substream,
     context::UpdateContext,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
     string::AvmString,
 };
 use gc_arena::Collect;
+pub use ruffle_common::buffer::Substream;
 use slotmap::{new_key_type, Key, SlotMap};
 
 #[cfg(feature = "audio")]

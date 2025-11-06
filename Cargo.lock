@@ -4406,6 +4406,7 @@ dependencies = [
  "ruffle_macros",
  "ruffle_wstr",
  "swf",
+ "thiserror 2.0.17",
  "tracing",
  "url",
 ]
