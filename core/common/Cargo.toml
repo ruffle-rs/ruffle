@@ -14,4 +14,5 @@ workspace = true
 hashbrown = { workspace = true }
 fnv = { workspace = true }
 gc-arena = { workspace = true }
+ruffle_macros = { path = "../macros" }
 ruffle_wstr = { path = "../../wstr" }

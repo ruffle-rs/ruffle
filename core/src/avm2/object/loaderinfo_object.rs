@@ -8,13 +8,13 @@ use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::loader::ContentType;
 use crate::tag_utils::SwfMovie;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
+use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, Ref};
 use std::sync::Arc;
 

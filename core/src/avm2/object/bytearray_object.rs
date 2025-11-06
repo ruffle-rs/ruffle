@@ -7,9 +7,9 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::character::Character;
 use crate::tag_utils::SwfSlice;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefCell, RefMut};
 
 /// A class instance allocator that allocates ByteArray objects.

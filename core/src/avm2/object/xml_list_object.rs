@@ -8,12 +8,12 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname, Namespace};
 use crate::string::AvmString;
-use crate::utils::HasPrefixField;
 use gc_arena::barrier::unlock;
 use gc_arena::{
     lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
 };
+use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_wstr::WString;
 use std::cell::{Cell, Ref, RefMut};

@@ -26,7 +26,7 @@ pub struct SuperObject<'gc> {
     depth: u8,
 
     /// Adds a niche, so that enums contaning this type can use it for their discriminant.
-    _niche: crate::utils::ZeroU8,
+    _niche: ruffle_common::utils::ZeroU8,
 }
 
 impl fmt::Debug for SuperObject<'_> {

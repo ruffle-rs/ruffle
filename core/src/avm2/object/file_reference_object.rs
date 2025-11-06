@@ -3,8 +3,8 @@ use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error};
 use crate::backend::ui::FileDialogResult;
 use crate::context::UpdateContext;
-use crate::utils::HasPrefixField;
 use gc_arena::{Collect, DynamicRoot, Gc, GcWeak, Rootable};
+use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, Ref, RefCell};
 use std::fmt;
 
