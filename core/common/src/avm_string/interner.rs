@@ -107,16 +107,15 @@ impl<'gc> AvmStringInterner<'gc> {
 
         // It's assumed that start<=end. This is tested later via a range check.
         if start_index == end_index {
-            return self.common.str_.into(); // this is the empty string
+            self.common.str_.into() // this is the empty string
+        } else if end_index == start_index + 1
+            && let Some(c) = s.get(start_index)
+            && let Some(s) = self.common.ascii_chars.get(c as usize)
+        {
+            (*s).into()
+        } else {
+            AvmString::substring(mc, s, start_index, end_index)
         }
-        if end_index == start_index + 1 {
-            if let Some(c) = s.get(start_index) {
-                if let Some(s) = self.common.ascii_chars.get(c as usize) {
-                    return (*s).into();
-                }
-            }
-        }
-        AvmString::substring(mc, s, start_index, end_index)
     }
 }
 

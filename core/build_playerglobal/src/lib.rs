@@ -1,5 +1,3 @@
-#![allow(clippy::collapsible_if)] // TODO: remove
-
 //! An internal Ruffle utility to build our playerglobal
 //! `library.swf`
 
@@ -147,11 +145,12 @@ fn strip_version_mark(val: Cow<'_, str>) -> Cow<'_, str> {
     const MIN_API_MARK: usize = 0xE000;
     const MAX_API_MARK: usize = 0xF8FF;
 
-    if let Some(chr) = val.chars().last() {
-        if chr as usize >= MIN_API_MARK && chr as usize <= MAX_API_MARK {
-            // The version mark is 3 bytes in utf-8
-            return val[..val.len() - 3].to_string().into();
-        }
+    if let Some(chr) = val.chars().last()
+        && chr as usize >= MIN_API_MARK
+        && chr as usize <= MAX_API_MARK
+    {
+        // The version mark is 3 bytes in utf-8
+        return val[..val.len() - 3].to_string().into();
     }
     val
 }
