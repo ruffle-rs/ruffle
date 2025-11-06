@@ -1,5 +1,5 @@
 use gc_arena::{Collect, Gc};
-use ruffle_wstr::{panic_on_invalid_length, ptr as wptr, wstr_impl_traits, WStr, WString};
+use ruffle_wstr::{WStr, WString, panic_on_invalid_length, ptr as wptr, wstr_impl_traits};
 use std::cell::Cell;
 use std::ops::Deref;
 
@@ -67,7 +67,8 @@ impl<'gc> AvmStringRepr<'gc> {
         Self {
             owner,
             ptr: wstr as *const WStr as *mut (),
-            meta: wptr::WStrMetadata::of(wstr),
+            // SAFETY: `&WStr` references always have valid metadata
+            meta: unsafe { wptr::WStrMetadata::of(wstr) },
             chars_used: Cell::new(0),
             capacity: Cell::new(wptr::WStrMetadata::new32(0, interned)),
         }
