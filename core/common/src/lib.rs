@@ -1,5 +1,6 @@
-//! Types used across Ruffle
+//! Methods and types used across Ruffle
 
 pub mod avm_string;
+pub mod buffer;
 pub mod sandbox;
 pub mod utils;

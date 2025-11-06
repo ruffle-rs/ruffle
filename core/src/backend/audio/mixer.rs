@@ -1,8 +1,8 @@
 use super::decoders::{self, AdpcmDecoder, Decoder, PcmDecoder, SeekableDecoder};
 use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
-use crate::buffer::Substream;
 use crate::tag_utils::SwfSlice;
+use ruffle_common::buffer::Substream;
 use slotmap::SlotMap;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
@@ -1099,7 +1099,7 @@ macro_rules! impl_audio_mixer_backend {
         #[inline]
         fn start_substream(
             &mut self,
-            stream_data: ruffle_core::buffer::Substream,
+            stream_data: ruffle_core::backend::audio::Substream,
             stream_info: &SoundStreamInfo,
         ) -> Result<SoundInstanceHandle, DecodeError> {
             self.$mixer.start_substream(stream_data, stream_info)

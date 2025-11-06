@@ -1,6 +1,6 @@
 use super::{Decoder, SeekableDecoder, SoundStreamInfo, Substream, SubstreamTagReader};
-use crate::buffer::SliceCursor;
 use bitstream_io::{BigEndian, BitRead, BitReader};
+use ruffle_common::buffer::SliceCursor;
 use std::io::{Cursor, Read};
 use swf::SoundFormat;
 use thiserror::Error;
