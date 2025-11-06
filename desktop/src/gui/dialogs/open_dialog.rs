@@ -7,7 +7,10 @@ use egui::{
 };
 use ruffle_core::backend::navigator::SocketMode;
 use ruffle_core::config::Letterbox;
-use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
+use ruffle_core::{
+    LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode, DEFAULT_PLAYER_VERSION,
+    NEWEST_PLAYER_VERSION,
+};
 use ruffle_render::quality::StageQuality;
 use std::borrow::Cow;
 use std::ops::RangeInclusive;
@@ -222,8 +225,10 @@ impl OpenDialog {
                 }),
             ),
         );
-        let player_version =
-            OptionalField::new(defaults.player.player_version, NumberField::new(1..=32, 32));
+        let player_version = OptionalField::new(
+            defaults.player.player_version,
+            NumberField::new(1..=NEWEST_PLAYER_VERSION, DEFAULT_PLAYER_VERSION),
+        );
         let player_runtime = OptionalField::new(
             defaults.player.player_runtime,
             EnumDropdownField::new(
