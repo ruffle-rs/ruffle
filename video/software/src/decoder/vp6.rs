@@ -5,7 +5,7 @@ use ruffle_video::error::Error;
 use nihav_codec_support::codecs::{NABufferRef, NAVideoBuffer, NAVideoInfo};
 use nihav_codec_support::codecs::{NABufferType::Video, YUV420_FORMAT};
 use nihav_core::codecs::NADecoderSupport;
-use nihav_duck::codecs::vp6::{VP56Decoder, VP56Parser, VP6BR};
+use nihav_duck::codecs::vp6::{VP6BR, VP56Decoder, VP56Parser};
 use nihav_duck::codecs::vpcommon::{BoolCoder, VP_YUVA420_FORMAT};
 use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};
 
@@ -203,7 +203,9 @@ impl VideoDecoder for Vp6Decoder {
         let &bounds = &self.bounds;
 
         if width < bounds.0 as usize || height < bounds.1 as usize {
-            log::warn!("A VP6 video frame is smaller than the bounds of the stream it belongs in. This is not supported.");
+            log::warn!(
+                "A VP6 video frame is smaller than the bounds of the stream it belongs in. This is not supported."
+            );
             // Flash Player just produces a black image in this case!
         }
 

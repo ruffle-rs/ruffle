@@ -10,7 +10,7 @@ use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};
 
 use js_sys::Uint8Array;
 use tracing::{debug, error, trace, warn};
-use tracing_subscriber::{layer::Layered, Registry};
+use tracing_subscriber::{Registry, layer::Layered};
 use tracing_wasm::WASMLayer;
 use wasm_bindgen::prelude::*;
 use web_sys::{

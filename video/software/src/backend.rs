@@ -1,10 +1,10 @@
 use crate::decoder::VideoDecoder;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelRegion};
+use ruffle_video::VideoStreamHandle;
 use ruffle_video::backend::VideoBackend;
 use ruffle_video::error::Error;
 use ruffle_video::frame::{EncodedFrame, FrameDependency};
-use ruffle_video::VideoStreamHandle;
 use slotmap::SlotMap;
 use swf::{VideoCodec, VideoDeblocking};
 
