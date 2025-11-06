@@ -50,7 +50,7 @@ use crate::system_properties::SystemProperties;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
-use crate::DefaultFont;
+use crate::{DefaultFont, DEFAULT_PLAYER_VERSION};
 use async_channel::Sender;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, DynamicRootSet, Mutation, Rootable};
@@ -70,10 +70,6 @@ use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use tracing::instrument;
 use web_time::Instant;
-
-/// The newest known Flash Player version, serves as a default to
-/// `player_version`.
-pub const NEWEST_PLAYER_VERSION: u8 = 32;
 
 #[cfg(feature = "default_font")]
 pub const FALLBACK_DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans.subset.ttf.gz");
@@ -2907,7 +2903,7 @@ impl PlayerBuilder {
             .video
             .unwrap_or_else(|| Box::new(null::NullVideoBackend::new()));
 
-        let player_version = self.player_version.unwrap_or(NEWEST_PLAYER_VERSION);
+        let player_version = self.player_version.unwrap_or(DEFAULT_PLAYER_VERSION);
         let language = ui.language();
 
         // Instantiate the player.

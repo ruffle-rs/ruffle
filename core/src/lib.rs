@@ -71,3 +71,9 @@ pub use ruffle_render::backend::ViewportDimensions;
 pub use swf;
 pub use swf::Color;
 pub use ttf_parser;
+
+/// The newest Flash Player version known to Ruffle.
+pub const NEWEST_PLAYER_VERSION: u8 = 32;
+
+/// The default Flash Player version that Ruffle will emulate.
+pub const DEFAULT_PLAYER_VERSION: u8 = 32;
