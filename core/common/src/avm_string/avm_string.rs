@@ -1,10 +1,10 @@
-use std::borrow::Cow;
-use std::ops::Deref;
+use super::interner::AvmAtom;
+use super::repr::AvmStringRepr;
 
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_wstr::{wstr_impl_traits, WStr, WString};
-
-use crate::string::{AvmAtom, AvmStringRepr};
+use std::borrow::Cow;
+use std::ops::Deref;
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
@@ -129,6 +129,7 @@ impl Deref for AvmString<'_> {
 
 // Manual equality implementation with fast paths for owned strings.
 impl PartialEq for AvmString<'_> {
+    #[inline]
     fn eq(&self, other: &Self) -> bool {
         if Gc::ptr_eq(self.0, other.0) {
             // Fast accept for identical strings.

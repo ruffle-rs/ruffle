@@ -20,9 +20,10 @@ gc-arena = { workspace = true }
 slotmap = { workspace = true }
 indexmap = { workspace = true }
 tracing = { workspace = true }
+ruffle_common = { path = "common" }
+ruffle_macros = { path = "macros" }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
-ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
 bitflags = { workspace = true }
@@ -50,7 +51,7 @@ enumset = "1.1.10"
 bytemuck = { workspace = true, features = ["derive"] }
 clap = { workspace = true, optional=true }
 realfft = "3.5.0"
-hashbrown = { version = "0.14.5", features = ["raw"] }
+hashbrown = { workspace = true }
 scopeguard = "1.2.0"
 fluent-templates = { workspace = true }
 egui = { workspace = true, optional = true }

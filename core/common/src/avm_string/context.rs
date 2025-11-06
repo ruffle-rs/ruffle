@@ -1,8 +1,11 @@
-use std::{borrow::Cow, ops::Range};
+use super::avm_string::AvmString;
+use super::common::CommonStrings;
+use super::interner::{AvmAtom, AvmStringInterner};
+use super::repr::AvmStringRepr;
 
 use gc_arena::{Gc, Mutation};
-
-use super::{AvmAtom, AvmString, AvmStringInterner, AvmStringRepr, CommonStrings, WStr, WString};
+use ruffle_wstr::{WStr, WString};
+use std::{borrow::Cow, ops::Range};
 
 /// Context for managing `AvmString`s: allocating them, interning them, etc...
 pub struct StringContext<'gc> {

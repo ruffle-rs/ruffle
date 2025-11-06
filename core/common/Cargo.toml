@@ -1,0 +1,17 @@
+[package]
+name = "ruffle_common"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+hashbrown = { workspace = true }
+fnv = { workspace = true }
+gc-arena = { workspace = true }
+ruffle_wstr = { path = "../../wstr" }
