@@ -1,5 +1,3 @@
-#![allow(clippy::collapsible_if)] // TODO: remove
-
 //! Proc macros used by Ruffle to generate various boilerplate.
 extern crate proc_macro;
 
@@ -147,10 +145,8 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                     .inputs
                     .iter()
                     .filter_map(|arg| {
-                        if let FnArg::Typed(arg) = arg {
-                            if let Pat::Ident(i) = &*arg.pat {
-                                return Some(i.ident.clone());
-                            }
+                        if let FnArg::Typed(arg) = arg && let Pat::Ident(i) = &*arg.pat {
+                            return Some(i.ident.clone());
                         }
                         None
                     })
