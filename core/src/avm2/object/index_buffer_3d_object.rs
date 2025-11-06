@@ -3,8 +3,8 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
-use crate::utils::HasPrefixField;
 use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::IndexBuffer;
 use std::cell::{Cell, RefCell, RefMut};
 

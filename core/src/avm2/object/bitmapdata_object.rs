@@ -6,10 +6,10 @@ use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Error;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::UpdateContext;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use ruffle_common::utils::HasPrefixField;
 
 /// A class instance allocator that allocates BitmapData objects.
 pub fn bitmap_data_allocator<'gc>(

@@ -297,7 +297,7 @@ pub fn derive_has_prefix_field(input: TokenStream) -> TokenStream {
         // for a worked-out example), so we add post-mono checks as a latch-ditch guard.
         #[automatically_derived]
         unsafe impl #impl_generics
-                crate::utils::HasPrefixField<#field_ty>
+                ruffle_common::utils::HasPrefixField<#field_ty>
                 for #ty #ty_generics #where_clause {
             const ASSERT_PREFIX_FIELD: () = {
                 ::core::assert!(::core::mem::offset_of!(Self, #field_name) == 0);

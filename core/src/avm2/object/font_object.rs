@@ -3,8 +3,8 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::{Activation, ClassObject, Error};
 use crate::character::Character;
 use crate::font::Font;
-use crate::utils::HasPrefixField;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use std::fmt;
 
 /// A class instance allocator that allocates Font objects.

@@ -8,11 +8,11 @@ use crate::avm2::{Avm2, Domain, Error};
 use crate::context::UpdateContext;
 use crate::local_connection::{LocalConnectionHandle, LocalConnections};
 use crate::string::AvmString;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::RefCell;
 

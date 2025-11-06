@@ -5,9 +5,9 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::Error;
 use crate::html::{TextDisplay, TextFormat};
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefCell, RefMut};
 
 /// A class instance allocator that allocates TextFormat objects.

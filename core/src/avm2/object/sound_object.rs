@@ -11,7 +11,6 @@ use crate::backend::audio::{AudioManager, SoundHandle};
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use crate::string::AvmString;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
@@ -19,6 +18,7 @@ use gc_arena::{
     Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable,
 };
 use id3::{Tag, TagLike};
+use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
 use std::io::Cursor;
 use swf::SoundInfo;

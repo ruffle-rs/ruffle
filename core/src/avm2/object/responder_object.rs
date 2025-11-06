@@ -4,10 +4,10 @@ use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::{Activation, Error};
 use crate::context::UpdateContext;
 use crate::net_connection::ResponderCallback;
-use crate::utils::HasPrefixField;
 use flash_lso::types::Value as AMFValue;
 use gc_arena::barrier::unlock;
 use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use std::fmt;
 
 /// A class instance allocator that allocates Responder objects.
