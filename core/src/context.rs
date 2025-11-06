@@ -272,11 +272,12 @@ impl<'gc> UpdateContext<'gc> {
         &mut self,
         sound: SoundHandle,
         settings: &swf::SoundInfo,
+        transform: Option<SoundTransform>,
         owner: Option<DisplayObject<'gc>>,
         avm1_object: Option<Avm1Object<'gc>>,
     ) -> Option<SoundInstanceHandle> {
         self.audio_manager
-            .start_sound(self.audio, sound, settings, owner, avm1_object)
+            .start_sound(self.audio, sound, settings, transform, owner, avm1_object)
     }
 
     pub fn attach_avm2_sound_channel(
