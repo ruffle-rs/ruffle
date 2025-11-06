@@ -1,11 +1,10 @@
 use gc_arena::Collect;
+use ruffle_common::sandbox::SandboxType;
 use std::fmt::{Debug, Formatter};
 use std::sync::Arc;
 use swf::{CharacterId, Fixed8, HeaderExt, Rectangle, TagCode, Twips};
 use thiserror::Error;
 use url::Url;
-
-use crate::sandbox::SandboxType;
 
 #[derive(Error, Debug)]
 pub enum Error {
