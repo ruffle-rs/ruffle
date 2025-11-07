@@ -7,6 +7,9 @@ use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm2::object::{EventObject as Avm2EventObject, Object as Avm2Object};
 use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack};
 use crate::avm_rng::AvmRng;
+use crate::backend::navigator::ErrorResponse;
+use crate::backend::navigator::OwnedFuture;
+use crate::backend::navigator::SuccessResponse;
 use crate::backend::ui::FontDefinition;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -2505,6 +2508,10 @@ impl Player {
         self.mutate_with_update_context(|context| {
             context.library.set_default_font(font, names);
         });
+    }
+
+    pub fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
+        self.navigator.fetch(request)
     }
 }
 
