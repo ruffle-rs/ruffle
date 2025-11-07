@@ -721,9 +721,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                         ],
                     })],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::from_pixels(10.0))
-                        .with_color(Color::from_rgba(0xff00ff00))],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(10.0))
+                            .with_color(Color::from_rgba(0xff00ff00)),
+                    ],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some(Point::from_pixels(20.0, 20.0)),
@@ -810,9 +812,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                         ],
                     })],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::from_pixels(2.0))
-                        .with_color(Color::from_rgba(0xffffff00))],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(2.0))
+                            .with_color(Color::from_rgba(0xffffff00)),
+                    ],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some(Point::from_pixels(20.0, 60.0)),
@@ -920,9 +924,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         },
                         focal_point: Fixed8::from_f64(0.97265625),
                     }],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::from_pixels(10.0))
-                        .with_color(Color::from_rgba(0xff00ff00))],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(10.0))
+                            .with_color(Color::from_rgba(0xff00ff00)),
+                    ],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some(Point::from_pixels(20.0, 20.0)),
@@ -1021,9 +1027,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         },
                         focal_point: Fixed8::from_f64(-0.9921875),
                     }],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::from_pixels(2.0))
-                        .with_color(Color::from_rgba(0xffffff00))],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(2.0))
+                            .with_color(Color::from_rgba(0xffffff00)),
+                    ],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some(Point::from_pixels(26.0, 147.35)),
@@ -1119,9 +1127,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                         ],
                     })],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::ZERO)
-                        .with_color(Color::from_rgba(0x00000000))],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::ZERO)
+                            .with_color(Color::from_rgba(0x00000000)),
+                    ],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: None,
@@ -1189,9 +1199,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                         ],
                     })],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::ZERO)
-                        .with_color(Color::from_rgba(0x00000000))],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::ZERO)
+                            .with_color(Color::from_rgba(0x00000000)),
+                    ],
                     shape: vec![
                         ShapeRecord::StraightEdge {
                             delta: PointDelta::from_pixels(200.0, 0.0),
@@ -2368,20 +2380,22 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 flags: ShapeFlag::HAS_SCALING_STROKES,
                 styles: ShapeStyles {
                     fill_styles: vec![],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::from_pixels(40.0))
-                        .with_fill_style(FillStyle::Bitmap {
-                            id: 1,
-                            matrix: Matrix {
-                                a: Fixed16::from_f32(20.0),
-                                d: Fixed16::from_f32(20.0),
-                                tx: Twips::from_pixels(10.0),
-                                ty: Twips::from_pixels(10.0),
-                                ..Default::default()
-                            },
-                            is_smoothed: false,
-                            is_repeating: true,
-                        })],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(40.0))
+                            .with_fill_style(FillStyle::Bitmap {
+                                id: 1,
+                                matrix: Matrix {
+                                    a: Fixed16::from_f32(20.0),
+                                    d: Fixed16::from_f32(20.0),
+                                    tx: Twips::from_pixels(10.0),
+                                    ty: Twips::from_pixels(10.0),
+                                    ..Default::default()
+                                },
+                                is_smoothed: false,
+                                is_repeating: true,
+                            }),
+                    ],
                 },
                 shape: vec![
                     ShapeRecord::StyleChange(Box::new(StyleChangeData {

@@ -88,8 +88,8 @@ pub fn write_swf_raw_tags<W: Write>(header: &Header, tags: &[u8], mut output: W)
 
 #[cfg(feature = "flate2")]
 fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
-    use flate2::write::ZlibEncoder;
     use flate2::Compression;
+    use flate2::write::ZlibEncoder;
     let mut encoder = ZlibEncoder::new(&mut output, Compression::best());
     encoder.write_all(swf_body)?;
     encoder.finish()?;
@@ -957,7 +957,7 @@ impl<W: Write> Writer<W> {
                 writer.write_button_record(record, 1)?;
             }
             writer.write_u8(0)?; // End button records
-                                 // TODO: Assert we have some action.
+            // TODO: Assert we have some action.
             writer.output.write_all(button.actions[0].action_data)?;
         }
         self.write_tag_header(TagCode::DefineButton, buf.len() as u32)?;
@@ -1191,7 +1191,7 @@ impl<W: Write> Writer<W> {
             _ => {
                 return Err(Error::invalid_data(
                     "Morph start and end fill styles must be the same variant.",
-                ))
+                ));
             }
         }
         Ok(())
@@ -1438,7 +1438,7 @@ impl<W: Write> Writer<W> {
         match record {
             ShapeRecord::StraightEdge { delta } => {
                 bits.write_ubits_ct::<2>(0b11)?; // Straight edge
-                                                 // TODO: Check underflow?
+                // TODO: Check underflow?
                 let num_bits = count_sbits_twips(delta.dx)
                     .max(count_sbits_twips(delta.dy))
                     .max(2);
@@ -1722,10 +1722,10 @@ impl<W: Write> Writer<W> {
 
             writer.write_u16(place_object.depth)?;
 
-            if place_object_version >= 3 {
-                if let Some(class_name) = place_object.class_name {
-                    writer.write_string(class_name)?;
-                }
+            if place_object_version >= 3
+                && let Some(class_name) = place_object.class_name
+            {
+                writer.write_string(class_name)?;
             }
 
             match place_object.action {
@@ -1779,10 +1779,10 @@ impl<W: Write> Writer<W> {
             }
 
             // PlaceObject4 adds some embedded AMF data per instance.
-            if place_object_version >= 4 {
-                if let Some(data) = place_object.amf_data {
-                    writer.output.write_all(data)?;
-                }
+            if place_object_version >= 4
+                && let Some(data) = place_object.amf_data
+            {
+                writer.output.write_all(data)?;
             }
         }
         let tag_code = match place_object_version {

@@ -1,5 +1,5 @@
 use crate::{
-    BlurFilter, BlurFilterFlags, Color, Fixed16, Fixed8, GlowFilter, GlowFilterFlags, Rectangle,
+    BlurFilter, BlurFilterFlags, Color, Fixed8, Fixed16, GlowFilter, GlowFilterFlags, Rectangle,
     Twips,
 };
 use bitflags::bitflags;
