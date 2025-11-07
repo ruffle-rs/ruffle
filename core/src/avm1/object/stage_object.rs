@@ -136,8 +136,10 @@ pub fn enumerate_keys<'gc>(dobj: DisplayObject<'gc>, keys: &mut Vec<AvmString<'g
     if let Some(ctr) = dobj.as_container() {
         // Button/MovieClip children are included in key list.
         for child in ctr.iter_render_list().rev() {
-            if child.as_interactive().is_some() {
-                keys.push(child.name().expect("Interactive DisplayObjects have names"));
+            // All named DOs are included in the list, even if they're not
+            // accessible by AVM1 code (e.g. `MorphShape`)
+            if let Some(name) = child.name() {
+                keys.push(name);
             }
         }
     }
