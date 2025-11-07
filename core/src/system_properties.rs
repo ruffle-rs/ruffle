@@ -267,10 +267,16 @@ pub struct SystemProperties {
     pub cpu_architecture: CpuArchitecture,
     /// The highest supported h264 decoder level
     pub idc_level: String,
+    /// A custom version string to report, instead of player version
+    pub custom_version_string: Option<String>,
 }
 
 impl SystemProperties {
-    pub fn new(player_runtime: PlayerRuntime, language: LanguageIdentifier) -> Self {
+    pub fn new(
+        player_runtime: PlayerRuntime,
+        language: LanguageIdentifier,
+        custom_version_string: Option<String>,
+    ) -> Self {
         let (manufacturer, os) = match player_runtime {
             PlayerRuntime::FlashPlayer => (Manufacturer::Windows, OperatingSystem::WindowsUnknown),
             PlayerRuntime::AIR => {
@@ -302,15 +308,24 @@ impl SystemProperties {
             os,
             cpu_architecture: CpuArchitecture::X86,
             idc_level: "5.1".into(),
+            custom_version_string,
         }
     }
 
     pub fn get_version_string(&self, player_version: u8) -> String {
-        format!(
-            "{} {},0,0,0",
-            self.manufacturer.get_platform_name(),
-            player_version
-        )
+        if let Some(custom_version_string) = &self.custom_version_string {
+            format!(
+                "{} {}",
+                self.manufacturer.get_platform_name(),
+                custom_version_string
+            )
+        } else {
+            format!(
+                "{} {},0,0,0",
+                self.manufacturer.get_platform_name(),
+                player_version
+            )
+        }
     }
 
     pub fn has_capability(&self, cap: SystemCapabilities) -> bool {
