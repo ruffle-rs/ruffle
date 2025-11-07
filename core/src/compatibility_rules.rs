@@ -1,5 +1,8 @@
 use std::borrow::Cow;
+use std::collections::HashSet;
 use url::Url;
+
+use crate::backend::navigator::FetchReason;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum UrlRewriteStage {
@@ -16,14 +19,21 @@ pub enum UrlRewriteStage {
 #[derive(Debug, Clone)]
 pub struct UrlRewriteRule {
     pub stage: UrlRewriteStage,
+    pub fetch_reasons: HashSet<FetchReason>,
     pub host: String,
     pub replacement: String,
 }
 
 impl UrlRewriteRule {
-    pub fn new(stage: UrlRewriteStage, host: impl ToString, replacement: impl ToString) -> Self {
+    pub fn new(
+        stage: UrlRewriteStage,
+        fetch_reasons: Vec<FetchReason>,
+        host: impl ToString,
+        replacement: impl ToString,
+    ) -> Self {
         Self {
             stage,
+            fetch_reasons: fetch_reasons.into_iter().collect(),
             host: host.to_string(),
             replacement: replacement.to_string(),
         }
@@ -33,7 +43,7 @@ impl UrlRewriteRule {
 #[derive(Debug, Clone)]
 pub struct RuleSet {
     name: String,
-    swf_domain_rewrite_rules: Vec<UrlRewriteRule>,
+    domain_rewrite_rules: Vec<UrlRewriteRule>,
 }
 
 #[derive(Debug, Clone)]
@@ -68,8 +78,9 @@ impl CompatibilityRules {
                 // Replaces konggames.com domains with kongregate.com to fool old sitelocks that no longer work.
                 RuleSet {
                     name: "kongregate_sitelock".to_string(),
-                    swf_domain_rewrite_rules: vec![UrlRewriteRule::new(
+                    domain_rewrite_rules: vec![UrlRewriteRule::new(
                         UrlRewriteStage::AfterResponse,
+                        vec![FetchReason::LoadSwf],
                         "*.konggames.com",
                         "chat.kongregate.com",
                     )],
@@ -82,6 +93,7 @@ impl CompatibilityRules {
         &self,
         original_url: Cow<'_, str>,
         stage: UrlRewriteStage,
+        fetch_reason: FetchReason,
     ) -> Option<String> {
         let mut url = match Url::parse(&original_url) {
             Ok(url) => url,
@@ -93,8 +105,8 @@ impl CompatibilityRules {
         let mut rewritten = false;
 
         for rule_set in &self.rule_sets {
-            for rule in &rule_set.swf_domain_rewrite_rules {
-                if rule.stage != stage {
+            for rule in &rule_set.domain_rewrite_rules {
+                if rule.stage != stage || !rule.fetch_reasons.contains(&fetch_reason) {
                     continue;
                 }
 
