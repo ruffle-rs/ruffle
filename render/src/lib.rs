@@ -1,4 +1,3 @@
-#![allow(clippy::collapsible_if)] // TODO: remove
 #![deny(clippy::unwrap_used)]
 
 pub mod atf;

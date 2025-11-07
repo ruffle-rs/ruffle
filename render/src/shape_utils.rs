@@ -649,10 +649,10 @@ pub fn shape_hit_test(
                     winding += winding_number_line(test_point, end, cursor);
                 }
 
-                if let Some(width) = stroke_width {
-                    if hit_test_stroke(test_point, cursor, end, width) {
-                        return true;
-                    }
+                if let Some(width) = stroke_width
+                    && hit_test_stroke(test_point, cursor, end, width)
+                {
+                    return true;
                 }
 
                 cursor = end;
@@ -673,10 +673,10 @@ pub fn shape_hit_test(
                     winding += winding_number_curve(test_point, anchor, control, cursor);
                 }
 
-                if let Some(width) = stroke_width {
-                    if hit_test_stroke_curve(test_point, cursor, control, anchor, width) {
-                        return true;
-                    }
+                if let Some(width) = stroke_width
+                    && hit_test_stroke_curve(test_point, cursor, control, anchor, width)
+                {
+                    return true;
                 }
 
                 cursor = anchor;

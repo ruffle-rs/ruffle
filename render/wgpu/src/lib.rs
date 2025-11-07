@@ -3,7 +3,6 @@
 // This lint is helpful, but right now we have too many instances of it.
 // TODO: Remove this once all instances are fixed.
 #![allow(clippy::needless_pass_by_ref_mut)]
-#![allow(clippy::collapsible_if)] // TODO: remove
 
 use crate::backend::ActiveFrame;
 use crate::bitmaps::BitmapSamplers;
