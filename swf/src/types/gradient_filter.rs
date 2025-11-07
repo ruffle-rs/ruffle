@@ -1,4 +1,4 @@
-use crate::{BlurFilter, BlurFilterFlags, Fixed16, Fixed8, GradientRecord};
+use crate::{BlurFilter, BlurFilterFlags, Fixed8, Fixed16, GradientRecord};
 use bitflags::bitflags;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

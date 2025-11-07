@@ -34,7 +34,7 @@ pub use color_matrix_filter::ColorMatrixFilter;
 pub use color_transform::ColorTransform;
 pub use convolution_filter::{ConvolutionFilter, ConvolutionFilterFlags};
 pub use drop_shadow_filter::{DropShadowFilter, DropShadowFilterFlags};
-pub use fixed::{Fixed16, Fixed8};
+pub use fixed::{Fixed8, Fixed16};
 pub use glow_filter::{GlowFilter, GlowFilterFlags};
 pub use gradient_filter::{GradientFilter, GradientFilterFlags};
 pub use matrix::Matrix;
@@ -1818,26 +1818,35 @@ mod tests {
 
     #[test]
     fn button_conditions_match() {
-        assert!(ButtonActionCondition::OVER_DOWN_TO_OVER_UP
-            .matches(ButtonActionCondition::OVER_DOWN_TO_OVER_UP));
+        assert!(
+            ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+                .matches(ButtonActionCondition::OVER_DOWN_TO_OVER_UP)
+        );
 
-        assert!(!ButtonActionCondition::OVER_DOWN_TO_OVER_UP
-            .matches(ButtonActionCondition::IDLE_TO_OVER_UP));
+        assert!(
+            !ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+                .matches(ButtonActionCondition::IDLE_TO_OVER_UP)
+        );
 
-        assert!((ButtonActionCondition::OVER_DOWN_TO_OVER_UP
-            | ButtonActionCondition::IDLE_TO_OVER_UP)
-            .matches(ButtonActionCondition::IDLE_TO_OVER_UP));
+        assert!(
+            (ButtonActionCondition::OVER_DOWN_TO_OVER_UP | ButtonActionCondition::IDLE_TO_OVER_UP)
+                .matches(ButtonActionCondition::IDLE_TO_OVER_UP)
+        );
 
-        assert!((ButtonActionCondition::OVER_DOWN_TO_OVER_UP
-            | ButtonActionCondition::from_key_code(3))
-        .matches(ButtonActionCondition::OVER_DOWN_TO_OVER_UP));
+        assert!(
+            (ButtonActionCondition::OVER_DOWN_TO_OVER_UP | ButtonActionCondition::from_key_code(3))
+                .matches(ButtonActionCondition::OVER_DOWN_TO_OVER_UP)
+        );
 
-        assert!((ButtonActionCondition::OVER_DOWN_TO_OVER_UP
-            | ButtonActionCondition::from_key_code(3))
-        .matches(ButtonActionCondition::from_key_code(3)));
+        assert!(
+            (ButtonActionCondition::OVER_DOWN_TO_OVER_UP | ButtonActionCondition::from_key_code(3))
+                .matches(ButtonActionCondition::from_key_code(3))
+        );
 
-        assert!(!(ButtonActionCondition::OVER_DOWN_TO_OVER_UP
-            | ButtonActionCondition::from_key_code(3))
-        .matches(ButtonActionCondition::from_key_code(1)));
+        assert!(
+            !(ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+                | ButtonActionCondition::from_key_code(3))
+            .matches(ButtonActionCondition::from_key_code(1))
+        );
     }
 }

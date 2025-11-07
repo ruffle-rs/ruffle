@@ -36,16 +36,13 @@ pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
         simple_asn1::from_der(input).map_err(|_| Error::invalid_data("Invalid ASN1 blob"))?;
     if let Some(ASN1Block::Sequence(_, s)) = asn1_blocks.into_iter().next() {
         for t in s {
-            if let ASN1Block::Explicit(_, _, _, block) = t {
-                if let ASN1Block::Sequence(_, s) = *block {
-                    if let Some(ASN1Block::Sequence(_, s)) = s.into_iter().nth(2) {
-                        if let Some(ASN1Block::Explicit(_, _, _, octet)) = s.into_iter().nth(1) {
-                            if let ASN1Block::OctetString(_, bytes) = *octet {
-                                return Ok(bytes);
-                            }
-                        }
-                    }
-                }
+            if let ASN1Block::Explicit(_, _, _, block) = t
+                && let ASN1Block::Sequence(_, s) = *block
+                && let Some(ASN1Block::Sequence(_, s)) = s.into_iter().nth(2)
+                && let Some(ASN1Block::Explicit(_, _, _, octet)) = s.into_iter().nth(1)
+                && let ASN1Block::OctetString(_, bytes) = *octet
+            {
+                return Ok(bytes);
             }
         }
     }
