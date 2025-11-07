@@ -56,6 +56,13 @@ pub enum SocketMode {
     Ask,
 }
 
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum FetchReason {
+    LoadSwf,
+    UrlLoader,
+    Other,
+}
+
 impl NavigationMethod {
     /// Convert an SWF method enum into a NavigationMethod.
     pub fn from_send_vars_method(s: SendVarsMethod) -> Option<Self> {

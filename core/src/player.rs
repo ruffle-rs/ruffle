@@ -8,6 +8,7 @@ use crate::avm2::object::{EventObject as Avm2EventObject, Object as Avm2Object};
 use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack};
 use crate::avm_rng::AvmRng;
 use crate::backend::navigator::ErrorResponse;
+use crate::backend::navigator::FetchReason;
 use crate::backend::navigator::OwnedFuture;
 use crate::backend::navigator::SuccessResponse;
 use crate::backend::ui::FontDefinition;
@@ -2510,7 +2511,11 @@ impl Player {
         });
     }
 
-    pub fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
+    pub fn fetch(
+        &self,
+        request: Request,
+        _fetch_reason: FetchReason,
+    ) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
         self.navigator.fetch(request)
     }
 }
