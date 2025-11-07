@@ -9,13 +9,13 @@ use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm_warn;
 use crate::backend::navigator::Request;
 use crate::string::{AvmString, StringContext, WStr, WString};
-use crate::xml::custom_unescape;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc};
 use quick_xml::errors::IllFormedError;
 use quick_xml::events::attributes::AttrError;
 use quick_xml::{events::Event, Reader};
+use ruffle_common::xml::custom_unescape;
 use ruffle_macros::istr;
 
 #[derive(Clone, Copy, Collect)]

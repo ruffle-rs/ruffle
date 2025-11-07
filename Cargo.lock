@@ -4403,6 +4403,8 @@ dependencies = [
  "fnv",
  "gc-arena",
  "hashbrown 0.14.5",
+ "quick-xml",
+ "regress",
  "ruffle_macros",
  "ruffle_wstr",
  "swf",

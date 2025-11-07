@@ -3,7 +3,6 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
 use crate::avm2::{Activation, Error, Multiname, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
-use crate::xml::custom_unescape;
 
 use gc_arena::barrier::unlock;
 use gc_arena::{
@@ -17,6 +16,7 @@ use quick_xml::{
     name::ResolveResult,
     Error as XmlError, NsReader,
 };
+use ruffle_common::xml::custom_unescape;
 use ruffle_macros::istr;
 
 use std::cell::{Ref, RefMut};
