@@ -20,6 +20,7 @@ use crate::backend::{
     ui::{MouseCursor, UiBackend},
 };
 use crate::compatibility_rules::CompatibilityRules;
+use crate::compatibility_rules::UrlRewriteStage;
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{
@@ -2516,10 +2517,44 @@ impl Player {
 
     pub fn fetch(
         &self,
-        request: Request,
-        _fetch_reason: FetchReason,
+        mut request: Request,
+        fetch_reason: FetchReason,
     ) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
-        self.navigator.fetch(request)
+        if matches!(fetch_reason, FetchReason::LoadSwf) {
+            let new_url = self
+                .compatibility_rules
+                .rewrite_swf_url(request.url().into(), UrlRewriteStage::BeforeRequest);
+            if let Some(new_url) = new_url {
+                request.set_url(new_url);
+            }
+        }
+
+        let self_reference = self.self_reference.clone();
+        let fetch = self.navigator.fetch(request);
+        Box::pin(async move {
+            let response = fetch.await;
+
+            let Ok(mut response) = response else {
+                return response;
+            };
+
+            let Some(player) = self_reference.upgrade() else {
+                return Ok(response);
+            };
+
+            if matches!(fetch_reason, FetchReason::LoadSwf) {
+                let new_url = player
+                    .lock()
+                    .unwrap()
+                    .compatibility_rules
+                    .rewrite_swf_url(response.url(), UrlRewriteStage::AfterResponse);
+                if let Some(new_url) = new_url {
+                    response.set_url(new_url);
+                }
+            }
+
+            Ok(response)
+        })
     }
 }
 
