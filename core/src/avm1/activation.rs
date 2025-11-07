@@ -2655,11 +2655,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         .and_then(|o| o.as_container())
                         .and_then(|o| o.child_by_name(name, case_sensitive))
                     {
-                        // If an object doesn't have an object representation, e.g. Graphic, then trying to access it
-                        // Returns the parent instead
                         if path_has_slash {
                             child.object1_or_undef()
-                        } else if let crate::display_object::DisplayObject::Graphic(_) = child {
+                        } else if child.object1().is_none() {
+                            // If an object doesn't have an object representation,
+                            // e.g. Graphic, then trying to access it returns
+                            // the parent instead
                             child
                                 .parent()
                                 .map(|p| p.object1_or_undef())
