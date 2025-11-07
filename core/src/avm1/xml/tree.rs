@@ -10,6 +10,7 @@ use gc_arena::{
 };
 use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
+use ruffle_common::xml::custom_unescape;
 use ruffle_macros::istr;
 use std::cell::RefMut;
 use std::fmt;
@@ -92,7 +93,7 @@ impl<'gc> XmlNode<'gc> {
         let attributes = attributes?;
         for attribute in attributes.iter().rev() {
             let key = AvmString::new_utf8_bytes(activation.gc(), attribute.key.into_inner());
-            let value_str = crate::xml::custom_unescape(&attribute.value, decoder)?;
+            let value_str = custom_unescape(&attribute.value, decoder)?;
             let value = AvmString::new_utf8_bytes(activation.gc(), value_str.as_bytes());
 
             // Insert an attribute.

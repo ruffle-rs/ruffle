@@ -30,7 +30,7 @@ bitflags = { workspace = true }
 smallvec = { workspace = true }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
-quick-xml = "0.37.5"
+quick-xml = { workspace = true }
 url = { workspace = true }
 weak-table = "0.3.2"
 percent-encoding = { workspace = true }
@@ -42,7 +42,7 @@ rand = { version = "0.9.1", features = ["std", "os_rng"], default-features = fal
 serde = { workspace = true }
 serde_json = { workspace = true, features = ["preserve_order"] }
 nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "073eb48d907201f46dea0c8feb4e8d9a1d92208c", optional = true }
-regress = { git = "https://github.com/ruffle-rs/regras3", rev = "5fcb02513c5ab4e00df4346459f5a8d0521d8fed" }
+regress = { workspace = true }
 flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "998f47c926b9986aabd518fbb7394ff56936d0b0" }
 lzma-rs = { workspace = true, optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }

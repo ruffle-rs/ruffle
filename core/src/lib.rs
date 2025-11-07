@@ -47,7 +47,6 @@ pub mod tag_utils;
 pub mod timer;
 mod types;
 mod vminterface;
-mod xml;
 
 pub mod backend;
 pub mod compatibility_rules;
