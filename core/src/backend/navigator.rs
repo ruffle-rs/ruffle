@@ -56,7 +56,7 @@ pub enum SocketMode {
     Ask,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
 pub enum FetchReason {
     LoadSwf,
     UrlLoader,
