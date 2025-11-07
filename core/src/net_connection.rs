@@ -4,7 +4,9 @@ use crate::avm2::object::{
     NetConnectionObject as Avm2NetConnectionObject, ResponderObject as Avm2ResponderObject,
 };
 use crate::avm2::{Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject};
-use crate::backend::navigator::{ErrorResponse, NavigatorBackend, OwnedFuture, Request};
+use crate::backend::navigator::{
+    ErrorResponse, FetchReason, NavigatorBackend, OwnedFuture, Request,
+};
 use crate::context::UpdateContext;
 use crate::loader::Error;
 use crate::Player;
@@ -517,7 +519,7 @@ impl FlashRemoting {
             let bytes = flash_lso::packet::write::write_to_bytes(&packet, true)
                 .expect("Must be able to serialize a packet");
             let request = Request::post(url, Some((bytes, "application/x-amf".to_string())));
-            let fetch = player.lock().unwrap().fetch(request);
+            let fetch = player.lock().unwrap().fetch(request, FetchReason::Other);
             let response: Result<_, ErrorResponse> = async {
                 let response = fetch.await?;
                 let url = response.url().to_string();
