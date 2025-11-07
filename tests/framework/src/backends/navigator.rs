@@ -30,6 +30,10 @@ impl SuccessResponse for TestResponse {
         Cow::Borrowed(&self.url)
     }
 
+    fn set_url(&mut self, url: String) {
+        self.url = url;
+    }
+
     fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
         Box::pin(async move { Ok(self.body) })
     }

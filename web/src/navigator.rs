@@ -403,6 +403,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             }
 
             let wrapper: Box<dyn SuccessResponse> = Box::new(WebResponseWrapper {
+                rewritten_url: None,
                 response,
                 body_stream: None,
             });
@@ -554,13 +555,21 @@ impl NavigatorBackend for WebNavigatorBackend {
 }
 
 struct WebResponseWrapper {
+    rewritten_url: Option<String>,
     response: WebResponse,
     body_stream: Option<Rc<RefCell<ReadableStream>>>,
 }
 
 impl SuccessResponse for WebResponseWrapper {
     fn url(&self) -> Cow<'_, str> {
-        Cow::Owned(self.response.url())
+        self.rewritten_url
+            .as_ref()
+            .map(|url| Cow::<'_, str>::Borrowed(url))
+            .unwrap_or_else(|| Cow::Owned(self.response.url()))
+    }
+
+    fn set_url(&mut self, url: String) {
+        self.rewritten_url = Some(url);
     }
 
     fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {

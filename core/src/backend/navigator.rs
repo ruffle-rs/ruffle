@@ -155,6 +155,10 @@ impl Request {
         &self.url
     }
 
+    pub fn set_url(&mut self, url: String) {
+        self.url = url;
+    }
+
     /// Retrieve the navigation method for this request.
     pub fn method(&self) -> NavigationMethod {
         self.method
@@ -182,6 +186,9 @@ impl Request {
 pub trait SuccessResponse {
     /// The final URL obtained after any redirects.
     fn url(&self) -> Cow<'_, str>;
+
+    /// Rewrite the URL to a different one.
+    fn set_url(&mut self, url: String);
 
     /// Retrieve the contents of the response body.
     ///
@@ -572,6 +579,10 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
     impl SuccessResponse for LocalResponse {
         fn url(&self) -> Cow<'_, str> {
             Cow::Borrowed(&self.url)
+        }
+
+        fn set_url(&mut self, url: String) {
+            self.url = url;
         }
 
         fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {

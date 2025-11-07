@@ -29,6 +29,10 @@ impl SuccessResponse for Response {
         std::borrow::Cow::Borrowed(&self.url)
     }
 
+    fn set_url(&mut self, url: String) {
+        self.url = url;
+    }
+
     #[expect(clippy::await_holding_lock)]
     fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
         match self.response_body {
