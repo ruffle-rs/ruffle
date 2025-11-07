@@ -1,3 +1,4 @@
+use crate::avm1::Object as Avm1Object;
 use crate::avm2::Activation;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::RenderContext;
@@ -11,6 +12,7 @@ use crate::prelude::*;
 use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::InteractiveObjectBase;
 use crate::tag_utils::SwfMovie;
+use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
@@ -115,6 +117,16 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         for child in self.iter_render_list() {
             child.construct_frame(context);
         }
+    }
+
+    fn post_instantiation(
+        self,
+        context: &mut UpdateContext<'gc>,
+        _init_object: Option<Avm1Object<'gc>>,
+        _instantiated_by: Instantiator,
+        _run_frame: bool,
+    ) {
+        self.set_default_instance_name(context);
     }
 
     fn movie(self) -> Arc<SwfMovie> {

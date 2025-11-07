@@ -1,3 +1,4 @@
+use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::DisplayObjectBase;
@@ -257,11 +258,13 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     fn post_instantiation(
         self,
         context: &mut UpdateContext<'gc>,
-        _init_object: Option<crate::avm1::Object<'gc>>,
+        _init_object: Option<Avm1Object<'gc>>,
         _instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
         if self.movie().is_action_script_3() {
+            self.set_default_instance_name(context);
+
             let statictext = context.avm2.classes().statictext;
             let object = Avm2StageObject::for_display_object(context.gc(), self.into(), statictext);
             // We don't need to call the initializer method, as AVM2 can't link

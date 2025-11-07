@@ -1,6 +1,6 @@
 //! Bitmap display object
 
-use crate::avm1;
+use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
     Activation as Avm2Activation, BitmapDataObject as Avm2BitmapDataObject,
     ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs,
@@ -312,13 +312,15 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     fn post_instantiation(
         self,
         context: &mut UpdateContext<'gc>,
-        _init_object: Option<avm1::Object<'gc>>,
+        _init_object: Option<Avm1Object<'gc>>,
         instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
         let mc = context.gc();
 
         if self.movie().is_action_script_3() {
+            self.set_default_instance_name(context);
+
             if !instantiated_by.is_avm() {
                 let bitmap_cls = self
                     .avm2_bitmap_class()

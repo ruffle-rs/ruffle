@@ -360,6 +360,10 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         _instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
+        if self.movie().is_action_script_3() {
+            self.set_default_instance_name(context);
+        }
+
         let movie = self.0.movie.clone();
 
         let (stream, keyframes) = match self.0.source.get() {
