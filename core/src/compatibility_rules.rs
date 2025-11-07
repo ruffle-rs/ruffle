@@ -85,6 +85,18 @@ impl CompatibilityRules {
                         "chat.kongregate.com",
                     )],
                 },
+                // Replaces fpdownload.adobe.com with Ruffle's CDN. fpdownload.adobe.com hosts SWZ files
+                // which do not work on web due to CORS (and the reliability of fpdownload.adobe.com is
+                // questionable).
+                RuleSet {
+                    name: "fpdownload".to_string(),
+                    domain_rewrite_rules: vec![UrlRewriteRule::new(
+                        UrlRewriteStage::BeforeRequest,
+                        vec![FetchReason::UrlLoader],
+                        "fpdownload.adobe.com",
+                        "cdn.ruffle.rs",
+                    )],
+                },
             ],
         }
     }
