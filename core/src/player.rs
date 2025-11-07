@@ -2979,7 +2979,7 @@ impl PlayerBuilder {
                 // TODO: AVM1 and AVM2 use separate RNGs (though algorithm is same), so this is technically incorrect.
                 // See: https://github.com/ruffle-rs/ruffle/issues/20244
                 rng: AvmRng::default(),
-                system: SystemProperties::new(language),
+                system: SystemProperties::new(self.player_runtime, language),
                 page_url: self.page_url.clone(),
                 transform_stack: TransformStack::new(),
                 instance_counter: 0,

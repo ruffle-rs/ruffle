@@ -1,4 +1,5 @@
 use crate::context::UpdateContext;
+use crate::PlayerRuntime;
 use bitflags::bitflags;
 use core::fmt;
 use fluent_templates::{langid, LanguageIdentifier};
@@ -269,7 +270,20 @@ pub struct SystemProperties {
 }
 
 impl SystemProperties {
-    pub fn new(language: LanguageIdentifier) -> Self {
+    pub fn new(player_runtime: PlayerRuntime, language: LanguageIdentifier) -> Self {
+        let (manufacturer, os) = match player_runtime {
+            PlayerRuntime::FlashPlayer => (Manufacturer::Windows, OperatingSystem::WindowsUnknown),
+            PlayerRuntime::AIR => {
+                if cfg!(windows) {
+                    (Manufacturer::Windows, OperatingSystem::WindowsUnknown)
+                } else if cfg!(target_vendor = "apple") {
+                    (Manufacturer::Macintosh, OperatingSystem::MacOs)
+                } else {
+                    (Manufacturer::Linux, OperatingSystem::Linux)
+                }
+            }
+        };
+
         SystemProperties {
             //TODO: default to true on fp>=7, false <= 6
             exact_settings: true,
@@ -284,8 +298,8 @@ impl SystemProperties {
             pixel_aspect_ratio: 1_f32,
             // source: https://tracker.adobe.com/#/view/FP-3949775
             dpi: 72_f32,
-            manufacturer: Manufacturer::Linux,
-            os: OperatingSystem::Linux,
+            manufacturer,
+            os,
             cpu_architecture: CpuArchitecture::X86,
             idc_level: "5.1".into(),
         }
