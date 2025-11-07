@@ -1,9 +1,11 @@
+use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::DisplayObjectBase;
 use crate::library::{Library, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
+use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
@@ -149,6 +151,18 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         }
 
         false
+    }
+
+    fn post_instantiation(
+        self,
+        context: &mut UpdateContext<'gc>,
+        _init_object: Option<Avm1Object<'gc>>,
+        _instantiated_by: Instantiator,
+        _run_frame: bool,
+    ) {
+        if self.movie().is_action_script_3() {
+            self.set_default_instance_name(context);
+        }
     }
 
     fn movie(self) -> Arc<SwfMovie> {
