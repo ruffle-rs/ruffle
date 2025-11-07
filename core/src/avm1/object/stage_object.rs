@@ -39,9 +39,9 @@ pub fn get_property<'gc>(
     {
         return if is_slash_path {
             Some(child.object1_or_undef())
-        // If an object doesn't have an object representation, e.g. Graphic, then trying to access it
-        // Returns the parent instead
-        } else if let crate::display_object::DisplayObject::Graphic(_) = child {
+        // If an object doesn't have an object representation, e.g. Graphic,
+        // then trying to access it returns the parent instead
+        } else if child.object1().is_none() {
             child.parent().map(|p| p.object1_or_undef())
         } else {
             Some(child.object1_or_undef())
