@@ -603,6 +603,20 @@ export interface BaseLoadOptions {
     playerVersion?: number | null;
 
     /**
+     * A custom version string to be reported through `Capabilities.version`/`$version`.
+     *
+     * By default, this will be something similar to `32,0,0,0` (depending on {@link playerVersion}).
+     *
+     * This does not change any player behavior, only changing the actual {@link playerVersion} will do that.
+     *
+     * Ordinarily SWFs expect to see four digits separated by a comma - e.g. `32,0,0,465`.
+     * You are not required to stick to this format, but you may break content that expects it.
+     *
+     * @default null
+     */
+    customPlayerVersionString?: string | null;
+
+    /**
      * The preferred render backend of the Ruffle player.
      *
      * This option should only be used for testing;
