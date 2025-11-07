@@ -84,6 +84,7 @@ impl From<&GlobalPreferences> for LaunchOptions {
                 referer: value.cli.referer.clone(),
                 cookie: value.cli.cookie.clone(),
                 player_version: value.cli.player_version,
+                custom_player_version_string: None,
                 player_runtime: value.cli.player_runtime,
                 frame_rate: value.cli.frame_rate,
                 dummy_external_interface: if value.cli.dummy_external_interface {
