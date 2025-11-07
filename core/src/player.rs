@@ -2520,13 +2520,13 @@ impl Player {
         mut request: Request,
         fetch_reason: FetchReason,
     ) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
-        if matches!(fetch_reason, FetchReason::LoadSwf) {
-            let new_url = self
-                .compatibility_rules
-                .rewrite_swf_url(request.url().into(), UrlRewriteStage::BeforeRequest);
-            if let Some(new_url) = new_url {
-                request.set_url(new_url);
-            }
+        let new_url = self.compatibility_rules.rewrite_swf_url(
+            request.url().into(),
+            UrlRewriteStage::BeforeRequest,
+            fetch_reason,
+        );
+        if let Some(new_url) = new_url {
+            request.set_url(new_url);
         }
 
         let self_reference = self.self_reference.clone();
@@ -2542,15 +2542,13 @@ impl Player {
                 return Ok(response);
             };
 
-            if matches!(fetch_reason, FetchReason::LoadSwf) {
-                let new_url = player
-                    .lock()
-                    .unwrap()
-                    .compatibility_rules
-                    .rewrite_swf_url(response.url(), UrlRewriteStage::AfterResponse);
-                if let Some(new_url) = new_url {
-                    response.set_url(new_url);
-                }
+            let new_url = player.lock().unwrap().compatibility_rules.rewrite_swf_url(
+                response.url(),
+                UrlRewriteStage::AfterResponse,
+                fetch_reason,
+            );
+            if let Some(new_url) = new_url {
+                response.set_url(new_url);
             }
 
             Ok(response)
