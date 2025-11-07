@@ -846,7 +846,7 @@ pub fn load_root_movie<'gc>(
                 .display_root_movie_download_failed_message(false, error.error.to_string());
             error.error
         })?;
-        let url = response.url().into_owned();
+        let swf_url = response.url().into_owned();
         let body = response.body().await.inspect_err(|error| {
             player
                 .lock()
@@ -856,11 +856,6 @@ pub fn load_root_movie<'gc>(
         })?;
 
         // The spoofed root movie URL takes precedence over the actual URL.
-        let swf_url = player
-            .lock()
-            .unwrap()
-            .compatibility_rules()
-            .rewrite_swf_url(url);
         let spoofed_or_swf_url = player
             .lock()
             .unwrap()

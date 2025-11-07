@@ -1,14 +1,29 @@
+use std::borrow::Cow;
 use url::Url;
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum UrlRewriteStage {
+    /// Perform URL rewrite before sending the request.
+    /// The request will be sent to a different URL.
+    BeforeRequest,
+
+    /// Perform URL rewrite after receiving the response.
+    /// The response URL will be rewritten, and SWFs will see
+    /// the rewritten URL.
+    AfterResponse,
+}
 
 #[derive(Debug, Clone)]
 pub struct UrlRewriteRule {
+    pub stage: UrlRewriteStage,
     pub host: String,
     pub replacement: String,
 }
 
 impl UrlRewriteRule {
-    pub fn new(host: impl ToString, replacement: impl ToString) -> Self {
+    pub fn new(stage: UrlRewriteStage, host: impl ToString, replacement: impl ToString) -> Self {
         Self {
+            stage,
             host: host.to_string(),
             replacement: replacement.to_string(),
         }
@@ -48,31 +63,41 @@ impl CompatibilityRules {
     /// - Only affect content that cannot run anymore, such as requiring lost assets
     /// - Not allow people to easily pirate or cheat games more than they can already
     pub fn builtin_rules() -> Self {
-        // Replaces konggames.com domains with kongregate.com to fool old sitelocks that no longer work.
-        let kongregate_sitelock = RuleSet {
-            name: "kongregate_sitelock".to_string(),
-            swf_domain_rewrite_rules: vec![UrlRewriteRule::new(
-                "*.konggames.com",
-                "chat.kongregate.com",
-            )],
-        };
-
         Self {
-            rule_sets: vec![kongregate_sitelock],
+            rule_sets: vec![
+                // Replaces konggames.com domains with kongregate.com to fool old sitelocks that no longer work.
+                RuleSet {
+                    name: "kongregate_sitelock".to_string(),
+                    swf_domain_rewrite_rules: vec![UrlRewriteRule::new(
+                        UrlRewriteStage::AfterResponse,
+                        "*.konggames.com",
+                        "chat.kongregate.com",
+                    )],
+                },
+            ],
         }
     }
 
-    pub fn rewrite_swf_url(&self, original_url: String) -> String {
+    pub fn rewrite_swf_url(
+        &self,
+        original_url: Cow<'_, str>,
+        stage: UrlRewriteStage,
+    ) -> Option<String> {
         let mut url = match Url::parse(&original_url) {
             Ok(url) => url,
             Err(e) => {
                 tracing::warn!("Couldn't rewrite swf url {original_url}: {e}");
-                return original_url;
+                return None;
             }
         };
+        let mut rewritten = false;
 
         for rule_set in &self.rule_sets {
             for rule in &rule_set.swf_domain_rewrite_rules {
+                if rule.stage != stage {
+                    continue;
+                }
+
                 if let Some(host) = url.host_str() {
                     if domain_matches(&rule.host, host) {
                         tracing::info!(
@@ -84,13 +109,19 @@ impl CompatibilityRules {
                                 "Couldn't rewrite swf host to {}: {e}",
                                 rule.replacement
                             );
+                        } else {
+                            rewritten = true;
                         }
                     }
                 }
             }
         }
 
-        url.to_string()
+        if rewritten {
+            Some(url.to_string())
+        } else {
+            None
+        }
     }
 }
 
