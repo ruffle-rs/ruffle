@@ -176,7 +176,7 @@ pub enum Error {
     InvalidDomain(String),
 
     #[error("Invalid SWF: {0}")]
-    InvalidSwf(#[from] crate::tag_utils::Error),
+    InvalidSwf(#[from] swf::error::Error),
 
     #[error("Invalid bitmap")]
     InvalidBitmap(#[from] ruffle_render::error::Error),

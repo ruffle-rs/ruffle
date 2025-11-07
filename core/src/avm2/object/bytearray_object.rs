@@ -6,7 +6,6 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::character::Character;
-use crate::tag_utils::SwfSlice;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_common::utils::HasPrefixField;
@@ -27,7 +26,7 @@ pub fn byte_array_allocator<'gc>(
             if let Some(Character::BinaryData(binary_data)) = lib.character_by_id(id) {
                 Some(ByteArrayStorage::from_vec(
                     activation.context,
-                    SwfSlice::as_ref(&binary_data).to_vec(),
+                    binary_data.to_vec(),
                 ))
             } else {
                 None
