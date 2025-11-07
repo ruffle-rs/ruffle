@@ -35,7 +35,7 @@ use crate::loader::{self, ContentType};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString};
-use crate::tag_utils::{self, ControlFlow, DecodeResult, Error, SwfMovie, SwfSlice, SwfStream};
+use crate::tag_utils::{self, ControlFlow, Error, SwfMovie, SwfSlice, SwfStream};
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use core::fmt;
@@ -3732,7 +3732,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
         tag_len: usize,
         chunk_limit: &mut ExecutionLimit,
-    ) -> DecodeResult {
+    ) -> Result<ControlFlow, Error> {
         let start = reader.as_slice();
         let id = reader.read_character_id()?;
         let num_frames = reader.read_u16()?;

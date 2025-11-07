@@ -5,7 +5,7 @@ use std::sync::Mutex;
 
 use image::RgbaImage;
 use ruffle_core::limits::ExecutionLimit;
-use ruffle_core::tag_utils::SwfMovie;
+use ruffle_core::tag_utils::movie_from_path;
 use ruffle_core::Player;
 use ruffle_core::PlayerBuilder;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
@@ -56,7 +56,7 @@ impl Exporter {
     }
 
     pub fn start_exporting_movie(&self, swf_path: &Path) -> Result<MovieExport> {
-        let movie = SwfMovie::from_path(swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
+        let movie = movie_from_path(swf_path, None).map_err(|e| anyhow!(e.to_string()))?;
 
         let width = self
             .size
