@@ -63,16 +63,16 @@ pub fn glue_tables_to_jpeg<'a>(
     jpeg_data: &'a [u8],
     jpeg_tables: Option<&'a [u8]>,
 ) -> Cow<'a, [u8]> {
-    if let Some(jpeg_tables) = jpeg_tables {
-        if jpeg_tables.len() >= 2 {
-            let mut full_jpeg = Vec::with_capacity(jpeg_tables.len() + jpeg_data.len());
-            full_jpeg.extend_from_slice(&jpeg_tables[..jpeg_tables.len() - 2]);
-            if jpeg_data.len() >= 2 {
-                full_jpeg.extend_from_slice(&jpeg_data[2..]);
-            }
-
-            return full_jpeg.into();
+    if let Some(jpeg_tables) = jpeg_tables
+        && jpeg_tables.len() >= 2
+    {
+        let mut full_jpeg = Vec::with_capacity(jpeg_tables.len() + jpeg_data.len());
+        full_jpeg.extend_from_slice(&jpeg_tables[..jpeg_tables.len() - 2]);
+        if jpeg_data.len() >= 2 {
+            full_jpeg.extend_from_slice(&jpeg_data[2..]);
         }
+
+        return full_jpeg.into();
     }
 
     // No JPEG tables or not enough data; return JPEG data as is
