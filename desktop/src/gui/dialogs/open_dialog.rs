@@ -43,6 +43,7 @@ pub struct OpenDialog {
     load_behavior: OptionalField<EnumDropdownField<LoadBehavior>>,
     letterbox: OptionalField<EnumDropdownField<Letterbox>>,
     player_version: OptionalField<NumberField<u8>>,
+    custom_player_version_string: OptionalField<SingleLineTextField>,
     player_runtime: OptionalField<EnumDropdownField<PlayerRuntime>>,
     dummy_external_interface: OptionalField<BooleanDropdownField>,
     upgrade_to_https: OptionalField<BooleanDropdownField>,
@@ -229,6 +230,10 @@ impl OpenDialog {
             defaults.player.player_version,
             NumberField::new(1..=NEWEST_PLAYER_VERSION, DEFAULT_PLAYER_VERSION),
         );
+        let custom_player_version_string = OptionalField::new(
+            defaults.player.custom_player_version_string.clone(),
+            SingleLineTextField::new("32,0,0,0"),
+        );
         let player_runtime = OptionalField::new(
             defaults.player.player_runtime,
             EnumDropdownField::new(
@@ -280,6 +285,7 @@ impl OpenDialog {
             load_behavior,
             letterbox,
             player_version,
+            custom_player_version_string,
             player_runtime,
             dummy_external_interface,
             upgrade_to_https,
@@ -499,6 +505,14 @@ impl OpenDialog {
                     .ui(ui, &mut self.options.player.player_version, locale);
                 ui.end_row();
 
+                ui.label(text(locale, "custom-player-version-string"));
+                self.custom_player_version_string.ui(
+                    ui,
+                    &mut self.options.player.custom_player_version_string,
+                    locale,
+                );
+                ui.end_row();
+
                 ui.label(text(locale, "player-runtime"));
                 self.player_runtime
                     .ui(ui, &mut self.options.player.player_runtime, locale);
@@ -611,6 +625,40 @@ impl InnerField for UrlField {
 
     fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
         Url::parse(value).map_err(|_| ())
+    }
+}
+
+struct SingleLineTextField {
+    hint: &'static str,
+}
+
+impl SingleLineTextField {
+    pub fn new(hint: &'static str) -> Self {
+        Self { hint }
+    }
+}
+
+impl InnerField for SingleLineTextField {
+    type Value = String;
+    type Result = String;
+
+    fn value_if_missing(&self) -> Self::Value {
+        String::new()
+    }
+
+    fn ui(&self, ui: &mut Ui, value: &mut Self::Value, error: bool, _locale: &LanguageIdentifier) {
+        TextEdit::singleline(value)
+            .hint_text(self.hint)
+            .text_color_opt(if error {
+                Some(ui.style().visuals.error_fg_color)
+            } else {
+                None
+            })
+            .ui(ui);
+    }
+
+    fn value_to_result(&self, value: &Self::Value) -> Result<Self::Result, ()> {
+        Ok(value.to_string())
     }
 }
 
