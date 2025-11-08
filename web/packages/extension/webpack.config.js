@@ -47,9 +47,6 @@ function transformManifest(content, env) {
         manifest.browser_specific_settings = {
             gecko: {
                 id: firefoxExtensionId,
-                data_collection_permissions: {
-                    required: ["none"],
-                },
             },
         };
         manifest.background = {
