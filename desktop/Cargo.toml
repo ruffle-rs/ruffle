@@ -24,7 +24,7 @@ ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
 ruffle_video_external = { path = "../video/external", features = ["openh264"], optional = true }
-ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal", "fs", "navigator", "executor"] }
+ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal", "fs", "navigator"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.3"
@@ -54,6 +54,7 @@ unicode-bidi = "0.3.18"
 fontconfig = { version = "0.10.0", optional = true, features = ["dlopen"]}
 memmap2.workspace = true
 walkdir.workspace = true
+async-task = "4.7.1"
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ashpd = "0.11.0"

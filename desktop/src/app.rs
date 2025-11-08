@@ -534,7 +534,7 @@ impl ApplicationHandler<RuffleEvent> for App {
 
     fn user_event(&mut self, event_loop: &ActiveEventLoop, event: RuffleEvent) {
         match (&mut self.main_window, event) {
-            (Some(main_window), RuffleEvent::TaskPoll) => main_window.player.poll(),
+            (Some(main_window), RuffleEvent::TaskPoll(task)) => main_window.player.poll(task),
 
             (Some(main_window), RuffleEvent::OnMetadata(swf_header)) => {
                 main_window.on_metadata(swf_header)

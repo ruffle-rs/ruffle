@@ -2,12 +2,13 @@
 
 use ruffle_core::events::PlayerNotification;
 
-use crate::{gui::DialogDescriptor, player::LaunchOptions};
+use crate::gui::DialogDescriptor;
+use crate::player::{LaunchOptions, PlayerRunnable};
 
 /// User-defined events.
 pub enum RuffleEvent {
-    /// Indicates that one or more tasks are ready to poll on our executor.
-    TaskPoll,
+    /// Indicates that a task is ready to be polled.
+    TaskPoll(PlayerRunnable),
 
     /// Indicates that an asynchronous SWF metadata load has been completed.
     OnMetadata(ruffle_core::swf::HeaderExt),

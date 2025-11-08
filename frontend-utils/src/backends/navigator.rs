@@ -1,6 +1,5 @@
 mod fetch;
 
-use crate::backends::executor::{FutureSpawner, spawn_tokio};
 use crate::backends::navigator::fetch::{Response, ResponseBody};
 use crate::content::PlayingContent;
 use async_channel::{Receiver, Sender, TryRecvError};
@@ -16,6 +15,7 @@ use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use std::collections::HashSet;
 use std::fs::File;
+use std::future::Future;
 use std::io;
 use std::io::ErrorKind;
 use std::path::Path;
@@ -39,9 +39,13 @@ pub trait NavigatorInterface: Clone + Send + 'static {
     ) -> impl std::future::Future<Output = bool> + Send;
 }
 
+pub trait FutureSpawner<Err> {
+    fn spawn(&self, future: OwnedFuture<(), Err>);
+}
+
 /// Implementation of `NavigatorBackend` for non-web environments that can call
 /// out to a web browser.
-pub struct ExternalNavigatorBackend<F: FutureSpawner, I: NavigatorInterface> {
+pub struct ExternalNavigatorBackend<F: FutureSpawner<Error>, I: NavigatorInterface> {
     /// Sink for tasks sent to us through `spawn_future`.
     future_spawner: F,
 
@@ -62,7 +66,7 @@ pub struct ExternalNavigatorBackend<F: FutureSpawner, I: NavigatorInterface> {
     interface: I,
 }
 
-impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
+impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
     /// Construct a navigator backend with fetch and async capability.
     #[expect(clippy::too_many_arguments)]
     pub fn new(
@@ -130,7 +134,7 @@ impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
     }
 }
 
-impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
+impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
     for ExternalNavigatorBackend<F, I>
 {
     fn navigate_to_url(
@@ -467,6 +471,19 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
     }
 }
 
+/// Spawns a new asynchronous task in a tokio runtime, without the current executor needing to belong to tokio
+pub async fn spawn_tokio<F>(future: F) -> F::Output
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    tokio::spawn(async move { sender.send(future.await) });
+    tokio::task::unconstrained(receiver)
+        .await
+        .expect("Oneshot should succeed")
+}
+
 #[cfg(test)]
 #[expect(clippy::unwrap_used)]
 mod tests {
@@ -497,8 +514,8 @@ mod tests {
 
     struct TestFutureSpawner;
 
-    impl FutureSpawner for TestFutureSpawner {
-        fn spawn(&self, future: OwnedFuture<(), Error>) {
+    impl<E: 'static> FutureSpawner<E> for TestFutureSpawner {
+        fn spawn(&self, future: OwnedFuture<(), E>) {
             task::spawn_local(future);
         }
     }
