@@ -134,6 +134,7 @@ pub fn trace<'gc>(
     // Unlike `Action::Trace`, `_global.trace` always coerces
     // undefined to "" in SWF6 and below. It also doesn't log
     // anything outside of the Flash editor's trace window.
+    // Ruffle does not respect the latter behavior, and will treat it the same as an `Action::Trace`.
     let out = args
         .get(0)
         .unwrap_or(&Value::Undefined)
