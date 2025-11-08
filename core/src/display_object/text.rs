@@ -255,6 +255,20 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         false
     }
 
+    fn construct_frame(self, context: &mut UpdateContext<'gc>) {
+        if self.movie().is_action_script_3() && self.object2().is_none() {
+            let statictext = context.avm2.classes().statictext;
+
+            let object = Avm2StageObject::for_display_object(context.gc(), self.into(), statictext);
+            // We don't need to call the initializer method, as AVM2 can't link
+            // a custom class to a StaticText, and the initializer method for
+            // StaticText itself is a no-op
+            self.set_object2(context, object);
+
+            self.on_construction_complete(context);
+        }
+    }
+
     fn post_instantiation(
         self,
         context: &mut UpdateContext<'gc>,
@@ -264,15 +278,6 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     ) {
         if self.movie().is_action_script_3() {
             self.set_default_instance_name(context);
-
-            let statictext = context.avm2.classes().statictext;
-            let object = Avm2StageObject::for_display_object(context.gc(), self.into(), statictext);
-            // We don't need to call the initializer method, as AVM2 can't link
-            // a custom class to a StaticText, and the initializer method for
-            // StaticText itself is a no-op
-            self.set_object2(context, object);
-
-            self.on_construction_complete(context);
         }
     }
 
