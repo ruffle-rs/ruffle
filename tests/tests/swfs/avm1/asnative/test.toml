@@ -1,1 +1,5 @@
+# Note that this test will not have the same result in `flashlog.txt`,
+# as `_global.trace` (and therefore `ASnative(100, 4)` does _not_ print to flashlog.txt!
+# You must use Flash's output console to see the results.
+# Ruffle does not make a distinction between the two trace outputs.
 num_frames = 1
