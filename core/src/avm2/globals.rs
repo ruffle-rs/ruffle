@@ -510,10 +510,10 @@ pub fn init_early_classes<'gc>(
     );
 
     // Now to weave the Gordian knot...
-    object_class.link_prototype(activation, object_proto);
+    object_class.link_prototype(activation.context, object_proto);
     object_class.link_type(mc, class_proto);
 
-    class_class.link_prototype(activation, class_proto);
+    class_class.link_prototype(activation.context, class_proto);
     class_class.link_type(mc, class_proto);
 
     // At this point, we need both early classes to be available in `SystemClasses`
@@ -846,9 +846,9 @@ pub fn load_playerglobal<'gc>(activation: &mut Activation<'_, 'gc>, domain: Doma
     let _ = tag_utils::decode_tags(&mut reader, tag_callback);
 
     // Domain memory must be initialized after playerglobals is loaded because it relies on ByteArray.
-    domain.init_default_domain_memory(activation);
+    domain.init_default_domain_memory(activation.context);
     activation
         .avm2()
         .stage_domain()
-        .init_default_domain_memory(activation);
+        .init_default_domain_memory(activation.context);
 }

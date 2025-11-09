@@ -200,7 +200,7 @@ pub fn init_custom_prototype<'gc>(
 
     let prototype_date_object = DateObject::for_prototype(activation, this);
 
-    this.link_prototype(activation, prototype_date_object);
+    this.link_prototype(activation.context, prototype_date_object);
 
     Ok(Value::Undefined)
 }
