@@ -1,14 +1,11 @@
 use either::Either;
 use ruffle_render::pixel_bender::{PixelBenderType, PixelBenderTypeOpcode};
 
-use crate::{
-    avm2::{
-        error::{make_error_2004, Error2004Type},
-        Activation, ArrayObject, ArrayStorage, Error, Object, Value,
-    },
-    ecma_conversions::f64_to_wrapping_i32,
-    string::AvmString,
-};
+use crate::avm2::error::{make_error_2004, Error2004Type};
+use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Object, Value};
+use crate::context::UpdateContext;
+use crate::ecma_conversions::f64_to_wrapping_i32;
+use crate::string::AvmString;
 
 pub trait PixelBenderTypeExt {
     fn from_avm2_value<'gc>(
@@ -21,7 +18,7 @@ pub trait PixelBenderTypeExt {
 
     fn as_avm2_value<'gc>(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         tint_as_int: bool,
     ) -> Result<Value<'gc>, Error<'gc>>;
 }
@@ -151,7 +148,7 @@ impl PixelBenderTypeExt for PixelBenderType {
 
     fn as_avm2_value<'gc>(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         tint_as_int: bool,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Flash appears to use a uint/int if the float has no fractional part
@@ -164,7 +161,7 @@ impl PixelBenderTypeExt for PixelBenderType {
         };
         let vals: Vec<Value<'gc>> = match self {
             PixelBenderType::TString(string) => {
-                return Ok(AvmString::new_utf8(activation.gc(), string).into());
+                return Ok(AvmString::new_utf8(context.gc(), string).into());
             }
             PixelBenderType::TInt(i) => {
                 if tint_as_int {
@@ -192,6 +189,6 @@ impl PixelBenderTypeExt for PixelBenderType {
             PixelBenderType::TBool(b) => vec![(*b).into()],
         };
         let storage = ArrayStorage::from_args(&vals);
-        Ok(ArrayObject::from_storage(activation.context, storage).into())
+        Ok(ArrayObject::from_storage(context, storage).into())
     }
 }
