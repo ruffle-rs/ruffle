@@ -18,10 +18,10 @@ pub fn call<'gc>(
         .map(|arg| ExternalValue::from_avm2(activation, arg.to_owned()))
         .collect::<Result<Vec<ExternalValue>, Error>>()?;
 
-    Ok(
-        ExternalInterface::call_method(activation.context, &name.to_utf8_lossy(), &external_args)
-            .into_avm2(activation),
-    )
+    let result =
+        ExternalInterface::call_method(activation.context, &name.to_utf8_lossy(), &external_args);
+
+    Ok(result.into_avm2(activation.context))
 }
 
 fn check_available<'gc>(activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
