@@ -379,15 +379,12 @@ impl<'gc> Sockets<'gc> {
 
                     match target {
                         SocketKind::Avm2(target) => {
-                            let activation = Avm2Activation::from_nothing(context);
-
                             // Clear the buffers if the connection was closed.
                             target.read_buffer().clear();
                             target.write_buffer().clear();
 
-                            let close_evt =
-                                EventObject::bare_default_event(activation.context, "close");
-                            Avm2::dispatch_event(activation.context, close_evt, target.into());
+                            let close_evt = EventObject::bare_default_event(context, "close");
+                            Avm2::dispatch_event(context, close_evt, target.into());
                         }
                         SocketKind::Avm1(target) => {
                             let mut activation = Avm1Activation::from_stub(
