@@ -89,10 +89,6 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
-        override public function get name():String {
-            return null;
-        }
-
         override public function set name(value:String):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
