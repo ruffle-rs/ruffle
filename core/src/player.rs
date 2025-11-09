@@ -4,8 +4,8 @@ use crate::avm1::Object;
 use crate::avm1::Value;
 use crate::avm1::VariableDumper;
 use crate::avm1::{Activation, ActivationIdentifier};
-use crate::avm2::object::{EventObject as Avm2EventObject, Object as Avm2Object};
-use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack};
+use crate::avm2::object::EventObject as Avm2EventObject;
+use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack, SharedObjectObject};
 use crate::avm_rng::AvmRng;
 use crate::backend::ui::FontDefinition;
 use crate::backend::{
@@ -164,7 +164,7 @@ struct GcRootData<'gc> {
 
     avm1_shared_objects: HashMap<String, Object<'gc>>,
 
-    avm2_shared_objects: HashMap<String, Avm2Object<'gc>>,
+    avm2_shared_objects: HashMap<String, SharedObjectObject<'gc>>,
 
     /// Text fields with unbound variable bindings.
     unbound_text_fields: Vec<EditText<'gc>>,
@@ -223,7 +223,7 @@ impl<'gc> GcRootData<'gc> {
         &mut Option<DragObject<'gc>>,
         &mut LoadManager<'gc>,
         &mut HashMap<String, Object<'gc>>,
-        &mut HashMap<String, Avm2Object<'gc>>,
+        &mut HashMap<String, SharedObjectObject<'gc>>,
         &mut Vec<EditText<'gc>>,
         &mut Timers<'gc>,
         &mut Option<ContextMenuState<'gc>>,
@@ -2403,12 +2403,14 @@ impl Player {
 
             let mut avm2_activation = Avm2Activation::from_nothing(context);
             for so in avm2_activation.context.avm2_shared_objects.clone().values() {
-                if let Err(e) = crate::avm2::globals::flash::net::shared_object::flush(
+                if crate::avm2::globals::flash::net::shared_object::flush_impl(
                     &mut avm2_activation,
-                    Avm2Value::Object(*so),
-                    &[],
-                ) {
-                    tracing::error!("Error flushing AVM2 shared object `{:?}`: {:?}", so, e);
+                    *so,
+                    0,
+                )
+                .is_err()
+                {
+                    tracing::error!("Error flushing AVM2 shared object");
                 }
             }
         });
