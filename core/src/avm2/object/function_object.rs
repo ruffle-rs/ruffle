@@ -8,6 +8,7 @@ use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::context::UpdateContext;
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -57,19 +58,19 @@ impl<'gc> FunctionObject<'gc> {
     /// It is the caller's responsibility to ensure that the `receiver` passed
     /// to this method is not Value::Null or Value::Undefined.
     pub fn from_method(
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
         receiver: Option<Value<'gc>>,
         bound_superclass_object: Option<ClassObject<'gc>>,
     ) -> FunctionObject<'gc> {
-        let fn_class = activation.avm2().classes().function;
+        let fn_class = context.avm2.classes().function;
         let exec = BoundMethod::from_method(method, scope, receiver, bound_superclass_object);
 
-        let es3_proto = ScriptObject::new_object(activation.context);
+        let es3_proto = ScriptObject::new_object(context);
 
         let function_object = FunctionObject(Gc::new(
-            activation.gc(),
+            context.gc(),
             FunctionObjectData {
                 base: ScriptObjectData::new(fn_class),
                 exec,
@@ -77,11 +78,11 @@ impl<'gc> FunctionObject<'gc> {
             },
         ));
 
-        let constructor_prop = istr!("constructor");
+        let constructor_prop = istr!(context, "constructor");
 
         // Set the constructor property on the prototype to point back to this function
-        es3_proto.set_dynamic_property(constructor_prop, function_object.into(), activation.gc());
-        es3_proto.set_local_property_is_enumerable(activation.gc(), constructor_prop, false);
+        es3_proto.set_dynamic_property(constructor_prop, function_object.into(), context.gc());
+        es3_proto.set_local_property_is_enumerable(context.gc(), constructor_prop, false);
 
         function_object
     }

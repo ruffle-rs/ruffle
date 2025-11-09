@@ -288,19 +288,16 @@ impl<'gc> Avm2<'gc> {
         script: Script<'gc>,
         context: &mut UpdateContext<'gc>,
     ) -> Result<(), Error<'gc>> {
-        // TODO can we skip creating this temporary Activation?
-        let mut activation = Activation::from_nothing(context);
-
         let (method, global_object, domain) = script.init();
 
         let scope = ScopeChain::new(domain);
         // Script `global` classes extend Object
-        let bound_superclass = Some(activation.avm2().classes().object);
+        let bound_superclass = Some(context.avm2.classes().object);
 
         // Provide a callee object if necessary
         let callee = if method.needs_arguments_object() {
             Some(FunctionObject::from_method(
-                &mut activation,
+                context,
                 method,
                 scope,
                 Some(global_object.into()),
@@ -309,6 +306,9 @@ impl<'gc> Avm2<'gc> {
         } else {
             None
         };
+
+        // TODO can we skip creating this temporary Activation?
+        let mut activation = Activation::from_nothing(context);
 
         exec(
             method,
