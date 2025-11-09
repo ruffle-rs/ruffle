@@ -27,7 +27,7 @@ pub fn init<'gc>(
     };
 
     let target_domain = this.as_domain_object().expect("Invalid target domain");
-    let fresh_domain = Domain::movie_domain(activation, parent_domain);
+    let fresh_domain = Domain::movie_domain(activation.context, parent_domain);
     target_domain.init_domain(activation.gc(), fresh_domain);
 
     Ok(Value::Undefined)
