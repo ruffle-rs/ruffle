@@ -1,5 +1,5 @@
 use crate::bundle::info::{
-    BundleInformation, BundleInformationParseError, BUNDLE_INFORMATION_FILENAME,
+    BUNDLE_INFORMATION_FILENAME, BundleInformation, BundleInformationParseError,
 };
 use crate::bundle::source::BundleSource;
 use crate::parse::ParseWarning;
@@ -70,7 +70,7 @@ impl Bundle {
 #[cfg(test)]
 mod tests {
     use crate::bundle::info::{
-        BundleInformation, BundleInformationParseError, BUNDLE_INFORMATION_FILENAME,
+        BUNDLE_INFORMATION_FILENAME, BundleInformation, BundleInformationParseError,
     };
     use crate::bundle::source::BundleSourceError;
     use crate::bundle::{Bundle, BundleError};

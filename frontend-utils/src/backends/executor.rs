@@ -1,10 +1,10 @@
 mod task;
 
 pub use crate::backends::executor::task::Task;
-use async_channel::{unbounded, Receiver, Sender};
+use async_channel::{Receiver, Sender, unbounded};
 use ruffle_core::backend::navigator::OwnedFuture;
 use ruffle_core::loader::Error;
-use slotmap::{new_key_type, SlotMap};
+use slotmap::{SlotMap, new_key_type};
 use std::future::Future;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex, MutexGuard, Weak};
@@ -75,7 +75,7 @@ impl<R: PollRequester> TaskHandle<R> {
             return None;
         }
 
-        Some(&*(almost_self as *const Self))
+        Some(unsafe { &*(almost_self as *const Self) })
     }
 
     /// Convert a voidptr into a mutable `TaskHandle` reference, if
@@ -93,36 +93,39 @@ impl<R: PollRequester> TaskHandle<R> {
             return None;
         }
 
-        Some(Box::from_raw(almost_self as *mut Self))
+        Some(unsafe { Box::from_raw(almost_self as *mut Self) })
     }
 
     /// Construct a new `RawWaker` that wakes the same task.
     ///
     /// This is part of the vtable methods of our `RawWaker` impl.
     unsafe fn clone_as_ptr(almost_self: *const ()) -> RawWaker {
-        let selfish = TaskHandle::<R>::from_const_ptr(almost_self).expect("non-null context ptr");
+        let selfish =
+            unsafe { TaskHandle::<R>::from_const_ptr(almost_self) }.expect("non-null context ptr");
 
         selfish.raw_waker()
     }
 
     /// Wake the given task, then drop it.
     unsafe fn wake_as_ptr(almost_self: *const ()) {
-        let selfish =
-            TaskHandle::<R>::box_from_const_ptr(almost_self).expect("non-null context ptr");
+        let selfish = unsafe { TaskHandle::<R>::box_from_const_ptr(almost_self) }
+            .expect("non-null context ptr");
 
         selfish.wake();
     }
 
     /// Wake the given task.
     unsafe fn wake_by_ref_as_ptr(almost_self: *const ()) {
-        let selfish = TaskHandle::<R>::from_const_ptr(almost_self).expect("non-null context ptr");
+        let selfish =
+            unsafe { TaskHandle::<R>::from_const_ptr(almost_self) }.expect("non-null context ptr");
 
         selfish.wake();
     }
 
     /// Drop the async executor.
     unsafe fn drop_as_ptr(almost_self: *const ()) {
-        let _ = TaskHandle::<R>::box_from_const_ptr(almost_self).expect("non-null context ptr");
+        let _ = unsafe { TaskHandle::<R>::box_from_const_ptr(almost_self) }
+            .expect("non-null context ptr");
     }
 
     const VTABLE: RawWakerVTable = RawWakerVTable::new(

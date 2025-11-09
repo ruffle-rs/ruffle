@@ -1,10 +1,10 @@
 use std::io::Write;
 
 use crate::parse::{DocumentHolder, ParseContext, ParseDetails, ReadExt};
-use crate::player_options::read_player_options;
-use crate::player_options::write_player_options;
 use crate::player_options::PlayerOptions;
 use crate::player_options::PlayerOptionsWriter;
+use crate::player_options::read_player_options;
+use crate::player_options::write_player_options;
 use toml_edit::DocumentMut;
 use url::Url;
 

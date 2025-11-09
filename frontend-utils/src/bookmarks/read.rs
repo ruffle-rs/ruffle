@@ -10,7 +10,7 @@ pub fn read_bookmarks(input: &str) -> ParseDetails<Bookmarks> {
             return ParseDetails {
                 result: Default::default(),
                 warnings: vec![ParseWarning::InvalidToml(e)],
-            }
+            };
         }
     };
 

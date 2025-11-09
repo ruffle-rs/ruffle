@@ -1,7 +1,7 @@
 use crate::parse::DocumentHolder;
 use crate::recents::{Recent, Recents};
 use crate::write::TableExt;
-use toml_edit::{value, ArrayOfTables, Table};
+use toml_edit::{ArrayOfTables, Table, value};
 
 pub struct RecentsWriter<'a>(&'a mut DocumentHolder<Recents>);
 
@@ -100,23 +100,45 @@ mod tests {
 
     #[test]
     fn test_limit() {
-        test("[[recent]]\nurl = \"file:///1.swf\"\n[[recent]]\nurl = \"file:///2.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n", |writer| writer.push(Recent {
-            url: Url::parse("file:///very_important_file.swf").unwrap(),
-            name: "Important File".to_string(),
-        }, 2), "[[recent]]\nurl = \"file:///3.swf\"\n\n[[recent]]\nurl = \"file:///very_important_file.swf\"\nname = \"Important File\"\n");
+        test(
+            "[[recent]]\nurl = \"file:///1.swf\"\n[[recent]]\nurl = \"file:///2.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n",
+            |writer| {
+                writer.push(
+                    Recent {
+                        url: Url::parse("file:///very_important_file.swf").unwrap(),
+                        name: "Important File".to_string(),
+                    },
+                    2,
+                )
+            },
+            "[[recent]]\nurl = \"file:///3.swf\"\n\n[[recent]]\nurl = \"file:///very_important_file.swf\"\nname = \"Important File\"\n",
+        );
     }
 
     #[test]
     fn test_move_to_top() {
-        test("[[recent]]\nurl = \"file:///very_important_file.swf\"\n[[recent]]\nurl = \"file:///2.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n", |writer| writer.push(Recent {
-            url: Url::parse("file:///very_important_file.swf").unwrap(),
-            name: "Important File".to_string()
-        }, 3), "[[recent]]\nurl = \"file:///2.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n\n[[recent]]\nurl = \"file:///very_important_file.swf\"\nname = \"Important File\"\n");
+        test(
+            "[[recent]]\nurl = \"file:///very_important_file.swf\"\n[[recent]]\nurl = \"file:///2.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n",
+            |writer| {
+                writer.push(
+                    Recent {
+                        url: Url::parse("file:///very_important_file.swf").unwrap(),
+                        name: "Important File".to_string(),
+                    },
+                    3,
+                )
+            },
+            "[[recent]]\nurl = \"file:///2.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n\n[[recent]]\nurl = \"file:///very_important_file.swf\"\nname = \"Important File\"\n",
+        );
     }
 
     #[test]
     fn clear() {
-        test("[[recent]]\nurl = \"file:///file_one.swf\"\n[[recent]]\nurl = \"file:///file_two.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n", |writer| writer.clear(), "");
+        test(
+            "[[recent]]\nurl = \"file:///file_one.swf\"\n[[recent]]\nurl = \"file:///file_two.swf\"\n[[recent]]\nurl = \"file:///3.swf\"\n",
+            |writer| writer.clear(),
+            "",
+        );
     }
 
     #[test]

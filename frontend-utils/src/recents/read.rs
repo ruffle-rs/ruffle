@@ -10,7 +10,7 @@ pub fn read_recents(input: &str) -> ParseDetails<Recents> {
             return ParseDetails {
                 result: Default::default(),
                 warnings: vec![ParseWarning::InvalidToml(e)],
-            }
+            };
         }
     };
 
