@@ -1,5 +1,5 @@
 use crate::options::TestOptions;
-use anyhow::{anyhow, Error};
+use anyhow::{Error, anyhow};
 use pretty_assertions::Comparison;
 use vfs::VfsPath;
 

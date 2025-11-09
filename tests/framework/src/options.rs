@@ -9,11 +9,11 @@ use crate::options::approximations::Approximations;
 use crate::options::font::{DefaultFontsOptions, FontOptions, FontSortOptions};
 use crate::options::image_comparison::ImageComparison;
 use crate::options::player::PlayerOptions;
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
-use toml::de::{DeTable, DeValue};
 use toml::Spanned;
+use toml::de::{DeTable, DeValue};
 use vfs::VfsPath;
 
 fn merge_into_subtest<'a>(

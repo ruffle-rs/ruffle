@@ -4,8 +4,8 @@ use async_channel::{Receiver, Sender};
 use percent_encoding::percent_decode_str;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, ErrorResponse, NavigationMethod, NavigatorBackend,
-    NullExecutor, NullSpawner, OwnedFuture, Request, SuccessResponse,
+    ErrorResponse, NavigationMethod, NavigatorBackend, NullExecutor, NullSpawner, OwnedFuture,
+    Request, SuccessResponse, async_return, create_fetch_error,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;

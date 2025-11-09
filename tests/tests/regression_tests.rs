@@ -15,7 +15,7 @@ use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
 use ruffle_test_framework::vfs::VfsPath;
 use std::borrow::Cow;
-use std::panic::{catch_unwind, resume_unwind, AssertUnwindSafe};
+use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use std::path::PathBuf;
 use std::thread::sleep;
 
