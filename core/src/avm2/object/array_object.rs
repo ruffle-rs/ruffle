@@ -7,6 +7,7 @@ use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
+use crate::context::UpdateContext;
 use crate::string::{AvmString, WStr};
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -61,22 +62,22 @@ pub struct ArrayObjectData<'gc> {
 
 impl<'gc> ArrayObject<'gc> {
     /// Construct an empty array.
-    pub fn empty(activation: &mut Activation<'_, 'gc>) -> ArrayObject<'gc> {
-        Self::from_storage(activation, ArrayStorage::new(0))
+    pub fn empty(context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
+        Self::from_storage(context, ArrayStorage::new(0))
     }
 
     /// Build an array object from storage.
     ///
     /// This will produce an instance of the system `Array` class.
     pub fn from_storage(
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         array: ArrayStorage<'gc>,
     ) -> ArrayObject<'gc> {
-        let class = activation.avm2().classes().array;
+        let class = context.avm2.classes().array;
         let base = ScriptObjectData::new(class);
 
         ArrayObject(Gc::new(
-            activation.gc(),
+            context.gc(),
             ArrayObjectData {
                 base,
                 array: RefLock::new(array),

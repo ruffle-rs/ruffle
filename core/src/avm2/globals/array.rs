@@ -87,7 +87,7 @@ pub fn build_array<'gc>(
     activation: &mut Activation<'_, 'gc>,
     array: ArrayStorage<'gc>,
 ) -> Value<'gc> {
-    ArrayObject::from_storage(activation, array).into()
+    ArrayObject::from_storage(activation.context, array).into()
 }
 
 /// Implements `Array.concat`
@@ -329,7 +329,7 @@ pub fn map<'gc>(
     let this = this.as_object().unwrap();
 
     let callback = match args.try_get_function(0) {
-        None => return Ok(ArrayObject::empty(activation).into()),
+        None => return Ok(ArrayObject::empty(activation.context).into()),
         Some(callback) => callback,
     };
     let receiver = args.get_value(1);
@@ -355,7 +355,7 @@ pub fn filter<'gc>(
     let this = this.as_object().unwrap();
 
     let callback = match args.try_get_function(0) {
-        None => return Ok(ArrayObject::empty(activation).into()),
+        None => return Ok(ArrayObject::empty(activation.context).into()),
         Some(callback) => callback,
     };
     let receiver = args.get_value(1);

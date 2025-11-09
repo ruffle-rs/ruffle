@@ -258,7 +258,7 @@ impl Value {
                     .map(|value| value.to_owned().into_avm2(activation))
                     .collect();
 
-                Avm2ArrayObject::from_storage(activation, storage).into()
+                Avm2ArrayObject::from_storage(activation.context, storage).into()
             }
         }
     }

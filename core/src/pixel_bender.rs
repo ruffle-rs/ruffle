@@ -192,6 +192,6 @@ impl PixelBenderTypeExt for PixelBenderType {
             PixelBenderType::TBool(b) => vec![(*b).into()],
         };
         let storage = ArrayStorage::from_args(&vals);
-        Ok(ArrayObject::from_storage(activation, storage).into())
+        Ok(ArrayObject::from_storage(activation.context, storage).into())
     }
 }

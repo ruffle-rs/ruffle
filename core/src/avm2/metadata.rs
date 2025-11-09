@@ -94,7 +94,7 @@ impl<'gc> Metadata<'gc> {
             .collect::<Vec<Option<Value<'gc>>>>();
 
         let values_array =
-            ArrayObject::from_storage(activation, ArrayStorage::from_storage(values));
+            ArrayObject::from_storage(activation.context, ArrayStorage::from_storage(values));
         object.set_dynamic_property(istr!("value"), values_array.into(), activation.gc());
         object
     }

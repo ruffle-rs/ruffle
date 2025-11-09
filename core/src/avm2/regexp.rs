@@ -342,7 +342,7 @@ impl<'gc> RegExp<'gc> {
                 .map(|c| AvmString::new(activation.gc(), WString::from_char(c)))
                 .collect();
 
-            return ArrayObject::from_storage(activation, storage);
+            return ArrayObject::from_storage(activation.context, storage);
         }
 
         let mut storage = ArrayStorage::new(0);
@@ -376,7 +376,7 @@ impl<'gc> RegExp<'gc> {
             storage.push(AvmString::new(activation.gc(), &text[start..]).into());
         }
 
-        ArrayObject::from_storage(activation, storage)
+        ArrayObject::from_storage(activation.context, storage)
     }
 
     pub fn find_utf16_match(

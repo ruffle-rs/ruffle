@@ -601,7 +601,7 @@ pub fn get_tab_stops<'gc>(
             .as_ref()
             .map_or(Ok(Value::Null), |tab_stops| {
                 let tab_stop_storage = tab_stops.iter().copied().collect();
-                Ok(ArrayObject::from_storage(activation, tab_stop_storage).into())
+                Ok(ArrayObject::from_storage(activation.context, tab_stop_storage).into())
             });
     }
 
