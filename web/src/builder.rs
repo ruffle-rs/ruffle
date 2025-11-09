@@ -1,8 +1,8 @@
 use crate::external_interface::JavascriptInterface;
 use crate::navigator::{OpenUrlMode, WebNavigatorBackend};
 use crate::{
-    audio, log_adapter, storage, ui, JavascriptPlayer, RuffleHandle, ScrollingBehavior,
-    SocketProxy, RUFFLE_GLOBAL_PANIC,
+    JavascriptPlayer, RUFFLE_GLOBAL_PANIC, RuffleHandle, ScrollingBehavior, SocketProxy, audio,
+    log_adapter, storage, ui,
 };
 use js_sys::{Promise, RegExp};
 use ruffle_core::backend::audio::{AudioBackend, NullAudioBackend};
@@ -12,9 +12,9 @@ use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
 use ruffle_core::events::{GamepadButton, KeyCode};
 use ruffle_core::{
-    swf, Color, DefaultFont, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode,
+    Color, DefaultFont, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode, swf,
 };
-use ruffle_core::{ttf_parser, FontFileData};
+use ruffle_core::{FontFileData, ttf_parser};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_video_external::backend::ExternalVideoBackend;
@@ -27,8 +27,8 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use tracing_subscriber::layer::{Layered, SubscriberExt};
 use tracing_subscriber::Registry;
+use tracing_subscriber::layer::{Layered, SubscriberExt};
 use tracing_wasm::{WASMLayer, WASMLayerConfigBuilder};
 use wasm_bindgen::prelude::*;
 use web_sys::{HtmlCanvasElement, HtmlElement};
@@ -391,49 +391,48 @@ impl RuffleInstanceBuilder {
                 }
             } else {
                 tracing::debug!("Loading font {font_name} as SWF font");
-                if let Ok(swf_stream) = swf::decompress_swf(&bytes[..]) {
-                    if let Ok(swf) = swf::parse_swf(&swf_stream) {
-                        let encoding = swf::SwfStr::encoding_for_version(swf.header.version());
-                        for tag in swf.tags {
-                            match tag {
-                                swf::Tag::DefineFont(_font) => {
-                                    tracing::warn!("DefineFont1 tag is not yet supported by Ruffle, inside font swf {font_name}");
-                                }
-                                swf::Tag::DefineFont2(font) => {
-                                    tracing::debug!(
-                                        "Loaded font {} from font swf {font_name}",
-                                        font.name.to_str_lossy(encoding)
-                                    );
-                                    player.register_device_font(FontDefinition::SwfTag(
-                                        *font, encoding,
-                                    ));
-                                }
-                                swf::Tag::DefineFont4(font) => {
-                                    let name = font.name.to_str_lossy(encoding);
-                                    if let Some(data) = font.data {
-                                        tracing::debug!(
-                                            "Loaded font {name} from font swf {font_name}"
-                                        );
-                                        player.register_device_font(FontDefinition::FontFile {
-                                            name: name.to_string(),
-                                            is_bold: font.is_bold,
-                                            is_italic: font.is_italic,
-                                            // TODO remove when https://github.com/rust-lang/rust-clippy/issues/15252 is fixed
-                                            #[expect(clippy::unnecessary_to_owned)]
-                                            data: FontFileData::new(data.to_vec()),
-                                            index: 0,
-                                        })
-                                    } else {
-                                        tracing::warn!(
-                                            "Font {name} from font swf {font_name} contains no data"
-                                        );
-                                    }
-                                }
-                                _ => {}
+                if let Ok(swf_stream) = swf::decompress_swf(&bytes[..])
+                    && let Ok(swf) = swf::parse_swf(&swf_stream)
+                {
+                    let encoding = swf::SwfStr::encoding_for_version(swf.header.version());
+                    for tag in swf.tags {
+                        match tag {
+                            swf::Tag::DefineFont(_font) => {
+                                tracing::warn!(
+                                    "DefineFont1 tag is not yet supported by Ruffle, inside font swf {font_name}"
+                                );
                             }
+                            swf::Tag::DefineFont2(font) => {
+                                tracing::debug!(
+                                    "Loaded font {} from font swf {font_name}",
+                                    font.name.to_str_lossy(encoding)
+                                );
+                                player
+                                    .register_device_font(FontDefinition::SwfTag(*font, encoding));
+                            }
+                            swf::Tag::DefineFont4(font) => {
+                                let name = font.name.to_str_lossy(encoding);
+                                if let Some(data) = font.data {
+                                    tracing::debug!("Loaded font {name} from font swf {font_name}");
+                                    player.register_device_font(FontDefinition::FontFile {
+                                        name: name.to_string(),
+                                        is_bold: font.is_bold,
+                                        is_italic: font.is_italic,
+                                        // TODO remove when https://github.com/rust-lang/rust-clippy/issues/15252 is fixed
+                                        #[expect(clippy::unnecessary_to_owned)]
+                                        data: FontFileData::new(data.to_vec()),
+                                        index: 0,
+                                    })
+                                } else {
+                                    tracing::warn!(
+                                        "Font {name} from font swf {font_name} contains no data"
+                                    );
+                                }
+                            }
+                            _ => {}
                         }
-                        continue;
                     }
+                    continue;
                 }
                 tracing::warn!("Font source {font_name} was not recognised (not a valid SWF?)");
             }

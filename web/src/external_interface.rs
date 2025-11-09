@@ -1,4 +1,4 @@
-use crate::{JavascriptPlayer, CURRENT_CONTEXT};
+use crate::{CURRENT_CONTEXT, JavascriptPlayer};
 use js_sys::{Array, Object};
 use ruffle_core::context::UpdateContext;
 use ruffle_core::external::{
@@ -89,10 +89,10 @@ pub fn js_to_external_value(js: &JsValue) -> ExternalValue {
     } else {
         let mut values = BTreeMap::new();
         for entry in Object::entries(&Object::from(js.to_owned())).values() {
-            if let Ok(entry) = entry.and_then(|v| v.dyn_into::<Array>()) {
-                if let Some(key) = entry.get(0).as_string() {
-                    values.insert(key, js_to_external_value(&entry.get(1)));
-                }
+            if let Ok(entry) = entry.and_then(|v| v.dyn_into::<Array>())
+                && let Some(key) = entry.get(0).as_string()
+            {
+                values.insert(key, js_to_external_value(&entry.get(1)));
             }
         }
         ExternalValue::Object(values)
