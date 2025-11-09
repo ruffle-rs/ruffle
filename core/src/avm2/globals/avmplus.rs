@@ -485,7 +485,7 @@ fn write_metadata<'gc>(
     let mut metadata_array = metadata_object.storage_mut(activation.gc());
 
     for single_trait in trait_metadata.iter() {
-        metadata_array.push(single_trait.as_json_object(activation).into());
+        metadata_array.push(single_trait.as_json_object(activation.context).into());
     }
 }
 
