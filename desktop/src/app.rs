@@ -580,18 +580,18 @@ impl ApplicationHandler<RuffleEvent> for App {
             }
 
             (Some(main_window), RuffleEvent::EnterFullScreen) => {
-                if let Some(mut player) = main_window.player.get() {
-                    if player.is_playing() {
-                        player.set_fullscreen(true);
-                    }
+                if let Some(mut player) = main_window.player.get()
+                    && player.is_playing()
+                {
+                    player.set_fullscreen(true);
                 }
             }
 
             (Some(main_window), RuffleEvent::ExitFullScreen) => {
-                if let Some(mut player) = main_window.player.get() {
-                    if player.is_playing() {
-                        player.set_fullscreen(false);
-                    }
+                if let Some(mut player) = main_window.player.get()
+                    && player.is_playing()
+                {
+                    player.set_fullscreen(false);
                 }
             }
 

@@ -300,17 +300,16 @@ impl OpenDialog {
         } else {
             self.options.player.frame_rate = None;
         }
-        if let Some(url) = self.path.result() {
-            if self
+        if let Some(url) = self.path.result()
+            && self
                 .event_loop
                 .send_event(RuffleEvent::Open(
                     url.clone(),
                     Box::new(self.options.clone()),
                 ))
                 .is_ok()
-            {
-                return true;
-            }
+        {
+            return true;
         }
 
         false

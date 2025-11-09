@@ -151,29 +151,29 @@ impl ActivePlayer {
         };
 
         let mut content = PlayingContent::DirectFile(movie_url.clone());
-        if movie_url.scheme() == "file" {
-            if let Ok(path) = movie_url.to_file_path() {
-                match Bundle::from_path(&path) {
-                    Ok(bundle) => {
-                        if bundle.warnings().is_empty() {
-                            tracing::info!("Opening bundle at {path:?}");
-                        } else {
-                            // TODO: Show warnings to user (toast?)
-                            tracing::warn!("Opening bundle at {path:?} with warnings");
-                            for warning in bundle.warnings() {
-                                tracing::warn!("{warning}");
-                            }
+        if movie_url.scheme() == "file"
+            && let Ok(path) = movie_url.to_file_path()
+        {
+            match Bundle::from_path(&path) {
+                Ok(bundle) => {
+                    if bundle.warnings().is_empty() {
+                        tracing::info!("Opening bundle at {path:?}");
+                    } else {
+                        // TODO: Show warnings to user (toast?)
+                        tracing::warn!("Opening bundle at {path:?} with warnings");
+                        for warning in bundle.warnings() {
+                            tracing::warn!("{warning}");
                         }
-                        content = PlayingContent::Bundle(movie_url.clone(), Box::new(bundle));
                     }
-                    Err(BundleError::BundleDoesntExist)
-                    | Err(BundleError::InvalidSource(BundleSourceError::UnknownSource)) => {
-                        // Do nothing and carry on opening it as a swf - this likely isn't a bundle at all
-                    }
-                    Err(e) => {
-                        // TODO: Visible popup when a bundle (or regular file) fails to open
-                        tracing::error!("Couldn't open bundle at {path:?}: {e}");
-                    }
+                    content = PlayingContent::Bundle(movie_url.clone(), Box::new(bundle));
+                }
+                Err(BundleError::BundleDoesntExist)
+                | Err(BundleError::InvalidSource(BundleSourceError::UnknownSource)) => {
+                    // Do nothing and carry on opening it as a swf - this likely isn't a bundle at all
+                }
+                Err(e) => {
+                    // TODO: Visible popup when a bundle (or regular file) fails to open
+                    tracing::error!("Couldn't open bundle at {path:?}: {e}");
                 }
             }
         }
@@ -491,10 +491,10 @@ impl PlayerController {
     }
 
     pub fn handle_event(&self, event: PlayerEvent) -> bool {
-        if let Some(mut player) = self.get() {
-            if player.is_playing() {
-                return player.handle_event(event);
-            }
+        if let Some(mut player) = self.get()
+            && player.is_playing()
+        {
+            return player.handle_event(event);
         }
 
         false

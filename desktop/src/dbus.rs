@@ -60,10 +60,10 @@ impl GameModeGuard {
             .inspect_err(|err| tracing::warn!("Failed to initialize gamemode controller: {}", err))
             .ok();
 
-        if let Some(gamemode) = &gamemode {
-            if let Err(err) = gamemode.register(std::process::id()).await {
-                tracing::warn!("Failed to register a game with gamemode: {}", err)
-            }
+        if let Some(gamemode) = &gamemode
+            && let Err(err) = gamemode.register(std::process::id()).await
+        {
+            tracing::warn!("Failed to register a game with gamemode: {}", err)
         }
 
         Self { gamemode }

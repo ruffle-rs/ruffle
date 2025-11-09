@@ -341,13 +341,13 @@ impl GuiController {
             .repaint_delay;
 
         // If we're not in a UI, tell egui which cursor we prefer to use instead
-        if !self.egui_winit.egui_ctx().wants_pointer_input() {
-            if let Some(player) = player.as_deref() {
-                full_output.platform_output.cursor_icon =
-                    <dyn Any>::downcast_ref::<DesktopUiBackend>(player.ui())
-                        .unwrap_or_else(|| panic!("UI Backend should be DesktopUiBackend"))
-                        .cursor();
-            }
+        if !self.egui_winit.egui_ctx().wants_pointer_input()
+            && let Some(player) = player.as_deref()
+        {
+            full_output.platform_output.cursor_icon =
+                <dyn Any>::downcast_ref::<DesktopUiBackend>(player.ui())
+                    .unwrap_or_else(|| panic!("UI Backend should be DesktopUiBackend"))
+                    .cursor();
         }
         self.egui_winit
             .handle_platform_output(&self.window, full_output.platform_output);

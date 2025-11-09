@@ -51,10 +51,10 @@ impl BundleSource {
 
         if path.is_file() {
             // Opening a ruffle-bundle.toml, the bundle is the parent directory
-            if path.file_name() == Some(OsStr::new(BUNDLE_INFORMATION_FILENAME)) {
-                if let Some(parent) = path.parent() {
-                    return Ok(Self::Directory(parent.to_owned()));
-                }
+            if path.file_name() == Some(OsStr::new(BUNDLE_INFORMATION_FILENAME))
+                && let Some(parent) = path.parent()
+            {
+                return Ok(Self::Directory(parent.to_owned()));
             }
 
             // Opening a .ruf file, the bundle is that file viewed as a zip

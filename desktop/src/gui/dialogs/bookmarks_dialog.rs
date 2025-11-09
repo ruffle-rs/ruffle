@@ -263,12 +263,12 @@ impl BookmarksDialog {
                 .num_columns(2)
                 .show(ui, |ui| {
                     ui.label(text(locale, "bookmarks-dialog-name"));
-                    if ui.text_edit_singleline(&mut bookmark.name).lost_focus() {
-                        if let Err(e) = self.preferences.write_bookmarks(|writer| {
+                    if ui.text_edit_singleline(&mut bookmark.name).lost_focus()
+                        && let Err(e) = self.preferences.write_bookmarks(|writer| {
                             writer.set_name(bookmark.index, bookmark.name.clone());
-                        }) {
-                            tracing::warn!("Couldn't update bookmarks: {e}");
-                        }
+                        })
+                    {
+                        tracing::warn!("Couldn't update bookmarks: {e}");
                     }
                     ui.end_row();
 
@@ -278,15 +278,15 @@ impl BookmarksDialog {
                     let current_url = bookmark.url.ui(locale, ui).result();
 
                     // TODO: Change the UrlOrPathField widget to return a response instead, so we can update when we lose the focus, removes the need to clone every redraw.
-                    if previous_url.as_ref() != current_url {
-                        if let Some(url) = current_url {
-                            if let Err(e) = self.preferences.write_bookmarks(|writer| {
-                                writer.set_url(bookmark.index, url.clone());
-                            }) {
-                                tracing::warn!("Couldn't update bookmarks: {e}");
-                            }
-                        }
+                    if let Some(url) = current_url
+                        && previous_url.as_ref() != current_url
+                        && let Err(e) = self.preferences.write_bookmarks(|writer| {
+                            writer.set_url(bookmark.index, url.clone());
+                        })
+                    {
+                        tracing::warn!("Couldn't update bookmarks: {e}");
                     }
+
                     ui.end_row();
                 });
         } else {
