@@ -1399,7 +1399,7 @@ impl<'gc> NetStream<'gc> {
                     .client()
                     .expect("Client should be initialized if script data is being accessed");
 
-                let data_object = variable_data.to_avm2_value(&mut activation);
+                let data_object = variable_data.to_avm2_value(activation.context);
                 let args = &[data_object];
 
                 Avm2Value::from(client_object).call_public_property(
