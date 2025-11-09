@@ -552,12 +552,12 @@ impl PreferencesDialog {
                 self.recent_limit_changed = true;
             }
 
-            if ui.button(text(locale, "recent-clear")).clicked() {
-                if let Err(e) = self.preferences.write_recents(|writer| {
+            if ui.button(text(locale, "recent-clear")).clicked()
+                && let Err(e) = self.preferences.write_recents(|writer| {
                     writer.clear();
-                }) {
-                    tracing::warn!("Couldn't update recents: {e}");
-                }
+                })
+            {
+                tracing::warn!("Couldn't update recents: {e}");
             }
         });
 

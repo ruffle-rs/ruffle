@@ -1,4 +1,3 @@
-#![allow(clippy::collapsible_if)] // TODO: remove
 #![deny(clippy::unwrap_used)]
 // By default, Windows creates an additional console window for our program.
 //

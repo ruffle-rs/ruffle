@@ -17,30 +17,27 @@ pub struct PathOrUrlField {
 impl PathOrUrlField {
     pub fn new(default: Option<Url>, hint: &'static str, picker: FilePicker) -> Self {
         if let Some(default) = default {
-            if default.scheme() == "file" {
-                if let Ok(path) = default.to_file_path() {
-                    return Self {
-                        picker,
-                        value: Arc::new(Mutex::new(path.to_string_lossy().to_string())),
-                        result: Some(default),
-                        hint,
-                    };
-                }
-            }
-
-            return Self {
+            Self {
                 picker,
-                value: Arc::new(Mutex::new(default.to_string())),
+                value: Arc::new(Mutex::new(
+                    if default.scheme() == "file"
+                        && let Ok(path) = default.to_file_path()
+                    {
+                        path.to_string_lossy().to_string()
+                    } else {
+                        default.to_string()
+                    },
+                )),
                 result: Some(default),
                 hint,
-            };
-        }
-
-        Self {
-            picker,
-            value: Arc::new(Mutex::new("".to_string())),
-            result: None,
-            hint,
+            }
+        } else {
+            Self {
+                picker,
+                value: Arc::new(Mutex::new("".to_string())),
+                result: None,
+                hint,
+            }
         }
     }
 

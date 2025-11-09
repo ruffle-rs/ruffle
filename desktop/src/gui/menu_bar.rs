@@ -82,11 +82,11 @@ impl MenuBar {
             fullscreen_pressed = egui_ctx
                 .input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_FULLSCREEN_WINDOWS));
         }
-        if fullscreen_pressed {
-            if let Some(player) = &mut player {
-                let is_fullscreen = player.is_fullscreen();
-                player.set_fullscreen(!is_fullscreen);
-            }
+        if let Some(player) = &mut player
+            && fullscreen_pressed
+        {
+            let is_fullscreen = player.is_fullscreen();
+            player.set_fullscreen(!is_fullscreen);
         }
     }
 
@@ -365,10 +365,10 @@ impl MenuBar {
                     let mut forced_scale_mode = original_forced_scale_mode;
                     ui.checkbox(&mut forced_scale_mode, text(locale, "scale-mode-force"))
                         .on_hover_text_at_pointer(text(locale, "scale-mode-force-tooltip"));
-                    if forced_scale_mode != original_forced_scale_mode {
-                        if let Some(player) = player {
-                            player.set_forced_scale_mode(forced_scale_mode);
-                        }
+                    if let Some(player) = player
+                        && forced_scale_mode != original_forced_scale_mode
+                    {
+                        player.set_forced_scale_mode(forced_scale_mode);
                     }
                 });
 
@@ -379,14 +379,14 @@ impl MenuBar {
                 };
                 let mut letterbox = original_letterbox;
                 ui.checkbox(&mut letterbox, text(locale, "letterbox"));
-                if letterbox != original_letterbox {
-                    if let Some(player) = player {
-                        player.set_letterbox(if letterbox {
-                            Letterbox::On
-                        } else {
-                            Letterbox::Off
-                        });
-                    }
+                if let Some(player) = player
+                    && letterbox != original_letterbox
+                {
+                    player.set_letterbox(if letterbox {
+                        Letterbox::On
+                    } else {
+                        Letterbox::Off
+                    });
                 }
                 ui.separator();
 

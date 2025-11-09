@@ -52,17 +52,17 @@ impl VolumeControls {
                         player.set_volume(self.get_volume());
                     }
                     // Don't update persisted volume if the CLI set it
-                    if preferences.cli.volume.is_none() {
-                        if let Err(e) = preferences.write_preferences(|writer| {
+                    if preferences.cli.volume.is_none()
+                        && let Err(e) = preferences.write_preferences(|writer| {
                             if changed_checkbox {
                                 writer.set_mute(self.is_muted);
                             }
                             if changed_slider {
                                 writer.set_volume(self.volume / 100.0);
                             }
-                        }) {
-                            tracing::warn!("Couldn't update volume preferences: {e}");
-                        }
+                        })
+                    {
+                        tracing::warn!("Couldn't update volume preferences: {e}");
                     }
                 }
             });

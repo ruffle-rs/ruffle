@@ -53,13 +53,12 @@ impl StorageBackend for DiskStorageBackend {
         if !Self::is_path_allowed(&path) {
             return false;
         }
-        if let Some(parent_dir) = path.parent() {
-            if !parent_dir.exists() {
-                if let Err(r) = fs::create_dir_all(parent_dir) {
-                    tracing::warn!("Unable to create storage dir {}", r);
-                    return false;
-                }
-            }
+        if let Some(parent_dir) = path.parent()
+            && !parent_dir.exists()
+            && let Err(r) = fs::create_dir_all(parent_dir)
+        {
+            tracing::warn!("Unable to create storage dir {}", r);
+            return false;
         }
 
         match File::create(path) {

@@ -314,17 +314,17 @@ impl UiBackend for DesktopUiBackend {
         };
 
         // It'd be nice if we can get the full list of candidates... Feature request?
-        if let Some(id) = self.font_database.query(&query) {
-            if let Some(face) = self.font_database.face(id) {
-                tracing::info!(
-                    "Loading device font \"{}\" for \"{name}\" (italic: {is_italic}, bold: {is_bold})",
-                    face.post_script_name
-                );
+        if let Some(id) = self.font_database.query(&query)
+            && let Some(face) = self.font_database.face(id)
+        {
+            tracing::info!(
+                "Loading device font \"{}\" for \"{name}\" (italic: {is_italic}, bold: {is_bold})",
+                face.post_script_name
+            );
 
-                match load_fontdb_font(name.to_string(), face) {
-                    Ok(font_definition) => register(font_definition),
-                    Err(error) => tracing::error!("Error loading font from fontdb: {error}"),
-                }
+            match load_fontdb_font(name.to_string(), face) {
+                Ok(font_definition) => register(font_definition),
+                Err(error) => tracing::error!("Error loading font from fontdb: {error}"),
             }
         }
     }

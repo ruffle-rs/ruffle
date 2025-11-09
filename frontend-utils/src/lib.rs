@@ -1,5 +1,3 @@
-#![allow(clippy::collapsible_if)] // TODO: remove
-
 pub mod bookmarks;
 pub mod bundle;
 pub mod parse;
