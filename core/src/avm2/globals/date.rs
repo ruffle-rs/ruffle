@@ -198,7 +198,7 @@ pub fn init_custom_prototype<'gc>(
     let this = this.as_object().unwrap();
     let this = this.as_class_object().unwrap();
 
-    let prototype_date_object = DateObject::for_prototype(activation, this);
+    let prototype_date_object = DateObject::for_prototype(activation.context, this);
 
     this.link_prototype(activation.context, prototype_date_object);
 
