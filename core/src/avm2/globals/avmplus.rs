@@ -96,11 +96,11 @@ fn describe_internal_body<'gc>(
 
     let traits = ScriptObject::new_object(activation.context);
 
-    let bases = ArrayObject::empty(activation);
-    let interfaces = ArrayObject::empty(activation);
-    let variables = ArrayObject::empty(activation);
-    let accessors = ArrayObject::empty(activation);
-    let methods = ArrayObject::empty(activation);
+    let bases = ArrayObject::empty(activation.context);
+    let interfaces = ArrayObject::empty(activation.context);
+    let variables = ArrayObject::empty(activation.context);
+    let accessors = ArrayObject::empty(activation.context);
+    let methods = ArrayObject::empty(activation.context);
 
     if flags.contains(DescribeTypeFlags::INCLUDE_BASES) {
         traits.set_dynamic_property(istr!("bases"), bases.into(), activation.gc());
@@ -230,7 +230,7 @@ fn describe_internal_body<'gc>(
                 variable.set_dynamic_property(istr!("metadata"), Value::Null, activation.gc());
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
-                    let metadata_object = ArrayObject::empty(activation);
+                    let metadata_object = ArrayObject::empty(activation.context);
                     if let Some(metadata) = trait_metadata {
                         write_metadata(metadata_object, metadata, activation);
                     }
@@ -306,7 +306,7 @@ fn describe_internal_body<'gc>(
                 method_obj.set_dynamic_property(istr!("metadata"), Value::Null, activation.gc());
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
-                    let metadata_object = ArrayObject::empty(activation);
+                    let metadata_object = ArrayObject::empty(activation.context);
                     if let Some(metadata) = trait_metadata {
                         write_metadata(metadata_object, metadata, activation);
                     }
@@ -385,7 +385,7 @@ fn describe_internal_body<'gc>(
                     activation.gc(),
                 );
 
-                let metadata_object = ArrayObject::empty(activation);
+                let metadata_object = ArrayObject::empty(activation.context);
 
                 if let Some(get_disp_id) = get {
                     if let Some(metadata) = vtable.get_metadata_for_disp(*get_disp_id) {
@@ -440,7 +440,7 @@ fn describe_internal_body<'gc>(
             "with top-level metadata"
         );
 
-        let metadata_object = ArrayObject::empty(activation);
+        let metadata_object = ArrayObject::empty(activation.context);
         traits.set_dynamic_property(istr!("metadata"), metadata_object.into(), activation.gc());
     } else {
         traits.set_dynamic_property(istr!("metadata"), Value::Null, activation.gc());
@@ -464,7 +464,7 @@ fn write_params<'gc>(
     method: Method<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> ArrayObject<'gc> {
-    let params = ArrayObject::empty(activation);
+    let params = ArrayObject::empty(activation.context);
     let mut params_array = params.storage_mut(activation.gc());
     for param in method.signature() {
         let param_type_name = display_name(activation.strings(), param.param_type_name);

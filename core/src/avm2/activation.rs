@@ -281,7 +281,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             unreachable!();
         };
 
-        let args_object = ArrayObject::from_storage(self, args_array);
+        let args_object = ArrayObject::from_storage(self.context, args_array);
 
         if method
             .method()
@@ -1846,7 +1846,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_new_array(&mut self, num_args: u32) -> Result<(), Error<'gc>> {
         let args = self.pop_stack_args(num_args);
         let array = ArrayStorage::from_args(&args[..]);
-        let array_obj = ArrayObject::from_storage(self, array);
+        let array_obj = ArrayObject::from_storage(self.context, array);
 
         self.push_stack(array_obj);
 

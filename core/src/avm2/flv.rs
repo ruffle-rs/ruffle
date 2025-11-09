@@ -36,7 +36,7 @@ fn avm2_array_from_flv_values<'gc>(
             .collect::<Vec<Option<Avm2Value<'gc>>>>(),
     );
 
-    ArrayObject::from_storage(activation, storage).into()
+    ArrayObject::from_storage(activation.context, storage).into()
 }
 
 fn avm2_date_from_flv_date<'gc>(

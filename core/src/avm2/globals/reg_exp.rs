@@ -227,7 +227,7 @@ pub fn exec<'gc>(
             })
             .collect();
 
-        let object = ArrayObject::from_storage(activation, storage);
+        let object = ArrayObject::from_storage(activation.context, storage);
 
         for (name, range) in matched.named_groups() {
             let string = range.map_or(istr!(""), |range| {

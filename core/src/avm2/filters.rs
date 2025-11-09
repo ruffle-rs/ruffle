@@ -348,7 +348,7 @@ fn color_matrix_filter_to_avm2<'gc>(
     filter: &ColorMatrixFilter,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let matrix = ArrayObject::from_storage(
-        activation,
+        activation.context,
         filter.matrix.iter().map(|v| Value::from(*v)).collect(),
     );
     activation
@@ -423,7 +423,7 @@ fn convolution_filter_to_avm2<'gc>(
     filter: &ConvolutionFilter,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let matrix = ArrayObject::from_storage(
-        activation,
+        activation.context,
         filter
             .matrix
             .iter()
@@ -755,7 +755,7 @@ fn gradient_filter_to_avm2<'gc>(
     class: ClassObject<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let colors = ArrayObject::from_storage(
-        activation,
+        activation.context,
         filter
             .colors
             .iter()
@@ -763,7 +763,7 @@ fn gradient_filter_to_avm2<'gc>(
             .collect(),
     );
     let alphas = ArrayObject::from_storage(
-        activation,
+        activation.context,
         filter
             .colors
             .iter()
@@ -771,7 +771,7 @@ fn gradient_filter_to_avm2<'gc>(
             .collect(),
     );
     let ratios = ArrayObject::from_storage(
-        activation,
+        activation.context,
         filter.colors.iter().map(|v| Value::from(v.ratio)).collect(),
     );
     class.construct(

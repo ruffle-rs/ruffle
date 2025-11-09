@@ -138,7 +138,7 @@ pub fn enumerate_fonts<'gc>(
         .map(|font| FontObject::for_font(activation.gc(), font_class, font))
         .collect();
 
-    Ok(ArrayObject::from_storage(activation, storage).into())
+    Ok(ArrayObject::from_storage(activation.context, storage).into())
 }
 
 /// `Font.registerFont`
