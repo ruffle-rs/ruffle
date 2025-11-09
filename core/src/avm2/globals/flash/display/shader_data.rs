@@ -39,7 +39,7 @@ pub fn _set_byte_code<'gc>(
         let name = AvmString::new_utf8(activation.gc(), &meta.key);
         // Top-level metadata appears to turn `TInt` into a plain integer value,
         // rather than a single-element array.
-        let value = meta.value.as_avm2_value(activation, true)?;
+        let value = meta.value.as_avm2_value(activation.context, true)?;
         this.set_dynamic_property(name, value, activation.gc());
     }
     this.set_dynamic_property(
