@@ -22,7 +22,7 @@ use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
 use serde::Serialize;
-use slotmap::{new_key_type, SlotMap};
+use slotmap::{SlotMap, new_key_type};
 use std::any::Any;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -147,7 +147,7 @@ struct RuffleInstance {
 }
 
 #[wasm_bindgen(raw_module = "./internal/player/inner")]
-extern "C" {
+unsafe extern "C" {
     #[derive(Clone)]
     pub type JavascriptPlayer;
 
@@ -159,7 +159,7 @@ extern "C" {
 
     #[wasm_bindgen(method, catch, js_name = "callFSCommand")]
     fn call_fs_command(this: &JavascriptPlayer, command: &str, args: &str)
-        -> Result<bool, JsValue>;
+    -> Result<bool, JsValue>;
 
     #[wasm_bindgen(method)]
     fn panic(this: &JavascriptPlayer, error: &JsError);
@@ -1110,57 +1110,54 @@ impl RuffleHandle {
                 ));
             }
 
-            if let Ok(gamepads) = instance.window.navigator().get_gamepads() {
-                if let Some(gamepad) = gamepads
-                    .into_iter()
-                    .next()
-                    .and_then(|gamepad| gamepad.dyn_into::<WebGamepad>().ok())
-                {
-                    let mut pressed_buttons = Vec::new();
+            if let Ok(gamepads) = instance.window.navigator().get_gamepads()
+                && let Some(gamepad) = gamepads.into_iter().next()
+                && let Ok(gamepad) = gamepad.dyn_into::<WebGamepad>()
+            {
+                let mut pressed_buttons = Vec::new();
 
-                    let buttons = gamepad.buttons();
-                    for (index, button) in buttons.into_iter().enumerate() {
-                        let Ok(button) = button.dyn_into::<WebGamepadButton>() else {
-                            continue;
-                        };
+                let buttons = gamepad.buttons();
+                for (index, button) in buttons.into_iter().enumerate() {
+                    let Ok(button) = button.dyn_into::<WebGamepadButton>() else {
+                        continue;
+                    };
 
-                        if !button.pressed() {
-                            continue;
-                        }
-
-                        // See https://w3c.github.io/gamepad/#remapping
-                        let gamepad_button = match index {
-                            0 => GamepadButton::South,
-                            1 => GamepadButton::East,
-                            2 => GamepadButton::West,
-                            3 => GamepadButton::North,
-                            12 => GamepadButton::DPadUp,
-                            13 => GamepadButton::DPadDown,
-                            14 => GamepadButton::DPadLeft,
-                            15 => GamepadButton::DPadRight,
-                            _ => continue,
-                        };
-
-                        pressed_buttons.push(gamepad_button);
+                    if !button.pressed() {
+                        continue;
                     }
 
-                    if pressed_buttons != instance.pressed_buttons {
-                        for button in pressed_buttons.iter() {
-                            if !instance.pressed_buttons.contains(button) {
-                                gamepad_button_events
-                                    .push(PlayerEvent::GamepadButtonDown { button: *button });
-                            }
-                        }
+                    // See https://w3c.github.io/gamepad/#remapping
+                    let gamepad_button = match index {
+                        0 => GamepadButton::South,
+                        1 => GamepadButton::East,
+                        2 => GamepadButton::West,
+                        3 => GamepadButton::North,
+                        12 => GamepadButton::DPadUp,
+                        13 => GamepadButton::DPadDown,
+                        14 => GamepadButton::DPadLeft,
+                        15 => GamepadButton::DPadRight,
+                        _ => continue,
+                    };
 
-                        for button in instance.pressed_buttons.iter() {
-                            if !pressed_buttons.contains(button) {
-                                gamepad_button_events
-                                    .push(PlayerEvent::GamepadButtonUp { button: *button });
-                            }
-                        }
+                    pressed_buttons.push(gamepad_button);
+                }
 
-                        instance.pressed_buttons = pressed_buttons;
+                if pressed_buttons != instance.pressed_buttons {
+                    for button in pressed_buttons.iter() {
+                        if !instance.pressed_buttons.contains(button) {
+                            gamepad_button_events
+                                .push(PlayerEvent::GamepadButtonDown { button: *button });
+                        }
                     }
+
+                    for button in instance.pressed_buttons.iter() {
+                        if !pressed_buttons.contains(button) {
+                            gamepad_button_events
+                                .push(PlayerEvent::GamepadButtonUp { button: *button });
+                        }
+                    }
+
+                    instance.pressed_buttons = pressed_buttons;
                 }
             }
 
@@ -1306,10 +1303,10 @@ fn parse_movie_parameters(input: &JsValue) -> Vec<(String, String)> {
     let mut params = Vec::new();
     if let Ok(keys) = js_sys::Reflect::own_keys(input) {
         for key in keys.values().into_iter().flatten() {
-            if let Ok(value) = js_sys::Reflect::get(input, &key) {
-                if let (Some(key), Some(value)) = (key.as_string(), value.as_string()) {
-                    params.push((key, value))
-                }
+            if let Ok(value) = js_sys::Reflect::get(input, &key)
+                && let (Some(key), Some(value)) = (key.as_string(), value.as_string())
+            {
+                params.push((key, value))
             }
         }
     }

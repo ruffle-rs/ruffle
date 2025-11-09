@@ -2,7 +2,7 @@
 name = "ruffle_web_safari"
 description = "Native binary for the Safari Web Extension"
 authors.workspace = true
-edition.workspace = true
+edition = "2024"
 homepage.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -12,5 +12,5 @@ publish = false # This crate is useless unless packaged into an appex bundle
 [lints]
 workspace = true
 
-[dependencies]
-objc = "0.2.7"
+[target.'cfg(target_os = "macos")'.dependencies]
+objc2 = "0.6.3"

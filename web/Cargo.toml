@@ -2,7 +2,7 @@
 name = "ruffle_web"
 description = "Web (WASM) bindings to the Ruffle Flash player"
 authors.workspace = true
-edition.workspace = true
+edition = "2024"
 homepage.workspace = true
 license.workspace = true
 repository.workspace = true

@@ -2,34 +2,34 @@
 use crate::SocketProxy;
 use async_channel::{Receiver, Sender};
 use futures_util::future::Either;
-use futures_util::{future, SinkExt, StreamExt};
-use gloo_net::websocket::{futures::WebSocket, Message};
+use futures_util::{SinkExt, StreamExt, future};
+use gloo_net::websocket::{Message, futures::WebSocket};
 use js_sys::{Array, Promise, RegExp, Uint8Array};
+use ruffle_core::Player;
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, create_specific_fetch_error, get_encoding, ErrorResponse,
-    NavigationMethod, NavigatorBackend, OwnedFuture, Request, SuccessResponse,
+    ErrorResponse, NavigationMethod, NavigatorBackend, OwnedFuture, Request, SuccessResponse,
+    async_return, create_fetch_error, create_specific_fetch_error, get_encoding,
 };
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use ruffle_core::swf::Encoding;
-use ruffle_core::Player;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
-use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
+use tracing_subscriber::layer::Layered;
 use tracing_wasm::WASMLayer;
 use url::{ParseError, Url};
 use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen_futures::{spawn_local, JsFuture};
+use wasm_bindgen_futures::{JsFuture, spawn_local};
 use wasm_streams::readable::ReadableStream;
 use web_sys::{
-    window, Blob, BlobPropertyBag, HtmlFormElement, HtmlInputElement, Request as WebRequest,
-    RequestCredentials, RequestInit, Response as WebResponse,
+    Blob, BlobPropertyBag, HtmlFormElement, HtmlInputElement, Request as WebRequest,
+    RequestCredentials, RequestInit, Response as WebResponse, window,
 };
 
 /// The handling mode of links opening a new website.
@@ -216,7 +216,9 @@ impl NavigatorBackend for WebNavigatorBackend {
             } else {
                 match target.to_lowercase().as_str() {
                     "_parent" | "_self" | "_top" | "" => {
-                        tracing::warn!("SWF tried to open a URL, but opening URLs in the current tab is prevented by script access");
+                        tracing::warn!(
+                            "SWF tried to open a URL, but opening URLs in the current tab is prevented by script access"
+                        );
                         return;
                     }
                     _ => (),

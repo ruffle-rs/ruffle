@@ -4825,7 +4825,7 @@ dependencies = [
 name = "ruffle_web_safari"
 version = "0.1.0"
 dependencies = [
- "objc",
+ "objc2 0.6.3",
 ]
 
 [[package]]
