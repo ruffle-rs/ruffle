@@ -1145,7 +1145,7 @@ pub fn load_data_into_url_loader<'gc>(
 
                 let data_object = if &data_format == b"binary" {
                     let storage = ByteArrayStorage::from_vec(activation.context, body);
-                    let bytearray = ByteArrayObject::from_storage(activation, storage);
+                    let bytearray = ByteArrayObject::from_storage(activation.context, storage);
 
                     Some(bytearray.into())
                 } else if &data_format == b"variables" {

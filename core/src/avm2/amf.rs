@@ -333,7 +333,7 @@ pub fn deserialize_value_impl<'gc>(
         AmfValue::Bool(b) => (*b).into(),
         AmfValue::ByteArray(bytes) => {
             let storage = ByteArrayStorage::from_vec(activation.context, bytes.clone());
-            let bytearray = ByteArrayObject::from_storage(activation, storage);
+            let bytearray = ByteArrayObject::from_storage(activation.context, storage);
             bytearray.into()
         }
         AmfValue::ECMAArray(id, values, elements, _) => {

@@ -6,6 +6,7 @@ use crate::avm2::value::Value;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::character::Character;
+use crate::context::UpdateContext;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_common::utils::HasPrefixField;
@@ -81,12 +82,12 @@ pub struct ByteArrayObjectData<'gc> {
 }
 
 impl<'gc> ByteArrayObject<'gc> {
-    pub fn from_storage(activation: &mut Activation<'_, 'gc>, bytes: ByteArrayStorage) -> Self {
-        let class = activation.avm2().classes().bytearray;
+    pub fn from_storage(context: &mut UpdateContext<'gc>, bytes: ByteArrayStorage) -> Self {
+        let class = context.avm2.classes().bytearray;
         let base = ScriptObjectData::new(class);
 
         ByteArrayObject(Gc::new(
-            activation.gc(),
+            context.gc(),
             ByteArrayObjectData {
                 base,
                 storage: RefCell::new(bytes),
