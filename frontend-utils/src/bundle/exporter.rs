@@ -1,11 +1,12 @@
+#[cfg(feature = "fs")]
 pub mod helpers;
 
-use super::info::{BundleInformation, BUNDLE_INFORMATION_FILENAME};
+use super::info::{BUNDLE_INFORMATION_FILENAME, BundleInformation};
 use std::{
     io::{Read, Seek, Write},
     path::Path,
 };
-use zip::{result::ZipError, write::FileOptions, ZipWriter};
+use zip::{ZipWriter, result::ZipError, write::FileOptions};
 
 #[derive(Debug, thiserror::Error)]
 #[non_exhaustive]
@@ -74,10 +75,10 @@ mod tests {
     use std::io::SeekFrom;
     use url::Url;
 
+    use crate::bundle::Bundle;
     use crate::bundle::exporter::BundleExporter;
     use crate::bundle::info::BundleInformation;
     use crate::bundle::source::BundleSource;
-    use crate::bundle::Bundle;
     use crate::player_options::PlayerOptions;
 
     #[test]

@@ -1,15 +1,15 @@
 mod fetch;
 
-use crate::backends::executor::{spawn_tokio, FutureSpawner};
+use crate::backends::executor::{FutureSpawner, spawn_tokio};
 use crate::backends::navigator::fetch::{Response, ResponseBody};
 use crate::content::PlayingContent;
 use async_channel::{Receiver, Sender, TryRecvError};
 use async_io::Timer;
 use futures_lite::FutureExt;
-use reqwest::{cookie, header, Proxy};
+use reqwest::{Proxy, cookie, header};
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, get_encoding, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OwnedFuture, Request, SocketMode, SuccessResponse,
+    ErrorResponse, NavigationMethod, NavigatorBackend, OwnedFuture, Request, SocketMode,
+    SuccessResponse, async_return, create_fetch_error, get_encoding,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;

@@ -1,7 +1,7 @@
 use std::time::Duration;
 
 use crate::{parse::DocumentHolder, player_options::PlayerOptions};
-use ruffle_core::{config::Letterbox, LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
+use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode, config::Letterbox};
 use ruffle_render::quality::StageQuality;
 use toml_edit::value;
 use url::Url;

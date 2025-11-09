@@ -1,7 +1,7 @@
 [package]
 name = "ruffle_frontend_utils"
 authors.workspace = true
-edition.workspace = true
+edition = "2024"
 homepage.workspace = true
 license.workspace = true
 repository.workspace = true
@@ -11,7 +11,7 @@ version.workspace = true
 workspace = true
 
 [features]
-cpal = ["dep:cpal", "dep:bytemuck"]
+cpal = ["dep:cpal", "dep:bytemuck", "ruffle_core/audio"]
 fs = []
 navigator = ["fs", "dep:async-io", "dep:tokio"]
 executor = ["dep:tokio"]
@@ -36,11 +36,11 @@ reqwest = { version = "0.12.24", default-features = false, features = [
     "http2",
     "macos-system-configuration",
 ] }
-tokio = { workspace = true, features = ["net"], optional = true }
+tokio = { workspace = true, features = ["net", "macros"], optional = true }
 cpal = { workspace = true, optional = true }
 bytemuck = { workspace = true, optional = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }
-tokio = { workspace = true, features = ["macros", "rt"] }
+tokio = { workspace = true, features = ["rt"] }
 macro_rules_attribute = "0.2.2"

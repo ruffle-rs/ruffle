@@ -1,4 +1,3 @@
-#[cfg(feature = "fs")]
 use std::path::{Path, PathBuf};
 
 use thiserror::Error;
@@ -7,7 +6,6 @@ use url::Url;
 use crate::bundle::exporter::{BundleExportError, BundleExporter};
 use crate::bundle::info::BundleInformation;
 
-#[cfg(feature = "fs")]
 #[derive(Debug, Error)]
 pub enum FilesystemHelperError {
     #[error("No files to export")]
@@ -32,13 +30,11 @@ pub enum FilesystemHelperError {
     IoError(#[from] std::io::Error),
 }
 
-#[cfg(feature = "fs")]
 pub struct FilesystemHelper<P: AsRef<Path>> {
     root_dir: PathBuf,
     files_to_export: Vec<P>,
 }
 
-#[cfg(feature = "fs")]
 impl<P: AsRef<Path>> FilesystemHelper<P> {
     pub fn new(files_to_export: Vec<P>) -> Result<Self, FilesystemHelperError> {
         let root_dir = Self::calculate_common_prefix(&files_to_export)?;
@@ -142,7 +138,7 @@ impl<P: AsRef<Path>> FilesystemHelper<P> {
     }
 }
 
-#[cfg(all(test, feature = "fs"))]
+#[cfg(test)]
 mod fs_tests {
     use std::path::{Path, PathBuf};
 
