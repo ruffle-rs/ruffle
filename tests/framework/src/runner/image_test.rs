@@ -125,7 +125,9 @@ pub fn test(
 
         any_check_executed = true;
         if outliers <= max_outliers {
-            println!("{check_name} succeeded: {outliers} outliers found, max difference {max_difference}");
+            println!(
+                "{check_name} succeeded: {outliers} outliers found, max difference {max_difference}"
+            );
             continue;
         }
 

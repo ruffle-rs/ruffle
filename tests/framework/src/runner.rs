@@ -6,13 +6,13 @@ use crate::backends::{TestLogBackend, TestNavigatorBackend, TestUiBackend};
 use crate::environment::RenderInterface;
 use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
-use crate::options::image_comparison::ImageComparison;
 use crate::options::TestOptions;
+use crate::options::image_comparison::ImageComparison;
 use crate::runner::automation::perform_automated_event;
 use crate::runner::image_test::capture_and_compare_image;
 use crate::runner::trace::compare_trace_output;
 use crate::test::Test;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
 use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
@@ -21,7 +21,7 @@ use ruffle_input_format::InputInjector;
 use ruffle_render::backend::{RenderBackend, ViewportDimensions};
 use ruffle_socket_format::SocketEvent;
 use std::collections::HashMap;
-use std::sync::{mpsc, Arc, Mutex};
+use std::sync::{Arc, Mutex, mpsc};
 use std::time::Duration;
 use vfs::VfsPath;
 
@@ -196,7 +196,10 @@ impl TestRunner {
                 FsCommand::CaptureImage(name) => {
                     if let Some(image_comparison) = self.images.remove(&name) {
                         if image_comparison.trigger != ImageTrigger::FsCommand {
-                            return Err(anyhow!("Encountered fscommand to capture and compare image '{name}', but the trigger was expected to be {:?}", image_comparison.trigger));
+                            return Err(anyhow!(
+                                "Encountered fscommand to capture and compare image '{name}', but the trigger was expected to be {:?}",
+                                image_comparison.trigger
+                            ));
                         }
                         capture_and_compare_image(
                             &self.root_path,
@@ -207,7 +210,9 @@ impl TestRunner {
                             self.render_interface.as_deref(),
                         )?;
                     } else {
-                        return Err(anyhow!("Encountered fscommand to capture and compare image '{name}', but no [image_comparison] was set up for this."));
+                        return Err(anyhow!(
+                            "Encountered fscommand to capture and compare image '{name}', but no [image_comparison] was set up for this."
+                        ));
                     }
                 }
             }

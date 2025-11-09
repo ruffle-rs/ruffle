@@ -3,11 +3,11 @@ use std::collections::HashMap;
 use crate::test::Font;
 use chrono::{DateTime, Utc};
 use ruffle_core::{
+    FontFileData, FontQuery,
     backend::ui::{
         DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
-        FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
+        FullscreenError, LanguageIdentifier, MouseCursor, US_ENGLISH, UiBackend,
     },
-    FontFileData, FontQuery,
 };
 use url::Url;
 
