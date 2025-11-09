@@ -1124,7 +1124,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
 
-        let function = FunctionObject::from_method(self, method, scope, None, None);
+        let function = FunctionObject::from_method(self.context, method, scope, None, None);
         let value = function.call(self, receiver, args)?;
 
         self.push_stack(value);
@@ -1771,7 +1771,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_new_function(&mut self, method: Method<'gc>) -> Result<(), Error<'gc>> {
         let scope = self.create_scopechain();
 
-        let new_fn = FunctionObject::from_method(self, method, scope, None, None);
+        let new_fn = FunctionObject::from_method(self.context, method, scope, None, None);
 
         self.push_stack(new_fn);
 

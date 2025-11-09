@@ -335,7 +335,7 @@ impl<'gc> ClassObject<'gc> {
         };
 
         let class_init_fn = FunctionObject::from_method(
-            activation,
+            activation.context,
             class_initializer,
             scope,
             Some(self_value),
@@ -363,7 +363,7 @@ impl<'gc> ClassObject<'gc> {
             // Provide a callee object if necessary
             let callee = if method.needs_arguments_object() {
                 Some(FunctionObject::from_method(
-                    activation,
+                    activation.context,
                     method,
                     scope,
                     Some(receiver),
@@ -498,7 +498,7 @@ impl<'gc> ClassObject<'gc> {
             Some(Property::Method { disp_id }) => {
                 let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
                 let callee = FunctionObject::from_method(
-                    activation,
+                    activation.context,
                     full_method.method,
                     full_method.scope(),
                     Some(receiver.into()),
@@ -616,7 +616,7 @@ impl<'gc> ClassObject<'gc> {
         // Only create callee if the method needs it
         let callee = if full_method.method.needs_arguments_object() {
             Some(FunctionObject::from_method(
-                activation,
+                activation.context,
                 full_method.method,
                 full_method.scope(),
                 Some(receiver.into()),

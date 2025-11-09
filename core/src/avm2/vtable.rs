@@ -516,12 +516,12 @@ impl<'gc> VTable<'gc> {
     /// to this method is not Value::Null or Value::Undefined.
     pub fn make_bound_method(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         receiver: Value<'gc>,
         disp_id: u32,
     ) -> Option<FunctionObject<'gc>> {
         self.get_full_method(disp_id)
-            .map(|method| Self::bind_method(activation, receiver, method))
+            .map(|method| Self::bind_method(context, receiver, method))
     }
 
     /// Bind an instance method to a receiver, allowing it to be used as a value. See `VTable::make_bound_method`
@@ -529,12 +529,12 @@ impl<'gc> VTable<'gc> {
     /// It is the caller's responsibility to ensure that the `receiver` passed
     /// to this method is not Value::Null or Value::Undefined.
     pub fn bind_method(
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         receiver: Value<'gc>,
         method: &ClassBoundMethod<'gc>,
     ) -> FunctionObject<'gc> {
         FunctionObject::from_method(
-            activation,
+            context,
             method.method,
             method.scope(),
             Some(receiver),
