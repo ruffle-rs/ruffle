@@ -231,7 +231,7 @@ impl<'gc> EventObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         info: impl IntoIterator<Item = (&'a str, &'a str)>,
     ) -> EventObject<'gc> {
-        let info_object = ScriptObject::new_object(activation);
+        let info_object = ScriptObject::new_object(activation.context);
         for (key, value) in info {
             let key = AvmString::new_utf8(activation.gc(), key);
             let value = AvmString::new_utf8(activation.gc(), value);

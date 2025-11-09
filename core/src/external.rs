@@ -243,7 +243,7 @@ impl Value {
             Value::Number(value) => Avm2Value::Number(value),
             Value::String(value) => Avm2Value::String(AvmString::new_utf8(activation.gc(), value)),
             Value::Object(values) => {
-                let obj = Avm2ScriptObject::new_object(activation);
+                let obj = Avm2ScriptObject::new_object(activation.context);
 
                 for (key, value) in values.into_iter() {
                     let key = AvmString::new_utf8(activation.gc(), key);

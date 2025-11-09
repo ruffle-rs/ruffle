@@ -10,7 +10,7 @@ fn avm2_object_from_flv_variables<'gc>(
     activation: &mut Activation<'_, 'gc>,
     variables: Vec<FlvVariable>,
 ) -> Avm2Value<'gc> {
-    let info_object = ScriptObject::new_object(activation);
+    let info_object = ScriptObject::new_object(activation.context);
 
     for value in variables {
         let property_name = value.name;

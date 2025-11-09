@@ -75,14 +75,14 @@ impl<'gc> Metadata<'gc> {
 
     // Converts the Metadata to an Object of the form used in avmplus:describeTypeJSON().
     pub fn as_json_object(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        let object = ScriptObject::new_object(activation);
+        let object = ScriptObject::new_object(activation.context);
         object.set_dynamic_property(istr!("name"), self.name.into(), activation.gc());
 
         let values = self
             .items
             .iter()
             .map(|item| {
-                let value_object = ScriptObject::new_object(activation);
+                let value_object = ScriptObject::new_object(activation.context);
                 value_object.set_dynamic_property(istr!("key"), item.key.into(), activation.gc());
                 value_object.set_dynamic_property(
                     istr!("value"),
