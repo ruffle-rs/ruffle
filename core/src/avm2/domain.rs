@@ -139,10 +139,10 @@ impl<'gc> Domain<'gc> {
     ///
     /// This function must not be called before the player globals have been
     /// fully allocated.
-    pub fn movie_domain(activation: &mut Activation<'_, 'gc>, parent: Domain<'gc>) -> Domain<'gc> {
-        let domain_memory = Self::create_default_domain_memory(activation.context);
+    pub fn movie_domain(context: &mut UpdateContext<'gc>, parent: Domain<'gc>) -> Domain<'gc> {
+        let domain_memory = Self::create_default_domain_memory(context);
         let this = Self(Gc::new(
-            activation.gc(),
+            context.gc(),
             DomainData {
                 cell: RefLock::new(DomainDataMut {
                     defs: PropertyMap::new(),
@@ -159,7 +159,7 @@ impl<'gc> Domain<'gc> {
         #[cfg(feature = "egui")]
         {
             parent
-                .cell_mut(activation.gc())
+                .cell_mut(context.gc())
                 .children
                 .push(DomainWeak(Gc::downgrade(this.0)));
         }
