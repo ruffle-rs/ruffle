@@ -403,7 +403,7 @@ impl<'gc> Domain<'gc> {
     fn create_default_domain_memory(activation: &mut Activation<'_, 'gc>) -> ByteArrayObject<'gc> {
         let initial_data = vec![0; MIN_DOMAIN_MEMORY_LENGTH];
         let storage = ByteArrayStorage::from_vec(activation.context, initial_data);
-        ByteArrayObject::from_storage(activation, storage)
+        ByteArrayObject::from_storage(activation.context, storage)
     }
 
     /// Allocate the default domain memory for this domain, if it does not
