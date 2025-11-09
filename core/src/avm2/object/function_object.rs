@@ -66,7 +66,7 @@ impl<'gc> FunctionObject<'gc> {
         let fn_class = activation.avm2().classes().function;
         let exec = BoundMethod::from_method(method, scope, receiver, bound_superclass_object);
 
-        let es3_proto = ScriptObject::new_object(activation);
+        let es3_proto = ScriptObject::new_object(activation.context);
 
         let function_object = FunctionObject(Gc::new(
             activation.gc(),

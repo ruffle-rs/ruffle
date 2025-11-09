@@ -23,7 +23,7 @@ pub fn describe_type_json<'gc>(
 
     let value = args.get_value(0);
     let class_def = instance_class_describe_type(activation, value);
-    let object = ScriptObject::new_object(activation);
+    let object = ScriptObject::new_object(activation.context);
 
     let mut used_class_def = class_def;
     if flags.contains(DescribeTypeFlags::USE_ITRAITS) {
@@ -94,7 +94,7 @@ fn describe_internal_body<'gc>(
 ) -> Object<'gc> {
     let mc = activation.gc();
 
-    let traits = ScriptObject::new_object(activation);
+    let traits = ScriptObject::new_object(activation.context);
 
     let bases = ArrayObject::empty(activation);
     let interfaces = ArrayObject::empty(activation);
@@ -213,7 +213,7 @@ fn describe_internal_body<'gc>(
 
                 let trait_metadata = vtable.get_metadata_for_slot(*slot_id);
 
-                let variable = ScriptObject::new_object(activation);
+                let variable = ScriptObject::new_object(activation.context);
                 variable.set_dynamic_property(istr!("name"), prop_name.into(), activation.gc());
                 variable.set_dynamic_property(
                     istr!("type"),
@@ -276,7 +276,7 @@ fn describe_internal_body<'gc>(
 
                 let trait_metadata = vtable.get_metadata_for_disp(*disp_id);
 
-                let method_obj = ScriptObject::new_object(activation);
+                let method_obj = ScriptObject::new_object(activation.context);
 
                 method_obj.set_dynamic_property(istr!("name"), prop_name.into(), activation.gc());
                 method_obj.set_dynamic_property(
@@ -366,7 +366,7 @@ fn describe_internal_body<'gc>(
                 let accessor_type = display_name(activation.strings(), method_type);
                 let declared_by = defining_class.dollar_removed_name(mc).to_qualified_name(mc);
 
-                let accessor_obj = ScriptObject::new_object(activation);
+                let accessor_obj = ScriptObject::new_object(activation.context);
                 accessor_obj.set_dynamic_property(istr!("name"), prop_name.into(), activation.gc());
                 accessor_obj.set_dynamic_property(istr!("access"), access.into(), activation.gc());
                 accessor_obj.set_dynamic_property(
@@ -469,7 +469,7 @@ fn write_params<'gc>(
     for param in method.signature() {
         let param_type_name = display_name(activation.strings(), param.param_type_name);
         let optional = param.default_value.is_some();
-        let param_obj = ScriptObject::new_object(activation);
+        let param_obj = ScriptObject::new_object(activation.context);
         param_obj.set_dynamic_property(istr!("type"), param_type_name.into(), activation.gc());
         param_obj.set_dynamic_property(istr!("optional"), optional.into(), activation.gc());
         params_array.push(param_obj.into());

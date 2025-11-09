@@ -1505,7 +1505,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             ScriptObject::custom_object(self.gc(), *catch_class, None, catch_class.vtable())
         } else {
             // for `finally` scopes, FP just creates a normal object.
-            ScriptObject::new_object(self)
+            ScriptObject::new_object(self.context)
         };
 
         self.push_stack(so);
@@ -1754,7 +1754,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_object(&mut self, num_args: u32) -> Result<(), Error<'gc>> {
-        let object = ScriptObject::new_object(self);
+        let object = ScriptObject::new_object(self.context);
 
         for _ in 0..num_args {
             let value = self.pop_stack();

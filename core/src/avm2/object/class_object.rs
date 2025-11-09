@@ -94,7 +94,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Object<'gc> {
-        let proto = ScriptObject::new_object(activation);
+        let proto = ScriptObject::new_object(activation.context);
 
         if let Some(superclass_object) = superclass_object {
             let base_proto = superclass_object.prototype();

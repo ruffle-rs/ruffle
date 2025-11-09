@@ -54,7 +54,7 @@ impl<'gc> SharedObjectObject<'gc> {
     }
 
     pub fn reset_data(&self, activation: &mut Activation<'_, 'gc>) {
-        let empty_data = ScriptObject::new_object(activation);
+        let empty_data = ScriptObject::new_object(activation.context);
 
         unlock!(
             Gc::write(activation.gc(), self.0),

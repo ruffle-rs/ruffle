@@ -537,7 +537,7 @@ pub fn get_parameters<'gc>(
             LoaderStream::Swf(root, _) => root,
         };
 
-        let params_obj = ScriptObject::new_object(activation);
+        let params_obj = ScriptObject::new_object(activation.context);
         let parameters = root.parameters();
 
         for (k, v) in parameters.iter() {

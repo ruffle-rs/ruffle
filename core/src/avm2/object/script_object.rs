@@ -98,14 +98,10 @@ impl<'gc> ScriptObject<'gc> {
     /// Creates an instance of the Object class, exactly as if `new Object()`
     /// were called, but without going through any construction or call
     /// machinery (since it's unnecessary for the Object class).
-    pub fn new_object(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        let object_class = activation.avm2().classes().object;
+    pub fn new_object(context: &mut UpdateContext<'gc>) -> Object<'gc> {
+        let object_class = context.avm2.classes().object;
 
-        ScriptObject(Gc::new(
-            activation.gc(),
-            ScriptObjectData::new(object_class),
-        ))
-        .into()
+        ScriptObject(Gc::new(context.gc(), ScriptObjectData::new(object_class))).into()
     }
 
     /// Construct an instance with a possibly-none class and proto chain.
@@ -115,7 +111,7 @@ impl<'gc> ScriptObject<'gc> {
     /// You shouldn't let scripts observe this weirdness.
     ///
     /// The proper way to create a normal empty ScriptObject (AS "Object") is to call
-    /// `ScriptObject::new_object(activation)`.
+    /// `ScriptObject::new_object(activation.context)`.
     ///
     /// Calling `custom_object(mc, object_class, object_class.prototype()` is
     /// technically also equivalent, but not recommended outside VM initialization code

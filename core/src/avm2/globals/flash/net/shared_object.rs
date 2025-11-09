@@ -158,7 +158,7 @@ pub fn get_local<'gc>(
         data
     } else {
         // No data; create a fresh data object.
-        ScriptObject::new_object(activation)
+        ScriptObject::new_object(activation.context)
     };
 
     let created_shared_object =

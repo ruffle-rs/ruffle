@@ -538,7 +538,7 @@ pub fn deserialize_lso<'gc>(
     activation: &mut Activation<'_, 'gc>,
     lso: &Lso,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let obj = ScriptObject::new_object(activation);
+    let obj = ScriptObject::new_object(activation.context);
 
     for child in &lso.body {
         obj.set_dynamic_property(
