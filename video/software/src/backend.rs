@@ -88,11 +88,11 @@ impl VideoBackend for SoftwareVideoBackend {
 
         let frame = stream.decoder.decode_frame(encoded_frame)?;
 
-        let w = frame.width();
-        let h = frame.height();
+        let width = frame.width();
+        let height = frame.height();
 
         let handle = if let Some(bitmap) = stream.bitmap.clone() {
-            renderer.update_texture(&bitmap, frame, PixelRegion::for_whole_size(w, h))?;
+            renderer.update_texture(&bitmap, frame, PixelRegion::for_whole_size(width, height))?;
             bitmap
         } else {
             renderer.register_bitmap(frame)?
@@ -101,8 +101,8 @@ impl VideoBackend for SoftwareVideoBackend {
 
         Ok(BitmapInfo {
             handle,
-            width: w as u16,
-            height: h as u16,
+            width,
+            height,
         })
     }
 }

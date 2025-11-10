@@ -47,12 +47,12 @@ pub fn decode_define_bits_jpeg(
     }
 }
 
-pub fn decode_define_bits_jpeg_dimensions(data: &[u8]) -> Result<(u16, u16), Error> {
+pub fn decode_define_bits_jpeg_dimensions(data: &[u8]) -> Result<(u32, u32), Error> {
     let format = determine_jpeg_tag_format(data);
     match format {
-        JpegTagFormat::Jpeg => decode_jpeg_dimensions(data),
+        JpegTagFormat::Jpeg => decode_jpeg_dimensions(data).map(|(w, h)| (w.into(), h.into())),
         JpegTagFormat::Png => decode_png_dimensions(data),
-        JpegTagFormat::Gif => decode_gif_dimensions(data),
+        JpegTagFormat::Gif => decode_gif_dimensions(data).map(|(w, h)| (w.into(), h.into())),
         JpegTagFormat::Unknown => Err(Error::UnknownType),
     }
 }
@@ -358,7 +358,7 @@ pub fn decode_define_bits_lossless(
     ))
 }
 
-fn decode_png_dimensions(data: &[u8]) -> Result<(u16, u16), Error> {
+fn decode_png_dimensions(data: &[u8]) -> Result<(u32, u32), Error> {
     use png::Transformations;
 
     let mut decoder = png::Decoder::new(Cursor::new(data));
@@ -366,10 +366,7 @@ fn decode_png_dimensions(data: &[u8]) -> Result<(u16, u16), Error> {
     // Ideally we'd want to normalize to 8-bit RGB only, but seems like the `png` crate provides no such a feature.
     decoder.set_transformations(Transformations::normalize_to_color8());
     let reader = decoder.read_info()?;
-    Ok((
-        reader.info().width.try_into().expect("Invalid PNG width"),
-        reader.info().height.try_into().expect("Invalid PNG height"),
-    ))
+    Ok((reader.info().width, reader.info().height))
 }
 
 /// Decodes the bitmap data in DefineBitsLossless tag into RGBA.
