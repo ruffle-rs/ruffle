@@ -6,28 +6,51 @@ package flash.display {
     // but airglobal.swc disagrees with that:
     [API("667")]
     public class NativeMenu extends EventDispatcher {
-        // Indicates whether any form of native menu is supported on the client system.
-        private var _isSupported:Boolean;
-
         // The array of NativeMenuItem objects in this menu.
-        public var items:Array;
+        private var _items:Array;
 
         // The parent menu.
         private var _parent:NativeMenu;
 
         public function NativeMenu() {}
 
+        public function get items():Array {
+            if (this._items == null) {
+                this._items = [];
+            }
+
+            return this._items.AS3::concat();
+        }
+        public function set items(newItems:Array):void {
+            this.removeAllItems();
+            for (var i:int = 0; i < newItems.length; i ++) {
+                this.addItem(newItems[i]);
+            }
+        }
+
         // Adds a menu item at the bottom of the menu.
         public function addItem(item:NativeMenuItem):NativeMenuItem {
             stub_method("flash.display.NativeMenu", "addItem");
-            this.items.push(item);
-            return item;
+            return this.addItemAt(item, this.numItems);
         }
 
         // Inserts a menu item at the specified position.
         public function addItemAt(item:NativeMenuItem, index:int):NativeMenuItem {
             stub_method("flash.display.NativeMenu", "addItemAt");
-            this.items[index] = item;
+
+            if (this._items == null) {
+                this._items = [];
+            }
+
+            if (index < 0 || index > this.numItems) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+            if (item == null) {
+                // For some reason this is an `ArgumentError` here instead of a `TypeError`
+                throw new ArgumentError("Error #2007: Parameter item must be non-null.", 2007);
+            }
+
+            this._items.splice(index, 0, item);
             return item;
         }
 
@@ -81,7 +104,8 @@ package flash.display {
         // Removes all items from the menu.
         public function removeAllItems():void {
             stub_method("flash.display.NativeMenu", "removeAllItems");
-            this.items = [];
+
+            this._items = [];
         }
 
         // Removes the specified menu item.
@@ -101,14 +125,16 @@ package flash.display {
             stub_method("flash.display.NativeMenu", "setItemIndex");
         }
 
-        // According to the documentation, it should be [API("668")]
-        // but there is no version gate in airglobal.swc
         public function get isSupported():Boolean {
-            return this._isSupported;
+            return false;
         }
 
         public function get numItems():int {
-            return this.items.length;
+            if (this._items == null) {
+                this._items = [];
+            }
+
+            return this._items.length;
         }
 
         public function get parent():NativeMenu {
