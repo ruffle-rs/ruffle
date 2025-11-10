@@ -7,6 +7,7 @@ package flash.display {
     import flash.events.Event;
     import flash.geom.Rectangle;
     import flash.geom.Transform;
+    import flash.media.StageVideo;
     import flash.text.TextSnapshot;
     import flash.ui.ContextMenu;
 
@@ -203,6 +204,11 @@ package flash.display {
         public native function get focus():InteractiveObject;
         public native function set focus(value:InteractiveObject):void;
 
+        public function isFocusInaccessible():Boolean {
+            stub_method("flash.display.Stage", "isFocusInaccessible");
+            return false;
+        }
+
         public native function get frameRate():Number;
         public native function set frameRate(value:Number):void;
 
@@ -235,6 +241,12 @@ package flash.display {
         public native function get stageFocusRect():Boolean;
         public native function set stageFocusRect(value:Boolean):void;
 
+        [API("665")]
+        public function get wmodeGPU():Boolean {
+            stub_getter("flash.display.Stage", "wmodeGPU");
+            return true;
+        }
+
         [API("670")]
         public function get softKeyboardRect() : Rectangle {
             stub_getter("flash.display.Stage", "softKeyboardRect");
@@ -251,6 +263,12 @@ package flash.display {
 
         public native function get quality():String;
         public native function set quality(value:String):void;
+
+        [API("667")]
+        public function get stageVideos():Vector.<StageVideo> {
+            stub_getter("flash.display.Stage", "stageVideos");
+            return null;
+        }
 
         [API("674")]
         public native function get stage3Ds():Vector.<Stage3D>;
@@ -326,6 +344,25 @@ package flash.display {
         [API("668")]
         public function setAspectRatio(newAspectRatio:String):void {
             stub_method("flash.display.Stage", "setAspectRatio");
+        }
+
+        // Undocumented function, what does it do? Running it in standalone
+        // debug FP32, it always seems to return `null`
+        [API("674")]
+        public function get displayContextInfo():String {
+            stub_getter("flash.display.Stage", "displayContextInfo");
+            return null;
+        }
+
+        // Undocumented accessors, what do they do? Running them in standalone
+        // debug FP32, `get constructor` always seems to return `null` and `set
+        // constructor` seems to do nothing
+        public function get constructor():* {
+            stub_getter("flash.display.Stage", "constructor");
+            return null;
+        }
+        public function set constructor(value:*):* {
+            stub_setter("flash.display.Stage", "constructor");
         }
 
         // TODO: Construct the NativeWindow as a native object
