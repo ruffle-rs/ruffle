@@ -275,15 +275,18 @@ package flash.display {
 
         public native function invalidate():void;
 
+        [API("662")]
         public function get colorCorrection():String {
             return this._colorCorrection;
         }
+        [API("662")]
         public function set colorCorrection(value:String):void {
             stub_setter("flash.display.Stage", "colorCorrection");
             if (value == null) throw new TypeError("Error #2007: Parameter colorCorrection must be non-null.", 2007);
             this._colorCorrection = value;
         }
 
+        [API("662")]
         public function get colorCorrectionSupport():String {
             stub_getter("flash.display.Stage", "colorCorrectionSupport");
             return ColorCorrectionSupport.UNSUPPORTED;
