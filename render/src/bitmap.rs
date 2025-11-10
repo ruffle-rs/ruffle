@@ -24,14 +24,14 @@ pub trait BitmapHandleImpl: Any + Debug {}
 #[derive(Clone, Debug)]
 pub struct BitmapInfo {
     pub handle: BitmapHandle,
-    pub width: u16,
-    pub height: u16,
+    pub width: u32,
+    pub height: u32,
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct BitmapSize {
-    pub width: u16,
-    pub height: u16,
+    pub width: u32,
+    pub height: u32,
 }
 
 /// An object that returns a bitmap given an ID.

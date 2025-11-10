@@ -98,10 +98,10 @@ pub struct BitmapCache {
     matrix_d: f32,
 
     /// The width of the original bitmap, pre-filters
-    source_width: u16,
+    source_width: u32,
 
     /// The height of the original bitmap, pre-filters
-    source_height: u16,
+    source_height: u32,
 
     /// The offset used to draw the final bitmap (i.e. if a filter increases the size)
     draw_offset: Point<i32>,
@@ -122,7 +122,7 @@ impl BitmapCache {
         self.matrix_a = f32::NAN;
     }
 
-    fn is_dirty(&self, other: &Matrix, source_width: u16, source_height: u16) -> bool {
+    fn is_dirty(&self, other: &Matrix, source_width: u32, source_height: u32) -> bool {
         self.matrix_a != other.a
             || self.matrix_b != other.b
             || self.matrix_c != other.c
@@ -138,10 +138,10 @@ impl BitmapCache {
         &mut self,
         renderer: &mut dyn RenderBackend,
         matrix: Matrix,
-        source_width: u16,
-        source_height: u16,
-        actual_width: u16,
-        actual_height: u16,
+        source_width: u32,
+        source_height: u32,
+        actual_width: u32,
+        actual_height: u32,
         draw_offset: Point<i32>,
         swf_version: u8,
     ) {
@@ -158,7 +158,7 @@ impl BitmapCache {
             }
         }
         let acceptable_size = if swf_version > 9 {
-            let total = actual_width as u32 * actual_height as u32;
+            let total = actual_width * actual_height;
             actual_width < 8191 && actual_height < 8191 && total < 16777215
         } else {
             actual_width < 2880 && actual_height < 2880
@@ -168,7 +168,7 @@ impl BitmapCache {
             && actual_height > 0
             && acceptable_size
         {
-            let handle = renderer.create_empty_texture(actual_width as u32, actual_height as u32);
+            let handle = renderer.create_empty_texture(actual_width, actual_height);
             self.bitmap = handle.ok().map(|handle| BitmapInfo {
                 width: actual_width,
                 height: actual_height,
@@ -944,8 +944,8 @@ pub fn render_base<'gc>(
             let width = bounds.width().to_pixels().ceil().max(0.0);
             let height = bounds.height().to_pixels().ceil().max(0.0);
             if width <= u16::MAX as f64 && height <= u16::MAX as f64 {
-                let width = width as u16;
-                let height = height as u16;
+                let width = width as u32;
+                let height = height as u32;
                 let mut filter_rect = Rectangle {
                     x_min: Twips::ZERO,
                     x_max: Twips::from_pixels_i32(width as i32),
@@ -971,8 +971,8 @@ pub fn render_base<'gc>(
                         base_transform.matrix,
                         width,
                         height,
-                        filter_rect.width() as u16,
-                        filter_rect.height() as u16,
+                        filter_rect.width() as u32,
+                        filter_rect.height() as u32,
                         draw_offset,
                         swf_version,
                     );
