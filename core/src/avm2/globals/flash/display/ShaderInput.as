@@ -1,4 +1,5 @@
 package flash.display {
+    [API("662")]
     public final dynamic class ShaderInput {
         [Ruffle(NativeAccessible)]
         private var _channels: int;
