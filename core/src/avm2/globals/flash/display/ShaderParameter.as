@@ -1,4 +1,5 @@
 package flash.display {
+    [API("662")]
     public final dynamic class ShaderParameter {
         [Ruffle(NativeAccessible)]
         private var _index:int;
