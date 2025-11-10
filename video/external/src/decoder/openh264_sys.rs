@@ -1365,7 +1365,7 @@ impl OpenH264 {
     where
         P: AsRef<::std::ffi::OsStr>,
     {
-        let library = ::libloading::Library::new(filename)?;
+        let library = ::libloading::Library::new(filename.as_ref())?;
         Self::from_library(library)
     }
     pub unsafe fn from_library<L>(library: L) -> Result<Self, ::libloading::Error>
