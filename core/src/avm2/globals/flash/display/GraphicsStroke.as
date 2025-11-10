@@ -1,5 +1,5 @@
 package flash.display {
-
+    [API("662")]
     public final class GraphicsStroke implements IGraphicsStroke, IGraphicsData {
         [Ruffle(NativeAccessible)]
         private var _caps : String;

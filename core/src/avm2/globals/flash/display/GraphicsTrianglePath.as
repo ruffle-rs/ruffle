@@ -1,5 +1,5 @@
 package flash.display {
-
+    [API("662")]
     public final class GraphicsTrianglePath implements IGraphicsPath, IGraphicsData {
         [Ruffle(NativeAccessible)]
         private var _culling : String;
