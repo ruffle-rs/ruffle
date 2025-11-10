@@ -104,5 +104,10 @@ package flash.display {
             stub_method("flash.display.BitmapData", "generateFilterRect");
             return sourceRect.clone();
         }
+        [API("680")]
+        public function encode(rect:Rectangle, compressor:Object, byteArray:ByteArray = null):ByteArray {
+            stub_method("flash.display.BitmapData", "encode");
+            return null;
+        }
     }
 }
