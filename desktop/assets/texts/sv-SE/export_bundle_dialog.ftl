@@ -1,0 +1,3 @@
+export-bundle-dialog-export = Exportera
+export-bundle-dialog-exporting = Exporterar...
+export-bundle-dialog-error-user-canceled = Avbruten av användare.

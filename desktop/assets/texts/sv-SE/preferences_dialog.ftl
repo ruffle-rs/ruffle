@@ -26,5 +26,7 @@ theme-dark = Mörkt
 # See for context https://github.com/FeralInteractive/gamemode
 gamemode = GameMode
 gamemode-default = Förval
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = Inmatningsmetod
 ime-enabled-experimental = (experimentell)
 ime-enabled-default = Förval
