@@ -2056,39 +2056,6 @@
     </method>
   </factory>
 </type>
-<type name="flash.display::NativeMenuItem" base="Class" isDynamic="true" isFinal="true" isStatic="true">
-  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
-  <extendsClass type="Class"/>
-  <extendsClass type="Object"/>
-  <factory type="flash.display::NativeMenuItem">
-      <accessor name="enabled" access="readwrite" type="Boolean" declaredBy="flash.display::NativeMenuItem"/>
-      <extendsClass type="Object"/>
-      <extendsClass type="flash.events::EventDispatcher"/>
-      <implementsInterface type="flash.events::IEventDispatcher"/>
-      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
-          <parameter index="1" type="String" optional="false"/>
-          <parameter index="2" type="Function" optional="false"/>
-          <parameter index="3" type="Boolean" optional="true"/>
-          <parameter index="4" type="int" optional="true"/>
-          <parameter index="5" type="Boolean" optional="true"/>
-    </method>
-      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
-          <parameter index="1" type="flash.events::Event" optional="false"/>
-    </method>
-      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
-          <parameter index="1" type="String" optional="false"/>
-    </method>
-      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
-          <parameter index="1" type="String" optional="false"/>
-          <parameter index="2" type="Function" optional="false"/>
-          <parameter index="3" type="Boolean" optional="true"/>
-    </method>
-      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
-      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
-          <parameter index="1" type="String" optional="false"/>
-    </method>
-  </factory>
-</type>
 <type name="flash.display::PNGEncoderOptions" base="Class" isDynamic="true" isFinal="true" isStatic="true">
   <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
   <extendsClass type="Class"/>
