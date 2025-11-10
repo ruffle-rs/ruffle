@@ -30,9 +30,11 @@ package flash.display {
         public native function get loaderURL():String;
         public native function get parameters():Object;
         public native function get sharedEvents():EventDispatcher;
-        public native function get uncaughtErrorEvents():UncaughtErrorEvents;
         public native function get sameDomain():Boolean;
         public native function get childAllowsParent():Boolean;
+
+        [API("667")]
+        public native function get uncaughtErrorEvents():UncaughtErrorEvents;
 
         override public function dispatchEvent(event:Event):Boolean {
             throw new IllegalOperationError("Error #2118: The LoaderInfo class does not implement this method.", 2118);

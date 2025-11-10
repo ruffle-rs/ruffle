@@ -28,6 +28,7 @@ package flash.display {
 
         public native function unload():void;
 
+        [API("662")]
         public function unloadAndStop(gc:Boolean = true):void {
             stub_method("flash.display.Loader", "unloadAndStop");
             this.unload();
@@ -57,6 +58,7 @@ package flash.display {
             throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
         }
 
+        [API("667")]
         public function get uncaughtErrorEvents():UncaughtErrorEvents {
             return this.contentLoaderInfo.uncaughtErrorEvents;
         }
