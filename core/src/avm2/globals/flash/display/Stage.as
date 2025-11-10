@@ -2,6 +2,7 @@ package flash.display {
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
+    import flash.accessibility.AccessibilityImplementation;
     import flash.accessibility.AccessibilityProperties;
     import flash.errors.IllegalOperationError;
     import flash.events.Event;
@@ -17,6 +18,10 @@ package flash.display {
         private var _mouseLock:Boolean = false;
         private var _nativeWindow:NativeWindow;
         private var _fullScreenSourceRect:Rectangle;
+
+        override public function set accessibilityImplementation(value:AccessibilityImplementation):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
 
         override public function set accessibilityProperties(value:AccessibilityProperties):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
@@ -110,6 +115,21 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
+        [API("662")]
+        override public function set rotationX(value:Number):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        [API("662")]
+        override public function set rotationY(value:Number):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        [API("662")]
+        override public function set rotationZ(value:Number):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
         override public function set scale9Grid(value:Rectangle):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
@@ -119,6 +139,11 @@ package flash.display {
         }
 
         override public function set scaleY(value:Number):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        [API("662")]
+        override public function set scaleZ(value:Number):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
@@ -179,6 +204,11 @@ package flash.display {
         }
 
         override public function set y(value:Number):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        [API("662")]
+        override public function set z(value:Number):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
