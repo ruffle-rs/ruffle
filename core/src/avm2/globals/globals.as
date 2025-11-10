@@ -86,6 +86,7 @@ include "flash/display/JointStyle.as"
 include "flash/display/JPEGEncoderOptions.as"
 include "flash/display/JPEGXREncoderOptions.as"
 include "flash/display/Loader.as"
+include "flash/display/AVLoader.as" // AVLoader extends Loader
 include "flash/display/LineScaleMode.as"
 include "flash/display/MorphShape.as"
 include "flash/display/NativeMenu.as"
