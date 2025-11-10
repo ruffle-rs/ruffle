@@ -1,6 +1,7 @@
 package flash.display {
     import flash.geom.Matrix;
 
+    [API("662")]
     public final class GraphicsGradientFill implements IGraphicsFill, IGraphicsData {
         [Ruffle(NativeAccessible)]
         public var alphas : Array;
