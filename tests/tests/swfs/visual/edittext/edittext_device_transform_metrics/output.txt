@@ -1,0 +1,40 @@
+false = (x=2, y=2, w=8, h=10),(x=10, y=2, w=8, h=10)
+false = 0,0,0,0,1,1,1,-1,-1,-1,-1,
+false = height=10,width=16,x=2,ascent=8,descent=2
+false = 120
+false = 16
+false = (x=2, y=2, w=8, h=10),(x=10, y=2, w=8, h=10)
+false = 0,0,0,0,1,1,1,-1,-1,-1,-1,
+false = height=10,width=16,x=2,ascent=8,descent=2
+false = 120
+false = 16
+false = (x=2, y=2, w=8, h=10),(x=10, y=2, w=8, h=10)
+false = 0,0,0,0,1,1,1,-1,-1,-1,-1,
+false = height=10,width=16,x=2,ascent=8,descent=2
+false = 120
+false = 16
+false = (x=2, y=2, w=8, h=10),(x=10, y=2, w=8, h=10)
+false = 0,0,0,0,1,1,1,-1,-1,-1,-1,
+false = height=10,width=16,x=2,ascent=8,descent=2
+false = 120
+false = 16
+true = (x=2, y=2, w=8, h=10),(x=10, y=2, w=8, h=10)
+true = 0,0,0,0,1,1,1,-1,-1,-1,-1,
+true = height=10,width=16,x=102,ascent=8,descent=2
+true = 120
+true = 16
+true = (x=2, y=2, w=4, h=10),(x=6, y=2, w=4, h=10)
+true = 0,0,0,1,-1,-1,-1,-1,-1,-1,-1,
+true = height=5,width=8,x=52,ascent=4,descent=1
+true = 60
+true = 8
+true = (x=2, y=2, w=16, h=10),(x=18, y=2, w=16, h=10)
+true = 0,0,0,0,0,0,0,-1,-1,-1,-1,
+true = height=20,width=32,x=102,ascent=16,descent=4
+true = 240
+true = 32
+true = (x=2, y=2, w=8, h=10),(x=10, y=2, w=8, h=10)
+true = 0,0,0,0,1,1,1,-1,-1,-1,-1,
+true = height=10,width=16,x=52,ascent=8,descent=2
+true = 120
+true = 16
