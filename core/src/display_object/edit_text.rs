@@ -791,10 +791,22 @@ impl<'gc> EditText<'gc> {
     /// coordinate space into this object's local space.
     fn layout_to_local_matrix(self) -> Matrix {
         let bounds = self.0.bounds.get();
-        Matrix::translate(
+        let matrix = Matrix::translate(
             bounds.x_min + Self::GUTTER - Twips::from_pixels(self.0.hscroll.get()),
             bounds.y_min + Self::GUTTER - self.0.vertical_scroll_offset(),
-        )
+        );
+
+        if self.font_type() == FontType::Device {
+            // Device text cannot be scaled independently in x/y.
+            // Here we have to make sure the independent x/y scale applied for
+            // the local coordinate space is reversed, leaving only y scale
+            // and keeping the original aspect ratio in x.
+            let m = self.local_to_global_matrix();
+            let device_font_scale_x = m.d / m.a;
+            matrix * Matrix::scale(device_font_scale_x, 1.0f32)
+        } else {
+            matrix
+        }
     }
 
     /// Returns the matrix for transforming from this object's
