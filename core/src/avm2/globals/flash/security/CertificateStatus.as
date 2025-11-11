@@ -5,7 +5,7 @@
 
 package flash.security
 {
-
+    [API("672")]
     public final class CertificateStatus
     {
         // The certificate is outside its valid period.

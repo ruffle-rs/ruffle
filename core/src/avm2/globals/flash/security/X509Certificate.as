@@ -1,8 +1,8 @@
 package flash.security {
+    import flash.utils.ByteArray;
+
     [API("674")]
     public final class X509Certificate {
-        import flash.utils.ByteArray;
-
         private var _encoded:ByteArray;
         private var _issuer:X500DistinguishedName;
         private var _issuerUniqueID:String;
