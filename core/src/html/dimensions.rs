@@ -152,6 +152,34 @@ impl<T> From<Position<T>> for Size<T> {
     }
 }
 
+impl From<swf::PointDelta<Twips>> for Size<Twips> {
+    fn from(size: swf::PointDelta<Twips>) -> Self {
+        Self {
+            width: size.dx,
+            height: size.dy,
+        }
+    }
+}
+
+impl From<Size<Twips>> for swf::PointDelta<Twips> {
+    fn from(size: Size<Twips>) -> Self {
+        Self {
+            dx: size.width,
+            dy: size.height,
+        }
+    }
+}
+
+impl std::ops::Mul<Size<Twips>> for ruffle_render::matrix::Matrix {
+    type Output = Size<Twips>;
+
+    fn mul(self, size: Size<Twips>) -> Size<Twips> {
+        // Size has the same semantics as PointDelta when applying a matrix
+        let size: swf::PointDelta<Twips> = size.into();
+        (self * size).into()
+    }
+}
+
 /// A type which represents the offset and size of a text box.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct BoxBounds<T> {

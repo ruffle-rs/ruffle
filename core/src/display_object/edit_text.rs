@@ -969,6 +969,7 @@ impl<'gc> EditText<'gc> {
     /// The returned tuple should be interpreted as width, then height.
     pub fn measure_text(self, _context: &mut UpdateContext<'gc>) -> (Twips, Twips) {
         let text_size = self.0.layout.borrow().text_size();
+        let text_size = self.layout_to_local_matrix() * text_size;
         (text_size.width(), text_size.height())
     }
 
