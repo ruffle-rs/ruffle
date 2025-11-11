@@ -799,15 +799,12 @@ impl<'gc> EditText<'gc> {
 
     /// Returns the matrix for transforming from this object's
     /// local space into its layout coordinate space.
-    fn local_to_layout_matrix(self) -> Matrix {
-        // layout_to_local contains only a translation,
-        // no need to inverse the matrix generically.
-        let Matrix { tx, ty, .. } = self.layout_to_local_matrix();
-        Matrix::translate(-tx, -ty)
+    fn local_to_layout_matrix(self) -> Option<Matrix> {
+        self.layout_to_local_matrix().inverse()
     }
 
-    fn local_to_layout(self, local: Point<Twips>) -> Point<Twips> {
-        self.local_to_layout_matrix() * local
+    fn local_to_layout(self, local: Point<Twips>) -> Option<Point<Twips>> {
+        Some(self.local_to_layout_matrix()? * local)
     }
 
     pub fn replace_text(
@@ -1593,7 +1590,7 @@ impl<'gc> EditText<'gc> {
     /// Characters are divided in half, the last line is extended, etc.
     pub fn screen_position_to_index(self, position: Point<Twips>) -> Option<usize> {
         let position = self.global_to_local(position)?;
-        let position = self.local_to_layout(position);
+        let position = self.local_to_layout(position)?;
 
         // TODO We can use binary search for both y and x here
 
@@ -2305,7 +2302,7 @@ impl<'gc> EditText<'gc> {
             return None;
         }
 
-        let position = self.local_to_layout(position);
+        let position = self.local_to_layout(position)?;
 
         Some(
             self.0
