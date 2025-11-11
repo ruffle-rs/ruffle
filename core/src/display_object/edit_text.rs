@@ -2399,10 +2399,25 @@ impl<'gc> EditText<'gc> {
         Some(index - start_index)
     }
 
-    pub fn char_bounds(self, index: usize) -> Option<Rectangle<Twips>> {
-        let bounds = self.0.layout.borrow().char_bounds(index)?;
-        let padding = Self::GUTTER;
-        let bounds = Matrix::translate(padding, padding) * bounds;
+    pub fn char_bounds(self, position: usize) -> Option<Rectangle<Twips>> {
+        let layout = self.0.layout.borrow();
+
+        let line_index = layout.find_line_index_by_position(position)?;
+        if line_index + 1 < self.scroll() {
+            // Return null for lines above the viewport.
+            // TODO It also should return null for lines below the viewport,
+            //      but the logic is not trivial.
+            return None;
+        }
+
+        let line = layout.lines().get(line_index)?;
+        let bounds = line.char_bounds(position)?;
+        let bounds = self.layout_to_local_matrix() * bounds;
+
+        // FP does not apply hscroll to char boundaries, so just revert it.
+        // TODO Check if that's fixed in versions newer than 32.
+        let bounds =
+            Matrix::translate(Twips::from_pixels(self.0.hscroll.get()), Twips::ZERO) * bounds;
         Some(bounds)
     }
 
