@@ -214,12 +214,12 @@ fn flash_to_rust_string(path: &str, uppercase: bool, separator: &str) -> String 
                 return component.to_string();
             }
 
-            let mut without_boundaries = vec![Boundary::DIGIT_UPPER];
+            let mut without_boundaries = vec![Boundary::DigitUpper];
             // Special case for classes ending in '3D' - we want to ave something like
             // 'vertex_buffer_3d' instead of 'vertex_buffer3d'
             if !component.ends_with("3D") {
                 // Do not split on a letter followed by a digit, so e.g. `atan2` won't become `atan_2`.
-                without_boundaries.extend([Boundary::UPPER_DIGIT, Boundary::LOWER_DIGIT]);
+                without_boundaries.extend([Boundary::UpperDigit, Boundary::LowerDigit]);
             }
 
             // For cases like `Vector$int`, so we don't have to put the native
