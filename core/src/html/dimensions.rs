@@ -231,6 +231,16 @@ where
     }
 }
 
+impl std::ops::Mul<BoxBounds<Twips>> for ruffle_render::matrix::Matrix {
+    type Output = BoxBounds<Twips>;
+
+    fn mul(self, bounds: BoxBounds<Twips>) -> BoxBounds<Twips> {
+        // BoxBounds have the same semantics as Rectangle when applying a matrix
+        let bounds: Rectangle<Twips> = bounds.into();
+        (self * bounds).into()
+    }
+}
+
 impl<T> BoxBounds<T>
 where
     T: Add<T, Output = T> + Sub<T, Output = T> + Copy,
