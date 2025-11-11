@@ -422,7 +422,7 @@ PASSED: typeof(tf._xscale) == 'number' [./TextField.as:901]
 PASSED: ! tf.hasOwnProperty('_xscale') [./TextField.as:902]
 PASSED: ! tf.__proto__.hasOwnProperty('_xscale') [./TextField.as:903]
 PASSED: tf._xscale == 100 [./TextField.as:904]
-textWidth: _xscale=100: 30; _xscale=200: 30
+textWidth: _xscale=100: 30; _xscale=200: 15
 PASSED: tf._width == currWidth*2 [./TextField.as:911]
 PASSED: typeof(tf._y) == 'number' [./TextField.as:918]
 PASSED: ! tf.hasOwnProperty('_y') [./TextField.as:919]
