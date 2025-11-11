@@ -2262,13 +2262,15 @@ impl<'gc> EditText<'gc> {
         let line = layout.lines().get(line)?;
         let bounds = line.bounds();
 
+        // TODO What about internal bounds?
+        let bounds = self.layout_to_local_matrix() * bounds;
         Some(LayoutMetrics {
             ascent: line.ascent(),
             descent: line.descent(),
             leading: line.leading(),
             width: bounds.width(),
             height: bounds.height() + line.leading(),
-            x: bounds.offset_x() + Self::GUTTER,
+            x: bounds.offset_x(),
         })
     }
 
