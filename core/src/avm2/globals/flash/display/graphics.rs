@@ -19,6 +19,7 @@ use crate::avm2::vector::VectorStorage;
 use crate::avm2::{ArrayStorage, Error};
 use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
+use crate::prelude::TDisplayObjectContainer;
 use crate::drawing::{Drawing, DrawingFill, DrawingPath};
 use crate::string::{AvmString, WStr};
 use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
@@ -1348,14 +1349,32 @@ pub fn line_bitmap_style<'gc>(
 pub fn read_graphics_data<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
-    let mut result = Vec::new();
+    let recurse = args.get_bool(0);
     let this = this.as_object().unwrap();
 
+    let mut drawings: Vec<Drawing> = Vec::new();
+    let mut result = Vec::new();
+
     if let Some(this) = this.as_display_object() {
+        
         if let Some(draw) = this.as_drawing() {
+            drawings.push(draw.clone());
+        }
+
+        if recurse {
+            if let Some(container) = this.as_container() {
+                for child in container.iter_render_list() {
+                    if let Some(draw) = child.as_drawing() {
+                        drawings.push(draw.clone());
+                    }
+                }
+            }
+        }
+
+        for draw in drawings {
             for path in draw.paths() {
                 match path {
                     DrawingPath::Fill(DrawingFill {
@@ -1373,6 +1392,37 @@ pub fn read_graphics_data<'gc>(
                                         .classes()
                                         .graphicssolidfill
                                         .construct(activation, &[color_value, alpha_value])?,
+                                );
+                            }
+                            FillStyle::Bitmap {
+                                id: _,
+                                matrix,
+                                is_smoothed:_, // According to the docs this value is hardcoded in return
+                                is_repeating:_, // According to the docs this value is hardcoded in return
+                            } => {
+
+                            // TODO
+                            //let bitmap = draw.bitmaps().get(*id as usize);
+                            let args = [
+                                Value::Number(matrix.a.into()),
+                                Value::Number(matrix.b.into()),
+                                Value::Number(matrix.c.into()),
+                                Value::Number(matrix.d.into()),
+                                Value::Number(matrix.tx.to_pixels().into()),
+                                Value::Number(matrix.ty.to_pixels().into()),
+                            ];
+                            let matrix = activation
+                                .avm2()
+                                .classes()
+                                .matrix
+                                .construct(activation, &args)?;
+
+                            result.push(
+                                    activation
+                                        .avm2()
+                                        .classes()
+                                        .graphicsbitmapfill
+                                        .construct(activation, &[Value::Undefined, matrix.into(), Value::Bool(true), Value::Bool(false)])?,
                                 );
                             }
                             _ => println!("unsupported style {style:?}"),
