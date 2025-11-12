@@ -94,7 +94,7 @@ pub use crate::avm2::multiname::Multiname;
 pub use crate::avm2::namespace::{CommonNamespaces, Namespace};
 pub use crate::avm2::object::{
     ArrayObject, BitmapDataObject, ClassObject, EventObject, LoaderInfoObject, Object,
-    SoundChannelObject, StageObject, TObject,
+    SharedObjectObject, SoundChannelObject, StageObject, TObject,
 };
 pub use crate::avm2::qname::QName;
 pub use crate::avm2::value::Value;
@@ -243,8 +243,7 @@ impl<'gc> Avm2<'gc> {
 
     pub fn load_player_globals(context: &mut UpdateContext<'gc>) {
         let globals = context.avm2.playerglobals_domain;
-        let mut activation = Activation::from_domain(context, globals);
-        globals::load_playerglobal(&mut activation, globals);
+        globals::load_playerglobal(context, globals);
     }
 
     pub fn playerglobals_domain(&self) -> Domain<'gc> {
@@ -289,19 +288,16 @@ impl<'gc> Avm2<'gc> {
         script: Script<'gc>,
         context: &mut UpdateContext<'gc>,
     ) -> Result<(), Error<'gc>> {
-        // TODO can we skip creating this temporary Activation?
-        let mut activation = Activation::from_nothing(context);
-
         let (method, global_object, domain) = script.init();
 
         let scope = ScopeChain::new(domain);
         // Script `global` classes extend Object
-        let bound_superclass = Some(activation.avm2().classes().object);
+        let bound_superclass = Some(context.avm2.classes().object);
 
         // Provide a callee object if necessary
         let callee = if method.needs_arguments_object() {
             Some(FunctionObject::from_method(
-                &mut activation,
+                context,
                 method,
                 scope,
                 Some(global_object.into()),
@@ -310,6 +306,9 @@ impl<'gc> Avm2<'gc> {
         } else {
             None
         };
+
+        // TODO can we skip creating this temporary Activation?
+        let mut activation = Activation::from_nothing(context);
 
         exec(
             method,

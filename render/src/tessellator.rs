@@ -117,8 +117,8 @@ impl ShapeTessellator {
                             DrawType::Bitmap(Bitmap {
                                 matrix: swf_bitmap_to_gl_matrix(
                                     (*matrix).into(),
-                                    bitmap.width.into(),
-                                    bitmap.height.into(),
+                                    bitmap.width,
+                                    bitmap.height,
                                 ),
                                 bitmap_id: *id,
                                 is_smoothed: *is_smoothed,

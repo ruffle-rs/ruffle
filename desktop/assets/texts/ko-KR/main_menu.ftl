@@ -17,6 +17,7 @@ file-menu-recents = 최근 항목
 file-menu-recents-empty = 최근 항목 없음
 file-menu-preferences = 환경설정...
 file-menu-exit = 종료
+file-menu-export = 내보내기...
 controls-menu = 컨트롤
 controls-menu-suspend = 일시 정지
 controls-menu-resume = 재개

@@ -281,7 +281,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             unreachable!();
         };
 
-        let args_object = ArrayObject::from_storage(self, args_array);
+        let args_object = ArrayObject::from_storage(self.context, args_array);
 
         if method
             .method()
@@ -1124,7 +1124,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
 
-        let function = FunctionObject::from_method(self, method, scope, None, None);
+        let function = FunctionObject::from_method(self.context, method, scope, None, None);
         let value = function.call(self, receiver, args)?;
 
         self.push_stack(value);
@@ -1505,7 +1505,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             ScriptObject::custom_object(self.gc(), *catch_class, None, catch_class.vtable())
         } else {
             // for `finally` scopes, FP just creates a normal object.
-            ScriptObject::new_object(self)
+            ScriptObject::new_object(self.context)
         };
 
         self.push_stack(so);
@@ -1754,7 +1754,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_object(&mut self, num_args: u32) -> Result<(), Error<'gc>> {
-        let object = ScriptObject::new_object(self);
+        let object = ScriptObject::new_object(self.context);
 
         for _ in 0..num_args {
             let value = self.pop_stack();
@@ -1771,7 +1771,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_new_function(&mut self, method: Method<'gc>) -> Result<(), Error<'gc>> {
         let scope = self.create_scopechain();
 
-        let new_fn = FunctionObject::from_method(self, method, scope, None, None);
+        let new_fn = FunctionObject::from_method(self.context, method, scope, None, None);
 
         self.push_stack(new_fn);
 
@@ -1846,7 +1846,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_new_array(&mut self, num_args: u32) -> Result<(), Error<'gc>> {
         let args = self.pop_stack_args(num_args);
         let array = ArrayStorage::from_args(&args[..]);
-        let array_obj = ArrayObject::from_storage(self, array);
+        let array_obj = ArrayObject::from_storage(self.context, array);
 
         self.push_stack(array_obj);
 

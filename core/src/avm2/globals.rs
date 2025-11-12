@@ -6,6 +6,7 @@ use crate::avm2::object::{ClassObject, ScriptObject};
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
+use crate::context::UpdateContext;
 use crate::string::WStr;
 use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::Collect;
@@ -527,10 +528,10 @@ pub fn init_early_classes<'gc>(
     );
 
     // Now to weave the Gordian knot...
-    object_class.link_prototype(activation, object_proto);
+    object_class.link_prototype(activation.context, object_proto);
     object_class.link_type(mc, class_proto);
 
-    class_class.link_prototype(activation, class_proto);
+    class_class.link_prototype(activation.context, class_proto);
     class_class.link_type(mc, class_proto);
 
     // At this point, we need both early classes to be available in `SystemClasses`
@@ -847,12 +848,12 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
 
 /// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
 /// into the environment. See 'core/src/avm2/globals/README.md' for more information
-pub fn load_playerglobal<'gc>(activation: &mut Activation<'_, 'gc>, domain: Domain<'gc>) {
-    activation.avm2().native_method_table = native::NATIVE_METHOD_TABLE;
-    activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
-    activation.avm2().native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
-    activation.avm2().native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
-    activation.avm2().native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
+pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'gc>) {
+    context.avm2.native_method_table = native::NATIVE_METHOD_TABLE;
+    context.avm2.native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
+    context.avm2.native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
+    context.avm2.native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
+    context.avm2.native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
 
     let movie = Arc::new(
         SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
@@ -868,7 +869,7 @@ pub fn load_playerglobal<'gc>(activation: &mut Activation<'_, 'gc>, domain: Doma
             let do_abc = reader
                 .read_do_abc_2()
                 .expect("playerglobal.swf should be valid");
-            Avm2::load_builtin_abc(activation.context, do_abc.data, domain, movie.clone());
+            Avm2::load_builtin_abc(context, do_abc.data, domain, movie.clone());
         } else if tag_code != TagCode::End {
             panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")
         }
@@ -878,9 +879,9 @@ pub fn load_playerglobal<'gc>(activation: &mut Activation<'_, 'gc>, domain: Doma
     let _ = tag_utils::decode_tags(&mut reader, tag_callback);
 
     // Domain memory must be initialized after playerglobals is loaded because it relies on ByteArray.
-    domain.init_default_domain_memory(activation);
-    activation
-        .avm2()
+    domain.init_default_domain_memory(context);
+    context
+        .avm2
         .stage_domain()
-        .init_default_domain_memory(activation);
+        .init_default_domain_memory(context);
 }

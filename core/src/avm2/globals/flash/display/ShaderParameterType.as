@@ -1,4 +1,5 @@
 package flash.display {
+    [API("662")]
     public final class ShaderParameterType {
         public static const FLOAT: String = "float";
         public static const FLOAT2: String = "float2";

@@ -306,6 +306,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "async-task"
+version = "4.7.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8b75356056920673b02621b35afd0f7dda9306d03c79a30f5c56c44cf256e3de"
+
+[[package]]
 name = "async-trait"
 version = "0.1.88"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -769,9 +775,9 @@ dependencies = [
 
 [[package]]
 name = "convert_case"
-version = "0.8.0"
+version = "0.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "baaaa0ecca5b51987b9423ccdc971514dd8b0bb7b4060b983d3664dad3f1f89f"
+checksum = "db05ffb6856bf0ecdf6367558a76a0e8a77b1713044eb92845c692100ed50190"
 dependencies = [
  "unicode-segmentation",
 ]
@@ -4487,6 +4493,7 @@ dependencies = [
  "anyhow",
  "ashpd",
  "async-channel",
+ "async-task",
  "bytemuck",
  "chrono",
  "clap",
@@ -4545,7 +4552,6 @@ dependencies = [
  "reqwest",
  "ruffle_core",
  "ruffle_render",
- "slotmap",
  "tempfile",
  "thiserror 2.0.17",
  "tokio",

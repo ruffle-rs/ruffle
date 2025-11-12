@@ -1,5 +1,5 @@
 package flash.display {
-
+    [API("662")]
     public final class GraphicsSolidFill implements IGraphicsFill, IGraphicsData {
         [Ruffle(NativeAccessible)]
         public var alpha : Number = 1.0;

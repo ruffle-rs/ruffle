@@ -583,8 +583,8 @@ fn begin_bitmap_fill<'gc>(
             let handle = bitmap_data.bitmap_handle(activation.gc(), activation.context.renderer);
             let bitmap = ruffle_render::bitmap::BitmapInfo {
                 handle,
-                width: bitmap_data.width() as u16,
-                height: bitmap_data.height() as u16,
+                width: bitmap_data.width(),
+                height: bitmap_data.height(),
             };
             let id = movie_clip.drawing_mut().add_bitmap(bitmap);
 

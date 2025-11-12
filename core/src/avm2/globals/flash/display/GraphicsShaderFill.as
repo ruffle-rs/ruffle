@@ -1,6 +1,7 @@
 package flash.display {
     import flash.geom.Matrix;
 
+    [API("662")]
     public final class GraphicsShaderFill implements IGraphicsFill, IGraphicsData {
         public var shader:Shader;
 

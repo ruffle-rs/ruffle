@@ -18,6 +18,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::QName;
 use crate::avm2::TranslationUnit;
+use crate::context::UpdateContext;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::barrier::unlock;
@@ -91,14 +92,14 @@ impl<'gc> ClassObject<'gc> {
     /// prototypes are weaved together separately.
     fn allocate_prototype(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Object<'gc> {
-        let proto = ScriptObject::new_object(activation);
+        let proto = ScriptObject::new_object(context);
 
         if let Some(superclass_object) = superclass_object {
             let base_proto = superclass_object.prototype();
-            proto.set_proto(activation.gc(), base_proto);
+            proto.set_proto(context.gc(), base_proto);
         }
         proto
     }
@@ -138,8 +139,8 @@ impl<'gc> ClassObject<'gc> {
     ) -> Self {
         let class_object = Self::from_class_minimal(activation, class, superclass_object);
 
-        let class_proto = class_object.allocate_prototype(activation, superclass_object);
-        class_object.link_prototype(activation, class_proto);
+        let class_proto = class_object.allocate_prototype(activation.context, superclass_object);
+        class_object.link_prototype(activation.context, class_proto);
 
         let class_class_proto = activation.avm2().classes().class.prototype();
         class_object.link_type(activation.gc(), class_class_proto);
@@ -259,12 +260,13 @@ impl<'gc> ClassObject<'gc> {
     }
 
     /// Link this class to a prototype.
-    pub fn link_prototype(self, activation: &mut Activation<'_, 'gc>, class_proto: Object<'gc>) {
-        let mc = activation.gc();
+    pub fn link_prototype(self, context: &mut UpdateContext<'gc>, class_proto: Object<'gc>) {
+        let mc = context.gc();
+        let constructor_str = istr!(context, "constructor");
 
         unlock!(Gc::write(mc, self.0), ClassObjectData, prototype).set(Some(class_proto));
-        class_proto.set_dynamic_property(istr!("constructor"), self.into(), mc);
-        class_proto.set_local_property_is_enumerable(mc, istr!("constructor"), false);
+        class_proto.set_dynamic_property(constructor_str, self.into(), mc);
+        class_proto.set_local_property_is_enumerable(mc, constructor_str, false);
     }
 
     /// Manually set the type of this `Class`.
@@ -333,7 +335,7 @@ impl<'gc> ClassObject<'gc> {
         };
 
         let class_init_fn = FunctionObject::from_method(
-            activation,
+            activation.context,
             class_initializer,
             scope,
             Some(self_value),
@@ -361,7 +363,7 @@ impl<'gc> ClassObject<'gc> {
             // Provide a callee object if necessary
             let callee = if method.needs_arguments_object() {
                 Some(FunctionObject::from_method(
-                    activation,
+                    activation.context,
                     method,
                     scope,
                     Some(receiver),
@@ -496,7 +498,7 @@ impl<'gc> ClassObject<'gc> {
             Some(Property::Method { disp_id }) => {
                 let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
                 let callee = FunctionObject::from_method(
-                    activation,
+                    activation.context,
                     full_method.method,
                     full_method.scope(),
                     Some(receiver.into()),
@@ -614,7 +616,7 @@ impl<'gc> ClassObject<'gc> {
         // Only create callee if the method needs it
         let callee = if full_method.method.needs_arguments_object() {
             Some(FunctionObject::from_method(
-                activation,
+                activation.context,
                 full_method.method,
                 full_method.scope(),
                 Some(receiver.into()),

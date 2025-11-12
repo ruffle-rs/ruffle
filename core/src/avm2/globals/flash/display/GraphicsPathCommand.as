@@ -1,4 +1,5 @@
 package flash.display {
+    [API("662")]
     public final class GraphicsPathCommand {
         public static const NO_OP: int = 0;
         public static const MOVE_TO: int = 1;

@@ -60,7 +60,7 @@ pub fn _init_function_class<'gc>(
     activation.avm2().system_classes.as_mut().unwrap().function = function_class_object;
 
     let function_proto = create_dummy_function(activation);
-    function_class_object.link_prototype(activation, function_proto.into());
+    function_class_object.link_prototype(activation.context, function_proto.into());
 
     Ok(Value::Undefined)
 }

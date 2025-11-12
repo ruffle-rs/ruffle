@@ -17,6 +17,7 @@ file-menu-recents = Nyliga
 file-menu-recents-empty = Inga nyliga inlägg
 file-menu-preferences = Inställningar...
 file-menu-exit = Avsluta
+file-menu-export = Exportera...
 controls-menu = Kontroller
 controls-menu-suspend = Suspendera
 controls-menu-resume = Fortsätt

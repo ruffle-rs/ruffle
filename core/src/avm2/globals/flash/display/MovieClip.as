@@ -6,6 +6,7 @@ package flash.display {
         public function MovieClip() {}
 
         public native function get currentFrame():int;
+        [API("662")]
         public native function get currentFrameLabel():String;
         public native function get currentLabel():String;
         public native function get currentLabels():Array;

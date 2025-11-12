@@ -333,12 +333,12 @@ pub fn deserialize_value_impl<'gc>(
         AmfValue::Bool(b) => (*b).into(),
         AmfValue::ByteArray(bytes) => {
             let storage = ByteArrayStorage::from_vec(activation.context, bytes.clone());
-            let bytearray = ByteArrayObject::from_storage(activation, storage);
+            let bytearray = ByteArrayObject::from_storage(activation.context, storage);
             bytearray.into()
         }
         AmfValue::ECMAArray(id, values, elements, _) => {
             let empty_storage = ArrayStorage::new(0);
-            let array = ArrayObject::from_storage(activation, empty_storage);
+            let array = ArrayObject::from_storage(activation.context, empty_storage);
             object_map.insert(*id, array.into());
 
             // First let's create an array out of `values` (dense portion), then we add the elements onto it.
@@ -371,7 +371,7 @@ pub fn deserialize_value_impl<'gc>(
         }
         AmfValue::StrictArray(id, values) => {
             let empty_storage = ArrayStorage::new(0);
-            let array = ArrayObject::from_storage(activation, empty_storage);
+            let array = ArrayObject::from_storage(activation.context, empty_storage);
             object_map.insert(*id, array.into());
 
             let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(values.len());
@@ -538,7 +538,7 @@ pub fn deserialize_lso<'gc>(
     activation: &mut Activation<'_, 'gc>,
     lso: &Lso,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let obj = ScriptObject::new_object(activation);
+    let obj = ScriptObject::new_object(activation.context);
 
     for child in &lso.body {
         obj.set_dynamic_property(

@@ -81,8 +81,8 @@ pub fn begin_bitmap_fill<'gc>(
 
         let bitmap = ruffle_render::bitmap::BitmapInfo {
             handle,
-            width: bitmap.width() as u16,
-            height: bitmap.height() as u16,
+            width: bitmap.width(),
+            height: bitmap.height(),
         };
         let scale_matrix = Matrix::scale(
             (Twips::TWIPS_PER_PIXEL as i16).into(),
@@ -1323,8 +1323,8 @@ pub fn line_bitmap_style<'gc>(
 
         let bitmap = ruffle_render::bitmap::BitmapInfo {
             handle,
-            width: bitmap.width() as u16,
-            height: bitmap.height() as u16,
+            width: bitmap.width(),
+            height: bitmap.height(),
         };
         let scale_matrix = Matrix::scale(
             Fixed16::from_f64(bitmap.width as f64),
@@ -1940,8 +1940,8 @@ fn handle_bitmap_fill<'gc>(
 
     let bitmap = ruffle_render::bitmap::BitmapInfo {
         handle,
-        width: bitmap_data.width() as u16,
-        height: bitmap_data.height() as u16,
+        width: bitmap_data.width(),
+        height: bitmap_data.height(),
     };
 
     let scale_matrix = Matrix::scale(

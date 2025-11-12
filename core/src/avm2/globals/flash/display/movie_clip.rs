@@ -143,7 +143,7 @@ fn labels_for_scene<'gc>(
     Ok((
         scene_name.to_string(),
         *scene_length,
-        ArrayObject::from_storage(activation, ArrayStorage::from_storage(frame_labels)),
+        ArrayObject::from_storage(activation.context, ArrayStorage::from_storage(frame_labels)),
     ))
 }
 
@@ -277,7 +277,7 @@ pub fn get_scenes<'gc>(
         }
 
         return Ok(ArrayObject::from_storage(
-            activation,
+            activation.context,
             ArrayStorage::from_storage(scene_objects),
         )
         .into());

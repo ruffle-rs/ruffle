@@ -6,9 +6,10 @@ use crate::avm2::object::{ArrayObject, ScriptObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::property::Property;
 use crate::avm2::{Activation, Error, Multiname, Namespace, Object, Value};
+use crate::context::UpdateContext;
 use crate::string::{AvmString, StringContext};
 
-use crate::avm2_stub_method;
+use crate::avm2_stub_method_context;
 
 use gc_arena::Gc;
 use ruffle_macros::istr;
@@ -23,7 +24,7 @@ pub fn describe_type_json<'gc>(
 
     let value = args.get_value(0);
     let class_def = instance_class_describe_type(activation, value);
-    let object = ScriptObject::new_object(activation);
+    let object = ScriptObject::new_object(activation.context);
 
     let mut used_class_def = class_def;
     if flags.contains(DescribeTypeFlags::USE_ITRAITS) {
@@ -60,7 +61,7 @@ pub fn describe_type_json<'gc>(
         activation.gc(),
     );
 
-    let traits = describe_internal_body(activation, used_class_def, flags);
+    let traits = describe_internal_body(activation.context, used_class_def, flags);
     if flags.contains(DescribeTypeFlags::INCLUDE_TRAITS) {
         object.set_dynamic_property(istr!("traits"), traits.into(), activation.gc());
     } else {
@@ -88,48 +89,48 @@ bitflags::bitflags! {
 }
 
 fn describe_internal_body<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     class_def: Class<'gc>,
     flags: DescribeTypeFlags,
 ) -> Object<'gc> {
-    let mc = activation.gc();
+    let mc = context.gc();
 
-    let traits = ScriptObject::new_object(activation);
+    let traits = ScriptObject::new_object(context);
 
-    let bases = ArrayObject::empty(activation);
-    let interfaces = ArrayObject::empty(activation);
-    let variables = ArrayObject::empty(activation);
-    let accessors = ArrayObject::empty(activation);
-    let methods = ArrayObject::empty(activation);
+    let bases = ArrayObject::empty(context);
+    let interfaces = ArrayObject::empty(context);
+    let variables = ArrayObject::empty(context);
+    let accessors = ArrayObject::empty(context);
+    let methods = ArrayObject::empty(context);
 
     if flags.contains(DescribeTypeFlags::INCLUDE_BASES) {
-        traits.set_dynamic_property(istr!("bases"), bases.into(), activation.gc());
+        traits.set_dynamic_property(istr!(context, "bases"), bases.into(), mc);
     } else {
-        traits.set_dynamic_property(istr!("bases"), Value::Null, activation.gc());
+        traits.set_dynamic_property(istr!(context, "bases"), Value::Null, mc);
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_INTERFACES) {
-        traits.set_dynamic_property(istr!("interfaces"), interfaces.into(), activation.gc());
+        traits.set_dynamic_property(istr!(context, "interfaces"), interfaces.into(), mc);
     } else {
-        traits.set_dynamic_property(istr!("interfaces"), Value::Null, activation.gc());
+        traits.set_dynamic_property(istr!(context, "interfaces"), Value::Null, mc);
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
-        traits.set_dynamic_property(istr!("variables"), variables.into(), activation.gc());
+        traits.set_dynamic_property(istr!(context, "variables"), variables.into(), mc);
     } else {
-        traits.set_dynamic_property(istr!("variables"), Value::Null, activation.gc());
+        traits.set_dynamic_property(istr!(context, "variables"), Value::Null, mc);
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_ACCESSORS) {
-        traits.set_dynamic_property(istr!("accessors"), accessors.into(), activation.gc());
+        traits.set_dynamic_property(istr!(context, "accessors"), accessors.into(), mc);
     } else {
-        traits.set_dynamic_property(istr!("accessors"), Value::Null, activation.gc());
+        traits.set_dynamic_property(istr!(context, "accessors"), Value::Null, mc);
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_METHODS) {
-        traits.set_dynamic_property(istr!("methods"), methods.into(), activation.gc());
+        traits.set_dynamic_property(istr!(context, "methods"), methods.into(), mc);
     } else {
-        traits.set_dynamic_property(istr!("methods"), Value::Null, activation.gc());
+        traits.set_dynamic_property(istr!(context, "methods"), Value::Null, mc);
     }
 
     let mut bases_array = bases.storage_mut(mc);
@@ -164,7 +165,7 @@ fn describe_internal_body<'gc>(
     let mut skip_ns: Vec<Namespace<'_>> = Vec::new();
     if let Some(super_vtable) = super_vtable {
         for (_, ns, prop) in super_vtable.resolved_traits().iter() {
-            if !ns.as_uri(activation.strings()).is_empty() {
+            if !ns.as_uri(&mut context.strings).is_empty() {
                 if let Property::Method { .. } = prop {
                     if !skip_ns
                         .iter()
@@ -184,7 +185,7 @@ fn describe_internal_body<'gc>(
             continue;
         }
 
-        if !ns.matches_api_version(activation.avm2().root_api_version) {
+        if !ns.matches_api_version(context.avm2.root_api_version) {
             continue;
         }
 
@@ -203,41 +204,37 @@ fn describe_internal_body<'gc>(
                 if !flags.contains(DescribeTypeFlags::INCLUDE_VARIABLES) {
                     continue;
                 }
-                let prop_class_name = vtable.slot_class_name(activation.strings(), *slot_id);
+                let prop_class_name = vtable.slot_class_name(&mut context.strings, *slot_id);
 
                 let access = match prop {
-                    Property::ConstSlot { .. } => istr!("readonly"),
-                    Property::Slot { .. } => istr!("readwrite"),
+                    Property::ConstSlot { .. } => istr!(context, "readonly"),
+                    Property::Slot { .. } => istr!(context, "readwrite"),
                     _ => unreachable!(),
                 };
 
                 let trait_metadata = vtable.get_metadata_for_slot(*slot_id);
 
-                let variable = ScriptObject::new_object(activation);
-                variable.set_dynamic_property(istr!("name"), prop_name.into(), activation.gc());
+                let variable = ScriptObject::new_object(context);
+                variable.set_dynamic_property(istr!(context, "name"), prop_name.into(), mc);
+                variable.set_dynamic_property(istr!(context, "type"), prop_class_name.into(), mc);
+                variable.set_dynamic_property(istr!(context, "access"), access.into(), mc);
                 variable.set_dynamic_property(
-                    istr!("type"),
-                    prop_class_name.into(),
-                    activation.gc(),
-                );
-                variable.set_dynamic_property(istr!("access"), access.into(), activation.gc());
-                variable.set_dynamic_property(
-                    istr!("uri"),
+                    istr!(context, "uri"),
                     uri.map_or(Value::Null, |u| u.into()),
-                    activation.gc(),
+                    mc,
                 );
 
-                variable.set_dynamic_property(istr!("metadata"), Value::Null, activation.gc());
+                variable.set_dynamic_property(istr!(context, "metadata"), Value::Null, mc);
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
-                    let metadata_object = ArrayObject::empty(activation);
+                    let metadata_object = ArrayObject::empty(context);
                     if let Some(metadata) = trait_metadata {
-                        write_metadata(metadata_object, metadata, activation);
+                        write_metadata(metadata_object, metadata, context);
                     }
                     variable.set_dynamic_property(
-                        istr!("metadata"),
+                        istr!(context, "metadata"),
                         metadata_object.into(),
-                        activation.gc(),
+                        mc,
                     );
                 }
 
@@ -264,10 +261,10 @@ fn describe_internal_body<'gc>(
                     continue;
                 }
 
-                let return_type_name = display_name(activation.strings(), method.return_type());
+                let return_type_name = display_name(&mut context.strings, method.return_type());
 
                 if flags.contains(DescribeTypeFlags::HIDE_OBJECT)
-                    && declared_by == activation.avm2().class_defs().object
+                    && declared_by == context.avm2.class_defs().object
                 {
                     continue;
                 }
@@ -276,44 +273,40 @@ fn describe_internal_body<'gc>(
 
                 let trait_metadata = vtable.get_metadata_for_disp(*disp_id);
 
-                let method_obj = ScriptObject::new_object(activation);
+                let method_obj = ScriptObject::new_object(context);
 
-                method_obj.set_dynamic_property(istr!("name"), prop_name.into(), activation.gc());
+                method_obj.set_dynamic_property(istr!(context, "name"), prop_name.into(), mc);
                 method_obj.set_dynamic_property(
-                    istr!("returnType"),
+                    istr!(context, "returnType"),
                     return_type_name.into(),
-                    activation.gc(),
+                    mc,
                 );
                 method_obj.set_dynamic_property(
-                    istr!("declaredBy"),
+                    istr!(context, "declaredBy"),
                     declared_by_name.into(),
-                    activation.gc(),
+                    mc,
                 );
 
                 method_obj.set_dynamic_property(
-                    istr!("uri"),
+                    istr!(context, "uri"),
                     uri.map_or(Value::Null, |u| u.into()),
-                    activation.gc(),
+                    mc,
                 );
 
-                let params = write_params(method, activation);
-                method_obj.set_dynamic_property(
-                    istr!("parameters"),
-                    params.into(),
-                    activation.gc(),
-                );
+                let params = write_params(method, context);
+                method_obj.set_dynamic_property(istr!(context, "parameters"), params.into(), mc);
 
-                method_obj.set_dynamic_property(istr!("metadata"), Value::Null, activation.gc());
+                method_obj.set_dynamic_property(istr!(context, "metadata"), Value::Null, mc);
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
-                    let metadata_object = ArrayObject::empty(activation);
+                    let metadata_object = ArrayObject::empty(context);
                     if let Some(metadata) = trait_metadata {
-                        write_metadata(metadata_object, metadata, activation);
+                        write_metadata(metadata_object, metadata, context);
                     }
                     method_obj.set_dynamic_property(
-                        istr!("metadata"),
+                        istr!(context, "metadata"),
                         metadata_object.into(),
-                        activation.gc(),
+                        mc,
                     );
                 }
                 methods_array.push(method_obj.into());
@@ -323,9 +316,9 @@ fn describe_internal_body<'gc>(
                     continue;
                 }
                 let access = match (get, set) {
-                    (Some(_), Some(_)) => istr!("readwrite"),
-                    (Some(_), None) => istr!("readonly"),
-                    (None, Some(_)) => istr!("writeonly"),
+                    (Some(_), Some(_)) => istr!(context, "readwrite"),
+                    (Some(_), None) => istr!(context, "readonly"),
+                    (None, Some(_)) => istr!(context, "writeonly"),
                     (None, None) => unreachable!(),
                 };
 
@@ -363,39 +356,35 @@ fn describe_internal_body<'gc>(
                 }
 
                 let uri = ns.as_uri_opt().filter(|uri| !uri.is_empty());
-                let accessor_type = display_name(activation.strings(), method_type);
+                let accessor_type = display_name(&mut context.strings, method_type);
                 let declared_by = defining_class.dollar_removed_name(mc).to_qualified_name(mc);
 
-                let accessor_obj = ScriptObject::new_object(activation);
-                accessor_obj.set_dynamic_property(istr!("name"), prop_name.into(), activation.gc());
-                accessor_obj.set_dynamic_property(istr!("access"), access.into(), activation.gc());
+                let accessor_obj = ScriptObject::new_object(context);
+                accessor_obj.set_dynamic_property(istr!(context, "name"), prop_name.into(), mc);
+                accessor_obj.set_dynamic_property(istr!(context, "access"), access.into(), mc);
+                accessor_obj.set_dynamic_property(istr!(context, "type"), accessor_type.into(), mc);
                 accessor_obj.set_dynamic_property(
-                    istr!("type"),
-                    accessor_type.into(),
-                    activation.gc(),
-                );
-                accessor_obj.set_dynamic_property(
-                    istr!("declaredBy"),
+                    istr!(context, "declaredBy"),
                     declared_by.into(),
-                    activation.gc(),
+                    mc,
                 );
                 accessor_obj.set_dynamic_property(
-                    istr!("uri"),
+                    istr!(context, "uri"),
                     uri.map_or(Value::Null, |u| u.into()),
-                    activation.gc(),
+                    mc,
                 );
 
-                let metadata_object = ArrayObject::empty(activation);
+                let metadata_object = ArrayObject::empty(context);
 
                 if let Some(get_disp_id) = get {
                     if let Some(metadata) = vtable.get_metadata_for_disp(*get_disp_id) {
-                        write_metadata(metadata_object, metadata, activation);
+                        write_metadata(metadata_object, metadata, context);
                     }
                 }
 
                 if let Some(set_disp_id) = set {
                     if let Some(metadata) = vtable.get_metadata_for_disp(*set_disp_id) {
-                        write_metadata(metadata_object, metadata, activation);
+                        write_metadata(metadata_object, metadata, context);
                     }
                 }
 
@@ -403,16 +392,12 @@ fn describe_internal_body<'gc>(
                     && metadata_object.storage().length() > 0
                 {
                     accessor_obj.set_dynamic_property(
-                        istr!("metadata"),
+                        istr!(context, "metadata"),
                         metadata_object.into(),
-                        activation.gc(),
+                        mc,
                     );
                 } else {
-                    accessor_obj.set_dynamic_property(
-                        istr!("metadata"),
-                        Value::Null,
-                        activation.gc(),
-                    );
+                    accessor_obj.set_dynamic_property(istr!(context, "metadata"), Value::Null, mc);
                 }
 
                 accessors_array.push(accessor_obj.into());
@@ -425,25 +410,25 @@ fn describe_internal_body<'gc>(
     if let Some(constructor) = constructor.filter(|c| {
         !c.signature().is_empty() && flags.contains(DescribeTypeFlags::INCLUDE_CONSTRUCTOR)
     }) {
-        let params = write_params(constructor, activation);
-        traits.set_dynamic_property(istr!("constructor"), params.into(), activation.gc());
+        let params = write_params(constructor, context);
+        traits.set_dynamic_property(istr!(context, "constructor"), params.into(), mc);
     } else {
         // This is needed to override the normal 'constructor' property
-        traits.set_dynamic_property(istr!("constructor"), Value::Null, activation.gc());
+        traits.set_dynamic_property(istr!(context, "constructor"), Value::Null, mc);
     }
 
     if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
-        avm2_stub_method!(
-            activation,
+        avm2_stub_method_context!(
+            context,
             "avmplus",
             "describeTypeJSON",
             "with top-level metadata"
         );
 
-        let metadata_object = ArrayObject::empty(activation);
-        traits.set_dynamic_property(istr!("metadata"), metadata_object.into(), activation.gc());
+        let metadata_object = ArrayObject::empty(context);
+        traits.set_dynamic_property(istr!(context, "metadata"), metadata_object.into(), mc);
     } else {
-        traits.set_dynamic_property(istr!("metadata"), Value::Null, activation.gc());
+        traits.set_dynamic_property(istr!(context, "metadata"), Value::Null, mc);
     }
 
     traits
@@ -460,18 +445,17 @@ fn display_name<'gc>(
     }
 }
 
-fn write_params<'gc>(
-    method: Method<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> ArrayObject<'gc> {
-    let params = ArrayObject::empty(activation);
-    let mut params_array = params.storage_mut(activation.gc());
+fn write_params<'gc>(method: Method<'gc>, context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
+    let mc = context.gc();
+
+    let params = ArrayObject::empty(context);
+    let mut params_array = params.storage_mut(mc);
     for param in method.signature() {
-        let param_type_name = display_name(activation.strings(), param.param_type_name);
+        let param_type_name = display_name(&mut context.strings, param.param_type_name);
         let optional = param.default_value.is_some();
-        let param_obj = ScriptObject::new_object(activation);
-        param_obj.set_dynamic_property(istr!("type"), param_type_name.into(), activation.gc());
-        param_obj.set_dynamic_property(istr!("optional"), optional.into(), activation.gc());
+        let param_obj = ScriptObject::new_object(context);
+        param_obj.set_dynamic_property(istr!(context, "type"), param_type_name.into(), mc);
+        param_obj.set_dynamic_property(istr!(context, "optional"), optional.into(), mc);
         params_array.push(param_obj.into());
     }
     params
@@ -480,12 +464,12 @@ fn write_params<'gc>(
 fn write_metadata<'gc>(
     metadata_object: ArrayObject<'gc>,
     trait_metadata: &[Metadata<'gc>],
-    activation: &mut Activation<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
 ) {
-    let mut metadata_array = metadata_object.storage_mut(activation.gc());
+    let mut metadata_array = metadata_object.storage_mut(context.gc());
 
     for single_trait in trait_metadata.iter() {
-        metadata_array.push(single_trait.as_json_object(activation).into());
+        metadata_array.push(single_trait.as_json_object(context).into());
     }
 }
 

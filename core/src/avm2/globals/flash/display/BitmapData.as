@@ -24,12 +24,14 @@ package flash.display {
         public native function getPixels(rect:Rectangle):ByteArray;
         [API("682")]
         public native function copyPixelsToByteArray(rect:Rectangle, data:ByteArray):void;
+        [API("662")]
         public native function getVector(rect:Rectangle):Vector.<uint>;
         public native function getPixel(x:int, y:int):uint;
         public native function getPixel32(x:int, y:int):uint;
         public native function setPixel(x:int, y:int, color:uint):void;
         public native function setPixel32(x:int, y:int, color:uint):void;
         public native function setPixels(rect:Rectangle, inputByteArray:ByteArray):void;
+        [API("662")]
         public native function setVector(rect:Rectangle, inputVector:Vector.<uint>):void;
         public native function copyChannel(sourceBitmapData:BitmapData, sourceRect:Rectangle, destPoint:Point, sourceChannel:uint, destChannel:uint):void;
         public native function floodFill(x:int, y:int, color:uint):void;
@@ -39,6 +41,7 @@ package flash.display {
         public native function scroll(x:int, y:int):void;
         public native function lock():void;
         public native function hitTest(firstPoint:Point, firstAlphaThreshold:uint, secondObject:Object, secondBitmapDataPoint:Point = null, secondAlphaThreshold:uint = 1):Boolean;
+        [API("662")]
         public function histogram(rect:Rectangle = null): Vector.<Vector.<Number>> {
             if (!rect) {
                 rect = this.rect;
@@ -103,6 +106,11 @@ package flash.display {
             }
             stub_method("flash.display.BitmapData", "generateFilterRect");
             return sourceRect.clone();
+        }
+        [API("680")]
+        public function encode(rect:Rectangle, compressor:Object, byteArray:ByteArray = null):ByteArray {
+            stub_method("flash.display.BitmapData", "encode");
+            return null;
         }
     }
 }

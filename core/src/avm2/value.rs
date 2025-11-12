@@ -962,7 +962,7 @@ impl<'gc> Value<'gc> {
                     }
 
                     let bound_method = vtable
-                        .make_bound_method(activation, *self, disp_id)
+                        .make_bound_method(activation.context, *self, disp_id)
                         .expect("Method should exist");
 
                     // TODO: Bound methods should be cached on the Method in a
@@ -972,7 +972,7 @@ impl<'gc> Value<'gc> {
                     Ok(bound_method.into())
                 } else {
                     let bound_method = vtable
-                        .make_bound_method(activation, *self, disp_id)
+                        .make_bound_method(activation.context, *self, disp_id)
                         .expect("Method should exist");
 
                     // TODO: Bound methods should be cached on the Method in a
@@ -1304,7 +1304,7 @@ impl<'gc> Value<'gc> {
             );
         }
 
-        let bound_method = VTable::bind_method(activation, *self, full_method);
+        let bound_method = VTable::bind_method(activation.context, *self, full_method);
 
         // TODO: Bound methods should be cached on the Method in a
         // WeakKeyHashMap<Value, FunctionObject>, not on the Object

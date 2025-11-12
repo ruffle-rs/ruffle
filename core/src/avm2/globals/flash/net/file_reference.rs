@@ -22,7 +22,7 @@ pub fn get_creation_date<'gc>(
         FileReference::None => return Err(make_error_2037(activation)),
         FileReference::FileDialogResult(ref dialog_result) => {
             if let Some(time) = dialog_result.creation_time() {
-                DateObject::from_date_time(activation, time).into()
+                DateObject::from_date_time(activation.context, time).into()
             } else {
                 Value::Null
             }
@@ -45,7 +45,7 @@ pub fn get_data<'gc>(
         FileReference::FileDialogResult(ref dialog_result) if this.loaded() => {
             let bytes = dialog_result.contents();
             let storage = ByteArrayStorage::from_vec(activation.context, bytes.to_vec());
-            ByteArrayObject::from_storage(activation, storage)
+            ByteArrayObject::from_storage(activation.context, storage)
         }
         // Contrary to other getters `data` will return null instead of throwing.
         _ => return Ok(Value::Null),
@@ -67,7 +67,7 @@ pub fn get_modification_date<'gc>(
         FileReference::None => return Err(make_error_2037(activation)),
         FileReference::FileDialogResult(ref dialog_result) => {
             if let Some(time) = dialog_result.modification_time() {
-                DateObject::from_date_time(activation, time).into()
+                DateObject::from_date_time(activation.context, time).into()
             } else {
                 Value::Null
             }

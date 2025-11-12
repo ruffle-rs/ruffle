@@ -1,5 +1,5 @@
 package flash.display {
-
+    [API("662")]
     public final class GraphicsPath implements IGraphicsPath, IGraphicsData {
         [Ruffle(NativeAccessible)]
         public var commands : Vector.<int>;

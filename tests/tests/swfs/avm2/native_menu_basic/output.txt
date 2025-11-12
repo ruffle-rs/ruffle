@@ -1,0 +1,20 @@
+null
+false
+
+[object TypeError]
+1034
+[NMI](test0)
+
+[NMI](test2),[NMI](test3)
+[object ArgumentError]
+2007
+[NMI](test2),[NMI](test3)
+[NMI](test2),[NMI](test3),[NMI](test4)
+[object RangeError]
+2006
+[NMI](test2),[NMI](test3),[NMI](test4)
+[NMI](test2),[NMI](test3),[NMI](test4),[NMI](test6)
+[object RangeError]
+2006
+[NMI](test2),[NMI](test3),[NMI](test4),[NMI](test6)
+

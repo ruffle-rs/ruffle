@@ -22,7 +22,6 @@ use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use ruffle_macros::istr;
 use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::filters::Filter;
 use std::str::FromStr;
@@ -296,9 +295,9 @@ pub fn get_filters<'gc>(
             .iter()
             .map(|f| f.as_avm2_object(activation))
             .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
-        return Ok(ArrayObject::from_storage(activation, array).into());
+        return Ok(ArrayObject::from_storage(activation.context, array).into());
     }
-    Ok(ArrayObject::empty(activation).into())
+    Ok(ArrayObject::empty(activation.context).into())
 }
 
 fn build_argument_type_error<'gc>(
@@ -541,14 +540,21 @@ pub fn set_rotation<'gc>(
 
 /// Implements `name`'s getter.
 pub fn get_name<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(dobj) = this.as_display_object() {
-        return Ok(dobj.name().unwrap_or_else(|| istr!("")).into());
+        if let Some(name) = dobj.name() {
+            return Ok(name.into());
+        } else {
+            // The `Stage` is the only DisplayObject that can be accessed in
+            // AVM2 that has a `None` name
+            assert!(matches!(dobj, DisplayObject::Stage(_)));
+            return Ok(Value::Null);
+        }
     }
 
     Ok(Value::Undefined)

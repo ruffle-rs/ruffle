@@ -26,6 +26,9 @@
     "settings_log_level_debug": {
         "message": "Vianjäljitys"
     },
+    "settings_max_execution_duration": {
+        "message": "ActionScript-suorituksen suurin sallittu kesto (sekunneissa)"
+    },
     "settings_player_version": {
         "message": "Emuloitava Flash-soittimen versio (välillä 1-32)"
     },
@@ -56,6 +59,9 @@
     "status_result_running_protected": {
         "message": "Ruffle on valmis toistamaan pyytämääsi Flash-sisältöä."
     },
+    "status_result_optout": {
+        "message": "Ruffle ei voi latautua, koska nykyinen verkkosivu merkitsi itsensä yhteensopimattomaksi."
+    },
     "status_result_disabled": {
         "message": "Ruffle on poistettu käytöstä."
     },
@@ -79,6 +85,12 @@
     },
     "settings_saved": {
         "message": "Asetukset tallennettu"
+    },
+    "permissions_grant": {
+        "message": "Myönnä Rufflelle oikeus käyttää dataa kaikilla sivustoilla"
+    },
+    "permissions_not_granted": {
+        "message": "Sinun täytyy napsauttaa Rufflen kuvaketta jokaisella sivustolla, jolla haluat käyttää Rufflea"
     },
     "grant_single_site_permission": {
         "message": "Ota pysyvästi käyttöön tällä sivustolla"

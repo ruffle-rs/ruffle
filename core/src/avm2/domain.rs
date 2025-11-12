@@ -139,10 +139,10 @@ impl<'gc> Domain<'gc> {
     ///
     /// This function must not be called before the player globals have been
     /// fully allocated.
-    pub fn movie_domain(activation: &mut Activation<'_, 'gc>, parent: Domain<'gc>) -> Domain<'gc> {
-        let domain_memory = Self::create_default_domain_memory(activation);
+    pub fn movie_domain(context: &mut UpdateContext<'gc>, parent: Domain<'gc>) -> Domain<'gc> {
+        let domain_memory = Self::create_default_domain_memory(context);
         let this = Self(Gc::new(
-            activation.gc(),
+            context.gc(),
             DomainData {
                 cell: RefLock::new(DomainDataMut {
                     defs: PropertyMap::new(),
@@ -159,7 +159,7 @@ impl<'gc> Domain<'gc> {
         #[cfg(feature = "egui")]
         {
             parent
-                .cell_mut(activation.gc())
+                .cell_mut(context.gc())
                 .children
                 .push(DomainWeak(Gc::downgrade(this.0)));
         }
@@ -400,10 +400,10 @@ impl<'gc> Domain<'gc> {
         Ok(())
     }
 
-    fn create_default_domain_memory(activation: &mut Activation<'_, 'gc>) -> ByteArrayObject<'gc> {
+    fn create_default_domain_memory(context: &mut UpdateContext<'gc>) -> ByteArrayObject<'gc> {
         let initial_data = vec![0; MIN_DOMAIN_MEMORY_LENGTH];
-        let storage = ByteArrayStorage::from_vec(activation.context, initial_data);
-        ByteArrayObject::from_storage(activation, storage)
+        let storage = ByteArrayStorage::from_vec(context, initial_data);
+        ByteArrayObject::from_storage(context, storage)
     }
 
     /// Allocate the default domain memory for this domain, if it does not
@@ -411,10 +411,10 @@ impl<'gc> Domain<'gc> {
     ///
     /// This function is only necessary to be called for domains created via
     /// `global_domain`. It will panic on already fully-initialized domains.
-    pub fn init_default_domain_memory(self, activation: &mut Activation<'_, 'gc>) {
-        let memory = Self::create_default_domain_memory(activation);
+    pub fn init_default_domain_memory(self, context: &mut UpdateContext<'gc>) {
+        let memory = Self::create_default_domain_memory(context);
 
-        let write = Gc::write(activation.gc(), self.0);
+        let write = Gc::write(context.gc(), self.0);
         match unlock!(write, DomainData, default_domain_memory).set(memory) {
             Ok(_) => unlock!(write, DomainData, domain_memory).set(Some(memory)),
             Err(_) => panic!("Already initialized domain memory!"),

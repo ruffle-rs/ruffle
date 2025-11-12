@@ -1,7 +1,7 @@
 package flash.display {
+    import flash.geom.Matrix;
 
-import flash.geom.Matrix;
-
+    [API("662")]
     public final class GraphicsBitmapFill implements IGraphicsFill, IGraphicsData {
         [Ruffle(NativeAccessible)]
         public var bitmapData : BitmapData;

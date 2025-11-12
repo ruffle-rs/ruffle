@@ -1555,7 +1555,7 @@ pub fn get_text_runs<'gc>(
             textrun_class.construct(activation, &[start.into(), end.into(), tf.into()])
         })
         .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
-    Ok(ArrayObject::from_storage(activation, array).into())
+    Ok(ArrayObject::from_storage(activation.context, array).into())
 }
 
 pub fn get_line_index_of_char<'gc>(

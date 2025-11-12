@@ -35,7 +35,7 @@ fn deserialize_json_inner<'gc>(
             }
         }
         JsonValue::Object(js_obj) => {
-            let obj = ScriptObject::new_object(activation);
+            let obj = ScriptObject::new_object(activation.context);
             for entry in js_obj.iter() {
                 let key = AvmString::new_utf8(activation.gc(), entry.0);
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;
@@ -72,7 +72,7 @@ fn deserialize_json_inner<'gc>(
                 arr.push(Some(mapped_val));
             }
             let storage = ArrayStorage::from_storage(arr);
-            let array = ArrayObject::from_storage(activation, storage);
+            let array = ArrayObject::from_storage(activation.context, storage);
             array.into()
         }
     })

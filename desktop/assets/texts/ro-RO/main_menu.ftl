@@ -17,6 +17,7 @@ file-menu-recents = Recente
 file-menu-recents-empty = Nicio intrare recentă
 file-menu-preferences = Preferințe...
 file-menu-exit = Ieșire
+file-menu-export = Exportă...
 controls-menu = Controale
 controls-menu-suspend = Suspendare
 controls-menu-resume = Reluare

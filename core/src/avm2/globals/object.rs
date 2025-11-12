@@ -20,7 +20,7 @@ pub fn object_constructor<'gc>(
         }
     }
 
-    let constructed_object = ScriptObject::new_object(activation);
+    let constructed_object = ScriptObject::new_object(activation.context);
     Ok(constructed_object.into())
 }
 
