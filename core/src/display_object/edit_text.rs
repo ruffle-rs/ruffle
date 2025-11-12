@@ -826,16 +826,9 @@ impl<'gc> EditText<'gc> {
     /// This `text_transform` is separate from and relative to the base
     /// transform that this `EditText` automatically gets by virtue of being a
     /// `DisplayObject`.
-    pub fn text_transform(self, color: Color, baseline_adjustment: Twips) -> Transform {
+    pub fn text_transform(self, color: Color) -> Transform {
         let mut transform: Transform = Default::default();
         transform.color_transform.set_mult_color(color);
-
-        // TODO MIKE: This feels incorrect here but is necessary for correct vertical position;
-        // the glyphs are rendered relative to the baseline. This should be taken into account either
-        // by the layout code earlier (cursor should start at the baseline, not 0,0) and/or by
-        // font.evaluate (should return transforms relative to the baseline).
-        transform.matrix.ty = baseline_adjustment;
-
         transform
     }
 
@@ -1273,12 +1266,11 @@ impl<'gc> EditText<'gc> {
         {
             let baseline = font.get_baseline_for_height(params.height());
             let descent = font.get_descent_for_height(params.height());
-            let baseline_adjustment = baseline - params.height();
             let caret_height = baseline + descent;
             let mut caret_x = Twips::ZERO;
             font.evaluate(
                 text,
-                self.text_transform(color, baseline_adjustment),
+                self.text_transform(color),
                 params,
                 |pos, transform, glyph: &Glyph, advance, x| {
                     if let Some(glyph_shape_handle) = glyph.shape_handle(context.renderer) {
@@ -1633,11 +1625,9 @@ impl<'gc> EditText<'gc> {
                 layout_box.as_renderable_text(self.0.text_spans.borrow().text())
             {
                 let mut result = 0;
-                let baseline_adjustment =
-                    font.get_baseline_for_height(params.height()) - params.height();
                 font.evaluate(
                     text,
-                    self.text_transform(color, baseline_adjustment),
+                    self.text_transform(color),
                     params,
                     |pos, _transform, _glyph: &Glyph, advance, x| {
                         if local_position.x >= x {
