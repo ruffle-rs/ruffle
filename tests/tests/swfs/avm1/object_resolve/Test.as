@@ -54,6 +54,18 @@ class Test {
 
     trace("");
 
+    trace("// object.__resolve = 42");
+    object.__resolve = 42;
+    trace("object.object: " + object.object);
+    trace("// object.__resolve = _root");
+    object.__resolve = _root;
+    trace("object.object: " + object.object);
+    trace("// object.__resolve = {}");
+    object.__resolve = {};
+    trace("object.object: " + object.object);
+
+    trace("");
+
     object = {};
     object.addProperty("__resolve", function() {return function() {return "resolved!";}}, null);
     trace("object.foo with an addProperty __resolve: " + object.foo);

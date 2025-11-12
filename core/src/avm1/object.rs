@@ -452,8 +452,10 @@ pub fn find_resolve_method<'gc>(
             return Err(Error::PrototypeRecursionLimit);
         }
 
-        if let Some(value) = p.get_local_stored(istr!("__resolve"), activation, false) {
-            return Ok(Some(value.coerce_to_object(activation)));
+        let resolve = p.get_local_stored(istr!("__resolve"), activation, false);
+        // FP completely skips over primitives (but not over non-function objects).
+        if let Some(Value::Object(value)) = resolve {
+            return Ok(Some(value));
         }
 
         proto = p.proto(activation);
