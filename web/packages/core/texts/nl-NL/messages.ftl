@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle kon de Flash-inhoud op de pagina niet draaien.
     Je kan proberen het bestand in een apart tabblad te openen, om hier omheen te werken.
+message-restored-from-bfcache =
+    Je browser heeft deze Flash-inhoud uit een eerdere sessie hersteld.
+    Herlaad de pagina voor een frisse start.
 panic-title = Er ging iets mis :(
 more-info = Meer informatie
 run-anyway = Toch starten
@@ -24,6 +27,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } om te kopiëren
 clipboard-message-cut = { " " } om te knippen
 clipboard-message-paste = { " " } om te plakken
+error-canvas-reload = De canvas renderer kan niet herladen worden wanneer deze al in gebruik is.
 error-file-protocol =
     Het lijkt erop dat je Ruffle gebruikt met het "file" protocol.
     De meeste browsers blokkeren dit om veiligheidsredenen, waardoor het niet werkt.
@@ -68,6 +72,10 @@ error-wasm-disabled-on-edge =
     Om dit op te lossen, ga naar je browserinstellingen, klik op "Privacy, zoeken en diensten", scroll omlaag, en schakel "Verbeter je veiligheid op he web" uit.
     Dan kan je browser wel de vereiste ".wasm" bestanden inladen.
     Als het probleem zich blijft voordoen, moet je misschien een andere browser gebruiken.
+error-wasm-unsupported-browser =
+    De browser die je gebruikt ondersteunt de WebAssembly extensies die Ruffle nodig heeft niet.
+    Gebruik alsjeblieft een ondersteunde browser.
+    Je kunt een lijst aan ondersteunde browsers vinden op de Wiki.
 error-javascript-conflict =
     Ruffle heeft een groot probleem ondervonden tijdens het initialiseren.
     Het lijkt erop dat deze pagina JavaScript code gebruikt die conflicteert met Ruffle.

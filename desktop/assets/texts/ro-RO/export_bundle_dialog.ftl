@@ -1,3 +1,5 @@
+export-bundle-dialog-title = Exportă Pachet Ruffle
+export-bundle-dialog-bundle-name = Nume pachet:
 export-bundle-dialog-files-select-all = Selectează Tot
 export-bundle-dialog-export = Exportă
 export-bundle-dialog-exporting = Se exportă...
@@ -5,3 +7,5 @@ export-bundle-dialog-exporting-failed = Exportarea a eșuat.
 export-bundle-dialog-error-user-canceled = Anulat de utilizator.
 export-bundle-dialog-error-failed-to-show-picker = A eșuat afișarea selectorului de fișier.
 export-bundle-dialog-error-io-error = Eroare la scrierea pachetului.
+export-bundle-dialog-info-title = Ce este un Pachet Ruffle?
+export-bundle-dialog-info-description = Un pachet Ruffle este un pachet universal care include tot ce trebuie pentru a rula un fișier SWF — configurația și toate resursele necesare. Cu un pachet, fișierul SWF funcționează ca din cutie — fără fișiere lipsă, fără configurare manuală, doar conectați și utilizați.

@@ -1,0 +1,12 @@
+export-bundle-dialog-title = Ruffle-Bündel exportieren
+export-bundle-dialog-bundle-name = Bündel-Name:
+export-bundle-dialog-files-description = Dateien zum Bündeln auswählen:
+export-bundle-dialog-files-select-all = Alle auswählen
+export-bundle-dialog-export = Exportieren
+export-bundle-dialog-exporting = Wird exportiert...
+export-bundle-dialog-exporting-failed = Exportieren fehlgeschlagen.
+export-bundle-dialog-error-user-canceled = Durch Nutzer abgebrochen.
+export-bundle-dialog-error-failed-to-show-picker = Konnte Dateiauswahl nicht anzeigen.
+export-bundle-dialog-error-io-error = Fehler beim Schreiben des Bündels.
+export-bundle-dialog-info-title = Was ist ein Ruffle-Bündel?
+export-bundle-dialog-info-description = Ein Ruffle-Bündel ist ein universales Paket, welches alles Notwendige beinhaltet, um eine SWF-Datei auszuführen — alle benötigten Assets und die Konfiguration. Mit einem Bündel funktioniert deine SWF ohne weitere Vorbereitung — keine fehlenden Dateien, kein manuelles Einrichten, einfach "plug and play".

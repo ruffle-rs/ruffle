@@ -45,6 +45,7 @@ scale-mode-showall = Sovita lähentämällä
 scale-mode-exactfit = Sovita venyttämällä
 scale-mode-noborder = Sovita rajaamalla
 scale-mode-force = Pakota
+scale-mode-force-tooltip = Estää elokuvaa vaihtamasta skaalaustilaa, lukiten sen valittuun asetukseen.
 player-version = Toistimen versio
 player-runtime = Toistimen ajoaikainen
 player-runtime-flash = Flash Player
