@@ -69,8 +69,7 @@ fn append_child<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let (Some(xmlnode), Some(child_xmlnode)) = (
         this.as_xml_node(),
-        args.get(0)
-            .and_then(|n| n.coerce_to_object(activation).as_xml_node()),
+        args.get(0).and_then(|n| n.as_xml_node()),
     ) {
         if !xmlnode.has_child(child_xmlnode) {
             let position = xmlnode.children_len();
@@ -89,10 +88,8 @@ fn insert_before<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let (Some(xmlnode), Some(child_xmlnode), Some(insertpoint_xmlnode)) = (
         this.as_xml_node(),
-        args.get(0)
-            .and_then(|n| n.coerce_to_object(activation).as_xml_node()),
-        args.get(1)
-            .and_then(|n| n.coerce_to_object(activation).as_xml_node()),
+        args.get(0).and_then(|n| n.as_xml_node()),
+        args.get(1).and_then(|n| n.as_xml_node()),
     ) {
         if !xmlnode.has_child(child_xmlnode) {
             if let Some(position) = xmlnode.child_position(insertpoint_xmlnode) {

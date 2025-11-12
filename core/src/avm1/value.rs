@@ -508,6 +508,14 @@ impl<'gc> Value<'gc> {
             Value::Bool(_) | Value::Object(_) | Value::MovieClip(_) => None,
         }
     }
+
+    /// Get the underlying XML node for this value, if it exists.
+    pub fn as_xml_node(self) -> Option<crate::avm1::xml::XmlNode<'gc>> {
+        match self {
+            Value::Object(obj) => obj.as_xml_node(),
+            _ => None,
+        }
+    }
 }
 
 /// Calculate `value * 10^exp` through repeated multiplication or division.
