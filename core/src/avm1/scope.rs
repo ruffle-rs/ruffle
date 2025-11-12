@@ -158,8 +158,9 @@ impl<'gc> Scope<'gc> {
                 && self.locals().has_own_property(activation, name)
             {
                 return activation
-                    .root_object()
-                    .coerce_to_object(activation)
+                    .base_clip()
+                    .avm1_root()
+                    .object1_or_bare(activation.gc())
                     .get_non_slash_path(name, activation)
                     .map(|v| CallableValue::Callable(self.locals_cell(), v));
             }

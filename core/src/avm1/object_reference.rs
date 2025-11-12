@@ -167,9 +167,7 @@ impl<'gc> MovieClipReference<'gc> {
 
             Some((
                 false,
-                display_object
-                    .object1_or_undef()
-                    .coerce_to_object(activation),
+                display_object.object1_or_bare(activation.gc()),
                 display_object,
             ))
         } else {

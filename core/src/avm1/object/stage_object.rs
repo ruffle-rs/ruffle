@@ -156,7 +156,7 @@ fn resolve_path_property<'gc>(
     } else if name.eq_with_case(b"_parent", case_sensitive) {
         return Some(
             dobj.avm1_parent()
-                .map(|dn| dn.object1_or_undef().coerce_to_object(activation))
+                .map(|dn| dn.object1_or_bare(activation.gc()))
                 .map(Value::Object)
                 .unwrap_or(Value::Undefined),
         );
