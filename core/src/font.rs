@@ -739,7 +739,7 @@ pub trait FontLike<'gc> {
     ) where
         FGlyph: FnMut(usize, &Transform, &Glyph, Twips, Twips),
     {
-        transform.matrix.ty += params.height;
+        transform.matrix.ty = self.get_baseline_for_height(params.height);
 
         // TODO [KJ] I'm not sure whether we should iterate over characters here or over code units.
         //   I suspect Flash Player does not support full UTF-16 when displaying and laying out text.
