@@ -343,11 +343,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         active_clip: DisplayObject<'gc>,
         code: SwfSlice,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
-        let mut parent_activation =
+        // TODO(moulins): remove this activation, it's useless.
+        let parent_activation =
             Activation::from_nothing(self.context, self.id.child("[Actions Parent]"), active_clip);
-        let clip_obj = active_clip
-            .object1_or_undef()
-            .coerce_to_object(&mut parent_activation);
+        let clip_obj = active_clip.object1_or_bare(parent_activation.gc());
         let child_scope = Gc::new(
             parent_activation.gc(),
             Scope::new(
@@ -866,7 +865,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let swf_version = self.swf_version();
         let func_data = parent_data.to_unbounded_subslice(action.actions);
         let constant_pool = self.constant_pool();
-        let bc = self.base_clip.object1_or_undef().coerce_to_object(self);
+        let bc = self.base_clip.object1_or_bare(self.gc());
         let func = Avm1Function::from_swf_function(
             self.gc(),
             swf_version,
@@ -1253,7 +1252,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
             if is_load_vars {
                 if let Some(clip_target) = clip_target {
-                    let target_obj = clip_target.object1_or_undef().coerce_to_object(self);
+                    let target_obj = clip_target.object1_or_bare(self.gc());
                     let request = self.locals_into_request(
                         url,
                         NavigationMethod::from_send_vars_method(action.send_vars_method()),
@@ -1792,10 +1791,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 // Revert the target to the base clip, or `None` if the base was also removed
                 self.set_target_clip(Some(self.base_clip()));
 
-                let clip_obj = self
-                    .target_clip_or_root()
-                    .object1_or_undef()
-                    .coerce_to_object(self);
+                let clip_obj = self.target_clip_or_root().object1_or_bare(self.gc());
 
                 self.set_scope(Scope::new_target_scope(self.scope(), clip_obj, self.gc()));
             }
@@ -1940,10 +1936,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         };
 
-        let clip_obj = self
-            .target_clip_or_base_clip()
-            .object1_or_undef()
-            .coerce_to_object(self);
+        let clip_obj = self.target_clip_or_base_clip().object1_or_bare(self.gc());
 
         self.set_scope(Scope::new_target_scope(self.scope(), clip_obj, self.gc()));
         Ok(FrameControl::Continue)
@@ -2503,7 +2496,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         let root = start.avm1_root();
-        let start = start.object1_or_undef().coerce_to_object(self);
+        let start = start.object1_or_bare(self.gc());
         Ok(self
             .resolve_target_path(root, start, &path, false, true)?
             .and_then(|o| o.as_display_object()))
@@ -2535,7 +2528,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // (`/bar` means `_root.bar`)
         let (mut object, mut is_slash_path) = if path.starts_with(b'/') {
             path = &path[1..];
-            (root.object1_or_undef().coerce_to_object(self), true)
+            (root.object1_or_bare(self.gc()), true)
         } else {
             (start, false)
         };
@@ -2589,7 +2582,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 if first_element && name == b"this" {
                     self.this_cell()
                 } else if first_element && name == b"_root" {
-                    self.root_object()
+                    self.base_clip().avm1_root().object1_or_undef()
                 } else {
                     // Get the value from the object.
                     // Resolves display object instances first, then local variables.
@@ -2869,11 +2862,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.target_clip().unwrap_or_else(|| self.base_clip())
     }
 
-    /// Obtain the value of `_root`.
-    pub fn root_object(&self) -> Value<'gc> {
-        self.base_clip().avm1_root().object1_or_undef()
-    }
-
     /// Returns whether property keys should be case sensitive based on the current SWF version.
     pub fn is_case_sensitive(&self) -> bool {
         crate::avm1::runtime::Avm1::is_case_sensitive(self.swf_version())
@@ -2926,7 +2914,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Scope::new(
                 self.scope,
                 ScopeClass::Target,
-                object.object1_or_undef().coerce_to_object(self),
+                object.object1_or_bare(self.gc()),
             ),
         );
     }
@@ -3022,7 +3010,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let base_clip = self.base_clip();
         let new_target_clip;
         let root = base_clip.avm1_root();
-        let start = base_clip.object1_or_undef().coerce_to_object(self);
+        let start = base_clip.object1_or_bare(self.gc());
         if target.is_empty() {
             new_target_clip = Some(base_clip);
         } else if let Some(clip) = self
@@ -3058,10 +3046,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         self.set_target_clip(new_target_clip);
 
-        let clip_obj = self
-            .target_clip_or_root()
-            .object1_or_undef()
-            .coerce_to_object(self);
+        let clip_obj = self.target_clip_or_root().object1_or_bare(self.gc());
 
         self.set_scope(Scope::new_target_scope(self.scope(), clip_obj, self.gc()));
         Ok(FrameControl::Continue)

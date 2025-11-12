@@ -146,15 +146,14 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let mut parent_activation = Activation::from_nothing(
+        // TODO(moulins): remove this activation, it's useless.
+        let parent_activation = Activation::from_nothing(
             context,
             ActivationIdentifier::root("[Actions Parent]"),
             active_clip,
         );
 
-        let clip_obj = active_clip
-            .object1_or_undef()
-            .coerce_to_object(&mut parent_activation);
+        let clip_obj = active_clip.object1_or_bare(parent_activation.gc());
         let child_scope = Gc::new(
             parent_activation.gc(),
             Scope::new(
@@ -231,15 +230,14 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        let mut parent_activation = Activation::from_nothing(
+        // TODO(moulins): remove this activation, it's useless
+        let parent_activation = Activation::from_nothing(
             context,
             ActivationIdentifier::root("[Init Parent]"),
             active_clip,
         );
 
-        let clip_obj = active_clip
-            .object1_or_undef()
-            .coerce_to_object(&mut parent_activation);
+        let clip_obj = active_clip.object1_or_bare(parent_activation.gc());
         let child_scope = Gc::new(
             parent_activation.gc(),
             Scope::new(

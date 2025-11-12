@@ -147,9 +147,12 @@ impl<'a> VariableDumper<'a> {
             Value::Object(object) => {
                 self.print_object(object, activation);
             }
-            Value::MovieClip(_) => {
-                let obj = value.coerce_to_object(activation);
-                self.print_object(obj, activation);
+            Value::MovieClip(mcr) => {
+                if let Some(obj) = mcr.coerce_to_object(activation) {
+                    self.print_object(obj, activation)
+                } else {
+                    self.output.push_str("undefined")
+                }
             }
         }
     }
