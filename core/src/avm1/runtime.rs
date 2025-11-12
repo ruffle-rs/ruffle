@@ -146,27 +146,19 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        // TODO(moulins): remove this activation, it's useless.
-        let parent_activation = Activation::from_nothing(
-            context,
-            ActivationIdentifier::root("[Actions Parent]"),
-            active_clip,
-        );
-
-        let clip_obj = active_clip.object1_or_bare(parent_activation.gc());
+        let clip_obj = active_clip.object1_or_bare(context.gc());
         let child_scope = Gc::new(
-            parent_activation.gc(),
+            context.gc(),
             Scope::new(
-                parent_activation.scope(),
+                context.avm1.global_scope(active_clip.swf_version()),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
         );
-        let constant_pool = parent_activation.context.avm1.constant_pool;
-        let child_name = parent_activation.id.child(name);
+        let constant_pool = context.avm1.constant_pool;
         let mut child_activation = Activation::from_action(
-            parent_activation.context,
-            child_name,
+            context,
+            ActivationIdentifier::root(name),
             active_clip.swf_version(),
             child_scope,
             constant_pool,
@@ -230,28 +222,20 @@ impl<'gc> Avm1<'gc> {
             return;
         }
 
-        // TODO(moulins): remove this activation, it's useless
-        let parent_activation = Activation::from_nothing(
-            context,
-            ActivationIdentifier::root("[Init Parent]"),
-            active_clip,
-        );
-
-        let clip_obj = active_clip.object1_or_bare(parent_activation.gc());
+        let clip_obj = active_clip.object1_or_bare(context.gc());
         let child_scope = Gc::new(
-            parent_activation.gc(),
+            context.gc(),
             Scope::new(
-                parent_activation.scope(),
+                context.avm1.global_scope(active_clip.swf_version()),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
         );
-        parent_activation.context.avm1.push(Value::Undefined);
-        let constant_pool = parent_activation.context.avm1.constant_pool;
-        let child_name = parent_activation.id.child("[Init]");
+        context.avm1.push(Value::Undefined);
+        let constant_pool = context.avm1.constant_pool;
         let mut child_activation = Activation::from_action(
-            parent_activation.context,
-            child_name,
+            context,
+            ActivationIdentifier::root("[Init]"),
             active_clip.swf_version(),
             child_scope,
             constant_pool,

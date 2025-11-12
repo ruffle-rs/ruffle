@@ -343,22 +343,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         active_clip: DisplayObject<'gc>,
         code: SwfSlice,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
-        // TODO(moulins): remove this activation, it's useless.
-        let parent_activation =
-            Activation::from_nothing(self.context, self.id.child("[Actions Parent]"), active_clip);
-        let clip_obj = active_clip.object1_or_bare(parent_activation.gc());
+        let clip_obj = active_clip.object1_or_bare(self.gc());
         let child_scope = Gc::new(
-            parent_activation.gc(),
+            self.gc(),
             Scope::new(
-                parent_activation.scope(),
+                self.context.avm1.global_scope(active_clip.swf_version()),
                 scope::ScopeClass::Target,
                 clip_obj,
             ),
         );
-        let constant_pool = parent_activation.context.avm1.constant_pool();
-        let child_name = parent_activation.id.child(name);
+        let constant_pool = self.context.avm1.constant_pool();
+        let child_name = self.id.child(name);
         let mut child_activation = Activation::from_action(
-            parent_activation.context,
+            self.context,
             child_name,
             active_clip.swf_version(),
             child_scope,
