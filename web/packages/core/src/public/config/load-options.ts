@@ -451,6 +451,13 @@ export interface BaseLoadOptions {
     favorFlash?: boolean;
 
     /**
+     * Hide the message when content is restored from the back/forward cache.
+     *
+     * @default false
+     */
+    hideRestoredMessage?: boolean;
+
+    /**
      * This is no longer used and does not affect anything.
      * It is only kept for backwards compatibility.
      *

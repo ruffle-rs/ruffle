@@ -2134,8 +2134,11 @@ export class InnerPlayer {
      * Inform the user that the browser restored the file from the back/forward cache.
      */
     protected displayRestoredFromBfcacheMessage(): void {
-        // Do not display the message if another one is already shown.
-        if (this.container.querySelector("#message-overlay") !== null) {
+        // Do not display the message if another one is already shown or website opted out.
+        if (
+            this.container.querySelector("#message-overlay") !== null ||
+            this.loadedConfig?.hideRestoredMessage
+        ) {
             return;
         }
         const message = textAsParagraphs("message-restored-from-bfcache");
