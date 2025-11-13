@@ -316,6 +316,7 @@ impl<'gc> Video<'gc> {
                         codec: swf_source.streamdef.codec,
                         data: &self.0.movie.data()[*slice_start..*slice_end],
                         frame_id,
+                        composition_time: None,
                     };
                     context
                         .video
@@ -394,6 +395,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                                 codec: streamdef.codec,
                                 data: &movie.data()[*frame_start..*frame_end],
                                 frame_id: *frame_id,
+                                composition_time: None,
                             },
                         );
 
