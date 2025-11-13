@@ -362,6 +362,26 @@ export enum GamepadButton {
 }
 
 /**
+ * The behavior when the bfcache takes effect
+ */
+export enum CacheBehavior {
+    /**
+     * Inform the user that the content was restore from the bfcache.
+     */
+    Inform = "inform",
+
+    /**
+     * Restore the content from the bfcache without a message.
+     */
+    Restore = "restore",
+
+    /**
+     * Reload the content so it starts fresh if the bfcache takes effect.
+     */
+    Reload = "reload",
+}
+
+/**
  * Any options used for loading a movie.
  */
 export interface BaseLoadOptions {
@@ -451,11 +471,11 @@ export interface BaseLoadOptions {
     favorFlash?: boolean;
 
     /**
-     * Hide the message when content is restored from the back/forward cache.
+     * Behavior when the bfcache takes effect
      *
-     * @default false
+     * @default CacheBehavior.Inform
      */
-    hideRestoredMessage?: boolean;
+    bfcacheBehavior?: CacheBehavior;
 
     /**
      * This is no longer used and does not affect anything.
