@@ -24,6 +24,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     upgradeToHttps: true,
     compatibilityRules: true,
     favorFlash: true,
+    hideRestoredMessage: false,
     warnOnUnsupportedContent: true,
     logLevel: LogLevel.Error,
     showSwfDownload: false,
