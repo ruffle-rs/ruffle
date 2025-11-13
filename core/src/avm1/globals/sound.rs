@@ -593,7 +593,7 @@ fn set_transform<'gc>(
     let obj = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     if let NativeObject::Sound(sound) = this.native() {
         let mut transform = if let Some(owner) = sound.owner() {

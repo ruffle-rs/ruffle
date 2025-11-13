@@ -107,10 +107,10 @@ fn set_style<'gc>(
     }
     let css = this
         .get_stored(istr!("_css"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let styles = this
         .get_stored(istr!("_styles"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let name = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -147,7 +147,7 @@ fn get_style<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let css = this
         .get_stored(istr!("_css"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let name = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -163,7 +163,7 @@ fn get_style_names<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let css = this
         .get_stored(istr!("_css"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     Ok(ArrayBuilder::new(activation)
         .with(
             css.get_keys(activation, false)

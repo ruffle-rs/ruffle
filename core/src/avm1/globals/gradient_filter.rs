@@ -187,7 +187,7 @@ impl<'gc> GradientFilter<'gc> {
         // FP 11 and FP 32 behave differently here: in FP 11, only "true" objects resize
         // the matrix, but in FP 32 strings will too (and so fill the matrix with `NaN`
         // values, as they have a `length` but no actual elements).
-        let object = value.coerce_to_object(activation);
+        let object = value.coerce_to_object_or_bare(activation)?;
         let length = usize::try_from(object.length(activation)?).unwrap_or_default();
         let num_colors = length.min(MAX_COLORS);
 

@@ -58,11 +58,11 @@ pub fn value_to_point<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<(f64, f64), Error<'gc>> {
     let x = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("x"), activation)?
         .coerce_to_f64(activation)?;
     let y = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("y"), activation)?
         .coerce_to_f64(activation)?;
     Ok((x, y))
@@ -128,7 +128,7 @@ fn equals<'gc>(
     if let Some(other) = args.get(0) {
         let this_x = this.get(istr!("x"), activation)?;
         let this_y = this.get(istr!("y"), activation)?;
-        let other = other.coerce_to_object(activation);
+        let other = other.coerce_to_object_or_bare(activation)?;
         let other_x = other.get(istr!("x"), activation)?;
         let other_y = other.get(istr!("y"), activation)?;
         return Ok((this_x == other_x && this_y == other_y).into());
@@ -187,7 +187,7 @@ fn distance<'gc>(
     let a = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let b = args.get(1).unwrap_or(&Value::Undefined);
     let delta = a.call_method(
         istr!("subtract"),
@@ -196,7 +196,7 @@ fn distance<'gc>(
         ExecutionReason::FunctionCall,
     )?;
     delta
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("length"), activation)
 }
 

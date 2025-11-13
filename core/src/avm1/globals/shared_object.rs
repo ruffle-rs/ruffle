@@ -409,7 +409,7 @@ fn get_local<'gc>(
     let constructor = activation.prototypes().shared_object_constructor;
     let this = constructor
         .construct(activation, &[])?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     // Set the internal name
     if let NativeObject::SharedObject(shared_object) = this.native() {
@@ -461,7 +461,7 @@ fn clear<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let data = this
         .get(istr!("data"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     for k in &data.get_keys(activation, false) {
         data.delete(activation, *k);
@@ -504,7 +504,7 @@ pub(crate) fn flush<'gc>(
     let name = shared_object.borrow().name();
     let data = this
         .get(istr!("data"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let mut lso = new_lso(activation, &name, data);
     flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
     // Flash does not write empty LSOs to disk
@@ -527,7 +527,7 @@ fn get_size<'gc>(
     let name = shared_object.borrow().name();
     let data = this
         .get(istr!("data"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let mut lso = new_lso(activation, &name, data);
     // Flash returns 0 for empty LSOs, but the actual number of bytes (including the header) otherwise
     if lso.body.is_empty() {

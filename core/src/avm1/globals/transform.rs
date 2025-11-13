@@ -100,7 +100,7 @@ pub fn method<'gc>(
             ];
 
             if let [value] = args {
-                let object = value.coerce_to_object(activation);
+                let object = value.coerce_to_object_or_bare(activation)?;
                 // Assignment only occurs for an object with Matrix properties (a, b, c, d, tx, ty).
                 let is_matrix = matrix_props
                     .iter()

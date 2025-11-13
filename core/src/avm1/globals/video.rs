@@ -43,7 +43,7 @@ pub fn attach_video<'gc>(
         .get(0)
         .cloned()
         .unwrap_or(Value::Undefined)
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     if let NativeObject::NetStream(ns) = source.native() {
         video.attach_netstream(activation.context, ns);

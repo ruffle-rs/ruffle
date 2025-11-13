@@ -28,7 +28,7 @@ fn constructor<'gc>(
     let callback = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     this.set(istr!("onSelect"), callback.into(), activation)?;
 
@@ -63,19 +63,19 @@ pub fn copy<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let callback = this
         .get(istr!("onSelect"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     let constructor = activation.prototypes().context_menu_constructor;
     let copy = constructor
         .construct(activation, &[callback.into()])?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     let built_in = this
         .get(istr!("builtInItems"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let copy_built_in = copy
         .get(istr!("builtInItems"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     let save = built_in
         .get(istr!("save"), activation)?
@@ -113,10 +113,10 @@ pub fn copy<'gc>(
 
     let custom_items = this
         .get(istr!("customItems"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let custom_items_copy = copy
         .get(istr!("customItems"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     for i in 0..custom_items.length(activation)? {
         let element = custom_items.get_element(activation, i);
@@ -133,7 +133,7 @@ pub fn hide_builtin_items<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let built_in_items = this
         .get(istr!("builtInItems"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     built_in_items.set(istr!("zoom"), false.into(), activation)?;
     built_in_items.set(istr!("quality"), false.into(), activation)?;
     built_in_items.set(istr!("play"), false.into(), activation)?;

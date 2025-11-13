@@ -81,7 +81,7 @@ impl<'gc> LocalConnection<'gc> {
         let constructor = activation.prototypes().object_constructor;
         let event = constructor
             .construct(&mut activation, &[])?
-            .coerce_to_object(&mut activation);
+            .coerce_to_object_or_bare(&mut activation)?;
         event.set(istr!("level"), status.into(), &mut activation)?;
         this.call_method(
             istr!("onStatus"),

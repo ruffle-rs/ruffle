@@ -288,8 +288,8 @@ impl<'gc> Avm1<'gc> {
         let broadcaster = activation
             .global_object()
             .get(broadcaster_name, &mut activation)
-            .unwrap()
-            .coerce_to_object(&mut activation);
+            .and_then(|v| v.coerce_to_object_or_bare(&mut activation))
+            .unwrap();
 
         let has_listener =
             as_broadcaster::broadcast_internal(broadcaster, args, method, &mut activation)

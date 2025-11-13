@@ -175,7 +175,7 @@ fn initialize<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let broadcaster = args.get_object(activation, 0);
+    let broadcaster = args.get_object(activation, 0)?;
     initialize_internal(
         &activation.context.strings,
         broadcaster,

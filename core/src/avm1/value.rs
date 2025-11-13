@@ -168,7 +168,7 @@ impl<'gc> Value<'gc> {
             Value::Object(_) => self
                 .to_primitive_num(activation)?
                 .primitive_as_number(activation),
-            Value::MovieClip(_) => Value::Object(self.coerce_to_object(activation))
+            Value::MovieClip(_) => Value::Object(self.coerce_to_object_or_bare(activation)?)
                 .to_primitive_num(activation)?
                 .primitive_as_number(activation),
             val => val.primitive_as_number(activation),
@@ -242,7 +242,7 @@ impl<'gc> Value<'gc> {
                 }
             }
             Value::MovieClip(_) => {
-                let object = self.coerce_to_object(activation);
+                let object = self.coerce_to_object_or_bare(activation)?;
                 // Other objects call `valueOf`.
                 let res = object.call_method(
                     istr!("valueOf"),
@@ -470,32 +470,57 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn coerce_to_object(self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        // If we're given an object, we return it directly.
-        if let Some(obj) = self.as_object(activation) {
-            return obj;
-        }
-        // Else, select the correct prototype for it from the system prototypes list.
+    /// Coerce `self` to a script object, boxing primitives if necessary.
+    ///
+    /// This can fail in two different ways:
+    /// - If the boxing constructor throws an error, `Err(_)` is returned;
+    /// - If `self` isn't coercible (e.g. because it is null or undefined),
+    ///   `Ok(None)` is returned instead.
+    pub fn coerce_to_object(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         let proto = match self {
-            Value::Object(_) => unreachable!(),
-            Value::MovieClip(_) | Value::Null | Value::Undefined => None,
-            Value::Bool(_) => Some(activation.prototypes().boolean),
-            Value::Number(_) => Some(activation.prototypes().number),
-            Value::String(_) => Some(activation.prototypes().string),
+            // Object coerce to themselves...
+            Value::Object(obj) => return Ok(Some(obj)),
+            // ...and MovieClips coerce to their underlying object.
+            Value::MovieClip(mcr) => return Ok(mcr.coerce_to_object(activation)),
+            // `null` and `undefined` cannot be coerced.
+            Value::Null | Value::Undefined => return Ok(None),
+            // Primitives need to be boxed, so select a suitable prototype.
+            Value::Bool(_) => activation.prototypes().boolean,
+            Value::Number(_) => activation.prototypes().number,
+            Value::String(_) => activation.prototypes().string,
         };
 
-        let obj = Object::new(&activation.context.strings, proto);
+        let obj = Object::new(&activation.context.strings, Some(proto));
 
         // Constructor populates the boxed object with the value.
-        use crate::avm1::globals;
-        match self {
-            Value::Bool(_) => drop(globals::boolean::constructor(activation, obj, &[self])),
-            Value::Number(_) => drop(globals::number::constructor(activation, obj, &[self])),
-            Value::String(_) => drop(globals::string::constructor(activation, obj, &[self])),
-            _ => (),
-        }
+        use crate::avm1::{function::NativeFunction, globals};
+        let constr: NativeFunction = match self {
+            Value::Bool(_) => globals::boolean::constructor,
+            Value::Number(_) => globals::number::constructor,
+            Value::String(_) => globals::string::constructor,
+            _ => |_, _, _| Ok(Value::Undefined),
+        };
 
-        obj
+        constr(activation, obj, &[self]).map(|_| Some(obj))
+    }
+
+    /// Coerce `self` to a script object, unconditionally.
+    ///
+    /// If `self` isn't coercible, returns a fresh bare object instead.
+    /// [MOULINS]: I suspect that most (if not all) usages of this method are incorrect,
+    /// but we have too much code already using it to remove it right now.
+    pub fn coerce_to_object_or_bare(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        if let Some(obj) = self.coerce_to_object(activation)? {
+            Ok(obj)
+        } else {
+            Ok(Object::new_without_proto(activation.gc()))
+        }
     }
 
     pub fn as_blend_mode(&self) -> Option<swf::BlendMode> {
