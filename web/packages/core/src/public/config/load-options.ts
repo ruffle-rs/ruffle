@@ -362,6 +362,26 @@ export enum GamepadButton {
 }
 
 /**
+ * The behavior when the bfcache takes effect
+ */
+export enum BFCacheBehavior {
+    /**
+     * Inform the user that the content was restore from the bfcache.
+     */
+    Inform = "inform",
+
+    /**
+     * Restore the content from the bfcache without a message.
+     */
+    Restore = "restore",
+
+    /**
+     * Reload the content so it starts fresh if the bfcache takes effect.
+     */
+    Reload = "reload",
+}
+
+/**
  * Any options used for loading a movie.
  */
 export interface BaseLoadOptions {
@@ -449,6 +469,13 @@ export interface BaseLoadOptions {
      * @default true
      */
     favorFlash?: boolean;
+
+    /**
+     * Behavior when the bfcache takes effect
+     *
+     * @default BFCacheBehavior.Inform
+     */
+    bfcacheBehavior?: BFCacheBehavior;
 
     /**
      * This is no longer used and does not affect anything.
