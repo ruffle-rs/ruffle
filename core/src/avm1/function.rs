@@ -563,12 +563,12 @@ impl<'gc> FunctionObject<'gc> {
         match self.function {
             Executable::Native(nf) => {
                 // TODO: Change NativeFunction to accept `this: Value`.
-                let this = this.coerce_to_object(activation);
+                let this = this.coerce_to_object_or_bare(activation)?;
                 nf(activation, this, args)
             }
             Executable::TableNative { native, index } => {
                 // TODO: Change TableNativeFunction to accept `this: Value`.
-                let this = this.coerce_to_object(activation);
+                let this = this.coerce_to_object_or_bare(activation)?;
                 native(activation, this, args, index)
             }
             Executable::Action(af) => af.exec(name, activation, this, depth, args, reason, callee),
@@ -596,12 +596,12 @@ impl<'gc> FunctionObject<'gc> {
         match constr {
             Executable::Native(nf) => {
                 // TODO: Change NativeFunction to accept `this: Value`.
-                let this = this.coerce_to_object(activation);
+                let this = this.coerce_to_object_or_bare(activation)?;
                 nf(activation, this, args)
             }
             Executable::TableNative { native, index } => {
                 // TODO: Change TableNativeFunction to accept `this: Value`.
-                let this = this.coerce_to_object(activation);
+                let this = this.coerce_to_object_or_bare(activation)?;
                 native(activation, this, args, index)
             }
             Executable::Action(af) => af.exec(name, activation, this, depth, args, reason, callee),

@@ -102,7 +102,9 @@ fn set_filters<'gc>(
     let mut filters = vec![];
     if let Value::Object(value) = value {
         for index in value.get_keys(activation, false).into_iter().rev() {
-            let filter_object = value.get(index, activation)?.coerce_to_object(activation);
+            let filter_object = value
+                .get(index, activation)?
+                .coerce_to_object_or_bare(activation)?;
             if let Some(filter) = bitmap_filter::avm1_to_filter(filter_object, activation.context) {
                 filters.push(filter);
             }

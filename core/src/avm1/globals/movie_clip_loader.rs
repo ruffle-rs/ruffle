@@ -62,7 +62,9 @@ fn load_clip<'gc>(
                     Some(activation.get_or_create_level(*level_id as i32))
                 }
                 Value::Object(object) => object.as_display_object(),
-                Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
+                Value::MovieClip(_) => target
+                    .coerce_to_object_or_bare(activation)?
+                    .as_display_object(),
                 _ => None,
             };
             if let Some(target) = target {
@@ -104,7 +106,9 @@ fn unload_clip<'gc>(
                 activation.get_level(*level_id as i32)
             }
             Value::Object(object) => object.as_display_object(),
-            Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
+            Value::MovieClip(_) => target
+                .coerce_to_object_or_bare(activation)?
+                .as_display_object(),
             _ => None,
         };
         if let Some(target) = target {
@@ -144,7 +148,9 @@ fn get_progress<'gc>(
             Value::Object(object) if object.as_display_object().is_some() => {
                 object.as_display_object()
             }
-            Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
+            Value::MovieClip(_) => target
+                .coerce_to_object_or_bare(activation)?
+                .as_display_object(),
             _ => return Ok(Value::Undefined),
         };
         let result = Object::new_without_proto(activation.gc());

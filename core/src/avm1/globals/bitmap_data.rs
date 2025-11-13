@@ -331,20 +331,20 @@ fn copy_channel<'gc>(
         return Ok((-1).into());
     };
 
-    let source_bitmap = match get_bitmap_data(args.get_object(activation, 0)) {
+    let source_bitmap = match get_bitmap_data(args.get_object(activation, 0)?) {
         BitmapDataResult::Valid(s) => s,
         BitmapDataResult::Disposed => return Ok((-3).into()),
         BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
-    let source_rect = args.get_object(activation, 1);
+    let source_rect = args.get_object(activation, 1)?;
     let Some((src_min_x, src_min_y, src_width, src_height)) =
         try_get_rect(activation, source_rect)?
     else {
         return Ok((-4).into());
     };
 
-    let dest_point = args.get_object(activation, 2);
+    let dest_point = args.get_object(activation, 2)?;
     let source_channel = args.get_i32(activation, 3)?;
     let dest_channel = args.get_i32(activation, 4)?;
 
@@ -381,7 +381,7 @@ fn fill_rect<'gc>(
         return Ok((-1).into());
     };
 
-    let source_rect = args.get_object(activation, 0);
+    let source_rect = args.get_object(activation, 0)?;
     let Some((x, y, width, height)) = try_get_rect(activation, source_rect)? else {
         return Ok((-1).into());
     };
@@ -511,7 +511,7 @@ fn draw<'gc>(
 
     let matrix = args
         .get(1)
-        .map(|o| o.coerce_to_object(activation))
+        .and_then(|o| o.coerce_to_object_or_bare(activation).ok())
         .and_then(|o| object_to_matrix(o, activation).ok())
         .unwrap_or_default();
 
@@ -538,7 +538,7 @@ fn draw<'gc>(
         .unwrap_or(&false.into())
         .as_bool(activation.swf_version());
 
-    let source = match get_bitmap_data(args.get_object(activation, 0)) {
+    let source = match get_bitmap_data(args.get_object(activation, 0)?) {
         BitmapDataResult::Valid(s) => IBitmapDrawable::BitmapData(s),
         BitmapDataResult::Disposed => return Ok((-3).into()),
         BitmapDataResult::NotBitmapData(source) => {
@@ -588,7 +588,7 @@ fn apply_filter<'gc>(
         return Ok((-1).into());
     };
 
-    let source = match get_bitmap_data(args.get_object(activation, 0)) {
+    let source = match get_bitmap_data(args.get_object(activation, 0)?) {
         BitmapDataResult::Valid(s) => s,
         BitmapDataResult::Disposed => return Ok((-3).into()),
         BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
@@ -597,7 +597,7 @@ fn apply_filter<'gc>(
     let source_rect = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     let src_min_x = source_rect
         .get(istr!("x"), activation)?
@@ -615,7 +615,7 @@ fn apply_filter<'gc>(
     let dest_point = args
         .get(2)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     let dest_x = dest_point
         .get(istr!("x"), activation)?
@@ -627,7 +627,7 @@ fn apply_filter<'gc>(
     let filter_object = args
         .get(3)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let filter = bitmap_filter::avm1_to_filter(filter_object, activation.context);
 
     if let Some(filter) = filter {
@@ -671,7 +671,7 @@ fn color_transform<'gc>(
         return Ok((-1).into());
     };
 
-    let rectangle = args.get_object(activation, 0);
+    let rectangle = args.get_object(activation, 0)?;
     let Some((x, y, width, height)) = try_get_rect(activation, rectangle)? else {
         return Ok((-2).into());
     };
@@ -750,7 +750,7 @@ fn perlin_noise<'gc>(
         ChannelOptions::RGB
     };
     let grayscale = args.get_bool(activation, 7);
-    let offsets = args.get_object(activation, 8);
+    let offsets = args.get_object(activation, 8)?;
 
     let octave_offsets: Result<Vec<_>, Error<'gc>> = (0..num_octaves)
         .map(|i| {
@@ -793,7 +793,7 @@ fn hit_test<'gc>(
         return Ok((-1).into());
     };
 
-    let first_point = args.get_object(activation, 0);
+    let first_point = args.get_object(activation, 0)?;
     let top_left = if let (Some(x), Some(y)) = (
         first_point.get_local_stored(istr!("x"), activation),
         first_point.get_local_stored(istr!("y"), activation),
@@ -805,7 +805,7 @@ fn hit_test<'gc>(
         return Ok((-2).into());
     };
     let source_threshold = args.get_i32(activation, 1)?.clamp(0, u8::MAX.into()) as u8;
-    let compare_object = args.get_object(activation, 2);
+    let compare_object = args.get_object(activation, 2)?;
 
     // Overload based on the object we are hit-testing against.
     // BitmapData vs. BitmapData
@@ -814,7 +814,7 @@ fn hit_test<'gc>(
             return Ok((-3).into());
         }
 
-        let second_point = args.get_object(activation, 3);
+        let second_point = args.get_object(activation, 3)?;
         let second_point = if let (Some(x), Some(y)) = (
             second_point.get_local_stored(istr!("x"), activation),
             second_point.get_local_stored(istr!("y"), activation),
@@ -898,20 +898,20 @@ fn copy_pixels<'gc>(
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-    let src_bitmap = match get_bitmap_data(args.get_object(activation, 0)) {
+    let src_bitmap = match get_bitmap_data(args.get_object(activation, 0)?) {
         BitmapDataResult::Valid(s) => s,
         BitmapDataResult::Disposed => return Ok((-3).into()),
         BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
-    let source_rect = args.get_object(activation, 1);
+    let source_rect = args.get_object(activation, 1)?;
     let Some((src_min_x, src_min_y, src_width, src_height)) =
         try_get_rect(activation, source_rect)?
     else {
         return Ok((-4).into());
     };
 
-    let dest_point = args.get_object(activation, 2);
+    let dest_point = args.get_object(activation, 2)?;
 
     let dest_x = dest_point
         .get(istr!("x"), activation)?
@@ -928,8 +928,9 @@ fn copy_pixels<'gc>(
 
     // TODO: This needs testing, the method seems to do _something_ with a disposed BMD
     // It doesn't error out, but it's also not taking the regular `copy_pixels` path...
-    if let BitmapDataResult::Valid(alpha_bitmap) = get_bitmap_data(args.get_object(activation, 3)) {
-        let alpha_point = args.get_object(activation, 4);
+    if let BitmapDataResult::Valid(alpha_bitmap) = get_bitmap_data(args.get_object(activation, 3)?)
+    {
+        let alpha_point = args.get_object(activation, 4)?;
 
         let alpha_x = alpha_point
             .get(istr!("x"), activation)?
@@ -977,20 +978,20 @@ fn merge<'gc>(
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-    let src_bitmap = match get_bitmap_data(args.get_object(activation, 0)) {
+    let src_bitmap = match get_bitmap_data(args.get_object(activation, 0)?) {
         BitmapDataResult::Valid(s) => s,
         BitmapDataResult::Disposed => return Ok((-3).into()),
         BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
-    let source_rect = args.get_object(activation, 1);
+    let source_rect = args.get_object(activation, 1)?;
     let Some((src_min_x, src_min_y, src_width, src_height)) =
         try_get_rect(activation, source_rect)?
     else {
         return Ok((-4).into());
     };
 
-    let dest_point = args.get_object(activation, 2);
+    let dest_point = args.get_object(activation, 2)?;
 
     let dest_x = dest_point
         .get(istr!("x"), activation)?
@@ -1031,20 +1032,20 @@ fn palette_map<'gc>(
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-    let src_bitmap = match get_bitmap_data(args.get_object(activation, 0)) {
+    let src_bitmap = match get_bitmap_data(args.get_object(activation, 0)?) {
         BitmapDataResult::Valid(s) => s,
         BitmapDataResult::Disposed => return Ok((-3).into()),
         BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
-    let source_rect = args.get_object(activation, 1);
+    let source_rect = args.get_object(activation, 1)?;
     let Some((src_min_x, src_min_y, src_width, src_height)) =
         try_get_rect(activation, source_rect)?
     else {
         return Ok((-4).into());
     };
 
-    let dest_point = args.get_object(activation, 2);
+    let dest_point = args.get_object(activation, 2)?;
 
     let dest_x = dest_point
         .get(istr!("x"), activation)?
@@ -1099,13 +1100,13 @@ fn pixel_dissolve<'gc>(
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-    let src_bitmap_data = match get_bitmap_data(args.get_object(activation, 0)) {
+    let src_bitmap_data = match get_bitmap_data(args.get_object(activation, 0)?) {
         BitmapDataResult::Valid(s) => s,
         BitmapDataResult::Disposed => return Ok((-3).into()),
         BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
-    let source_rect = args.get_object(activation, 1);
+    let source_rect = args.get_object(activation, 1)?;
     let Some((src_min_x, src_min_y, src_width, src_height)) =
         try_get_rect(activation, source_rect)?
     else {
@@ -1113,7 +1114,7 @@ fn pixel_dissolve<'gc>(
         return Ok((-4).into());
     };
 
-    let dest_point = args.get_object(activation, 2);
+    let dest_point = args.get_object(activation, 2)?;
     let dest_x = dest_point
         .get(istr!("x"), activation)?
         .coerce_to_f64(activation)? as i32;
@@ -1188,20 +1189,20 @@ fn threshold<'gc>(
     let BitmapDataResult::Valid(bitmap_data) = get_bitmap_data(this) else {
         return Ok((-1).into());
     };
-    let src_bitmap = match get_bitmap_data(args.get_object(activation, 0)) {
+    let src_bitmap = match get_bitmap_data(args.get_object(activation, 0)?) {
         BitmapDataResult::Valid(s) => s,
         BitmapDataResult::Disposed => return Ok((-3).into()),
         BitmapDataResult::NotBitmapData(_) => return Ok((-2).into()),
     };
 
-    let source_rect = args.get_object(activation, 1);
+    let source_rect = args.get_object(activation, 1)?;
     let Some((src_min_x, src_min_y, src_width, src_height)) =
         try_get_rect(activation, source_rect)?
     else {
         return Ok((-4).into());
     };
 
-    let dest_point = args.get_object(activation, 2);
+    let dest_point = args.get_object(activation, 2)?;
 
     let dest_x = dest_point
         .get(istr!("x"), activation)?
@@ -1256,7 +1257,7 @@ fn compare<'gc>(
     };
 
     let BitmapDataResult::Valid(other_bitmap_data) =
-        get_bitmap_data(args.get_object(activation, 0))
+        get_bitmap_data(args.get_object(activation, 0)?)
     else {
         return Ok(BITMAP_DISPOSED.into());
     };

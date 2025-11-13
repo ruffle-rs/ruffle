@@ -40,30 +40,30 @@ pub fn value_to_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("a"), activation)?
         .coerce_to_f64(activation)? as f32;
     let b = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("b"), activation)?
         .coerce_to_f64(activation)? as f32;
     let c = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("c"), activation)?
         .coerce_to_f64(activation)? as f32;
     let d = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("d"), activation)?
         .coerce_to_f64(activation)? as f32;
     let tx = Twips::from_pixels(
         value
-            .coerce_to_object(activation)
+            .coerce_to_object_or_bare(activation)?
             .get(istr!("tx"), activation)?
             .coerce_to_f64(activation)?,
     );
     let ty = Twips::from_pixels(
         value
-            .coerce_to_object(activation)
+            .coerce_to_object_or_bare(activation)?
             .get(istr!("ty"), activation)?
             .coerce_to_f64(activation)?,
     );

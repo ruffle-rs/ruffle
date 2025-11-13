@@ -203,7 +203,7 @@ fn set_transform<'gc>(
         let transform = args
             .get(0)
             .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation);
+            .coerce_to_object_or_bare(activation)?;
         set_color_mult(
             activation,
             transform,

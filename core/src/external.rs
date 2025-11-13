@@ -291,14 +291,13 @@ impl<'gc> Callback<'gc> {
                         Avm1ActivationIdentifier::root("[ExternalInterface]"),
                         base_clip,
                     );
-                    let this = this.coerce_to_object(&mut activation);
                     let args: Vec<Avm1Value> = args
                         .into_iter()
                         .map(|v| v.into_avm1(&mut activation))
                         .collect();
                     let name = AvmString::new_utf8(activation.gc(), name);
                     if let Ok(result) = method
-                        .call(name, &mut activation, this.into(), &args)
+                        .call(name, &mut activation, *this, &args)
                         .and_then(|value| Value::from_avm1(&mut activation, value))
                     {
                         return result;

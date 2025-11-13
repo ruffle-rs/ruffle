@@ -52,7 +52,7 @@ pub fn call<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = match myargs.get(0).unwrap_or(&Value::Undefined) {
         Value::Undefined | Value::Null => activation.global_object(),
-        this_val => this_val.coerce_to_object(activation),
+        this_val => this_val.coerce_to_object_or_bare(activation)?,
     };
     let empty = [];
     let args = match myargs.len() {
@@ -84,7 +84,7 @@ pub fn apply<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = match myargs.get(0).unwrap_or(&Value::Undefined) {
         Value::Undefined | Value::Null => activation.global_object(),
-        this_val => this_val.coerce_to_object(activation),
+        this_val => this_val.coerce_to_object_or_bare(activation)?,
     };
     let args_object = myargs.get(1).cloned().unwrap_or(Value::Undefined);
     let length = match args_object {
@@ -94,7 +94,7 @@ pub fn apply<'gc>(
 
     let mut child_args = Vec::with_capacity(length);
     while child_args.len() < length {
-        let args = args_object.coerce_to_object(activation);
+        let args = args_object.coerce_to_object_or_bare(activation)?;
         // TODO: why don't this use args_object.array_element?
         let next_arg = format!("{}", child_args.len());
         let next_arg = args.get(AvmString::new_utf8(activation.gc(), next_arg), activation)?;

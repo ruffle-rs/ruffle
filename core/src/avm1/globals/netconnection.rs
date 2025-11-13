@@ -62,7 +62,7 @@ impl<'gc> NetConnection<'gc> {
         let constructor = activation.prototypes().object_constructor;
         let event = constructor
             .construct(&mut activation, &[])?
-            .coerce_to_object(&mut activation);
+            .coerce_to_object_or_bare(&mut activation)?;
         let code = AvmString::new_utf8(activation.gc(), code);
         event.set(istr!("code"), code.into(), &mut activation)?;
         event.set(istr!("level"), istr!("status").into(), &mut activation)?;
@@ -279,7 +279,7 @@ fn call<'gc>(
 
     if let Some(handle) = net_connection.handle() {
         if let Some(responder) = args.get(1) {
-            let responder = responder.coerce_to_object(activation);
+            let responder = responder.coerce_to_object_or_bare(activation)?;
             NetConnections::send_avm1(
                 activation.context,
                 handle,

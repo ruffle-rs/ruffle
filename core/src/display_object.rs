@@ -2528,9 +2528,11 @@ pub trait TDisplayObject<'gc>:
             .unwrap_or(Avm1Value::Undefined)
     }
 
-    // [MOULINS]: I suspect that most (if not all) usages of this method are incorrect,
-    // but a dedicated method is still superior to the equivalent `self.object1_or_undef().coerce_to_object()`
-    // as it avoids the need for an activation.
+    /// Equivalent to `self.object1_or_undef().coerce_to_object_or_bare()`, but avoids
+    /// the need for an activation.
+    ///
+    /// [MOULINS]: Like `coerce_to_object_bare`, I suspect that usages of this method
+    /// are incorrect,
     #[no_dynamic]
     fn object1_or_bare(self, mc: &Mutation<'gc>) -> Avm1Object<'gc> {
         self.object1()

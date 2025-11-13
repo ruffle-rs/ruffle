@@ -425,9 +425,9 @@ fn line_gradient_style<'gc>(
             );
             return Ok(Value::Undefined);
         };
-        let colors = colors.coerce_to_object(activation);
-        let alphas = alphas.coerce_to_object(activation);
-        let ratios = ratios.coerce_to_object(activation);
+        let colors = colors.coerce_to_object_or_bare(activation)?;
+        let alphas = alphas.coerce_to_object_or_bare(activation)?;
+        let ratios = ratios.coerce_to_object_or_bare(activation)?;
         let records = if let Some(records) =
             build_gradient_records(activation, "lineGradientStyle()", colors, alphas, ratios)?
         {
@@ -435,7 +435,7 @@ fn line_gradient_style<'gc>(
         } else {
             return Ok(Value::Undefined);
         };
-        let matrix = matrix.coerce_to_object(activation);
+        let matrix = matrix.coerce_to_object_or_bare(activation)?;
         let matrix = gradient_object_to_matrix(matrix, activation)?;
         let spread = parse_spread_method(
             args.get(5)
@@ -591,7 +591,7 @@ fn begin_bitmap_fill<'gc>(
             let mut matrix = avm1::globals::matrix::object_to_matrix_or_default(
                 args.get(1)
                     .unwrap_or(&Value::Undefined)
-                    .coerce_to_object(activation),
+                    .coerce_to_object_or_bare(activation)?,
                 activation,
             )?;
             // Flash matrix is in pixels. Scale from pixels to twips.
@@ -654,9 +654,9 @@ fn begin_gradient_fill<'gc>(
             );
             return Ok(Value::Undefined);
         };
-        let colors = colors.coerce_to_object(activation);
-        let alphas = alphas.coerce_to_object(activation);
-        let ratios = ratios.coerce_to_object(activation);
+        let colors = colors.coerce_to_object_or_bare(activation)?;
+        let alphas = alphas.coerce_to_object_or_bare(activation)?;
+        let ratios = ratios.coerce_to_object_or_bare(activation)?;
         let records = if let Some(records) =
             build_gradient_records(activation, "beginGradientFill()", colors, alphas, ratios)?
         {
@@ -664,7 +664,7 @@ fn begin_gradient_fill<'gc>(
         } else {
             return Ok(Value::Undefined);
         };
-        let matrix = matrix.coerce_to_object(activation);
+        let matrix = matrix.coerce_to_object_or_bare(activation)?;
         let matrix = gradient_object_to_matrix(matrix, activation)?;
         let spread = parse_spread_method(
             args.get(5)
@@ -924,7 +924,10 @@ fn duplicate_movie_clip<'gc>(
     };
     // Despite the docs say the `initObject` parameter is supported in Flash Player 6 and later,
     // it's not version-gated.
-    let init_object = args.get(2).map(|v| v.coerce_to_object(activation));
+    let init_object = args
+        .get(2)
+        .map(|v| v.coerce_to_object_or_bare(activation))
+        .transpose()?;
 
     // `duplicateMovieClip` method uses biased depth compared to `CloneSprite`.
     let depth = depth.wrapping_add(AVM_DEPTH_BIAS);
@@ -1775,7 +1778,9 @@ fn set_filters<'gc>(
     let mut filters = vec![];
     if let Value::Object(value) = value {
         for index in value.get_keys(activation, false).into_iter().rev() {
-            let filter_object = value.get(index, activation)?.coerce_to_object(activation);
+            let filter_object = value
+                .get(index, activation)?
+                .coerce_to_object_or_bare(activation)?;
             if let Some(filter) = bitmap_filter::avm1_to_filter(filter_object, activation.context) {
                 filters.push(filter);
             }

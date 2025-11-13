@@ -1904,7 +1904,7 @@ impl<'gc> MovieClip<'gc> {
 
                 if let Ok(prototype) = constructor
                     .get(istr!("prototype"), &mut activation)
-                    .map(|v| v.coerce_to_object(&mut activation))
+                    .and_then(|v| v.coerce_to_object_or_bare(&mut activation))
                 {
                     let object = Avm1Object::new_with_native(
                         &activation.context.strings,

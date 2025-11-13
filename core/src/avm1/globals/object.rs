@@ -86,7 +86,7 @@ fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = match args.get(0).unwrap_or(&Value::Undefined) {
         Value::Undefined | Value::Null => this,
-        val => val.coerce_to_object(activation),
+        val => val.coerce_to_object_or_bare(activation)?,
     };
     Ok(this.into())
 }
@@ -99,7 +99,7 @@ fn function<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let obj = match args.get(0).unwrap_or(&Value::Undefined) {
         Value::Undefined | Value::Null => Object::new_without_proto(activation.gc()),
-        val => val.coerce_to_object(activation),
+        val => val.coerce_to_object_or_bare(activation)?,
     };
     Ok(obj.into())
 }
@@ -196,7 +196,7 @@ fn is_prototype_of<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     match args.get(0) {
         Some(val) => {
-            let ob = val.coerce_to_object(activation);
+            let ob = val.coerce_to_object_or_bare(activation)?;
             Ok(this.is_prototype_of(activation, ob).into())
         }
         _ => Ok(false.into()),
@@ -253,7 +253,7 @@ fn watch<'gc>(
     let callback = args
         .get(1)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     if callback.as_function().is_none() {
         return Ok(false.into());
     }
@@ -292,7 +292,7 @@ pub fn as_set_prop_flags<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let object = if let Some(v) = args.get(0) {
-        v.coerce_to_object(activation)
+        v.coerce_to_object_or_bare(activation)?
     } else {
         avm_warn!(
             activation,
