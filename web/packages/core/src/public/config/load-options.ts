@@ -364,7 +364,7 @@ export enum GamepadButton {
 /**
  * The behavior when the bfcache takes effect
  */
-export enum CacheBehavior {
+export enum BFCacheBehavior {
     /**
      * Inform the user that the content was restore from the bfcache.
      */
@@ -473,9 +473,9 @@ export interface BaseLoadOptions {
     /**
      * Behavior when the bfcache takes effect
      *
-     * @default CacheBehavior.Inform
+     * @default BFCacheBehavior.Inform
      */
-    bfcacheBehavior?: CacheBehavior;
+    bfcacheBehavior?: BFCacheBehavior;
 
     /**
      * This is no longer used and does not affect anything.

@@ -10,7 +10,7 @@ import {
     UnmuteOverlay,
     WindowMode,
     ScrollingBehavior,
-    CacheBehavior,
+    BFCacheBehavior,
 } from "./load-options";
 
 export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
@@ -23,7 +23,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     upgradeToHttps: true,
     compatibilityRules: true,
     favorFlash: true,
-    bfcacheBehavior: CacheBehavior.Inform,
+    bfcacheBehavior: BFCacheBehavior.Inform,
     warnOnUnsupportedContent: true,
     logLevel: LogLevel.Error,
     showSwfDownload: false,

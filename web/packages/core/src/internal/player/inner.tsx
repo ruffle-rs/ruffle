@@ -9,7 +9,7 @@ import {
     UnmuteOverlay,
     URLLoadOptions,
     WindowMode,
-    CacheBehavior,
+    BFCacheBehavior,
 } from "../../public/config";
 import { MovieMetadata, ReadyState } from "../../public/player";
 import { ruffleShadowTemplate } from "../ui/shadow-template";
@@ -2138,11 +2138,11 @@ export class InnerPlayer {
         // Do not display the message if another one is already shown or website opted out.
         if (
             this.container.querySelector("#message-overlay") !== null ||
-            this.loadedConfig?.bfcacheBehavior === CacheBehavior.Restore
+            this.loadedConfig?.bfcacheBehavior === BFCacheBehavior.Restore
         ) {
             return;
         }
-        if (this.loadedConfig?.bfcacheBehavior === CacheBehavior.Reload) {
+        if (this.loadedConfig?.bfcacheBehavior === BFCacheBehavior.Reload) {
             this.reload();
             return;
         }
