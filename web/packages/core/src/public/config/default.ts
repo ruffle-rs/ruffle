@@ -12,6 +12,7 @@ import {
     WindowMode,
     ScrollingBehavior,
     DeviceFontRenderer,
+    CacheBehavior,
 } from "./load-options.js";
 
 export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
@@ -24,7 +25,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     upgradeToHttps: true,
     compatibilityRules: true,
     favorFlash: true,
-    hideRestoredMessage: false,
+    bfcacheBehavior: CacheBehavior.Inform,
     warnOnUnsupportedContent: true,
     logLevel: LogLevel.Error,
     showSwfDownload: false,
