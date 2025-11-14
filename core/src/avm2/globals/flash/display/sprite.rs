@@ -9,7 +9,7 @@ use crate::avm2::globals::slots::{
 use crate::avm2::object::{ClassObject, Object, StageObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::display_object::{MovieClip, SoundTransform, TDisplayObject};
+use crate::display_object::{MovieClip, SoundTransform, TDisplayObject, TDisplayObjectContainer};
 use swf::{Rectangle, Twips};
 
 pub fn sprite_allocator<'gc>(
@@ -56,6 +56,25 @@ pub fn sprite_allocator<'gc>(
         class_def = class.super_class();
     }
     unreachable!("A Sprite subclass should have Sprite in superclass chain");
+}
+
+pub fn construct_children<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let this = this.as_display_object().unwrap();
+    let clip = this.as_movie_clip().unwrap();
+
+    // Construct children of this Sprite
+    clip.set_constructing_frame(true);
+    for child in clip.iter_render_list() {
+        child.construct_frame(activation.context);
+    }
+    clip.set_constructing_frame(false);
+
+    Ok(Value::Undefined)
 }
 
 /// Implements `dropTarget`'s getter

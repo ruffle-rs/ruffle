@@ -9,6 +9,13 @@ package flash.display {
         [Ruffle(NativeAccessible)]
         private var _graphics:Graphics;
 
+        public function Sprite() {
+            super();
+            this.constructChildren();
+        }
+
+        private native function constructChildren():void;
+
         public native function get graphics():Graphics;
         public native function get dropTarget():DisplayObject;
         public native function get soundTransform():SoundTransform;
