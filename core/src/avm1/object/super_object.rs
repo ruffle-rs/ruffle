@@ -56,16 +56,22 @@ impl<'gc> SuperObject<'gc> {
         self.depth
     }
 
-    pub(super) fn base_proto(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
+    fn base_proto(&self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
         let mut proto = self.this();
         for _ in 0..self.depth() {
-            proto = proto.proto(activation).coerce_to_object(activation);
+            match proto.proto(activation) {
+                Value::Object(p) => proto = p,
+                _ => return None,
+            }
         }
-        proto
+        Some(proto)
     }
 
     pub(super) fn proto(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
-        self.base_proto(activation).proto(activation)
+        match self.base_proto(activation) {
+            Some(p) => p.proto(activation),
+            None => Value::Undefined,
+        }
     }
 
     pub(super) fn call(
@@ -74,10 +80,16 @@ impl<'gc> SuperObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let constructor = self
-            .base_proto(activation)
-            .get(istr!("__constructor__"), activation)?
-            .coerce_to_object(activation);
+        let Some(proto) = self.base_proto(activation) else {
+            return Ok(Value::Undefined);
+        };
+
+        let constructor = istr!("__constructor__");
+        let Some((Value::Object(constructor), _depth)) =
+            search_prototype(proto.into(), constructor, activation, proto, false, false)?
+        else {
+            return Ok(Value::Undefined);
+        };
 
         let NativeObject::Function(constr) = constructor.native() else {
             return Ok(Value::Undefined);
@@ -102,11 +114,11 @@ impl<'gc> SuperObject<'gc> {
         reason: ExecutionReason,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = self.this();
-        let (method, depth) =
-            match search_prototype(self.proto(activation), name, activation, this, false)? {
-                Some((Value::Object(method), depth)) => (method, depth),
-                _ => return Ok(Value::Undefined),
-            };
+        let Some((Value::Object(method), depth)) =
+            search_prototype(self.proto(activation), name, activation, this, false, true)?
+        else {
+            return Ok(Value::Undefined);
+        };
 
         match method.as_function() {
             Some(exec) => exec.exec(
