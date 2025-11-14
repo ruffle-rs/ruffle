@@ -173,7 +173,7 @@ impl<'gc> Object<'gc> {
         } else {
             (self, Value::Object(self))
         };
-        match search_prototype(proto, name.into(), activation, this, is_slash_path)? {
+        match search_prototype(proto, name.into(), activation, this, is_slash_path, true)? {
             Some((value, _depth)) => Ok(value),
             None => Ok(Value::Undefined),
         }
@@ -280,7 +280,7 @@ impl<'gc> Object<'gc> {
         }
 
         let (method, depth) =
-            match search_prototype(Value::Object(self), name, activation, self, false)? {
+            match search_prototype(Value::Object(self), name, activation, self, false, true)? {
                 Some((Value::Object(method), depth)) => (method, depth),
                 _ => return Ok(Value::Undefined),
             };
@@ -395,6 +395,7 @@ pub fn search_prototype<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     is_slash_path: bool,
+    call_resolve_fn: bool,
 ) -> Result<Option<(Value<'gc>, u8)>, Error<'gc>> {
     let mut depth = 0;
     let orig_proto = proto;
@@ -432,9 +433,12 @@ pub fn search_prototype<'gc>(
         depth += 1;
     }
 
-    if let Some(resolve) = find_resolve_method(orig_proto, activation)? {
-        let result = resolve.call(istr!("__resolve"), activation, this.into(), &[name.into()])?;
-        return Ok(Some((result, 0)));
+    if call_resolve_fn {
+        if let Some(resolve) = find_resolve_method(orig_proto, activation)? {
+            let result =
+                resolve.call(istr!("__resolve"), activation, this.into(), &[name.into()])?;
+            return Ok(Some((result, 0)));
+        }
     }
 
     Ok(None)
