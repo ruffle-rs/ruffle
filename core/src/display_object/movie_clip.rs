@@ -2475,7 +2475,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 self.construct_as_avm2_object(context);
                 self.on_construction_complete(context);
                 // If we're in the load frame and we were constructed by ActionScript,
-                // then we want to wait for the DisplayObject constructor to run
+                // then we want to wait for the Sprite constructor to run
                 // 'construct_frame' on children. This is observable by ActionScript -
                 // before calling super(), 'this.numChildren' will show a non-zero number
                 // when we have children placed on the load frame, but 'this.getChildAt(0)'
