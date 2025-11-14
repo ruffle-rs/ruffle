@@ -14,7 +14,9 @@ use crate::display_object::container::{dispatch_added_event, dispatch_removed_ev
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
 use crate::display_object::{DisplayObjectBase, MovieClip};
 use crate::events::{ClipEvent, ClipEventResult};
-use crate::frame_lifecycle::catchup_display_object_to_frame;
+use crate::frame_lifecycle::{
+    broadcast_frame_constructed, broadcast_frame_exited, catchup_display_object_to_frame,
+};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::vminterface::Instantiator;
@@ -363,15 +365,17 @@ impl<'gc> Avm2Button<'gc> {
                 dispatch_removed_event(old_state_child, context);
             }
 
-            if let Some(child) = child {
-                child.frame_constructed(context);
+            // FIXME is this correct?
+            if child.is_some() {
+                broadcast_frame_constructed(context);
             }
         }
 
         if is_cur_state {
             if let Some(child) = child {
                 child.run_frame_scripts(context);
-                child.exit_frame(context);
+                // FIXME is this correct?
+                broadcast_frame_exited(context);
             }
         }
     }
@@ -527,10 +531,10 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
                     let stage = context.stage;
                     stage.construct_frame(context);
-                    stage.frame_constructed(context);
+                    broadcast_frame_constructed(context);
                     self.set_state(context, ButtonState::Up);
                     stage.run_frame_scripts(context);
-                    stage.exit_frame(context);
+                    broadcast_frame_exited(context);
                 }
 
                 if let Some(avm2_object) = self.0.object.get() {
