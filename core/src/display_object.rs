@@ -2,13 +2,11 @@ use crate::avm1::{
     ActivationIdentifier as Avm1ActivationIdentifier, Object as Avm1Object, Value as Avm1Value,
 };
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
-    LoaderInfoObject, Multiname as Avm2Multiname, Object as Avm2Object,
-    StageObject as Avm2StageObject, TObject as _, Value as Avm2Value,
+    Activation as Avm2Activation, Error as Avm2Error, LoaderInfoObject, Multiname as Avm2Multiname,
+    Object as Avm2Object, StageObject as Avm2StageObject, TObject as _, Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
-use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
@@ -2344,16 +2342,6 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    /// Emit a `frameConstructed` event on this DisplayObject and any children it
-    /// may have.
-    #[no_dynamic]
-    fn frame_constructed(self, context: &mut UpdateContext<'gc>) {
-        let frame_constructed_evt =
-            Avm2EventObject::bare_default_event(context, "frameConstructed");
-        let dobject_constr = context.avm2.classes().display_object;
-        Avm2::broadcast_event(context, frame_constructed_evt, dobject_constr);
-    }
-
     /// Run any frame scripts (if they exist and this object needs to run them).
     fn run_frame_scripts(self, context: &mut UpdateContext<'gc>) {
         if let Some(container) = self.as_container() {
@@ -2361,16 +2349,6 @@ pub trait TDisplayObject<'gc>:
                 child.run_frame_scripts(context);
             }
         }
-    }
-
-    /// Emit an `exitFrame` broadcast event.
-    #[no_dynamic]
-    fn exit_frame(self, context: &mut UpdateContext<'gc>) {
-        let exit_frame_evt = Avm2EventObject::bare_default_event(context, "exitFrame");
-        let dobject_constr = context.avm2.classes().display_object;
-        Avm2::broadcast_event(context, exit_frame_evt, dobject_constr);
-
-        LoadManager::run_exit_frame(context);
     }
 
     /// Called before the child is about to be rendered.
