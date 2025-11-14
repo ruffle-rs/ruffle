@@ -6,9 +6,15 @@ package flash.display {
 
     [Ruffle(InstanceAllocator)]
     public class Sprite extends DisplayObjectContainer {
-
         [Ruffle(NativeAccessible)]
         private var _graphics:Graphics;
+
+        public function Sprite() {
+            super();
+            this.constructChildren();
+        }
+
+        private native function constructChildren():void;
 
         public native function get graphics():Graphics;
         public native function get dropTarget():DisplayObject;
