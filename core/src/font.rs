@@ -1,3 +1,4 @@
+use crate::context::RenderContext;
 use crate::drawing::Drawing;
 use crate::html::TextSpan;
 use crate::prelude::*;
@@ -5,10 +6,13 @@ use crate::string::WStr;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
+use ruffle_render::bitmap::{Bitmap, BitmapHandle};
+use ruffle_render::error::Error;
 use ruffle_render::shape_utils::{DrawCommand, FillRule};
 use ruffle_render::transform::Transform;
-use std::cell::{OnceCell, Ref, RefCell};
+use std::cell::{Cell, OnceCell, Ref, RefCell};
 use std::hash::{Hash, Hasher};
+use std::rc::Rc;
 use std::sync::Arc;
 use swf::FillStyle;
 
@@ -540,7 +544,7 @@ impl<'gc> Font<'gc> {
 
                 // Eager-load ASCII characters.
                 if code < 128 {
-                    glyph.shape_handle(renderer);
+                    glyph.glyph_handle(renderer);
                 }
 
                 glyph
@@ -766,7 +770,7 @@ pub trait FontLike<'gc> {
     ) where
         FGlyph: FnMut(usize, &Transform, GlyphRef, Twips, Twips),
     {
-        transform.matrix.ty = self.get_baseline_for_height(params.height);
+        let baseline = self.get_baseline_for_height(params.height);
 
         // TODO [KJ] I'm not sure whether we should iterate over characters here or over code units.
         //   I suspect Flash Player does not support full UTF-16 when displaying and laying out text.
@@ -800,6 +804,11 @@ pub trait FontLike<'gc> {
 
                 transform.matrix.a = scale;
                 transform.matrix.d = scale;
+                transform.matrix.ty = if glyph.rendered_at_baseline() {
+                    baseline
+                } else {
+                    Twips::ZERO
+                };
 
                 glyph_func(pos, &transform, glyph, twips_advance, x);
 
@@ -947,10 +956,27 @@ impl SwfGlyphOrShape {
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum GlyphHandle {
+    Shape(ShapeHandle),
+    Bitmap(BitmapHandle),
+}
+
+impl GlyphHandle {
+    pub fn from_shape(shape_handle: ShapeHandle) -> Self {
+        Self::Shape(shape_handle)
+    }
+
+    pub fn from_bitmap(bitmap_handle: BitmapHandle) -> Self {
+        Self::Bitmap(bitmap_handle)
+    }
+}
+
 #[derive(Debug, Clone)]
 enum GlyphShape {
     Swf(Box<RefCell<SwfGlyphOrShape>>),
     Drawing(Box<Drawing>),
+    Bitmap(Rc<GlyphBitmap<'static>>),
     None,
 }
 
@@ -964,11 +990,15 @@ impl GlyphShape {
                     && ruffle_render::shape_utils::shape_hit_test(shape, point, local_matrix)
             }
             GlyphShape::Drawing(drawing) => drawing.hit_test(point, local_matrix),
+            GlyphShape::Bitmap(_) => {
+                // TODO Implement this.
+                true
+            }
             GlyphShape::None => false,
         }
     }
 
-    pub fn register(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
+    pub fn register(&self, renderer: &mut dyn RenderBackend) -> Option<GlyphHandle> {
         match self {
             GlyphShape::Swf(glyph) => {
                 let mut glyph = glyph.borrow_mut();
@@ -976,11 +1006,60 @@ impl GlyphShape {
                 handle.get_or_insert_with(|| {
                     renderer.register_shape((&*shape).into(), &NullBitmapSource)
                 });
-                handle.clone()
+                handle.clone().map(GlyphHandle::from_shape)
             }
-            GlyphShape::Drawing(drawing) => drawing.register_or_replace(renderer),
+            GlyphShape::Drawing(drawing) => drawing
+                .register_or_replace(renderer)
+                .map(GlyphHandle::from_shape),
+            GlyphShape::Bitmap(bitmap) => bitmap
+                .get_handle_or_register(renderer)
+                .as_ref()
+                .inspect_err(|err| {
+                    tracing::error!(
+                        "Failed to register glyph as a bitmap: {err}, glyphs will be missing"
+                    )
+                })
+                .ok()
+                .cloned()
+                .map(GlyphHandle::from_bitmap),
             GlyphShape::None => None,
         }
+    }
+}
+
+/// A Bitmap that can be registered to a RenderBackend.
+struct GlyphBitmap<'a> {
+    bitmap: Cell<Option<Bitmap<'a>>>,
+    handle: OnceCell<Result<BitmapHandle, Error>>,
+}
+
+impl<'a> std::fmt::Debug for GlyphBitmap<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GlyphBitmap")
+            .field("handle", &self.handle)
+            .finish()
+    }
+}
+
+impl<'a> GlyphBitmap<'a> {
+    pub fn new(bitmap: Bitmap<'a>) -> Self {
+        Self {
+            bitmap: Cell::new(Some(bitmap)),
+            handle: OnceCell::new(),
+        }
+    }
+
+    pub fn get_handle_or_register(
+        &self,
+        renderer: &mut dyn RenderBackend,
+    ) -> &Result<BitmapHandle, Error> {
+        self.handle.get_or_init(|| {
+            renderer.register_bitmap(
+                self.bitmap
+                    .take()
+                    .expect("Bitmap should be available before registering"),
+            )
+        })
     }
 }
 
@@ -1003,7 +1082,15 @@ impl Glyph {
         }
     }
 
-    pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
+    pub fn from_bitmap(character: char, bitmap: Bitmap<'static>, advance: Twips) -> Self {
+        Self {
+            shape: GlyphShape::Bitmap(Rc::new(GlyphBitmap::new(bitmap))),
+            advance,
+            character,
+        }
+    }
+
+    pub fn glyph_handle(&self, renderer: &mut dyn RenderBackend) -> Option<GlyphHandle> {
         self.shape.register(renderer)
     }
 
@@ -1021,6 +1108,44 @@ impl Glyph {
 
     pub fn as_ref(&self) -> GlyphRef<'_> {
         GlyphRef::Direct(self)
+    }
+
+    pub fn rendered_at_baseline(&self) -> bool {
+        match self.shape {
+            GlyphShape::Swf(_) => true,
+            GlyphShape::Drawing(_) => true,
+            GlyphShape::Bitmap(_) => false,
+            GlyphShape::None => false,
+        }
+    }
+
+    pub fn renderable<'gc>(&self, context: &mut RenderContext<'_, 'gc>) -> bool {
+        self.glyph_handle(context.renderer).is_some()
+    }
+
+    pub fn render<'gc>(&self, context: &mut RenderContext<'_, 'gc>) {
+        use ruffle_render::commands::CommandHandler;
+
+        let Some(glyph_handle) = self.glyph_handle(context.renderer) else {
+            return;
+        };
+
+        let transform = context.transform_stack.transform();
+        match glyph_handle {
+            GlyphHandle::Shape(shape_handle) => {
+                context
+                    .commands
+                    .render_shape(shape_handle.clone(), transform);
+            }
+            GlyphHandle::Bitmap(bitmap_handle) => {
+                context.commands.render_bitmap(
+                    bitmap_handle.clone(),
+                    transform,
+                    true,
+                    ruffle_render::bitmap::PixelSnapping::Auto,
+                );
+            }
+        }
     }
 }
 

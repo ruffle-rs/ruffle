@@ -11,7 +11,6 @@ use gc_arena::barrier::unlock;
 use gc_arena::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
-use ruffle_render::commands::CommandHandler;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WString;
 use std::cell::RefCell;
@@ -166,12 +165,9 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 transform.color_transform.set_mult_color(color);
                 for c in &block.glyphs {
                     if let Some(glyph) = font.get_glyph(c.index as usize) {
-                        if let Some(glyph_shape_handle) = glyph.shape_handle(context.renderer) {
+                        if glyph.renderable(context) {
                             context.transform_stack.push(&transform);
-                            context.commands.render_shape(
-                                glyph_shape_handle,
-                                context.transform_stack.transform(),
-                            );
+                            glyph.render(context);
                             context.transform_stack.pop();
                         }
 
