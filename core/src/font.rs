@@ -416,6 +416,26 @@ impl FontType {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct FontMetrics {
+    /// The scaling applied to the font height to render at the proper size.
+    /// This depends on the DefineFont tag version.
+    pub scale: f32,
+
+    /// The distance from the top of each glyph to the baseline of the font, in
+    /// EM-square coordinates.
+    pub ascent: i32,
+
+    /// The distance from the baseline of the font to the bottom of each glyph,
+    /// in EM-square coordinates.
+    pub descent: i32,
+
+    /// The distance between the bottom of any one glyph and the top of
+    /// another, in EM-square coordinates.
+    #[allow(dead_code)] // Web build falsely claims it's unused
+    pub leading: i16,
+}
+
 #[derive(Debug, Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Font<'gc>(Gc<'gc, FontData>);
@@ -425,22 +445,7 @@ pub struct Font<'gc>(Gc<'gc, FontData>);
 struct FontData {
     glyphs: GlyphSource,
 
-    /// The scaling applied to the font height to render at the proper size.
-    /// This depends on the DefineFont tag version.
-    scale: f32,
-
-    /// The distance from the top of each glyph to the baseline of the font, in
-    /// EM-square coordinates.
-    ascent: i32,
-
-    /// The distance from the baseline of the font to the bottom of each glyph,
-    /// in EM-square coordinates.
-    descent: i32,
-
-    /// The distance between the bottom of any one glyph and the top of
-    /// another, in EM-square coordinates.
-    #[allow(dead_code)] // Web build falsely claims it's unused
-    leading: i16,
+    metrics: FontMetrics,
 
     /// The identity of the font.
     #[collect(require_static)]
@@ -468,10 +473,12 @@ impl<'gc> Font<'gc> {
         Ok(Font(Gc::new(
             gc_context,
             FontData {
-                scale: face.scale,
-                ascent: face.ascender,
-                descent: face.descender,
-                leading: face.leading,
+                metrics: FontMetrics {
+                    scale: face.scale,
+                    ascent: face.ascender,
+                    descent: face.descender,
+                    leading: face.leading,
+                },
                 glyphs: GlyphSource::FontFace(face),
                 descriptor,
                 font_type,
@@ -547,12 +554,14 @@ impl<'gc> Font<'gc> {
                     }
                 },
 
-                // DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
-                // (SWF19 p.164)
-                scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
-                ascent,
-                descent,
-                leading,
+                metrics: FontMetrics {
+                    // DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
+                    // (SWF19 p.164)
+                    scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
+                    ascent,
+                    descent,
+                    leading,
+                },
                 descriptor,
                 font_type,
                 has_layout: tag.layout.is_some(),
@@ -601,10 +610,12 @@ impl<'gc> Font<'gc> {
         Font(Gc::new(
             gc_context,
             FontData {
-                scale: 1.0,
-                ascent: 0,
-                descent: 0,
-                leading: 0,
+                metrics: FontMetrics {
+                    scale: 1.0,
+                    ascent: 0,
+                    descent: 0,
+                    leading: 0,
+                },
                 glyphs: GlyphSource::Empty,
                 descriptor,
                 font_type,
@@ -669,23 +680,23 @@ impl<'gc> FontLike<'gc> for Font<'gc> {
     fn get_leading_for_height(&self, height: Twips) -> Twips {
         let scale = height.get() as f32 / self.scale();
 
-        Twips::new((self.0.leading as f32 * scale) as i32)
+        Twips::new((self.0.metrics.leading as f32 * scale) as i32)
     }
 
     fn get_baseline_for_height(&self, height: Twips) -> Twips {
         let scale = height.get() as f32 / self.scale();
 
-        Twips::new((self.0.ascent as f32 * scale) as i32)
+        Twips::new((self.0.metrics.ascent as f32 * scale) as i32)
     }
 
     fn get_descent_for_height(&self, height: Twips) -> Twips {
         let scale = height.get() as f32 / self.scale();
 
-        Twips::new((self.0.descent as f32 * scale) as i32)
+        Twips::new((self.0.metrics.descent as f32 * scale) as i32)
     }
 
     fn scale(&self) -> f32 {
-        self.0.scale
+        self.0.metrics.scale
     }
 
     fn font_type(&self) -> FontType {
