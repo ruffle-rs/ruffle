@@ -1,0 +1,4 @@
+num_ticks = 1
+
+# TODO We need to properly implement text culling logic
+known_failure = true
