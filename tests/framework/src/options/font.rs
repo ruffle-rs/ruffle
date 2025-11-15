@@ -1,4 +1,5 @@
-use ruffle_core::{DefaultFont, FontQuery, FontType, Player};
+use ruffle_core::Player;
+use ruffle_core::font::{DefaultFont, FontQuery, FontType};
 use serde::Deserialize;
 
 #[derive(Deserialize, Default, Clone)]

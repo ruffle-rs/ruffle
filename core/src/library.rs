@@ -15,7 +15,7 @@ use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
 
 use crate::backend::ui::{FontDefinition, UiBackend};
-use crate::DefaultFont;
+use crate::font::DefaultFont;
 use fnv::{FnvHashMap, FnvHashSet};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};

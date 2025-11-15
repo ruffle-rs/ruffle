@@ -32,6 +32,7 @@ use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult, KeyCode, MouseBut
 use crate::external::{ExternalInterface, ExternalInterfaceProvider, NullFsCommandProvider};
 use crate::external::{FsCommandProvider, Value as ExternalValue};
 use crate::focus_tracker::NavigationDirection;
+use crate::font::DefaultFont;
 use crate::frame_lifecycle::{run_all_phases_avm2, FramePhase};
 use crate::input::InputEvent;
 use crate::input::InputManager;
@@ -50,7 +51,7 @@ use crate::system_properties::SystemProperties;
 use crate::tag_utils::SwfMovie;
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
-use crate::{DefaultFont, DEFAULT_PLAYER_VERSION};
+use crate::DEFAULT_PLAYER_VERSION;
 use async_channel::Sender;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, DynamicRootSet, Mutation, Rootable};

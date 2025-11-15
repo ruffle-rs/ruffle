@@ -2,12 +2,11 @@
 
 use crate::context::UpdateContext;
 use crate::drawing::Drawing;
-use crate::font::{EvalParameters, Font, FontLike, FontSet, FontType};
+use crate::font::{DefaultFont, EvalParameters, Font, FontLike, FontSet, FontType};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::string::{utils as string_utils, WStr};
 use crate::tag_utils::SwfMovie;
-use crate::DefaultFont;
 use gc_arena::Collect;
 use std::cmp::{max, min, Ordering};
 use std::fmt::{Debug, Formatter};
