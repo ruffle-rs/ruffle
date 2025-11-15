@@ -147,7 +147,7 @@ fn get_progress<'gc>(
             Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
             _ => return Ok(Value::Undefined),
         };
-        let result = Object::new(&activation.context.strings, None);
+        let result = Object::new_without_proto(activation.gc());
         if let Some(target) = target {
             result.define_value(
                 activation.gc(),

@@ -97,7 +97,7 @@ impl<'gc> Xml<'gc> {
                 root,
                 xml_decl: Lock::new(None),
                 doctype: Lock::new(None),
-                id_map: Object::new(context, None),
+                id_map: Object::new_without_proto(context.gc()),
                 status: Cell::new(XmlStatus::NoError),
             },
         ));

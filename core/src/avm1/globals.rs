@@ -545,7 +545,7 @@ pub fn create_globals<'gc>(
     as_broadcaster::BroadcasterFunctions<'gc>,
 ) {
     let context = {
-        let object_proto = Object::new(context, None);
+        let object_proto = Object::new_without_proto(context.gc());
         &mut DeclContext {
             object_proto,
             fn_proto: Object::new(context, Some(object_proto)),

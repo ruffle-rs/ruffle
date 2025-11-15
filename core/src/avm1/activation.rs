@@ -1039,9 +1039,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         //TODO: What happens if we try to extend an object which has no `prototype`?
         //e.g. `class Whatever extends Object.prototype` or `class Whatever extends 5`
-        let super_prototype = superclass
-            .get(istr!(self, "prototype"), self)?
-            .coerce_to_object(self);
+        let super_prototype = superclass.get(istr!(self, "prototype"), self)?;
 
         let sub_prototype = Object::new(self.strings(), Some(super_prototype));
 

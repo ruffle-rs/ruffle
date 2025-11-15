@@ -98,7 +98,7 @@ fn function<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let obj = match args.get(0).unwrap_or(&Value::Undefined) {
-        Value::Undefined | Value::Null => Object::new(&activation.context.strings, None),
+        Value::Undefined | Value::Null => Object::new_without_proto(activation.gc()),
         val => val.coerce_to_object(activation),
     };
     Ok(obj.into())

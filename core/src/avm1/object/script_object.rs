@@ -111,11 +111,27 @@ impl<'gc> Object<'gc> {
         ObjectWeak(Gc::downgrade(self.0))
     }
 
-    pub fn new(context: &StringContext<'gc>, proto: Option<Object<'gc>>) -> Self {
+    pub fn new(context: &StringContext<'gc>, proto: Option<impl Into<Value<'gc>>>) -> Self {
+        Self::new_impl(context, proto.map(Into::into), NativeObject::None)
+    }
+
+    pub fn new_with_native(
+        context: &StringContext<'gc>,
+        proto: Option<impl Into<Value<'gc>>>,
+        native: NativeObject<'gc>,
+    ) -> Self {
+        Self::new_impl(context, proto.map(Into::into), native)
+    }
+
+    fn new_impl(
+        context: &StringContext<'gc>,
+        proto: Option<Value<'gc>>,
+        native: NativeObject<'gc>,
+    ) -> Self {
         let object = Self(Gc::new(
             context.gc(),
             RefLock::new(ObjectData {
-                native: NativeObject::None,
+                native,
                 properties: PropertyMap::new(),
                 interfaces: None,
                 watchers: PropertyMap::new(),
@@ -125,21 +141,11 @@ impl<'gc> Object<'gc> {
             object.define_value(
                 context.gc(),
                 istr!(context, "__proto__"),
-                proto.into(),
+                proto,
                 Attribute::DONT_ENUM | Attribute::DONT_DELETE,
             );
         }
         object
-    }
-
-    pub fn new_with_native(
-        context: &StringContext<'gc>,
-        proto: Option<Object<'gc>>,
-        native: NativeObject<'gc>,
-    ) -> Self {
-        let obj = Self::new(context, proto);
-        obj.set_native(context.gc(), native);
-        obj
     }
 
     // Creates a Object, without assigning any __proto__ property.
