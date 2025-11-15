@@ -145,20 +145,36 @@ impl<'gc> NativeObject<'gc> {
 
 impl<'gc> Object<'gc> {
     /// Retrieve a named property from the object, or its prototype.
-    pub fn get(
+    /// Returns `None` if the property couldn't be found.
+    pub fn get_opt(
         self,
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
+        call_resolve_fn: bool,
+    ) -> Result<Option<Value<'gc>>, Error<'gc>> {
+        // This duplicates logic already present in `SuperObject::proto` and so doesn't seem necessary.
+        // But removing it would make `SuperObject`s go through an extra iteration in `search_prototype`,
+        // which impacts the maximum possible depth before `Error::PrototypeRecursionLimit`.
+        // TODO(moulins): Test this limit and figure out what is correct.
         let (this, proto) = if let Some(super_object) = self.as_super_object() {
             (super_object.this(), super_object.proto(activation))
         } else {
             (self, Value::Object(self))
         };
-        match search_prototype(proto, name.into(), activation, this, true)? {
-            Some((value, _depth)) => Ok(value),
-            None => Ok(Value::Undefined),
-        }
+
+        let result = search_prototype(proto, name.into(), activation, this, call_resolve_fn)?;
+        Ok(result.map(|(value, _depth)| value))
+    }
+
+    /// Retrieve a named property from the object, or its prototype.
+    /// If the property couldn't be found, try to find and call a `__resolve` handler.
+    pub fn get(
+        self,
+        name: impl Into<AvmString<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        self.get_opt(name, activation, true)
+            .map(|v| v.unwrap_or(Value::Undefined))
     }
 
     /// Retrieve a non-virtual property from the object, or its prototype.

@@ -85,8 +85,7 @@ impl<'gc> SuperObject<'gc> {
         };
 
         let constructor = istr!("__constructor__");
-        let Some((Value::Object(constructor), _depth)) =
-            search_prototype(proto.into(), constructor, activation, proto, false)?
+        let Some(Value::Object(constructor)) = proto.get_opt(constructor, activation, false)?
         else {
             return Ok(Value::Undefined);
         };
