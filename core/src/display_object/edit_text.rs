@@ -1273,7 +1273,7 @@ impl<'gc> EditText<'gc> {
                 self.text_transform(color),
                 params,
                 |pos, transform, glyph, advance, x| {
-                    if let Some(glyph_shape_handle) = glyph.shape_handle(context.renderer) {
+                    if glyph.renderable(context) {
                         // If it's highlighted, override the color.
                         if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
                             // Set text color to white
@@ -1285,11 +1285,7 @@ impl<'gc> EditText<'gc> {
                         } else {
                             context.transform_stack.push(transform);
                         }
-
-                        // Render glyph.
-                        context
-                            .commands
-                            .render_shape(glyph_shape_handle, context.transform_stack.transform());
+                        glyph.render(context);
                         context.transform_stack.pop();
                     }
 
