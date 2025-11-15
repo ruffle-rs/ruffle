@@ -1409,6 +1409,12 @@ impl<'gc> MovieClip<'gc> {
                     child.set_parent(context, Some(self.into()));
                     child.set_place_frame(self.current_frame());
 
+                    // If this MC hasn't had an `object2` allocated yet, this
+                    // child will be constructed by `Sprite.constructChildren`,
+                    // not by the timeline
+                    let has_object2_allocated = self.object2().is_none();
+                    child.set_manual_frame_construct(has_object2_allocated);
+
                     // Apply PlaceObject parameters.
                     child.apply_place_object(context, place_object);
                     if let Some(name) = &place_object.name {
@@ -2485,12 +2491,28 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
                 let running_construct_frame = self
                     .0
                     .contains_flag(MovieClipFlags::RUNNING_CONSTRUCT_FRAME);
-                // The supercall constructor for display objects is responsible
-                // for triggering construct_frame on frame 1.
                 for child in self.iter_render_list() {
-                    if running_construct_frame && child.object2().is_none() {
-                        continue;
+                    // Under some conditions, we won't run `construct_frame` on
+                    // a not-yet-constructed child
+                    if child.object2().is_none() {
+                        // Avoid running recursively- if `Sprite.constructChildren`
+                        // was constructing this clip's children, and somehow
+                        // a child's construction triggered another `construct_frame`
+                        // on this clip, Flash avoids running `construct_frame` on
+                        // the non-constructed children of this clip.
+                        if running_construct_frame {
+                            continue;
+                        }
+
+                        // The supercall constructor for display objects is responsible
+                        // for triggering construct_frame on frame 1 (see above comment).
+                        // However, if the child has already been constructed, we run
+                        // `construct_frame` like normal.
+                        if child.manual_frame_construct() {
+                            continue;
+                        }
                     }
+
                     child.construct_frame(context);
                 }
             }

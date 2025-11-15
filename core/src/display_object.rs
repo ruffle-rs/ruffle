@@ -794,6 +794,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_flag(DisplayObjectFlags::PLACED_BY_AVM2_SCRIPT, value);
     }
 
+    fn manual_frame_construct(&self) -> bool {
+        self.contains_flag(DisplayObjectFlags::MANUAL_FRAME_CONSTRUCT)
+    }
+
+    fn set_manual_frame_construct(&self, value: bool) {
+        self.set_flag(DisplayObjectFlags::MANUAL_FRAME_CONSTRUCT, value);
+    }
+
     fn is_bitmap_cached_preference(&self) -> bool {
         self.contains_flag(DisplayObjectFlags::CACHE_AS_BITMAP)
     }
@@ -2192,6 +2200,18 @@ pub trait TDisplayObject<'gc>:
         self.base().set_placed_by_avm2_script(value)
     }
 
+    #[no_dynamic]
+    fn manual_frame_construct(&self) -> bool {
+        self.base().manual_frame_construct()
+    }
+
+    /// When this flag is set, the object will not be instantiated in-line with
+    /// normal frame construction by `MovieClip::construct_frame`.
+    #[no_dynamic]
+    fn set_manual_frame_construct(&self, value: bool) {
+        self.base().set_manual_frame_construct(value);
+    }
+
     /// Whether this display object has been instantiated by the timeline.
     /// When this flag is set, attempts to change the object's name from AVM2
     /// throw an exception.
@@ -2864,7 +2884,7 @@ impl<'gc> DisplayObject<'gc> {
 bitflags! {
     /// Bit flags used by `DisplayObject`.
     #[derive(Clone, Copy)]
-    struct DisplayObjectFlags: u16 {
+    struct DisplayObjectFlags: u32 {
         /// Whether this object has been removed from the display list.
         /// Necessary in AVM1 to throw away queued actions from removed movie clips.
         const AVM1_REMOVED             = 1 << 0;
@@ -2925,6 +2945,18 @@ bitflags! {
         /// i.e. attachMovie, createEmptyMovieClip, duplicateMovieClip.
         // TODO [KJ] Can this be merged with PLACED_BY_AVM2_SCRIPT?
         const PLACED_BY_AVM1_SCRIPT    = 1 << 15;
+
+        /// Whether this object was placed by the timeline on a `MovieClip`
+        /// before the `MovieClip` had its AVM2 object constructed. Such objects
+        /// are only instantiated by `Sprite.constructChildren`, which is
+        /// usually called when `super()` is called in a `Sprite` subclass.
+        /// However, if `super()` (and therefore `Sprite.constructChildren()`)
+        /// is never called, the object will never be instantiated. We mark all
+        /// objects placed by the timeline on a load frame with this flag to
+        /// ensure that `MovieClip::construct_frame` does not instantiate them
+        /// (they need to be instantiated "manually" by
+        /// `Sprite.constructChildren`).
+        const MANUAL_FRAME_CONSTRUCT  = 1 << 16;
     }
 }
 

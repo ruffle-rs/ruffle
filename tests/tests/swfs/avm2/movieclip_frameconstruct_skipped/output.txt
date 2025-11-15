@@ -1,0 +1,9 @@
+Main allocated
+Frame constructed (theSprite=null, theShape=null)
+Frame exited
+Frame entered
+Frame constructed (theSprite=null, theShape=null)
+Frame exited
+Frame entered
+Frame constructed (theSprite=null, theShape=null)
+Frame exited
