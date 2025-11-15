@@ -11,10 +11,9 @@ use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
 use ruffle_core::events::{GamepadButton, KeyCode};
-use ruffle_core::{
-    Color, DefaultFont, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode, swf,
-};
-use ruffle_core::{FontFileData, ttf_parser};
+use ruffle_core::font::{DefaultFont, FontFileData};
+use ruffle_core::ttf_parser;
+use ruffle_core::{Color, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode, swf};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_video_external::backend::ExternalVideoBackend;

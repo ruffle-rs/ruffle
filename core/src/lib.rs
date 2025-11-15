@@ -25,7 +25,7 @@ mod drawing;
 mod ecma_conversions;
 pub mod events;
 pub mod focus_tracker;
-mod font;
+pub mod font;
 mod frame_lifecycle;
 mod html;
 mod input;
@@ -59,7 +59,6 @@ pub mod stub;
 
 pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;
-pub use font::{DefaultFont, FontFileData, FontQuery, FontType};
 pub use indexmap;
 pub use loader::LoadBehavior;
 pub use player::{Player, PlayerBuilder, PlayerMode, PlayerRuntime, StaticCallstack};

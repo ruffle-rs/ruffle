@@ -1,12 +1,12 @@
 use super::JavascriptPlayer;
 use rfd::{AsyncFileDialog, FileHandle};
-use ruffle_core::FontQuery;
 use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter,
 };
 use ruffle_core::backend::ui::{
     FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, US_ENGLISH, UiBackend,
 };
+use ruffle_core::font::FontQuery;
 use ruffle_web_common::JsResult;
 use std::borrow::Cow;
 use url::Url;
