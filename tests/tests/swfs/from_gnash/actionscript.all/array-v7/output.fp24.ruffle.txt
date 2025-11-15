@@ -642,13 +642,13 @@ FAILED: expected: "undefined" obtained: function [./array.as:1763]
 PASSED: typeof(ar.constructor) == "function" [./array.as:1771]
 FAILED: expected: "number" obtained: object [./array.as:1772]
 FAILED: expected: 8 obtained: undefined,undefined,undefined,undefined [./array.as:1773]
-FAILED: expected: "number" obtained: object [./array.as:1777]
+PASSED: typeof(ar.__proto__) == "number" [./array.as:1777]
 FAILED: expected: "undefined" obtained: function [./array.as:1784]
 FAILED: expected: "undefined" obtained: object [./array.as:1785]
 FAILED: expected: undefined obtained: undefined,undefined,undefined,undefined [./array.as:1786]
 FAILED: expected: "object" obtained: function [./array.as:1791]
 FAILED: expected: "string" obtained: object [./array.as:1792]
 FAILED: expected: "string" obtained: undefined,undefined,undefined,undefined [./array.as:1793]
-#passed: 602
-#failed: 44
+#passed: 603
+#failed: 43
 #total tests run: 646

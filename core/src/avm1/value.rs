@@ -973,7 +973,7 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert!(n.coerce_to_f64(activation).unwrap().is_nan());
 
-            let o = Object::new(&activation.context.strings, None);
+            let o = Object::new_without_proto(activation.gc());
 
             assert!(Value::from(o).coerce_to_f64(activation).unwrap().is_nan());
 
@@ -995,7 +995,7 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert_eq!(n.coerce_to_f64(activation).unwrap(), 0.0);
 
-            let o = Object::new(&activation.context.strings, None);
+            let o = Object::new_without_proto(activation.gc());
 
             assert_eq!(Value::from(o).coerce_to_f64(activation).unwrap(), 0.0);
 

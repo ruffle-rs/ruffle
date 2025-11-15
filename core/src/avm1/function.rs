@@ -231,7 +231,7 @@ impl<'gc> Avm1Function<'gc> {
         // `f[""]()` emits a CallMethod op, causing `this` to be undefined, but `super` is a function; what is it?
         let zuper = this.filter(|_| !suppress).map(|this| {
             let zuper = NativeObject::Super(SuperObject::new(this, depth));
-            Object::new_with_native(frame.strings(), None, zuper).into()
+            Object::new_with_native(frame.strings(), None::<Value<'_>>, zuper).into()
         });
 
         if preload {
@@ -656,9 +656,7 @@ impl<'gc> FunctionObject<'gc> {
         callee: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let prototype = callee
-            .get(istr!("prototype"), activation)?
-            .coerce_to_object(activation);
+        let prototype = callee.get(istr!("prototype"), activation)?;
         let this = Object::new(activation.strings(), Some(prototype));
 
         Self::define_constructor_props(activation, this, callee.into());

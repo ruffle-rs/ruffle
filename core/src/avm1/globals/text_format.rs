@@ -538,7 +538,7 @@ fn get_text_extent<'gc>(
     temp_edittext.set_new_text_format(text_format.clone());
     temp_edittext.set_text(&text, activation.context);
 
-    let result = Object::new(&activation.context.strings, None);
+    let result = Object::new_without_proto(activation.gc());
     let metrics = temp_edittext
         .layout_metrics()
         .expect("All text boxes should have at least one line at all times");

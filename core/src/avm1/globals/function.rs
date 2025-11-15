@@ -40,7 +40,7 @@ fn function<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(args.get(0).copied().unwrap_or_else(|| {
         // Calling `Function()` seems to give a prototypeless bare object.
-        Object::new(&activation.context.strings, None).into()
+        Object::new_without_proto(activation.gc()).into()
     }))
 }
 
