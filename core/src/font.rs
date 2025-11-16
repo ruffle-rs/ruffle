@@ -7,7 +7,7 @@ use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::shape_utils::{DrawCommand, FillRule};
 use ruffle_render::transform::Transform;
-use std::cell::{OnceCell, RefCell};
+use std::cell::{OnceCell, Ref, RefCell};
 use std::hash::{Hash, Hasher};
 use std::sync::Arc;
 use swf::FillStyle;
@@ -329,6 +329,22 @@ impl FontFace {
     }
 }
 
+pub enum GlyphRef<'a> {
+    Direct(&'a Glyph),
+    Ref(Ref<'a, Glyph>),
+}
+
+impl<'a> std::ops::Deref for GlyphRef<'a> {
+    type Target = Glyph;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            GlyphRef::Direct(r) => r,
+            GlyphRef::Ref(r) => r.deref(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum GlyphSource {
     Memory {
@@ -349,15 +365,15 @@ pub enum GlyphSource {
 }
 
 impl GlyphSource {
-    pub fn get_by_index(&self, index: usize) -> Option<&Glyph> {
+    pub fn get_by_index(&self, index: usize) -> Option<GlyphRef<'_>> {
         match self {
-            GlyphSource::Memory { glyphs, .. } => glyphs.get(index),
+            GlyphSource::Memory { glyphs, .. } => glyphs.get(index).map(GlyphRef::Direct),
             GlyphSource::FontFace(_) => None, // Unsupported.
             GlyphSource::Empty => None,
         }
     }
 
-    pub fn get_by_code_point(&self, code_point: char) -> Option<&Glyph> {
+    pub fn get_by_code_point(&self, code_point: char) -> Option<GlyphRef<'_>> {
         match self {
             GlyphSource::Memory {
                 glyphs,
@@ -367,12 +383,12 @@ impl GlyphSource {
                 // TODO: Properly handle UTF-16/out-of-bounds code points.
                 let code_point = code_point as u16;
                 if let Some(index) = code_point_to_glyph.get(&code_point) {
-                    glyphs.get(*index)
+                    glyphs.get(*index).map(GlyphRef::Direct)
                 } else {
                     None
                 }
             }
-            GlyphSource::FontFace(face) => face.get_glyph(code_point),
+            GlyphSource::FontFace(face) => face.get_glyph(code_point).map(GlyphRef::Direct),
             GlyphSource::Empty => None,
         }
     }
@@ -632,13 +648,13 @@ impl<'gc> Font<'gc> {
 
     /// Returns a glyph entry by index.
     /// Used by `Text` display objects.
-    pub fn get_glyph(&self, i: usize) -> Option<&Glyph> {
+    pub fn get_glyph(&self, i: usize) -> Option<GlyphRef<'_>> {
         self.0.glyphs.get_by_index(i)
     }
 
     /// Returns a glyph entry by character.
     /// Used by `EditText` display objects.
-    pub fn get_glyph_for_char(&self, c: char) -> Option<&Glyph> {
+    pub fn get_glyph_for_char(&self, c: char) -> Option<GlyphRef<'_>> {
         self.0.glyphs.get_by_code_point(c)
     }
 
@@ -748,7 +764,7 @@ pub trait FontLike<'gc> {
         params: EvalParameters,
         mut glyph_func: FGlyph,
     ) where
-        FGlyph: FnMut(usize, &Transform, &Glyph, Twips, Twips),
+        FGlyph: FnMut(usize, &Transform, GlyphRef, Twips, Twips),
     {
         transform.matrix.ty = self.get_baseline_for_height(params.height);
 
@@ -793,7 +809,7 @@ pub trait FontLike<'gc> {
             } else {
                 // No glyph, zero advance.  This makes it possible to use this method for purposes
                 // other than rendering the font, e.g. measurement, iterating over characters.
-                glyph_func(pos, &transform, &Glyph::empty(c), Twips::ZERO, x);
+                glyph_func(pos, &transform, Glyph::empty(c).as_ref(), Twips::ZERO, x);
             }
         }
     }
@@ -1002,15 +1018,19 @@ impl Glyph {
     pub fn character(&self) -> char {
         self.character
     }
+
+    pub fn as_ref(&self) -> GlyphRef<'_> {
+        GlyphRef::Direct(self)
+    }
 }
 
 pub struct GlyphRenderData<'a, 'gc> {
-    pub glyph: &'a Glyph,
+    pub glyph: GlyphRef<'a>,
     pub font: Font<'gc>,
 }
 
 impl<'a, 'gc> GlyphRenderData<'a, 'gc> {
-    fn new(glyph: &'a Glyph, font: Font<'gc>) -> Self {
+    fn new(glyph: GlyphRef<'a>, font: Font<'gc>) -> Self {
         Self { glyph, font }
     }
 }
