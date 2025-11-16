@@ -145,35 +145,17 @@ impl<'gc> NativeObject<'gc> {
 
 impl<'gc> Object<'gc> {
     /// Retrieve a named property from the object, or its prototype.
-    pub fn get_non_slash_path(
-        self,
-        name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.lookup(name, activation, false)
-    }
-
-    /// Retrieve a named property from the object, or its prototype.
     pub fn get(
         self,
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.lookup(name, activation, true)
-    }
-
-    fn lookup(
-        self,
-        name: impl Into<AvmString<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
-        is_slash_path: bool,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let (this, proto) = if let Some(super_object) = self.as_super_object() {
             (super_object.this(), super_object.proto(activation))
         } else {
             (self, Value::Object(self))
         };
-        match search_prototype(proto, name.into(), activation, this, is_slash_path, true)? {
+        match search_prototype(proto, name.into(), activation, this, true)? {
             Some((value, _depth)) => Ok(value),
             None => Ok(Value::Undefined),
         }
@@ -193,7 +175,7 @@ impl<'gc> Object<'gc> {
                 return Err(Error::PrototypeRecursionLimit);
             }
 
-            if let Some(value) = p.get_local_stored(name, activation, true) {
+            if let Some(value) = p.get_local_stored(name, activation) {
                 return Ok(value);
             }
 
@@ -280,7 +262,7 @@ impl<'gc> Object<'gc> {
         }
 
         let (method, depth) =
-            match search_prototype(Value::Object(self), name, activation, self, false, true)? {
+            match search_prototype(Value::Object(self), name, activation, self, true)? {
                 Some((Value::Object(method), depth)) => (method, depth),
                 _ => return Ok(Value::Undefined),
             };
@@ -394,7 +376,6 @@ pub fn search_prototype<'gc>(
     name: AvmString<'gc>,
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
-    is_slash_path: bool,
     call_resolve_fn: bool,
 ) -> Result<Option<(Value<'gc>, u8)>, Error<'gc>> {
     let mut depth = 0;
@@ -425,7 +406,7 @@ pub fn search_prototype<'gc>(
             }
         }
 
-        if let Some(value) = p.get_local_stored(name, activation, is_slash_path) {
+        if let Some(value) = p.get_local_stored(name, activation) {
             return Ok(Some((value, depth)));
         }
 
@@ -456,7 +437,7 @@ pub fn find_resolve_method<'gc>(
             return Err(Error::PrototypeRecursionLimit);
         }
 
-        let resolve = p.get_local_stored(istr!("__resolve"), activation, false);
+        let resolve = p.get_local_stored(istr!("__resolve"), activation);
         // FP completely skips over primitives (but not over non-function objects).
         if let Some(Value::Object(value)) = resolve {
             return Ok(Some(value));

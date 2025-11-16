@@ -86,7 +86,7 @@ impl<'gc> SuperObject<'gc> {
 
         let constructor = istr!("__constructor__");
         let Some((Value::Object(constructor), _depth)) =
-            search_prototype(proto.into(), constructor, activation, proto, false, false)?
+            search_prototype(proto.into(), constructor, activation, proto, false)?
         else {
             return Ok(Value::Undefined);
         };
@@ -115,7 +115,7 @@ impl<'gc> SuperObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let this = self.this();
         let Some((Value::Object(method), depth)) =
-            search_prototype(self.proto(activation), name, activation, this, false, true)?
+            search_prototype(self.proto(activation), name, activation, this, true)?
         else {
             return Ok(Value::Undefined);
         };

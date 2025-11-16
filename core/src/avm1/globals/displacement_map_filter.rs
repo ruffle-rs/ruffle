@@ -120,9 +120,9 @@ impl<'gc> DisplacementMapFilter<'gc> {
         let Some(value) = value else { return Ok(()) };
 
         if let Value::Object(object) = value {
-            if let Some(x) = object.get_local_stored(istr!("x"), activation, false) {
+            if let Some(x) = object.get_local_stored(istr!("x"), activation) {
                 let x = x.coerce_to_f64(activation)?.clamp_to_i32();
-                if let Some(y) = object.get_local_stored(istr!("y"), activation, false) {
+                if let Some(y) = object.get_local_stored(istr!("y"), activation) {
                     let y = y.coerce_to_f64(activation)?.clamp_to_i32();
                     self.0.map_point.set(Point::new(x, y));
                     return Ok(());

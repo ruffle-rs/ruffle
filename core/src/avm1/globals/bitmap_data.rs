@@ -410,7 +410,7 @@ fn clone<'gc>(
     };
 
     Ok(new_bitmap_data(
-        this.get_local_stored(istr!("__proto__"), activation, false),
+        this.get_local_stored(istr!("__proto__"), activation),
         bitmap_data.clone_data(activation.context.gc_context, activation.context.renderer),
         activation,
     )
@@ -795,8 +795,8 @@ fn hit_test<'gc>(
 
     let first_point = args.get_object(activation, 0);
     let top_left = if let (Some(x), Some(y)) = (
-        first_point.get_local_stored(istr!("x"), activation, false),
-        first_point.get_local_stored(istr!("y"), activation, false),
+        first_point.get_local_stored(istr!("x"), activation),
+        first_point.get_local_stored(istr!("y"), activation),
     ) {
         (x.coerce_to_i32(activation)?, y.coerce_to_i32(activation)?)
     } else {
@@ -816,8 +816,8 @@ fn hit_test<'gc>(
 
         let second_point = args.get_object(activation, 3);
         let second_point = if let (Some(x), Some(y)) = (
-            second_point.get_local_stored(istr!("x"), activation, false),
-            second_point.get_local_stored(istr!("y"), activation, false),
+            second_point.get_local_stored(istr!("x"), activation),
+            second_point.get_local_stored(istr!("y"), activation),
         ) {
             (x.coerce_to_i32(activation)?, y.coerce_to_i32(activation)?)
         } else if args.len() > 3 {
@@ -842,10 +842,10 @@ fn hit_test<'gc>(
         // Determine what kind of Object we have, point or rectangle.
         // Duck-typed dumb objects are allowed.
         let compare_fields = (
-            compare_object.get_local_stored(istr!("x"), activation, false),
-            compare_object.get_local_stored(istr!("y"), activation, false),
-            compare_object.get_local_stored(istr!("width"), activation, false),
-            compare_object.get_local_stored(istr!("height"), activation, false),
+            compare_object.get_local_stored(istr!("x"), activation),
+            compare_object.get_local_stored(istr!("y"), activation),
+            compare_object.get_local_stored(istr!("width"), activation),
+            compare_object.get_local_stored(istr!("height"), activation),
         );
         match compare_fields {
             // BitmapData vs. point
@@ -1276,7 +1276,7 @@ fn compare<'gc>(
         other_bitmap_data,
     ) {
         Some(bitmap_data) => Ok(new_bitmap_data(
-            this.get_local_stored(istr!("__proto__"), activation, false),
+            this.get_local_stored(istr!("__proto__"), activation),
             bitmap_data,
             activation,
         )
@@ -1322,7 +1322,7 @@ fn load_bitmap<'gc>(
             .collect(),
     );
     Ok(new_bitmap_data(
-        this.get_local_stored(istr!("prototype"), activation, false),
+        this.get_local_stored(istr!("prototype"), activation),
         bitmap_data,
         activation,
     )
