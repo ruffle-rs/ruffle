@@ -25,6 +25,9 @@ theme-light = Licht
 theme-dark = Donker
 # See for context https://github.com/FeralInteractive/gamemode
 gamemode = GameMode
+gamemode-tooltip =
+    GameMode past tijdelijk verscheidene optimalisaties toe aan jouw computer en/of Ruffle.
+    Ruffle vraagt GameMode enkel aan wanneer een film gespeeld wordt.
 gamemode-default = Standaard
 gamemode-default-tooltip = GameMode zal enkel aangezet worden wanneer de stroomverbruiksvoorkeur op hoog staat.
 # See for context https://wiki.archlinux.org/title/Input_method
