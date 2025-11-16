@@ -53,35 +53,6 @@ pub fn initialize_for_allocator<'gc>(
     obj.into()
 }
 
-/// Implements `flash.display.DisplayObject`'s native instance constructor.
-pub fn display_object_initializer<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Value<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    // No need to call `super()`, it wouldn't do anything
-
-    let this = this.as_object().unwrap();
-
-    if let Some(dobj) = this.as_display_object() {
-        if let Some(clip) = dobj.as_movie_clip() {
-            clip.set_constructing_frame(true);
-        }
-
-        if let Some(container) = dobj.as_container() {
-            for child in container.iter_render_list() {
-                child.construct_frame(activation.context);
-            }
-        }
-
-        if let Some(clip) = dobj.as_movie_clip() {
-            clip.set_constructing_frame(false);
-        }
-    }
-
-    Ok(Value::Undefined)
-}
-
 /// Implements `alpha`'s getter.
 pub fn get_alpha<'gc>(
     _activation: &mut Activation<'_, 'gc>,
