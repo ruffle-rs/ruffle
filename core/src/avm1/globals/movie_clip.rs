@@ -153,7 +153,7 @@ pub fn object_to_rectangle<'gc>(
     let mut values = [0; 4];
 
     for (&name, value) in names.iter().zip(&mut values) {
-        *value = match object.get_local_stored(name, activation, false) {
+        *value = match object.get_local_stored(name, activation) {
             Some(value) => value.coerce_to_i32(activation)?,
             None => return Ok(None),
         }
@@ -1378,10 +1378,10 @@ fn local_to_global<'gc>(
         // It does not search the prototype chain and ignores virtual properties.
         if let (Value::Number(x), Value::Number(y)) = (
             point
-                .get_local_stored(istr!("x"), activation, false)
+                .get_local_stored(istr!("x"), activation)
                 .unwrap_or(Value::Undefined),
             point
-                .get_local_stored(istr!("y"), activation, false)
+                .get_local_stored(istr!("y"), activation)
                 .unwrap_or(Value::Undefined),
         ) {
             let local = Point::from_pixels(x, y);
@@ -1560,10 +1560,10 @@ fn global_to_local<'gc>(
         // It does not search the prototype chain and ignores virtual properties.
         if let (Value::Number(x), Value::Number(y)) = (
             point
-                .get_local_stored(istr!("x"), activation, false)
+                .get_local_stored(istr!("x"), activation)
                 .unwrap_or(Value::Undefined),
             point
-                .get_local_stored(istr!("y"), activation, false)
+                .get_local_stored(istr!("y"), activation)
                 .unwrap_or(Value::Undefined),
         ) {
             let global = Point::from_pixels(x, y);

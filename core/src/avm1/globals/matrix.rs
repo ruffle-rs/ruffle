@@ -148,12 +148,12 @@ pub fn object_to_matrix_or_default<'gc>(
 ) -> Result<Matrix, Error<'gc>> {
     if let (Some(a), Some(b), Some(c), Some(d), Some(tx), Some(ty)) = (
         // These lookups do not search the prototype chain and ignore virtual properties.
-        object.get_local_stored(istr!("a"), activation, false),
-        object.get_local_stored(istr!("b"), activation, false),
-        object.get_local_stored(istr!("c"), activation, false),
-        object.get_local_stored(istr!("d"), activation, false),
-        object.get_local_stored(istr!("tx"), activation, false),
-        object.get_local_stored(istr!("ty"), activation, false),
+        object.get_local_stored(istr!("a"), activation),
+        object.get_local_stored(istr!("b"), activation),
+        object.get_local_stored(istr!("c"), activation),
+        object.get_local_stored(istr!("d"), activation),
+        object.get_local_stored(istr!("tx"), activation),
+        object.get_local_stored(istr!("ty"), activation),
     ) {
         let a = a.coerce_to_f64(activation)? as f32;
         let b = b.coerce_to_f64(activation)? as f32;

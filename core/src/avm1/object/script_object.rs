@@ -218,7 +218,6 @@ impl<'gc> Object<'gc> {
         self,
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
-        is_slash_path: bool,
     ) -> Option<Value<'gc>> {
         // TODO(moulins): can this special case be removed? (as `super` never has properties)
         if self.as_super_object().is_some() {
@@ -233,9 +232,9 @@ impl<'gc> Object<'gc> {
             .filter(|property| property.allow_swf_version(activation.swf_version()))
             .map(|property| property.data())
             .or_else(|| {
-                read.native.as_display_object().and_then(|dobj| {
-                    stage_object::get_property(dobj, name, activation, is_slash_path)
-                })
+                read.native
+                    .as_display_object()
+                    .and_then(|dobj| stage_object::get_property(dobj, name, activation))
             })
     }
 

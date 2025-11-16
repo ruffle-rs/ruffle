@@ -251,17 +251,15 @@ pub fn browse<'gc>(
 
             for i in 0..length {
                 if let Value::Object(element) = array.get_element(activation, i) {
-                    let mac_type = if let Some(val) =
-                        element.get_local_stored(istr!("macType"), activation, false)
-                    {
-                        Some(val.coerce_to_string(activation)?.to_string())
-                    } else {
-                        None
-                    };
+                    let mac_type =
+                        if let Some(val) = element.get_local_stored(istr!("macType"), activation) {
+                            Some(val.coerce_to_string(activation)?.to_string())
+                        } else {
+                            None
+                        };
 
-                    let description =
-                        element.get_local_stored(istr!("description"), activation, false);
-                    let extension = element.get_local_stored(istr!("extension"), activation, false);
+                    let description = element.get_local_stored(istr!("description"), activation);
+                    let extension = element.get_local_stored(istr!("extension"), activation);
 
                     if let (Some(description), Some(extension)) = (description, extension) {
                         let description = description.coerce_to_string(activation)?.to_string();

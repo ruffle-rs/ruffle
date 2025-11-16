@@ -20,7 +20,6 @@ pub fn get_property<'gc>(
     dobj: DisplayObject<'gc>,
     name: AvmString<'gc>,
     activation: &mut Activation<'_, 'gc>,
-    is_slash_path: bool,
 ) -> Option<Value<'gc>> {
     // Property search order for DisplayObjects:
 
@@ -37,15 +36,13 @@ pub fn get_property<'gc>(
         .as_container()
         .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
     {
-        return if is_slash_path {
-            Some(child.object1_or_undef())
-        // If an object doesn't have an object representation, e.g. Graphic,
-        // then trying to access it returns the parent instead
-        } else if child.object1().is_none() {
-            child.parent().map(|p| p.object1_or_undef())
-        } else {
-            Some(child.object1_or_undef())
-        };
+        let value = child
+            .object1()
+            // If an object doesn't have an object representation, e.g. Graphic,
+            // then trying to access it returns the parent instead
+            .or_else(|| child.parent().and_then(|p| p.object1()))
+            .map_or(Value::Undefined, Value::from);
+        return Some(value);
     }
 
     // 3) Display object properties such as `_x`, `_y` (never case sensitive)
