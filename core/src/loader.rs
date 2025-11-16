@@ -17,7 +17,9 @@ use crate::avm2::{
     Object as Avm2Object,
 };
 use crate::avm2_stub_method_context;
-use crate::backend::navigator::{ErrorResponse, OwnedFuture, Request, SuccessResponse};
+use crate::backend::navigator::{
+    ErrorResponse, FetchReason, OwnedFuture, Request, SuccessResponse,
+};
 use crate::backend::ui::DialogResultFuture;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::Color;
@@ -318,7 +320,7 @@ impl<'gc> LoadManager<'gc> {
         let importer_movie = MovieClipHandle::stash(uc, importer_movie);
 
         Box::pin(async move {
-            let fetch = player.lock().unwrap().navigator().fetch(request);
+            let fetch = player.lock().unwrap().fetch(request, FetchReason::LoadSwf);
 
             match wait_for_full_response(fetch).await {
                 Ok((body, url, _status, _redirected)) => {
@@ -646,7 +648,7 @@ impl<'gc> MovieLoader<'gc> {
             let request_url = request.url().to_string();
             let resolved_url = player.lock().unwrap().navigator().resolve_url(&request_url);
 
-            let fetch = player.lock().unwrap().navigator().fetch(request);
+            let fetch = player.lock().unwrap().fetch(request, FetchReason::LoadSwf);
 
             let mut replacing_root_movie = false;
             player.lock().unwrap().update(|uc| -> Result<(), Error> {
@@ -835,7 +837,7 @@ pub fn load_root_movie<'gc>(
     let player = uc.player_handle();
 
     Box::pin(async move {
-        let fetch = player.lock().unwrap().navigator().fetch(request);
+        let fetch = player.lock().unwrap().fetch(request, FetchReason::LoadSwf);
         let response = fetch.await.map_err(|error| {
             player
                 .lock()
@@ -844,7 +846,7 @@ pub fn load_root_movie<'gc>(
                 .display_root_movie_download_failed_message(false, error.error.to_string());
             error.error
         })?;
-        let url = response.url().into_owned();
+        let swf_url = response.url().into_owned();
         let body = response.body().await.inspect_err(|error| {
             player
                 .lock()
@@ -854,11 +856,6 @@ pub fn load_root_movie<'gc>(
         })?;
 
         // The spoofed root movie URL takes precedence over the actual URL.
-        let swf_url = player
-            .lock()
-            .unwrap()
-            .compatibility_rules()
-            .rewrite_swf_url(url);
         let spoofed_or_swf_url = player
             .lock()
             .unwrap()
@@ -896,7 +893,7 @@ pub fn load_form_into_object<'gc>(
     let target_object = ObjectHandle::stash(uc, target_object);
 
     Box::pin(async move {
-        let fetch = player.lock().unwrap().navigator().fetch(request);
+        let fetch = player.lock().unwrap().fetch(request, FetchReason::Other);
 
         let response = fetch.await.map_err(|e| e.error)?;
         let response_encoding = response.text_encoding();
@@ -970,7 +967,7 @@ pub fn load_form_into_load_vars<'gc>(
     let target_object = ObjectHandle::stash(uc, target_object);
 
     Box::pin(async move {
-        let fetch = player.lock().unwrap().navigator().fetch(request);
+        let fetch = player.lock().unwrap().fetch(request, FetchReason::Other);
         let response = wait_for_full_response(fetch).await;
 
         // Fire the load handler.
@@ -1054,7 +1051,7 @@ pub fn load_stylesheet<'gc>(
     let target_object = ObjectHandle::stash(uc, target_object);
 
     Box::pin(async move {
-        let fetch = player.lock().unwrap().navigator().fetch(request);
+        let fetch = player.lock().unwrap().fetch(request, FetchReason::Other);
         let response = wait_for_full_response(fetch).await;
 
         // Fire the load handler.
@@ -1113,7 +1110,10 @@ pub fn load_data_into_url_loader<'gc>(
     let target = Avm2ScriptObjectHandle::stash(uc, target);
 
     Box::pin(async move {
-        let fetch = player.lock().unwrap().navigator().fetch(request);
+        let fetch = player
+            .lock()
+            .unwrap()
+            .fetch(request, FetchReason::UrlLoader);
         let response = wait_for_full_response(fetch).await;
 
         player.lock().unwrap().update(|uc| {
@@ -1269,7 +1269,7 @@ pub fn load_sound_avm1<'gc>(
     let sound_object = ObjectHandle::stash(uc, sound_object);
 
     Box::pin(async move {
-        let fetch = player.lock().unwrap().navigator().fetch(request);
+        let fetch = player.lock().unwrap().fetch(request, FetchReason::Other);
         let response = wait_for_full_response(fetch).await;
 
         // Fire the load handler.
@@ -1329,7 +1329,7 @@ pub fn load_sound_avm2<'gc>(
     let sound = SoundObjectHandle::stash(uc, sound);
 
     Box::pin(async move {
-        let fetch = player.lock().unwrap().navigator().fetch(request);
+        let fetch = player.lock().unwrap().fetch(request, FetchReason::Other);
         let response = wait_for_full_response(fetch).await;
 
         player.lock().unwrap().update(|uc| {
@@ -1402,7 +1402,7 @@ pub fn load_netstream<'gc>(
     let stream = NetStreamHandle::stash(uc, stream);
 
     Box::pin(async move {
-        let fetch = player.lock().unwrap().navigator().fetch(request);
+        let fetch = player.lock().unwrap().fetch(request, FetchReason::Other);
         match fetch.await {
             Ok(mut response) => {
                 let expected_length = response.expected_length();
@@ -2386,7 +2386,7 @@ pub fn download_file_dialog<'gc>(
         // Download the data
         let req = Request::get(url.clone());
         // Doing this in two steps to prevent holding the player lock during fetch
-        let future = player.lock().unwrap().navigator().fetch(req);
+        let future = player.lock().unwrap().fetch(req, FetchReason::Other);
         let download_res = wait_for_full_response(future).await;
 
         // Fire the load handler.
@@ -2603,7 +2603,7 @@ pub fn upload_file<'gc>(
             )),
         );
         // Doing this in two steps to prevent holding the player lock during fetch
-        let future = player.lock().unwrap().navigator().fetch(req);
+        let future = player.lock().unwrap().fetch(req, FetchReason::Other);
         let result = future.await;
 
         // Fire the load handler.
