@@ -15,8 +15,8 @@ pub enum Error {
     #[error("Unknown bitmap format")]
     UnknownType,
 
-    #[error("Invalid ZLIB compression")]
-    InvalidZlibCompression,
+    #[error("Invalid ZLIB compression: {0}")]
+    InvalidZlibCompression(std::io::Error),
 
     #[error("Invalid JPEG")]
     InvalidJpeg(#[from] jpeg_decoder::Error),

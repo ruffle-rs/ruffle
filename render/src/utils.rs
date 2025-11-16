@@ -491,7 +491,7 @@ fn decompress_zlib(data: &[u8]) -> Result<Vec<u8>, Error> {
     let mut decoder = flate2::bufread::ZlibDecoder::new(data);
     decoder
         .read_to_end(&mut out_data)
-        .map_err(|_| Error::InvalidZlibCompression)?;
+        .map_err(Error::InvalidZlibCompression)?;
     out_data.shrink_to_fit();
     Ok(out_data)
 }
