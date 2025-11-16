@@ -104,9 +104,18 @@ fn load_test_dir<'a>(test_dir: &'a VfsPath, name: &'a str) -> impl Iterator<Item
 
 fn trial_for_test(opts: &RuffleTestOpts, test: Test, list_only: bool) -> Trial {
     let ignore = !test.should_run(opts.ignore_known_failures, !list_only, &NativeEnvironment);
-    let subtest_name = test.options.subtest_name.clone();
 
-    let mut trial = Trial::test(test.name.clone(), move || {
+    // Put extra info into the test 'kind' instead of appending it to the test name,
+    // to not break `cargo test some/test -- --exact` and `cargo test -- --list`.
+    let mut test_kind = String::new();
+    if test.options.known_failure {
+        test_kind.push('!');
+    }
+    if let Some(name) = &test.options.subtest_name {
+        test_kind.push_str(name);
+    }
+
+    let trial = Trial::test(test.name.clone(), move || {
         let test = AssertUnwindSafe(test);
         let unwind_result = catch_unwind(|| {
             let mut runner = test.create_test_runner(&NativeEnvironment)?;
@@ -136,13 +145,6 @@ fn trial_for_test(opts: &RuffleTestOpts, test: Test, list_only: bool) -> Trial {
             }
         }
     });
-    if ignore {
-        trial = trial.with_ignored_flag(true);
-    }
-    if let Some(name) = subtest_name {
-        // Put the subtest name as the test 'kind' instead of appending it to the test name,
-        // to not break `cargo test some/test -- --exact` and `cargo test -- --list`.
-        trial = trial.with_kind(name);
-    }
-    trial
+
+    trial.with_ignored_flag(ignore).with_kind(test_kind)
 }
