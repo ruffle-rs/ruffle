@@ -238,6 +238,12 @@ pub enum ScrollingBehavior {
     Smart,
 }
 
+#[derive(Debug, Clone, Copy)]
+pub enum DeviceFontRenderer {
+    Embedded,
+    Canvas,
+}
+
 #[wasm_bindgen]
 impl RuffleHandle {
     /// Stream an arbitrary movie file from (presumably) the Internet.

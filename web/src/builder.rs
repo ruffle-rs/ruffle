@@ -1,8 +1,8 @@
 use crate::external_interface::JavascriptInterface;
 use crate::navigator::{OpenUrlMode, WebNavigatorBackend};
 use crate::{
-    JavascriptPlayer, RUFFLE_GLOBAL_PANIC, RuffleHandle, ScrollingBehavior, SocketProxy, audio,
-    log_adapter, storage, ui,
+    DeviceFontRenderer, JavascriptPlayer, RUFFLE_GLOBAL_PANIC, RuffleHandle, ScrollingBehavior,
+    SocketProxy, audio, log_adapter, storage, ui,
 };
 use js_sys::{Promise, RegExp};
 use ruffle_core::backend::audio::{AudioBackend, NullAudioBackend};
@@ -65,6 +65,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub(crate) url_rewrite_rules: Vec<(RegExp, String)>,
     pub(crate) scrolling_behavior: ScrollingBehavior,
+    pub(crate) device_font_renderer: DeviceFontRenderer,
 }
 
 impl Default for RuffleInstanceBuilder {
@@ -104,6 +105,7 @@ impl Default for RuffleInstanceBuilder {
             gamepad_button_mapping: HashMap::new(),
             url_rewrite_rules: vec![],
             scrolling_behavior: ScrollingBehavior::Smart,
+            device_font_renderer: DeviceFontRenderer::Embedded,
         }
     }
 }
@@ -343,6 +345,15 @@ impl RuffleInstanceBuilder {
             "always" => ScrollingBehavior::Always,
             "never" => ScrollingBehavior::Never,
             "smart" => ScrollingBehavior::Smart,
+            _ => return,
+        };
+    }
+
+    #[wasm_bindgen(js_name = "setDeviceFontRenderer")]
+    pub fn set_device_font_renderer(&mut self, device_font_renderer: String) {
+        self.device_font_renderer = match device_font_renderer.as_str() {
+            "embedded" => DeviceFontRenderer::Embedded,
+            "canvas" => DeviceFontRenderer::Canvas,
             _ => return,
         };
     }
