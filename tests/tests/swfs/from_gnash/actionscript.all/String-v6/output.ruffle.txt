@@ -369,9 +369,9 @@ PASSED: saved1.value == 'string' [./String.as:1332]
 PASSED: saved2.value == 'another string' [./String.as:1333]
 PASSED: saved2.value.prop != saved3.value.prop [./String.as:1337]
 PASSED: saved2.value !== saved3.value [./String.as:1338]
-FAILED: expected: 'wonder1' obtained:  [./String.as:1352]
-FAILED: expected: 'wonder2' obtained:  [./String.as:1354]
-FAILED: expected: 'wonder3' obtained:  [./String.as:1356]
-#passed: 355
-#failed: 16
+PASSED: a.id == 'wonder1' [./String.as:1352]
+PASSED: a.id == 'wonder2' [./String.as:1354]
+PASSED: a.id == 'wonder3' [./String.as:1356]
+#passed: 358
+#failed: 13
 #total tests run: 371

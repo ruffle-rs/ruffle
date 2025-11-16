@@ -470,43 +470,6 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    /// Coerce `self` to a script object, boxing primitives if necessary.
-    ///
-    /// This can fail in two different ways:
-    /// - If the boxing constructor throws an error, `Err(_)` is returned;
-    /// - If `self` isn't coercible (e.g. because it is null or undefined),
-    ///   `Ok(None)` is returned instead.
-    pub fn coerce_to_object(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Option<Object<'gc>>, Error<'gc>> {
-        let proto = match self {
-            // Object coerce to themselves...
-            Value::Object(obj) => return Ok(Some(obj)),
-            // ...and MovieClips coerce to their underlying object.
-            Value::MovieClip(mcr) => return Ok(mcr.coerce_to_object(activation)),
-            // `null` and `undefined` cannot be coerced.
-            Value::Null | Value::Undefined => return Ok(None),
-            // Primitives need to be boxed, so select a suitable prototype.
-            Value::Bool(_) => activation.prototypes().boolean,
-            Value::Number(_) => activation.prototypes().number,
-            Value::String(_) => activation.prototypes().string,
-        };
-
-        let obj = Object::new(&activation.context.strings, Some(proto));
-
-        // Constructor populates the boxed object with the value.
-        use crate::avm1::{function::NativeFunction, globals};
-        let constr: NativeFunction = match self {
-            Value::Bool(_) => globals::boolean::constructor,
-            Value::Number(_) => globals::number::constructor,
-            Value::String(_) => globals::string::constructor,
-            _ => |_, _, _| Ok(Value::Undefined),
-        };
-
-        constr(activation, obj, &[self]).map(|_| Some(obj))
-    }
-
     /// Coerce `self` to a script object, unconditionally.
     ///
     /// If `self` isn't coercible, returns a fresh bare object instead.
@@ -520,6 +483,49 @@ impl<'gc> Value<'gc> {
             Ok(obj)
         } else {
             Ok(Object::new_without_proto(activation.gc()))
+        }
+    }
+
+    /// Coerce `self` to a script object, boxing primitives if necessary.
+    ///
+    /// This can fail in two different ways:
+    /// - If the boxing constructor throws an error, `Err(_)` is returned;
+    /// - If `self` isn't coercible (e.g. because it is null or undefined),
+    ///   `Ok(None)` is returned instead.
+    pub fn coerce_to_object(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<Object<'gc>>, Error<'gc>> {
+        let class_name = match self {
+            // Object coerce to themselves...
+            Value::Object(obj) => return Ok(Some(obj)),
+            // ...and MovieClips coerce to their underlying object.
+            Value::MovieClip(mcr) => return Ok(mcr.coerce_to_object(activation)),
+            // `null` and `undefined` cannot be coerced.
+            Value::Null | Value::Undefined => return Ok(None),
+            // Primitives need to be boxed, so select a suitable class.
+            Value::Bool(_) => istr!("Boolean"),
+            Value::Number(_) => istr!("Number"),
+            Value::String(_) => istr!("String"),
+        };
+
+        // Fetch the constructor from the global scope...
+        let Some(Value::Object(class)) = activation
+            .global_object()
+            .get_opt(class_name, activation, false)?
+        else {
+            // No valid constructor, give up.
+            return Ok(None);
+        };
+
+        // ...and use it to box the primitive.
+        if let Value::Object(obj) = class.construct(activation, &[self])? {
+            // TODO(moulins): do MovieClips count as objects here?
+            Ok(Some(obj))
+        } else {
+            // The constructor returned a non-object (this can happen
+            // with some native constructors), give up.
+            Ok(None)
         }
     }
 
