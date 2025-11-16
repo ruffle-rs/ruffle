@@ -688,10 +688,16 @@ impl RuffleInstanceBuilder {
                 .with_fs_commands(interface);
         }
 
-        let trace_observer = Rc::new(RefCell::new(JsValue::UNDEFINED));
+        let trace_observer: Rc<RefCell<JsValue>> = Rc::new(RefCell::new(JsValue::UNDEFINED));
+        let use_canvas_font_renderer =
+            matches!(self.device_font_renderer, DeviceFontRenderer::Canvas);
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
-            .with_ui(ui::WebUiBackend::new(js_player.clone(), &canvas))
+            .with_ui(ui::WebUiBackend::new(
+                js_player.clone(),
+                &canvas,
+                use_canvas_font_renderer,
+            ))
             // `ExternalVideoBackend` has an internal `SoftwareVideoBackend` that it uses for any non-H.264 video.
             .with_video(ExternalVideoBackend::new_with_webcodecs(
                 log_subscriber.clone(),
@@ -724,7 +730,10 @@ impl RuffleInstanceBuilder {
             core.set_show_menu(self.show_menu);
             core.set_allow_fullscreen(self.allow_fullscreen);
             core.set_window_mode(self.wmode.as_deref().unwrap_or("window"));
-            self.setup_fonts(&mut core);
+
+            if matches!(self.device_font_renderer, DeviceFontRenderer::Embedded) {
+                self.setup_fonts(&mut core);
+            }
         }
 
         Ok(BuiltPlayer {
