@@ -143,6 +143,16 @@ impl EvalParameters {
     }
 }
 
+pub trait FontRenderer: std::fmt::Debug {
+    fn get_font_metrics(&self) -> FontMetrics;
+
+    fn has_kerning_info(&self) -> bool;
+
+    fn render_glyph(&self, character: char) -> Option<Glyph>;
+
+    fn calculate_kerning(&self, left: char, right: char) -> Twips;
+}
+
 struct GlyphToDrawing<'a>(&'a mut Drawing);
 
 /// Convert from a TTF outline, to a flash Drawing.
@@ -365,6 +375,15 @@ pub enum GlyphSource {
         kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
     },
     FontFace(FontFace),
+    ExternalRenderer {
+        /// Maps Unicode code points to glyphs rendered by the renderer.
+        glyph_cache: RefCell<fnv::FnvHashMap<u16, Option<Glyph>>>,
+
+        /// Maps Unicode pairs to kerning provided by the renderer.
+        kerning_cache: RefCell<fnv::FnvHashMap<(u16, u16), Twips>>,
+
+        font_renderer: Box<dyn FontRenderer>,
+    },
     Empty,
 }
 
@@ -373,6 +392,7 @@ impl GlyphSource {
         match self {
             GlyphSource::Memory { glyphs, .. } => glyphs.get(index).map(GlyphRef::Direct),
             GlyphSource::FontFace(_) => None, // Unsupported.
+            GlyphSource::ExternalRenderer { .. } => None, // Unsupported.
             GlyphSource::Empty => None,
         }
     }
@@ -393,6 +413,26 @@ impl GlyphSource {
                 }
             }
             GlyphSource::FontFace(face) => face.get_glyph(code_point).map(GlyphRef::Direct),
+            GlyphSource::ExternalRenderer {
+                glyph_cache,
+                font_renderer,
+                ..
+            } => {
+                let character = code_point;
+                let code_point = code_point as u16;
+
+                glyph_cache
+                    .borrow_mut()
+                    .entry(code_point)
+                    .or_insert_with(|| font_renderer.render_glyph(character));
+
+                let glyph = Ref::filter_map(glyph_cache.borrow(), |v| {
+                    v.get(&code_point).unwrap_or(&None).as_ref()
+                })
+                .ok();
+
+                glyph.map(GlyphRef::Ref)
+            }
             GlyphSource::Empty => None,
         }
     }
@@ -401,6 +441,7 @@ impl GlyphSource {
         match self {
             GlyphSource::Memory { kerning_pairs, .. } => !kerning_pairs.is_empty(),
             GlyphSource::FontFace(face) => face.has_kerning_info(),
+            GlyphSource::ExternalRenderer { font_renderer, .. } => font_renderer.has_kerning_info(),
             GlyphSource::Empty => false,
         }
     }
@@ -417,6 +458,19 @@ impl GlyphSource {
                     .unwrap_or_default()
             }
             GlyphSource::FontFace(face) => face.get_kerning_offset(left, right),
+            GlyphSource::ExternalRenderer {
+                kerning_cache,
+                font_renderer,
+                ..
+            } => {
+                let (Ok(left_cp), Ok(right_cp)) = (left.try_into(), right.try_into()) else {
+                    return Twips::ZERO;
+                };
+                *kerning_cache
+                    .borrow_mut()
+                    .entry((left_cp, right_cp))
+                    .or_insert_with(|| font_renderer.calculate_kerning(left, right))
+            }
             GlyphSource::Empty => Twips::ZERO,
         }
     }
@@ -616,6 +670,29 @@ impl<'gc> Font<'gc> {
                 FontType::EmbeddedCFF,
             ))
         }
+    }
+
+    pub fn from_renderer(
+        gc_context: &Mutation<'gc>,
+        descriptor: FontDescriptor,
+        font_renderer: Box<dyn FontRenderer>,
+    ) -> Self {
+        let metrics = font_renderer.get_font_metrics();
+        Font(Gc::new(
+            gc_context,
+            FontData {
+                glyphs: GlyphSource::ExternalRenderer {
+                    glyph_cache: RefCell::new(fnv::FnvHashMap::default()),
+                    kerning_cache: RefCell::new(fnv::FnvHashMap::default()),
+                    font_renderer,
+                },
+
+                metrics,
+                descriptor,
+                font_type: FontType::Device,
+                has_layout: true,
+            },
+        ))
     }
 
     pub fn empty_font(
