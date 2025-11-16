@@ -1,12 +1,21 @@
 package flash.xml {
+    import __ruffle__.stub_method;
+
     import flash.xml.XMLNode;
     import flash.xml.XMLNodeType;
 
     public class XMLDocument extends XMLNode {
-        public var ignoreWhite: Boolean = false;
+        public var docTypeDecl:Object = null;
+        public var idMap:Object;
+        public var ignoreWhite:Boolean = false;
+        public var xmlDecl:Object = null;
 
         public function XMLDocument(input: String = null) {
-            super(XMLNodeType.ELEMENT_NODE, null);
+            super(XMLNodeType.ELEMENT_NODE, "");
+
+            this.idMap = {};
+            this.nodeName = null;
+
             if (input != null) {
                 parseXML(input);
             }
@@ -89,6 +98,11 @@ package flash.xml {
 
         public function createTextNode(text:String): XMLNode {
             return new XMLNode(XMLNodeType.TEXT_NODE, text);
+        }
+
+        override public function toString():String {
+            stub_method("flash.xml.XMLDocument", "toString");
+            return super.toString();
         }
     }
 }

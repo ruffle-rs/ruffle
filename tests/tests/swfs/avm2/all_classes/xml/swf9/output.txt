@@ -1,0 +1,116 @@
+<type name="flash.xml::XMLDocument" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.xml::XMLDocument">
+      <accessor name="attributes" access="readwrite" type="Object" declaredBy="flash.xml::XMLNode"/>
+      <accessor name="childNodes" access="readonly" type="Array" declaredBy="flash.xml::XMLNode"/>
+      <accessor name="localName" access="readonly" type="String" declaredBy="flash.xml::XMLNode"/>
+      <accessor name="namespaceURI" access="readonly" type="String" declaredBy="flash.xml::XMLNode"/>
+      <accessor name="prefix" access="readonly" type="String" declaredBy="flash.xml::XMLNode"/>
+      <constructor>
+          <parameter index="1" type="String" optional="true"/>
+    </constructor>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.xml::XMLNode"/>
+      <method name="appendChild" declaredBy="flash.xml::XMLNode" returnType="void">
+          <parameter index="1" type="flash.xml::XMLNode" optional="false"/>
+    </method>
+      <method name="cloneNode" declaredBy="flash.xml::XMLNode" returnType="flash.xml::XMLNode">
+          <parameter index="1" type="Boolean" optional="false"/>
+    </method>
+      <method name="createElement" declaredBy="flash.xml::XMLDocument" returnType="flash.xml::XMLNode">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="createTextNode" declaredBy="flash.xml::XMLDocument" returnType="flash.xml::XMLNode">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="getNamespaceForPrefix" declaredBy="flash.xml::XMLNode" returnType="String">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="getPrefixForNamespace" declaredBy="flash.xml::XMLNode" returnType="String">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hasChildNodes" declaredBy="flash.xml::XMLNode" returnType="Boolean"/>
+      <method name="insertBefore" declaredBy="flash.xml::XMLNode" returnType="void">
+          <parameter index="1" type="flash.xml::XMLNode" optional="false"/>
+          <parameter index="2" type="flash.xml::XMLNode" optional="false"/>
+    </method>
+      <method name="parseXML" declaredBy="flash.xml::XMLDocument" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="removeNode" declaredBy="flash.xml::XMLNode" returnType="void"/>
+      <method name="toString" declaredBy="flash.xml::XMLDocument" returnType="String"/>
+      <variable name="docTypeDecl" type="Object"/>
+      <variable name="firstChild" type="flash.xml::XMLNode"/>
+      <variable name="idMap" type="Object"/>
+      <variable name="ignoreWhite" type="Boolean"/>
+      <variable name="lastChild" type="flash.xml::XMLNode"/>
+      <variable name="nextSibling" type="flash.xml::XMLNode"/>
+      <variable name="nodeName" type="String"/>
+      <variable name="nodeType" type="uint"/>
+      <variable name="nodeValue" type="String"/>
+      <variable name="parentNode" type="flash.xml::XMLNode"/>
+      <variable name="previousSibling" type="flash.xml::XMLNode"/>
+      <variable name="xmlDecl" type="Object"/>
+  </factory>
+</type>
+<type name="flash.xml::XMLNode" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.xml::XMLNode">
+      <accessor name="attributes" access="readwrite" type="Object" declaredBy="flash.xml::XMLNode"/>
+      <accessor name="childNodes" access="readonly" type="Array" declaredBy="flash.xml::XMLNode"/>
+      <accessor name="localName" access="readonly" type="String" declaredBy="flash.xml::XMLNode"/>
+      <accessor name="namespaceURI" access="readonly" type="String" declaredBy="flash.xml::XMLNode"/>
+      <accessor name="prefix" access="readonly" type="String" declaredBy="flash.xml::XMLNode"/>
+      <constructor>
+          <parameter index="1" type="uint" optional="false"/>
+          <parameter index="2" type="String" optional="false"/>
+    </constructor>
+      <extendsClass type="Object"/>
+      <method name="appendChild" declaredBy="flash.xml::XMLNode" returnType="void">
+          <parameter index="1" type="flash.xml::XMLNode" optional="false"/>
+    </method>
+      <method name="cloneNode" declaredBy="flash.xml::XMLNode" returnType="flash.xml::XMLNode">
+          <parameter index="1" type="Boolean" optional="false"/>
+    </method>
+      <method name="getNamespaceForPrefix" declaredBy="flash.xml::XMLNode" returnType="String">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="getPrefixForNamespace" declaredBy="flash.xml::XMLNode" returnType="String">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hasChildNodes" declaredBy="flash.xml::XMLNode" returnType="Boolean"/>
+      <method name="insertBefore" declaredBy="flash.xml::XMLNode" returnType="void">
+          <parameter index="1" type="flash.xml::XMLNode" optional="false"/>
+          <parameter index="2" type="flash.xml::XMLNode" optional="false"/>
+    </method>
+      <method name="removeNode" declaredBy="flash.xml::XMLNode" returnType="void"/>
+      <method name="toString" declaredBy="flash.xml::XMLNode" returnType="String"/>
+      <variable name="firstChild" type="flash.xml::XMLNode"/>
+      <variable name="lastChild" type="flash.xml::XMLNode"/>
+      <variable name="nextSibling" type="flash.xml::XMLNode"/>
+      <variable name="nodeName" type="String"/>
+      <variable name="nodeType" type="uint"/>
+      <variable name="nodeValue" type="String"/>
+      <variable name="parentNode" type="flash.xml::XMLNode"/>
+      <variable name="previousSibling" type="flash.xml::XMLNode"/>
+  </factory>
+</type>
+<type name="flash.xml::XMLNodeType" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="CDATA_NODE" type="uint"/>
+  <constant name="COMMENT_NODE" type="uint"/>
+  <constant name="DOCUMENT_TYPE_NODE" type="uint"/>
+  <constant name="ELEMENT_NODE" type="uint"/>
+  <constant name="PROCESSING_INSTRUCTION_NODE" type="uint"/>
+  <constant name="TEXT_NODE" type="uint"/>
+  <constant name="XML_DECLARATION" type="uint"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.xml::XMLNodeType">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
