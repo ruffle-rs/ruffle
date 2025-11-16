@@ -45,8 +45,8 @@ PASSED: s == undefined [./Instance.as:126]
 PASSED: s.__proto__ == 8 [./Instance.as:128]
 PASSED: typeof(s) == "object" [./Instance.as:129]
 PASSED: !s instanceOf String [./Instance.as:130]
-FAILED: expected: undefined obtained: hello [./Instance.as:136]
+PASSED: s == undefined [./Instance.as:136]
 PASSED: c.__proto__ == 8 [./Instance.as:142]
-#passed: 41
-#failed: 5
+#passed: 42
+#failed: 4
 #total tests run: 46
