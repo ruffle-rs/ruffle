@@ -1,3 +1,5 @@
+mod font_renderer;
+
 use super::JavascriptPlayer;
 use rfd::{AsyncFileDialog, FileHandle};
 use ruffle_core::backend::ui::{
