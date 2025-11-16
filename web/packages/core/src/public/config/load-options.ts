@@ -284,6 +284,30 @@ export enum ScrollingBehavior {
 }
 
 /**
+ * Specifies how device fonts should be rendered.
+ */
+export enum DeviceFontRenderer {
+    /**
+     * Use Ruffle's embedded text rendering engine.
+     *
+     * It cannot access device fonts and uses fonts provided in the
+     * configuration and the default Noto Sans font as a fallback.
+     *
+     * This is the default method.
+     */
+    Embedded = "embedded",
+
+    /**
+     * Use an offscreen canvas for text rendering.
+     *
+     * It can access and render device fonts, glyphs are rendered as bitmaps.
+     *
+     * This is an experimental method and some features might not work properly.
+     */
+    Canvas = "canvas",
+}
+
+/**
  * Represents a host, port and proxyUrl. Used when a SWF file tries to use a Socket.
  */
 export interface SocketProxy {
@@ -758,6 +782,13 @@ export interface BaseLoadOptions {
      * @default ScrollingBehavior.Smart
      */
     scrollingBehavior?: ScrollingBehavior;
+
+    /**
+     * Specify how device fonts should be rendered.
+     *
+     * @default DeviceFontRenderer.Embedded
+     */
+    deviceFontRenderer?: DeviceFontRenderer;
 }
 
 /**
