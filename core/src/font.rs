@@ -411,6 +411,10 @@ pub enum FontType {
 }
 
 impl FontType {
+    pub fn is_device(self) -> bool {
+        self == Self::Device
+    }
+
     pub fn is_embedded(self) -> bool {
         self != Self::Device
     }
@@ -744,7 +748,8 @@ pub trait FontLike<'gc> {
         // TODO [KJ] I'm not sure whether we should iterate over characters here or over code units.
         //   I suspect Flash Player does not support full UTF-16 when displaying and laying out text.
         let mut char_indices = text.char_indices().peekable();
-        let has_kerning_info = self.has_kerning_info();
+        let kerning_enabled =
+            self.has_kerning_info() && (self.font_type().is_device() || params.kerning);
         let mut x = Twips::ZERO;
         while let Some((pos, c)) = char_indices.next() {
             let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
@@ -752,7 +757,7 @@ pub trait FontLike<'gc> {
                 let glyph = render_data.glyph;
                 let scale = params.height.get() as f32 / render_data.font.scale();
                 let mut advance = glyph.advance();
-                if has_kerning_info && params.kerning {
+                if kerning_enabled {
                     let next_char = char_indices.peek().cloned().unwrap_or((0, Ok('\0'))).1;
                     let next_char = next_char.unwrap_or(char::REPLACEMENT_CHARACTER);
                     advance += self.get_kerning_offset(c, next_char);
