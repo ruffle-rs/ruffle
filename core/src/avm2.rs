@@ -4,7 +4,8 @@ use crate::avm2::bytearray::ObjectEncoding;
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
 use crate::avm2::e4x::XmlSettings;
 use crate::avm2::error::{
-    make_error_1014, make_error_1107, type_error, verify_error, Error1014Type,
+    make_error_1014, make_error_1047, make_error_1107, make_error_2022, make_error_2023,
+    Error1014Type,
 };
 use crate::avm2::function::exec;
 use crate::avm2::globals::{
@@ -514,11 +515,7 @@ impl<'gc> Avm2<'gc> {
                 // The class must extend DisplayObject to ensure that events
                 // can properly be dispatched to them
                 if !class.has_class_in_chain(activation.avm2().class_defs().display_object) {
-                    return Err(Error::avm_error(type_error(
-                        activation,
-                        &format!("Error #2022: Class {}$ must inherit from DisplayObject to link to a symbol.", class.name().local_name()),
-                        2022,
-                    )?));
+                    return Err(make_error_2022(activation, class));
                 }
             }
         } else if movie_clip.avm2_class().is_none() {
@@ -527,14 +524,7 @@ impl<'gc> Avm2<'gc> {
             // ClassObject is going to be the class of the MC. Ensure it
             // subclasses Sprite.
             if !class.has_class_in_chain(activation.avm2().class_defs().sprite) {
-                return Err(Error::avm_error(type_error(
-                    activation,
-                    &format!(
-                        "Error #2023: Class {}$ must inherit from Sprite to link to the root.",
-                        class.name().local_name(),
-                    ),
-                    2023,
-                )?));
+                return Err(make_error_2023(activation, class));
             }
         }
 
@@ -565,11 +555,7 @@ impl<'gc> Avm2<'gc> {
         activation.set_outer(ScopeChain::new(domain));
 
         if abc.scripts.is_empty() {
-            return Err(Error::avm_error(verify_error(
-                &mut activation,
-                "Error #1047: No entry point was found.",
-                1047,
-            )?));
+            return Err(make_error_1047(&mut activation));
         }
 
         let num_scripts = abc.scripts.len();
