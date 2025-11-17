@@ -333,6 +333,16 @@ pub fn make_error_1035<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1047<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(activation, "Error #1047: No entry point was found.", 1047);
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1051<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,
@@ -699,6 +709,40 @@ pub fn make_error_2012<'gc>(
         activation,
         &format!("Error #2012: {class_name} class cannot be instantiated."),
         2012,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2022<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        &format!(
+            "Error #2022: Class {}$ must inherit from DisplayObject to link to a symbol.",
+            class.name().local_name()
+        ),
+        2022,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2023<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        &format!(
+            "Error #2023: Class {}$ must inherit from Sprite to link to the root.",
+            class.name().local_name()
+        ),
+        2023,
     );
     match err {
         Ok(err) => Error::avm_error(err),
