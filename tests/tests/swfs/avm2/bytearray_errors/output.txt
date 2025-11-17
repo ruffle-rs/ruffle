@@ -1,0 +1,24 @@
+Got [object TypeError] id 2007
+Got [object IOError] id 2058
+Got [object TypeError] id 2007
+Got [object IOError] id 2058
+No error
+Got [object TypeError] id 2007
+Got [object ArgumentError] id 2008
+Got [object TypeError] id 2007
+Got [object TypeError] id 2007
+Got [object TypeError] id 2007
+Got [object TypeError] id 2007
+No error
+No error
+Got [object TypeError] id 2007
+Got [object TypeError] id 2007
+Got [object TypeError] id 2007
+No error
+Got [object EOFError] id 2030
+Got [object TypeError] id 2007
+Got [object TypeError] id 2007
+No error
+Got [object EOFError] id 2030
+No error
+Got [object EOFError] id 2030
