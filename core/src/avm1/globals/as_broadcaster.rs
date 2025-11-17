@@ -26,6 +26,13 @@ pub fn create_class<'gc>(
     // returned in such cases.
     let class = context.empty_class(super_proto);
 
+    class.constr.set_attributes(
+        context.gc(),
+        None,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::VERSION_6,
+        Attribute::empty(),
+    );
+
     let mut define_as_object = |index: usize| -> Object<'gc> {
         match OBJECT_DECLS[index].define_on(context.strings, class.constr, context.fn_proto) {
             Value::Object(o) => o,
