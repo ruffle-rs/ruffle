@@ -5,8 +5,8 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
-    make_error_1040, make_error_1041, make_error_1065, make_error_1127, make_error_1506,
-    make_null_or_undefined_error, type_error, verify_error,
+    make_error_1040, make_error_1041, make_error_1063, make_error_1065, make_error_1127,
+    make_error_1506, make_null_or_undefined_error, type_error, verify_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
@@ -31,8 +31,6 @@ use ruffle_macros::istr;
 use std::cmp::{min, Ordering};
 use std::sync::Arc;
 use swf::avm2::types::MethodFlags as AbcMethodFlags;
-
-use super::error::make_mismatch_error;
 
 /// Represents a single activation of a given AVM2 function or keyframe.
 pub struct Activation<'a, 'gc: 'a> {
@@ -214,11 +212,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     let arg = if let Some(default_value) = &param_config.default_value {
                         *default_value
                     } else {
-                        return Err(Error::avm_error(make_mismatch_error(
-                            self,
-                            method,
-                            user_arguments.len(),
-                        )?));
+                        return Err(make_error_1063(self, method, user_arguments.len()));
                     };
 
                     let coerced_arg = if let Some(param_class) = param_config.param_type {
@@ -344,11 +338,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let signature = method.resolved_param_config();
 
         if user_arguments.len() > signature.len() && !has_rest_or_args && !method.is_unchecked() {
-            return Err(Error::avm_error(make_mismatch_error(
-                self,
-                method,
-                user_arguments.len(),
-            )?));
+            return Err(make_error_1063(self, method, user_arguments.len()));
         }
 
         // Create locals
@@ -377,11 +367,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 } else if method.is_unchecked() {
                     Value::Undefined
                 } else {
-                    return Err(Error::avm_error(make_mismatch_error(
-                        self,
-                        method,
-                        user_arguments.len(),
-                    )?));
+                    return Err(make_error_1063(self, method, user_arguments.len()));
                 };
 
                 let coerced_arg = if let Some(param_class) = param_config.param_type {
