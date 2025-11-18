@@ -251,6 +251,20 @@ pub fn make_error_1003<'gc>(activation: &mut Activation<'_, 'gc>, radix: i32) ->
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1005<'gc>(activation: &mut Activation<'_, 'gc>, length: f64) -> Error<'gc> {
+    let err = range_error(
+        activation,
+        &format!("Error #1005: Array index is not a positive integer ({length})."),
+        1005,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = type_error(activation, "Error #1006: value is not a function.", 1006);
     match err {
