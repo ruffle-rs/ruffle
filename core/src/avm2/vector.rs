@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::error::{make_error_1125, range_error};
+use crate::avm2::error::{make_error_1125, make_error_1126};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
 use gc_arena::Collect;
@@ -56,11 +56,7 @@ impl<'gc> VectorStorage<'gc> {
 
     pub fn check_fixed(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         if self.is_fixed {
-            return Err(Error::avm_error(range_error(
-                activation,
-                "Error #1126: Cannot change the length of a fixed Vector.",
-                1126,
-            )?));
+            return Err(make_error_1126(activation));
         }
         Ok(())
     }

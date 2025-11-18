@@ -770,6 +770,20 @@ pub fn make_error_1125<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = range_error(
+        activation,
+        "Error #1126: Cannot change the length of a fixed Vector.",
+        1126,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = type_error(
         activation,
