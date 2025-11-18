@@ -729,6 +729,34 @@ pub fn make_error_1508<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
     }
 }
 
+#[inline(never)]
+#[cold]
+pub fn make_error_2002<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = io_error(
+        activation,
+        "Error #2002: Operation attempted on invalid socket.",
+        2002,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(e) => e,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2003<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = security_error(
+        activation,
+        "Error #2003: Invalid socket port number specified.",
+        2003,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(e) => e,
+    }
+}
+
 pub enum Error2004Type {
     Error,
     ArgumentError,
