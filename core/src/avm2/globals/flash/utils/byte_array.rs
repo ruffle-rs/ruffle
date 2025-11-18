@@ -2,7 +2,7 @@ use std::rc::Rc;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::{Endian, ObjectEncoding};
-use crate::avm2::error::make_error_2008;
+use crate::avm2::error::{make_error_2008, make_error_2058};
 use crate::avm2::object::Object;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -718,13 +718,7 @@ pub fn compress<'gc>(
         let algorithm = args.get_string_non_null(activation, 0, "algorithm")?;
         let algorithm = match algorithm.parse() {
             Ok(algorithm) => algorithm,
-            Err(_) => {
-                return Err(Error::avm_error(crate::avm2::error::io_error(
-                    activation,
-                    "Error #2058: There was an error decompressing the data.",
-                    2058,
-                )?))
-            }
+            Err(_) => return Err(make_error_2058(activation)),
         };
         let buffer = bytearray.compress(algorithm);
         bytearray.clear();
@@ -748,23 +742,11 @@ pub fn uncompress<'gc>(
         let algorithm = args.get_string_non_null(activation, 0, "algorithm")?;
         let algorithm = match algorithm.parse() {
             Ok(algorithm) => algorithm,
-            Err(_) => {
-                return Err(Error::avm_error(crate::avm2::error::io_error(
-                    activation,
-                    "Error #2058: There was an error decompressing the data.",
-                    2058,
-                )?))
-            }
+            Err(_) => return Err(make_error_2058(activation)),
         };
         let buffer = match bytearray.decompress(algorithm) {
             Some(buffer) => buffer,
-            None => {
-                return Err(Error::avm_error(crate::avm2::error::io_error(
-                    activation,
-                    "Error #2058: There was an error decompressing the data.",
-                    2058,
-                )?))
-            }
+            None => return Err(make_error_2058(activation)),
         };
         bytearray.clear();
         bytearray

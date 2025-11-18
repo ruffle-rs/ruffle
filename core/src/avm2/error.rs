@@ -808,6 +808,20 @@ pub fn make_error_2037<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2058<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = io_error(
+        activation,
+        "Error #2058: There was an error decompressing the data.",
+        2058,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2085<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
     let err = argument_error(
         activation,
