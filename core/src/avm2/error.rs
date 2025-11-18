@@ -318,6 +318,25 @@ pub fn make_error_1014<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1019<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    index: Option<usize>,
+) -> Error<'gc> {
+    let message = if let Some(index) = index {
+        format!("Error #1019: Getscopeobject {index} is out of bounds.")
+    } else {
+        "Error #1019: Getscopeobject  is out of bounds.".to_string()
+    };
+
+    let err = verify_error(activation, &message, 1019);
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1021<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,
