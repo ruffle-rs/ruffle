@@ -1,5 +1,5 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_mismatch_error, Error};
+use crate::avm2::error::{make_error_1063, Error};
 use crate::avm2::method::{Method, MethodKind, ParamConfig};
 use crate::avm2::object::{ClassObject, FunctionObject};
 use crate::avm2::scope::ScopeChain;
@@ -217,11 +217,7 @@ pub fn exec<'gc>(
             // Check for too many arguments
             if arguments.len() > signature.len() && !method.is_variadic() && !method.is_unchecked()
             {
-                return Err(Error::avm_error(make_mismatch_error(
-                    &mut activation,
-                    method,
-                    arguments.len(),
-                )?));
+                return Err(make_error_1063(&mut activation, method, arguments.len()));
             }
 
             let arguments = activation.resolve_parameters(method, arguments, signature)?;

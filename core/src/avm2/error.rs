@@ -556,6 +556,36 @@ pub fn make_error_1058<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1063<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: Method<'gc>,
+    passed_arg_count: usize,
+) -> Error<'gc> {
+    let expected_num_params = method
+        .signature()
+        .iter()
+        .filter(|param| param.default_value.is_none())
+        .count();
+
+    let mut function_name = WString::new();
+
+    display_function(&mut function_name, method);
+
+    let err = argument_error(
+        activation,
+        &format!(
+            "Error #1063: Argument count mismatch on {function_name}. Expected {expected_num_params}, got {passed_arg_count}.",
+        ),
+        1063,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1065<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: &Multiname<'gc>,
@@ -1258,32 +1288,6 @@ pub fn error<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let class = activation.avm2().classes().error;
     error_constructor(activation, class, message, code)
-}
-
-#[inline(never)]
-#[cold]
-pub fn make_mismatch_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    method: Method<'gc>,
-    passed_arg_count: usize,
-) -> Result<Value<'gc>, Error<'gc>> {
-    let expected_num_params = method
-        .signature()
-        .iter()
-        .filter(|param| param.default_value.is_none())
-        .count();
-
-    let mut function_name = WString::new();
-
-    display_function(&mut function_name, method);
-
-    return Err(Error::avm_error(argument_error(
-        activation,
-        &format!(
-            "Error #1063: Argument count mismatch on {function_name}. Expected {expected_num_params}, got {passed_arg_count}.",
-        ),
-        1063,
-    )?));
 }
 
 fn error_constructor<'gc>(
