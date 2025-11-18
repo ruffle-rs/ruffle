@@ -507,15 +507,17 @@ pub fn swap_children<'gc>(
                 .get_object(activation, 0, "child")?
                 .as_display_object()
                 .expect("Child must be a display object");
-            let child1 = args
-                .get_object(activation, 1, "child")?
-                .as_display_object()
-                .expect("Child must be a display object");
 
             let index0 = ctr
                 .iter_render_list()
                 .position(|a| DisplayObject::ptr_eq(a, child0))
                 .ok_or(make_error_2025(activation))?;
+
+            let child1 = args
+                .get_object(activation, 1, "child")?
+                .as_display_object()
+                .expect("Child must be a display object");
+
             let index1 = ctr
                 .iter_render_list()
                 .position(|a| DisplayObject::ptr_eq(a, child1))
