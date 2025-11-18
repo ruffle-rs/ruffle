@@ -1,6 +1,8 @@
 use ruffle_wstr::WString;
 
 use crate::avm2::{Activation, AvmString, Class, Multiname, Value};
+use quick_xml::errors::{Error as XmlError, SyntaxError as XmlSyntaxError};
+use quick_xml::events::attributes::AttrError as XmlAttrError;
 use std::fmt::{Debug, Display};
 use std::mem::size_of;
 
@@ -133,6 +135,86 @@ pub fn make_reference_error<'gc>(
 
     let class = activation.avm2().classes().referenceerror;
     let error = error_constructor(activation, class, &msg, code as u32);
+    match error {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, err: XmlError) -> Error<'gc> {
+    let error = match err {
+        XmlError::InvalidAttr(XmlAttrError::Duplicated(_, _)) => type_error(
+            activation,
+            "Error #1104: Attribute was already specified for element.",
+            1104,
+        ),
+
+        XmlError::Syntax(syntax_error) => match syntax_error {
+            XmlSyntaxError::UnclosedCData => type_error(
+                activation,
+                "Error #1091: XML parser failure: Unterminated CDATA section.",
+                1091,
+            ),
+            XmlSyntaxError::UnclosedDoctype => type_error(
+                activation,
+                "Error #1093: XML parser failure: Unterminated DOCTYPE declaration.",
+                1093,
+            ),
+            XmlSyntaxError::UnclosedComment => type_error(
+                activation,
+                "Error #1094: XML parser failure: Unterminated comment.",
+                1094,
+            ),
+            XmlSyntaxError::UnclosedPIOrXmlDecl => type_error(
+                activation,
+                "Error #1097: XML parser failure: Unterminated processing instruction.",
+                1097,
+            ),
+            _ => type_error(
+                activation,
+                "Error #1090: XML parser failure: element is malformed.",
+                1090,
+            ),
+        },
+        _ => type_error(
+            activation,
+            "Error #1090: XML parser failure: element is malformed.",
+            1090,
+        ),
+    };
+
+    match error {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_unknown_ns_error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    ns: &[u8],
+    local_name: AvmString<'gc>,
+) -> Error<'gc> {
+    let error = if ns.is_empty() {
+        type_error(
+            activation,
+            &format!("Error #1084: Element or attribute (\":{local_name}\") does not match QName production: QName::=(NCName':')?NCName."),
+            1084,
+        )
+    } else {
+        // Note: Flash also uses this error message for attributes.
+        type_error(
+            activation,
+            &format!(
+                "Error #1083: The prefix \"{}\" for element \"{local_name}\" is not bound.",
+                String::from_utf8_lossy(ns),
+            ),
+            1083,
+        )
+    };
     match error {
         Ok(err) => Error::avm_error(err),
         Err(err) => err,
