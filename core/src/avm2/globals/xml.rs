@@ -3,23 +3,13 @@
 use ruffle_macros::istr;
 
 use crate::avm2::e4x::{name_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
-use crate::avm2::error::{make_error_1117, type_error};
+use crate::avm2::error::{make_error_1088, make_error_1117};
 pub use crate::avm2::object::xml_allocator;
 use crate::avm2::object::{E4XOrXml, QNameObject, TObject, XmlListObject, XmlObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
 use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Multiname, Object, Value};
 use crate::avm2_stub_method;
-
-fn ill_formed_markup_err<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    type_error(
-        activation,
-        "Error #1088: The markup in the document following the root element must be well-formed.",
-        1088,
-    )
-}
 
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -41,7 +31,7 @@ pub fn init<'gc>(
             // an error, since E4XNode::parse would otherwise return an empty array
             // (which would be accepted)
             if xml_list.length() != 1 {
-                return Err(Error::avm_error(ill_formed_markup_err(activation)?));
+                return Err(make_error_1088(activation));
             }
         }
     }
@@ -95,7 +85,7 @@ pub fn init<'gc>(
             if let Some(element) = single_element_node {
                 *element
             } else {
-                return Err(Error::avm_error(ill_formed_markup_err(activation)?));
+                return Err(make_error_1088(activation));
             }
         }
     };
@@ -855,7 +845,7 @@ pub fn call_handler<'gc>(
                         .get_or_create_xml(activation)
                         .into());
                 }
-                return Err(Error::avm_error(ill_formed_markup_err(activation)?));
+                return Err(make_error_1088(activation));
             }
         }
     }
