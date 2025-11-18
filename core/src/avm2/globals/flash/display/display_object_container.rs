@@ -4,7 +4,7 @@ use swf::Point;
 use swf::Twips;
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{argument_error, make_error_2025, range_error};
+use crate::avm2::error::{argument_error, make_error_2006, make_error_2025};
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{Object, TObject as _};
 use crate::avm2::parameters::ParametersExt;
@@ -71,12 +71,7 @@ fn validate_add_operation<'gc>(
     }
 
     if proposed_index > ctr.num_children() {
-        // Flash error message: The supplied index is out of bounds.
-        return Err(Error::avm_error(range_error(
-            activation,
-            "Index position does not exist in the child list",
-            2006,
-        )?));
+        return Err(make_error_2006(activation));
     }
 
     Ok(())
@@ -144,12 +139,7 @@ pub fn get_child_at<'gc>(
         return if let Some(child) = dobj.child_by_index(index as usize) {
             Ok(child.object2_or_null())
         } else {
-            // Flash error message: The supplied index is out of bounds.
-            Err(Error::avm_error(range_error(
-                activation,
-                &format!("Display object container has no child with id {index}"),
-                2006,
-            )?))
+            Err(make_error_2006(activation))
         };
     }
 
@@ -335,16 +325,7 @@ pub fn remove_child_at<'gc>(
             let target_child = args.get_i32(0);
 
             if target_child >= ctr.num_children() as i32 || target_child < 0 {
-                // Flash error message: The supplied index is out of bounds.
-                return Err(Error::avm_error(range_error(
-                    activation,
-                    &format!(
-                        "{} does not exist in the child list (valid range is 0 to {})",
-                        target_child,
-                        ctr.num_children()
-                    ),
-                    2006,
-                )?));
+                return Err(make_error_2006(activation));
             }
 
             let child = ctr.child_by_index(target_child as usize).unwrap();
@@ -377,38 +358,15 @@ pub fn remove_children<'gc>(
             // https://github.com/ruffle-rs/ruffle/issues/11382
 
             if (from >= ctr.num_children() as i32 || from < 0) && to != i32::MAX {
-                // Flash error message: The supplied index is out of bounds.
-                return Err(Error::avm_error(range_error(
-                    activation,
-                    &format!(
-                        "Starting position {} does not exist in the child list (valid range is 0 to {})",
-                        from,
-                        ctr.num_children()
-                    ),
-                    2006,
-                )?));
+                return Err(make_error_2006(activation));
             }
 
             if (to >= ctr.num_children() as i32 || to < 0) && to != i32::MAX {
-                // Flash error message: The supplied index is out of bounds.
-                return Err(Error::avm_error(range_error(
-                    activation,
-                    &format!(
-                        "Ending position {} does not exist in the child list (valid range is 0 to {})",
-                        to,
-                        ctr.num_children()
-                    ),
-                    2006,
-                )?));
+                return Err(make_error_2006(activation));
             }
 
             if from > to {
-                // Flash error message: The supplied index is out of bounds.
-                return Err(Error::avm_error(range_error(
-                    activation,
-                    &format!("Range {from} to {to} is invalid"),
-                    2006,
-                )?));
+                return Err(make_error_2006(activation));
             }
 
             ctr.remove_range(
@@ -463,21 +421,11 @@ pub fn swap_children_at<'gc>(
             let bounds = ctr.num_children();
 
             if index0 < 0 || index0 as usize >= bounds {
-                // Flash error message: The supplied index is out of bounds.
-                return Err(Error::avm_error(range_error(
-                    activation,
-                    &format!("Index {index0} is out of bounds"),
-                    2006,
-                )?));
+                return Err(make_error_2006(activation));
             }
 
             if index1 < 0 || index1 as usize >= bounds {
-                // Flash error message: The supplied index is out of bounds.
-                return Err(Error::avm_error(range_error(
-                    activation,
-                    &format!("Index {index1} is out of bounds"),
-                    2006,
-                )?));
+                return Err(make_error_2006(activation));
             }
 
             let child0 = ctr.child_by_index(index0 as usize).unwrap();
