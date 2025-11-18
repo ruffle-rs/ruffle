@@ -755,6 +755,24 @@ pub fn make_error_2004<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2005<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    param_index: u32,
+    param_name: &str,
+) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        &format!("Error #2005: Parameter {param_index} is of the incorrect type. Should be type {param_name}."),
+        2005,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = range_error(
         activation,

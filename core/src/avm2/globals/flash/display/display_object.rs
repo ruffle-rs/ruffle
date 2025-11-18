@@ -1,7 +1,9 @@
 //! `flash.display.DisplayObject` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{illegal_operation_error, make_error_2007, make_error_2008};
+use crate::avm2::error::{
+    illegal_operation_error, make_error_2005, make_error_2007, make_error_2008,
+};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::globals::flash::geom::transform::color_transform_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::has_matrix3d_from_transform_object;
@@ -300,16 +302,6 @@ pub fn get_filters<'gc>(
     Ok(ArrayObject::empty(activation.context).into())
 }
 
-fn build_argument_type_error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Value<'gc>, Error<'gc>> {
-    Err(Error::avm_error(crate::avm2::error::argument_error(
-        activation,
-        "Error #2005: Parameter 0 is of the incorrect type. Should be type Filter.",
-        2005,
-    )?))
-}
-
 pub fn set_filters<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -328,7 +320,7 @@ pub fn set_filters<'gc>(
 
                 for filter in filters_storage.iter().flatten() {
                     if !filter.is_of_type(filter_class) {
-                        return build_argument_type_error(activation);
+                        return Err(make_error_2005(activation, 0, "Filter"));
                     }
 
                     let filter_object = filter
