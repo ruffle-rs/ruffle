@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{
-    argument_error, make_error_2004, make_error_2007, make_error_2008, range_error, Error2004Type,
+    argument_error, make_error_2004, make_error_2005, make_error_2008, range_error, Error2004Type,
 };
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::globals::slots::{
@@ -807,11 +807,7 @@ pub fn hit_test<'gc>(
 
             let Value::Object(compare_object) = compare_object else {
                 // This is the error message Flash Player produces. Even though it's misleading.
-                return Err(Error::avm_error(argument_error(
-                    activation,
-                    "Error #2005: Parameter 0 is of the incorrect type. Should be type BitmapData.",
-                    2005,
-                )?));
+                return Err(make_error_2005(activation, 0, "BitmapData"));
             };
 
             if compare_object.is_of_type(point_class) {
@@ -908,11 +904,7 @@ pub fn hit_test<'gc>(
                 )));
             } else {
                 // This is the error message Flash Player produces. Even though it's misleading.
-                return Err(Error::avm_error(argument_error(
-                    activation,
-                    "Error #2005: Parameter 0 is of the incorrect type. Should be type BitmapData.",
-                    2005,
-                )?));
+                return Err(make_error_2005(activation, 0, "BitmapData"));
             }
         }
     }
@@ -1415,25 +1407,17 @@ pub fn threshold<'gc>(
                     .get_slot(point_slots::Y)
                     .coerce_to_i32(activation)?,
             );
-            let operation = args.try_get_string(3);
+            let operation = args.get_string_non_null(activation, 3, "operationStr")?;
             let threshold = args.get_u32(4);
             let color = args.get_u32(5);
             let mask = args.get_u32(6);
             let copy_source = args.get_bool(7);
 
-            let operation = if let Some(operation) = operation {
-                if let Some(operation) = ThresholdOperation::from_wstr(&operation) {
-                    operation
-                } else {
-                    // It's wrong but this is what Flash says.
-                    return Err(Error::avm_error(argument_error(
-                        activation,
-                        "Parameter 0 is of the incorrect type. Should be type Operation.",
-                        2005,
-                    )?));
-                }
+            let operation = if let Some(operation) = ThresholdOperation::from_wstr(&operation) {
+                operation
             } else {
-                return Err(make_error_2007(activation, "operation"));
+                // It's wrong but this is what Flash says.
+                return Err(make_error_2005(activation, 0, "Operation"));
             };
 
             let (src_min_x, src_min_y, src_width, src_height) =
