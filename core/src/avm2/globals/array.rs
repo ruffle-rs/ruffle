@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::error::{make_error_1125, range_error};
+use crate::avm2::error::{make_error_1005, make_error_1125};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
@@ -28,13 +28,7 @@ pub fn array_initializer<'gc>(
         if args.len() == 1 {
             if let Some(expected_len) = args.get_optional(0).and_then(|v| v.try_as_f64()) {
                 if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
-                    return Err(Error::avm_error(range_error(
-                        activation,
-                        &format!(
-                            "Error #1005: Array index is not a positive integer ({expected_len})"
-                        ),
-                        1005,
-                    )?));
+                    return Err(make_error_1005(activation, expected_len));
                 }
 
                 array.set_length(expected_len as usize);
