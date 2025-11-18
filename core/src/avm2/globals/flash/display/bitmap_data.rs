@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{
-    argument_error, make_error_2004, make_error_2005, make_error_2008, range_error, Error2004Type,
+    make_error_2004, make_error_2005, make_error_2008, make_error_2015, range_error, Error2004Type,
 };
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::globals::slots::{
@@ -126,11 +126,7 @@ pub fn init<'gc>(
         let fill_color = args.get_u32(3);
 
         if !is_size_valid(activation.context.root_swf.version(), width, height) {
-            return Err(Error::avm_error(argument_error(
-                activation,
-                "Error #2015: Invalid BitmapData.",
-                2015,
-            )?));
+            return Err(make_error_2015(activation));
         }
 
         BitmapData::new(
