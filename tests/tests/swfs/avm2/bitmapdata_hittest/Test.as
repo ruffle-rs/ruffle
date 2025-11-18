@@ -1,5 +1,4 @@
-﻿package  {
-	
+package {
 	import flash.display.MovieClip;
 	import flash.display.Bitmap;
 	import flash.display.BitmapData;
@@ -14,7 +13,6 @@
 			var bmd: BitmapData = createImage();
 			var otherBmd: BitmapData = createImage();
 			var bitmap: Bitmap = new Bitmap(bmd);
-
 
 
 			// Testing bmd against bmd, aligns both images so both points overlap and checks for any opaque overlap
@@ -77,6 +75,18 @@
 
 			try {
 				test(bmd, new Point(0, 0), 0x00, {});
+			} catch (error: Error) {
+				trace("- Error " + error.errorID);
+			}
+
+			try {
+				test(bmd, new Point(0, 0), 0x00, 3);
+			} catch (error: Error) {
+				trace("- Error " + error.errorID);
+			}
+
+			try {
+				test(bmd, new Point(0, 0), 0x00, undefined);
 			} catch (error: Error) {
 				trace("- Error " + error.errorID);
 			}

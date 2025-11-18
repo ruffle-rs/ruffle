@@ -797,13 +797,22 @@ pub fn hit_test<'gc>(
                     .coerce_to_i32(activation)?,
             );
             let source_threshold = args.get_u32(1).clamp(0, u8::MAX.into()) as u8;
-            let compare_object = args.get_object(activation, 2, "secondObject")?;
+            let compare_object = args.get_value(2);
             let point_class = activation.avm2().classes().point.inner_class_definition();
             let rectangle_class = activation
                 .avm2()
                 .classes()
                 .rectangle
                 .inner_class_definition();
+
+            let Value::Object(compare_object) = compare_object else {
+                // This is the error message Flash Player produces. Even though it's misleading.
+                return Err(Error::avm_error(argument_error(
+                    activation,
+                    "Error #2005: Parameter 0 is of the incorrect type. Should be type BitmapData.",
+                    2005,
+                )?));
+            };
 
             if compare_object.is_of_type(point_class) {
                 let test_point = (
@@ -901,7 +910,7 @@ pub fn hit_test<'gc>(
                 // This is the error message Flash Player produces. Even though it's misleading.
                 return Err(Error::avm_error(argument_error(
                     activation,
-                    "Parameter 0 is of the incorrect type. Should be type BitmapData.",
+                    "Error #2005: Parameter 0 is of the incorrect type. Should be type BitmapData.",
                     2005,
                 )?));
             }
