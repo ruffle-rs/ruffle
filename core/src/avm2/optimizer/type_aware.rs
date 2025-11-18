@@ -1,5 +1,6 @@
 use crate::avm2::error::{
-    make_error_1026, make_error_1035, make_error_1051, make_error_1058, verify_error,
+    make_error_1019, make_error_1026, make_error_1035, make_error_1051, make_error_1058,
+    verify_error,
 };
 use crate::avm2::method::{Method, MethodAssociation, MethodKind, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
@@ -1230,11 +1231,7 @@ fn abstract_interpret_ops<'gc>(
             }
             Op::GetScopeObject { index } => {
                 if index >= scope_stack.len() {
-                    return Err(Error::avm_error(verify_error(
-                        activation,
-                        "Error #1019: Getscopeobject  is out of bounds.",
-                        1019,
-                    )?));
+                    return Err(make_error_1019(activation, Some(index)));
                 }
 
                 stack.push(activation, scope_stack.at(index).0)?;
@@ -1977,11 +1974,7 @@ fn abstract_interpret_ops<'gc>(
             Op::SetGlobalSlot { .. } => {
                 let outer_scope = activation.outer();
                 if outer_scope.is_empty() && scope_stack.is_empty() {
-                    return Err(Error::avm_error(verify_error(
-                        activation,
-                        "Error #1019: Getscopeobject  is out of bounds.",
-                        1019,
-                    )?));
+                    return Err(make_error_1019(activation, Some(0)));
                 }
 
                 stack.pop(activation)?;
