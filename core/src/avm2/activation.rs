@@ -5,8 +5,8 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
-    make_error_1065, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
-    verify_error,
+    make_error_1040, make_error_1041, make_error_1065, make_error_1127, make_error_1506,
+    make_null_or_undefined_error, type_error, verify_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
@@ -2486,11 +2486,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .and_then(|o| o.as_class_object())
         else {
-            return Err(Error::avm_error(type_error(
-                self,
-                "Error #1041: The right-hand side of operator must be a class.",
-                1041,
-            )?));
+            return Err(make_error_1041(self));
         };
         let value = self.pop_stack();
 
@@ -2521,12 +2517,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         if let Some(class) = class.as_object() {
             let Some(class) = class.as_class_object() else {
-                return Err(Error::avm_error(type_error(
-                    self,
-                    "Error #1041: The right-hand side of operator must be a class.",
-                    1041,
-                )?));
+                return Err(make_error_1041(self));
             };
+
             let value = self.pop_stack();
 
             if value.is_of_type(class.inner_class_definition()) {
@@ -2544,19 +2537,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_instance_of(&mut self) -> Result<(), Error<'gc>> {
         let Some(type_object) = self.pop_stack().as_object() else {
-            return Err(Error::avm_error(type_error(
-                self,
-                "Error #1040: The right-hand side of instanceof must be a class or function.",
-                1040,
-            )?));
+            return Err(make_error_1040(self));
         };
 
         if type_object.as_class_object().is_none() && type_object.as_function_object().is_none() {
-            return Err(Error::avm_error(type_error(
-                self,
-                "Error #1040: The right-hand side of instanceof must be a class or function.",
-                1040,
-            )?));
+            return Err(make_error_1040(self));
         };
 
         let value = self.pop_stack();
