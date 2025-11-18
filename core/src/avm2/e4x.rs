@@ -1,4 +1,7 @@
-use crate::avm2::error::{make_error_1010, make_error_1085, make_error_1118, type_error};
+use crate::avm2::error::{
+    make_error_1010, make_error_1085, make_error_1088, make_error_1118, make_unknown_ns_error,
+    make_xml_error,
+};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
 use crate::avm2::{Activation, Error, Multiname, Value};
@@ -11,8 +14,8 @@ use gc_arena::{
 };
 
 use quick_xml::{
-    errors::{IllFormedError, SyntaxError as XmlSyntaxError},
-    events::{attributes::AttrError as XmlAttrError, BytesStart, Event},
+    errors::IllFormedError,
+    events::{BytesStart, Event},
     name::ResolveResult,
     Error as XmlError, NsReader,
 };
@@ -50,54 +53,6 @@ impl Debug for E4XNodeData<'_> {
             .field("local_name", &self.local_name.get())
             .field("kind", &self.kind.borrow())
             .finish()
-    }
-}
-
-fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, err: XmlError) -> Error<'gc> {
-    let error = match err {
-        XmlError::InvalidAttr(XmlAttrError::Duplicated(_, _)) => type_error(
-            activation,
-            "Error #1104: Attribute was already specified for element.",
-            1104,
-        ),
-
-        XmlError::Syntax(syntax_error) => match syntax_error {
-            XmlSyntaxError::UnclosedCData => type_error(
-                activation,
-                "Error #1091: XML parser failure: Unterminated CDATA section.",
-                1091,
-            ),
-            XmlSyntaxError::UnclosedDoctype => type_error(
-                activation,
-                "Error #1093: XML parser failure: Unterminated DOCTYPE declaration.",
-                1093,
-            ),
-            XmlSyntaxError::UnclosedComment => type_error(
-                activation,
-                "Error #1094: XML parser failure: Unterminated comment.",
-                1094,
-            ),
-            XmlSyntaxError::UnclosedPIOrXmlDecl => type_error(
-                activation,
-                "Error #1097: XML parser failure: Unterminated processing instruction.",
-                1097,
-            ),
-            _ => type_error(
-                activation,
-                "Error #1090: XML parser failure: element is malformed.",
-                1090,
-            ),
-        },
-        _ => type_error(
-            activation,
-            "Error #1090: XML parser failure: element is malformed.",
-            1090,
-        ),
-    };
-
-    match error {
-        Ok(err) => Error::avm_error(err),
-        Err(err) => err,
     }
 }
 
@@ -827,11 +782,7 @@ impl<'gc> E4XNode<'gc> {
                 Err(XmlError::IllFormed(IllFormedError::UnmatchedEndTag(_)))
                     if open_tags.is_empty() =>
                 {
-                    return Err(Error::avm_error(type_error(
-                        activation,
-                        "Error #1088: The markup in the document following the root element must be well-formed.",
-                        1088,
-                    )?));
+                    return Err(make_error_1088(activation));
                 }
                 Err(err) => return Err(make_xml_error(activation, err)),
             };
@@ -964,34 +915,6 @@ impl<'gc> E4XNode<'gc> {
         let mut attribute_nodes = Vec::new();
         let mut namespaces = Vec::new();
 
-        fn make_unknown_ns_error<'gc>(
-            activation: &mut Activation<'_, 'gc>,
-            ns: Vec<u8>,
-            local_name: AvmString<'gc>,
-        ) -> Error<'gc> {
-            let error = if ns.is_empty() {
-                type_error(
-                    activation,
-                    &format!("Error #1084: Element or attribute (\":{local_name}\") does not match QName production: QName::=(NCName':')?NCName."),
-                    1084,
-                )
-            } else {
-                // Note: Flash also uses this error message for attributes.
-                type_error(
-                    activation,
-                    &format!(
-                        "Error #1083: The prefix \"{}\" for element \"{local_name}\" is not bound.",
-                        String::from_utf8_lossy(&ns),
-                    ),
-                    1083,
-                )
-            };
-            match error {
-                Ok(err) => Error::avm_error(err),
-                Err(err) => err,
-            }
-        }
-
         let attributes: Result<Vec<_>, _> = bs.attributes().collect();
         for attribute in
             attributes.map_err(|e| make_xml_error(activation, XmlError::InvalidAttr(e)))?
@@ -1021,7 +944,7 @@ impl<'gc> E4XNode<'gc> {
                     Some(E4XNamespace { prefix, uri })
                 }
                 ResolveResult::Unknown(ns) => {
-                    return Err(make_unknown_ns_error(activation, ns, name));
+                    return Err(make_unknown_ns_error(activation, &ns, name));
                 }
                 ResolveResult::Unbound => {
                     // The default XML namespace declaration
@@ -1064,7 +987,7 @@ impl<'gc> E4XNode<'gc> {
                 Some(E4XNamespace { prefix, uri })
             }
             ResolveResult::Unknown(ns) => {
-                return Err(make_unknown_ns_error(activation, ns, name));
+                return Err(make_unknown_ns_error(activation, &ns, name));
             }
             ResolveResult::Unbound => None,
         };
