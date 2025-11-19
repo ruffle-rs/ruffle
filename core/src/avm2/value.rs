@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{self};
-use crate::avm2::error::{make_error_1006, make_error_1034, type_error};
+use crate::avm2::error::{make_error_1006, make_error_1034, make_error_1050, type_error};
 use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
@@ -695,13 +695,7 @@ impl<'gc> Value<'gc> {
                     return Ok(prim);
                 }
 
-                let class_name = self.instance_of_class_name(activation);
-
-                Err(Error::avm_error(type_error(
-                    activation,
-                    &format!("Error #1050: Cannot convert {class_name} to primitive."),
-                    1050,
-                )?))
+                Err(make_error_1050(activation, *self))
             }
             Value::Object(_) if hint == Hint::Number => {
                 let prim =
@@ -719,13 +713,7 @@ impl<'gc> Value<'gc> {
                     return Ok(prim);
                 }
 
-                let class_name = self.instance_of_class_name(activation);
-
-                Err(Error::avm_error(type_error(
-                    activation,
-                    &format!("Error #1050: Cannot convert {class_name} to primitive."),
-                    1050,
-                )?))
+                Err(make_error_1050(activation, *self))
             }
             _ => Ok(*self),
         }

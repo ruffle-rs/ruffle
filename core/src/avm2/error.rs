@@ -486,6 +486,22 @@ pub fn make_error_1047<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1050<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -> Error<'gc> {
+    let class_name = value.instance_of_class_name(activation);
+
+    let err = type_error(
+        activation,
+        &format!("Error #1050: Cannot convert {class_name} to primitive."),
+        1050,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1051<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,
