@@ -23,9 +23,9 @@
     "devDependencies": {
         "@fluent/bundle": "^0.19.1",
         "@fluent/langneg": "^0.7.0",
-        "@tsconfig/strictest": "^2.0.7",
+        "@tsconfig/strictest": "^2.0.8",
         "@types/mocha": "^10.0.10",
-        "autoprefixer": "^10.4.21",
+        "autoprefixer": "^10.4.22",
         "cssnano": "^7.1.2",
         "cssnano-preset-advanced": "^7.0.10",
         "mocha": "^11.7.5",
