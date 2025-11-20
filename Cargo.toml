@@ -54,7 +54,7 @@ tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 naga = { version = "26.0.0", features = ["wgsl-out"] }
 wgpu = "26.0.1"
 egui = { git = "https://github.com/emilk/egui.git", branch = "main" }
-clap = { version = "4.5.51", features = ["derive"] }
+clap = { version = "4.5.53", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
 gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "08e08414249d5914dfc3b402d7eadc133e00ce56" }
@@ -66,7 +66,7 @@ chrono = { version = "0.4.42", default-features = false }
 enum-map = "2.7.3"
 flate2 = "1.1.5"
 futures = "0.3.31"
-image = { version = "0.25.8", default-features = false }
+image = { version = "0.25.9", default-features = false }
 js-sys = "0.3.78"
 web-sys = "0.3.78"
 log = "0.4"
