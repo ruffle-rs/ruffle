@@ -318,6 +318,22 @@ pub fn make_error_1014<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1016<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) -> Error<'gc> {
+    let class_name = class.name().to_qualified_name_err_message(activation.gc());
+
+    let err = type_error(
+        activation,
+        &format!("Error #1016: Descendants operator (..) not supported on type {class_name}",),
+        1016,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1019<'gc>(
     activation: &mut Activation<'_, 'gc>,
     index: Option<usize>,
