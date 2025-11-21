@@ -189,4 +189,6 @@ export interface PlayerV1 {
      * @returns Any value returned by the callback.
      */
     callExternalInterface(name: string, ...args: unknown[]): unknown;
+
+    tick(timestamp: number): void;
 }

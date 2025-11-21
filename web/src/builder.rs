@@ -65,6 +65,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub(crate) url_rewrite_rules: Vec<(RegExp, String)>,
     pub(crate) scrolling_behavior: ScrollingBehavior,
+    pub(crate) tick_automatically: bool,
 }
 
 impl Default for RuffleInstanceBuilder {
@@ -104,6 +105,7 @@ impl Default for RuffleInstanceBuilder {
             gamepad_button_mapping: HashMap::new(),
             url_rewrite_rules: vec![],
             scrolling_behavior: ScrollingBehavior::Smart,
+            tick_automatically: true,
         }
     }
 }
@@ -345,6 +347,11 @@ impl RuffleInstanceBuilder {
             "smart" => ScrollingBehavior::Smart,
             _ => return,
         };
+    }
+
+    #[wasm_bindgen(js_name = "setTickAutomatically")]
+    pub fn set_tick_automatically(&mut self, tick_automatically: bool) {
+        self.tick_automatically = tick_automatically;
     }
 
     // TODO: This should be split into two methods that either load url or load data
