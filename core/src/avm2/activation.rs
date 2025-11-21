@@ -6,8 +6,8 @@ use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
     make_error_1016, make_error_1040, make_error_1041, make_error_1063, make_error_1065,
-    make_error_1119, make_error_1123, make_error_1127, make_error_1506,
-    make_null_or_undefined_error, verify_error,
+    make_error_1108, make_error_1119, make_error_1123, make_error_1127, make_error_1506,
+    make_null_or_undefined_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
@@ -1788,11 +1788,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if base_class.is_none() && class.super_class().is_some() {
             return Err(make_null_or_undefined_error(self, Value::Null, None));
         } else if base_class.map(|c| c.inner_class_definition()) != class.super_class() {
-            return Err(Error::avm_error(verify_error(
-                self,
-                "Error #1108: The OP_newclass opcode was used with the incorrect base class.",
-                1108,
-            )?));
+            return Err(make_error_1108(self));
         }
 
         // Finally, actually construct the ClassObject
