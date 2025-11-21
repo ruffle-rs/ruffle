@@ -16,3 +16,7 @@ RECOVER_*.fla
 
 # Mac junk
 .DS_Store
+
+# Test output
+tests/tests/swfs/**/*.actual-*.png
+tests/tests/swfs/**/*.difference-*.png
