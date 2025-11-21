@@ -44,6 +44,7 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     publicPath: null,
     polyfills: true,
     playerVersion: null,
+    customPlayerVersionString: null,
     preferredRenderer: null,
     openUrlMode: OpenURLMode.Allow,
     allowNetworking: NetworkingAccessMode.All,
