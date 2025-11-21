@@ -769,6 +769,24 @@ pub fn make_error_1108<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1112<'gc>(activation: &mut Activation<'_, 'gc>, arg_count: usize) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        &format!(
+            "Error #1112: Argument count mismatch on class coercion.  Expected 1, got {}.",
+            arg_count
+        ),
+        1112,
+    );
+
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1117<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: AvmString<'gc>,
