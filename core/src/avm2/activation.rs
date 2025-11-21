@@ -6,8 +6,8 @@ use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
     make_error_1016, make_error_1040, make_error_1041, make_error_1063, make_error_1065,
-    make_error_1123, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
-    verify_error,
+    make_error_1119, make_error_1123, make_error_1127, make_error_1506,
+    make_null_or_undefined_error, verify_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
@@ -1374,11 +1374,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if matches!(name_value, Value::Object(Object::XmlListObject(_))) {
                 // ECMA-357 11.3.1 The delete Operator
                 // If the type of the operand is XMLList, then a TypeError exception is thrown.
-                return Err(Error::avm_error(type_error(
-                    self,
-                    "Error #1119: Delete operator is not supported with operand of type XMLList.",
-                    1119,
-                )?));
+                return Err(make_error_1119(self));
             }
         }
         let multiname = multiname.fill_with_runtime_params(self)?;
