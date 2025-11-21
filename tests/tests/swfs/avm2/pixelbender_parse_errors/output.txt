@@ -1,0 +1,6 @@
+[object ArgumentError]
+2004
+[object EOFError]
+2030
+[object EOFError]
+2030
