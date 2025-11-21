@@ -1117,7 +1117,7 @@ pub fn make_error_2027<'gc>(activation: &mut Activation<'_, 'gc>, value: i32) ->
 #[inline(never)]
 #[cold]
 pub fn make_error_2030<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    let err = error(
+    let err = eof_error(
         activation,
         "Error #2030: End of file was encountered.",
         2030,
