@@ -354,6 +354,20 @@ pub fn make_error_1019<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1020<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1020: Code cannot fall off the end of a method.",
+        1020,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1021<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,
