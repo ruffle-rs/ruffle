@@ -1,4 +1,4 @@
-use crate::avm2::error::{eof_error, make_error_2006};
+use crate::avm2::error::{make_error_2006, make_error_2030};
 use crate::avm2::Activation;
 use crate::avm2::Error;
 use crate::context::UpdateContext;
@@ -36,14 +36,7 @@ impl ByteArrayError {
     #[inline(never)]
     pub fn to_avm<'gc>(self, activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
         match self {
-            ByteArrayError::EndOfFile => match eof_error(
-                activation,
-                "Error #2030: End of file was encountered.",
-                2030,
-            ) {
-                Ok(e) => Error::avm_error(e),
-                Err(e) => e,
-            },
+            ByteArrayError::EndOfFile => make_error_2030(activation),
             ByteArrayError::IndexOutOfBounds => make_error_2006(activation),
         }
     }
