@@ -1256,6 +1256,16 @@ pub fn make_error_2162<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_3671<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = argument_error(activation, "Error #3671: Buffer has zero size.", 3671);
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn range_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
