@@ -419,6 +419,20 @@ pub fn make_error_1026<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1027<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1027: Method_info exceeds method_count.",
+        1027,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1032<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
     let err = verify_error(
         activation,
