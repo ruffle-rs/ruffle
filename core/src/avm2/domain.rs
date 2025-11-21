@@ -5,7 +5,7 @@ use std::cell::{Ref, RefMut};
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::error::{error, reference_error, Error};
+use crate::avm2::error::{error, make_error_1065, Error};
 use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::script::Script;
@@ -16,7 +16,6 @@ use crate::string::AvmString;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, OnceLock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
-use ruffle_macros::istr;
 use ruffle_wstr::WStr;
 
 /// Represents a set of scripts and movies that share traits across different
@@ -264,14 +263,7 @@ impl<'gc> Domain<'gc> {
     ) -> Result<(QName<'gc>, Script<'gc>), Error<'gc>> {
         match self.get_defining_script(multiname) {
             Some(val) => Ok(val),
-            None => Err(Error::avm_error(reference_error(
-                activation,
-                &format!(
-                    "Error #1065: Variable {} is not defined.",
-                    multiname.local_name().unwrap_or(istr!("*"))
-                ),
-                1065,
-            )?)),
+            None => Err(make_error_1065(activation, multiname)),
         }
     }
 
