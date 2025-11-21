@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::error::{make_error_1132, type_error};
+use crate::avm2::error::{make_error_1131, make_error_1132, type_error};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, ScriptObject, TObject};
@@ -304,26 +304,20 @@ pub fn stringify<'gc>(
 
     // If the replacer is None, that means it was either undefined or null.
     if replacer.is_none() && !matches!(args.get_value(1), Value::Null) {
-        return Err(Error::avm_error(type_error(
-            activation,
-            "Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.",
-            1131,
-        )?));
+        return Err(make_error_1131(activation));
     }
 
-    let replacer = replacer.map(|replacer| {
-        if let Some(func) = replacer.as_function_object() {
-            Ok(Replacer::Function(func))
-        } else if let Some(arr) = replacer.as_array_object() {
-            Ok(Replacer::PropList(arr))
-        } else {
-            Err(Error::avm_error(type_error(
-                activation,
-                "Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.",
-                1131,
-            )?))
-        }
-    }).transpose()?;
+    let replacer = replacer
+        .map(|replacer| {
+            if let Some(func) = replacer.as_function_object() {
+                Ok(Replacer::Function(func))
+            } else if let Some(arr) = replacer.as_array_object() {
+                Ok(Replacer::PropList(arr))
+            } else {
+                Err(make_error_1131(activation))
+            }
+        })
+        .transpose()?;
 
     // NOTE: We do not coerce to a string or to a number, the value must already be a string or number.
     let indent = if let Value::String(s) = &spaces {
