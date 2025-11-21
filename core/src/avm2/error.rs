@@ -760,6 +760,20 @@ pub fn make_error_1098<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1100<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        "Error #1100: Cannot supply flags when constructing one RegExp from another.",
+        1100,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1107<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,

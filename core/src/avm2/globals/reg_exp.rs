@@ -3,7 +3,7 @@
 use ruffle_macros::istr;
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::type_error;
+use crate::avm2::error::make_error_1100;
 use crate::avm2::object::{ArrayObject, Object, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::regexp::RegExpFlags;
@@ -26,11 +26,7 @@ pub fn init<'gc>(
             Value::Undefined => istr!(""),
             Value::Object(Object::RegExpObject(o)) => {
                 if !matches!(args.get_value(1), Value::Undefined) {
-                    return Err(Error::avm_error(type_error(
-                        activation,
-                        "Error #1100: Cannot supply flags when constructing one RegExp from another.",
-                        1100,
-                    )?));
+                    return Err(make_error_1100(activation));
                 }
                 let other = o.regexp();
                 regexp.set_source(other.source());
