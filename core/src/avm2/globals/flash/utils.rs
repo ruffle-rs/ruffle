@@ -1,6 +1,6 @@
 //! `flash.utils` namespace
 
-use crate::avm2::error::argument_error;
+use crate::avm2::error::make_error_1507;
 use crate::avm2::globals::avmplus::instance_class_describe_type;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
@@ -210,10 +210,6 @@ pub fn get_definition_by_name<'gc>(
     } else {
         // For some reason this throws error #1507, so we can't use
         // `get_string_non_null` to get the argument
-        Err(Error::avm_error(argument_error(
-            activation,
-            "Error #1507: Argument name cannot be null.",
-            1507,
-        )?))
+        Err(make_error_1507(activation, "name"))
     }
 }
