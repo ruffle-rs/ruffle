@@ -2,13 +2,11 @@ use crate::avm1::{
     ActivationIdentifier as Avm1ActivationIdentifier, Object as Avm1Object, Value as Avm1Value,
 };
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
-    LoaderInfoObject, Multiname as Avm2Multiname, Object as Avm2Object,
-    StageObject as Avm2StageObject, TObject as _, Value as Avm2Value,
+    Activation as Avm2Activation, Error as Avm2Error, LoaderInfoObject, Multiname as Avm2Multiname,
+    Object as Avm2Object, StageObject as Avm2StageObject, TObject as _, Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
-use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
@@ -794,6 +792,14 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_placed_by_avm2_script(&self, value: bool) {
         self.set_flag(DisplayObjectFlags::PLACED_BY_AVM2_SCRIPT, value);
+    }
+
+    fn frame_construct_skipped(&self) -> bool {
+        self.contains_flag(DisplayObjectFlags::FRAME_CONSTRUCT_SKIPPED)
+    }
+
+    fn set_frame_construct_skipped(&self, value: bool) {
+        self.set_flag(DisplayObjectFlags::FRAME_CONSTRUCT_SKIPPED, value);
     }
 
     fn is_bitmap_cached_preference(&self) -> bool {
@@ -2194,6 +2200,18 @@ pub trait TDisplayObject<'gc>:
         self.base().set_placed_by_avm2_script(value)
     }
 
+    #[no_dynamic]
+    fn frame_construct_skipped(&self) -> bool {
+        self.base().frame_construct_skipped()
+    }
+
+    /// When this flag is set, the object will not be instantiated in-line with
+    /// normal frame construction by `MovieClip::construct_frame`.
+    #[no_dynamic]
+    fn set_frame_construct_skipped(&self, value: bool) {
+        self.base().set_frame_construct_skipped(value);
+    }
+
     /// Whether this display object has been instantiated by the timeline.
     /// When this flag is set, attempts to change the object's name from AVM2
     /// throw an exception.
@@ -2344,16 +2362,6 @@ pub trait TDisplayObject<'gc>:
         }
     }
 
-    /// Emit a `frameConstructed` event on this DisplayObject and any children it
-    /// may have.
-    #[no_dynamic]
-    fn frame_constructed(self, context: &mut UpdateContext<'gc>) {
-        let frame_constructed_evt =
-            Avm2EventObject::bare_default_event(context, "frameConstructed");
-        let dobject_constr = context.avm2.classes().display_object;
-        Avm2::broadcast_event(context, frame_constructed_evt, dobject_constr);
-    }
-
     /// Run any frame scripts (if they exist and this object needs to run them).
     fn run_frame_scripts(self, context: &mut UpdateContext<'gc>) {
         if let Some(container) = self.as_container() {
@@ -2361,16 +2369,6 @@ pub trait TDisplayObject<'gc>:
                 child.run_frame_scripts(context);
             }
         }
-    }
-
-    /// Emit an `exitFrame` broadcast event.
-    #[no_dynamic]
-    fn exit_frame(self, context: &mut UpdateContext<'gc>) {
-        let exit_frame_evt = Avm2EventObject::bare_default_event(context, "exitFrame");
-        let dobject_constr = context.avm2.classes().display_object;
-        Avm2::broadcast_event(context, exit_frame_evt, dobject_constr);
-
-        LoadManager::run_exit_frame(context);
     }
 
     /// Called before the child is about to be rendered.
@@ -2886,7 +2884,7 @@ impl<'gc> DisplayObject<'gc> {
 bitflags! {
     /// Bit flags used by `DisplayObject`.
     #[derive(Clone, Copy)]
-    struct DisplayObjectFlags: u16 {
+    struct DisplayObjectFlags: u32 {
         /// Whether this object has been removed from the display list.
         /// Necessary in AVM1 to throw away queued actions from removed movie clips.
         const AVM1_REMOVED             = 1 << 0;
@@ -2947,6 +2945,16 @@ bitflags! {
         /// i.e. attachMovie, createEmptyMovieClip, duplicateMovieClip.
         // TODO [KJ] Can this be merged with PLACED_BY_AVM2_SCRIPT?
         const PLACED_BY_AVM1_SCRIPT    = 1 << 15;
+
+        /// Whether this object was placed by the timeline on a `MovieClip`
+        /// before the `MovieClip` had its AVM2 object constructed. Such objects
+        /// are only instantiated by `Sprite.constructChildren`, which is
+        /// usually called when `super()` is called in a `Sprite` subclass.
+        /// However, if `super()` (and therefore `Sprite.constructChildren()`)
+        /// is never called, the object will never be instantiated. We mark all
+        /// objects placed by the timeline on a load frame with this flag to
+        /// ensure that `MovieClip::construct_frame` does not instantiate them.
+        const FRAME_CONSTRUCT_SKIPPED  = 1 << 16;
     }
 }
 
