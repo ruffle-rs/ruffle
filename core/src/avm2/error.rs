@@ -385,13 +385,18 @@ pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) ->
 pub fn make_error_1026<'gc>(
     activation: &mut Activation<'_, 'gc>,
     slot_id: u32,
-    slot_count: usize,
+    slot_count: Option<usize>,
+    class: Option<Class<'gc>>,
 ) -> Error<'gc> {
-    let err = verify_error(
-        activation,
-        &format!("Error #1026: Slot {slot_id} exceeds slotCount={slot_count} of global."),
-        1026,
-    );
+    let error_message = if let (Some(slot_count), Some(class)) = (slot_count, class) {
+        let class_name = class.name().to_qualified_name_err_message(activation.gc());
+
+        format!("Error #1026: Slot {slot_id} exceeds slotCount={slot_count} of {class_name}.")
+    } else {
+        format!("Error #1026: Slot {slot_id} exceeds slotCount.")
+    };
+
+    let err = verify_error(activation, &error_message, 1026);
     match err {
         Ok(err) => Error::avm_error(err),
         Err(err) => err,
