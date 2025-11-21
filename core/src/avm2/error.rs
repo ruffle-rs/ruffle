@@ -1181,10 +1181,14 @@ pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2027<'gc>(activation: &mut Activation<'_, 'gc>, value: i32) -> Error<'gc> {
+pub fn make_error_2027<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    param_name: &str,
+    value: i32,
+) -> Error<'gc> {
     let err = range_error(
         activation,
-        &format!("Error #2027: Parameter tabIndex must be a non-negative number; got {value}."),
+        &format!("Error #2027: Parameter {param_name} must be a non-negative number; got {value}."),
         2027,
     );
     match err {
