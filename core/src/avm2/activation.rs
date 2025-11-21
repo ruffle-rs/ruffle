@@ -1940,7 +1940,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if value.is_of_type(xml) || value.is_of_type(xml_list) {
             self.push_stack(value);
         } else {
-            let class_name = value.instance_of_class_name(self);
+            let class_name = value
+                .instance_class(self)
+                .name()
+                .to_qualified_name_err_message(self.gc());
 
             return Err(Error::avm_error(type_error(
                 self,
