@@ -1223,6 +1223,20 @@ pub fn make_error_2058<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2078<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = illegal_operation_error(
+        activation,
+        "Error #2078: The name property of a Timeline-placed object cannot be modified.",
+        2078,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2085<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
     let err = argument_error(
         activation,
