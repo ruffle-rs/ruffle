@@ -784,6 +784,20 @@ pub fn make_error_1118<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1119<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        "Error #1119: Delete operator is not supported with operand of type XMLList.",
+        1119,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1123<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) -> Error<'gc> {
     let class_name = class.name().to_qualified_name_err_message(activation.gc());
 
