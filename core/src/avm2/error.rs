@@ -3,6 +3,7 @@ use ruffle_wstr::WString;
 use crate::avm2::{Activation, AvmString, Class, Multiname, Value};
 use quick_xml::errors::{Error as XmlError, SyntaxError as XmlSyntaxError};
 use quick_xml::events::attributes::AttrError as XmlAttrError;
+use ruffle_macros::istr;
 use std::fmt::{Debug, Display};
 use std::mem::size_of;
 
@@ -622,11 +623,13 @@ pub fn make_error_1065<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: &Multiname<'gc>,
 ) -> Error<'gc> {
-    let qualified_name = name.as_uri(activation.strings());
+    // FIXME: in FP, sometimes this uses the full qualified name, rather than
+    // just the local name
+    let local_name = name.local_name().unwrap_or(istr!("*"));
 
     let err = reference_error(
         activation,
-        &format!("Error #1065: Variable {qualified_name} is not defined."),
+        &format!("Error #1065: Variable {local_name} is not defined."),
         1065,
     );
     match err {
