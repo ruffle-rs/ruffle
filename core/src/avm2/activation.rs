@@ -5,8 +5,8 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
-    make_error_1040, make_error_1041, make_error_1063, make_error_1065, make_error_1127,
-    make_error_1506, make_null_or_undefined_error, type_error, verify_error,
+    make_error_1016, make_error_1040, make_error_1041, make_error_1063, make_error_1065,
+    make_error_1127, make_error_1506, make_null_or_undefined_error, type_error, verify_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
@@ -1597,18 +1597,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.push_stack(descendants);
         } else {
             // Even if it's an object with the "descendants" property, we won't support it.
-            let class_name = object
-                .instance_class(self)
-                .name()
-                .to_qualified_name_err_message(self.gc());
+            let class = object.instance_class(self);
 
-            return Err(Error::avm_error(type_error(
-                self,
-                &format!(
-                    "Error #1016: Descendants operator (..) not supported on type {class_name}",
-                ),
-                1016,
-            )?));
+            return Err(make_error_1016(self, class));
         }
 
         Ok(())
