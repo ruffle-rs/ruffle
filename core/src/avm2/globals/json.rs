@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::error::{make_error_1131, make_error_1132, type_error};
+use crate::avm2::error::{make_error_1129, make_error_1131, make_error_1132};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, ScriptObject, TObject};
@@ -238,11 +238,7 @@ impl<'gc> AvmSerializer<'gc> {
             Value::String(s) => JsonValue::from(s.to_utf8_lossy().deref()),
             Value::Object(obj) => {
                 if self.obj_stack.contains(&obj) {
-                    return Err(Error::avm_error(type_error(
-                        activation,
-                        "Error #1129: Cyclic structure cannot be converted to JSON string.",
-                        1129,
-                    )?));
+                    return Err(make_error_1129(activation));
                 }
                 self.obj_stack.push(obj);
                 let value = if obj.is_of_type(activation.avm2().class_defs().array) {
