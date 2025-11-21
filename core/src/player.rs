@@ -7,6 +7,10 @@ use crate::avm1::{Activation, ActivationIdentifier};
 use crate::avm2::object::EventObject as Avm2EventObject;
 use crate::avm2::{Activation as Avm2Activation, Avm2, CallStack, SharedObjectObject};
 use crate::avm_rng::AvmRng;
+use crate::backend::navigator::ErrorResponse;
+use crate::backend::navigator::FetchReason;
+use crate::backend::navigator::OwnedFuture;
+use crate::backend::navigator::SuccessResponse;
 use crate::backend::ui::FontDefinition;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
@@ -16,6 +20,7 @@ use crate::backend::{
     ui::{MouseCursor, UiBackend},
 };
 use crate::compatibility_rules::CompatibilityRules;
+use crate::compatibility_rules::UrlRewriteStage;
 use crate::config::Letterbox;
 use crate::context::{ActionQueue, ActionType, RenderContext, UpdateContext};
 use crate::context_menu::{
@@ -2508,6 +2513,46 @@ impl Player {
         self.mutate_with_update_context(|context| {
             context.library.set_default_font(font, names);
         });
+    }
+
+    pub fn fetch(
+        &self,
+        mut request: Request,
+        fetch_reason: FetchReason,
+    ) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
+        let new_url = self.compatibility_rules.rewrite_swf_url(
+            request.url().into(),
+            UrlRewriteStage::BeforeRequest,
+            fetch_reason,
+        );
+        if let Some(new_url) = new_url {
+            request.set_url(new_url);
+        }
+
+        let self_reference = self.self_reference.clone();
+        let fetch = self.navigator.fetch(request);
+        Box::pin(async move {
+            let response = fetch.await;
+
+            let Ok(mut response) = response else {
+                return response;
+            };
+
+            let Some(player) = self_reference.upgrade() else {
+                return Ok(response);
+            };
+
+            let new_url = player.lock().unwrap().compatibility_rules.rewrite_swf_url(
+                response.url(),
+                UrlRewriteStage::AfterResponse,
+                fetch_reason,
+            );
+            if let Some(new_url) = new_url {
+                response.set_url(new_url);
+            }
+
+            Ok(response)
+        })
     }
 }
 
