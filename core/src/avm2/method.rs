@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::error::{make_error_1014, make_error_1107, verify_error, Error, Error1014Type};
+use crate::avm2::error::{make_error_1014, make_error_1027, make_error_1107, Error, Error1014Type};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{abc_default_value, Value};
 use crate::avm2::verify::VerifiedMethodInfo;
@@ -164,11 +164,7 @@ impl<'gc> Method<'gc> {
         let abc = txunit.abc();
 
         let Some(method) = abc.methods.get(method_index) else {
-            return Err(Error::avm_error(verify_error(
-                activation,
-                "Error #1027: Method_info exceeds method_count.",
-                1027,
-            )?));
+            return Err(make_error_1027(activation));
         };
 
         let mut signature = Vec::new();
