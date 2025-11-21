@@ -784,6 +784,22 @@ pub fn make_error_1118<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1123<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) -> Error<'gc> {
+    let class_name = class.name().to_qualified_name_err_message(activation.gc());
+
+    let err = type_error(
+        activation,
+        &format!("Error #1123: Filter operator not supported on type {class_name}."),
+        1123,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1125<'gc>(
     activation: &mut Activation<'_, 'gc>,
     index: f64,
