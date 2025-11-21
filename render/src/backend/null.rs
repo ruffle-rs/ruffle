@@ -68,6 +68,7 @@ impl RenderBackend for NullRenderer {
         _commands: CommandList,
         _quality: StageQuality,
         _bounds: PixelRegion,
+        _cache_entries: Vec<BitmapCacheEntry>,
     ) -> Option<Box<dyn SyncHandle>> {
         None
     }
