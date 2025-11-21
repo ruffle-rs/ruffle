@@ -1,0 +1,12 @@
+export-bundle-dialog-title = Экспорт Ruffle-пакета
+export-bundle-dialog-bundle-name = Имя пакета:
+export-bundle-dialog-files-description = Выберите файлы для пакета:
+export-bundle-dialog-files-select-all = Выбрать всё
+export-bundle-dialog-export = Экспортировать
+export-bundle-dialog-exporting = Экспортирование...
+export-bundle-dialog-exporting-failed = Экспортирование не удалось.
+export-bundle-dialog-error-user-canceled = Отменено пользователем.
+export-bundle-dialog-error-failed-to-show-picker = Не удалось показать диалог выбора файлов.
+export-bundle-dialog-error-io-error = Ошибка записи пакета.
+export-bundle-dialog-info-title = Что такое Ruffle-пакет?
+export-bundle-dialog-info-description = Ruffle-пакет это универсальный пакет, который включает всё необходимое для запуска SWF файла: все требуемые ресурсы и настройки. С таким пакетом ваш SWF работает сразу из коробки — без пропавших файлов и ручной настройки, просто запускаете и всё работает.
