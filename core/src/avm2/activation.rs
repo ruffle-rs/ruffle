@@ -6,7 +6,8 @@ use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
     make_error_1016, make_error_1040, make_error_1041, make_error_1063, make_error_1065,
-    make_error_1127, make_error_1506, make_null_or_undefined_error, type_error, verify_error,
+    make_error_1123, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
+    verify_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
@@ -1940,16 +1941,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if value.is_of_type(xml) || value.is_of_type(xml_list) {
             self.push_stack(value);
         } else {
-            let class_name = value
-                .instance_class(self)
-                .name()
-                .to_qualified_name_err_message(self.gc());
+            let class = value.instance_class(self);
 
-            return Err(Error::avm_error(type_error(
-                self,
-                &format!("Error #1123: Filter operator not supported on type {class_name}."),
-                1123,
-            )?));
+            return Err(make_error_1123(self, class));
         }
         Ok(())
     }
