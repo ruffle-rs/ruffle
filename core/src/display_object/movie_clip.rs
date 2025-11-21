@@ -4056,7 +4056,10 @@ impl<'gc, 'a> MovieClipShared<'gc> {
 
         for _ in 0..num_symbols {
             let id = reader.read_u16()?;
-            let class_name = reader.read_str()?.decode(reader.encoding());
+
+            // Ensure invalid UTF-8 sequences are treated as raw bytes (matching AVM2 behavior)
+            // rather than being replaced with the Unicode replacement character.
+            let class_name = ruffle_wstr::from_utf8_bytes(reader.read_str()?.as_bytes());
 
             // Store the name and symbol with in the global data for this frame. The first time
             // we execute this frame (for any instance of this MovieClip), we will load the symbolclass
