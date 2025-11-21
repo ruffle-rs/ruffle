@@ -914,6 +914,20 @@ pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1129<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        "Error #1129: Cyclic structure cannot be converted to JSON string.",
+        1129,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1131<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = type_error(
         activation,
