@@ -116,7 +116,7 @@ impl<'gc> SoundChannelObject<'gc> {
 
     pub fn set_sound_instance(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         instance: SoundInstanceHandle,
     ) {
         let mut sound_channel_data = self.0.sound_channel_data.borrow_mut();
@@ -126,13 +126,11 @@ impl<'gc> SoundChannelObject<'gc> {
                 should_stop,
             } => {
                 if let Some(sound_transform) = sound_transform {
-                    activation
-                        .context
-                        .set_local_sound_transform(instance, *sound_transform);
+                    context.set_local_sound_transform(instance, *sound_transform);
                 }
 
                 if *should_stop {
-                    activation.context.stop_sound(instance);
+                    context.stop_sound(instance);
                 }
                 *sound_channel_data = SoundChannelData::Loaded {
                     sound_instance: instance,
