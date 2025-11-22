@@ -1004,6 +1004,16 @@ pub fn make_error_1132<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1504<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = error(activation, "Error #1504: End of file.", 1504);
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1506<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = range_error(
         activation,
