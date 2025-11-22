@@ -19,6 +19,7 @@ file-menu-preferences = Asetukset...
 file-menu-exit = Lopeta
 file-menu-export = Vie...
 controls-menu = Säätimet
+controls-menu-suspend = Keskeytä
 controls-menu-resume = Jatka
 controls-menu-volume = Äänenvoimakkuuden säätö
 help-menu = Ohje
