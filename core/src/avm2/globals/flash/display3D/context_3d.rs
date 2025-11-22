@@ -1,4 +1,4 @@
-use crate::avm2::error::{argument_error, error, make_error_2008};
+use crate::avm2::error::{argument_error, error, make_error_2008, make_error_3671};
 use crate::avm2::globals::methods::flash_geom_matrix_3d as matrix3d_methods;
 use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
@@ -29,11 +29,7 @@ pub fn create_index_buffer<'gc>(
         let num_indices = args.get_u32(0);
 
         if num_indices == 0 {
-            return Err(Error::avm_error(argument_error(
-                activation,
-                "Error #3671: Buffer has zero size.",
-                3671,
-            )?));
+            return Err(make_error_3671(activation));
         }
 
         return Ok(context.create_index_buffer(num_indices, activation));
@@ -60,11 +56,7 @@ pub fn create_vertex_buffer<'gc>(
                 3670,
             )?));
         } else if data_32_per_vertex == 0 {
-            return Err(Error::avm_error(argument_error(
-                activation,
-                "Error #3671: Buffer has zero size.",
-                3671,
-            )?));
+            return Err(make_error_3671(activation));
         }
 
         return Ok(context.create_vertex_buffer(

@@ -300,6 +300,20 @@ pub enum Error1014Type {
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1011<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1011: Method contained illegal opcode.",
+        1011,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1014<'gc>(
     activation: &mut Activation<'_, 'gc>,
     kind: Error1014Type,
@@ -310,6 +324,22 @@ pub fn make_error_1014<'gc>(
         Error1014Type::ReferenceError => reference_error(activation, message, 1014),
         Error1014Type::VerifyError => verify_error(activation, message, 1014),
     };
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1016<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) -> Error<'gc> {
+    let class_name = class.name().to_qualified_name_err_message(activation.gc());
+
+    let err = type_error(
+        activation,
+        &format!("Error #1016: Descendants operator (..) not supported on type {class_name}",),
+        1016,
+    );
     match err {
         Ok(err) => Error::avm_error(err),
         Err(err) => err,
@@ -329,6 +359,20 @@ pub fn make_error_1019<'gc>(
     };
 
     let err = verify_error(activation, &message, 1019);
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1020<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1020: Code cannot fall off the end of a method.",
+        1020,
+    );
     match err {
         Ok(err) => Error::avm_error(err),
         Err(err) => err,
@@ -368,12 +412,31 @@ pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) ->
 pub fn make_error_1026<'gc>(
     activation: &mut Activation<'_, 'gc>,
     slot_id: u32,
-    slot_count: usize,
+    slot_count: Option<usize>,
+    class: Option<Class<'gc>>,
 ) -> Error<'gc> {
+    let error_message = if let (Some(slot_count), Some(class)) = (slot_count, class) {
+        let class_name = class.name().to_qualified_name_err_message(activation.gc());
+
+        format!("Error #1026: Slot {slot_id} exceeds slotCount={slot_count} of {class_name}.")
+    } else {
+        format!("Error #1026: Slot {slot_id} exceeds slotCount.")
+    };
+
+    let err = verify_error(activation, &error_message, 1026);
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1027<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,
-        &format!("Error #1026: Slot {slot_id} exceeds slotCount={slot_count} of global."),
-        1026,
+        "Error #1027: Method_info exceeds method_count.",
+        1027,
     );
     match err {
         Ok(err) => Error::avm_error(err),
@@ -468,6 +531,16 @@ pub fn make_error_1041<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         "Error #1041: The right-hand side of operator must be a class.",
         1041,
     );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1043<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(activation, "Error #1043: Invalid code_length=0.", 1043);
     match err {
         Ok(err) => Error::avm_error(err),
         Err(err) => err,
@@ -722,12 +795,58 @@ pub fn make_error_1098<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1100<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        "Error #1100: Cannot supply flags when constructing one RegExp from another.",
+        1100,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1107<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = verify_error(
         activation,
         "Error #1107: The ABC data is corrupt, attempt to read out of bounds.",
         1107,
     );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1108<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1108: The OP_newclass opcode was used with the incorrect base class.",
+        1108,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1112<'gc>(activation: &mut Activation<'_, 'gc>, arg_count: usize) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        &format!(
+            "Error #1112: Argument count mismatch on class coercion.  Expected 1, got {}.",
+            arg_count
+        ),
+        1112,
+    );
+
     match err {
         Ok(err) => Error::avm_error(err),
         Err(err) => err,
@@ -759,6 +878,36 @@ pub fn make_error_1118<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #1118: Illegal cyclical loop between nodes.",
         1118,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1119<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        "Error #1119: Delete operator is not supported with operand of type XMLList.",
+        1119,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1123<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) -> Error<'gc> {
+    let class_name = class.name().to_qualified_name_err_message(activation.gc());
+
+    let err = type_error(
+        activation,
+        &format!("Error #1123: Filter operator not supported on type {class_name}."),
+        1123,
     );
     match err {
         Ok(err) => Error::avm_error(err),
@@ -814,8 +963,46 @@ pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1129<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        "Error #1129: Cyclic structure cannot be converted to JSON string.",
+        1129,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1131<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = type_error(
+        activation,
+        "Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.",
+        1131,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1132<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = syntax_error(activation, "Error #1132: Invalid JSON parse input.", 1132);
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1504<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = error(activation, "Error #1504: End of file.", 1504);
     match err {
         Ok(err) => Error::avm_error(err),
         Err(err) => err,
@@ -829,6 +1016,20 @@ pub fn make_error_1506<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #1506: The range specified is invalid.",
         1506,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1507<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        &format!("Error #1507: Argument {param_name} cannot be null."),
+        1507,
     );
     match err {
         Ok(err) => Error::avm_error(err),
@@ -1039,10 +1240,14 @@ pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_2027<'gc>(activation: &mut Activation<'_, 'gc>, value: i32) -> Error<'gc> {
+pub fn make_error_2027<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    param_name: &str,
+    value: i32,
+) -> Error<'gc> {
     let err = range_error(
         activation,
-        &format!("Error #2027: Parameter tabIndex must be a non-negative number; got {value}."),
+        &format!("Error #2027: Parameter {param_name} must be a non-negative number; got {value}."),
         2027,
     );
     match err {
@@ -1054,7 +1259,7 @@ pub fn make_error_2027<'gc>(activation: &mut Activation<'_, 'gc>, value: i32) ->
 #[inline(never)]
 #[cold]
 pub fn make_error_2030<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    let err = error(
+    let err = eof_error(
         activation,
         "Error #2030: End of file was encountered.",
         2030,
@@ -1086,6 +1291,62 @@ pub fn make_error_2058<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #2058: There was an error decompressing the data.",
         2058,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2078<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = illegal_operation_error(
+        activation,
+        "Error #2078: The name property of a Timeline-placed object cannot be modified.",
+        2078,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2082<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        "Error #2082: Connect failed because the object is already connected.",
+        2082,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2083<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        "Error #2083: Close failed because the object is not connected.",
+        2083,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2084<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        "Error #2084: The AMF encoding of the arguments cannot exceed 40K.",
+        2084,
     );
     match err {
         Ok(err) => Error::avm_error(err),
@@ -1151,6 +1412,20 @@ pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2130<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = error(
+        activation,
+        "Error #2130: Unable to flush SharedObject.",
+        2130,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2136<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     let err = error(
         activation,
@@ -1171,6 +1446,16 @@ pub fn make_error_2162<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         "Error #2162: The Shader output type is not compatible for this operation.",
         2162,
     );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3671<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = argument_error(activation, "Error #3671: Buffer has zero size.", 3671);
     match err {
         Ok(err) => Error::avm_error(err),
         Err(err) => err,

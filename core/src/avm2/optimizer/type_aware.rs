@@ -90,6 +90,12 @@ impl<'gc> OptValue<'gc> {
         self.class.filter(|c| !c.is_interface()).map(|c| c.vtable())
     }
 
+    pub fn vtable_and_class(self) -> Option<(VTable<'gc>, Class<'gc>)> {
+        self.class
+            .filter(|c| !c.is_interface())
+            .map(|c| (c.vtable(), c))
+    }
+
     pub fn is_null(self) -> bool {
         matches!(self.constant_value, Some(ConstantValue::Null))
     }
@@ -1421,7 +1427,7 @@ fn abstract_interpret_ops<'gc>(
                 let stack_value = stack.pop(activation)?;
 
                 // The value must have a vtable
-                let Some(vtable) = stack_value.vtable() else {
+                let Some((vtable, class)) = stack_value.vtable_and_class() else {
                     return Err(make_error_1051(activation));
                 };
 
@@ -1432,7 +1438,8 @@ fn abstract_interpret_ops<'gc>(
                     return Err(make_error_1026(
                         activation,
                         slot_id + 1,
-                        vtable.default_slots().len(),
+                        Some(vtable.default_slots().len()),
+                        Some(class),
                     ));
                 };
 
@@ -1451,7 +1458,7 @@ fn abstract_interpret_ops<'gc>(
                 let stack_value = stack.pop(activation)?;
 
                 // The value must have a vtable
-                let Some(vtable) = stack_value.vtable() else {
+                let Some((vtable, class)) = stack_value.vtable_and_class() else {
                     return Err(make_error_1051(activation));
                 };
 
@@ -1462,7 +1469,8 @@ fn abstract_interpret_ops<'gc>(
                     return Err(make_error_1026(
                         activation,
                         slot_id + 1,
-                        vtable.default_slots().len(),
+                        Some(vtable.default_slots().len()),
+                        Some(class),
                     ));
                 };
 

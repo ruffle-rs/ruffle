@@ -5,8 +5,9 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
-    make_error_1040, make_error_1041, make_error_1063, make_error_1065, make_error_1127,
-    make_error_1506, make_null_or_undefined_error, type_error, verify_error,
+    make_error_1016, make_error_1040, make_error_1041, make_error_1063, make_error_1065,
+    make_error_1108, make_error_1119, make_error_1123, make_error_1127, make_error_1506,
+    make_null_or_undefined_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
@@ -1373,11 +1374,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if matches!(name_value, Value::Object(Object::XmlListObject(_))) {
                 // ECMA-357 11.3.1 The delete Operator
                 // If the type of the operand is XMLList, then a TypeError exception is thrown.
-                return Err(Error::avm_error(type_error(
-                    self,
-                    "Error #1119: Delete operator is not supported with operand of type XMLList.",
-                    1119,
-                )?));
+                return Err(make_error_1119(self));
             }
         }
         let multiname = multiname.fill_with_runtime_params(self)?;
@@ -1597,18 +1594,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.push_stack(descendants);
         } else {
             // Even if it's an object with the "descendants" property, we won't support it.
-            let class_name = object
-                .instance_class(self)
-                .name()
-                .to_qualified_name_err_message(self.gc());
+            let class = object.instance_class(self);
 
-            return Err(Error::avm_error(type_error(
-                self,
-                &format!(
-                    "Error #1016: Descendants operator (..) not supported on type {class_name}",
-                ),
-                1016,
-            )?));
+            return Err(make_error_1016(self, class));
         }
 
         Ok(())
@@ -1800,11 +1788,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if base_class.is_none() && class.super_class().is_some() {
             return Err(make_null_or_undefined_error(self, Value::Null, None));
         } else if base_class.map(|c| c.inner_class_definition()) != class.super_class() {
-            return Err(Error::avm_error(verify_error(
-                self,
-                "Error #1108: The OP_newclass opcode was used with the incorrect base class.",
-                1108,
-            )?));
+            return Err(make_error_1108(self));
         }
 
         // Finally, actually construct the ClassObject
@@ -1949,13 +1933,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if value.is_of_type(xml) || value.is_of_type(xml_list) {
             self.push_stack(value);
         } else {
-            let class_name = value.instance_of_class_name(self);
+            let class = value.instance_class(self);
 
-            return Err(Error::avm_error(type_error(
-                self,
-                &format!("Error #1123: Filter operator not supported on type {class_name}."),
-                1123,
-            )?));
+            return Err(make_error_1123(self, class));
         }
         Ok(())
     }

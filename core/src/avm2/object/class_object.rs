@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{AllocatorFn, Class, CustomConstructorFn};
 use crate::avm2::error::{
-    self, argument_error, make_error_1107, make_error_1127, reference_error, type_error,
+    self, make_error_1107, make_error_1112, make_error_1127, reference_error, type_error,
 };
 use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
@@ -698,14 +698,7 @@ impl<'gc> ClassObject<'gc> {
                 .get_at(0)
                 .coerce_to_type(activation, self.inner_class_definition())
         } else {
-            Err(Error::avm_error(argument_error(
-                activation,
-                &format!(
-                    "Error #1112: Argument count mismatch on class coercion.  Expected 1, got {}.",
-                    arguments.len()
-                ),
-                1112,
-            )?))
+            Err(make_error_1112(activation, arguments.len()))
         }
     }
 

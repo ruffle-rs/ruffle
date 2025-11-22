@@ -3,7 +3,8 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{
-    make_error_2004, make_error_2005, make_error_2008, make_error_2015, range_error, Error2004Type,
+    make_error_2004, make_error_2005, make_error_2008, make_error_2015, make_error_2027,
+    Error2004Type,
 };
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::globals::slots::{
@@ -1542,16 +1543,11 @@ pub fn pixel_dissolve<'gc>(
 
         let num_pixels = args.get_i32(4);
         if num_pixels < 0 {
-            return Err(Error::avm_error(range_error(
-                activation,
-                &format!("Error #2027: Parameter numPixels must be a non-negative number; got {num_pixels}."),
-                2027,
-            )?));
+            return Err(make_error_2027(activation, "numPixels", num_pixels));
         }
 
         let fill_color = args.get_u32(5);
 
-        // Apparently, if this check fails, a type error for `null` is given.
         if let Some(src_bitmap_data) = src_bitmap_data.as_bitmap_data() {
             src_bitmap_data.check_valid(activation)?;
 

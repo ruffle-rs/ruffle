@@ -1,9 +1,7 @@
 //! `flash.display.DisplayObject` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{
-    illegal_operation_error, make_error_2005, make_error_2007, make_error_2008,
-};
+use crate::avm2::error::{make_error_2005, make_error_2007, make_error_2008, make_error_2078};
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::globals::flash::geom::transform::color_transform_from_transform_object;
 use crate::avm2::globals::flash::geom::transform::has_matrix3d_from_transform_object;
@@ -564,11 +562,7 @@ pub fn set_name<'gc>(
         let new_name = args.get_string(activation, 0);
 
         if dobj.instantiated_by_timeline() {
-            return Err(Error::avm_error(illegal_operation_error(
-                activation,
-                "Error #2078: The name property of a Timeline-placed object cannot be modified.",
-                2078,
-            )?));
+            return Err(make_error_2078(activation));
         }
 
         dobj.set_name(activation.gc(), new_name);

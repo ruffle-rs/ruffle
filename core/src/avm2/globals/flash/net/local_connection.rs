@@ -1,5 +1,7 @@
 use crate::avm2::amf::serialize_value;
-use crate::avm2::error::{argument_error, make_error_2004, make_error_2085, Error2004Type};
+use crate::avm2::error::{
+    make_error_2004, make_error_2082, make_error_2083, make_error_2085, Error2004Type,
+};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
@@ -88,11 +90,7 @@ pub fn connect<'gc>(
         if !local_connection.connect(activation, connection_name) {
             // This triggers both if this object is already connected, OR there's something else taking the name
             // (The error message is misleading, in that case!)
-            return Err(Error::avm_error(argument_error(
-                activation,
-                "Error #2082: Connect failed because the object is already connected.",
-                2082,
-            )?));
+            return Err(make_error_2082(activation));
         }
     }
 
@@ -109,11 +107,7 @@ pub fn close<'gc>(
 
     if let Some(local_connection) = this.as_local_connection_object() {
         if !local_connection.is_connected() {
-            return Err(Error::avm_error(argument_error(
-                activation,
-                "Error #2083: Close failed because the object is not connected.",
-                2083,
-            )?));
+            return Err(make_error_2083(activation));
         }
 
         local_connection.disconnect(activation);
