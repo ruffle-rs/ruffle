@@ -301,6 +301,20 @@ pub enum Error1014Type {
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1011<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = verify_error(
+        activation,
+        "Error #1011: Method contained illegal opcode.",
+        1011,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1014<'gc>(
     activation: &mut Activation<'_, 'gc>,
     kind: Error1014Type,
