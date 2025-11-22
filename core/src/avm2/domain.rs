@@ -5,7 +5,7 @@ use std::cell::{Ref, RefMut};
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::error::{error, make_error_1065, Error};
+use crate::avm2::error::{make_error_1065, make_error_1504, Error};
 use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::script::Script;
@@ -376,11 +376,7 @@ impl<'gc> Domain<'gc> {
     ) -> Result<(), Error<'gc>> {
         let memory = if let Some(domain_memory) = domain_memory {
             if domain_memory.storage().len() < MIN_DOMAIN_MEMORY_LENGTH {
-                return Err(Error::avm_error(error(
-                    activation,
-                    "Error #1504: End of file.",
-                    1504,
-                )?));
+                return Err(make_error_1504(activation));
             }
             domain_memory
         } else {
