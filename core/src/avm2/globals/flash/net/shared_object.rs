@@ -1,6 +1,6 @@
 //! `flash.net.SharedObject` builtin/prototype
 
-use crate::avm2::error::error;
+use crate::avm2::error::make_error_2130;
 use crate::avm2::object::{ScriptObject, SharedObjectObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
@@ -216,11 +216,7 @@ pub fn flush_impl<'gc>(
         if activation.context.storage.put(name, &bytes) {
             Ok(istr!("flushed"))
         } else {
-            Err(Error::avm_error(error(
-                activation,
-                "Error #2130: Unable to flush SharedObject.",
-                2130,
-            )?))
+            Err(make_error_2130(activation))
         }
     }
     // FIXME - We should dispatch a NetStatusEvent after this function returns
