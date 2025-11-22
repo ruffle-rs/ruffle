@@ -1,8 +1,8 @@
 use crate::avm2::class::Class;
 use crate::avm2::error::{
     make_error_1011, make_error_1014, make_error_1019, make_error_1020, make_error_1021,
-    make_error_1025, make_error_1026, make_error_1032, make_error_1054, make_error_1107,
-    verify_error, Error1014Type,
+    make_error_1025, make_error_1026, make_error_1032, make_error_1043, make_error_1054,
+    make_error_1107, verify_error, Error1014Type,
 };
 use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
@@ -86,11 +86,7 @@ pub fn verify_method<'gc>(
     use swf::extensions::ReadSwfExt;
 
     if body.code.is_empty() {
-        return Err(Error::avm_error(verify_error(
-            activation,
-            "Error #1043: Invalid code_length=0.",
-            1043,
-        )?));
+        return Err(make_error_1043(activation));
     }
 
     let activation_class = create_activation_class(activation, method)?;
