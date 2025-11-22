@@ -1307,6 +1307,20 @@ pub fn make_error_2078<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2084<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    let err = argument_error(
+        activation,
+        "Error #2084: The AMF encoding of the arguments cannot exceed 40K.",
+        2084,
+    );
+    match err {
+        Ok(err) => Error::avm_error(err),
+        Err(err) => err,
+    }
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2085<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &str) -> Error<'gc> {
     let err = argument_error(
         activation,
