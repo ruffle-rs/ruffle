@@ -10,6 +10,7 @@ import {
     UnmuteOverlay,
     WindowMode,
     ScrollingBehavior,
+    DeviceFontRenderer,
 } from "./load-options";
 
 export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
@@ -56,4 +57,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     gamepadButtonMapping: {},
     urlRewriteRules: [],
     scrollingBehavior: ScrollingBehavior.Smart,
+    deviceFontRenderer: DeviceFontRenderer.Embedded,
 };

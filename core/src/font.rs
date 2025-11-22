@@ -1,3 +1,4 @@
+use crate::context::RenderContext;
 use crate::drawing::Drawing;
 use crate::html::TextSpan;
 use crate::prelude::*;
@@ -5,10 +6,13 @@ use crate::string::WStr;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
+use ruffle_render::bitmap::{Bitmap, BitmapHandle};
+use ruffle_render::error::Error;
 use ruffle_render::shape_utils::{DrawCommand, FillRule};
 use ruffle_render::transform::Transform;
-use std::cell::{OnceCell, RefCell};
+use std::cell::{Cell, OnceCell, Ref, RefCell};
 use std::hash::{Hash, Hasher};
+use std::rc::Rc;
 use std::sync::Arc;
 use swf::FillStyle;
 
@@ -137,6 +141,16 @@ impl EvalParameters {
     pub fn height(&self) -> Twips {
         self.height
     }
+}
+
+pub trait FontRenderer: std::fmt::Debug {
+    fn get_font_metrics(&self) -> FontMetrics;
+
+    fn has_kerning_info(&self) -> bool;
+
+    fn render_glyph(&self, character: char) -> Option<Glyph>;
+
+    fn calculate_kerning(&self, left: char, right: char) -> Twips;
 }
 
 struct GlyphToDrawing<'a>(&'a mut Drawing);
@@ -329,6 +343,22 @@ impl FontFace {
     }
 }
 
+pub enum GlyphRef<'a> {
+    Direct(&'a Glyph),
+    Ref(Ref<'a, Glyph>),
+}
+
+impl<'a> std::ops::Deref for GlyphRef<'a> {
+    type Target = Glyph;
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            GlyphRef::Direct(r) => r,
+            GlyphRef::Ref(r) => r.deref(),
+        }
+    }
+}
+
 #[derive(Debug)]
 pub enum GlyphSource {
     Memory {
@@ -345,19 +375,29 @@ pub enum GlyphSource {
         kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
     },
     FontFace(FontFace),
+    ExternalRenderer {
+        /// Maps Unicode code points to glyphs rendered by the renderer.
+        glyph_cache: RefCell<fnv::FnvHashMap<u16, Option<Glyph>>>,
+
+        /// Maps Unicode pairs to kerning provided by the renderer.
+        kerning_cache: RefCell<fnv::FnvHashMap<(u16, u16), Twips>>,
+
+        font_renderer: Box<dyn FontRenderer>,
+    },
     Empty,
 }
 
 impl GlyphSource {
-    pub fn get_by_index(&self, index: usize) -> Option<&Glyph> {
+    pub fn get_by_index(&self, index: usize) -> Option<GlyphRef<'_>> {
         match self {
-            GlyphSource::Memory { glyphs, .. } => glyphs.get(index),
+            GlyphSource::Memory { glyphs, .. } => glyphs.get(index).map(GlyphRef::Direct),
             GlyphSource::FontFace(_) => None, // Unsupported.
+            GlyphSource::ExternalRenderer { .. } => None, // Unsupported.
             GlyphSource::Empty => None,
         }
     }
 
-    pub fn get_by_code_point(&self, code_point: char) -> Option<&Glyph> {
+    pub fn get_by_code_point(&self, code_point: char) -> Option<GlyphRef<'_>> {
         match self {
             GlyphSource::Memory {
                 glyphs,
@@ -367,12 +407,32 @@ impl GlyphSource {
                 // TODO: Properly handle UTF-16/out-of-bounds code points.
                 let code_point = code_point as u16;
                 if let Some(index) = code_point_to_glyph.get(&code_point) {
-                    glyphs.get(*index)
+                    glyphs.get(*index).map(GlyphRef::Direct)
                 } else {
                     None
                 }
             }
-            GlyphSource::FontFace(face) => face.get_glyph(code_point),
+            GlyphSource::FontFace(face) => face.get_glyph(code_point).map(GlyphRef::Direct),
+            GlyphSource::ExternalRenderer {
+                glyph_cache,
+                font_renderer,
+                ..
+            } => {
+                let character = code_point;
+                let code_point = code_point as u16;
+
+                glyph_cache
+                    .borrow_mut()
+                    .entry(code_point)
+                    .or_insert_with(|| font_renderer.render_glyph(character));
+
+                let glyph = Ref::filter_map(glyph_cache.borrow(), |v| {
+                    v.get(&code_point).unwrap_or(&None).as_ref()
+                })
+                .ok();
+
+                glyph.map(GlyphRef::Ref)
+            }
             GlyphSource::Empty => None,
         }
     }
@@ -381,6 +441,7 @@ impl GlyphSource {
         match self {
             GlyphSource::Memory { kerning_pairs, .. } => !kerning_pairs.is_empty(),
             GlyphSource::FontFace(face) => face.has_kerning_info(),
+            GlyphSource::ExternalRenderer { font_renderer, .. } => font_renderer.has_kerning_info(),
             GlyphSource::Empty => false,
         }
     }
@@ -397,6 +458,19 @@ impl GlyphSource {
                     .unwrap_or_default()
             }
             GlyphSource::FontFace(face) => face.get_kerning_offset(left, right),
+            GlyphSource::ExternalRenderer {
+                kerning_cache,
+                font_renderer,
+                ..
+            } => {
+                let (Ok(left_cp), Ok(right_cp)) = (left.try_into(), right.try_into()) else {
+                    return Twips::ZERO;
+                };
+                *kerning_cache
+                    .borrow_mut()
+                    .entry((left_cp, right_cp))
+                    .or_insert_with(|| font_renderer.calculate_kerning(left, right))
+            }
             GlyphSource::Empty => Twips::ZERO,
         }
     }
@@ -416,6 +490,26 @@ impl FontType {
     }
 }
 
+#[derive(Debug, Clone)]
+pub struct FontMetrics {
+    /// The scaling applied to the font height to render at the proper size.
+    /// This depends on the DefineFont tag version.
+    pub scale: f32,
+
+    /// The distance from the top of each glyph to the baseline of the font, in
+    /// EM-square coordinates.
+    pub ascent: i32,
+
+    /// The distance from the baseline of the font to the bottom of each glyph,
+    /// in EM-square coordinates.
+    pub descent: i32,
+
+    /// The distance between the bottom of any one glyph and the top of
+    /// another, in EM-square coordinates.
+    #[allow(dead_code)] // Web build falsely claims it's unused
+    pub leading: i16,
+}
+
 #[derive(Debug, Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Font<'gc>(Gc<'gc, FontData>);
@@ -425,22 +519,7 @@ pub struct Font<'gc>(Gc<'gc, FontData>);
 struct FontData {
     glyphs: GlyphSource,
 
-    /// The scaling applied to the font height to render at the proper size.
-    /// This depends on the DefineFont tag version.
-    scale: f32,
-
-    /// The distance from the top of each glyph to the baseline of the font, in
-    /// EM-square coordinates.
-    ascent: i32,
-
-    /// The distance from the baseline of the font to the bottom of each glyph,
-    /// in EM-square coordinates.
-    descent: i32,
-
-    /// The distance between the bottom of any one glyph and the top of
-    /// another, in EM-square coordinates.
-    #[allow(dead_code)] // Web build falsely claims it's unused
-    leading: i16,
+    metrics: FontMetrics,
 
     /// The identity of the font.
     #[collect(require_static)]
@@ -468,10 +547,12 @@ impl<'gc> Font<'gc> {
         Ok(Font(Gc::new(
             gc_context,
             FontData {
-                scale: face.scale,
-                ascent: face.ascender,
-                descent: face.descender,
-                leading: face.leading,
+                metrics: FontMetrics {
+                    scale: face.scale,
+                    ascent: face.ascender,
+                    descent: face.descender,
+                    leading: face.leading,
+                },
                 glyphs: GlyphSource::FontFace(face),
                 descriptor,
                 font_type,
@@ -517,7 +598,7 @@ impl<'gc> Font<'gc> {
 
                 // Eager-load ASCII characters.
                 if code < 128 {
-                    glyph.shape_handle(renderer);
+                    glyph.glyph_handle(renderer);
                 }
 
                 glyph
@@ -547,12 +628,14 @@ impl<'gc> Font<'gc> {
                     }
                 },
 
-                // DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
-                // (SWF19 p.164)
-                scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
-                ascent,
-                descent,
-                leading,
+                metrics: FontMetrics {
+                    // DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
+                    // (SWF19 p.164)
+                    scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
+                    ascent,
+                    descent,
+                    leading,
+                },
                 descriptor,
                 font_type,
                 has_layout: tag.layout.is_some(),
@@ -589,6 +672,29 @@ impl<'gc> Font<'gc> {
         }
     }
 
+    pub fn from_renderer(
+        gc_context: &Mutation<'gc>,
+        descriptor: FontDescriptor,
+        font_renderer: Box<dyn FontRenderer>,
+    ) -> Self {
+        let metrics = font_renderer.get_font_metrics();
+        Font(Gc::new(
+            gc_context,
+            FontData {
+                glyphs: GlyphSource::ExternalRenderer {
+                    glyph_cache: RefCell::new(fnv::FnvHashMap::default()),
+                    kerning_cache: RefCell::new(fnv::FnvHashMap::default()),
+                    font_renderer,
+                },
+
+                metrics,
+                descriptor,
+                font_type: FontType::Device,
+                has_layout: true,
+            },
+        ))
+    }
+
     pub fn empty_font(
         gc_context: &Mutation<'gc>,
         name: &str,
@@ -601,10 +707,12 @@ impl<'gc> Font<'gc> {
         Font(Gc::new(
             gc_context,
             FontData {
-                scale: 1.0,
-                ascent: 0,
-                descent: 0,
-                leading: 0,
+                metrics: FontMetrics {
+                    scale: 1.0,
+                    ascent: 0,
+                    descent: 0,
+                    leading: 0,
+                },
                 glyphs: GlyphSource::Empty,
                 descriptor,
                 font_type,
@@ -621,13 +729,13 @@ impl<'gc> Font<'gc> {
 
     /// Returns a glyph entry by index.
     /// Used by `Text` display objects.
-    pub fn get_glyph(&self, i: usize) -> Option<&Glyph> {
+    pub fn get_glyph(&self, i: usize) -> Option<GlyphRef<'_>> {
         self.0.glyphs.get_by_index(i)
     }
 
     /// Returns a glyph entry by character.
     /// Used by `EditText` display objects.
-    pub fn get_glyph_for_char(&self, c: char) -> Option<&Glyph> {
+    pub fn get_glyph_for_char(&self, c: char) -> Option<GlyphRef<'_>> {
         self.0.glyphs.get_by_code_point(c)
     }
 
@@ -669,23 +777,23 @@ impl<'gc> FontLike<'gc> for Font<'gc> {
     fn get_leading_for_height(&self, height: Twips) -> Twips {
         let scale = height.get() as f32 / self.scale();
 
-        Twips::new((self.0.leading as f32 * scale) as i32)
+        Twips::new((self.0.metrics.leading as f32 * scale) as i32)
     }
 
     fn get_baseline_for_height(&self, height: Twips) -> Twips {
         let scale = height.get() as f32 / self.scale();
 
-        Twips::new((self.0.ascent as f32 * scale) as i32)
+        Twips::new((self.0.metrics.ascent as f32 * scale) as i32)
     }
 
     fn get_descent_for_height(&self, height: Twips) -> Twips {
         let scale = height.get() as f32 / self.scale();
 
-        Twips::new((self.0.descent as f32 * scale) as i32)
+        Twips::new((self.0.metrics.descent as f32 * scale) as i32)
     }
 
     fn scale(&self) -> f32 {
-        self.0.scale
+        self.0.metrics.scale
     }
 
     fn font_type(&self) -> FontType {
@@ -737,9 +845,9 @@ pub trait FontLike<'gc> {
         params: EvalParameters,
         mut glyph_func: FGlyph,
     ) where
-        FGlyph: FnMut(usize, &Transform, &Glyph, Twips, Twips),
+        FGlyph: FnMut(usize, &Transform, GlyphRef, Twips, Twips),
     {
-        transform.matrix.ty = self.get_baseline_for_height(params.height);
+        let baseline = self.get_baseline_for_height(params.height);
 
         // TODO [KJ] I'm not sure whether we should iterate over characters here or over code units.
         //   I suspect Flash Player does not support full UTF-16 when displaying and laying out text.
@@ -773,6 +881,11 @@ pub trait FontLike<'gc> {
 
                 transform.matrix.a = scale;
                 transform.matrix.d = scale;
+                transform.matrix.ty = if glyph.rendered_at_baseline() {
+                    baseline
+                } else {
+                    Twips::ZERO
+                };
 
                 glyph_func(pos, &transform, glyph, twips_advance, x);
 
@@ -782,7 +895,7 @@ pub trait FontLike<'gc> {
             } else {
                 // No glyph, zero advance.  This makes it possible to use this method for purposes
                 // other than rendering the font, e.g. measurement, iterating over characters.
-                glyph_func(pos, &transform, &Glyph::empty(c), Twips::ZERO, x);
+                glyph_func(pos, &transform, Glyph::empty(c).as_ref(), Twips::ZERO, x);
             }
         }
     }
@@ -920,10 +1033,27 @@ impl SwfGlyphOrShape {
     }
 }
 
+#[derive(Clone, Debug)]
+pub enum GlyphHandle {
+    Shape(ShapeHandle),
+    Bitmap(BitmapHandle),
+}
+
+impl GlyphHandle {
+    pub fn from_shape(shape_handle: ShapeHandle) -> Self {
+        Self::Shape(shape_handle)
+    }
+
+    pub fn from_bitmap(bitmap_handle: BitmapHandle) -> Self {
+        Self::Bitmap(bitmap_handle)
+    }
+}
+
 #[derive(Debug, Clone)]
 enum GlyphShape {
     Swf(Box<RefCell<SwfGlyphOrShape>>),
     Drawing(Box<Drawing>),
+    Bitmap(Rc<GlyphBitmap<'static>>),
     None,
 }
 
@@ -937,11 +1067,15 @@ impl GlyphShape {
                     && ruffle_render::shape_utils::shape_hit_test(shape, point, local_matrix)
             }
             GlyphShape::Drawing(drawing) => drawing.hit_test(point, local_matrix),
+            GlyphShape::Bitmap(_) => {
+                // TODO Implement this.
+                true
+            }
             GlyphShape::None => false,
         }
     }
 
-    pub fn register(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
+    pub fn register(&self, renderer: &mut dyn RenderBackend) -> Option<GlyphHandle> {
         match self {
             GlyphShape::Swf(glyph) => {
                 let mut glyph = glyph.borrow_mut();
@@ -949,11 +1083,60 @@ impl GlyphShape {
                 handle.get_or_insert_with(|| {
                     renderer.register_shape((&*shape).into(), &NullBitmapSource)
                 });
-                handle.clone()
+                handle.clone().map(GlyphHandle::from_shape)
             }
-            GlyphShape::Drawing(drawing) => drawing.register_or_replace(renderer),
+            GlyphShape::Drawing(drawing) => drawing
+                .register_or_replace(renderer)
+                .map(GlyphHandle::from_shape),
+            GlyphShape::Bitmap(bitmap) => bitmap
+                .get_handle_or_register(renderer)
+                .as_ref()
+                .inspect_err(|err| {
+                    tracing::error!(
+                        "Failed to register glyph as a bitmap: {err}, glyphs will be missing"
+                    )
+                })
+                .ok()
+                .cloned()
+                .map(GlyphHandle::from_bitmap),
             GlyphShape::None => None,
         }
+    }
+}
+
+/// A Bitmap that can be registered to a RenderBackend.
+struct GlyphBitmap<'a> {
+    bitmap: Cell<Option<Bitmap<'a>>>,
+    handle: OnceCell<Result<BitmapHandle, Error>>,
+}
+
+impl<'a> std::fmt::Debug for GlyphBitmap<'a> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("GlyphBitmap")
+            .field("handle", &self.handle)
+            .finish()
+    }
+}
+
+impl<'a> GlyphBitmap<'a> {
+    pub fn new(bitmap: Bitmap<'a>) -> Self {
+        Self {
+            bitmap: Cell::new(Some(bitmap)),
+            handle: OnceCell::new(),
+        }
+    }
+
+    pub fn get_handle_or_register(
+        &self,
+        renderer: &mut dyn RenderBackend,
+    ) -> &Result<BitmapHandle, Error> {
+        self.handle.get_or_init(|| {
+            renderer.register_bitmap(
+                self.bitmap
+                    .take()
+                    .expect("Bitmap should be available before registering"),
+            )
+        })
     }
 }
 
@@ -976,7 +1159,15 @@ impl Glyph {
         }
     }
 
-    pub fn shape_handle(&self, renderer: &mut dyn RenderBackend) -> Option<ShapeHandle> {
+    pub fn from_bitmap(character: char, bitmap: Bitmap<'static>, advance: Twips) -> Self {
+        Self {
+            shape: GlyphShape::Bitmap(Rc::new(GlyphBitmap::new(bitmap))),
+            advance,
+            character,
+        }
+    }
+
+    pub fn glyph_handle(&self, renderer: &mut dyn RenderBackend) -> Option<GlyphHandle> {
         self.shape.register(renderer)
     }
 
@@ -991,15 +1182,57 @@ impl Glyph {
     pub fn character(&self) -> char {
         self.character
     }
+
+    pub fn as_ref(&self) -> GlyphRef<'_> {
+        GlyphRef::Direct(self)
+    }
+
+    pub fn rendered_at_baseline(&self) -> bool {
+        match self.shape {
+            GlyphShape::Swf(_) => true,
+            GlyphShape::Drawing(_) => true,
+            GlyphShape::Bitmap(_) => false,
+            GlyphShape::None => false,
+        }
+    }
+
+    pub fn renderable<'gc>(&self, context: &mut RenderContext<'_, 'gc>) -> bool {
+        self.glyph_handle(context.renderer).is_some()
+    }
+
+    pub fn render<'gc>(&self, context: &mut RenderContext<'_, 'gc>) {
+        use ruffle_render::commands::CommandHandler;
+
+        let Some(glyph_handle) = self.glyph_handle(context.renderer) else {
+            return;
+        };
+
+        let transform = context.transform_stack.transform();
+        match glyph_handle {
+            GlyphHandle::Shape(shape_handle) => {
+                context
+                    .commands
+                    .render_shape(shape_handle.clone(), transform);
+            }
+            GlyphHandle::Bitmap(bitmap_handle) => {
+                context.commands.render_bitmap(
+                    bitmap_handle.clone(),
+                    transform,
+                    true,
+                    ruffle_render::bitmap::PixelSnapping::Auto,
+                );
+            }
+        }
+    }
 }
 
 pub struct GlyphRenderData<'a, 'gc> {
-    pub glyph: &'a Glyph,
+    pub glyph: GlyphRef<'a>,
     pub font: Font<'gc>,
 }
 
 impl<'a, 'gc> GlyphRenderData<'a, 'gc> {
-    fn new(glyph: &'a Glyph, font: Font<'gc>) -> Self {
+    fn new(glyph: GlyphRef<'a>, font: Font<'gc>) -> Self {
         Self { glyph, font }
     }
 }

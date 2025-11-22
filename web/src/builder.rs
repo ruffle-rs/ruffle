@@ -1,8 +1,8 @@
 use crate::external_interface::JavascriptInterface;
 use crate::navigator::{OpenUrlMode, WebNavigatorBackend};
 use crate::{
-    JavascriptPlayer, RUFFLE_GLOBAL_PANIC, RuffleHandle, ScrollingBehavior, SocketProxy, audio,
-    log_adapter, storage, ui,
+    DeviceFontRenderer, JavascriptPlayer, RUFFLE_GLOBAL_PANIC, RuffleHandle, ScrollingBehavior,
+    SocketProxy, audio, log_adapter, storage, ui,
 };
 use js_sys::{Promise, RegExp};
 use ruffle_core::backend::audio::{AudioBackend, NullAudioBackend};
@@ -65,6 +65,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub(crate) url_rewrite_rules: Vec<(RegExp, String)>,
     pub(crate) scrolling_behavior: ScrollingBehavior,
+    pub(crate) device_font_renderer: DeviceFontRenderer,
 }
 
 impl Default for RuffleInstanceBuilder {
@@ -104,6 +105,7 @@ impl Default for RuffleInstanceBuilder {
             gamepad_button_mapping: HashMap::new(),
             url_rewrite_rules: vec![],
             scrolling_behavior: ScrollingBehavior::Smart,
+            device_font_renderer: DeviceFontRenderer::Embedded,
         }
     }
 }
@@ -343,6 +345,15 @@ impl RuffleInstanceBuilder {
             "always" => ScrollingBehavior::Always,
             "never" => ScrollingBehavior::Never,
             "smart" => ScrollingBehavior::Smart,
+            _ => return,
+        };
+    }
+
+    #[wasm_bindgen(js_name = "setDeviceFontRenderer")]
+    pub fn set_device_font_renderer(&mut self, device_font_renderer: String) {
+        self.device_font_renderer = match device_font_renderer.as_str() {
+            "embedded" => DeviceFontRenderer::Embedded,
+            "canvas" => DeviceFontRenderer::Canvas,
             _ => return,
         };
     }
@@ -677,10 +688,16 @@ impl RuffleInstanceBuilder {
                 .with_fs_commands(interface);
         }
 
-        let trace_observer = Rc::new(RefCell::new(JsValue::UNDEFINED));
+        let trace_observer: Rc<RefCell<JsValue>> = Rc::new(RefCell::new(JsValue::UNDEFINED));
+        let use_canvas_font_renderer =
+            matches!(self.device_font_renderer, DeviceFontRenderer::Canvas);
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
-            .with_ui(ui::WebUiBackend::new(js_player.clone(), &canvas))
+            .with_ui(ui::WebUiBackend::new(
+                js_player.clone(),
+                &canvas,
+                use_canvas_font_renderer,
+            ))
             // `ExternalVideoBackend` has an internal `SoftwareVideoBackend` that it uses for any non-H.264 video.
             .with_video(ExternalVideoBackend::new_with_webcodecs(
                 log_subscriber.clone(),
@@ -713,7 +730,10 @@ impl RuffleInstanceBuilder {
             core.set_show_menu(self.show_menu);
             core.set_allow_fullscreen(self.allow_fullscreen);
             core.set_window_mode(self.wmode.as_deref().unwrap_or("window"));
-            self.setup_fonts(&mut core);
+
+            if matches!(self.device_font_renderer, DeviceFontRenderer::Embedded) {
+                self.setup_fonts(&mut core);
+            }
         }
 
         Ok(BuiltPlayer {

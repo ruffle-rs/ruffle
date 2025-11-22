@@ -681,6 +681,17 @@ impl<'gc> Library<'gc> {
                     warn!("Failed to load device font from file");
                 }
             }
+            FontDefinition::ExternalRenderer {
+                name,
+                is_bold,
+                is_italic,
+                font_renderer,
+            } => {
+                let descriptor = FontDescriptor::from_parts(&name, is_bold, is_italic);
+                let font = Font::from_renderer(gc_context, descriptor, font_renderer);
+                info!("Loaded new externally rendered font \"{name}\" (bold: {is_bold}, italic: {is_italic})");
+                self.device_fonts.register(font);
+            }
         }
         self.default_font_cache.clear();
     }
