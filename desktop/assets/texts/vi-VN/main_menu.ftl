@@ -17,6 +17,7 @@ file-menu-recents = Gần đây
 file-menu-recents-empty = Không có tệp nào gần đây
 file-menu-preferences = Tuỳ biến...
 file-menu-exit = Thoát
+file-menu-export = Xuất...
 controls-menu = Điều khiển
 controls-menu-suspend = Tạm hoãn
 controls-menu-resume = Tiếp tục
