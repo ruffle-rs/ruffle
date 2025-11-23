@@ -23,6 +23,8 @@ theme = Teema
 theme-system = Järjestelmän oletus
 theme-light = Vaalea
 theme-dark = Tumma
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
 gamemode-default = Oletus
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Syötetapa

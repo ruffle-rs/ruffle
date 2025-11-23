@@ -1,4 +1,5 @@
 export-bundle-dialog-title = 匯出 Ruffle 包裹
+export-bundle-dialog-bundle-name = 包裹名稱：
 export-bundle-dialog-files-description = 選擇要打包的檔案：
 export-bundle-dialog-files-select-all = 全選
 export-bundle-dialog-export = 匯出
