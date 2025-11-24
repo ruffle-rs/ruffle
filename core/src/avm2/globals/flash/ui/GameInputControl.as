@@ -3,7 +3,5 @@ package flash.ui {
 
     [API("688")]
     [Ruffle(Abstract)]
-    public dynamic class GameInputControl extends EventDispatcher {
-
-    }
+    public dynamic class GameInputControl extends EventDispatcher {}
 }

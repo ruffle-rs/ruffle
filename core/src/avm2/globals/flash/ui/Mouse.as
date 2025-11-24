@@ -1,12 +1,12 @@
 package flash.ui {
-
     import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
 
     [Ruffle(Abstract)]
     public final class Mouse {
-        public static native function hide(): void;
-        public static native function show(): void;
+        public static native function hide():void;
+        public static native function show():void;
+
         public static function get supportsCursor():Boolean {
             stub_getter("flash.ui.Mouse", "supportsCursor");
             return true;

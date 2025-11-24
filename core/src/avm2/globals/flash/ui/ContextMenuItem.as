@@ -1,16 +1,13 @@
-package flash.ui
-{
+package flash.ui {
     import flash.display.NativeMenuItem;
 
-    public final class ContextMenuItem extends NativeMenuItem
-    {
+    public final class ContextMenuItem extends NativeMenuItem {
         public function ContextMenuItem(
             caption:String,
             separatorBefore:Boolean = false,
             enabled:Boolean = true,
             visible:Boolean = true
-        )
-        {
+        ) {
             this.caption = caption;
             this.separatorBefore = separatorBefore;
             this.enabled = enabled;
@@ -38,18 +35,17 @@ package flash.ui
             this._visible = value;
         }
 
-        public function clone(): ContextMenuItem
-        {
+        public function clone():ContextMenuItem {
             return new ContextMenuItem(this.caption, this.separatorBefore, this.enabled, this.visible);
         }
 
         [Ruffle(NativeAccessible)]
-        private var _caption: String;
+        private var _caption:String;
 
         [Ruffle(NativeAccessible)]
-        private var _separatorBefore: Boolean;
+        private var _separatorBefore:Boolean;
 
         [Ruffle(NativeAccessible)]
-        private var _visible: Boolean;
+        private var _visible:Boolean;
     }
 }
