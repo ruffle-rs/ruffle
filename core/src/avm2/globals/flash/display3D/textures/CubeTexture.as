@@ -5,10 +5,24 @@ package flash.display3D.textures {
     [Ruffle(Abstract)]
     public final class CubeTexture extends TextureBase {
         [API("674")]
-        public native function uploadFromBitmapData(source:BitmapData, side:uint, miplevel:uint = 0):void;
+        public native function uploadFromBitmapData(
+            source:BitmapData,
+            side:uint, miplevel:uint = 0
+        ):void;
+
         [API("674")]
-        public native function uploadFromByteArray(data:ByteArray, byteArrayOffset:uint, side:uint, miplevel:uint = 0);
+        public native function uploadFromByteArray(
+            data:ByteArray,
+            byteArrayOffset:uint,
+            side:uint,
+            miplevel:uint = 0
+        );
+
         [API("674")]
-        public native function uploadCompressedTextureFromByteArray(data:ByteArray, byteArrayOffset:uint, async:Boolean = false):void;
+        public native function uploadCompressedTextureFromByteArray(
+            data:ByteArray,
+            byteArrayOffset:uint,
+            async:Boolean = false
+        ):void;
     }
 }

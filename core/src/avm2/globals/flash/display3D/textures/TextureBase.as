@@ -1,6 +1,7 @@
 package flash.display3D.textures {
-    import flash.events.EventDispatcher;
     import __ruffle__.stub_method;
+
+    import flash.events.EventDispatcher;
 
     [API("674")]
     public class TextureBase extends EventDispatcher {
