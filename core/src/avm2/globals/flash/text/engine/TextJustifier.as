@@ -1,13 +1,14 @@
 package flash.text.engine {
-    import flash.utils.getQualifiedClassName;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
 
+    import flash.utils.getQualifiedClassName;
 
     [API("662")]
     public class TextJustifier {
         private var _lineJustification:String = null;
         private var _locale:String = "en";
+
         public function TextJustifier(locale:String, lineJustification:String) {
             // TODO: Is there a better way to do this?
             if (getQualifiedClassName(this) === "flash.text.engine::TextJustifier") {

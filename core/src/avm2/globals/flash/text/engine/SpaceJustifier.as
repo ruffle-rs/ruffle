@@ -6,7 +6,11 @@ package flash.text.engine {
         private var _optimumSpacing:Number = 1.0;
         private var _maximumSpacing:Number = 1.5;
 
-        public function SpaceJustifier(locale:String = "en", lineJustification:String = "unjustified", letterSpacing:Boolean = false) {
+        public function SpaceJustifier(
+            locale:String = "en",
+            lineJustification:String = "unjustified",
+            letterSpacing:Boolean = false
+        ) {
             super(locale, lineJustification);
             this._letterSpacing = letterSpacing;
         }

@@ -1,14 +1,21 @@
 package flash.text.engine {
-    import flash.display.DisplayObject;
-    import flash.events.EventDispatcher;
-
     import __ruffle__.stub_constructor;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
 
+    import flash.display.DisplayObject;
+    import flash.events.EventDispatcher;
+
     [API("662")]
     public final class GraphicElement extends ContentElement {
-        public function GraphicElement(graphic:DisplayObject = null, elementWidth:Number = 15.0, elementHeight:Number = 15.0, elementFormat:ElementFormat = null, eventMirror:EventDispatcher = null, textRotation:String = "rotate0") {
+        public function GraphicElement(
+            graphic:DisplayObject = null,
+            elementWidth:Number = 15.0,
+            elementHeight:Number = 15.0,
+            elementFormat:ElementFormat = null,
+            eventMirror:EventDispatcher = null,
+            textRotation:String = "rotate0"
+        ) {
             stub_constructor("flash.text.engine.GraphicElement");
         }
 
