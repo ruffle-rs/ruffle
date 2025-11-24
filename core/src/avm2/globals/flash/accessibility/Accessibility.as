@@ -1,5 +1,6 @@
 package flash.accessibility {
     import __ruffle__.stub_method;
+
     import flash.display.DisplayObject;
 
     [Ruffle(Abstract)]
