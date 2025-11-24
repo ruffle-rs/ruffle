@@ -7,11 +7,11 @@ package flash.sensors {
             return false;
         }
 
-        public function setRequestedUpdateInterval(interval: Number) {
+        public function setRequestedUpdateInterval(interval:Number) {
             __ruffle__.stub_method("flash.sensors.Accelerometer", "setRequestedUpdateInterval");
         }
 
-        public function get muted(): Boolean {
+        public function get muted():Boolean {
             __ruffle__.stub_getter("flash.sensors.Accelerometer", "muted");
             return true;
         }
