@@ -13,7 +13,6 @@ package flash.system {
 
         public function get state():String {
             stub_getter("flash.system.MessageChannel", "state");
-
             return "open";
         }
     }
