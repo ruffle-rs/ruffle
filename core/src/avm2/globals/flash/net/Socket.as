@@ -1,15 +1,14 @@
 package flash.net {
+    import __ruffle__.stub_getter;
+
     import flash.events.EventDispatcher;
     import flash.utils.ByteArray;
     import flash.utils.Endian;
     import flash.utils.IDataInput;
     import flash.utils.IDataOutput;
 
-    import __ruffle__.stub_getter;
-
     [Ruffle(InstanceAllocator)]
     public class Socket extends EventDispatcher implements IDataOutput, IDataInput {
-
         public function Socket(host:String = null, port:int = 0) {
             this.timeout = 20000;
             if (host != null) {
@@ -17,7 +16,7 @@ package flash.net {
             }
         }
 
-        public native function connect(host: String, port: int):void;
+        public native function connect(host:String, port:int):void;
 
         [API("662")]
         public native function get timeout():uint;

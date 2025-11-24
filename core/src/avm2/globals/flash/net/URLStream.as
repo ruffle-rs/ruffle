@@ -1,4 +1,8 @@
 package flash.net {
+    import __ruffle__.stub_constructor;
+    import __ruffle__.stub_getter;
+    import __ruffle__.stub_setter;
+
     import flash.events.Event;
     import flash.events.EventDispatcher;
     import flash.utils.Endian;
@@ -9,9 +13,6 @@ package flash.net {
     import flash.events.IOErrorEvent;
     import flash.events.ProgressEvent;
     import flash.events.SecurityErrorEvent;
-    import __ruffle__.stub_constructor;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
 
     public class URLStream extends EventDispatcher implements IDataInput {
         private var _endian:String = Endian.BIG_ENDIAN;
@@ -100,42 +101,55 @@ package flash.net {
         public function readBoolean():Boolean {
             return this._loader.data.readBoolean();
         }
+
         public function readByte():int {
             return this._loader.data.readByte();
         }
+
         public function readBytes(bytes:ByteArray, offset:uint = 0, length:uint = 0):void {
             this._loader.data.readBytes(bytes, offset, length);
         }
+
         public function readDouble():Number {
             return this._loader.data.readDouble();
         }
+
         public function readFloat():Number {
             return this._loader.data.readFloat();
         }
+
         public function readInt():int {
             return this._loader.data.readInt();
         }
+
         public function readMultiByte(length:uint, charSet:String):String {
             return this._loader.data.readMultiByte(length, charSet);
         }
+
         public function readObject():* {
             return this._loader.data.readObject();
         }
+
         public function readShort():int {
             return this._loader.data.readShort();
         }
+
         public function readUnsignedByte():uint {
             return this._loader.data.readUnsignedByte();
         }
+
         public function readUnsignedInt():uint {
             return this._loader.data.readUnsignedInt();
         }
+
         public function readUnsignedShort():uint {
             return this._loader.data.readUnsignedShort();
         }
+
         public function readUTF():String {
             return this._loader.data.readUTF();
         }
+
         public function readUTFBytes(length:uint):String {
             return this._loader.data.readUTFBytes(length);
         }

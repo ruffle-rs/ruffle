@@ -1,8 +1,6 @@
 package flash.net {
     import flash.events.EventDispatcher;
 
-    namespace ruffle = "__ruffle__";
-
     [Ruffle(Abstract)]
     public class SharedObject extends EventDispatcher {
         // NOTE: We currently always use AMF3 serialization.

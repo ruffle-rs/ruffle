@@ -1,14 +1,15 @@
 package flash.net {
+    import __ruffle__.stub_method;
+
     import flash.events.EventDispatcher;
     import flash.net.URLRequest;
-    import __ruffle__.stub_method;
 
     public class URLLoader extends EventDispatcher {
         [Ruffle(NativeAccessible)]
-        public var data: *;
+        public var data:*;
 
         [Ruffle(NativeAccessible)]
-        public var dataFormat: String = "text";
+        public var dataFormat:String = "text";
 
         [Ruffle(NativeAccessible)]
         public var bytesLoaded:uint;

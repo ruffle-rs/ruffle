@@ -1,4 +1,8 @@
 package flash.net {
+    import __ruffle__.stub_method;
+    import __ruffle__.stub_getter;
+    import __ruffle__.stub_setter;
+
     import flash.net.NetConnection;
     import flash.net.NetStreamPlayOptions;
     import flash.net.NetStreamInfo;
@@ -8,17 +12,12 @@ package flash.net {
     import flash.media.Camera;
     import flash.media.VideoStreamSettings;
 
-    import __ruffle__.stub_method;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-
     [Ruffle(InstanceAllocator)]
     public class NetStream extends EventDispatcher {
         public static const CONNECT_TO_FMS:String = "connectToFMS";
         public static const DIRECT_CONNECTIONS:String = "directConnections";
 
-        public function NetStream(connection:NetConnection, peer:String = CONNECT_TO_FMS) {
-        }
+        public function NetStream(connection:NetConnection, peer:String = CONNECT_TO_FMS) {}
 
         public function appendBytes(bytes:ByteArray) {
             stub_method("flash.net.NetStream", "appendBytes");

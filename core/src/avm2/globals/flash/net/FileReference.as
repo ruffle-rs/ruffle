@@ -5,8 +5,7 @@ package flash.net {
 
     [Ruffle(InstanceAllocator)]
     public class FileReference extends EventDispatcher {
-        public function FileReference() {
-        }
+        public function FileReference() {}
 
         public native function get creationDate():Date;
 
