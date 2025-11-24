@@ -1,10 +1,10 @@
 package flash.media {
     public class AVNetworkingParams {
-        private var _forceNativeNetworking: Boolean;
-        private var _readSetCookieHeader: Boolean;
-        private var _useCookieHeaderForAllRequests: Boolean;
-        private var _networkDownVerificationUrl: String;
-        private var _appendRandomQueryParameter: String;
+        private var _forceNativeNetworking:Boolean;
+        private var _readSetCookieHeader:Boolean;
+        private var _useCookieHeaderForAllRequests:Boolean;
+        private var _networkDownVerificationUrl:String;
+        private var _appendRandomQueryParameter:String;
 
         public function AVNetworkingParams(
             init_forceNativeNetworking:Boolean = false,
