@@ -13,8 +13,7 @@ package flash.geom {
         [Ruffle(NativeAccessible)]
         private var center:Point = new Point(250, 250);
 
-        public function PerspectiveProjection() {
-        }
+        public function PerspectiveProjection() {}
 
         public native function get fieldOfView():Number;
 
