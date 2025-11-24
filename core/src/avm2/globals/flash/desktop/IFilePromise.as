@@ -8,7 +8,6 @@ package flash.desktop {
         function get relativePath():String;
         function close():void;
         function open():IDataInput;
-        function reportError(e:ErrorEvent):void
-
+        function reportError(e:ErrorEvent):void;
     }
 }

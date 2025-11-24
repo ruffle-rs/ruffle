@@ -12,7 +12,6 @@ package flash.desktop {
 
         public function get arguments():Vector.<String> {
             stub_getter("flash.desktop.NativeProcessStartupInfo", "arguments");
-
             return null;
         }
 
@@ -22,7 +21,6 @@ package flash.desktop {
 
         public function get executable():File {
             stub_getter("flash.desktop.NativeProcessStartupInfo", "executable");
-
             return null;
         }
 
@@ -32,7 +30,6 @@ package flash.desktop {
 
         public function get workingDirectory():File {
             stub_getter("flash.desktop.NativeProcessStartupInfo", "workingDirectory");
-
             return null;
         }
 
