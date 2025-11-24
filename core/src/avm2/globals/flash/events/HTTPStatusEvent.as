@@ -9,18 +9,39 @@ package flash.events {
         private var _responseHeaders:Array;
         private var _responseURL:String;
 
-        public function HTTPStatusEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, status:int = 0, redirected:Boolean = false) {
+        public function HTTPStatusEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            status:int = 0,
+            redirected:Boolean = false
+        ) {
             super(type, bubbles, cancelable);
             this._status = status;
             this.redirected = redirected;
         }
 
         override public function clone():Event {
-            return new HTTPStatusEvent(this.type, this.bubbles, this.cancelable, this.status, this.redirected);
+            return new HTTPStatusEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.status,
+                this.redirected
+            );
         }
 
         override public function toString():String {
-            return this.formatToString("HTTPStatusEvent", "type", "bubbles", "cancelable", "eventPhase", "status", "redirected", "responseURL");
+            return this.formatToString(
+                "HTTPStatusEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "status",
+                "redirected",
+                "responseURL"
+            );
         }
 
         public function get status():int {

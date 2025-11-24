@@ -2,13 +2,22 @@ package flash.events {
     public class DRMReturnVoucherErrorEvent extends ErrorEvent {
         public static const RETURN_VOUCHER_ERROR:String = "returnVoucherError";
 
-        private var _subErrorID: int;
-        private var _serverURL: String;
-        private var _licenseID: String;
-        private var _policyID: String;
+        private var _subErrorID:int;
+        private var _serverURL:String;
+        private var _licenseID:String;
+        private var _policyID:String;
 
-        public function DRMReturnVoucherErrorEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, inDetail:String = "",
-            inErrorID:int = 0, inSubErrorID:int = 0, inServerURL:String = null, inLicenseID:String = null, inPolicyID:String = null) {
+        public function DRMReturnVoucherErrorEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            inDetail:String = "",
+            inErrorID:int = 0,
+            inSubErrorID:int = 0,
+            inServerURL:String = null,
+            inLicenseID:String = null,
+            inPolicyID:String = null
+        ) {
             super(type, bubbles, cancelable, inDetail, inErrorID);
             this.subErrorID = inSubErrorID;
             this.serverURL = inServerURL;
@@ -45,7 +54,17 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new DRMReturnVoucherErrorEvent(this.type, this.bubbles, this.cancelable, this.text, this.errorID, this.subErrorID, this.serverURL, this.licenseID, this.policyID);
+            return new DRMReturnVoucherErrorEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.text,
+                this.errorID,
+                this.subErrorID,
+                this.serverURL,
+                this.licenseID,
+                this.policyID
+            );
         }
     }
 }

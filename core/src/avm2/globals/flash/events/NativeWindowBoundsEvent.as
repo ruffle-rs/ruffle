@@ -24,7 +24,13 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new NativeWindowBoundsEvent(this.type, this.bubbles, this.cancelable, this.beforeBounds, this.afterBounds);
+            return new NativeWindowBoundsEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.beforeBounds,
+                this.afterBounds
+            );
         }
 
         override public function toString():String {
@@ -32,7 +38,14 @@ package flash.events {
             // [NativeWindowBoundsEvent type=value bubbles=value cancelable=value previousDisplayState=value currentDisplayState=value]
             // but it seems that previousDisplayState and currentDisplayState doesn't exist.
             // It's likely a mistake in the documentation.
-            return this.formatToString("NativeWindowBoundsEvent", "type", "bubbles", "cancelable", "beforeBounds", "afterBounds");
+            return this.formatToString(
+                "NativeWindowBoundsEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "beforeBounds",
+                "afterBounds"
+            );
         }
 
         public function get beforeBounds():Rectangle {

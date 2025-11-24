@@ -25,7 +25,14 @@ package flash.events {
         private var _result:AVResult;
         private var _description:String;
 
-        public function AVStatusEvent(type:String = "avStatus", bubbles:Boolean = false, cancelable:Boolean = false, notificationType:String = "", result:int = 0, description:String = "") {
+        public function AVStatusEvent(
+            type:String = "avStatus",
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            notificationType:String = "",
+            result:int = 0,
+            description:String = ""
+        ) {
             super(type, bubbles, cancelable);
 
             this._notificationType = notificationType;

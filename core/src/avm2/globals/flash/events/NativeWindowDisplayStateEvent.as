@@ -20,11 +20,24 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new NativeWindowDisplayStateEvent(this.type, this.bubbles, this.cancelable, this.beforeDisplayState, this.afterDisplayState);
+            return new NativeWindowDisplayStateEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.beforeDisplayState,
+                this.afterDisplayState
+            );
         }
 
         override public function toString():String {
-            return this.formatToString("NativeWindowDisplayStateEvent", "type", "bubbles", "cancelable", "beforeDisplayState", "afterDisplayState");
+            return this.formatToString(
+                "NativeWindowDisplayStateEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "beforeDisplayState",
+                "afterDisplayState"
+            );
         }
 
         public function get beforeDisplayState():String {

@@ -7,7 +7,13 @@ package flash.events {
         private var _dictionary:Dictionary;
         private var _time:Number;
 
-        public function AVDictionaryDataEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, init_dictionary:Dictionary = null, init_dataTime:Number = 0) {
+        public function AVDictionaryDataEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            init_dictionary:Dictionary = null,
+            init_dataTime:Number = 0
+        ) {
             super(type, bubbles, cancelable);
             this._dictionary = init_dictionary;
             this._time = init_dataTime;

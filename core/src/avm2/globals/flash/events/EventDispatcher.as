@@ -10,8 +10,19 @@ package flash.events {
             this.target = target;
         }
 
-        public native function addEventListener(type:String, listener:Function, useCapture:Boolean = false, priority:int = 0, useWeakReference:Boolean = false):void;
-        public native function removeEventListener(type:String, listener:Function, useCapture:Boolean = false):void;
+        public native function addEventListener(
+            type:String,
+            listener:Function,
+            useCapture:Boolean = false,
+            priority:int = 0,
+            useWeakReference:Boolean = false
+        ):void;
+
+        public native function removeEventListener(
+            type:String, listener:Function,
+            useCapture:Boolean = false
+        ):void;
+
         public native function hasEventListener(type:String):Boolean;
 
         [Ruffle(NativeCallable)]

@@ -5,7 +5,13 @@ package flash.events {
         private var _code:String;
         private var _level:String;
 
-        public function StatusEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, code:String = "", level:String = "") {
+        public function StatusEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            code:String = "",
+            level:String = ""
+        ) {
             super(type, bubbles, cancelable);
             this.code = code;
             this.level = level;
@@ -26,11 +32,25 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new StatusEvent(this.type, this.bubbles, this.cancelable, this.code, this.level);
+            return new StatusEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.code,
+                this.level
+            );
         }
 
         override public function toString():String {
-            return this.formatToString("StatusEvent", "type", "bubbles", "cancelable", "eventPhase", "code", "level");
+            return this.formatToString(
+                "StatusEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "code",
+                "level"
+            );
         }
     }
 }

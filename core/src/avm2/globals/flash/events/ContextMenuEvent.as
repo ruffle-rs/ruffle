@@ -9,18 +9,37 @@ package flash.events {
         private var _contextMenuOwner:InteractiveObject;
         private var _isMouseTargetInaccessible:Boolean;
 
-        public function ContextMenuEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, mouseTarget:InteractiveObject = null, contextMenuOwner:InteractiveObject = null) {
+        public function ContextMenuEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            mouseTarget:InteractiveObject = null,
+            contextMenuOwner:InteractiveObject = null
+        ) {
             super(type, bubbles, cancelable);
             this._mouseTarget = mouseTarget;
             this._contextMenuOwner = contextMenuOwner;
         }
 
         override public function clone():Event {
-            return new ContextMenuEvent(this.type, this.bubbles, this.cancelable, this._mouseTarget, this._contextMenuOwner);
+            return new ContextMenuEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this._mouseTarget,
+                this._contextMenuOwner);
         }
 
         override public function toString():String {
-            return this.formatToString("ContextMenuEvent", "type", "bubbles", "cancelable", "eventPhase", "mouseTarget", "contextMenuOwner");
+            return this.formatToString(
+                "ContextMenuEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "mouseTarget",
+                "contextMenuOwner"
+            );
         }
 
         public function get mouseTarget():InteractiveObject {

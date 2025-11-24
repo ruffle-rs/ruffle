@@ -8,8 +8,15 @@ package flash.events {
         private var _accelerationY:Number;
         private var _accelerationZ:Number;
 
-        public function AccelerometerEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, timestamp:Number = 0,
-            accelerationX:Number = 0, accelerationY:Number = 0, accelerationZ:Number = 0) {
+        public function AccelerometerEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            timestamp:Number = 0,
+            accelerationX:Number = 0,
+            accelerationY:Number = 0,
+            accelerationZ:Number = 0
+        ) {
             super(type, bubbles, cancelable);
             this.timestamp = timestamp;
             this.accelerationX = accelerationX;
@@ -46,11 +53,29 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new AccelerometerEvent(this.type, this.bubbles, this.cancelable, this.timestamp, this.accelerationX, this.accelerationY, this.accelerationZ);
+            return new AccelerometerEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.timestamp,
+                this.accelerationX,
+                this.accelerationY,
+                this.accelerationZ
+            );
         }
 
         override public function toString():String {
-            return this.formatToString("AccelerometerEvent", "type", "bubbles", "cancelable", "eventPhase", "timestamp", "accelerationX", "accelerationY", "accelerationZ");
+            return this.formatToString(
+                "AccelerometerEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "timestamp",
+                "accelerationX",
+                "accelerationY",
+                "accelerationZ"
+            );
         }
     }
 }

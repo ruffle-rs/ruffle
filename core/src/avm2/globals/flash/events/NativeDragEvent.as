@@ -16,9 +16,7 @@ package flash.events {
         public static const NATIVE_DRAG_UPDATE:String = "nativeDragUpdate";
 
         public var allowedActions:NativeDragOptions;
-
         public var clipboard:Clipboard;
-
         public var dropAction:String;
 
         public function NativeDragEvent(
@@ -37,16 +35,46 @@ package flash.events {
             commandKey:Boolean = false
         ) {
             super(type, bubbles, cancelable, localX, localY, relatedObject);
-
             stub_constructor("flash.events.NativeDragEvent");
         }
 
         override public function clone():Event {
-            return new NativeDragEvent(this.type, this.bubbles, this.cancelable, this.localX, this.localY, this.relatedObject, this.clipboard, this.allowedActions, this.dropAction, this.controlKey, this.altKey, this.shiftKey, this.commandKey);
+            return new NativeDragEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.localX,
+                this.localY,
+                this.relatedObject,
+                this.clipboard,
+                this.allowedActions,
+                this.dropAction,
+                this.controlKey,
+                this.altKey,
+                this.shiftKey,
+                this.commandKey
+            );
         }
 
         override public function toString():String {
-            return formatToString("NativeDragEvent", "type", "bubbles", "cancelable", "localX", "localY", "stageX", "stageY", "relatedObject", "clipboard", "allowedActions", "dropAction", "controlKey", "altKey", "shiftKey", "commandKey");
+            return formatToString(
+                "NativeDragEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "localX",
+                "localY",
+                "stageX",
+                "stageY",
+                "relatedObject",
+                "clipboard",
+                "allowedActions",
+                "dropAction",
+                "controlKey",
+                "altKey",
+                "shiftKey",
+                "commandKey"
+            );
         }
     }
 }

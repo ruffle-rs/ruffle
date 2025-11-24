@@ -75,11 +75,39 @@ package flash.events {
 
         override public function clone():Event {
             // note: movementX/Y not cloned
-            return new MouseEvent(this.type, this.bubbles, this.cancelable, this.localX, this.localY, this.relatedObject, this.ctrlKey, this.altKey, this.shiftKey, this.buttonDown, this.delta);
+            return new MouseEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.localX,
+                this.localY,
+                this.relatedObject,
+                this.ctrlKey,
+                this.altKey,
+                this.shiftKey,
+                this.buttonDown,
+                this.delta
+            );
         }
 
         override public function toString():String {
-            return this.formatToString("MouseEvent", "type", "bubbles", "cancelable", "eventPhase", "localX", "localY", "stageX", "stageY", "relatedObject", "ctrlKey", "altKey", "shiftKey", "buttonDown", "delta");
+            return this.formatToString(
+                "MouseEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "localX",
+                "localY",
+                "stageX",
+                "stageY",
+                "relatedObject",
+                "ctrlKey",
+                "altKey",
+                "shiftKey",
+                "buttonDown",
+                "delta"
+            );
         }
 
         public function get isRelatedObjectInaccessible():Boolean {

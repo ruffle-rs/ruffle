@@ -13,7 +13,13 @@ package flash.events {
         private var _status:String;
         private var _colorSpace:String;
 
-        public function StageVideoEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, status:String = null, colorSpace:String = null) {
+        public function StageVideoEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            status:String = null,
+            colorSpace:String = null
+        ) {
             super(type, bubbles, cancelable);
             this._status = status;
             this._colorSpace = colorSpace;
