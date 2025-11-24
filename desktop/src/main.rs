@@ -151,8 +151,7 @@ fn shutdown() {
     }
 }
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
+fn main() -> Result<(), Error> {
     init();
 
     let opt = Opt::parse();
@@ -191,11 +190,9 @@ async fn main() -> Result<(), Error> {
 
     subscriber.init();
 
-    let result = App::new(preferences)
-        .await
-        .and_then(|(mut app, event_loop)| {
-            event_loop.run_app(&mut app).context("Event loop failure")
-        });
+    let result = App::new(preferences).and_then(|(mut app, event_loop)| {
+        event_loop.run_app(&mut app).context("Event loop failure")
+    });
 
     #[cfg(windows)]
     if let Err(error) = &result {
