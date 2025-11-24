@@ -38,7 +38,7 @@ package {
 
         prototype.toString = function():String {
             // Note: This function is not generic and will throw for non-regexps.
-            var regexp: RegExp = this;
+            var regexp:RegExp = this;
 
             // ECMA-262 Edition 5.1 - RegExp.prototype.toString():
             //  Return the String value formed by concatenating the Strings "/",

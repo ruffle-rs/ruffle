@@ -2,7 +2,7 @@ package {
     [API("674")]
     [Ruffle(Abstract)]
     public final class JSON {
-        public static native function parse(text:String, reviver:Function = null): Object;
-        public static native function stringify(value:Object, replacer:* = null, space:* = null): String;
+        public static native function parse(text:String, reviver:Function = null):Object;
+        public static native function stringify(value:Object, replacer:* = null, space:* = null):String;
     }
 }

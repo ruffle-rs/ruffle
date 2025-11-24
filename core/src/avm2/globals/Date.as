@@ -221,14 +221,31 @@ package {
         prototype.setPropertyIsEnumerable("setUTCMilliseconds", false);
 
 
-        public function Date(year:* = undefined, month:* = undefined, day:* = undefined, hours:* = undefined, minutes:* = undefined, seconds:* = undefined, ms:* = undefined) {
+        public function Date(
+            year:* = undefined,
+            month:* = undefined,
+            day:* = undefined,
+            hours:* = undefined,
+            minutes:* = undefined,
+            seconds:* = undefined,
+            ms:* = undefined
+        ) {
             this.init(arguments);
         }
         private native function init(args:Array);
 
         public static native function parse(date:*):Number;
 
-        public static native function UTC(year:*, month:*, date:* = 1, hour:* = 0, minute:* = 0, second:* = 0, millisecond:* = 0, ... rest):Number;
+        public static native function UTC(
+            year:*,
+            month:*,
+            date:* = 1,
+            hour:* = 0,
+            minute:* = 0,
+            second:* = 0,
+            millisecond:* = 0,
+            ...rest
+        ):Number;
 
         AS3 function valueOf():Number {
             return this.AS3::getTime();

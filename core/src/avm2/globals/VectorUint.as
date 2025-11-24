@@ -3,7 +3,7 @@ package __AS3__.vec {
     [Ruffle(InstanceAllocator)]
     internal final dynamic class Vector$uint {
         {
-            prototype.concat = function(... rest):* {
+            prototype.concat = function(...rest):* {
                 var v:Vector$uint = this;
                 return v.AS3::concat.apply(v, rest);
             };
@@ -56,7 +56,7 @@ package __AS3__.vec {
                 return v.AS3::pop();
             };
 
-            prototype.push = function(... rest):* {
+            prototype.push = function(...rest):* {
                 var v:Vector$uint = this;
                 return v.AS3::push.apply(v, rest);
             };
@@ -93,7 +93,7 @@ package __AS3__.vec {
                 return v.AS3::sort(func);
             };
 
-            prototype.splice = function(start:*, deleteCount:*, ... items):* {
+            prototype.splice = function(start:*, deleteCount:*, ...items):* {
                 var argsList:Array = [start, deleteCount];
                 argsList = argsList.AS3::concat(items);
 
@@ -111,7 +111,7 @@ package __AS3__.vec {
                 return v.AS3::join(",");
             };
 
-            prototype.unshift = function(... rest):* {
+            prototype.unshift = function(...rest):* {
                 var v:Vector$uint = this;
                 return v.AS3::unshift.apply(v, rest);
             };
@@ -150,7 +150,7 @@ package __AS3__.vec {
 
         public native function set length(length:uint):*;
 
-        AS3 native function concat(... rest):Vector$uint;
+        AS3 native function concat(...rest):Vector$uint;
 
         AS3 native function every(callback:Function, receiver:Object = null):Boolean;
 
@@ -171,7 +171,7 @@ package __AS3__.vec {
 
         AS3 native function pop():uint;
 
-        AS3 native function push(... rest):uint;
+        AS3 native function push(...rest):uint;
 
         [API("708")]
         // For some reason the parameter is a uint for Vector$uint specifically
@@ -191,7 +191,7 @@ package __AS3__.vec {
 
         AS3 native function sort(func:*):Vector$uint;
 
-        AS3 native function splice(start:Number, deleteLen:Number, ... rest):Vector$uint;
+        AS3 native function splice(start:Number, deleteLen:Number, ...rest):Vector$uint;
 
         AS3 function toLocaleString():String {
             return this.AS3::join(",");
@@ -201,6 +201,6 @@ package __AS3__.vec {
             return this.AS3::join(",");
         }
 
-        AS3 native function unshift(... rest):uint;
+        AS3 native function unshift(...rest):uint;
     }
 }

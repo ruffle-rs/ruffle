@@ -7,7 +7,12 @@ package {
             this.init(value, XML.ignoreComments, XML.ignoreProcessingInstructions, XML.ignoreWhitespace);
         }
 
-        private native function init(value:*, ignoreComments:Boolean, ignoreProcessingInstructions:Boolean, ignoreWhitespace:Boolean): void;
+        private native function init(
+            value:*,
+            ignoreComments:Boolean,
+            ignoreProcessingInstructions:Boolean,
+            ignoreWhitespace:Boolean
+        ):void;
 
         [Ruffle(FastCall)]
         AS3 native function length():int;
@@ -40,13 +45,13 @@ package {
         AS3 native function insertChildAfter(child1:*, child2:*):*;
         AS3 native function insertChildBefore(child1:*, child2:*):*;
         AS3 native function localName():Object
-        AS3 native function name(): Object;
+        AS3 native function name():Object;
         private native function namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*;
         AS3 function namespace(prefix:* = null):* {
             return namespace_internal_impl(arguments.length > 0, prefix);
         }
         AS3 native function namespaceDeclarations():Array;
-        AS3 native function nodeKind(): String;
+        AS3 native function nodeKind():String;
         AS3 native function prependChild(child:*):XML;
         AS3 native function removeNamespace(ns:*):XML;
         AS3 native function replace(propertyName:*, value:*):XML;
@@ -55,7 +60,7 @@ package {
         AS3 native function setName(name:*):void;
         AS3 native function setNamespace(ns:*):void;
 
-        AS3 function toJSON(k:String) : * {
+        AS3 function toJSON(k:String):* {
             return this.toJSON(k);
         }
 
@@ -157,7 +162,7 @@ package {
             return self.AS3::localName();
         }
 
-        prototype.name = function(): Object {
+        prototype.name = function():Object {
             var self:XMLList = this;
             return self.AS3::name();
         }
