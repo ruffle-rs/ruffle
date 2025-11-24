@@ -3,20 +3,16 @@ package {
     [Ruffle(InstanceAllocator)]
     public dynamic class Array {
         public static const CASEINSENSITIVE:uint = 1;
-
         public static const DESCENDING:uint = 2;
-
         public static const UNIQUESORT:uint = 4;
-
         public static const RETURNINDEXEDARRAY:uint = 8;
-
         public static const NUMERIC:uint = 16;
 
         // FIXME avmplus allows for calling some of these prototype functions on any
         // Array-like object (for example, `Array.prototype.sort.call(myVector)` works),
         // but currently we only support calling them on real Arrays
         {
-            prototype.concat = function(... rest):Array {
+            prototype.concat = function(...rest):Array {
                 var a:Array = this;
                 return a.AS3::concat.apply(a, rest);
             };
@@ -61,7 +57,7 @@ package {
                 return a.AS3::pop();
             };
 
-            prototype.push = function(... args):uint {
+            prototype.push = function(...args):uint {
                 var a:Array = this;
                 return a.AS3::push.apply(a, args);
             };
@@ -86,17 +82,17 @@ package {
                 return a.AS3::some(callback, receiver);
             };
 
-            prototype.sort = function(... rest):* {
+            prototype.sort = function(...rest):* {
                 var a:Array = this;
                 return a.AS3::sort.apply(a, rest);
             };
 
-            prototype.sortOn = function(fieldNames:*, options:* = 0, ... rest):* {
+            prototype.sortOn = function(fieldNames:*, options:* = 0, ...rest):* {
                 var a:Array = this;
                 return a.AS3::sortOn(fieldNames, options);
             };
 
-            prototype.splice = function(... rest):* {
+            prototype.splice = function(...rest):* {
                 var a:Array = this;
                 return a.AS3::splice.apply(a, rest);
             };
@@ -106,7 +102,7 @@ package {
                 var result:String = "";
                 var arrayLength:uint = a.length;
 
-                for(var i:uint = 0; i < arrayLength; i ++) {
+                for (var i:uint = 0; i < arrayLength; i ++) {
                     if (a[i] === void 0 || a[i] === null) {
                         result += a[i];
                     } else {
@@ -126,7 +122,7 @@ package {
                 return a.AS3::join(",");
             };
 
-            prototype.unshift = function(... rest):uint {
+            prototype.unshift = function(...rest):uint {
                 var a:Array = this;
                 return a.AS3::unshift.apply(a, rest);
             };
@@ -154,10 +150,10 @@ package {
         }
 
         // Constructor (defined in Rust)
-        public native function Array(... rest);
+        public native function Array(...rest);
 
         // Instance methods
-        AS3 native function concat(... rest):Array;
+        AS3 native function concat(...rest):Array;
 
         AS3 native function every(callback:Function, receiver:* = null):Boolean;
 
@@ -188,7 +184,7 @@ package {
 
         AS3 native function pop():*;
 
-        AS3 native function push(... rest):uint;
+        AS3 native function push(...rest):uint;
 
         [API("708")]
         AS3 native function removeAt(index:int):*;
@@ -201,13 +197,13 @@ package {
 
         AS3 native function some(callback:Function, receiver:* = null):Boolean;
 
-        AS3 native function sort(... rest):*;
+        AS3 native function sort(...rest):*;
 
-        AS3 native function sortOn(fieldNames:*, options:* = 0, ... rest):*;
+        AS3 native function sortOn(fieldNames:*, options:* = 0, ...rest):*;
 
-        AS3 native function splice(... rest):*;
+        AS3 native function splice(...rest):*;
 
-        AS3 native function unshift(... rest):uint;
+        AS3 native function unshift(...rest):uint;
 
         public static const length:int = 1;
     }

@@ -27,7 +27,7 @@ package avmplus {
                                         HIDE_NSURI_METHODS |
                                         HIDE_OBJECT;
 
-    internal function copyParams(params: Object, xml: XML) {
+    internal function copyParams(params:Object, xml:XML) {
         for (var i in params) {
             var param = params[i];
             var elem = <parameter />;
@@ -38,7 +38,7 @@ package avmplus {
         }
     }
 
-    internal function copyMetadata(metadata: Array, xml: XML) {
+    internal function copyMetadata(metadata:Array, xml:XML) {
         for each (var md in metadata) {
             var data = <metadata />;
             data.@name = md.name;
@@ -52,7 +52,7 @@ package avmplus {
         }
     }
 
-    internal function copyUriAndMetadata(data: Object, xml: XML) {
+    internal function copyUriAndMetadata(data:Object, xml:XML) {
         if (data.uri) {
             xml.@uri = data.uri;
         }
@@ -61,7 +61,7 @@ package avmplus {
         }
     }
 
-    internal function copyTraits(traits: Object, xml: XML) {
+    internal function copyTraits(traits:Object, xml:XML) {
         for each (var base in traits.bases) {
             var elem = <extendsClass />;
             elem.@type = base;
@@ -110,7 +110,7 @@ package avmplus {
         copyMetadata(traits.metadata, xml);
     }
 
-    public function describeType(value: *, flags: uint):XML {
+    public function describeType(value:*, flags:uint):XML {
         var json = describeTypeJSON(value, flags);
         var xml = <type />;
         xml.@name = json.name;

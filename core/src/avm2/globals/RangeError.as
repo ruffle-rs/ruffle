@@ -1,7 +1,7 @@
 package {
     [Ruffle(ConstructOnCall)]
     public dynamic class RangeError extends Error {
-        RangeError.prototype.name = "RangeError"
+        RangeError.prototype.name = "RangeError";
 
         public function RangeError(message:String = "", code:* = 0) {
             super(message, code);

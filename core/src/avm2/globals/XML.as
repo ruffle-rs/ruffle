@@ -2,7 +2,7 @@ package {
     [Ruffle(InstanceAllocator)]
     [Ruffle(CallHandler)]
     public final dynamic class XML {
-        AS3 static function setSettings(settings:Object = null): void {
+        AS3 static function setSettings(settings:Object = null):void {
             if (settings == null) {
                 settings = XML.AS3::defaultSettings();
             }
@@ -61,7 +61,7 @@ package {
         AS3 native function copy():XML;
         AS3 native function descendants(name:Object = "*"):XMLList;
         AS3 native function length():int;
-        AS3 native function normalize(): XML;
+        AS3 native function normalize():XML;
         AS3 native function parent():*;
         AS3 native function text():XMLList;
 
@@ -80,7 +80,7 @@ package {
             return this;
         }
 
-        AS3 function toJSON(k:String) : * {
+        AS3 function toJSON(k:String):* {
             return this.toJSON(k);
         }
 
