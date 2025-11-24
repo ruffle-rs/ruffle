@@ -4,7 +4,7 @@ package flash.text {
     [Ruffle(InstanceAllocator)]
     public dynamic class StyleSheet extends EventDispatcher {
         // Shallow copies of the original style objects. Not used by Ruffle itself, just for getStyle()
-        private var _styles: Object = {};
+        private var _styles:Object = {};
 
         public function StyleSheet() {}
 
@@ -121,7 +121,7 @@ package flash.text {
             return result;
         }
 
-        private function _createShallowCopy(original: *): Object {
+        private function _createShallowCopy(original:*):Object {
             var copy = {};
             for (var key in original) {
                 copy[key] = original[key];
@@ -130,11 +130,11 @@ package flash.text {
         }
 
         // Avoid doing potentially expensive string parsing in AS :D
-        private native function innerParseCss(css: String): Object;
-        private native function innerParseColor(color: String): Number;
-        private native function innerParseFontFamily(fontFamily: String): String;
+        private native function innerParseCss(css:String):Object;
+        private native function innerParseColor(color:String):Number;
+        private native function innerParseFontFamily(fontFamily:String):String;
 
-        private native function setStyleInternal(selector: String, textFormat: TextFormat): void;
-        private native function clearInternal(): void;
+        private native function setStyleInternal(selector:String, textFormat:TextFormat):void;
+        private native function clearInternal():void;
     }
 }

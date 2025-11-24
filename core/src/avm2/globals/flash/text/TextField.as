@@ -1,10 +1,11 @@
 package flash.text {
-    import flash.display.InteractiveObject;
-    import flash.display.DisplayObject;
-    import flash.geom.Rectangle;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
     import __ruffle__.stub_method;
+
+    import flash.display.InteractiveObject;
+    import flash.display.DisplayObject;
+    import flash.geom.Rectangle;
 
     [Ruffle(InstanceAllocator)]
     public class TextField extends InteractiveObject {
@@ -114,10 +115,10 @@ package flash.text {
 
         public native function get numLines():int;
 
-        public native function get caretIndex(): int;
+        public native function get caretIndex():int;
 
-        public native function get selectionBeginIndex(): int;
-        public native function get selectionEndIndex(): int;
+        public native function get selectionBeginIndex():int;
+        public native function get selectionEndIndex():int;
 
         public native function appendText(text:String):void;
         public native function getLineMetrics(lineIndex:int):TextLineMetrics;
