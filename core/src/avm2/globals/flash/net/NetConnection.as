@@ -4,7 +4,6 @@ package flash.net {
 
     [Ruffle(InstanceAllocator)]
     public class NetConnection extends EventDispatcher {
-
         public static var defaultObjectEncoding:uint = 3;
 
         private var _objectEncoding:uint = NetConnection.defaultObjectEncoding;
