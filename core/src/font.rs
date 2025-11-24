@@ -747,20 +747,26 @@ pub trait FontLike<'gc> {
 
         // TODO [KJ] I'm not sure whether we should iterate over characters here or over code units.
         //   I suspect Flash Player does not support full UTF-16 when displaying and laying out text.
-        let mut char_indices = text.char_indices().peekable();
+        let mut char_indices = text
+            .char_indices()
+            .map(|(pos, c)| (pos, c.unwrap_or(char::REPLACEMENT_CHARACTER)))
+            .peekable();
+
         let kerning_enabled =
             self.has_kerning_info() && (self.font_type().is_device() || params.kerning);
+
         let mut x = Twips::ZERO;
         while let Some((pos, c)) = char_indices.next() {
-            let c = c.unwrap_or(char::REPLACEMENT_CHARACTER);
             if let Some(render_data) = self.get_glyph_render_data(c) {
                 let glyph = render_data.glyph;
                 let scale = params.height.get() as f32 / render_data.font.scale();
                 let mut advance = glyph.advance();
                 if kerning_enabled {
-                    let next_char = char_indices.peek().cloned().unwrap_or((0, Ok('\0'))).1;
-                    let next_char = next_char.unwrap_or(char::REPLACEMENT_CHARACTER);
-                    advance += self.get_kerning_offset(c, next_char);
+                    let next_char = char_indices.peek().map(|(_, ch)| *ch);
+                    let kerning = next_char
+                        .map(|ch| self.get_kerning_offset(c, ch))
+                        .unwrap_or_default();
+                    advance += kerning;
                 }
                 let twips_advance = if self.font_type() == FontType::Device {
                     let unspaced_advance =
