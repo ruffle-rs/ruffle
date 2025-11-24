@@ -202,7 +202,7 @@ package flash.xml {
                 return getNamespaceForPrefix(prefix);
             }
 
-            var node: XMLNode = this;
+            var node:XMLNode = this;
             do {
                 if (node.attributes.xmlns) {
                     return node.attributes.xmlns;
