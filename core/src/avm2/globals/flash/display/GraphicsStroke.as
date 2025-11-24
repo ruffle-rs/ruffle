@@ -2,25 +2,25 @@ package flash.display {
     [API("662")]
     public final class GraphicsStroke implements IGraphicsStroke, IGraphicsData {
         [Ruffle(NativeAccessible)]
-        private var _caps : String;
+        private var _caps:String;
 
         [Ruffle(NativeAccessible)]
-        public var fill : IGraphicsFill;
+        public var fill:IGraphicsFill;
 
         [Ruffle(NativeAccessible)]
-        private var _joints : String;
+        private var _joints:String;
 
         [Ruffle(NativeAccessible)]
-        public var miterLimit : Number;
+        public var miterLimit:Number;
 
         [Ruffle(NativeAccessible)]
-        public var pixelHinting : Boolean;
+        public var pixelHinting:Boolean;
 
         [Ruffle(NativeAccessible)]
-        private var _scaleMode : String;
+        private var _scaleMode:String;
 
         [Ruffle(NativeAccessible)]
-        public var thickness : Number;
+        public var thickness:Number;
 
         public function GraphicsStroke(
             thickness:Number = NaN,

@@ -1,6 +1,7 @@
 package flash.display {
-    import flash.events.EventDispatcher;
     import __ruffle__.stub_method;
+
+    import flash.events.EventDispatcher;
 
     // According to the documentation, it should be [API("661")]
     // but airglobal.swc disagrees with that:

@@ -1,10 +1,11 @@
 package flash.display {
+    import __ruffle__.stub_setter;
+
     import flash.events.ErrorEvent;
     import flash.events.EventDispatcher;
     import flash.display3D.Context3D;
     import flash.display3D.Context3DProfile;
     import flash.utils.setTimeout;
-    import __ruffle__.stub_setter;
 
     [API("674")]
     [Ruffle(Abstract)]

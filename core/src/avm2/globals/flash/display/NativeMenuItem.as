@@ -1,26 +1,27 @@
 package flash.display {
-    import flash.events.EventDispatcher;
     import __ruffle__.stub_constructor;
     import __ruffle__.stub_getter;
+
+    import flash.events.EventDispatcher;
+
     // According to the documentation, it should be [API("661")]
     // but airglobal.swc disagrees with that:
     [API("667")]
     public class NativeMenuItem extends EventDispatcher {
         [Ruffle(NativeAccessible)]
-        private var _enabled: Boolean = false;
+        private var _enabled:Boolean = false;
 
-        private var _checked: Boolean = false;
-        private var _data: Object;
-        private var _isSeparator: Boolean;
-        private var _keyEquivalent: String = "k";
-        private var _keyEquivalentModifiers: Array = [];
-        private var _label: String;
-        private var _mnemonicIndex: int = 0;
-        private var _name: String = "";
-        private var _submenu: NativeMenu = new NativeMenu();
+        private var _checked:Boolean = false;
+        private var _data:Object;
+        private var _isSeparator:Boolean;
+        private var _keyEquivalent:String = "k";
+        private var _keyEquivalentModifiers:Array = [];
+        private var _label:String;
+        private var _mnemonicIndex:int = 0;
+        private var _name:String = "";
+        private var _submenu:NativeMenu = new NativeMenu();
 
-        public function NativeMenuItem(label:String = "", isSeparator:Boolean = false)
-        {
+        public function NativeMenuItem(label:String = "", isSeparator:Boolean = false) {
             stub_constructor("flash.display.NativeMenuItem");
             this.label = label;
             this.isSeparator = isSeparator;
@@ -118,8 +119,7 @@ package flash.display {
         }
 
         [API("668")]
-        public function get menu():NativeMenu
-        {
+        public function get menu():NativeMenu {
             stub_getter("flash.display.NativeMenuItem", "menu");
             return new NativeMenu();
         }

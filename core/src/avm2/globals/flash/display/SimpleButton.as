@@ -8,11 +8,21 @@ package flash.display {
 
     [Ruffle(InstanceAllocator)]
     public class SimpleButton extends InteractiveObject {
-        public function SimpleButton(upState:DisplayObject = null, overState:DisplayObject = null, downState:DisplayObject = null, hitTestState:DisplayObject = null) {
+        public function SimpleButton(
+            upState:DisplayObject = null,
+            overState:DisplayObject = null,
+            downState:DisplayObject = null,
+            hitTestState:DisplayObject = null
+        ) {
             this.init(upState, overState, downState, hitTestState)
         }
 
-        private native function init(upState:DisplayObject, overState:DisplayObject, downState:DisplayObject, hitTestState:DisplayObject):void;
+        private native function init(
+            upState:DisplayObject,
+            overState:DisplayObject,
+            downState:DisplayObject,
+            hitTestState:DisplayObject
+        ):void;
 
         public native function get downState():DisplayObject;
         public native function set downState(value:DisplayObject):void;

@@ -1,4 +1,4 @@
 package flash.display {
     [API("662")]
-    public interface IDrawCommand { }
+    public interface IDrawCommand {}
 }
