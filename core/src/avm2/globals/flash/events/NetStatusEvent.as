@@ -4,7 +4,12 @@ package flash.events {
 
         private var _info:Object;
 
-        public function NetStatusEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, info:Object = null) {
+        public function NetStatusEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            info:Object = null
+        ) {
             super(type, bubbles, cancelable);
             this.info = info;
         }
@@ -21,7 +26,14 @@ package flash.events {
         }
 
         override public function toString():String {
-            return this.formatToString("NetStatusEvent", "type", "bubbles", "cancelable", "eventPhase", "info");
+            return this.formatToString(
+                "NetStatusEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "info"
+            );
         }
     }
 }

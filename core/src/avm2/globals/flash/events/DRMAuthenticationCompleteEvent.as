@@ -5,11 +5,18 @@ package flash.events {
     public class DRMAuthenticationCompleteEvent extends Event {
         public static const AUTHENTICATION_COMPLETE:String = "authenticationComplete";
 
-        private var _serverURL: String;
-        private var _domain: String;
-        private var _token: ByteArray;
+        private var _serverURL:String;
+        private var _domain:String;
+        private var _token:ByteArray;
 
-        public function DRMAuthenticationCompleteEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, inServerURL:String = null, inDomain:String = null, inToken:ByteArray = null) {
+        public function DRMAuthenticationCompleteEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            inServerURL:String = null,
+            inDomain:String = null,
+            inToken:ByteArray = null
+        ) {
             super(type, bubbles, cancelable);
             this.serverURL = inServerURL;
             this.domain = inDomain;
@@ -38,7 +45,14 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new DRMAuthenticationCompleteEvent(this.type, this.bubbles, this.cancelable, this.serverURL, this.domain, this.token);
+            return new DRMAuthenticationCompleteEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.serverURL,
+                this.domain,
+                this.token
+            );
         }
     }
 }

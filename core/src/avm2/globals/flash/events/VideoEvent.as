@@ -8,7 +8,12 @@ package flash.events {
 
         private var _status:String;
 
-        public function VideoEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, status:String = null) {
+        public function VideoEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            status:String = null
+        ) {
             super(type, bubbles, cancelable);
             this._status = status;
         }

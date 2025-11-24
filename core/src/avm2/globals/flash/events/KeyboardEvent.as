@@ -2,6 +2,7 @@ package flash.events {
     public class KeyboardEvent extends Event {
         public static const KEY_DOWN:String = "keyDown";
         public static const KEY_UP:String = "keyUp";
+
         private var _charCode:uint;
         private var _keyCode:uint;
         private var _keyLocation:uint;
@@ -100,11 +101,34 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new KeyboardEvent(this.type, this.bubbles, this.cancelable, this._charCode, this._keyCode, this._keyLocation, this._ctrlKey, this._altKey, this._shiftKey, this._controlKey, this._commandKey);
+            return new KeyboardEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this._charCode,
+                this._keyCode,
+                this._keyLocation,
+                this._ctrlKey,
+                this._altKey,
+                this._shiftKey,
+                this._controlKey,
+                this._commandKey
+            );
         }
 
         override public function toString():String {
-            return this.formatToString("KeyboardEvent", "type", "bubbles", "cancelable", "eventPhase", "charCode", "keyCode", "keyLocation", "ctrlKey", "altKey", "shiftKey");
+            return this.formatToString(
+                "KeyboardEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "charCode",
+                "keyCode",
+                "keyLocation",
+                "ctrlKey",
+                "altKey",
+                "shiftKey");
         }
 
         public native function updateAfterEvent():void;

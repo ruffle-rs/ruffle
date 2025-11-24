@@ -13,8 +13,15 @@ package flash.events {
         private var _direction:String;
         private var _isRelatedObjectInaccessible:Boolean;
 
-        public function FocusEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false, relatedObject:InteractiveObject = null,
-            shiftKey:Boolean = false, keyCode:uint = 0, direction:String = "none") {
+        public function FocusEvent(
+            type:String,
+            bubbles:Boolean = true,
+            cancelable:Boolean = false,
+            relatedObject:InteractiveObject = null,
+            shiftKey:Boolean = false,
+            keyCode:uint = 0,
+            direction:String = "none"
+        ) {
             super(type, bubbles, cancelable);
             this.relatedObject = relatedObject;
             this.shiftKey = shiftKey;
@@ -63,11 +70,28 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new FocusEvent(this.type, this.bubbles, this.cancelable, this.relatedObject, this.shiftKey, this.keyCode, this.direction);
+            return new FocusEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.relatedObject,
+                this.shiftKey,
+                this.keyCode,
+                this.direction
+            );
         }
 
         override public function toString():String {
-            return this.formatToString("FocusEvent", "type", "bubbles", "cancelable", "eventPhase", "relatedObject", "shiftKey", "keyCode");
+            return this.formatToString(
+                "FocusEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "relatedObject",
+                "shiftKey",
+                "keyCode"
+            );
         }
     }
 }

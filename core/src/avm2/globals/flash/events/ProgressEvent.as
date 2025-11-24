@@ -6,9 +6,14 @@ package flash.events {
         private var _bytesLoaded:Number;
         private var _bytesTotal:Number;
 
-        public function ProgressEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, bytesLoaded:Number = 0, bytesTotal:Number = 0)
-        {
-            super(type,bubbles,cancelable);
+        public function ProgressEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            bytesLoaded:Number = 0,
+            bytesTotal:Number = 0
+        ) {
+            super(type, bubbles, cancelable);
             this._bytesLoaded = bytesLoaded;
             this._bytesTotal = bytesTotal;
         }
@@ -27,14 +32,26 @@ package flash.events {
             this._bytesTotal = value;
         }
 
-        override public function clone() : Event
-        {
-            return new ProgressEvent(this.type,this.bubbles,this.cancelable,this.bytesLoaded,this.bytesTotal);
+        override public function clone():Event {
+            return new ProgressEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.bytesLoaded,
+                this.bytesTotal
+            );
         }
 
-        override public function toString() : String
-        {
-            return this.formatToString("ProgressEvent","type","bubbles","cancelable","eventPhase","bytesLoaded","bytesTotal");
+        override public function toString():String {
+            return this.formatToString(
+                "ProgressEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "bytesLoaded",
+                "bytesTotal"
+            );
         }
     }
 }

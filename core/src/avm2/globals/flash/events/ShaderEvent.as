@@ -9,7 +9,14 @@ package flash.events{
         public var bitmapData:BitmapData;
         public var byteArray:ByteArray;
 
-        public function ShaderEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, bitmap:BitmapData = null, array:ByteArray = null, vector:Vector.<Number> = null) {
+        public function ShaderEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            bitmap:BitmapData = null,
+            array:ByteArray = null,
+            vector:Vector.<Number> = null
+        ) {
             super(type, bubbles, cancelable);
             this.bitmapData = bitmap;
             this.byteArray = array;
@@ -17,11 +24,25 @@ package flash.events{
         }
 
         override public function clone():Event {
-            return new ShaderEvent(this.type, this.bubbles, this.cancelable, this.vector);
+            return new ShaderEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.vector
+            );
         }
 
         override public function toString():String {
-            return this.formatToString("ShaderEvent", "type", "bubbles", "cancelable", "eventPhase", "bitmapData", "byteArray", "vector");
+            return this.formatToString(
+                "ShaderEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "bitmapData",
+                "byteArray",
+                "vector"
+            );
         }
     }
 }

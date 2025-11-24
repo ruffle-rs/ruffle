@@ -4,7 +4,12 @@ package flash.events {
 
         private var _changeList:Array;
 
-        public function SyncEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, changeList:Array = null) {
+        public function SyncEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            changeList:Array = null
+        ) {
             super(type, bubbles, cancelable);
             this.changeList = changeList;
         }
@@ -17,11 +22,23 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new SyncEvent(this.type, this.bubbles, this.cancelable, this.changeList);
+            return new SyncEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.changeList
+            );
         }
 
         override public function toString():String {
-            return this.formatToString("SyncEvent", "type", "bubbles", "cancelable", "eventPhase", "changeList");
+            return this.formatToString(
+                "SyncEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "changeList"
+            );
         }
     }
 }

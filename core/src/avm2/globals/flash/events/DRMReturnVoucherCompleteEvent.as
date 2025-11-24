@@ -3,13 +3,20 @@ package flash.events {
     public class DRMReturnVoucherCompleteEvent extends Event {
         public static const RETURN_VOUCHER_COMPLETE:String = "returnVoucherComplete";
 
-        private var _serverURL: String;
-        private var _licenseID: String;
-        private var _policyID: String;
-        private var _numberOfVouchersReturned: int;
+        private var _serverURL:String;
+        private var _licenseID:String;
+        private var _policyID:String;
+        private var _numberOfVouchersReturned:int;
 
-        public function DRMReturnVoucherCompleteEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, inServerURL:String = null,
-            inLicenseID:String = null, inPolicyID:String = null, inNumberOfVouchersReturned:int = 0) {
+        public function DRMReturnVoucherCompleteEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            inServerURL:String = null,
+            inLicenseID:String = null,
+            inPolicyID:String = null,
+            inNumberOfVouchersReturned:int = 0
+        ) {
             super(type, bubbles, cancelable);
             this.serverURL = inServerURL;
             this.licenseID = inLicenseID;
@@ -46,7 +53,15 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new DRMReturnVoucherCompleteEvent(this.type, this.bubbles, this.cancelable, this.serverURL, this.licenseID, this.policyID, this.numberOfVouchersReturned);
+            return new DRMReturnVoucherCompleteEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.serverURL,
+                this.licenseID,
+                this.policyID,
+                this.numberOfVouchersReturned
+            );
         }
     }
 }

@@ -4,7 +4,12 @@ package flash.events {
 
         private var _userData:int;
 
-        public function AVPauseAtPeriodEndEvent(type:String = "avPauseAtPeriodEnd", bubbles:Boolean = false, cancelable:Boolean = false, userData:int = 0) {
+        public function AVPauseAtPeriodEndEvent(
+            type:String = "avPauseAtPeriodEnd",
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            userData:int = 0
+        ) {
             super(type, bubbles, cancelable);
             this._userData = userData;
         }

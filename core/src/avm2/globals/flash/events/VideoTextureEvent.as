@@ -9,7 +9,13 @@ package flash.events {
         [API("706")]
         public const codecInfo:String;
 
-        public function VideoTextureEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, status:String = null, colorSpace:String = null) {
+        public function VideoTextureEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            status:String = null,
+            colorSpace:String = null
+        ) {
             super(type, bubbles, cancelable);
             this._status = status;
             this._colorSpace = colorSpace;

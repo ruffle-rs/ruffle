@@ -9,7 +9,13 @@ package flash.events {
 
         private var _imeClient:IIMEClient;
 
-        public function IMEEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, text:String = "", imeClient:IIMEClient = null) {
+        public function IMEEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            text:String = "",
+            imeClient:IIMEClient = null
+        ) {
             super(type, bubbles, cancelable, text);
             this._imeClient = imeClient;
         }
@@ -28,7 +34,14 @@ package flash.events {
         }
 
         override public function toString():String {
-            return formatToString("IMEEvent", "type", "bubbles", "cancelable", "eventPhase", "text", "imeClient");
+            return formatToString(
+                "IMEEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "text",
+                "imeClient");
         }
     }
 }
