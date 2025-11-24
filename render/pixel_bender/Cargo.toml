@@ -15,8 +15,8 @@ thiserror = { workspace = true }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
 byteorder = { workspace = true }
-pest = { version = "2.8.3", optional = true }
-pest_derive = { version = "2.8.3", optional = true }
+pest = { version = "2.8.4", optional = true }
+pest_derive = { version = "2.8.4", optional = true }
 serde_json = { version = "1.0.145", optional = true }
 
 [features]
