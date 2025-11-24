@@ -1,5 +1,4 @@
 package flash.utils {
-
     import __ruffle__.stub_setter;
 
     [Ruffle(InstanceAllocator)]
@@ -7,7 +6,7 @@ package flash.utils {
         private var _shareable:Boolean = false;
 
         [API("684")]
-        public function set shareable(shareable: Boolean):void {
+        public function set shareable(shareable:Boolean):void {
             stub_setter("flash.utils.ByteArray", "shareable");
 
             this._shareable = shareable;

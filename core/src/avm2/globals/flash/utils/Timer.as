@@ -1,21 +1,22 @@
 package flash.utils {
     import flash.events.EventDispatcher;
     import flash.events.TimerEvent;
+
     public class Timer extends EventDispatcher {
-        private var _currentCount: int;
-        private var _repeatCount: int;
+        private var _currentCount:int;
+        private var _repeatCount:int;
 
         [Ruffle(NativeAccessible)]
-        private var _delay: Number;
+        private var _delay:Number;
 
         [Ruffle(NativeAccessible)]
-        private var _timerId: int = -1;
+        private var _timerId:int = -1;
 
         // Returns 'true' if we should cancel the underlying Ruffle native timer
         [Ruffle(NativeAccessible)]
         private var _onUpdateClosure:Function;
 
-        private function checkDelay(delay:Number): void {
+        private function checkDelay(delay:Number):void {
             if (!isFinite(delay) || delay < 0) {
                 throw new RangeError("Timer delay out of range", 2066);
             }
@@ -44,15 +45,15 @@ package flash.utils {
             }
         }
 
-        public function get currentCount(): int {
+        public function get currentCount():int {
             return this._currentCount;
         }
 
-        public function get delay(): Number {
+        public function get delay():Number {
             return this._delay;
         }
 
-        public function set delay(value:Number): void {
+        public function set delay(value:Number):void {
             this.checkDelay(delay);
             this._delay = value;
             if (this.running) {
@@ -62,18 +63,18 @@ package flash.utils {
 
         private native function updateDelay():void;
 
-        public function get repeatCount(): int {
+        public function get repeatCount():int {
             return this._repeatCount;
         }
 
-        public function set repeatCount(value:int): void {
+        public function set repeatCount(value:int):void {
             this._repeatCount = value;
             if (this._repeatCount != 0 && this._repeatCount <= this._currentCount) {
                 this.stop();
             }
         }
 
-        public function get running(): Boolean {
+        public function get running():Boolean {
             return this._timerId != -1;
         }
 
