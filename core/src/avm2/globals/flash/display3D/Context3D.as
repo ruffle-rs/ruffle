@@ -191,7 +191,13 @@ package flash.display3D {
         [API("686")]
         public native function setSamplerStateAt(sampler:int, wrap:String, filter:String, mipfilter:String):void;
 
-        public native function setRenderToTexture(texture:TextureBase, enableDepthAndStencil:Boolean = false, antiAlias:int = 0, surfaceSelector:int = 0, colorOutputIndex:int = 0):void;
+        public native function setRenderToTexture(
+            texture:TextureBase,
+            enableDepthAndStencil:Boolean = false,
+            antiAlias:int = 0,
+            surfaceSelector:int = 0,
+            colorOutputIndex:int = 0
+        ):void;
 
         public function setStencilActions(
             triangleFace:String = "frontAndBack",

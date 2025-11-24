@@ -51,7 +51,11 @@ package flash.net {
 
         public native function save(data:*, defaultFileName:String = null):void;
 
-        public function upload(request:URLRequest, uploadDataFieldName:String = "Filedata", testUpload:Boolean = false):void {
+        public function upload(
+            request:URLRequest,
+            uploadDataFieldName:String = "Filedata",
+            testUpload:Boolean = false
+        ):void {
             stub_method("flash.net.FileReference", "upload");
         }
 

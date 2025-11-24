@@ -10,13 +10,17 @@ package flash.globalization {
         private var _localeIDName:String;
         private var _timeStyle:String;
 
-        private static function throwNonNull(name: String) {
+        private static function throwNonNull(name:String) {
             throw new TypeError("Error #2007: Parameter " + name + " must be non-null.", 2007);
         }
 
         public function DateTimeFormatter(requestedLocaleIDName:String, dateStyle:String = "long", timeStyle:String = "long") {
             stub_constructor("flash.globalization.DateTimeFormatter");
-            if (requestedLocaleIDName == null) throwNonNull("requestedLocaleIDName");
+
+            if (requestedLocaleIDName == null) {
+                throwNonNull("requestedLocaleIDName");
+            }
+
             this._localeIDName = requestedLocaleIDName;
             this._dateTimePattern = "EEEE, MMMM d, yyyy h:mm:ss a";
             this.setDateTimeStyles(dateStyle, timeStyle);
@@ -38,13 +42,21 @@ package flash.globalization {
 
         public function format(dateTime:Date):String {
             stub_method("flash.globalization.DateTimeFormatter", "format");
-            if (dateTime == null) throwNonNull("dateTime");
+
+            if (dateTime == null) {
+                throwNonNull("dateTime");
+            }
+
             return dateTime.toString();
         }
 
         public function formatUTC(dateTime:Date):String {
             stub_method("flash.globalization.DateTimeFormatter", "formatUTC");
-            if (dateTime == null) throwNonNull("dateTime");
+
+            if (dateTime == null) {
+                throwNonNull("dateTime");
+            }
+
             return dateTime.toUTCString();
         }
 
@@ -68,9 +80,29 @@ package flash.globalization {
 
         public function getMonthNames(nameStyle:String = "full", context:String = "standalone"):Vector.<String> {
             stub_method("flash.globalization.DateTimeFormatter", "getMonthNames");
-            if (nameStyle == null) throwNonNull("nameStyle");
-            if (context == null) throwNonNull("context");
-            return new <String>["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+            if (nameStyle == null) {
+                throwNonNull("nameStyle");
+            }
+
+            if (context == null) {
+                throwNonNull("context");
+            }
+
+            return new <String>[
+                "January",
+                "February",
+                "March",
+                "April",
+                "May",
+                "June",
+                "July",
+                "August",
+                "September",
+                "October",
+                "November",
+                "December"
+            ];
         }
 
         public function getTimeStyle():String {
@@ -79,21 +111,39 @@ package flash.globalization {
 
         public function getWeekdayNames(nameStyle:String = "full", context:String = "standalone"):Vector.<String> {
             stub_method("flash.globalization.DateTimeFormatter", "getWeekdayNames");
-            if (nameStyle == null) throwNonNull("nameStyle");
-            if (context == null) throwNonNull("context");
+
+            if (nameStyle == null) {
+                throwNonNull("nameStyle");
+            }
+
+            if (context == null) {
+                throwNonNull("context");
+            }
+
             return new <String>["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
         }
 
         public function setDateTimePattern(pattern:String):void {
             stub_method("flash.globalization.DateTimeFormatter", "setDateTimePattern");
-            if (pattern == null) throwNonNull("pattern");
+
+            if (pattern == null) {
+                throwNonNull("pattern");
+            }
+
             this._dateTimePattern = pattern;
         }
 
         public function setDateTimeStyles(dateStyle:String, timeStyle:String):void {
             stub_method("flash.globalization.DateTimeFormatter", "setDateTimeStyles");
-            if (dateStyle == null) throwNonNull("dateStyle");
-            if (timeStyle == null) throwNonNull("timeStyle");
+
+            if (dateStyle == null) {
+                throwNonNull("dateStyle");
+            }
+
+            if (timeStyle == null) {
+                throwNonNull("timeStyle");
+            }
+
             this._dateStyle = dateStyle;
             this._timeStyle = timeStyle;
         }

@@ -49,7 +49,7 @@ package flash.filters {
             this.preserveAlpha = preserveAlpha;
         }
 
-        override public function clone(): BitmapFilter {
+        override public function clone():BitmapFilter {
             return new ConvolutionFilter(
                 this.matrixX,
                 this.matrixY,

@@ -10,7 +10,7 @@ package flash.system {
             applicationDomain:ApplicationDomain = null,
             securityDomain:SecurityDomain = null
         ) {
-            super(checkPolicyFile,applicationDomain,securityDomain);
+            super(checkPolicyFile, applicationDomain, securityDomain);
             this.deblockingFilter = deblockingFilter;
         }
     }

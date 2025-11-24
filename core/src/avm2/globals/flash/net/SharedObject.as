@@ -8,7 +8,11 @@ package flash.net {
         // you will need to adjust the serialization and deserialization code
         // to work with AMF0.
 
-        public static native function getLocal(name:String, localPath:String = null, secure:Boolean = false):SharedObject;
+        public static native function getLocal(
+            name:String,
+            localPath:String = null,
+            secure:Boolean = false
+        ):SharedObject;
 
         public native function get size():uint;
         public native function get objectEncoding():uint;

@@ -36,7 +36,13 @@ package flash.display {
             return super.addChildAt(child, index);
         }
 
-        override public function addEventListener(type:String, listener:Function, useCapture:Boolean = false, priority:int = 0, useWeakReference:Boolean = false):void {
+        override public function addEventListener(
+            type:String,
+            listener:Function,
+            useCapture:Boolean = false,
+            priority:int = 0,
+            useWeakReference:Boolean = false
+        ):void {
             super.addEventListener(type, listener, useCapture, priority, useWeakReference);
         }
 
@@ -180,7 +186,7 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
-        override public function set transform(value: Transform):void {
+        override public function set transform(value:Transform):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
@@ -279,7 +285,7 @@ package flash.display {
         }
 
         [API("670")]
-        public function get softKeyboardRect() : Rectangle {
+        public function get softKeyboardRect():Rectangle {
             stub_getter("flash.display.Stage", "softKeyboardRect");
             // This is technically a valid implementation most of the time,
             // as 0x0 Rect is the expected value with no soft keyboard.

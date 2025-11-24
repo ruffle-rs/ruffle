@@ -10,6 +10,11 @@ package flash.media {
 
         public static native function stopAll():void;
         public static native function areSoundsInaccessible():Boolean
-        public static native function computeSpectrum(outputArray:ByteArray, FFTMode:Boolean = false, stretchFactor:int = 0):void;
+
+        public static native function computeSpectrum(
+            outputArray:ByteArray,
+            FFTMode:Boolean = false,
+            stretchFactor:int = 0
+        ):void;
     }
 }
