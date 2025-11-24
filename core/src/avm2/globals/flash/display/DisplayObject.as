@@ -1,5 +1,4 @@
 package flash.display {
-
     import __ruffle__.stub_method;
 
     import flash.accessibility.AccessibilityProperties;
@@ -149,5 +148,4 @@ package flash.display {
         [API("662")]
         public native function set blendShader(value:Shader):void;
     }
-
 }

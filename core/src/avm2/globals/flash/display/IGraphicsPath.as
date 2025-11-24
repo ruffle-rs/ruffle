@@ -1,5 +1,4 @@
 package flash.display {
     [API("662")]
-    public interface IGraphicsPath {
-    }
+    public interface IGraphicsPath {}
 }

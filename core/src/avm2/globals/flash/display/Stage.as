@@ -2,6 +2,7 @@ package flash.display {
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
+
     import flash.accessibility.AccessibilityImplementation;
     import flash.accessibility.AccessibilityProperties;
     import flash.errors.IllegalOperationError;
