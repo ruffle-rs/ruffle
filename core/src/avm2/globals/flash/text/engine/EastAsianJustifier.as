@@ -4,7 +4,11 @@ package flash.text.engine {
         private var _justificationStyle:String;
         private var _composeTrailingIdeographicSpaces:Boolean;
 
-        public function EastAsianJustifier(locale:String = "ja", lineJustification:String = "allButLast", justificationStyle:String = "pushInKinsoku") {
+        public function EastAsianJustifier(
+            locale:String = "ja",
+            lineJustification:String = "allButLast",
+            justificationStyle:String = "pushInKinsoku"
+        ) {
             super(locale, lineJustification);
             this.justificationStyle = justificationStyle;
         }

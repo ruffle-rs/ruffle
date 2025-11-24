@@ -4,6 +4,7 @@ package flash.text.engine {
     [API("662")]
     public class ContentElement {
         public static const GRAPHIC_ELEMENT:uint = 65007;
+
         public var userData;
 
         internal var _text:String = null;
@@ -11,7 +12,11 @@ package flash.text.engine {
         [Ruffle(NativeAccessible)]
         private var _elementFormat:ElementFormat;
 
-        public function ContentElement(elementFormat:ElementFormat = null, eventMirror:EventDispatcher = null, textRotation:String = "rotate0") {
+        public function ContentElement(
+            elementFormat:ElementFormat = null,
+            eventMirror:EventDispatcher = null,
+            textRotation:String = "rotate0"
+        ) {
             // FIXME: `new ContentElement()` throws an error in Flash; see TextJustifier
             this._elementFormat = elementFormat;
         }

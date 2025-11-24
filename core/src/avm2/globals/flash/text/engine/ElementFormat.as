@@ -6,49 +6,42 @@ package flash.text.engine {
     [API("662")]
     public final class ElementFormat {
         private var _alignmentBaseline:String;
-
         private var _alpha:Number;
-
         private var _baselineShift:Number;
-
         private var _breakOpportunity:String;
-
         [Ruffle(NativeAccessible)]
         private var _color:uint;
-
         private var _digitCase:String;
-
         private var _digitWidth:String;
-
         private var _dominantBaseline:String;
-
         [Ruffle(NativeAccessible)]
         private var _fontDescription:FontDescription;
-
         [Ruffle(NativeAccessible)]
         private var _fontSize:Number;
-
         private var _kerning:String;
-
         private var _ligatureLevel:String;
-
         private var _locale:String;
-
         private var _textRotation:String;
-
         private var _trackingLeft:Number;
-
         private var _trackingRight:Number;
-
         private var _typographicCase:String;
 
-
         public function ElementFormat(
-            fontDescription:FontDescription = null, fontSize:Number = 12, color:uint = 0, alpha:Number = 1,
-            textRotation:String = "auto", dominantBaseline:String = "roman",
-            alignmentBaseline:String = "useDominantBaseline", baselineShift:Number = 0, kerning:String = "on",
-            trackingRight:Number = 0, trackingLeft:Number = 0, locale:String = "en", breakOpportunity:String = "auto",
-            digitCase:String = "default", digitWidth:String = "default", ligatureLevel:String = "common",
+            fontDescription:FontDescription = null,
+            fontSize:Number = 12,
+            color:uint = 0,
+            alpha:Number = 1,
+            textRotation:String = "auto",
+            dominantBaseline:String = "roman",
+            alignmentBaseline:String = "useDominantBaseline",
+            baselineShift:Number = 0,
+            kerning:String = "on",
+            trackingRight:Number = 0,
+            trackingLeft:Number = 0, locale:String = "en",
+            breakOpportunity:String = "auto",
+            digitCase:String = "default",
+            digitWidth:String = "default",
+            ligatureLevel:String = "common",
             typographicCase:String = "default"
         ) {
             this.fontDescription = (fontDescription != null) ? fontDescription : new FontDescription();
@@ -210,13 +203,25 @@ package flash.text.engine {
         public function clone():ElementFormat {
             var fd = this.fontDescription ? this.fontDescription.clone() : null;
             return new ElementFormat(
-                fd, this.fontSize, this.color, this.alpha, this.textRotation,
-                this.dominantBaseline, this.alignmentBaseline, this.baselineShift, this.kerning,
-                this.trackingRight, this.trackingLeft, this.locale, this.breakOpportunity,
-                this.digitCase, this.digitWidth, this.ligatureLevel, this.typographicCase
+                fd,
+                this.fontSize,
+                this.color,
+                this.alpha,
+                this.textRotation,
+                this.dominantBaseline,
+                this.alignmentBaseline,
+                this.baselineShift,
+                this.kerning,
+                this.trackingRight,
+                this.trackingLeft,
+                this.locale,
+                this.breakOpportunity,
+                this.digitCase,
+                this.digitWidth,
+                this.ligatureLevel,
+                this.typographicCase
             );
         }
-
 
         public function getFontMetrics():FontMetrics {
             stub_method("flash.text.engine.ElementFormat", "getFontMetrics");
