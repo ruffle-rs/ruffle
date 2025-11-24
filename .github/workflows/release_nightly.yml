@@ -27,7 +27,7 @@ jobs:
     if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Check for repo activity
         id: activity
@@ -137,7 +137,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
@@ -235,7 +235,7 @@ jobs:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
@@ -334,7 +334,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
@@ -367,7 +367,7 @@ jobs:
       statuses: write
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
@@ -534,7 +534,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone JS docs
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ruffle-rs/js-docs
           path: js-docs
@@ -567,7 +567,7 @@ jobs:
           force: true
 
       - name: Clone web demo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ruffle-rs/demo
           path: demo
@@ -608,7 +608,7 @@ jobs:
     runs-on: ubuntu-24.04
     if: github.repository == 'ruffle-rs/ruffle'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 

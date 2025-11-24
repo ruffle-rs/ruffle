@@ -18,7 +18,7 @@ jobs:
     outputs:
       should_run: ${{ steps.filter.outputs.src }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: AurorNZ/paths-filter@v4
         id: filter
@@ -39,7 +39,7 @@ jobs:
         os: [ubuntu-24.04, windows-2025]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js ${{ matrix.node_version }}
         uses: actions/setup-node@v6
@@ -104,7 +104,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -162,7 +162,7 @@ jobs:
         browser: ["chrome", "firefox", "edge"]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js 24
         uses: actions/setup-node@v6

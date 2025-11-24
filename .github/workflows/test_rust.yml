@@ -42,7 +42,7 @@ jobs:
     outputs:
       should_run: ${{ steps.filter.outputs.src }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - uses: AurorNZ/paths-filter@v4
         id: filter
@@ -72,7 +72,7 @@ jobs:
             os: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -130,7 +130,7 @@ jobs:
         rust_version: [stable, beta, nightly]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
@@ -165,7 +165,7 @@ jobs:
     name: Coverage Report
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           # We need history for delta coverage, but we also don't want to fetch
           # the whole repo. 42 commits seem reasonable
@@ -283,7 +283,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
