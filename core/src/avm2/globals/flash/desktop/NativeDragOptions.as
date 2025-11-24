@@ -5,6 +5,6 @@ package flash.desktop {
         public var allowLink:Boolean = true;
         public var allowMove:Boolean = true;
 
-        public function NativeDragOptions() { }
+        public function NativeDragOptions() {}
     }
 }
