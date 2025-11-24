@@ -1,4 +1,3 @@
 package flash.utils {
-    internal interface IDataInput2 extends IDataInput {
-    }
+    internal interface IDataInput2 extends IDataInput {}
 }
