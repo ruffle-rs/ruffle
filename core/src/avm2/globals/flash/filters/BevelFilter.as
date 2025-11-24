@@ -3,40 +3,40 @@ package flash.filters {
         // FIXME these should all be getters/setters to match Flash
 
         [Ruffle(NativeAccessible)]
-        public var angle : Number;
+        public var angle:Number;
 
         [Ruffle(NativeAccessible)]
-        public var blurX : Number;
+        public var blurX:Number;
 
         [Ruffle(NativeAccessible)]
-        public var blurY : Number;
+        public var blurY:Number;
 
         [Ruffle(NativeAccessible)]
-        public var distance : Number;
+        public var distance:Number;
 
         [Ruffle(NativeAccessible)]
-        public var highlightAlpha : Number;
+        public var highlightAlpha:Number;
 
         [Ruffle(NativeAccessible)]
-        public var highlightColor : uint;
+        public var highlightColor:uint;
 
         [Ruffle(NativeAccessible)]
-        public var knockout : Boolean;
+        public var knockout:Boolean;
 
         [Ruffle(NativeAccessible)]
-        public var quality : int;
+        public var quality:int;
 
         [Ruffle(NativeAccessible)]
-        public var shadowAlpha : Number;
+        public var shadowAlpha:Number;
 
         [Ruffle(NativeAccessible)]
-        public var shadowColor : uint;
+        public var shadowColor:uint;
 
         [Ruffle(NativeAccessible)]
-        public var strength : Number;
+        public var strength:Number;
 
         [Ruffle(NativeAccessible)]
-        public var type : String;
+        public var type:String;
 
         public function BevelFilter(
             distance:Number = 4.0,
@@ -66,7 +66,7 @@ package flash.filters {
             this.type = type;
         }
 
-        override public function clone(): BitmapFilter {
+        override public function clone():BitmapFilter {
             return new BevelFilter(
                 this.distance,
                 this.angle,

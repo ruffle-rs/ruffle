@@ -4,38 +4,37 @@
         // GradientGlowFilter; filter code assumes the slot layouts are identical
 
         [Ruffle(NativeAccessible)]
-        private var _alphas : Array;
+        private var _alphas:Array;
 
         [Ruffle(NativeAccessible)]
-        private var _angle : Number;
+        private var _angle:Number;
 
         [Ruffle(NativeAccessible)]
-        private var _blurX : Number;
+        private var _blurX:Number;
 
         [Ruffle(NativeAccessible)]
-        private var _blurY : Number;
+        private var _blurY:Number;
 
         [Ruffle(NativeAccessible)]
-        private var _colors : Array;
+        private var _colors:Array;
 
         [Ruffle(NativeAccessible)]
-        private var _distance : Number;
+        private var _distance:Number;
 
         [Ruffle(NativeAccessible)]
-        private var _knockout : Boolean;
+        private var _knockout:Boolean;
 
         [Ruffle(NativeAccessible)]
-        private var _quality : int;
+        private var _quality:int;
 
         [Ruffle(NativeAccessible)]
-        private var _ratios : Array;
+        private var _ratios:Array;
 
         [Ruffle(NativeAccessible)]
-        private var _strength : Number;
+        private var _strength:Number;
 
         [Ruffle(NativeAccessible)]
-        private var _type : String;
-
+        private var _type:String;
 
         public function get alphas():Array {
             return this._alphas;
@@ -140,7 +139,7 @@
             this.knockout = knockout;
         }
 
-        override public function clone(): BitmapFilter {
+        override public function clone():BitmapFilter {
             return new GradientBevelFilter(
                 this.distance,
                 this.angle,
