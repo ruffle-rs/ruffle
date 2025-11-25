@@ -542,8 +542,18 @@ impl<E: std::error::Error + 'static> FutureSpawner<E> for WinitExecutor {
         let event_loop = self.event_loop.clone();
         let scheduler = move |task| {
             let event = RuffleEvent::TaskPoll(PlayerRunnable(task));
-            if event_loop.send_event(event).is_err() {
+            if let Err(event) = event_loop.send_event(event) {
                 tracing::error!("Couldn't schedule task - event loop is closed");
+                // Dropping the task here would cause a panic, and we have no way
+                // to send it back to its original thread, so we have no choice but to leak.
+                // This only happens when the user closes Ruffle while an async operation is
+                // running, so the leak is mostly harmless as the process is about to be
+                // terminated anyways.
+                // FIXME: The proper way of handling this would be to make sure that the winit
+                // event loop outlives the tokio runtime by manually shutting down the runtime
+                // (see `https://github.com/ruffle-rs/ruffle/pull/22320`), but this approach
+                // doesn't seem to work properly under Wayland and causes a segfault.
+                core::mem::forget(event);
             }
         };
 
