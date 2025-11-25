@@ -11,7 +11,7 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-convert_case = "0.9.0"
+convert_case = "0.10.0"
 proc-macro2 = "1.0.103"
 quote = "1.0.42"
 swf = { path = "../../swf" }
