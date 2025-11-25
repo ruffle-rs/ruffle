@@ -24,6 +24,7 @@
     <name xml:lang="sv">Ruffle</name>
     <name xml:lang="th">Ruffle</name>
     <name xml:lang="tr">Ruffle</name>
+    <name xml:lang="tt">Ruffle</name>
     <name xml:lang="uk">Ruffle</name>
     <name xml:lang="vi">Ruffle</name>
     <name xml:lang="zh-CN">Ruffle</name>
@@ -48,6 +49,7 @@
     <summary xml:lang="sv">Spela Flashspel &amp; filmer</summary>
     <summary xml:lang="th">เล่นเกม Flash และสื่อ</summary>
     <summary xml:lang="tr">Flash oyunları &amp; filmleri oynat</summary>
+    <summary xml:lang="tt">Flash уеннары һәм клиплар уйнау</summary>
     <summary xml:lang="uk">Відтворюйте Flash ігри та фільми</summary>
     <summary xml:lang="zh-CN">播放 Flash 游戏和动画</summary>
     <summary xml:lang="zh-TW">播放 Flash 遊戲和 &amp; 動畫</summary>
@@ -73,6 +75,7 @@
         <name xml:lang="sv">Ruffle Teamet</name>
         <name xml:lang="th">ทีมงาน Ruffle</name>
         <name xml:lang="tr">Ruffle ekibi</name>
+        <name xml:lang="tt">Ruffle командасы</name>
         <name xml:lang="uk">Команда Ruffle</name>
         <name xml:lang="vi">Nhóm phát triển Ruffle</name>
         <name xml:lang="zh-CN">Ruffle 项目组</name>
@@ -200,6 +203,7 @@
         <keyword xml:lang="sv">flash</keyword>
         <keyword xml:lang="th">flash</keyword>
         <keyword xml:lang="tr">flash</keyword>
+        <keyword xml:lang="tt">flash</keyword>
         <keyword xml:lang="uk">flash</keyword>
         <keyword xml:lang="vi">flash</keyword>
         <keyword xml:lang="zh-CN">flash</keyword>
@@ -226,6 +230,7 @@
         <keyword xml:lang="sv">swf</keyword>
         <keyword xml:lang="th">swf</keyword>
         <keyword xml:lang="tr">swf</keyword>
+        <keyword xml:lang="tt">swf</keyword>
         <keyword xml:lang="uk">swf</keyword>
         <keyword xml:lang="vi">swf</keyword>
         <keyword xml:lang="zh-CN">swf</keyword>
@@ -252,6 +257,7 @@
         <keyword xml:lang="sk">prehrávač</keyword>
         <keyword xml:lang="sv">player</keyword>
         <keyword xml:lang="tr">oynatıcı</keyword>
+        <keyword xml:lang="tt">плеер</keyword>
         <keyword xml:lang="uk">програвач</keyword>
         <keyword xml:lang="vi">trình phát</keyword>
         <keyword xml:lang="zh-CN">播放器</keyword>
@@ -278,6 +284,7 @@
         <keyword xml:lang="sv">emulator</keyword>
         <keyword xml:lang="th">โปรแกรมเลียนแบบ</keyword>
         <keyword xml:lang="tr">öykünücü</keyword>
+        <keyword xml:lang="tt">эмулятор</keyword>
         <keyword xml:lang="uk">емулятор</keyword>
         <keyword xml:lang="vi">trình giả lập</keyword>
         <keyword xml:lang="zh-CN">模拟器</keyword>
