@@ -661,12 +661,12 @@ impl<'gc> MovieClip<'gc> {
             let movie = self.movie();
             let domain = context.library.library_for_movie_mut(movie).avm2_domain();
 
-            // DoAbc tag seems to be equivalent to a DoAbc2 with Lazy flag set
+            // DoAbc tag seems to be equivalent to a DoAbc2 with no flags (eager)
             match Avm2::do_abc(
                 context,
                 data,
                 None,
-                swf::DoAbc2Flag::LAZY_INITIALIZE,
+                swf::DoAbc2Flag::empty(),
                 domain,
                 self.movie(),
             ) {
