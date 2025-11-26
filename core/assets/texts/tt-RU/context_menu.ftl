@@ -1,0 +1,12 @@
+context-menu-play = Уйнарга
+context-menu-rewind = Кайтару
+context-menu-forward = Алга
+context-menu-back = Артка
+context-menu-quality-low = Сыйфат: түбән
+context-menu-quality-medium = Сыйфат: уртача
+context-menu-quality-high = Сыйфат: югары
+context-menu-cut = Кисеп алырга
+context-menu-copy = Күчермə
+context-menu-paste = Өстəргə
+context-menu-delete = Бетерергə
+context-menu-select-all = Барысын сайлау

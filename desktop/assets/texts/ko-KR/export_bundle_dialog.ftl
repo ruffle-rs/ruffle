@@ -1,5 +1,6 @@
 export-bundle-dialog-title = Ruffle 번들 내보내기
 export-bundle-dialog-bundle-name = 번들 이름:
+export-bundle-dialog-files-description = 번들로 묶을 파일 선택:
 export-bundle-dialog-files-select-all = 모두 선택
 export-bundle-dialog-export = 내보내기
 export-bundle-dialog-exporting = 내보내는 중...
