@@ -145,10 +145,16 @@ impl FileDialogResult for DesktopFileDialogResult {
 }
 
 pub struct DesktopUiBackend {
+    // It's important that `clipboard`` gets dropped before `window`, dropping
+    // them the other way around causes a segfault inside `smithay_clipboard`.
+    // See:
+    // - https://github.com/emilk/egui/issues/7660
+    // - https://github.com/emilk/egui/issues/7743
+    clipboard: Clipboard,
     window: Arc<Window>,
+
     event_loop: EventLoopProxy<RuffleEvent>,
     cursor_visible: bool,
-    clipboard: Clipboard,
     preferences: GlobalPreferences,
     preferred_cursor: MouseCursor,
     font_database: Rc<fontdb::Database>,
