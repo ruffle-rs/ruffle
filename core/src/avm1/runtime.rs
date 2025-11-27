@@ -14,6 +14,7 @@ use crate::{avm1, avm_debug};
 use gc_arena::{Collect, Gc, Mutation};
 use swf::avm1::read::Reader;
 use tracing::instrument;
+use web_sys::console;
 
 /// The global environment.
 ///
@@ -107,6 +108,10 @@ pub struct Avm1<'gc> {
 
     #[cfg(feature = "avm_debug")]
     pub debug_output: bool,
+
+    pub output_json: i8,
+    pub output_json_stdin: bool,
+    pub output_json_code: u8,
 }
 
 impl<'gc> Avm1<'gc> {
@@ -129,6 +134,10 @@ impl<'gc> Avm1<'gc> {
             #[cfg(feature = "avm_debug")]
             debug_output: false,
             use_new_invalid_bounds_value: false,
+
+            output_json: -1,
+            output_json_stdin: false,
+            output_json_code: 0xFF,
         }
     }
 
@@ -346,6 +355,15 @@ impl<'gc> Avm1<'gc> {
         });
 
         avm_debug!(self, "Stack pop {}: {value:?}", self.stack.len());
+        if self.output_json == 1 {
+            if let Value::Bool(b) = value {
+                if self.output_json_stdin {
+                    println!("{b}");
+                } else {
+                    console::log_1(&b.into());
+                }
+            }
+        }
 
         value
     }

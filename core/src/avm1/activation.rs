@@ -1,4 +1,5 @@
 use crate::avm1::callable_value::CallableValue;
+use crate::avm1::debug::VariableDumperJson;
 use crate::avm1::error::Error;
 use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
 use crate::avm1::property::Attribute;
@@ -22,9 +23,11 @@ use ruffle_macros::istr;
 use std::cell::Cell;
 use std::cmp::min;
 use std::fmt;
+use std::io;
 use swf::avm1::read::Reader;
 use swf::avm1::types::*;
 use url::form_urlencoded;
+use web_sys::console;
 use web_time::Instant;
 
 use super::object_reference::MovieClipReference;
@@ -442,6 +445,36 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 "({}) Action: {action:?}",
                 self.id.depth(),
             );
+            if self.context.avm1.output_json != -1 {
+                if self.context.avm1.output_json_stdin {
+                    println!("{}", serde_json::to_string(&action).unwrap());
+
+                    let mut buffer = String::new();
+                    match io::stdin().read_line(&mut buffer).unwrap() {
+                        #[cfg(not(windows))]
+                        1 => (), //\n , \r   //continue
+                        #[cfg(windows)]
+                        2 => (), //\r\n      //continue
+
+                        _ => {
+                            //breakpoint
+                            let mut dumper = VariableDumperJson::new();
+                            dumper.print_activation(self);
+                            println!("{}", dumper.output());
+                            let _ = io::stdin().read_line(&mut buffer); //block again to aknowledge the breakpoint at the other side
+                        }
+                    }
+                } else {
+                    if self.context.avm1.output_json == 1 {
+                        console::log_1(&serde_json::to_string(&action).unwrap().into());
+                    }
+                    if action.discriminant() == self.context.avm1.output_json_code {
+                        let mut dumper = VariableDumperJson::new();
+                        dumper.print_activation(self);
+                        console::log_1(&dumper.output().into());
+                    }
+                }
+            }
 
             match action {
                 Action::Add => self.action_add(),
