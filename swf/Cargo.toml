@@ -12,7 +12,7 @@ repository.workspace = true
 workspace = true
 
 [dependencies]
-bitflags = { workspace = true }
+bitflags = { workspace = true, features = ["serde"]  }
 bitstream-io = { workspace = true }
 byteorder = { workspace = true }
 encoding_rs = { workspace = true }
@@ -23,6 +23,7 @@ flate2 = { workspace = true, optional = true }
 lzma-rs = { workspace = true, optional = true }
 enum-map = { workspace = true }
 simple_asn1 = "0.6.3"
+serde = { version = "1.0.210", features = ["derive"] }
 
 [features]
 default = ["flate2", "lzma"]
