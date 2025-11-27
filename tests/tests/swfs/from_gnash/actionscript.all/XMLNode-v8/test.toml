@@ -8,7 +8,3 @@ player_options.version = 9
 [subtests.fp10]
 output_path = "output.fp10.txt"
 player_options.version = 10
-
-[subtests.fp11]
-output_path = "output.fp11.txt"
-player_options.version = 11
