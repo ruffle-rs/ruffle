@@ -8,6 +8,7 @@ use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
 use crate::options::TestOptions;
 use crate::options::image_comparison::ImageComparison;
+use crate::options::known_failure::KnownFailure;
 use crate::runner::automation::perform_automated_event;
 use crate::runner::image_test::capture_and_compare_image;
 use crate::runner::trace::compare_trace_output;
@@ -20,6 +21,8 @@ use ruffle_core::{Player, PlayerBuilder};
 use ruffle_input_format::InputInjector;
 use ruffle_render::backend::{RenderBackend, ViewportDimensions};
 use ruffle_socket_format::SocketEvent;
+use std::any::Any;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::Duration;
@@ -163,33 +166,39 @@ impl TestRunner {
     pub fn tick(&mut self) -> Result<TestStatus> {
         use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 
-        let unwind_result = catch_unwind(AssertUnwindSafe(|| self.tick_inner()));
-    
-        match (unwind_result, self.options.known_failure) {
-            (Ok(ret), _) => ret,
-            // known_failure tests may pass by panicking.
-            (Err(_), true) =>  Ok(TestStatus::Finished),
-            (Err(panic), false) => resume_unwind(panic),
-        }
-    }
-    
-    fn tick_inner(&mut self) -> Result<TestStatus> {
-        self.do_tick();
-
-        match (self.test(), self.options.known_failure) {
+        let unwind_result = catch_unwind(AssertUnwindSafe(|| self.do_tick()));
+        match (unwind_result, &self.options.known_failure) {
             (Ok(()), _) => (),
-            (Err(_), true) => return Ok(TestStatus::Finished),
-            (Err(err), false) => return Err(err),
+            (Err(panic), KnownFailure::Panic { message }) => {
+                let actual = panic_payload_as_string(panic);
+                if actual.contains(message) {
+                    return Ok(TestStatus::Finished);
+                }
+
+                let mut actual = actual.into_owned();
+                actual.push_str("\n\nnote: expected panic message to contain: ");
+                actual.push_str(message);
+                resume_unwind(Box::new(actual))
+            }
+            (Err(panic), _) => resume_unwind(panic),
         }
 
-        match self.remaining_iterations {
-            0 => match (self.last_test(), self.options.known_failure) {
-                (Ok(()), true) => Err(anyhow!(
+        match (self.test(), &self.options.known_failure) {
+            (Ok(()), _) => (),
+            (Err(_), KnownFailure::AnyCheck) => return Ok(TestStatus::Finished),
+            (Err(err), _) => return Err(err),
+        }
+
+        match (self.remaining_iterations, &self.options.known_failure) {
+            (0, KnownFailure::None) => self.last_test().map(|_| TestStatus::Finished),
+            (0, KnownFailure::Panic { .. }) => Err(anyhow!(
+                "Test was known to be panicking, but now finishes successfully. Please update it and remove `known_failure.panic = '...'`!",
+            )),
+            (0, KnownFailure::AnyCheck) => match self.last_test() {
+                Ok(()) => Err(anyhow!(
                     "Test was known to be failing, but now passes successfully. Please update it and remove `known_failure = true`!",
                 )),
-                (Ok(()), false) => Ok(TestStatus::Finished),
-                (Err(_), true) => Ok(TestStatus::Finished),
-                (Err(err), false) => Err(err),
+                Err(_) => Ok(TestStatus::Finished),
             },
             _ if self.options.sleep_to_meet_frame_rate => {
                 // If requested, ensure that the 'expected' amount of
@@ -258,7 +267,7 @@ impl TestRunner {
                             &self.player,
                             &name,
                             image_comparison,
-                            self.options.known_failure,
+                            matches!(self.options.known_failure, KnownFailure::AnyCheck),
                             self.render_interface.as_deref(),
                         )?;
                     } else {
@@ -284,7 +293,7 @@ impl TestRunner {
                 &self.player,
                 &name,
                 comp,
-                self.options.known_failure,
+                matches!(self.options.known_failure, KnownFailure::AnyCheck),
                 self.render_interface.as_deref(),
             )?;
         }
@@ -302,7 +311,7 @@ impl TestRunner {
                 &self.player,
                 &name,
                 comp,
-                self.options.known_failure,
+                matches!(self.options.known_failure, KnownFailure::AnyCheck),
                 self.render_interface.as_deref(),
             )?;
         }
@@ -330,5 +339,15 @@ impl TestRunner {
         trigger: ImageTrigger,
     ) -> Option<(String, ImageComparison)> {
         self.images.extract_if(|_k, v| v.trigger == trigger).next()
+    }
+}
+
+fn panic_payload_as_string(panic: Box<dyn Any + Send + 'static>) -> Cow<'static, str> {
+    if let Some(s) = panic.downcast_ref::<&str>() {
+        (*s).into()
+    } else if let Ok(s) = panic.downcast::<String>() {
+        (*s).into()
+    } else {
+        "<opaque payload>".into()
     }
 }

@@ -142,7 +142,7 @@ impl Test {
         if self.options.ignore {
             return false;
         }
-        if ignore_known_failures && self.options.known_failure {
+        if ignore_known_failures && self.options.has_known_failure() {
             return false;
         }
         self.options.required_features.can_run()

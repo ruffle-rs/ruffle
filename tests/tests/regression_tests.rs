@@ -106,7 +106,7 @@ fn trial_for_test(opts: &RuffleTestOpts, test: Test, list_only: bool) -> Trial {
     // Put extra info into the test 'kind' instead of appending it to the test name,
     // to not break `cargo test some/test -- --exact` and `cargo test -- --list`.
     let mut test_kind = String::new();
-    if test.options.known_failure {
+    if test.options.has_known_failure() {
         test_kind.push('!');
     }
     if let Some(name) = &test.options.subtest_name {

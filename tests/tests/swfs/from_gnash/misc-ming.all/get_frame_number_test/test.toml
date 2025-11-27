@@ -1,2 +1,2 @@
 num_frames = 30
-known_failure = true
+known_failure.panic = "attempt to add with overflow"

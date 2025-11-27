@@ -37,6 +37,9 @@ ignore = false
 
 # If true, this test is known to fail and the test runner will expect it to fail.
 # When the test passes in the future, it'll fail and alert that it now passes.
+# This will not catch Ruffle panics; if the test is expected to panic, use
+#   `known_failure.panic = "panic message"`
+# instead.
 known_failure = false
 
 # Path (relative to the directory containing test.toml) to the expected output
