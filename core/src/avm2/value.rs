@@ -2,7 +2,10 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{self};
-use crate::avm2::error::{make_error_1006, make_error_1034, make_error_1050, type_error};
+use crate::avm2::error::{
+    make_error_1006, make_error_1007, make_error_1034, make_error_1050, make_error_1064,
+    make_error_1115,
+};
 use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
@@ -1350,6 +1353,92 @@ impl<'gc> Value<'gc> {
         }
     }
 
+    pub fn construct_prop(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        multiname: &Multiname<'gc>,
+        arguments: FunctionArgs<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let vtable = self.vtable(activation);
+
+        match vtable.get_trait(multiname) {
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                // Only objects can have slots
+                let object = self.as_object().unwrap();
+
+                let value = object.get_slot(slot_id);
+
+                // If the value is a `Function` or `Class`, it's constructible
+                let is_constructible = value.as_object().is_some_and(|o| {
+                    o.as_class_object().is_some() || o.as_function_object().is_some()
+                });
+
+                // This check might seem redundant, as `Value::construct` will
+                // throw an error anyway if the value isn't constructible.
+                // However, in avmplus, attempting to construct a
+                // non-constructible value using `constructprop` in interpreter
+                // mode in SWFv9/v10 throws a different error, error #1115 (see
+                // below). So here, we have to manually check for
+                // `Function`/`Class` and throw error 1115 or 1007 (depending on
+                // the SWF version) if the value is neither of them.
+                if is_constructible {
+                    value.construct(activation, arguments)
+                } else {
+                    // Error 1115 is only thrown in SWFv9/v10 in interpreter-mode code
+                    if activation.context.root_swf.version() < 11 && activation.is_interpreter() {
+                        Err(make_error_1115(activation, "value"))
+                    } else {
+                        Err(make_error_1007(activation))
+                    }
+                }
+            }
+            Some(Property::Method { disp_id }) => {
+                // Attempting to `construct_prop` a method always throws error 1064
+
+                let method = vtable.get_method(disp_id).expect("Method should exist");
+                Err(make_error_1064(activation, method))
+            }
+            Some(Property::Virtual { get: Some(get), .. }) => {
+                let value = self.call_method_with_args(get, FunctionArgs::empty(), activation)?;
+
+                value.construct(activation, arguments)
+            }
+            Some(Property::Virtual { get: None, .. }) => {
+                let instance_class = self.instance_class(activation);
+
+                Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::ReadFromWriteOnly,
+                    multiname,
+                    instance_class,
+                ))
+            }
+            None => {
+                let value = if let Some(object) = self.as_object() {
+                    object.get_property_local(multiname, activation)?
+                } else {
+                    // Unlike `Value::get_property`, error messages report that
+                    // the read failed on the `Object` class, not the
+                    // `instance_class` of this `Value`.
+                    let object_class = activation.avm2().class_defs().object;
+                    let proto = self.proto(activation);
+
+                    let dynamic_lookup = crate::avm2::object::get_dynamic_property(
+                        activation,
+                        multiname,
+                        None,
+                        proto,
+                        object_class,
+                    )?;
+
+                    dynamic_lookup.unwrap_or(Value::Undefined)
+                };
+
+                value.construct(activation, arguments)
+            }
+        }
+    }
+
     /// Returns true if the value has one or more traits of a given name.
     ///
     /// This method will panic if called on null or undefined.
@@ -1424,19 +1513,7 @@ impl<'gc> Value<'gc> {
             Some(Object::FunctionObject(function_object)) => {
                 function_object.construct(activation, args).map(Into::into)
             }
-            _ => {
-                let error = if activation.context.root_swf.version() < 11 {
-                    type_error(activation, "Error #1115: value is not a constructor.", 1115)
-                } else {
-                    type_error(
-                        activation,
-                        "Error #1007: Instantiation attempted on a non-constructor.",
-                        1007,
-                    )
-                };
-
-                Err(Error::avm_error(error?))
-            }
+            _ => Err(make_error_1007(activation)),
         }
     }
 

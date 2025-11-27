@@ -1,7 +1,7 @@
 //! `Class` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::type_error;
+use crate::avm2::error::make_error_1115;
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
@@ -10,11 +10,7 @@ pub fn class_allocator<'gc>(
     _class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    Err(Error::avm_error(type_error(
-        activation,
-        "Error #1115: Class$ is not a constructor.",
-        1115,
-    )?))
+    Err(make_error_1115(activation, "Class$"))
 }
 
 pub fn get_prototype<'gc>(
