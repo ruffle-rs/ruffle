@@ -1,6 +1,7 @@
 //! Function object impl
 
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_error_1064;
 use crate::avm2::function::{BoundMethod, FunctionArgs};
 use crate::avm2::method::Method;
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
@@ -103,6 +104,13 @@ impl<'gc> FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
+        let method = self.0.exec.as_method();
+        if method.bound_class().is_some() {
+            // If the Method is class-bound, attempting to construct it throws
+            // an error
+            return Err(make_error_1064(activation, method));
+        }
+
         let object_class = activation.avm2().classes().object;
 
         let prototype = if let Some(proto) = self.prototype() {
