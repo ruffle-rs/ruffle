@@ -1678,8 +1678,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = multiname.fill_with_runtime_params(self)?;
         let source = self.pop_stack().null_check(self, Some(&multiname))?;
 
-        let ctor = source.get_property(&multiname, self)?;
-        let constructed_object = ctor.construct(self, args)?;
+        let constructed_object = source.construct_prop(self, &multiname, args)?;
 
         self.push_stack(constructed_object);
 

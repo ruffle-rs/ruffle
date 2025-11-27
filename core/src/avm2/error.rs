@@ -257,6 +257,16 @@ pub fn make_error_1006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1007<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(type_error(
+        activation,
+        "Error #1007: Instantiation attempted on a non-constructor.",
+        1007,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1010<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: Option<&Multiname<'gc>>,
@@ -571,6 +581,23 @@ pub fn make_error_1063<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1064<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    method: Method<'gc>,
+) -> Error<'gc> {
+    let mut function_name = WString::new();
+
+    display_function(&mut function_name, method);
+
+    make_error!(type_error(
+        activation,
+        &format!("Error #1064: Cannot call method {function_name} as constructor.",),
+        1064,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1065<'gc>(
     activation: &mut Activation<'_, 'gc>,
     name: &Multiname<'gc>,
@@ -699,6 +726,16 @@ pub fn make_error_1112<'gc>(activation: &mut Activation<'_, 'gc>, arg_count: usi
             arg_count
         ),
         1112,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1115<'gc>(activation: &mut Activation<'_, 'gc>, name: &str) -> Error<'gc> {
+    make_error!(type_error(
+        activation,
+        &format!("Error #1115: {name} is not a constructor."),
+        1115,
     ))
 }
 
