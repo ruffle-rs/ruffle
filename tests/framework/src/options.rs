@@ -2,12 +2,14 @@ pub mod approximations;
 pub mod expression;
 pub mod font;
 pub mod image_comparison;
+pub mod known_failure;
 pub mod player;
 
 use crate::image_trigger::ImageTrigger;
 use crate::options::approximations::Approximations;
 use crate::options::font::{DefaultFontsOptions, FontOptions, FontSortOptions};
 use crate::options::image_comparison::ImageComparison;
+use crate::options::known_failure::KnownFailure;
 use crate::options::player::PlayerOptions;
 use anyhow::{Result, bail};
 use serde::Deserialize;
@@ -68,7 +70,7 @@ pub struct TestOptions {
     pub sleep_to_meet_frame_rate: bool,
     pub image_comparisons: HashMap<String, ImageComparison>,
     pub ignore: bool,
-    pub known_failure: bool,
+    pub known_failure: KnownFailure,
     pub approximations: Option<Approximations>,
     pub player_options: PlayerOptions,
     pub log_fetch: bool,
@@ -89,7 +91,7 @@ impl Default for TestOptions {
             sleep_to_meet_frame_rate: false,
             image_comparisons: Default::default(),
             ignore: false,
-            known_failure: false,
+            known_failure: KnownFailure::None,
             approximations: None,
             player_options: PlayerOptions::default(),
             log_fetch: false,
@@ -176,6 +178,10 @@ impl TestOptions {
         }
 
         Ok(())
+    }
+
+    pub fn has_known_failure(&self) -> bool {
+        !matches!(self.known_failure, KnownFailure::None)
     }
 
     pub fn output_path(&self, test_directory: &VfsPath) -> Result<VfsPath> {
