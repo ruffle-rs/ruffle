@@ -182,6 +182,7 @@ impl TestOptions {
 
     pub fn has_known_failure(&self) -> bool {
         !matches!(self.known_failure, KnownFailure::None)
+            || self.image_comparisons.values().any(|cmp| cmp.known_failure)
     }
 
     pub fn output_path(&self, test_directory: &VfsPath) -> Result<VfsPath> {

@@ -14,49 +14,56 @@ pub fn capture_and_compare_image(
     player: &Arc<Mutex<Player>>,
     name: &String,
     image_comparison: ImageComparison,
-    known_failure: bool,
     render_interface: Option<&dyn RenderInterface>,
 ) -> anyhow::Result<()> {
     use anyhow::Context;
 
-    if let Some(render_interface) = render_interface {
+    let Some(render_interface) = render_interface else {
+        return Ok(());
+    };
+
+    let actual_image = {
         let mut player_lock = player.lock().unwrap();
         player_lock.render();
+        render_interface.capture(player_lock.renderer_mut())
+    };
 
-        let actual_image = render_interface.capture(player_lock.renderer_mut());
-
-        let expected_image_path = base_path.join(format!("{name}.expected.png"))?;
-        if expected_image_path.is_file()? {
-            let expected_image = image::load_from_memory(&read_bytes(&expected_image_path)?)
+    let expected_image = {
+        let path = base_path.join(format!("{name}.expected.png"))?;
+        if path.is_file()? {
+            image::load_from_memory(&read_bytes(&path)?)
                 .context("Failed to open expected image")?
-                .into_rgba8();
-
-            test(
-                &image_comparison,
-                name,
-                actual_image,
-                expected_image,
-                base_path,
-                render_interface.name(),
-                known_failure,
-            )?;
-        } else if known_failure {
-            return Err(anyhow!(
-                "No image to compare to, pretending this failed since we don't know if it worked."
-            ));
-        } else {
+                .into_rgba8()
+        } else if image_comparison.known_failure {
             // If we're expecting this to be wrong, don't save a likely wrong image
-            write_image(&expected_image_path, &actual_image, ImageFormat::Png)?;
+            return Err(anyhow!("Image '{name}': No image to compare to!"));
+        } else {
+            write_image(&path, &actual_image, ImageFormat::Png)?;
+            return Err(anyhow!(
+                "Image '{name}': No image to compare to! Saved actual image as expected."
+            ));
         }
-    } else if known_failure {
-        // It's possible that the trace output matched but the image might not.
-        // If we aren't checking the image, pretend the match failed (which makes it actually pass, since it's expecting failure).
-        return Err(anyhow!(
-            "Not checking images, pretending this failed since we don't know if it worked."
-        ));
-    }
+    };
 
-    Ok(())
+    let result = test(
+        &image_comparison,
+        name,
+        actual_image,
+        expected_image,
+        base_path,
+        render_interface.name(),
+        // If we're expecting failure, spamming files isn't productive.
+        !image_comparison.known_failure,
+    );
+
+    match (result, image_comparison.known_failure) {
+        (result, false) => result,
+        (Ok(()), true) => Err(anyhow!(
+            "Image '{name}': Check was known to be failing, but now passes successfully. \
+            Please update the test and remove `known_failure = true`!",
+        )),
+        (Err(_), true) => Ok(()),
+    }
 }
 
 pub fn test(
@@ -66,13 +73,12 @@ pub fn test(
     expected_image: image::RgbaImage,
     test_path: &VfsPath,
     environment_name: String,
-    known_failure: bool,
+    save_failures: bool,
 ) -> anyhow::Result<()> {
     use anyhow::Context;
 
     let save_actual_image = || {
-        if !known_failure {
-            // If we're expecting failure, spamming files isn't productive.
+        if save_failures {
             write_image(
                 &test_path.join(format!("{name}.actual-{environment_name}.png"))?,
                 &actual_image,
@@ -141,8 +147,7 @@ pub fn test(
             difference_color.extend_from_slice(&p[..3]);
         }
 
-        if !known_failure {
-            // If we're expecting failure, spamming files isn't productive.
+        if save_failures {
             let difference_image = image::RgbImage::from_raw(
                 actual_image.width(),
                 actual_image.height(),
@@ -163,8 +168,7 @@ pub fn test(
                 difference_alpha.push(p[3])
             }
 
-            if !known_failure {
-                // If we're expecting failure, spamming files isn't productive.
+            if save_failures {
                 let difference_image = image::GrayImage::from_raw(
                     actual_image.width(),
                     actual_image.height(),
