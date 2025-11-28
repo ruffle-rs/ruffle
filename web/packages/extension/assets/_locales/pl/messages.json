@@ -44,6 +44,9 @@
     "settings_preferred_renderer_auto": {
         "message": "Automatyczny"
     },
+    "settings_device_font_renderer": {
+        "message": "Renderer czcionek urządzenia"
+    },
     "settings_advanced_options": {
         "message": "Opcje zaawansowane"
     },
