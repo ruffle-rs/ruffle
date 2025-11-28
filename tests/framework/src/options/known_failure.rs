@@ -9,7 +9,7 @@ use serde::{
 pub enum KnownFailure {
     #[default]
     None,
-    AnyCheck,
+    TraceOutput,
     Panic {
         message: String,
     },
@@ -32,7 +32,7 @@ impl<'de> de::Visitor<'de> for KnownFailureVisitor {
 
     fn visit_bool<E: de::Error>(self, v: bool) -> Result<Self::Value, E> {
         if v {
-            Ok(KnownFailure::AnyCheck)
+            Ok(KnownFailure::TraceOutput)
         } else {
             Ok(KnownFailure::None)
         }

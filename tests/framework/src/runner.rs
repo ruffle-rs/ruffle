@@ -183,23 +183,10 @@ impl TestRunner {
             (Err(panic), _) => resume_unwind(panic),
         }
 
-        match (self.test(), &self.options.known_failure) {
-            (Ok(()), _) => (),
-            (Err(_), KnownFailure::AnyCheck) => return Ok(TestStatus::Finished),
-            (Err(err), _) => return Err(err),
-        }
+        self.test()?;
 
-        match (self.remaining_iterations, &self.options.known_failure) {
-            (0, KnownFailure::None) => self.last_test().map(|_| TestStatus::Finished),
-            (0, KnownFailure::Panic { .. }) => Err(anyhow!(
-                "Test was known to be panicking, but now finishes successfully. Please update it and remove `known_failure.panic = '...'`!",
-            )),
-            (0, KnownFailure::AnyCheck) => match self.last_test() {
-                Ok(()) => Err(anyhow!(
-                    "Test was known to be failing, but now passes successfully. Please update it and remove `known_failure = true`!",
-                )),
-                Err(_) => Ok(TestStatus::Finished),
-            },
+        match self.remaining_iterations {
+            0 => self.last_test().map(|_| TestStatus::Finished),
             _ if self.options.sleep_to_meet_frame_rate => {
                 // If requested, ensure that the 'expected' amount of
                 // time actually elapses between frames. This is useful for
@@ -267,7 +254,6 @@ impl TestRunner {
                             &self.player,
                             &name,
                             image_comparison,
-                            matches!(self.options.known_failure, KnownFailure::AnyCheck),
                             self.render_interface.as_deref(),
                         )?;
                     } else {
@@ -293,7 +279,6 @@ impl TestRunner {
                 &self.player,
                 &name,
                 comp,
-                matches!(self.options.known_failure, KnownFailure::AnyCheck),
                 self.render_interface.as_deref(),
             )?;
         }
@@ -303,6 +288,12 @@ impl TestRunner {
 
     fn last_test(&mut self) -> Result<()> {
         // Last iteration, let's check everything went well
+        if let KnownFailure::Panic { .. } = &self.options.known_failure {
+            return Err(anyhow!(
+                "Test was known to be panicking, but now finishes successfully. \
+                Please update it and remove `known_failure.panic = '...'`!",
+            ));
+        }
 
         let trigger = ImageTrigger::LastFrame;
         if let Some((name, comp)) = self.take_image_comparison_by_trigger(trigger) {
@@ -311,7 +302,6 @@ impl TestRunner {
                 &self.player,
                 &name,
                 comp,
-                matches!(self.options.known_failure, KnownFailure::AnyCheck),
                 self.render_interface.as_deref(),
             )?;
         }
@@ -325,13 +315,12 @@ impl TestRunner {
 
         self.executor.run();
 
-        let trace = self.log.trace_output();
-        // Null bytes are invisible, and interfere with constructing
-        // the expected output.txt file. Any tests dealing with null
-        // bytes should explicitly test for them in ActionScript.
-        let normalized_trace = trace.replace('\0', "");
-        compare_trace_output(&self.output_path, &self.options, &normalized_trace)?;
-        Ok(())
+        compare_trace_output(
+            &self.log,
+            &self.output_path,
+            self.options.approximations.as_ref(),
+            matches!(self.options.known_failure, KnownFailure::TraceOutput),
+        )
     }
 
     fn take_image_comparison_by_trigger(

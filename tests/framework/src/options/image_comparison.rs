@@ -11,6 +11,7 @@ pub struct ImageComparison {
     max_outliers: Option<usize>,
     checks: Vec<ImageComparisonCheck>,
     pub trigger: ImageTrigger,
+    pub known_failure: bool,
 }
 
 impl ImageComparison {
