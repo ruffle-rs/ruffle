@@ -141,11 +141,10 @@ pub fn capture_image<R, F: FnOnce(&[u8], u32) -> R>(
         sender.send(result).unwrap();
     });
     device
-        .poll(
-            index
-                .map(wgpu::PollType::WaitForSubmissionIndex)
-                .unwrap_or(wgpu::PollType::Wait),
-        )
+        .poll(wgpu::PollType::Wait {
+            submission_index: index,
+            timeout: None,
+        })
         .expect("Device must not fail to poll");
     let _ = receiver.recv().expect("MPSC channel must not fail");
     let map = buffer_slice.get_mapped_range();
