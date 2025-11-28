@@ -2,6 +2,7 @@
 
 num_frames = 1
 
+[image_comparisons.output]
 # FIXME Even on low quality, Flash uses antialiasing here
 known_failure = true
 
