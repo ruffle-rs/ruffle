@@ -143,7 +143,7 @@ impl Iterator for DecodeAvmUtf8<'_> {
         }
 
         let mb_count = core::cmp::min(ones - 1, 3);
-        let bm = u8::MAX >> ones;
+        let bm = u8::MAX.checked_shr(ones).unwrap_or(0);
         let mut ch = (bm & first) as u32;
         match self
             .src
