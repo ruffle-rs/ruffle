@@ -32,6 +32,9 @@
     "settings_player_version": {
         "message": "Emuloitava Flash-soittimen versio (välillä 1-32)"
     },
+    "settings_preferred_renderer": {
+        "message": "Ensisijainen renderöijä"
+    },
     "settings_preferred_renderer_auto": {
         "message": "Automaattinen"
     },
