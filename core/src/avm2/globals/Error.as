@@ -11,6 +11,8 @@ package {
             };
         }
 
+        public static native function getErrorMessage(id:int):String;
+
         [Ruffle(NativeAccessible)]
         public var name:String = "Error";
 
