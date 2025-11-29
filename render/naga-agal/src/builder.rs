@@ -844,12 +844,19 @@ impl<'a> NagaBuilder<'a> {
                     RegisterType::Constant => {
                         // Load the index register (e.g. 'va0') as normal, and access the component
                         // given by 'index_select' (e.g. 'x'). This is 'va0.x' in the above example.
-                        let (base_index, _format) =
+                        let (base_index, format) =
                             load_register(&source.index_type, source.reg_num as usize)?;
-                        let index_expr = self.evaluate_expr(Expression::AccessIndex {
-                            base: base_index,
-                            index: source.index_select as u32,
-                        });
+
+                        // If the index register is a scalar (Float1), use it directly.
+                        // Otherwise, extract the component given by 'index_select'.
+                        let index_expr = if format == VertexAttributeFormat::Float1 {
+                            base_index
+                        } else {
+                            self.evaluate_expr(Expression::AccessIndex {
+                                base: base_index,
+                                index: source.index_select as u32,
+                            })
+                        };
 
                         // Convert to an integer, since we're going to be indexing an array
                         let index_integer = self.evaluate_expr(Expression::As {
