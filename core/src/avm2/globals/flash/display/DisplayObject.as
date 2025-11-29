@@ -16,8 +16,6 @@ package flash.display {
     public class DisplayObject extends EventDispatcher implements IBitmapDrawable {
         private var _accessibilityProperties:AccessibilityProperties;
 
-        public native function DisplayObject();
-
         public function get accessibilityProperties():AccessibilityProperties {
             return this._accessibilityProperties;
         }
