@@ -44,6 +44,12 @@
     "settings_preferred_renderer_auto": {
         "message": "자동"
     },
+    "settings_device_font_renderer": {
+        "message": "장치 글꼴 렌더러"
+    },
+    "device_font_renderer_embedded": {
+        "message": "임베디드"
+    },
     "settings_advanced_options": {
         "message": "고급 설정"
     },
