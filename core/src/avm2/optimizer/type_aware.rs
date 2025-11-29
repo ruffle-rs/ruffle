@@ -1744,17 +1744,17 @@ fn abstract_interpret_ops<'gc>(
                         match vtable.get_trait(&multiname) {
                             Some(Property::Slot { slot_id })
                             | Some(Property::ConstSlot { slot_id }) => {
-                                optimize_op_to!(Op::ConstructSlot {
-                                    index: slot_id,
-                                    num_args
-                                });
-
                                 let mut value_class =
                                     vtable.slot_class(slot_id).expect("Slot should exist");
                                 let resolved_value_class = value_class.get_class(activation)?;
 
                                 if let Some(slot_class) = resolved_value_class {
                                     if let Some(instance_class) = slot_class.i_class() {
+                                        optimize_op_to!(Op::ConstructSlot {
+                                            index: slot_id,
+                                            num_args
+                                        });
+
                                         // ConstructProp on a c_class will construct its i_class
                                         stack_push_done = true;
                                         stack.push_class_not_null(activation, instance_class)?;
