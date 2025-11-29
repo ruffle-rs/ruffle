@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::environment::Environment;
 use crate::options::TestOptions;
+use crate::options::known_failure::KnownFailure;
 use crate::runner::TestRunner;
 use crate::util::read_bytes;
 use anyhow::{Result, anyhow};
@@ -145,6 +146,15 @@ impl Test {
         if ignore_known_failures && self.options.has_known_failure() {
             return false;
         }
+
+        // Panicky tests may expect to hit a debug assertion, so don't run them
+        // if assertions are disabled.
+        if !cfg!(debug_assertions)
+            && matches!(self.options.known_failure, KnownFailure::Panic { .. })
+        {
+            return false;
+        }
+
         self.options.required_features.can_run()
             && self
                 .options
