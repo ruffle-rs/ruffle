@@ -30,15 +30,14 @@ pub fn external_interface_avm1(
     let mut first = true;
 
     loop {
-        runner.tick();
-        if !runner.is_preloaded() {
-            continue;
-        }
-
-        match runner.test()? {
+        match runner.tick()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
             TestStatus::Finished => break,
+        }
+
+        if !runner.is_preloaded() {
+            continue;
         }
 
         if first {
@@ -102,15 +101,14 @@ pub fn external_interface_avm2(
     let mut first = true;
 
     loop {
-        runner.tick();
-        if !runner.is_preloaded() {
-            continue;
-        }
-
-        match runner.test()? {
+        match runner.tick()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
             TestStatus::Finished => break,
+        }
+
+        if !runner.is_preloaded() {
+            continue;
         }
 
         if first {
