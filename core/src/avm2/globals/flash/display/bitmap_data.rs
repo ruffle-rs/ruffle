@@ -23,6 +23,10 @@ use crate::bitmap::{is_size_valid, operations};
 use crate::character::{Character, CompressedBitmap};
 use crate::ecma_conversions::round_to_even;
 use crate::swf::BlendMode;
+use image::ImageEncoder;
+use ruffle_macros::istr;
+use ruffle_render::backend::RenderBackend;
+use ruffle_render::bitmap::PixelRegion;
 use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
@@ -1622,4 +1626,157 @@ pub fn merge<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.encode`
+pub fn encode<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(bitmap_data) = this.as_bitmap_data() {
+        bitmap_data.check_valid(activation)?;
+
+        let rectangle = args.get_object(activation, 0, "rect")?;
+        let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
+
+        let compressor = args.get_object(activation, 1, "compressor")?;
+
+        // Get or create the output ByteArray
+        let output_bytearray = if let Some(ba) = args.try_get_object(2) {
+            ba.as_bytearray_object().unwrap()
+        } else {
+            let storage = ByteArrayStorage::new(activation.context);
+            ByteArrayObject::from_storage(activation.context, storage)
+        };
+
+        let jpeg_encoder_class = activation.avm2().classes().jpegencoder_options;
+        let png_encoder_class = activation.avm2().classes().pngencoder_options;
+
+        let options = if compressor.is_of_type(jpeg_encoder_class.inner_class_definition()) {
+            let quality = Value::from(compressor)
+                .get_public_property(istr!("quality"), activation)?
+                .coerce_to_u32(activation)?
+                .clamp(1, 100) as u8;
+
+            EncodeOptions::Jpeg { quality }
+        } else if compressor.is_of_type(png_encoder_class.inner_class_definition()) {
+            let fast_compression = Value::from(compressor)
+                .get_public_property(istr!("fastCompression"), activation)?
+                .coerce_to_boolean();
+
+            EncodeOptions::Png { fast_compression }
+        } else {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "encode",
+                "with JPEGXREncoderOptions"
+            );
+            return Ok(Value::Null);
+        };
+
+        encode_internal(
+            bitmap_data,
+            activation.context.renderer,
+            x,
+            y,
+            width,
+            height,
+            options,
+            &mut output_bytearray.storage_mut(),
+        )
+        .unwrap();
+
+        return Ok(output_bytearray.into());
+    }
+
+    Ok(Value::Null)
+}
+
+enum EncodeOptions {
+    Jpeg { quality: u8 },
+    Png { fast_compression: bool },
+}
+
+#[expect(clippy::too_many_arguments)]
+fn encode_internal(
+    bitmap: BitmapData,
+    renderer: &mut dyn RenderBackend,
+    x: i32,
+    y: i32,
+    width: i32,
+    height: i32,
+    options: EncodeOptions,
+    bytearray: &mut ByteArrayStorage,
+) -> Result<(), image::ImageError> {
+    let mut region = PixelRegion::for_region_i32(x, y, width, height);
+
+    region.clamp(bitmap.width(), bitmap.height());
+
+    if region.width() == 0 || region.height() == 0 {
+        return Ok(());
+    }
+
+    let read = bitmap.read_area(region, renderer);
+
+    match options {
+        EncodeOptions::Jpeg { quality } => {
+            let mut rgb_data = Vec::with_capacity((region.width() * region.height() * 3) as usize);
+
+            for y in region.y_min..region.y_max {
+                for x in region.x_min..region.x_max {
+                    let color = read.get_pixel32_raw(x, y).to_un_multiplied_alpha();
+                    rgb_data.push(color.red());
+                    rgb_data.push(color.green());
+                    rgb_data.push(color.blue());
+                }
+            }
+
+            let encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(bytearray, quality);
+
+            encoder.write_image(
+                &rgb_data,
+                region.width(),
+                region.height(),
+                image::ExtendedColorType::Rgb8,
+            )?;
+        }
+        EncodeOptions::Png { fast_compression } => {
+            let mut rgba_data = Vec::with_capacity((region.width() * region.height() * 4) as usize);
+
+            for y in region.y_min..region.y_max {
+                for x in region.x_min..region.x_max {
+                    let color = read.get_pixel32_raw(x, y).to_un_multiplied_alpha();
+                    rgba_data.push(color.red());
+                    rgba_data.push(color.green());
+                    rgba_data.push(color.blue());
+                    rgba_data.push(color.alpha());
+                }
+            }
+
+            let compression = if fast_compression {
+                image::codecs::png::CompressionType::Fast
+            } else {
+                image::codecs::png::CompressionType::Default
+            };
+
+            let encoder = image::codecs::png::PngEncoder::new_with_quality(
+                bytearray,
+                compression,
+                image::codecs::png::FilterType::Adaptive,
+            );
+
+            encoder.write_image(
+                &rgba_data,
+                region.width(),
+                region.height(),
+                image::ExtendedColorType::Rgba8,
+            )?;
+        }
+    };
+
+    Ok(())
 }

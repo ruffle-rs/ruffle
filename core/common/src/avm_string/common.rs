@@ -115,6 +115,7 @@ define_common_strings! {
     str_error: b"error",
     str_extension: b"extension",
     str_false: b"false",
+    str_fastCompression: b"fastCompression",
     str_flushed: b"flushed",
     str_focusEnabled: b"focusEnabled",
     str_fontStyle: b"fontStyle",
