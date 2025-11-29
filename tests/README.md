@@ -40,7 +40,8 @@ ignore = false
 # When the test passes in the future, it'll fail and alert that it now passes.
 # This will not catch Ruffle panics; if the test is expected to panic, use
 #   `known_failure.panic = "panic message"`
-# instead.
+# instead (note that 'panicky' tests will be skipped if the test harness is run
+# with debug assertions disabled, e.g. with `--release`).
 known_failure = false
 
 # Path (relative to the directory containing test.toml) to the expected output
