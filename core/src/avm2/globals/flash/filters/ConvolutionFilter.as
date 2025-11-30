@@ -1,5 +1,5 @@
 package flash.filters {
-    public final class ConvolutionFilter extends BitmapFilter {
+    public class ConvolutionFilter extends BitmapFilter {
         [Ruffle(NativeAccessible)]
         public var alpha:Number;
 
