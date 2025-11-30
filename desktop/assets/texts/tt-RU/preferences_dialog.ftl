@@ -8,6 +8,7 @@ log-filename-pattern = Лог файлы исеме
 storage-backend-disk = Диск
 storage-backend-memory = Хәтер
 recent-clear = Чистарту
+theme = Гомуми күренеш
 theme-system = Система килешү
 theme-light = Якты
 theme-dark = Караңгы
