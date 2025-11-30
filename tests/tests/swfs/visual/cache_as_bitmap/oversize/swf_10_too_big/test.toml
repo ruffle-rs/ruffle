@@ -2,7 +2,7 @@ num_frames = 1
 
 [image_comparisons.output]
 known_failure = true
-tolerance = 0
+tolerance = 1 # Should be set to 0 when removing known_failure
 
 [player_options]
 with_renderer = { optional = false, sample_count = 4 }
