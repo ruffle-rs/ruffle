@@ -1,0 +1,24 @@
+PASSED: typeof(_root.dup1) == movieclip  [opcode_guard_test2.sc:61]
+PASSED: typeof(_root.dup2) == movieclip  [opcode_guard_test2.sc:62]
+PASSED: typeof(_root.dup1) == undefined  [opcode_guard_test2.sc:69]
+PASSED: testVar ==   [opcode_guard_test2.sc:70]
+PASSED: typeof(_root.dup2) == undefined  [opcode_guard_test2.sc:77]
+PASSED: testVar ==   [opcode_guard_test2.sc:78]
+PASSED: typeof(_root.dup3) == movieclip  [opcode_guard_test2.sc:85]
+PASSED: testVar == dup3_var  [opcode_guard_test2.sc:86]
+PASSED: testvar == true  [opcode_guard_test2.sc:132]
+PASSED: mc100Ref.testvar == 100  [opcode_guard_test2.sc:144]
+PASSED: mc101Ref.testvar == 101  [opcode_guard_test2.sc:145]
+PASSED: testvar == 100  [opcode_guard_test2.sc:148]
+FAILED: testvar: expected: "100" , obtained: "101"  [opcode_guard_test2.sc:153]
+FAILED: testvar: expected: "100" , obtained: "101"  [opcode_guard_test2.sc:158]
+PASSED: mc99Ref.testvar == 99  [opcode_guard_test2.sc:161]
+PASSED: ref200.getDepth() == -32969  [opcode_guard_test2.sc:170]
+PASSED: ref201.getDepth() == 201  [opcode_guard_test2.sc:171]
+PASSED: testvar == 200  [opcode_guard_test2.sc:173]
+FAILED: testvar: expected: "200" , obtained: "201"  [opcode_guard_test2.sc:177]
+PASSED: _target == /  [opcode_guard_test2.sc:189]
+Total tests run: 20 typeof expected: number
+#passed: 17
+#failed: 3
+__END_OF_TEST__

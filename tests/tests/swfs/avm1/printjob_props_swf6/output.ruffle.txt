@@ -1,0 +1,45 @@
+[type Function]
+function
+[object Object]
+object
+[object Object]
+object
+Enumerated
+orientation
+pageWidth
+pageHeight
+paperWidth
+paperHeight
+Enumerated prototype
+orientation
+pageWidth
+pageHeight
+paperWidth
+paperHeight
+Props
+undefined
+undefined
+undefined
+0
+0
+0
+0
+0
+After set
+test
+test
+test
+0
+0
+0
+0
+0
+After delete
+undefined
+undefined
+undefined
+0
+0
+0
+0
+0

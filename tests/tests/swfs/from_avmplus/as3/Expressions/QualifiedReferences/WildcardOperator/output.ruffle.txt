@@ -1,0 +1,3 @@
+Use wildcard operator on an array FAILED! expected: ReferenceError: Error #1081 got: ReferenceError: Error #1069
+Use wildcard operator on an object FAILED! expected: ReferenceError: Error #1081 got: ReferenceError: Error #1069
+Use wildcard operator on a string PASSED!

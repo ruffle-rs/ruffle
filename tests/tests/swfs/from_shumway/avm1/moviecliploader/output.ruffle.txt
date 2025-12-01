@@ -1,0 +1,7 @@
+loading started
+onLoadStart _level0.content
+onLoadComplete _level0.content
+loadee frame 1
+loader frame 2
+onLoadInit _level0.content
+loadee frame 2

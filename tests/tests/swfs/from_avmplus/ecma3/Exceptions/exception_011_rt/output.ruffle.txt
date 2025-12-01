@@ -1,0 +1,1 @@
+Thrown undefined should be uncaught. PASSED!

@@ -1,0 +1,10 @@
+PASSED: _root._currentframe == 1  [action_execution_order_test10.sc:63]
+FAILED: _root.as_order1: expected: "0+1+2+3+4+5+6+7+8+9+10+" , obtained: "0+1+YY+2+3+YY+4+5+6+7+8+9+10+"  [action_execution_order_test10.sc:166]
+PASSED: _root.as_order2 == 0+1+2+3+  [action_execution_order_test10.sc:167]
+FAILED: mc4_onConstruct_executed: expected: "true" , obtained: "false"  [action_execution_order_test10.sc:231]
+FAILED: mc5_onConstruct_executed: expected: "true" , obtained: "false"  [action_execution_order_test10.sc:232]
+Total tests run: 5 typeof expected: number
+FAILED: TOTAL tests run: 5, expected: 9 [ [action_execution_order_test10.sc:237]]
+#passed: 2
+#failed: 4
+__END_OF_TEST__

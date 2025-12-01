@@ -1,0 +1,8 @@
+FAIL: flash.text::TextField/getTextLineMetrics().height. expected: "18", actual: "4"
+FAIL: flash.text::TextField/getTextLineMetrics().ascent. expected: "13", actual: "0"
+FAIL: flash.text::TextField/getTextLineMetrics().descent. expected: "3", actual: "0"
+FAIL: flash.text::TextField/getTextLineMetrics().leading. expected: "2", actual: "4"
+FAIL: flash.text::TextField/get maxScrollV(). expected: "2", actual: "1"
+FAIL: flash.text::TextField/get bottomScrollV(). expected: "1", actual: "2"
+FAIL: flash.text::TextField/get scrollV(). expected: "2", actual: "1"
+FAIL: flash.text::TextField/get maxScrollV(). expected: "2", actual: "1"

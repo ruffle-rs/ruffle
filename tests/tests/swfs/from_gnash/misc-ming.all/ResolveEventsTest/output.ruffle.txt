@@ -1,0 +1,15 @@
+Do not touch anything!
+PASSED: events.toString()  ==  'func,onEnterFrame,onRollOver' [ResolveEventsTest.c:139]
+PASSED: resolveevents.toString()  ==  'func,onEnterFrame,onRollOver' [ResolveEventsTest.c:141]
+PASSED: events.toString()  ==  'func,onEnterFrame,onRollOver,onEnterFrame' [ResolveEventsTest.c:146]
+FAILED: expected: 'func,onEnterFrame,onRollOver' obtained: func,onEnterFrame,onRollOver,onLoad,onEnterFrame [ResolveEventsTest.c:148] 
+Move over square, click and release!
+PASSED: events.toString()  ==  'func,onEnterFrame,onRollOver,onEnterFrame,onRollOver,onMouseDown,onPress,onMouseUp,onRelease' [ResolveEventsTest.c:161]
+FAILED: expected: 'func,onEnterFrame,onRollOver' obtained: func,onEnterFrame,onRollOver,onLoad,onEnterFrame,onEnterFrame,onEnterFrame,onEnterFrame,onEnterFrame,onEnterFrame,onEnterFrame,onEnterFrame,onEnterFrame,onMouseMove,onEnterFrame,onMouseDown,onEnterFrame,onMouseUp,onEnterFrame [ResolveEventsTest.c:163] 
+Move out of square, click and release!
+PASSED: events.toString()  ==  'func,onEnterFrame,onRollOver,onEnterFrame,onRollOver,onMouseDown,onPress,onMouseUp,onRelease,onRollOut,onMouseDown,onMouseUp' [ResolveEventsTest.c:172]
+FAILED: expected: 'func,onEnterFrame,onRollOver' obtained: func,onEnterFrame,onRollOver,onLoad,onEnterFrame,onEnterFrame,onEnterFrame,onEnterFrame,onEnterFrame,onEnterFrame,onEnterFrame,onEnterFrame,onEnterFrame,onMouseMove,onEnterFrame,onMouseDown,onEnterFrame,onMouseUp,onEnterFrame,onMouseMove,onEnterFrame,onMouseDown,onEnterFrame,onMouseUp,onEnterFrame [ResolveEventsTest.c:174] 
+Move the mouse about, then click
+PASSED: mevents[0]  ==  'onMouseMove' [ResolveEventsTest.c:187]
+FAILED: expected: ressiz obtained: 31 [ResolveEventsTest.c:188] 
+End of test!

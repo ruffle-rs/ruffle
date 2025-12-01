@@ -1,0 +1,16 @@
+typeof (now.toTimeString()) PASSED!
+Date.prototype.toTimeString.length PASSED!
+(Thu Jan 1 05:45:00 GMT+0545 1970).toTimeString() PASSED!
+(Thu Jan 1 11:30:00 GMT+0545 1970).toTimeString() PASSED!
+(Mon Jan 1 05:45:00 GMT+0545 1900).toTimeString() PASSED!
+(Mon Jan 1 00:00:00 GMT+0545 1900).toTimeString() PASSED!
+(Sat Jan 1 05:45:00 GMT+0545 2000).toTimeString() PASSED!
+(Sat Jan 1 00:00:00 GMT+0545 2000).toTimeString() PASSED!
+(Tue Feb 29 05:45:00 GMT+0545 2000).toTimeString() PASSED!
+(Tue Feb 29 05:44:59 GMT+0545 2000).toTimeString() PASSED!
+(Tue Feb 29 00:00:00 GMT+0545 2000).toTimeString() PASSED!
+(Sat Feb 3 04:05:06 GMT+0545 2001).toTimeString() PASSED!
+(Fri Feb 2 22:20:06 GMT+0545 2001).toTimeString() PASSED!
+(Sat Jan 1 05:45:00 GMT+0545 2005).toTimeString() PASSED!
+(Sat Jan 1 05:44:59 GMT+0545 2005).toTimeString() PASSED!
+(Sat Jan 1 00:00:00 GMT+0545 2005).toTimeString() PASSED!

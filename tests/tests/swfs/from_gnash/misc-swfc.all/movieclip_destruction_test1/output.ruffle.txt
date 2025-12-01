@@ -1,0 +1,36 @@
+undefined
+undefined
+mc1.frame1 [movieclip_destruction_test1.sc:71]
+root.frame2 (after put mc1) [movieclip_destruction_test1.sc:89]
+PASSED: typeof(mc1) == movieclip  [movieclip_destruction_test1.sc:90]
+PASSED: mc1.getDepth() == -16383  [movieclip_destruction_test1.sc:91]
+mc1.frame2 [movieclip_destruction_test1.sc:75]
+PASSED: _root.mc1.getDepth() == -16383  [movieclip_destruction_test1.sc:76]
+root.frame3 (before definesprite) [movieclip_destruction_test1.sc:96]
+root.frame3 (after initaction) [movieclip_destruction_test1.sc:113]
+PASSED: _root.x == 0  [movieclip_destruction_test1.sc:150]
+PASSED: typeof(_root.mc4) == movieclip  [movieclip_destruction_test1.sc:162]
+PASSED: this.valueOf() == _level0.mc4  [movieclip_destruction_test1.sc:166]
+PASSED: typeof(_root.mc4) == undefined  [movieclip_destruction_test1.sc:172]
+PASSED: typeof(this) == movieclip  [movieclip_destruction_test1.sc:173]
+PASSED: this.valueOf() == null  [movieclip_destruction_test1.sc:174]
+PASSED: _root.testvar1 == 100  [movieclip_destruction_test1.sc:180]
+PASSED: _root.testvar2 == 200  [movieclip_destruction_test1.sc:181]
+PASSED: typeof(_root.mc4Ref) == movieclip  [movieclip_destruction_test1.sc:182]
+PASSED: _root.mc4Ref.valueOf() == undefined  [movieclip_destruction_test1.sc:183]
+PASSED: typeof(_root.mc5) == movieclip  [movieclip_destruction_test1.sc:192]
+PASSED: this.valueOf() == _level0.mc5  [movieclip_destruction_test1.sc:198]
+PASSED: typeof(_root.mc5) == movieclip  [movieclip_destruction_test1.sc:201]
+PASSED: typeof(this) == movieclip  [movieclip_destruction_test1.sc:202]
+PASSED: this == _level0.mc5  [movieclip_destruction_test1.sc:203]
+PASSED: _root.testvar1 == 300  [movieclip_destruction_test1.sc:209]
+PASSED: _root.testvar2 == 400  [movieclip_destruction_test1.sc:210]
+PASSED: typeof(_root.mc5) == movieclip  [movieclip_destruction_test1.sc:211]
+PASSED: mc5.getDepth() == -32969  [movieclip_destruction_test1.sc:212]
+PASSED: this.__proto__ == [object Object]  [movieclip_destruction_test1.sc:256]
+FAILED: initActionExecuted: expected: "mc2, mc3, mc61, mc6, mc8" , obtained: "mc2, mc3, mc61, mc6, mc6, mc8"  [movieclip_destruction_test1.sc:294]
+Total tests run: 24 typeof expected: number
+FAILED: TOTAL tests run: 24, expected: 39 [ [movieclip_destruction_test1.sc:296]]
+#passed: 23
+#failed: 2
+__END_OF_TEST__

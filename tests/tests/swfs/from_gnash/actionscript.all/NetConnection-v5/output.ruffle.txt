@@ -1,0 +1,7 @@
+SWF5
+
+[NetConnection.as debug-22403-05c7ba106]
+FAILED: expected: undefined obtained: [type Function] [./NetConnection.as:30]
+#passed: 0
+#failed: 1
+#total tests run: 1

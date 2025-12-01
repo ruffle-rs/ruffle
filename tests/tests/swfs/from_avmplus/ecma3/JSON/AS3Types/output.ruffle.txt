@@ -1,0 +1,18 @@
+Vectors are stringified to JSON Array syntax FAILED! expected: [1,"2",true,4,"a"] got: {"fixed":false,"length":5,"0":1,"1":"2","2":true,"3":4,"4":"a"}
+Vectors of int are stringified to JSON Array syntax FAILED! expected: [1,-2,3,-4] got: {"fixed":false,"length":4,"0":1,"1":-2,"2":3,"3":-4}
+Vectors of uint are stringified to JSON Array syntax FAILED! expected: [1,2,3,4] got: {"fixed":false,"length":4,"0":1,"1":2,"2":3,"3":4}
+Vectors of Number are stringified to JSON Array syntax FAILED! expected: [1,2.2,3.33,4.444] got: {"fixed":false,"length":4,"0":1,"1":2.2,"2":3.33,"3":4.444}
+Vectors of Boolean are stringified to JSON Array syntax FAILED! expected: [true,false,true,false] got: {"fixed":false,"length":4,"0":true,"1":false,"2":true,"3":false}
+uninitialized Vector is stringified to [] FAILED! expected: [] got: {"fixed":false,"length":0}
+Vector of edge case values FAILED! expected: [null,null,null,null,""] got: {"fixed":false,"length":5,"0":null,"1":null,"2":null,"3":null,"4":""}
+Arrays are parsed correctly, empty [] PASSED!
+Arrays are parsed correctly, [1] PASSED!
+Arrays are parsed correctly, [1,2,3] PASSED!
+Arrays errors are detected, [ PASSED!
+Arrays errors are detected, [1,2,3,fals] PASSED!
+Arrays errors are detected, [1,2,] PASSED!
+Arrays errors are detected, [1,2,3 PASSED!
+Type * is like an untyped variable PASSED!
+stringify a Dictionary object FAILED! expected: "Dictionary" got: {"o":"value"}
+stringify a 1-elem Dictionary with customized toJSON FAILED! expected: {"o_3":"value"} got: {"toJSON":{"length":0,"prototype":{}},"o_3":"value"}
+stringify a 3-elem Dictionary with customized toJSON FAILED! expected: {"o_1":"o1-value","o_3":"o3-value","p_2":"p2-value"} got: {"o_1":"o1-value","o_3":"o3-value","p_2":"p2-value","toJSON":[object Object]}
