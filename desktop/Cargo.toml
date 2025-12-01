@@ -27,7 +27,7 @@ ruffle_video_external = { path = "../video/external", features = ["openh264"], o
 ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal", "fs", "navigator"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-tracing-appender = "0.2.3"
+tracing-appender = "0.2.4"
 winit = "0.30.12"
 webbrowser = "1.0.6"
 url = { workspace = true }
