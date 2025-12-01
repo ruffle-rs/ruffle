@@ -1,2 +1,4 @@
 num_ticks = 1
-known_failure = true
+# Ruffle's JPEG decoder produces slightly different results depending on the platform,
+# and `[approximations]` can't be used for hexadecimal pixel values.
+known_failure.ruffle_check = false

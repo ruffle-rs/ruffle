@@ -319,7 +319,7 @@ impl TestRunner {
             &self.log,
             &self.output_path,
             self.options.approximations.as_ref(),
-            matches!(self.options.known_failure, KnownFailure::TraceOutput),
+            &self.options.known_failure,
         )
     }
 

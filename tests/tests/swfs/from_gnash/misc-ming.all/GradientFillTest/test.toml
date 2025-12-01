@@ -1,5 +1,8 @@
 num_frames = 30
-known_failure = true
+
+# Ruffle's renderer produces different results depending on the platform,
+# and `[approximations]` can't be used for hexadecimal pixel values.
+known_failure.ruffle_check = false
 
 [image_comparisons.output]
 tolerance = 50

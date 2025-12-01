@@ -1,2 +1,8 @@
 num_ticks = 1
 known_failure = true
+
+# Ruffle's (wrong) output is slightly different on macOS.
+# Remove this when removing `known_failure`.
+[approximations]
+number_patterns = [".+ FAILED! expected: ([\\de+.]+) got:.+"]
+max_relative = 1e-13

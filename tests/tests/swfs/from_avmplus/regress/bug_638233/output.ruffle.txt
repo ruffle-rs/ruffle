@@ -1,11 +1,11 @@
-Asserting for TypeError FAILED! expected: true got: false
-1 FAILED! expected: TypeError: Error #1007 got: ReferenceError: Error 
-Asserting for TypeError FAILED! expected: true got: false
-2 FAILED! expected: TypeError: Error #1007 got: ReferenceError: Error 
-Asserting for TypeError FAILED! expected: true got: false
-3 FAILED! expected: TypeError: Error #1007 got: ReferenceError: Error 
-Asserting for TypeError FAILED! expected: true got: false
-4 FAILED! expected: TypeError: Error #1007 got: ReferenceError: Error 
+Asserting for TypeError PASSED!
+1 PASSED!
+Asserting for TypeError PASSED!
+2 PASSED!
+Asserting for TypeError PASSED!
+3 PASSED!
+Asserting for TypeError PASSED!
+4 PASSED!
 Asserting for TypeError FAILED! expected: true got: false
 5 FAILED! expected: TypeError: Error #1007 got: ReferenceError: Error 
 Asserting for TypeError PASSED!
