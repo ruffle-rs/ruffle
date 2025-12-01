@@ -1,0 +1,4 @@
+Array.prototype.length FAILED! expected: 0 got: undefined
+Array.length PASSED!
+typeof Array.prototype PASSED!
+Array.prototype.toString = Object.prototype.toString; Array.prototype.toString() FAILED! expected: [object Array] got: [object Object]

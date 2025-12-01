@@ -1,0 +1,51 @@
+onEnterFrame
+Frame 2 actions: undefined
+ctor: 0
+dynamic load: 0
+onEnterFrame
+Frame 3 actions: 0
+Frame 2 actions: 0
+onEnterFrame
+Frame 3 actions: 0
+Frame 2 actions: 0
+ctor: 1
+dynamic unload: 0
+dynamic load: 1
+onEnterFrame
+Frame 3 actions: 0
+Frame 2 actions: 0
+onEnterFrame
+Frame 3 actions: 1
+Frame 2 actions: 1
+ctor: 2
+dynamic unload: 1
+dynamic load: 2
+onEnterFrame
+Frame 3 actions: 1
+Frame 2 actions: 1
+onEnterFrame
+Frame 3 actions: 2
+PASSED: _global.arr.length  ==  20 [ActionOrderTest5.c:167]
+PASSED: _global.arr[0]  ==  'Frame 2 actions: undefined' [ActionOrderTest5.c:168]
+PASSED: _global.arr[1]  ==  'ctor: 0' [ActionOrderTest5.c:169]
+FAILED: expected: 'Frame 3 actions: 0' obtained: dynamic load: 0 [ActionOrderTest5.c:170] 
+FAILED: expected: 'dynamic load: 0' obtained: Frame 3 actions: 0 [ActionOrderTest5.c:171] 
+PASSED: _global.arr[4]  ==  'Frame 2 actions: 0' [ActionOrderTest5.c:172]
+PASSED: _global.arr[5]  ==  'Frame 3 actions: 0' [ActionOrderTest5.c:173]
+PASSED: _global.arr[6]  ==  'Frame 2 actions: 0' [ActionOrderTest5.c:174]
+PASSED: _global.arr[7]  ==  'ctor: 1' [ActionOrderTest5.c:175]
+PASSED: _global.arr[8]  ==  'dynamic unload: 0' [ActionOrderTest5.c:176]
+FAILED: expected: 'Frame 3 actions: 0' obtained: dynamic load: 1 [ActionOrderTest5.c:177] 
+PASSED: _global.arr[11]  ==  'Frame 2 actions: 0' [ActionOrderTest5.c:178]
+PASSED: _global.arr[12]  ==  'Frame 3 actions: 1' [ActionOrderTest5.c:179]
+PASSED: _global.arr[13]  ==  'Frame 2 actions: 1' [ActionOrderTest5.c:180]
+PASSED: _global.arr[14]  ==  'ctor: 2' [ActionOrderTest5.c:181]
+PASSED: _global.arr[15]  ==  'dynamic unload: 1' [ActionOrderTest5.c:182]
+FAILED: expected: 'Frame 3 actions: 1' obtained: dynamic load: 2 [ActionOrderTest5.c:183] 
+FAILED: expected: 'dynamic load: 2' obtained: Frame 3 actions: 1 [ActionOrderTest5.c:184] 
+PASSED: _global.arr[18]  ==  'Frame 2 actions: 1' [ActionOrderTest5.c:185]
+PASSED: _global.arr[19]  ==  'Frame 3 actions: 2' [ActionOrderTest5.c:186]
+FAILED: expected: 'Frame 2 actions: undefined,ctor: 0,Frame 3 actions: 0,dynamic load: 0,Frame 2 actions: 0,Frame 3 actions: 0,Frame 2 actions: 0,ctor: 1,dynamic unload: 0,Frame 3 actions: 0,dynamic load: 1,Frame 2 actions: 0,Frame 3 actions: 1,Frame 2 actions: 1,ctor: 2,dynamic unload: 1,Frame 3 actions: 1,dynamic load: 2,Frame 2 actions: 1,Frame 3 actions: 2' obtained: Frame 2 actions: undefined,ctor: 0,dynamic load: 0,Frame 3 actions: 0,Frame 2 actions: 0,Frame 3 actions: 0,Frame 2 actions: 0,ctor: 1,dynamic unload: 0,dynamic load: 1,Frame 3 actions: 0,Frame 2 actions: 0,Frame 3 actions: 1,Frame 2 actions: 1,ctor: 2,dynamic unload: 1,dynamic load: 2,Frame 3 actions: 1,Frame 2 actions: 1,Frame 3 actions: 2 [ActionOrderTest5.c:188] 
+#passed: 15
+#failed: 6
+#total tests run: 21

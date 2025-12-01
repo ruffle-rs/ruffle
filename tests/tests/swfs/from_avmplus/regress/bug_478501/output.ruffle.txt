@@ -1,0 +1,1 @@
+<e a={s}/>.toXMLString() FAILED! expected: <e a="a&#x0;a"/> got: <e a="aa"/>

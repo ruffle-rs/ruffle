@@ -1,0 +1,104 @@
+onEnterFrame
+Frame 2 actions: undefined
+static load: undefined
+ctor: 0
+static load: 0
+dynamic load: 0
+onEnterFrame
+Frame 3 actions: 0
+Frame 2 actions: 0
+onEnterFrame
+Frame 3 actions: 0
+Frame 2 actions: 0
+ctor: 1
+dynamic unload: 0
+static load: 1
+dynamic load: 1
+onEnterFrame
+Frame 3 actions: 0
+Frame 2 actions: 0
+onEnterFrame
+Frame 3 actions: 1
+Frame 2 actions: 1
+ctor: 2
+dynamic unload: 1
+static load: 2
+dynamic load: 2
+onEnterFrame
+Frame 3 actions: 1
+Frame 2 actions: 1
+onEnterFrame
+Frame 3 actions: 2
+PASSED: _global.arr.length  ==  24 [ActionOrderTest4.c:175]
+PASSED: _global.arr[0]  ==  'Frame 2 actions: undefined' [ActionOrderTest4.c:176]
+PASSED: _global.arr[1]  ==  'static load: undefined' [ActionOrderTest4.c:177]
+PASSED: _global.arr[2]  ==  'ctor: 0' [ActionOrderTest4.c:178]
+PASSED: _global.arr[3]  ==  'static load: 0' [ActionOrderTest4.c:179]
+PASSED: _global.arr[4]  ==  'dynamic load: 0' [ActionOrderTest4.c:180]
+PASSED: _global.arr[5]  ==  'Frame 3 actions: 0' [ActionOrderTest4.c:181]
+PASSED: _global.arr[6]  ==  'Frame 2 actions: 0' [ActionOrderTest4.c:182]
+PASSED: _global.arr[7]  ==  'Frame 3 actions: 0' [ActionOrderTest4.c:183]
+PASSED: _global.arr[8]  ==  'Frame 2 actions: 0' [ActionOrderTest4.c:184]
+PASSED: _global.arr[9]  ==  'ctor: 1' [ActionOrderTest4.c:185]
+PASSED: _global.arr[10]  ==  'dynamic unload: 0' [ActionOrderTest4.c:186]
+PASSED: _global.arr[11]  ==  'static load: 1' [ActionOrderTest4.c:187]
+PASSED: _global.arr[12]  ==  'dynamic load: 1' [ActionOrderTest4.c:188]
+PASSED: _global.arr[13]  ==  'Frame 3 actions: 0' [ActionOrderTest4.c:189]
+PASSED: _global.arr[14]  ==  'Frame 2 actions: 0' [ActionOrderTest4.c:190]
+PASSED: _global.arr[15]  ==  'Frame 3 actions: 1' [ActionOrderTest4.c:191]
+PASSED: _global.arr[16]  ==  'Frame 2 actions: 1' [ActionOrderTest4.c:192]
+PASSED: _global.arr[17]  ==  'ctor: 2' [ActionOrderTest4.c:193]
+PASSED: _global.arr[18]  ==  'dynamic unload: 1' [ActionOrderTest4.c:194]
+PASSED: _global.arr[19]  ==  'static load: 2' [ActionOrderTest4.c:195]
+PASSED: _global.arr[20]  ==  'dynamic load: 2' [ActionOrderTest4.c:196]
+PASSED: _global.arr[21]  ==  'Frame 3 actions: 1' [ActionOrderTest4.c:197]
+PASSED: _global.arr[22]  ==  'Frame 2 actions: 1' [ActionOrderTest4.c:198]
+PASSED: _global.arr[23]  ==  'Frame 3 actions: 2' [ActionOrderTest4.c:199]
+PASSED: _global.arr.toString()  ==  'Frame 2 actions: undefined,static load: undefined,ctor: 0,static load: 0,dynamic load: 0,Frame 3 actions: 0,Frame 2 actions: 0,Frame 3 actions: 0,Frame 2 actions: 0,ctor: 1,dynamic unload: 0,static load: 1,dynamic load: 1,Frame 3 actions: 0,Frame 2 actions: 0,Frame 3 actions: 1,Frame 2 actions: 1,ctor: 2,dynamic unload: 1,static load: 2,dynamic load: 2,Frame 3 actions: 1,Frame 2 actions: 1,Frame 3 actions: 2' [ActionOrderTest4.c:200]
+ctor: 3
+dynamic unload: 2
+static load: 3
+dynamic load: 3
+#passed: 26
+#failed: 0
+#total tests run: 26
+ctor: 4
+dynamic unload: 3
+static load: 4
+dynamic load: 4
+ctor: 5
+dynamic unload: 4
+static load: 5
+dynamic load: 5
+ctor: 6
+dynamic unload: 5
+static load: 6
+dynamic load: 6
+ctor: 7
+dynamic unload: 6
+static load: 7
+dynamic load: 7
+ctor: 8
+dynamic unload: 7
+static load: 8
+dynamic load: 8
+ctor: 9
+dynamic unload: 8
+static load: 9
+dynamic load: 9
+ctor: 10
+dynamic unload: 9
+static load: 10
+dynamic load: 10
+ctor: 11
+dynamic unload: 10
+static load: 11
+dynamic load: 11
+ctor: 12
+dynamic unload: 11
+static load: 12
+dynamic load: 12
+ctor: 13
+dynamic unload: 12
+static load: 13
+dynamic load: 13

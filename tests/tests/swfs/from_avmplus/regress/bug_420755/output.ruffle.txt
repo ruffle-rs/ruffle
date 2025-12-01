@@ -1,0 +1,27 @@
+Validate behaviour of holes in Array PASSED!
+Validate behaviour of holes in subclassed dynamic Array PASSED!
+Validate behaviour of holes in subclassed grandchild of dynamic Array PASSED!
+Validate behaviour of holes in subclassed non-dynamic Array FAILED! expected: Error #1056 got: no error
+Validate behaviour of holes in subclassed grandchild of non-dynamic Array FAILED! expected: Error #1056 got: no error
+test array construct PASSED!
+Asserting for ArgumentError PASSED!
+Test construct of subclassed dynamic Array PASSED!
+Asserting for ArgumentError PASSED!
+Test construct of grandchild of subclassed dynamic Array PASSED!
+Asserting for ArgumentError PASSED!
+Test construct in subclassed non-dynamic Array PASSED!
+Asserting for ArgumentError PASSED!
+Test construct in grandchild of subclassed non-dynamic Array PASSED!
+Test array call PASSED!
+Asserting for ArgumentError PASSED!
+Test call in subclassed dynamic Array PASSED!
+Asserting for ArgumentError PASSED!
+Test call in grandchild of subclassed dynamic Array PASSED!
+Asserting for ArgumentError PASSED!
+Test call in subclassed non-dynamic Array PASSED!
+Asserting for ArgumentError PASSED!
+Test call in grandchild of subclassed non-dynamic Array PASSED!
+test holes vs elements-with-value-of-undefined: for-var-in PASSED!
+test holes vs elements-with-value-of-undefined: for-each-var-in PASSED!
+test holes vs elements-with-value-of-undefined - deleted element: for-var-in PASSED!
+test holes vs elements-with-value-of-undefined - deleted element: for-each-var-in PASSED!

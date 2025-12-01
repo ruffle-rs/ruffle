@@ -1,0 +1,18 @@
+mc1 Construct called
+PASSED: movieclip == movieclip
+FAILED: expected: undefined , obtained: movieclip
+mc1 Unload called
+FAILED: expected: undefined , obtained: movieclip
+PASSED: testvar1  ==  'executed' [opcode_guard_test.c:122]
+FAILED: expected: 'executed' obtained: undefined [opcode_guard_test.c:123] 
+PASSED: testvar3  ==  'executed' [opcode_guard_test.c:124]
+mc2 EnterFrame called
+Target not found: Target="non-exist-target" Base="_level0"
+PASSED: undefined == undefined
+PASSED: / == /
+PASSED: 9 == 9
+PASSED: 9 == 9
+PASSED: 100 == 100
+#passed: 8
+#failed: 3
+#total tests run: 11

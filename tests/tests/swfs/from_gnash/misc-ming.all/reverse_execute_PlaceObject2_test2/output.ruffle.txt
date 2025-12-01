@@ -1,0 +1,10 @@
+PASSED: _root.mc._x  ==  0 [reverse_execute_PlaceObject2_test2.c:89]
+PASSED: _root.mc._x  ==  300 [reverse_execute_PlaceObject2_test2.c:92]
+PASSED: _root.mc._x  ==  900 [reverse_execute_PlaceObject2_test2.c:96]
+PASSED: _root.mc._x  ==  900 [reverse_execute_PlaceObject2_test2.c:100]
+PASSED: _root.mc._x  ==  900 [reverse_execute_PlaceObject2_test2.c:100]
+FAILED: expected: 'onLoad+onLoad+' obtained: onLoad+ [reverse_execute_PlaceObject2_test2.c:108] 
+PASSED: _root.x2  ==  'onUnload+onUnload+' [reverse_execute_PlaceObject2_test2.c:109]
+#passed: 6
+#failed: 1
+#total tests run: 7

@@ -1,0 +1,278 @@
+[undefined debug-22403-05c7ba106]
+SWFundefined
+
+Checking square at 0x0
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0x8080ff, got: 0xffffff (Allowed tolerance: 32, distance: 179.605122421383)
+FAILED: Expected: 0x8080ff, got: 0xffffff (Allowed tolerance: 32, distance: 179.605122421383)
+FAILED: Expected: 0x8080ff, got: 0xffffff (Allowed tolerance: 32, distance: 179.605122421383)
+FAILED: Expected: 0x8787ff, got: 0xffffff (Allowed tolerance: 32, distance: 169.705627484771)
+FAILED: Expected: 0x8787ff, got: 0xffffff (Allowed tolerance: 32, distance: 169.705627484771)
+FAILED: Expected: 0x8787ff, got: 0xffffff (Allowed tolerance: 32, distance: 169.705627484771)
+FAILED: Expected: 0x8d8dff, got: 0xffffff (Allowed tolerance: 32, distance: 161.220346110533)
+FAILED: Expected: 0x8d8dff, got: 0xffffff (Allowed tolerance: 32, distance: 161.220346110533)
+FAILED: Expected: 0x8d8dff, got: 0xffffff (Allowed tolerance: 32, distance: 161.220346110533)
+Checking square at 100x0
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xb0bff, got: 0xffffff (Allowed tolerance: 32, distance: 345.068109219035)
+FAILED: Expected: 0xb0bff, got: 0xffffff (Allowed tolerance: 32, distance: 345.068109219035)
+FAILED: Expected: 0xb0bff, got: 0xffffff (Allowed tolerance: 32, distance: 345.068109219035)
+FAILED: Expected: 0x7f7fff, got: 0xffffff (Allowed tolerance: 32, distance: 181.019335983756)
+FAILED: Expected: 0x7f7fff, got: 0xffffff (Allowed tolerance: 32, distance: 181.019335983756)
+FAILED: Expected: 0x7f7fff, got: 0xffffff (Allowed tolerance: 32, distance: 181.019335983756)
+PASSED: 0xf4f4ff is near to 0xffffff
+PASSED: 0xf4f4ff is near to 0xffffff
+PASSED: 0xf4f4ff is near to 0xffffff
+Checking square at 200x0
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xff, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0x5a5aff, got: 0xffffff (Allowed tolerance: 32, distance: 233.345237791561)
+PASSED: 0xfffdff is near to 0xffffff
+FAILED: Expected: 0x5a5aff, got: 0xffffff (Allowed tolerance: 32, distance: 233.345237791561)
+PASSED: 0xffffff is near to 0xffffff
+FAILED: Expected: 0xff59ff, got: 0xffffff (Allowed tolerance: 32, distance: 166)
+PASSED: 0xffffff is near to 0xffffff
+FAILED: Expected: 0xff59ff, got: 0xffffff (Allowed tolerance: 32, distance: 166)
+FAILED: Expected: 0xff00ff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+Checking square at 300x0
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xff, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0x4a4aff, got: 0xffffff (Allowed tolerance: 32, distance: 255.97265478953)
+FAILED: Expected: 0xff, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0x4a4aff, got: 0xffffff (Allowed tolerance: 32, distance: 255.97265478953)
+FAILED: Expected: 0x9c9cff, got: 0xffffff (Allowed tolerance: 32, distance: 140.007142674936)
+FAILED: Expected: 0x4a4aff, got: 0xffffff (Allowed tolerance: 32, distance: 255.97265478953)
+FAILED: Expected: 0x9c9cff, got: 0xffffff (Allowed tolerance: 32, distance: 140.007142674936)
+PASSED: 0xeeeeff is near to 0xffffff
+Checking square at 400x0
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+PASSED: 0xffffff is near to 0xffffff
+FAILED: Expected: 0xabffab, got: 0xffffff (Allowed tolerance: 32, distance: 118.79393923934)
+FAILED: Expected: 0x59ff59, got: 0xffffff (Allowed tolerance: 32, distance: 234.759451353934)
+FAILED: Expected: 0xacacff, got: 0xffffff (Allowed tolerance: 32, distance: 117.379725676967)
+PASSED: 0xffffff is near to 0xffffff
+FAILED: Expected: 0xabffab, got: 0xffffff (Allowed tolerance: 32, distance: 118.79393923934)
+FAILED: Expected: 0x5a5aff, got: 0xffffff (Allowed tolerance: 32, distance: 233.345237791561)
+FAILED: Expected: 0xacacff, got: 0xffffff (Allowed tolerance: 32, distance: 117.379725676967)
+PASSED: 0xffffff is near to 0xffffff
+Checking square at 500x0
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0x3737ff, got: 0xffffff (Allowed tolerance: 32, distance: 282.842712474619)
+FAILED: Expected: 0xa29ea2, got: 0xffffff (Allowed tolerance: 32, distance: 163.422764632104)
+FAILED: Expected: 0xd1ff57, got: 0xffffff (Allowed tolerance: 32, distance: 174.183810958424)
+FAILED: Expected: 0x3737ff, got: 0xffffff (Allowed tolerance: 32, distance: 282.842712474619)
+FAILED: Expected: 0xa29ea2, got: 0xffffff (Allowed tolerance: 32, distance: 163.422764632104)
+FAILED: Expected: 0xd1ff57, got: 0xffffff (Allowed tolerance: 32, distance: 174.183810958424)
+FAILED: Expected: 0x3737ff, got: 0xffffff (Allowed tolerance: 32, distance: 282.842712474619)
+FAILED: Expected: 0xa29ea2, got: 0xffffff (Allowed tolerance: 32, distance: 163.422764632104)
+FAILED: Expected: 0xd1ff57, got: 0xffffff (Allowed tolerance: 32, distance: 174.183810958424)
+Checking square at 0x100
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0x2020ff, got: 0xffffff (Allowed tolerance: 32, distance: 315.3696244092)
+FAILED: Expected: 0x2d2dff, got: 0xffffff (Allowed tolerance: 32, distance: 296.98484809835)
+FAILED: Expected: 0x3a3aff, got: 0xffffff (Allowed tolerance: 32, distance: 278.6000717875)
+FAILED: Expected: 0x2323ff, got: 0xffffff (Allowed tolerance: 32, distance: 311.126983722081)
+FAILED: Expected: 0x2f2fff, got: 0xffffff (Allowed tolerance: 32, distance: 294.156420973604)
+FAILED: Expected: 0x3b3bff, got: 0xffffff (Allowed tolerance: 32, distance: 277.185858225127)
+FAILED: Expected: 0x2a2aff, got: 0xffffff (Allowed tolerance: 32, distance: 301.227488785469)
+FAILED: Expected: 0x3434ff, got: 0xffffff (Allowed tolerance: 32, distance: 287.085353161738)
+FAILED: Expected: 0x4040ff, got: 0xffffff (Allowed tolerance: 32, distance: 270.114790413261)
+Checking square at 100x100
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+PASSED: 0xffffff is near to 0xffffff
+PASSED: 0xe9e9ff is near to 0xffffff
+PASSED: 0xffffff is near to 0xffffff
+PASSED: 0xe9e9ff is near to 0xffffff
+FAILED: Expected: 0xff, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+PASSED: 0xe9e9ff is near to 0xffffff
+PASSED: 0xffffff is near to 0xffffff
+PASSED: 0xe9e9ff is near to 0xffffff
+PASSED: 0xffffff is near to 0xffffff
+Checking square at 200x100
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xff00ff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xff2bff, got: 0xffffff (Allowed tolerance: 32, distance: 212)
+FAILED: Expected: 0xff00ff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xff2bff, got: 0xffffff (Allowed tolerance: 32, distance: 212)
+FAILED: Expected: 0xff, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff2bff, got: 0xffffff (Allowed tolerance: 32, distance: 212)
+FAILED: Expected: 0xff00ff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xff2bff, got: 0xffffff (Allowed tolerance: 32, distance: 212)
+FAILED: Expected: 0xff00ff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+Checking square at 300x100
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xff00ff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xff00ff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xff15ff, got: 0xffffff (Allowed tolerance: 32, distance: 234)
+FAILED: Expected: 0xff00ff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xff93ff, got: 0xffffff (Allowed tolerance: 32, distance: 108)
+PASSED: 0xfffdff is near to 0xffffff
+FAILED: Expected: 0xff15ff, got: 0xffffff (Allowed tolerance: 32, distance: 234)
+PASSED: 0xfffdff is near to 0xffffff
+FAILED: Expected: 0x2020ff, got: 0xffffff (Allowed tolerance: 32, distance: 315.3696244092)
+Checking square at 400x100
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0x2020ff, got: 0xffffff (Allowed tolerance: 32, distance: 315.3696244092)
+PASSED: 0xfdfffd is near to 0xffffff
+FAILED: Expected: 0x15ff15, got: 0xffffff (Allowed tolerance: 32, distance: 330.925973595304)
+PASSED: 0xfdfffd is near to 0xffffff
+FAILED: Expected: 0x93ff93, got: 0xffffff (Allowed tolerance: 32, distance: 152.735064736294)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0x15ff15, got: 0xffffff (Allowed tolerance: 32, distance: 330.925973595304)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+Checking square at 500x100
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xffff00, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xb4ff9d, got: 0xffffff (Allowed tolerance: 32, distance: 123.405834546021)
+FAILED: Expected: 0xffff00, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xb4ff9d, got: 0xffffff (Allowed tolerance: 32, distance: 123.405834546021)
+FAILED: Expected: 0xff, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xb4ff9d, got: 0xffffff (Allowed tolerance: 32, distance: 123.405834546021)
+FAILED: Expected: 0xffff00, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xb4ff9d, got: 0xffffff (Allowed tolerance: 32, distance: 123.405834546021)
+FAILED: Expected: 0xffff00, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+Checking square at 0x200
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xafafff, got: 0xffffff (Allowed tolerance: 32, distance: 113.137084989848)
+FAILED: Expected: 0xafafff, got: 0xffffff (Allowed tolerance: 32, distance: 113.137084989848)
+FAILED: Expected: 0xafafff, got: 0xffffff (Allowed tolerance: 32, distance: 113.137084989848)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+Checking square at 100x200
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xff0000, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff0000, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff0000, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff0000, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff0000, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff0000, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff0000, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff0000, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff0000, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+Checking square at 200x200
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+FAILED: Expected: 0xff00, got: 0xffffff (Allowed tolerance: 32, distance: 360.624458405139)
+Checking square at 300x200
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff00, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+Checking square at 400x200
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0x55ff, got: 0xffffff (Allowed tolerance: 32, distance: 306.471858414439)
+FAILED: Expected: 0xa9ff, got: 0xffffff (Allowed tolerance: 32, distance: 269.11150105486)
+FAILED: Expected: 0x43ff, got: 0xffffff (Allowed tolerance: 32, distance: 316.810669012267)
+FAILED: Expected: 0xb6ff, got: 0xffffff (Allowed tolerance: 32, distance: 265.243284552126)
+FAILED: Expected: 0xeded11, got: 0xffffff (Allowed tolerance: 32, distance: 239.357473248696)
+FAILED: Expected: 0xd1ff, got: 0xffffff (Allowed tolerance: 32, distance: 259.115804226604)
+FAILED: Expected: 0x30ff, got: 0xffffff (Allowed tolerance: 32, distance: 328.441775661989)
+FAILED: Expected: 0xdeff, got: 0xffffff (Allowed tolerance: 32, distance: 257.126428046593)
+FAILED: Expected: 0x1dff, got: 0xffffff (Allowed tolerance: 32, distance: 340.735968163034)
+Checking square at 500x200
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0x9d9d61, got: 0xffffff (Allowed tolerance: 32, distance: 210.171358657644)
+FAILED: Expected: 0xa3ff, got: 0xffffff (Allowed tolerance: 32, distance: 271.0885464198)
+FAILED: Expected: 0x91916d, got: 0xffffff (Allowed tolerance: 32, distance: 213.344791358964)
+FAILED: Expected: 0xb6ff, got: 0xffffff (Allowed tolerance: 32, distance: 265.243284552126)
+FAILED: Expected: 0xeaea14, got: 0xffffff (Allowed tolerance: 32, distance: 236.869162197193)
+FAILED: Expected: 0xd1ff, got: 0xffffff (Allowed tolerance: 32, distance: 259.115804226604)
+FAILED: Expected: 0x82827c, got: 0xffffff (Allowed tolerance: 32, distance: 220.024998579707)
+FAILED: Expected: 0xe4ff, got: 0xffffff (Allowed tolerance: 32, distance: 256.425427756297)
+FAILED: Expected: 0x757589, got: 0xffffff (Allowed tolerance: 32, distance: 228.061395242597)
+Checking square at 0x300
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff00, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+Checking square at 100x300
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff00, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+Checking square at 200x300
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xfefe, got: 0xffffff (Allowed tolerance: 32, distance: 255.003921538474)
+FAILED: Expected: 0xe2fe, got: 0xffffff (Allowed tolerance: 32, distance: 256.645670136864)
+FAILED: Expected: 0xfefe, got: 0xffffff (Allowed tolerance: 32, distance: 255.003921538474)
+FAILED: Expected: 0xe2fe, got: 0xffffff (Allowed tolerance: 32, distance: 256.645670136864)
+FAILED: Expected: 0xfefe00, got: 0xffffff (Allowed tolerance: 32, distance: 255.003921538474)
+FAILED: Expected: 0xe2fe, got: 0xffffff (Allowed tolerance: 32, distance: 256.645670136864)
+FAILED: Expected: 0xfefe, got: 0xffffff (Allowed tolerance: 32, distance: 255.003921538474)
+FAILED: Expected: 0xe2fe, got: 0xffffff (Allowed tolerance: 32, distance: 256.645670136864)
+FAILED: Expected: 0xfefe, got: 0xffffff (Allowed tolerance: 32, distance: 255.003921538474)
+Checking square at 300x300
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff00, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc3ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.963737948595)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+Checking square at 400x300
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xe1ff, got: 0xffffff (Allowed tolerance: 32, distance: 256.758641529355)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xc6ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.292939055)
+FAILED: Expected: 0x3636c8, got: 0xffffff (Allowed tolerance: 32, distance: 289.52892774298)
+FAILED: Expected: 0xc6ff, got: 0xffffff (Allowed tolerance: 32, distance: 261.292939055)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+FAILED: Expected: 0xf2f20c, got: 0xffffff (Allowed tolerance: 32, distance: 243.694480856666)
+FAILED: Expected: 0xffff, got: 0xffffff (Allowed tolerance: 32, distance: 255)
+Checking square at 500x300
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xfa3a00, got: 0xffffff (Allowed tolerance: 32, distance: 322.271624565366)
+FAILED: Expected: 0xfa3a00, got: 0xffffff (Allowed tolerance: 32, distance: 322.271624565366)
+FAILED: Expected: 0xfa3a00, got: 0xffffff (Allowed tolerance: 32, distance: 322.271624565366)
+FAILED: Expected: 0xbbbb00, got: 0xffffff (Allowed tolerance: 32, distance: 272.530732211984)
+FAILED: Expected: 0xbbbb00, got: 0xffffff (Allowed tolerance: 32, distance: 272.530732211984)
+FAILED: Expected: 0xbbbb00, got: 0xffffff (Allowed tolerance: 32, distance: 272.530732211984)
+FAILED: Expected: 0x3afa00, got: 0xffffff (Allowed tolerance: 32, distance: 322.271624565366)
+FAILED: Expected: 0x3afa00, got: 0xffffff (Allowed tolerance: 32, distance: 322.271624565366)
+FAILED: Expected: 0x3afa00, got: 0xffffff (Allowed tolerance: 32, distance: 322.271624565366)
+Checking square at 0x400
+0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff,0xffffff
+FAILED: Expected: 0xfa420b, got: 0xffffff (Allowed tolerance: 32, distance: 308.67782557223)
+FAILED: Expected: 0xfa420b, got: 0xffffff (Allowed tolerance: 32, distance: 308.67782557223)
+FAILED: Expected: 0xfa420b, got: 0xffffff (Allowed tolerance: 32, distance: 308.67782557223)
+FAILED: Expected: 0xdddd7f, got: 0xffffff (Allowed tolerance: 32, distance: 136.733317081098)
+FAILED: Expected: 0xdddd7f, got: 0xffffff (Allowed tolerance: 32, distance: 136.733317081098)
+FAILED: Expected: 0xdddd7f, got: 0xffffff (Allowed tolerance: 32, distance: 136.733317081098)
+PASSED: 0xf6fff4 is near to 0xffffff
+PASSED: 0xf6fff4 is near to 0xffffff
+PASSED: 0xf6fff4 is near to 0xffffff

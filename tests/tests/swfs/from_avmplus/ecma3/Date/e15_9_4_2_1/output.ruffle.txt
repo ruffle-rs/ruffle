@@ -1,0 +1,4 @@
+new Date('1/1/1999 12:30 AM').toString() FAILED! expected: Fri Jan 1 00:30:00 GMT+0545 1999 got: Invalid Date
+new Date('1/1/1999 12:30 PM').toString() FAILED! expected: Fri Jan 1 12:30:00 GMT+0545 1999 got: Invalid Date
+new Date('1/1/1999 13:30 AM') PASSED!
+new Date('1/1/1999 13:30 PM') PASSED!

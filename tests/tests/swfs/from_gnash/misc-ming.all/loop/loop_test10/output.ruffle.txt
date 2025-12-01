@@ -1,0 +1,24 @@
+_level0.mc1 initialized
+_level0.mc2 initialized
+_level0.mc1 unloaded
+_level0.mc3 initialized
+_level0.mc2 unloaded
+FAILED: expected: 2 obtained: 1 [loop_test10.c:221] 
+FAILED: expected: 2 obtained: 1 [loop_test10.c:222] 
+PASSED: mc3Initialized  ==  1 [loop_test10.c:223]
+FAILED: expected: 2 obtained: 1 [loop_test10.c:224] 
+FAILED: expected: 2 obtained: 1 [loop_test10.c:225] 
+PASSED: mc3Unloaded  ==  0 [loop_test10.c:226]
+FAILED: expected: '0+1+2+3+4+5+1+2+3+5+' obtained: 0+1+2+3+4+5+ [loop_test10.c:228] 
+FAILED: expected: /instance3 , obtained: /instance2
+FAILED: expected: /instance3/instance4 , obtained: /instance2/instance3
+FAILED: expected: /instance3 , obtained: /instance2
+FAILED: expected: /instance3/instance5 , obtained: /instance2/instance4
+FAILED: expected: /instance6 , obtained: /instance5
+FAILED: expected: /instance6/instance7 , obtained: /instance5/instance6
+FAILED: expected: /instance6 , obtained: /instance5
+FAILED: expected: /instance6/instance7 , obtained: /instance5/instance6
+FAILED: expected: /instance9 , obtained: /instance7
+#passed: 2
+#failed: 14
+#total tests run: 16
