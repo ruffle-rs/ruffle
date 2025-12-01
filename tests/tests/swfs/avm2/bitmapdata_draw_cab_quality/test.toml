@@ -1,0 +1,10 @@
+num_ticks = 1
+
+[image_comparisons.output]
+# Outliers come from the top triangle due to MSAA,
+# the bottom one should produce a lot more in case something's wrong.
+max_outliers = 80
+
+[player_options]
+with_renderer = { optional = false, sample_count = 4 }
+viewport_dimensions = { width = 160, height = 160, scale_factor = 1 }
