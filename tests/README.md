@@ -42,6 +42,9 @@ ignore = false
 #   `known_failure.panic = "panic message"`
 # instead (note that 'panicky' tests will be skipped if the test harness is run
 # with debug assertions disabled, e.g. with `--release`).
+# By default, the test runner will additionally check Ruffle's output against itself
+# to detect regressions in failing tests; this can be disabled with
+#    `known_failure.ruffle_check = false`.
 known_failure = false
 
 # Path (relative to the directory containing test.toml) to the expected output

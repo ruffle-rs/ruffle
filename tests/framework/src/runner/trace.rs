@@ -1,5 +1,6 @@
 use crate::backends::TestLogBackend;
 use crate::options::approximations::Approximations;
+use crate::options::known_failure::KnownFailure;
 use anyhow::{Error, anyhow};
 use pretty_assertions::Comparison;
 use vfs::VfsPath;
@@ -7,8 +8,8 @@ use vfs::VfsPath;
 pub fn compare_trace_output(
     log: &TestLogBackend,
     expected_path: &VfsPath,
-    approximations: Option<&Approximations>,
-    known_failure: bool,
+    approx: Option<&Approximations>,
+    known_failure: &KnownFailure,
 ) -> anyhow::Result<()> {
     let expected_trace = expected_path.read_to_string()?.replace("\r\n", "\n");
 
@@ -17,23 +18,54 @@ pub fn compare_trace_output(
     // bytes should explicitly test for them in ActionScript.
     let actual_trace = log.trace_output().replace('\0', "");
 
-    let result = test(&expected_trace, approximations, &actual_trace);
-    match (result, known_failure) {
-        (res, false) => res,
-        (Ok(()), true) => Err(anyhow!(
-            "Trace output check was known to be failing, but now passes successfully. \
-            Please update the test and remove `known_failure = true`!",
-        )),
-        (Err(_), true) => Ok(()),
+    let result = test("flash_expected", approx, &expected_trace, &actual_trace);
+
+    match known_failure {
+        KnownFailure::None | KnownFailure::Panic { .. } => result,
+        KnownFailure::TraceOutput {
+            ruffle_check: false,
+        } => {
+            if result.is_ok() {
+                Err(anyhow!(
+                    "Trace output check was known to be failing, but now passes successfully. \
+                    Please update the test and remove `known_failure = true`!"
+                ))
+            } else {
+                Ok(())
+            }
+        }
+        KnownFailure::TraceOutput { ruffle_check: true } => {
+            let path = path_with_suffix(expected_path, "ruffle")?;
+
+            if result.is_ok() {
+                return Err(anyhow!(
+                    "Trace output check was known to be failing, but now passes successfully. \
+                    Please update the test, and remove `known_failure = true` and `{}`!",
+                    path.as_str(),
+                ));
+            }
+
+            let expected_trace = if path.exists()? {
+                path.read_to_string()?.replace("\r\n", "\n")
+            } else {
+                path.create_file()?.write_all(actual_trace.as_bytes())?;
+                return Err(anyhow!(
+                    "No trace to compare to! Saved actual trace as Ruffle-expected."
+                ));
+            };
+
+            test("ruffle_expected", approx, &expected_trace, &actual_trace)
+        }
     }
 }
 
-pub fn test(
+fn test(
+    expected_name: &str,
+    approx: Option<&Approximations>,
     expected_output: &str,
-    approximations: Option<&Approximations>,
     actual_output: &str,
 ) -> anyhow::Result<()> {
-    if let Some(approximations) = approximations {
+    if let Some(approx) = approx {
         let add_comparison_to_err = |err: Error| -> Error {
             let left_pretty = PrettyString(actual_output);
             let right_pretty = PrettyString(expected_output);
@@ -44,7 +76,7 @@ pub fn test(
 
         if actual_output.lines().count() != expected_output.lines().count() {
             return Err(anyhow!(
-                "# of lines of output didn't match (expected {} from Flash, got {} from Ruffle",
+                "# of lines of output didn't match ({expected_name}: {}, ruffle_actual: {})",
                 expected_output.lines().count(),
                 actual_output.lines().count()
             ));
@@ -58,21 +90,21 @@ pub fn test(
                     continue;
                 }
 
-                approximations
+                approx
                     .compare(actual, expected)
                     .map_err(add_comparison_to_err)?;
             } else {
                 let mut found = false;
 
                 // Check each of the user-provided regexes for a match
-                for pattern in approximations.number_patterns() {
+                for pattern in approx.number_patterns() {
                     if let (Some(actual_captures), Some(expected_captures)) =
                         (pattern.captures(actual), pattern.captures(expected))
                     {
                         found = true;
                         if expected_captures.len() != actual_captures.len() {
                             return Err(anyhow!(
-                                "Differing numbers of regex captures (expected {}, actually {})",
+                                "Differing numbers of regex captures ({expected_name}: {}, ruffle_actual: {})",
                                 expected_captures.len(),
                                 actual_captures.len(),
                             ));
@@ -95,25 +127,29 @@ pub fn test(
                                 .as_str()
                                 .parse::<f64>()
                                 .expect("Failed to parse 'expected' capture group as float");
-                            approximations
+                            approx
                                 .compare(actual_num, expected_num)
                                 .map_err(add_comparison_to_err)?;
                         }
                         let modified_actual = pattern.replace_all(actual, "");
                         let modified_expected = pattern.replace_all(expected, "");
 
-                        assert_text_matches(modified_actual.as_ref(), modified_expected.as_ref())?;
+                        assert_text_matches(
+                            modified_actual.as_ref(),
+                            modified_expected.as_ref(),
+                            expected_name,
+                        )?;
                         break;
                     }
                 }
 
                 if !found {
-                    assert_text_matches(actual, expected)?;
+                    assert_text_matches(actual, expected, expected_name)?;
                 }
             }
         }
     } else {
-        assert_text_matches(actual_output, expected_output)?;
+        assert_text_matches(actual_output, expected_output, expected_name)?;
     }
 
     Ok(())
@@ -134,14 +170,14 @@ impl std::fmt::Debug for PrettyString<'_> {
     }
 }
 
-fn assert_text_matches(ruffle: &str, flash: &str) -> anyhow::Result<()> {
-    if ruffle != flash {
+fn assert_text_matches(ruffle: &str, expected: &str, expected_name: &str) -> anyhow::Result<()> {
+    if ruffle != expected {
         let left_pretty = PrettyString(ruffle);
-        let right_pretty = PrettyString(flash);
+        let right_pretty = PrettyString(expected);
         let comparison = Comparison::new(&left_pretty, &right_pretty);
 
         Err(anyhow!(
-            "assertion failed: `(ruffle_actual == flash_expected)`\
+            "assertion failed: `(ruffle_actual == {expected_name})`\
                        \n\
                        \n{}\
                        \n",
@@ -150,4 +186,21 @@ fn assert_text_matches(ruffle: &str, flash: &str) -> anyhow::Result<()> {
     } else {
         Ok(())
     }
+}
+
+/// Adds a suffix to the filename: e.g. `foo/bar.txt` -> `foo/bar.suffix.txt`
+fn path_with_suffix(path: &VfsPath, suffix: &str) -> anyhow::Result<VfsPath> {
+    // `VfsPath`'s API is less nice than std's `Path`... :(
+    let mut name = path.filename();
+    name.insert_str(0, "../");
+    if let Some(ext) = path.extension() {
+        name.truncate(name.len() - ext.len());
+        name.push_str(suffix);
+        name.push('.');
+        name.push_str(&ext);
+    } else {
+        name.push('.');
+        name.push_str(suffix);
+    }
+    Ok(path.join(&name)?)
 }
