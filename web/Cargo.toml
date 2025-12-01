@@ -35,7 +35,7 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 slotmap = { workspace = true }
 js-sys = { workspace = true }
 tracing = { workspace = true, features = ["log"] }
-tracing-subscriber = { version = "0.3.20", default-features = false, features = ["registry"] }
+tracing-subscriber = { version = "0.3.22", default-features = false, features = ["registry"] }
 tracing-log = "0.2.0"
 tracing-wasm = { workspace = true }
 ruffle_render_canvas = { path = "../render/canvas", optional = true }
