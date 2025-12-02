@@ -615,6 +615,26 @@ pub fn make_error_1065<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1075<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(type_error(
+        activation,
+        "Error #1075: Math is not a function.",
+        1075,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1076<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(type_error(
+        activation,
+        "Error #1076: Math is not a constructor.",
+        1076,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1080<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(type_error(
         activation,
