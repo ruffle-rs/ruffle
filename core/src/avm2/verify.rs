@@ -2,7 +2,7 @@ use crate::avm2::class::Class;
 use crate::avm2::error::{
     make_error_1011, make_error_1014, make_error_1019, make_error_1020, make_error_1021,
     make_error_1025, make_error_1026, make_error_1032, make_error_1043, make_error_1054,
-    make_error_1107, verify_error, Error1014Type,
+    make_error_1107, make_error_1124, verify_error, Error1014Type,
 };
 use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
@@ -752,11 +752,7 @@ fn translate_op<'gc>(
             } else if index_register >= max_locals {
                 return Err(make_error_1025(activation, index_register));
             } else if index_register == object_register {
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1124: OP_hasnext2 requires object and index to be distinct registers.",
-                    1124,
-                )?));
+                return Err(make_error_1124(activation));
             }
         }
 
