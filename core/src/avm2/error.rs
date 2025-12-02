@@ -1093,6 +1093,16 @@ pub fn make_error_2058<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2067<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(
+        activation,
+        "Error #2067: The ExternalInterface is not available in this container. ExternalInterface requires Internet Explorer ActiveX, Firefox, Mozilla 1.7.5 and greater, or other browsers that support NPRuntime.",
+        2067,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2078<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(illegal_operation_error(
         activation,
