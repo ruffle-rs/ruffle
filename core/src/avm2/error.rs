@@ -642,6 +642,16 @@ pub fn make_error_1070<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1072<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1072: Disp_id 0 is illegal.",
+        1072
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1075<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(type_error(
         activation,
