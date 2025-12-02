@@ -1,5 +1,9 @@
-ruffle (20251201) UNRELEASED; urgency=medium
+ruffle (0.1.0-20251202) unstable; urgency=medium
 
-  * Initial release.
+  * chore: test entry text
+  * chore: test entry text 2
 
- -- unknown <localhost>  Fri, 28 Nov 2025 16:38:58 +0800
+ -- unknown <unknown@localhost>  Tue, 02 Dec 2025 20:57:04 +0800
+
+
+

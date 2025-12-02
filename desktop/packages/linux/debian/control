@@ -9,12 +9,13 @@ Build-Depends:
  cargo (>= 1.86),
  libasound2-dev,
  libudev-dev,
+ jq,
 Standards-Version: 4.7.2
 Homepage: https://ruffle.rs/
 #Vcs-Browser: https://github.com/ruffle-rs/ruffle
 #Vcs-Git: https://github.com/ruffle-rs/ruffle.git
 
-Package: ruffle
+Package: ruffle-desktop
 Architecture: any
 Depends:
  ${shlibs:Depends},
