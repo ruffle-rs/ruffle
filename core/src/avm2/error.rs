@@ -662,6 +662,16 @@ pub fn make_error_1076<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1078<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1078: Illegal opcode/multiname combination.",
+        1078,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1080<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(type_error(
         activation,
