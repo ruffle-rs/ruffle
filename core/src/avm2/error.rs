@@ -843,6 +843,16 @@ pub fn make_error_1123<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1124<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1124: OP_hasnext2 requires object and index to be distinct registers.",
+        1124,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1125<'gc>(
     activation: &mut Activation<'_, 'gc>,
     index: f64,
