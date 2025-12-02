@@ -1,5 +1,5 @@
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::error::{argument_error, error, make_error_2037, make_error_2097};
+use crate::avm2::error::{error, make_error_2037, make_error_2097};
 use crate::avm2::globals::slots::flash_net_file_filter as file_filter_slots;
 use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
 use crate::avm2::parameters::ParametersExt;
@@ -241,7 +241,7 @@ pub fn load<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn save<'gc>(
+pub fn save_internal<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
@@ -249,34 +249,24 @@ pub fn save<'gc>(
     let this = this.as_object().unwrap();
 
     let this = this.as_file_reference().unwrap();
-    let data = args.get_value(0);
+    let byte_array = args
+        .try_get_object(0)
+        .expect("AS code ensures data is non-null");
 
-    let data = match data {
-        Value::Null | Value::Undefined => {
-            // For some reason this isn't a proper error.
-            return Err(Error::avm_error(argument_error(activation, "data", 0)?));
-        }
-        Value::Object(obj) => {
-            if let Some(bytearray) = obj.as_bytearray() {
-                bytearray.bytes().to_vec()
-            } else if let Some(xml) = obj.as_xml_object() {
-                xml.as_xml_string(activation).to_string().into_bytes()
-            } else {
-                data.coerce_to_string(activation)?.to_string().into_bytes()
-            }
-        }
-        _ => data.coerce_to_string(activation)?.to_string().into_bytes(),
-    };
+    let mut byte_array = byte_array.as_bytearray_mut().unwrap();
 
-    let file_name = if let Some(name) = args.try_get_string(1) {
-        name.to_string()
-    } else {
-        "".into()
-    };
+    let mut data = Vec::new();
+    byte_array.swap_storage_with(&mut data);
+    // The ByteArray is now empty, and `data` stores the data previously
+    // contained in it
+
+    let file_name = args
+        .try_get_string(1)
+        .expect("AS code ensures defaultFileName is non-null");
 
     // Create and spawn dialog
     let dialog = activation.context.ui.display_file_save_dialog(
-        file_name.to_owned(),
+        file_name.to_owned().to_string(),
         format!("Select location to save the file {file_name}"),
     );
 
