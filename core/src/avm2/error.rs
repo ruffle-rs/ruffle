@@ -788,6 +788,16 @@ pub fn make_error_1112<'gc>(activation: &mut Activation<'_, 'gc>, arg_count: usi
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1113<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
+        1113,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1115<'gc>(activation: &mut Activation<'_, 'gc>, name: &str) -> Error<'gc> {
     make_error!(type_error(
         activation,

@@ -2,7 +2,8 @@ use crate::avm2::class::Class;
 use crate::avm2::error::{
     make_error_1011, make_error_1014, make_error_1019, make_error_1020, make_error_1021,
     make_error_1025, make_error_1026, make_error_1032, make_error_1043, make_error_1054,
-    make_error_1078, make_error_1107, make_error_1124, verify_error, Error1014Type,
+    make_error_1078, make_error_1107, make_error_1113, make_error_1124, verify_error,
+    Error1014Type,
 };
 use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
@@ -1046,11 +1047,7 @@ fn translate_op<'gc>(
                 // This results in this VerifyError being thrown upon
                 // encountering any `newactivation` op in the bytecode.
 
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
-                    1113,
-                )?));
+                return Err(make_error_1113(activation));
             }
         }
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },
