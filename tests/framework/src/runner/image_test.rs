@@ -44,9 +44,20 @@ pub fn capture_and_compare_image(
         }
     };
 
+    let ruffle_expected_path = base_path.join(format!("{name}.ruffle.png"))?;
+
     let diff = test(&image_comparison, name, &actual_image, expected_image)?;
     let (failure, failure_name) = match (diff, image_comparison.known_failure) {
-        (None, false) => return Ok(()),
+        (None, false) => {
+            return if ruffle_expected_path.exists()? {
+                Err(anyhow!(
+                    "Unexpected `{}` file for passing check, please remove it!",
+                    ruffle_expected_path.as_str(),
+                ))
+            } else {
+                Ok(())
+            };
+        }
         (None, true) => {
             return Err(anyhow!(
                 "Image '{name}': Check was known to be failing, but now passes successfully. \
@@ -56,13 +67,12 @@ pub fn capture_and_compare_image(
         (Some(diff), false) => (diff, Cow::Borrowed(name)),
         (Some(_), true) => {
             let ruffle_name = format!("{name}.ruffle");
-            let path = base_path.join(format!("{ruffle_name}.png"))?;
-            let image = if path.exists()? {
-                image::load_from_memory(&read_bytes(&path)?)
+            let image = if ruffle_expected_path.exists()? {
+                image::load_from_memory(&read_bytes(&ruffle_expected_path)?)
                     .context("Failed to open Ruffle-expected image")?
                     .into_rgba8()
             } else {
-                write_image(&path, &actual_image)?;
+                write_image(&ruffle_expected_path, &actual_image)?;
                 return Err(anyhow!(
                     "Image '{ruffle_name}': No image to compare to! Saved actual image as Ruffle-expected."
                 ));

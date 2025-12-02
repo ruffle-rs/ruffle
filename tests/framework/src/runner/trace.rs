@@ -13,6 +13,8 @@ pub fn compare_trace_output(
 ) -> anyhow::Result<()> {
     let expected_trace = expected_path.read_to_string()?.replace("\r\n", "\n");
 
+    let ruffle_expected_path = path_with_suffix(expected_path, "ruffle")?;
+
     // Null bytes are invisible, and interfere with constructing
     // the expected output.txt file. Any tests dealing with null
     // bytes should explicitly test for them in ActionScript.
@@ -21,7 +23,16 @@ pub fn compare_trace_output(
     let result = test("flash_expected", approx, &expected_trace, &actual_trace);
 
     match known_failure {
-        KnownFailure::None | KnownFailure::Panic { .. } => result,
+        KnownFailure::None | KnownFailure::Panic { .. } => {
+            if result.is_ok() && ruffle_expected_path.exists()? {
+                Err(anyhow!(
+                    "Unexpected `{}` file for passing check, please remove it!",
+                    ruffle_expected_path.as_str(),
+                ))
+            } else {
+                result
+            }
+        }
         KnownFailure::TraceOutput {
             ruffle_check: false,
         } => {
@@ -35,20 +46,20 @@ pub fn compare_trace_output(
             }
         }
         KnownFailure::TraceOutput { ruffle_check: true } => {
-            let path = path_with_suffix(expected_path, "ruffle")?;
-
             if result.is_ok() {
                 return Err(anyhow!(
                     "Trace output check was known to be failing, but now passes successfully. \
                     Please update the test, and remove `known_failure = true` and `{}`!",
-                    path.as_str(),
+                    ruffle_expected_path.as_str(),
                 ));
             }
 
-            let expected_trace = if path.exists()? {
-                path.read_to_string()?.replace("\r\n", "\n")
+            let expected_trace = if ruffle_expected_path.exists()? {
+                ruffle_expected_path.read_to_string()?.replace("\r\n", "\n")
             } else {
-                path.create_file()?.write_all(actual_trace.as_bytes())?;
+                ruffle_expected_path
+                    .create_file()?
+                    .write_all(actual_trace.as_bytes())?;
                 return Err(anyhow!(
                     "No trace to compare to! Saved actual trace as Ruffle-expected."
                 ));
