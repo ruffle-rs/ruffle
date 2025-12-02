@@ -326,6 +326,13 @@ impl ByteArrayStorage {
         *self.bytes.get_mut(item).unwrap() = value;
     }
 
+    /// Swap all data stored in this bytearray with the passed `Vec<u8>`. This
+    /// method sets the bytearray's `position` to 0.
+    pub fn swap_storage_with(&mut self, new_data: &mut Vec<u8>) {
+        self.position.set(0);
+        std::mem::swap(&mut self.bytes, new_data);
+    }
+
     /// Write a single byte at any offset in the bytearray, panicking if out of bounds.
     pub fn set_nongrowing(&mut self, item: usize, value: u8) {
         self.bytes[item] = value;
