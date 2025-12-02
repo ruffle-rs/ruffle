@@ -625,6 +625,23 @@ pub fn make_error_1066<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1070<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class: Class<'gc>,
+    multiname: &Multiname<'gc>,
+) -> Error<'gc> {
+    let class_name = class.name().to_qualified_name_err_message(activation.gc());
+    let multiname_name = multiname.as_uri(activation.strings());
+
+    make_error!(reference_error(
+        activation,
+        &format!("Error #1070: Method {multiname_name} not found on {class_name}",),
+        1070,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1075<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(type_error(
         activation,
