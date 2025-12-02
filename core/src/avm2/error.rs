@@ -615,6 +615,16 @@ pub fn make_error_1065<'gc>(
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1066<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(eval_error(
+        activation,
+        "Error #1066: The form function('function body') is not supported.",
+        1066,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1075<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(type_error(
         activation,
@@ -756,6 +766,16 @@ pub fn make_error_1115<'gc>(activation: &mut Activation<'_, 'gc>, name: &str) ->
         activation,
         &format!("Error #1115: {name} is not a constructor."),
         1115,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1116<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(type_error(
+        activation,
+        "Error #1116: second argument to Function.prototype.apply must be an array.",
+        1116,
     ))
 }
 
