@@ -860,6 +860,25 @@ pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1128<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class: Class<'gc>,
+    param_count: usize,
+) -> Error<'gc> {
+    let class_name = class.name().to_qualified_name_err_message(activation.gc());
+
+    make_error!(type_error(
+        activation,
+        &format!(
+            "Error #1128: Incorrect number of type parameters for {}. Expected 1, got {}.",
+            class_name, param_count
+        ),
+        1128,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1129<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(type_error(
         activation,

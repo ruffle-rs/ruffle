@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{AllocatorFn, Class, CustomConstructorFn};
 use crate::avm2::error::{
-    self, make_error_1107, make_error_1112, make_error_1127, reference_error, type_error,
+    self, make_error_1107, make_error_1112, make_error_1127, make_error_1128, reference_error,
 };
 use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
@@ -803,20 +803,11 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         }
 
         if nullable_params.len() != 1 {
-            let class_name = self
-                .inner_class_definition()
-                .name()
-                .to_qualified_name(activation.gc());
-
-            return Err(Error::avm_error(type_error(
+            return Err(make_error_1128(
                 activation,
-                &format!(
-                    "Error #1128: Incorrect number of type parameters for {}. Expected 1, got {}.",
-                    class_name,
-                    nullable_params.len()
-                ),
-                1128,
-            )?));
+                self.inner_class_definition(),
+                nullable_params.len(),
+            ));
         }
 
         //Because `null` is a valid parameter, we have to accept values as
