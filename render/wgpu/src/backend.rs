@@ -975,22 +975,18 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 self.resolve_sync_handle(
                     sync_handle,
                     Box::new(|raw_pixels, buffer_width| {
-                        if buffer_width as usize
-                            != *width as usize * output_channels * std::mem::size_of::<f32>()
-                        {
-                            let channels_in_raw_pixels = if has_padding { 4usize } else { 3usize };
+                        let width = *width as usize;
 
+                        if buffer_width as usize
+                            != width * output_channels * std::mem::size_of::<f32>()
+                        {
                             let mut new_pixels = Vec::new();
                             for row in raw_pixels.chunks(buffer_width as usize) {
-                                // Ignore any wgpu-added padding (this is distinct from the alpha-channel padding
-                                // that we add for pixelbender)
-                                let actual_row = &row[0..(*width as usize
-                                    * channels_in_raw_pixels
-                                    * std::mem::size_of::<f32>())];
+                                let actual_row = &row[0..(width * std::mem::size_of::<[f32; 4]>())];
 
-                                for pixel in actual_row.chunks_exact(
-                                    channels_in_raw_pixels * std::mem::size_of::<f32>(),
-                                ) {
+                                for pixel in
+                                    actual_row.chunks_exact(std::mem::size_of::<[f32; 4]>())
+                                {
                                     if has_padding {
                                         // Take the first three channels
                                         new_pixels.extend_from_slice(
