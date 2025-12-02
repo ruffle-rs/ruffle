@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{AllocatorFn, Class, CustomConstructorFn};
 use crate::avm2::error::{
-    self, make_error_1107, make_error_1112, make_error_1127, make_error_1128, reference_error,
+    self, make_error_1070, make_error_1107, make_error_1112, make_error_1127, make_error_1128,
 };
 use crate::avm2::function::{exec, FunctionArgs};
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
@@ -441,21 +441,11 @@ impl<'gc> ClassObject<'gc> {
                 multiname,
                 self.inner_class_definition(),
             )),
-            None => {
-                let qualified_multiname_name = multiname.as_uri(activation.strings());
-                let qualified_class_name = self
-                    .inner_class_definition()
-                    .name()
-                    .to_qualified_name_err_message(activation.gc());
-
-                return Err(Error::avm_error(reference_error(
-                    activation,
-                    &format!(
-                        "Error #1070: Method {qualified_multiname_name} not found on {qualified_class_name}",
-                    ),
-                    1070,
-                )?));
-            }
+            None => Err(make_error_1070(
+                activation,
+                self.inner_class_definition(),
+                multiname,
+            )),
         }
     }
 
