@@ -4,6 +4,7 @@ num_frames = 1
 known_failure = true # https://github.com/ruffle-rs/ruffle/issues/12123
 
 [image_comparisons.output]
+known_failure = true # https://github.com/ruffle-rs/ruffle/issues/12123
 tolerance = 0
 
 [player_options]

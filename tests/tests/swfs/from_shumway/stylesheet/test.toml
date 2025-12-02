@@ -1,7 +1,7 @@
 num_ticks = 1
-known_failure = true
 
 [image_comparisons.output]
+known_failure = true
 tolerance = 5
 
 [player_options]

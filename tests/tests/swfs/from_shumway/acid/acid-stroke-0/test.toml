@@ -1,9 +1,9 @@
 # Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/acid
 
 num_frames = 1
-known_failure = true # https://github.com/ruffle-rs/ruffle/issues/12119
 
 [image_comparisons.output]
+known_failure = true # https://github.com/ruffle-rs/ruffle/issues/12119
 tolerance = 0
 
 [player_options]

@@ -8,6 +8,7 @@ use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
 use crate::options::TestOptions;
 use crate::options::image_comparison::ImageComparison;
+use crate::options::known_failure::KnownFailure;
 use crate::runner::automation::perform_automated_event;
 use crate::runner::image_test::capture_and_compare_image;
 use crate::runner::trace::compare_trace_output;
@@ -20,6 +21,8 @@ use ruffle_core::{Player, PlayerBuilder};
 use ruffle_input_format::InputInjector;
 use ruffle_render::backend::{RenderBackend, ViewportDimensions};
 use ruffle_socket_format::SocketEvent;
+use std::any::Any;
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, mpsc};
 use std::time::Duration;
@@ -154,8 +157,57 @@ impl TestRunner {
         self.remaining_iterations == 1
     }
 
-    /// Tick this test forward, running any actionscript and progressing the timeline by one.
-    pub fn tick(&mut self) {
+    pub fn is_preloaded(&self) -> bool {
+        self.preloaded
+    }
+
+    /// Ticks this test forward: runs actionscript, progresses the timeline by one,
+    /// executes custom FsCommands and performs scheduled tests.
+    pub fn tick(&mut self) -> Result<TestStatus> {
+        use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
+
+        let unwind_result = catch_unwind(AssertUnwindSafe(|| self.do_tick()));
+        match (unwind_result, &self.options.known_failure) {
+            (Ok(()), _) => (),
+            (Err(panic), KnownFailure::Panic { message }) => {
+                let actual = panic_payload_as_string(panic);
+                if actual.contains(message) {
+                    return Ok(TestStatus::Finished);
+                }
+
+                let mut actual = actual.into_owned();
+                actual.push_str("\n\nnote: expected panic message to contain: ");
+                actual.push_str(message);
+                resume_unwind(Box::new(actual))
+            }
+            (Err(panic), _) => resume_unwind(panic),
+        }
+
+        self.test()?;
+
+        match self.remaining_iterations {
+            0 => self.last_test().map(|_| TestStatus::Finished),
+            _ if self.options.sleep_to_meet_frame_rate => {
+                // If requested, ensure that the 'expected' amount of
+                // time actually elapses between frames. This is useful for
+                // tests that call 'flash.utils.getTimer()' and use
+                // 'setInterval'/'flash.utils.Timer'
+                //
+                // Note that when Ruffle actually runs frames, we can
+                // execute frames faster than this in order to 'catch up'
+                // if we've fallen behind. However, in order to make regression
+                // tests deterministic, we always call 'update_timers' with
+                // an elapsed time of 'frame_time'. By sleeping for 'frame_time_duration',
+                // we ensure that the result of 'flash.utils.getTimer()' is consistent
+                // with timer execution (timers will see an elapsed time of *at least*
+                // the requested timer interval).
+                Ok(TestStatus::Sleep(self.frame_time_duration))
+            }
+            _ => Ok(TestStatus::Continue),
+        }
+    }
+
+    fn do_tick(&mut self) {
         if !self
             .player
             .lock()
@@ -179,14 +231,10 @@ impl TestRunner {
         self.executor.run();
     }
 
-    pub fn is_preloaded(&self) -> bool {
-        self.preloaded
-    }
-
     /// After a tick, run any custom fdcommands that were queued up and perform any scheduled tests.
-    pub fn test(&mut self) -> Result<TestStatus> {
+    fn test(&mut self) -> Result<()> {
         if !self.preloaded {
-            return Ok(TestStatus::Continue);
+            return Ok(());
         }
         for command in self.fs_commands.try_iter() {
             match command {
@@ -206,7 +254,6 @@ impl TestRunner {
                             &self.player,
                             &name,
                             image_comparison,
-                            self.options.known_failure,
                             self.render_interface.as_deref(),
                         )?;
                     } else {
@@ -225,86 +272,71 @@ impl TestRunner {
         // Rendering has side-effects (such as processing 'DisplayObject.scrollRect' updates)
         self.player.lock().unwrap().render();
 
-        if let Some(name) = self
-            .images
-            .iter()
-            .find(|(_k, v)| v.trigger == ImageTrigger::SpecificIteration(self.current_iteration))
-            .map(|(k, _v)| k.to_owned())
-        {
-            let image_comparison = self
-                .images
-                .remove(&name)
-                .expect("Name was just retrieved from map, should not be missing!");
+        let trigger = ImageTrigger::SpecificIteration(self.current_iteration);
+        if let Some((name, comp)) = self.take_image_comparison_by_trigger(trigger) {
             capture_and_compare_image(
                 &self.root_path,
                 &self.player,
                 &name,
-                image_comparison,
-                self.options.known_failure,
+                comp,
                 self.render_interface.as_deref(),
             )?;
         }
 
-        if self.remaining_iterations == 0 {
-            // Last iteration, let's check everything went well
+        Ok(())
+    }
 
-            if let Some(name) = self
-                .images
-                .iter()
-                .find(|(_k, v)| v.trigger == ImageTrigger::LastFrame)
-                .map(|(k, _v)| k.to_owned())
-            {
-                let image_comparison = self
-                    .images
-                    .remove(&name)
-                    .expect("Name was just retrieved from map, should not be missing!");
-
-                capture_and_compare_image(
-                    &self.root_path,
-                    &self.player,
-                    &name,
-                    image_comparison,
-                    self.options.known_failure,
-                    self.render_interface.as_deref(),
-                )?;
-            }
-
-            if !self.images.is_empty() {
-                return Err(anyhow!(
-                    "Image comparisons didn't trigger: {:?}",
-                    self.images.keys()
-                ));
-            }
-
-            self.executor.run();
-
-            let trace = self.log.trace_output();
-            // Null bytes are invisible, and interfere with constructing
-            // the expected output.txt file. Any tests dealing with null
-            // bytes should explicitly test for them in ActionScript.
-            let normalized_trace = trace.replace('\0', "");
-            compare_trace_output(&self.output_path, &self.options, &normalized_trace)?;
+    fn last_test(&mut self) -> Result<()> {
+        // Last iteration, let's check everything went well
+        if let KnownFailure::Panic { .. } = &self.options.known_failure {
+            return Err(anyhow!(
+                "Test was known to be panicking, but now finishes successfully. \
+                Please update it and remove `known_failure.panic = '...'`!",
+            ));
         }
 
-        Ok(match self.remaining_iterations {
-            0 => TestStatus::Finished,
-            _ if self.options.sleep_to_meet_frame_rate => {
-                // If requested, ensure that the 'expected' amount of
-                // time actually elapses between frames. This is useful for
-                // tests that call 'flash.utils.getTimer()' and use
-                // 'setInterval'/'flash.utils.Timer'
-                //
-                // Note that when Ruffle actually runs frames, we can
-                // execute frames faster than this in order to 'catch up'
-                // if we've fallen behind. However, in order to make regression
-                // tests deterministic, we always call 'update_timers' with
-                // an elapsed time of 'frame_time'. By sleeping for 'frame_time_duration',
-                // we ensure that the result of 'flash.utils.getTimer()' is consistent
-                // with timer execution (timers will see an elapsed time of *at least*
-                // the requested timer interval).
-                TestStatus::Sleep(self.frame_time_duration)
-            }
-            _ => TestStatus::Continue,
-        })
+        let trigger = ImageTrigger::LastFrame;
+        if let Some((name, comp)) = self.take_image_comparison_by_trigger(trigger) {
+            capture_and_compare_image(
+                &self.root_path,
+                &self.player,
+                &name,
+                comp,
+                self.render_interface.as_deref(),
+            )?;
+        }
+
+        if !self.images.is_empty() {
+            return Err(anyhow!(
+                "Image comparisons didn't trigger: {:?}",
+                self.images.keys()
+            ));
+        }
+
+        self.executor.run();
+
+        compare_trace_output(
+            &self.log,
+            &self.output_path,
+            self.options.approximations.as_ref(),
+            matches!(self.options.known_failure, KnownFailure::TraceOutput),
+        )
+    }
+
+    fn take_image_comparison_by_trigger(
+        &mut self,
+        trigger: ImageTrigger,
+    ) -> Option<(String, ImageComparison)> {
+        self.images.extract_if(|_k, v| v.trigger == trigger).next()
+    }
+}
+
+fn panic_payload_as_string(panic: Box<dyn Any + Send + 'static>) -> Cow<'static, str> {
+    if let Some(s) = panic.downcast_ref::<&str>() {
+        (*s).into()
+    } else if let Ok(s) = panic.downcast::<String>() {
+        (*s).into()
+    } else {
+        "<opaque payload>".into()
     }
 }

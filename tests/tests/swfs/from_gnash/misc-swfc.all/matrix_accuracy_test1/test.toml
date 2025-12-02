@@ -1,5 +1,5 @@
 num_frames = 30
-known_failure = true
+known_failure.panic = "attempt to subtract with overflow"
 
 [subtests.fp9]
 output_path = "output.fp9.txt"

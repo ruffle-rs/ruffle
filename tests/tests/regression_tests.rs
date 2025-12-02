@@ -6,7 +6,6 @@ use crate::environment::NativeEnvironment;
 use crate::external_interface::tests::{external_interface_avm1, external_interface_avm2};
 use crate::shared_object::{shared_object_avm1, shared_object_avm2, shared_object_self_ref_avm1};
 use anyhow::Context;
-use anyhow::Result;
 use clap::Parser;
 use libtest_mimic::Trial;
 use ruffle_fs_tests_runner::FsTestsRunner;
@@ -15,7 +14,6 @@ use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
 use ruffle_test_framework::vfs::VfsPath;
 use std::borrow::Cow;
-use std::panic::{AssertUnwindSafe, catch_unwind, resume_unwind};
 use std::path::PathBuf;
 use std::thread::sleep;
 
@@ -108,7 +106,7 @@ fn trial_for_test(opts: &RuffleTestOpts, test: Test, list_only: bool) -> Trial {
     // Put extra info into the test 'kind' instead of appending it to the test name,
     // to not break `cargo test some/test -- --exact` and `cargo test -- --list`.
     let mut test_kind = String::new();
-    if test.options.known_failure {
+    if test.options.has_known_failure() {
         test_kind.push('!');
     }
     if let Some(name) = &test.options.subtest_name {
@@ -116,32 +114,13 @@ fn trial_for_test(opts: &RuffleTestOpts, test: Test, list_only: bool) -> Trial {
     }
 
     let trial = Trial::test(test.name.clone(), move || {
-        let test = AssertUnwindSafe(test);
-        let unwind_result = catch_unwind(|| {
-            let mut runner = test.create_test_runner(&NativeEnvironment)?;
+        let mut runner = test.create_test_runner(&NativeEnvironment)?;
 
-            loop {
-                runner.tick();
-                match runner.test()? {
-                    TestStatus::Continue => {}
-                    TestStatus::Sleep(duration) => sleep(duration),
-                    TestStatus::Finished => break,
-                }
-            }
-
-            Result::<_>::Ok(())
-        });
-        if test.options.known_failure {
-            match unwind_result {
-                Ok(Ok(())) => Err(
-                    format!("{} was known to be failing, but now passes successfully. Please update it and remove `known_failure = true`!", test.name).into()
-                ),
-                Ok(Err(_)) | Err(_) => Ok(()),
-            }
-        } else {
-            match unwind_result {
-                Ok(r) => Ok(r?),
-                Err(e) => resume_unwind(e),
+        loop {
+            match runner.tick()? {
+                TestStatus::Continue => (),
+                TestStatus::Sleep(duration) => sleep(duration),
+                TestStatus::Finished => break Ok(()),
             }
         }
     });

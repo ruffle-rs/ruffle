@@ -1,19 +1,42 @@
-use crate::options::TestOptions;
+use crate::backends::TestLogBackend;
+use crate::options::approximations::Approximations;
 use anyhow::{Error, anyhow};
 use pretty_assertions::Comparison;
 use vfs::VfsPath;
 
 pub fn compare_trace_output(
+    log: &TestLogBackend,
     expected_path: &VfsPath,
-    options: &TestOptions,
+    approximations: Option<&Approximations>,
+    known_failure: bool,
+) -> anyhow::Result<()> {
+    let expected_trace = expected_path.read_to_string()?.replace("\r\n", "\n");
+
+    // Null bytes are invisible, and interfere with constructing
+    // the expected output.txt file. Any tests dealing with null
+    // bytes should explicitly test for them in ActionScript.
+    let actual_trace = log.trace_output().replace('\0', "");
+
+    let result = test(&expected_trace, approximations, &actual_trace);
+    match (result, known_failure) {
+        (res, false) => res,
+        (Ok(()), true) => Err(anyhow!(
+            "Trace output check was known to be failing, but now passes successfully. \
+            Please update the test and remove `known_failure = true`!",
+        )),
+        (Err(_), true) => Ok(()),
+    }
+}
+
+pub fn test(
+    expected_output: &str,
+    approximations: Option<&Approximations>,
     actual_output: &str,
 ) -> anyhow::Result<()> {
-    let expected_output = expected_path.read_to_string()?.replace("\r\n", "\n");
-
-    if let Some(approximations) = &options.approximations {
+    if let Some(approximations) = approximations {
         let add_comparison_to_err = |err: Error| -> Error {
             let left_pretty = PrettyString(actual_output);
-            let right_pretty = PrettyString(&expected_output);
+            let right_pretty = PrettyString(expected_output);
             let comparison = Comparison::new(&left_pretty, &right_pretty);
 
             anyhow!("{}\n\n{}\n", err, comparison)
@@ -90,7 +113,7 @@ pub fn compare_trace_output(
             }
         }
     } else {
-        assert_text_matches(actual_output, &expected_output)?;
+        assert_text_matches(actual_output, expected_output)?;
     }
 
     Ok(())
