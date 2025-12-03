@@ -5,8 +5,8 @@ use swf::Twips;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{
-    argument_error, make_error_2006, make_error_2024, make_error_2025, make_error_2150,
-    make_error_2180,
+    make_error_2006, make_error_2024, make_error_2025, make_error_2150, make_error_2180,
+    make_error_3783,
 };
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{Object, TObject as _};
@@ -36,11 +36,7 @@ fn validate_add_operation<'gc>(
         .expect("Parent must be a DisplayObjectContainer");
 
     if let DisplayObject::Stage(_) = proposed_child {
-        return Err(Error::avm_error(argument_error(
-            activation,
-            "Error #3783: A Stage object cannot be added as the child of another object.",
-            3783,
-        )?));
+        return Err(make_error_3783(activation));
     }
 
     if !proposed_child.movie().is_action_script_3() && activation.context.root_swf.version() > 9 {

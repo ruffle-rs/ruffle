@@ -1646,6 +1646,16 @@ pub fn make_error_3781<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_3783<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3783: A Stage object cannot be added as the child of another object.",
+        3783,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn range_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
