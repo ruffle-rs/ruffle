@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{
     make_error_1014, make_error_1053, make_error_1059, make_error_1103, make_error_1107,
-    verify_error, Error1014Type,
+    make_error_1111, verify_error, Error1014Type,
 };
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::{scriptobject_allocator, ClassObject, Object};
@@ -875,23 +875,13 @@ impl<'gc> Class<'gc> {
         self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Box<[Class<'gc>]>, Error<'gc>> {
-        let mc = activation.gc();
-
         let mut interfaces = Vec::with_capacity(self.direct_interfaces().len());
         let mut dedup = HashSet::new();
         let mut queue = vec![self];
         while let Some(cls) = queue.pop() {
             for interface in cls.direct_interfaces() {
                 if !interface.is_interface() {
-                    return Err(Error::avm_error(verify_error(
-                        activation,
-                        &format!(
-                            "Error #1111: {} cannot implement {}.",
-                            self.name().to_qualified_name(mc),
-                            interface.name().to_qualified_name_err_message(mc)
-                        ),
-                        1111,
-                    )?));
+                    return Err(make_error_1111(activation, self, *interface));
                 }
 
                 if dedup.insert(*interface) {
