@@ -353,15 +353,15 @@ PASSED: a == "123" [./String.as:1254]
 PASSED: a.length == "another string" [./String.as:1256]
 PASSED: a.length == "another string" [./String.as:1258]
 PASSED: a.hasOwnProperty('length') [./String.as:1260]
-FAILED: expected: "toString" obtained: prototype,toString [./String.as:1269]
-FAILED: expected: "toString" obtained: prototype,toString [./String.as:1277]
+PASSED: a.toString() == "toString" [./String.as:1269]
+PASSED: a.toString() == "toString" [./String.as:1277]
 PASSED: typeof(String.__proto__) == 'object' [./String.as:1279]
 PASSED: typeof(Object.prototype) == 'object' [./String.as:1280]
 PASSED: String.gotcha == 1 [./String.as:1282]
 PASSED: !String.__proto__.hasOwnProperty("gotcha") [./String.as:1284]
 PASSED: String.__proto__.__proto__.hasOwnProperty("gotcha") [./String.as:1285]
 PASSED: String.__proto__.__proto__ == Object.prototype [./String.as:1286]
-FAILED: expected: "gotcha,toString" obtained: gotcha,prototype,toString [./String.as:1289]
+PASSED: a.toString() == "gotcha,toString" [./String.as:1289]
 PASSED: typeof(saved1.value) == 'object' [./String.as:1327]
 PASSED: saved1.value == 'string' [./String.as:1328]
 PASSED: saved1.value == 'string' [./String.as:1330]
@@ -372,6 +372,6 @@ PASSED: saved2.value !== saved3.value [./String.as:1338]
 PASSED: a.id == 'wonder1' [./String.as:1352]
 PASSED: a.id == 'wonder2' [./String.as:1354]
 PASSED: a.id == 'wonder3' [./String.as:1356]
-#passed: 358
-#failed: 13
+#passed: 361
+#failed: 10
 #total tests run: 371

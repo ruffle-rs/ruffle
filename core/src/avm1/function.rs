@@ -490,7 +490,7 @@ impl<'gc> FunctionObject<'gc> {
                 context.gc(),
                 istr!(context, "prototype"),
                 prototype.into(),
-                Attribute::DONT_DELETE,
+                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
             );
         }
 
