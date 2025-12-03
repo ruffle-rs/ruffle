@@ -446,6 +446,40 @@ pub fn make_error_1027<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1030<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    first_len: usize,
+    second_len: usize,
+) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        &format!(
+            "Error #1030: Stack depth is unbalanced. {} != {}.",
+            first_len, second_len,
+        ),
+        1030,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1031<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    first_len: usize,
+    second_len: usize,
+) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        &format!(
+            "Error #1031: Scope depth is unbalanced. {} != {}.",
+            first_len, second_len,
+        ),
+        1031,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1032<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
     make_error!(verify_error(
         activation,
