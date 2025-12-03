@@ -4,7 +4,7 @@ use swf::Point;
 use swf::Twips;
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{argument_error, make_error_2006, make_error_2025};
+use crate::avm2::error::{argument_error, make_error_2006, make_error_2024, make_error_2025};
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{Object, TObject as _};
 use crate::avm2::parameters::ParametersExt;
@@ -49,11 +49,7 @@ fn validate_add_operation<'gc>(
     }
 
     if DisplayObject::ptr_eq(proposed_child, new_parent) {
-        return Err(Error::avm_error(argument_error(
-            activation,
-            "Error #2024: An object cannot be added as a child of itself.",
-            2024,
-        )?));
+        return Err(make_error_2024(activation));
     }
 
     let mut checking_parent = Some(new_parent);

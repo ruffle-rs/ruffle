@@ -1298,6 +1298,16 @@ pub fn make_error_2023<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2024<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #2024: An object cannot be added as a child of itself.",
+        2024,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(argument_error(
         activation,
