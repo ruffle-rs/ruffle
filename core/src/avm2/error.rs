@@ -1480,6 +1480,18 @@ pub fn make_error_2174<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     ))
 }
 
+// Currently we don't use this, see `globals::flash::system::system::set_clipboard`
+#[allow(dead_code)]
+#[inline(never)]
+#[cold]
+pub fn make_error_2176<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(
+        activation,
+        "Error #2176: Certain actions, such as those that display a pop-up window, may only be invoked upon user interaction, for example by a mouse click or button press.",
+        2176,
+    ))
+}
+
 #[inline(never)]
 #[cold]
 pub fn make_error_3671<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
