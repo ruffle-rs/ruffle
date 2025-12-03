@@ -1670,7 +1670,7 @@ pub fn make_error_3783<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn range_error<'gc>(
+fn range_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1681,7 +1681,7 @@ pub fn range_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn eval_error<'gc>(
+fn eval_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1692,7 +1692,7 @@ pub fn eval_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn argument_error<'gc>(
+fn argument_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1703,7 +1703,7 @@ pub fn argument_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn security_error<'gc>(
+fn security_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1714,7 +1714,7 @@ pub fn security_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn type_error<'gc>(
+fn type_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1725,7 +1725,7 @@ pub fn type_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn reference_error<'gc>(
+fn reference_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1736,7 +1736,7 @@ pub fn reference_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn verify_error<'gc>(
+fn verify_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1747,7 +1747,7 @@ pub fn verify_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn illegal_operation_error<'gc>(
+fn illegal_operation_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1758,7 +1758,7 @@ pub fn illegal_operation_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn io_error<'gc>(
+fn io_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1769,7 +1769,7 @@ pub fn io_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn eof_error<'gc>(
+fn eof_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1780,7 +1780,7 @@ pub fn eof_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn uri_error<'gc>(
+fn uri_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1791,7 +1791,7 @@ pub fn uri_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn syntax_error<'gc>(
+fn syntax_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1802,7 +1802,7 @@ pub fn syntax_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn error<'gc>(
+fn error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
