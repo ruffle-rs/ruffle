@@ -555,6 +555,16 @@ pub fn make_error_1058<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1059<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1059: ClassInfo is referenced before definition.",
+        1059,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1063<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,

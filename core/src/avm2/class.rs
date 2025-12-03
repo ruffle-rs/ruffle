@@ -2,7 +2,7 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{
-    make_error_1014, make_error_1053, make_error_1107, verify_error, Error1014Type,
+    make_error_1014, make_error_1053, make_error_1059, make_error_1107, verify_error, Error1014Type,
 };
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::{scriptobject_allocator, ClassObject, Object};
@@ -675,11 +675,7 @@ impl<'gc> Class<'gc> {
                                 (_, TraitKind::Class { .. }) => {
                                     if !allow_class_trait {
                                         // Class traits aren't allowed in a class (except `global` classes)
-                                        return Err(Error::avm_error(verify_error(
-                                            activation,
-                                            "Error #1059: ClassInfo is referenced before definition.",
-                                            1059,
-                                        )?));
+                                        return Err(make_error_1059(activation));
                                     }
                                 }
                                 (TraitKind::Getter { .. }, TraitKind::Getter { .. })
