@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 from datetime import datetime
+from email import utils
 import xml.etree.ElementTree as xml
 import json
 
@@ -112,6 +113,19 @@ def gh_get_last_nightly_tag():
     return next(gh_list_nightly_tags(16), None)
 
 
+def deb_changelog(version, revision, date, fullname='ruffle', email='ruffle@ruffle.rs', suite='unstable'):
+    orig = ''
+    changes = ''
+    rfc2822date = utils.format_datetime(date)
+    if os.path.exists(f'{REPO_DIR}/.github/changelog.entries'):
+        with open(f'{REPO_DIR}/.github/changelog.entries', 'r') as changelog:
+            changes = changelog.read()
+    with open(f'{REPO_DIR}/desktop/packages/linux/debian/changelog', 'r') as original:
+        orig = original.read()
+    with open(f'{REPO_DIR}/desktop/packages/linux/debian/changelog', 'w') as modified:
+        modified.write(f'ruffle ({version}-{revision}) {suite}; urgency=medium\n\n{changes}\n\n -- {fullname} <{email}>  {rfc2822date}\n\n{orig}')
+
+
 # ===== Commands ===========================================
 
 def bump():
@@ -129,7 +143,8 @@ def bump():
 
     log(f'Next planned version is {next_planned_version}')
 
-    nightly_version = f'{next_planned_version}-nightly.{get_current_time_version()}'
+    current_time_version = get_current_time_version()
+    nightly_version = f'{next_planned_version}-nightly.{current_time_version}'
     log(f'Nightly version is {nightly_version}')
 
     cargo_set_version([nightly_version])
@@ -145,6 +160,8 @@ def bump():
     github_output('current-version', current_version)
     github_output('version', version)
     github_output('version4', version4)
+
+    deb_changelog(next_planned_version, ''.join(part.zfill(2) for part in current_time_version.split('.')), datetime.now())
 
 
 def metainfo():

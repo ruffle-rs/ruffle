@@ -56,11 +56,16 @@ uninstall:
 version:
 	@echo $(VERSION)-$(REVISION)
 	@-if ! grep "$(VERSION)-$(REVISION)" $(DEBIAN_DIR)/changelog; then \
-	  sed $(SI) '1i\\' $(DEBIAN_DIR)/changelog; \
+	  if [ -s $(DEBIAN_DIR)/changelog ]; then \
+	    sed $(SI) '1i\\' $(DEBIAN_DIR)/changelog; \
+	  else \
+	    echo > $(DEBIAN_DIR)/changelog; \
+	  fi; \
 	  sed $(SI) '1i\ -- $(DEBFULLNAME) <$(DEBEMAIL)>  $(DEBDATE)' $(DEBIAN_DIR)/changelog; \
 	  sed $(SI) '1i\\' $(DEBIAN_DIR)/changelog; \
-	  cat .github/changelog.entries | while read line; do \
-	    sed $(SI) "1i\ \ * $$line" $(DEBIAN_DIR)/changelog; \
+	  touch -a .github/changelog.entries \
+	  tac .github/changelog.entries | while read line; do \
+	    sed $(SI) "1i$$line" $(DEBIAN_DIR)/changelog; \
 	  done; \
 	  sed $(SI) '1i\\' $(DEBIAN_DIR)/changelog; \
 	  sed $(SI) '1iruffle ($(VERSION)-$(REVISION)) $(DEBSUITE); urgency=medium' $(DEBIAN_DIR)/changelog; \

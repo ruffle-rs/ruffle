@@ -54,6 +54,22 @@ jobs:
           crate: cargo-get
           version: '^1.0'
 
+      - name: Get changelog
+        uses: mikepenz/release-changelog-builder-action@v6.0.1
+        with:
+          owner: "ruffle-rs"
+          repo: "ruffle"
+          fromTag: "nightly-2025-12-01"
+          toTag: "nightly-2025-12-02"
+          token: ${{ secrets.PGITHUB_TOKEN }}
+          outputFile: ".github/changelog.entries"
+          failOnError: "true"
+          configurationJson: |
+            {
+              "template": "#{{UNCATEGORIZED}}",
+              "pr_template": "  * #{{TITLE}} by @#{{AUTHOR}} in ##{{NUMBER}}",
+              "categories": []
+            }
       - name: Bump version
         if: steps.activity.outputs.is_active == 'true'
         id: version
