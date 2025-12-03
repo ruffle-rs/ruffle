@@ -1442,6 +1442,20 @@ pub fn make_error_2099<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2109<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    frame_label: AvmString<'gc>,
+    scene: AvmString<'gc>,
+) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        &format!("Error #2109: Frame label {frame_label} not found in scene {scene}."),
+        2109,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(argument_error(
         activation,
