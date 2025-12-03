@@ -1494,6 +1494,16 @@ pub fn make_error_2176<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2182<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #2182: Invalid fieldOfView value.  The value must be greater than 0 and less than 180.",
+        2182,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2186<'gc>(activation: &mut Activation<'_, 'gc>, focal_length: f64) -> Error<'gc> {
     make_error!(argument_error(
         activation,
