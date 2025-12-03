@@ -368,6 +368,26 @@ pub fn make_error_1021<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1023<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1023: Stack overflow occurred.",
+        1023,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1024<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1024: Stack underflow occurred.",
+        1024,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
     make_error!(verify_error(
         activation,

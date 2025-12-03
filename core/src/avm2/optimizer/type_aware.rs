@@ -1,6 +1,6 @@
 use crate::avm2::error::{
-    make_error_1013, make_error_1019, make_error_1026, make_error_1035, make_error_1051,
-    make_error_1058, verify_error,
+    make_error_1013, make_error_1019, make_error_1023, make_error_1024, make_error_1026,
+    make_error_1035, make_error_1051, make_error_1058, verify_error,
 };
 use crate::avm2::method::{Method, MethodAssociation, MethodKind, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
@@ -338,11 +338,7 @@ impl<'gc> Stack<'gc> {
         value: OptValue<'gc>,
     ) -> Result<(), Error<'gc>> {
         if self.len() >= self.max_height() {
-            return Err(Error::avm_error(verify_error(
-                activation,
-                "Error #1023: Stack overflow occurred.",
-                1023,
-            )?));
+            return Err(make_error_1023(activation));
         }
 
         self.0.push(value);
@@ -352,11 +348,7 @@ impl<'gc> Stack<'gc> {
 
     fn pop(&mut self, activation: &mut Activation<'_, 'gc>) -> Result<OptValue<'gc>, Error<'gc>> {
         if self.0.is_empty() {
-            return Err(Error::avm_error(verify_error(
-                activation,
-                "Error #1024: Stack underflow occurred.",
-                1024,
-            )?));
+            return Err(make_error_1024(activation));
         }
 
         Ok(self.0.pop().unwrap())
