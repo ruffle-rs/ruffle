@@ -6,6 +6,7 @@ use swf::Twips;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{
     argument_error, make_error_2006, make_error_2024, make_error_2025, make_error_2150,
+    make_error_2180,
 };
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{Object, TObject as _};
@@ -43,11 +44,7 @@ fn validate_add_operation<'gc>(
     }
 
     if !proposed_child.movie().is_action_script_3() && activation.context.root_swf.version() > 9 {
-        return Err(Error::avm_error(argument_error(
-            activation,
-            "Error #2180: It is illegal to move AVM1 content (AS1 or AS2) to a different part of the displayList when it has been loaded into AVM2 (AS3) content.",
-            2180,
-        )?));
+        return Err(make_error_2180(activation));
     }
 
     if DisplayObject::ptr_eq(proposed_child, new_parent) {
