@@ -1494,6 +1494,12 @@ pub fn make_error_2176<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_3669<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(activation, "Error #3669: Bad input size.", 3669))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_3670<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(argument_error(
         activation,
@@ -1509,6 +1515,26 @@ pub fn make_error_3671<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #3671: Buffer has zero size.",
         3671,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3780<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(
+        activation,
+        "Error #3780: Requested width of backbuffer is not in allowed range 32 to 16384.",
+        3680,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3781<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(
+        activation,
+        "Error #3781: Requested height of backbuffer is not in allowed range 32 to 16384.",
+        3681,
     ))
 }
 
