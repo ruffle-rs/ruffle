@@ -3,7 +3,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{
     make_error_1014, make_error_1053, make_error_1059, make_error_1103, make_error_1107,
-    make_error_1111, verify_error, Error1014Type,
+    make_error_1110, make_error_1111, Error1014Type,
 };
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::{scriptobject_allocator, ClassObject, Object};
@@ -623,15 +623,7 @@ impl<'gc> Class<'gc> {
             }
 
             if superclass.is_interface() {
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    &format!(
-                        "Error #1110: Class {} cannot extend {}.",
-                        self.name().to_qualified_name(mc),
-                        superclass.name().to_qualified_name_err_message(mc)
-                    ),
-                    1110,
-                )?));
+                return Err(make_error_1110(activation, self, superclass));
             }
 
             for instance_trait in self.traits() {
