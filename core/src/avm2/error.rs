@@ -719,6 +719,16 @@ pub fn make_error_1066<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1068<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1068: Scope values cannot be reconciled.",
+        1068,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1070<'gc>(
     activation: &mut Activation<'_, 'gc>,
     class: Class<'gc>,

@@ -1,7 +1,7 @@
 use crate::avm2::error::{
     make_error_1013, make_error_1017, make_error_1018, make_error_1019, make_error_1023,
     make_error_1024, make_error_1026, make_error_1030, make_error_1031, make_error_1035,
-    make_error_1051, make_error_1058, verify_error,
+    make_error_1051, make_error_1058, make_error_1068,
 };
 use crate::avm2::method::{Method, MethodAssociation, MethodKind, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
@@ -547,11 +547,7 @@ impl<'gc> AbstractState<'gc> {
             let other_scope = other.scope_stack.at(i);
 
             if our_scope.1 != other_scope.1 {
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1068: Scope values cannot be reconciled.",
-                    1068,
-                )?));
+                return Err(make_error_1068(activation));
             }
 
             let merged = our_scope.0.merged_with(other_scope.0);
