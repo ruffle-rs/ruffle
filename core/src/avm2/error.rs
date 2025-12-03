@@ -810,6 +810,28 @@ pub fn make_error_1108<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1111<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class: Class<'gc>,
+    interface: Class<'gc>,
+) -> Error<'gc> {
+    let mc = activation.gc();
+
+    let class_name = class.name().to_qualified_name(mc);
+    let interface_name = interface.name().to_qualified_name_err_message(mc);
+
+    make_error!(verify_error(
+        activation,
+        &format!(
+            "Error #1111: {} cannot implement {}.",
+            class_name, interface_name
+        ),
+        1111,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1112<'gc>(activation: &mut Activation<'_, 'gc>, arg_count: usize) -> Error<'gc> {
     make_error!(argument_error(
         activation,
