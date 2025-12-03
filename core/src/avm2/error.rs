@@ -1494,11 +1494,21 @@ pub fn make_error_2176<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_3670<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3670: Buffer too big.",
+        3670,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_3671<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(argument_error(
         activation,
         "Error #3671: Buffer has zero size.",
-        3671
+        3671,
     ))
 }
 

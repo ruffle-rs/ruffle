@@ -1,4 +1,6 @@
-use crate::avm2::error::{argument_error, error, make_error_2008, make_error_3671};
+use crate::avm2::error::{
+    argument_error, error, make_error_2008, make_error_3670, make_error_3671,
+};
 use crate::avm2::globals::methods::flash_geom_matrix_3d as matrix3d_methods;
 use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
@@ -50,11 +52,7 @@ pub fn create_vertex_buffer<'gc>(
         let data_32_per_vertex = args.get_u32(1);
 
         if data_32_per_vertex > 64 {
-            return Err(Error::avm_error(argument_error(
-                activation,
-                "Error #3670: Buffer too big.",
-                3670,
-            )?));
+            return Err(make_error_3670(activation));
         } else if data_32_per_vertex == 0 {
             return Err(make_error_3671(activation));
         }
