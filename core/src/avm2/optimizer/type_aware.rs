@@ -1,6 +1,6 @@
 use crate::avm2::error::{
-    make_error_1019, make_error_1026, make_error_1035, make_error_1051, make_error_1058,
-    verify_error,
+    make_error_1013, make_error_1019, make_error_1026, make_error_1035, make_error_1051,
+    make_error_1058, verify_error,
 };
 use crate::avm2::method::{Method, MethodAssociation, MethodKind, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
@@ -1282,11 +1282,7 @@ fn abstract_interpret_ops<'gc>(
             Op::FindPropStrict { multiname } | Op::FindProperty { multiname } => {
                 let outer_scope = activation.outer();
                 if outer_scope.is_empty() && scope_stack.is_empty() {
-                    return Err(Error::avm_error(verify_error(
-                        activation,
-                        "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
-                        1013,
-                    )?));
+                    return Err(make_error_1013(activation));
                 }
 
                 let mut stack_push_done = false;
