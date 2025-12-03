@@ -2,7 +2,8 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{
-    make_error_1014, make_error_1053, make_error_1059, make_error_1107, verify_error, Error1014Type,
+    make_error_1014, make_error_1053, make_error_1059, make_error_1103, make_error_1107,
+    verify_error, Error1014Type,
 };
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::{scriptobject_allocator, ClassObject, Object};
@@ -618,14 +619,7 @@ impl<'gc> Class<'gc> {
         if let Some(superclass) = superclass {
             // We have to make an exception for `c_class`es
             if superclass.is_final() && !self.is_c_class() {
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    &format!(
-                        "Error #1103: Class {} cannot extend final base class.",
-                        self.name().to_qualified_name(mc)
-                    ),
-                    1103,
-                )?));
+                return Err(make_error_1103(activation, self));
             }
 
             if superclass.is_interface() {
