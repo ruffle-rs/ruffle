@@ -1,5 +1,6 @@
 use crate::avm2::error::{
-    argument_error, error, make_error_2008, make_error_3670, make_error_3671,
+    argument_error, make_error_2008, make_error_3669, make_error_3670, make_error_3671,
+    make_error_3780, make_error_3781,
 };
 use crate::avm2::globals::methods::flash_geom_matrix_3d as matrix3d_methods;
 use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
@@ -87,27 +88,19 @@ pub fn configure_back_buffer<'gc>(
         }
 
         if width < 32 || width > 16384 {
-            return Err(Error::avm_error(error(
-                activation,
-                if old_swf {
-                    "Error #3669: Bad input size."
-                } else {
-                    "Error #3780: Requested width of backbuffer is not in allowed range 32 to 16384."
-                },
-                if old_swf { 3669 } else { 3780 },
-            )?));
+            return Err(if old_swf {
+                make_error_3669(activation)
+            } else {
+                make_error_3780(activation)
+            });
         }
 
         if height < 32 || height > 16384 {
-            return Err(Error::avm_error(error(
-                activation,
-                if old_swf {
-                    "Error #3669: Bad input size."
-                } else {
-                    "Error #3781: Requested height of backbuffer is not in allowed range 32 to 16384."
-                },
-                if old_swf { 3669 } else { 3781 },
-            )?));
+            return Err(if old_swf {
+                make_error_3669(activation)
+            } else {
+                make_error_3781(activation)
+            });
         }
 
         let wants_best_resolution = args.get_bool(4);
