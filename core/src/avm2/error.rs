@@ -1472,6 +1472,16 @@ pub fn make_error_2136<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2150<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #2150: An object cannot be added as a child to one of it's children (or children's children, etc.).",
+        2150,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2162<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(argument_error(
         activation,
