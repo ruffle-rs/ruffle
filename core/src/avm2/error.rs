@@ -1494,6 +1494,16 @@ pub fn make_error_2176<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2186<'gc>(activation: &mut Activation<'_, 'gc>, focal_length: f64) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        &format!("Error #2186: Invalid focalLength {focal_length}."),
+        2186,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_3669<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(error(activation, "Error #3669: Bad input size.", 3669))
 }
