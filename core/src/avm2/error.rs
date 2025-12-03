@@ -1514,6 +1514,16 @@ pub fn make_error_2176<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2180<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #2180: It is illegal to move AVM1 content (AS1 or AS2) to a different part of the displayList when it has been loaded into AVM2 (AS3) content.",
+        2180,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2182<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(argument_error(
         activation,
