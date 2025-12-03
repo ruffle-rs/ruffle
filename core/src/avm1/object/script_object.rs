@@ -661,6 +661,20 @@ impl<'gc> Object<'gc> {
             return zuper.proto(activation);
         }
 
+        // In swfv5, __proto__ property of function objects is undefined by default.
+        if activation.swf_version() < 6 {
+            if let NativeObject::Function(_) = self.native_no_super() {
+                let read = self.0.borrow();
+                if let Some(prop) = read.properties.get(istr!("__proto__"), false) {
+                    if !prop.allow_swf_version(activation.swf_version()) {
+                        return Value::Undefined;
+                    }
+                    return prop.data();
+                }
+                return Value::Undefined;
+            }
+        }
+
         self.get_data(istr!("__proto__"), activation)
     }
 

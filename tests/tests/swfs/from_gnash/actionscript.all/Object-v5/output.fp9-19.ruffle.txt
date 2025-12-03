@@ -3,8 +3,8 @@ SWF5
 [Object.as debug-22403-05c7ba106]
 PASSED: typeof(Object) == 'function' [./Object.as:29]
 PASSED: typeof(Object.prototype) == 'object' [./Object.as:30]
-PASSED: typeof(Object.constructor) == 'function' [./Object.as:31]
-FAILED: expected: 'undefined' obtained: object [./Object.as:33]
+FAILED: expected: 'function' obtained: undefined [./Object.as:31]
+PASSED: typeof(Object.__proto__) == 'undefined' [./Object.as:33]
 PASSED: typeof(Object.__proto__) == 'object' [./Object.as:37]
 PASSED: typeof(Object.registerClass) == 'function' [./Object.as:40]
 PASSED: Object.prototype.registerClass == undefined [./Object.as:41]
@@ -25,7 +25,7 @@ PASSED: typeof(Object.prototype.isPropertyEnumerable) == 'function' [./Object.as
 PASSED: typeof(Object.prototype.isPrototypeOf) == 'function' [./Object.as:63]
 PASSED: typeof(Object.prototype.hasOwnProperty) == 'function' [./Object.as:64]
 PASSED: Object.prototype.constructor == Object [./Object.as:66]
-PASSED: typeof(Object.prototype.toString.constructor) == 'function' [./Object.as:67]
+FAILED: expected: 'function' obtained: undefined [./Object.as:67]
 PASSED: typeof(Function) == 'undefined' [./Object.as:73]
 PASSED: Object.prototype.prototype == undefined [./Object.as:75]
 PASSED: Object.prototype.__proto__ == undefined [./Object.as:81]
@@ -140,6 +140,6 @@ FAILED: expected: "undefined" obtained: object [./Object.as:1019]
 PASSED: typeof(o) == "object" [./Object.as:1021]
 PASSED: o.toString() == "true" [./Object.as:1022]
 FAILED: expected: "undefined" obtained: object [./Object.as:1026]
-#passed: 129
-#failed: 10
+#passed: 128
+#failed: 11
 #total tests run: 139

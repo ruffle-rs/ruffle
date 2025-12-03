@@ -479,6 +479,14 @@ impl<'gc> FunctionObject<'gc> {
         let native = NativeObject::Function(Gc::new(context.gc(), self));
         obj.set_native(context.gc(), native);
 
+        // In swfv5, __proto__ property of function objects is undefined by default.
+        obj.define_value(
+            context.gc(),
+            istr!(context, "__proto__"),
+            fn_proto.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::VERSION_6,
+        );
+
         if let Some(prototype) = prototype {
             prototype.define_value(
                 context.gc(),
