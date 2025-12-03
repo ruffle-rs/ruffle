@@ -1538,6 +1538,32 @@ pub fn make_error_3671<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
     ))
 }
 
+// This isn't used if the `jpegxr` feature is disabled, see
+// `globals::flash::display3D::textures::atf_jpegxr`
+#[allow(dead_code)]
+#[inline(never)]
+#[cold]
+pub fn make_error_3675<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3675: Texture format mismatch.",
+        3675,
+    ))
+}
+
+// This isn't used if the `jpegxr` feature is disabled, see
+// `globals::flash::display3D::textures::atf_jpegxr`
+#[allow(dead_code)]
+#[inline(never)]
+#[cold]
+pub fn make_error_3679<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3679: Texture size does not match.",
+        3679,
+    ))
+}
+
 #[inline(never)]
 #[cold]
 pub fn make_error_3771<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
