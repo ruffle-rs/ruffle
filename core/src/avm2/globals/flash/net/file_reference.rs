@@ -1,5 +1,5 @@
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::error::{error, make_error_2037, make_error_2097};
+use crate::avm2::error::{make_error_2037, make_error_2097, make_error_2174};
 use crate::avm2::globals::slots::flash_net_file_filter as file_filter_slots;
 use crate::avm2::object::{ByteArrayObject, DateObject, FileReference};
 use crate::avm2::parameters::ParametersExt;
@@ -272,16 +272,11 @@ pub fn save_internal<'gc>(
 
     match dialog {
         Some(dialog) => {
-            let process = crate::loader::save_file_dialog(
-                activation.context,
-                this,
-                dialog,
-                data,
-            );
+            let process = crate::loader::save_file_dialog(activation.context, this, dialog, data);
 
             activation.context.navigator.spawn_future(process);
         }
-        None => return Err(Error::avm_error(error(activation, "Error #2174: Only one download, upload, load or save operation can be active at a time on each FileReference.", 2174)?)),
+        None => return Err(make_error_2174(activation)),
     }
 
     Ok(Value::Undefined)
