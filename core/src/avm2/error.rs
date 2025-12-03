@@ -298,6 +298,16 @@ pub fn make_error_1011<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1013<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
+        1013,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1014<'gc>(
     activation: &mut Activation<'_, 'gc>,
     kind: Error1014Type,
