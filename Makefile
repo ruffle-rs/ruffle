@@ -16,9 +16,9 @@ prefix ?= /usr/local
 VERSION := $(shell cargo metadata --format-version=1 --no-deps --offline | jq -r '.packages[] | select(.name == "ruffle_desktop").version')
 DEBIAN_ORIG_GZ := ../ruffle_$(VERSION).orig.tar.gz
 DEBIAN_ORIG_XZ := ../ruffle_$(VERSION).orig.tar.xz
-REVISION := $(shell echo $(notdir $(CURDIR)) | sed 's/$(VERSION)//' | tr -cd '0-9')
+REVISION := $(shell date -d $(shell echo $(notdir $(CURDIR)) | sed 's/ruffle-//' | sed 's/nightly-//' | sed 's/$(VERSION)-//') +%y%j)
 ifeq ($(REVISION),)
-	REVISION := $(shell date +%Y%m%d)
+	REVISION := $(shell date +%y%j)
 endif
 
 all: ruffle_desktop
@@ -63,7 +63,7 @@ version:
 	  fi; \
 	  sed $(SI) '1i\ -- $(DEBFULLNAME) <$(DEBEMAIL)>  $(DEBDATE)' $(DEBIAN_DIR)/changelog; \
 	  sed $(SI) '1i\\' $(DEBIAN_DIR)/changelog; \
-	  touch -a .github/changelog.entries \
+	  touch -a .github/changelog.entries; \
 	  tac .github/changelog.entries | while read line; do \
 	    sed $(SI) "1i$$line" $(DEBIAN_DIR)/changelog; \
 	  done; \
@@ -73,8 +73,12 @@ version:
 
 deb: version
 	@if [ ! -s $(DEBIAN_ORIG_XZ) -a ! -s $(DEBIAN_ORIG_GZ) ]; then \
-	  echo 'Creating $(DEBIAN_ORIG_GZ) from HEAD...' >&2; \
-	  git archive --prefix=ruffle-$(VERSION)/ -o $(DEBIAN_ORIG_GZ) HEAD; \
+	  if [ -s ../$(notdir $(CURDIR)).tar.gz ]; then \
+	    mv -v ../$(notdir $(CURDIR)).tar.gz $(DEBIAN_ORIG_GZ); \
+	  else \
+	    echo 'Creating $(DEBIAN_ORIG_GZ) from HEAD...' >&2; \
+	    git archive --prefix=ruffle-$(VERSION)/ -o $(DEBIAN_ORIG_GZ) HEAD; \
+	  fi; \
 	fi
 	rm -rf debian
 	cp -a $(DEBIAN_DIR) ./

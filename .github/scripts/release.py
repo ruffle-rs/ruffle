@@ -134,6 +134,7 @@ def bump():
     """
 
     current_version = cargo_get_version()
+    current_day_id = get_current_day_id()
     log(f'Current version: {current_version}')
 
     log('Bumping minor version to get the next planned version')
@@ -143,14 +144,13 @@ def bump():
 
     log(f'Next planned version is {next_planned_version}')
 
-    current_time_version = get_current_time_version()
-    nightly_version = f'{next_planned_version}-nightly.{current_time_version}'
+    nightly_version = f'{next_planned_version}-nightly.{get_current_time_version()}'
     log(f'Nightly version is {nightly_version}')
 
     cargo_set_version([nightly_version])
 
     version = cargo_get_version()
-    version4 = f'{next_planned_version}.{get_current_day_id()}'
+    version4 = f'{next_planned_version}.{current_day_id}'
 
     npm_dir = f'{REPO_DIR}/web'
     run_command(['npm', 'install', 'workspace-version'], cwd=npm_dir)
@@ -161,7 +161,7 @@ def bump():
     github_output('version', version)
     github_output('version4', version4)
 
-    deb_changelog(next_planned_version, ''.join(part.zfill(2) for part in current_time_version.split('.')), datetime.now())
+    deb_changelog(version, current_day_id, datetime.now())
 
 
 def metainfo():

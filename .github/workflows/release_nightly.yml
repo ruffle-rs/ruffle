@@ -21,6 +21,7 @@ jobs:
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       package_prefix: ${{ steps.create_release.outputs.package_prefix }}
       tag_name: ${{ steps.commit.outputs.tag_name }}
+      version: ${{ steps.version.outputs.version }}
       version4: ${{ steps.version.outputs.version4 }}
 
     # Only run the scheduled workflows on the main repo.
@@ -54,16 +55,21 @@ jobs:
           crate: cargo-get
           version: '^1.0'
 
+      - name: Get last tag
+        id: last_tag
+        run: echo "last_tag=`gh release list --order=desc --limit=1 --json tagName --jq '.[0].tagName'`" >> $GITHUB_OUTPUT
+        env:
+          GITHUB_TOKEN: ${{ secrets.PGITHUB_TOKEN }}
       - name: Get changelog
         uses: mikepenz/release-changelog-builder-action@v6.0.1
         with:
-          owner: "ruffle-rs"
-          repo: "ruffle"
-          fromTag: "nightly-2025-12-01"
-          toTag: "nightly-2025-12-02"
+          owner: ruffle-rs
+          repo: ruffle
+          #fromTag: nightly-2025-12-03
+          fromTag: ${{ steps.last_tag.outputs.last_tag }}
+          toTag: HEAD
           token: ${{ secrets.PGITHUB_TOKEN }}
-          outputFile: ".github/changelog.entries"
-          failOnError: "true"
+          outputFile: .github/changelog.entries
           configurationJson: |
             {
               "template": "#{{UNCATEGORIZED}}",
@@ -663,3 +669,121 @@ jobs:
           commit_email: ruffle@ruffle.rs
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
           commit_message: Update to ${{ needs.create-nightly-release.outputs.tag_name }}
+
+  build-debian-packages:
+    name: Build Debian ${{ matrix.build_name }} packages
+    needs: [create-nightly-release, build]
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - build_name: amd64
+            os: ubuntu-24.04
+            arch: x86_64
+          - build_name: arm64
+            os: ubuntu-24.04-arm
+            arch: aarch64
+    runs-on: ${{ matrix.os }}
+    if: github.repository == 'donmor/ruffle'
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
+      - name: Get current time with dashes
+        uses: josStorer/get-current-time@v2.1.2
+        id: current_time_dashes
+        with:
+          format: YYYY-MM-DD
+
+      - name: Get current time with dots
+        uses: josStorer/get-current-time@v2.1.2
+        id: current_time_dots
+        with:
+          format: YYYY.M.D
+
+      - name: Install build dependencies
+        run: sudo apt install debhelper rename
+      - name: Prepare informations and source
+        id: profiling
+        run: |
+          version4=${{ needs.create-nightly-release.outputs.version4 }}
+          version=${{ needs.create-nightly-release.outputs.version }}
+          revision=${version4##*.}
+          echo "version=${version}" >>$GITHUB_OUTPUT
+          echo "revision=${revision}" >>$GITHUB_OUTPUT
+          git archive --prefix=ruffle-${version}/ -o ../ruffle_${version}.orig.tar.gz HEAD
+          cp -a desktop/packages/linux/debian ./
+      - name: Build Source package
+        if: runner.arch == 'X64'
+        run: |
+          dpkg-buildpackage -us -uc -d -S
+      - name: Get prebuilt binaries
+        run: |
+          gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-${{ matrix.arch }}.tar.gz"
+          tar -xf "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-${{ matrix.arch }}.tar.gz" ruffle
+          rm "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-${{ matrix.arch }}.tar.gz"
+          mv ruffle ruffle_desktop
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build Packages
+        run: |
+          dpkg-buildpackage -us -uc -nc -d -b
+          rename 's/\.deb/\.ddeb/' *-dbgsym*.deb
+      - name: Move built files (sources)
+        if: runner.arch == 'X64'
+        run: |
+          mv ../ruffle_${{ steps.profiling.outputs.version }}.orig.tar.gz ./
+          mv ../ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}.debian.tar.xz ./
+          mv ../ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}.dsc ./
+          mv ../ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_source.buildinfo ./
+          mv ../ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_source.changes ./
+      - name: Move built files (packages)
+        run: |
+          mv ../ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_${{ matrix.build_name }}.buildinfo ./
+          mv ../ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_${{ matrix.build_name }}.changes ./
+          mv ../ruffle-desktop_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_${{ matrix.build_name }}.deb ./
+          mv ../ruffle-desktop-dbgsym_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_${{ matrix.build_name }}.ddeb ./
+      - name: Upload Source package as build artifact
+        if: runner.arch == 'X64'
+        uses: actions/upload-artifact@v5
+        with:
+          name: deb-source
+          path: |
+            ruffle_${{ steps.profiling.outputs.version }}.orig.tar.gz
+            ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}.debian.tar.xz
+            ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}.dsc
+            ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_source.buildinfo
+            ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_source.changes
+      - name: Upload Packages as build artifact
+        uses: actions/upload-artifact@v5
+        with:
+          name: deb-${{ matrix.build_name }}
+          path: |
+            ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_${{ matrix.build_name }}.buildinfo
+            ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_${{ matrix.build_name }}.changes
+            ruffle-desktop_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_${{ matrix.build_name }}.deb
+            ruffle-desktop-dbgsym_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_${{ matrix.build_name }}.ddeb
+  publish-debian-packages:
+    name: Publish Debian packages
+    needs: [create-nightly-release, build-debian-packages]
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download all artifacts previously built
+        uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+          run-id: ${{ needs.build-debian-packages.outputs.run_id }}
+          path: download/${{ needs.create-nightly-release.outputs.tag_name }}
+      - name: Generate trivial source
+        working-directory: download/${{ needs.create-nightly-release.outputs.tag_name }}
+        run: |
+          dpkg-scanpackages -m ../../download/${{ needs.create-nightly-release.outputs.tag_name }} > Packages
+          dpkg-scanpackages -t ddeb -m ../../download/${{ needs.create-nightly-release.outputs.tag_name }} >> Packages
+          dpkg-scansources ../../download/${{ needs.create-nightly-release.outputs.tag_name }} > Sources
+          apt-ftparchive release . > Release
+      - name: Upload packages
+        run: |
+          gh release upload -R ${{ github.repository }} "${{ needs.create-nightly-release.outputs.tag_name }}" `find download -name 'ruffle*.deb'` `find download -name 'ruffle*.ddeb'`
+          gh release upload -R ${{ github.repository }} "${{ needs.create-nightly-release.outputs.tag_name }}" `find download -name 'ruffle*.orig.tar.gz'` `find download -name 'ruffle*.debian.tar.xz'` `find download -name 'ruffle*.dsc'` download/${{ needs.create-nightly-release.outputs.tag_name }}/Packages download/${{ needs.create-nightly-release.outputs.tag_name }}/Sources download/${{ needs.create-nightly-release.outputs.tag_name }}/Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.PGITHUB_TOKEN }}
