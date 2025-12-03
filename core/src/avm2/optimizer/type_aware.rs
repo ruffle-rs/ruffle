@@ -1,7 +1,7 @@
 use crate::avm2::error::{
     make_error_1013, make_error_1017, make_error_1018, make_error_1019, make_error_1023,
-    make_error_1024, make_error_1026, make_error_1035, make_error_1051, make_error_1058,
-    verify_error,
+    make_error_1024, make_error_1026, make_error_1030, make_error_1031, make_error_1035,
+    make_error_1051, make_error_1058, verify_error,
 };
 use crate::avm2::method::{Method, MethodAssociation, MethodKind, ResolvedParamConfig};
 use crate::avm2::multiname::Multiname;
@@ -515,15 +515,11 @@ impl<'gc> AbstractState<'gc> {
 
         // Merge stack
         if self.stack.len() != other.stack.len() {
-            return Err(Error::avm_error(verify_error(
+            return Err(make_error_1030(
                 activation,
-                &format!(
-                    "Error #1030: Stack depth is unbalanced. {} != {}.",
-                    other.stack.len(),
-                    self.stack.len(),
-                ),
-                1030,
-            )?));
+                other.stack.len(),
+                self.stack.len(),
+            ));
         }
 
         for i in 0..self.stack.len() {
@@ -539,15 +535,11 @@ impl<'gc> AbstractState<'gc> {
 
         // Merge scope stack
         if self.scope_stack.len() != other.scope_stack.len() {
-            return Err(Error::avm_error(verify_error(
+            return Err(make_error_1031(
                 activation,
-                &format!(
-                    "Error #1031: Scope depth is unbalanced. {} != {}.",
-                    other.scope_stack.len(),
-                    self.scope_stack.len(),
-                ),
-                1031,
-            )?));
+                other.scope_stack.len(),
+                self.scope_stack.len(),
+            ));
         }
 
         for i in 0..self.scope_stack.len() {
