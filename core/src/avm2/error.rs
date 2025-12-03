@@ -775,6 +775,21 @@ pub fn make_error_1100<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1103<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) -> Error<'gc> {
+    let class_name = class.name().to_qualified_name(activation.gc());
+
+    make_error!(verify_error(
+        activation,
+        &format!(
+            "Error #1103: Class {} cannot extend final base class.",
+            class_name
+        ),
+        1103,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1107<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(verify_error(
         activation,
