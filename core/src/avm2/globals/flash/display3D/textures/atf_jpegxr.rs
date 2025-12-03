@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
-use crate::avm2::error::{argument_error, Error};
+use crate::avm2::error::{make_error_3675, make_error_3679, Error};
 use crate::avm2::object::{Object, TextureObject};
 use crate::avm2_stub_method;
 use ruffle_render::atf::ATFTexture;
@@ -26,19 +26,11 @@ pub fn do_compressed_upload<'gc>(
     if atf_texture.width != texture.handle().width()
         || atf_texture.height != texture.handle().height()
     {
-        return Err(Error::avm_error(argument_error(
-            activation,
-            "Error #3679: Texture size does not match.",
-            3679,
-        )?));
+        return Err(make_error_3679(activation));
     }
 
     if is_cube != atf_texture.cubemap {
-        return Err(Error::avm_error(argument_error(
-            activation,
-            "Error #3675: Texture format mismatch.",
-            3675,
-        )?));
+        return Err(make_error_3675(activation));
     }
 
     // Just use the first mip level for now. We ignore the builtin format - the JPEG-XR format
