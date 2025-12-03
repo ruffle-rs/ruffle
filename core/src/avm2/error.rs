@@ -1520,6 +1520,36 @@ pub fn make_error_3671<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_3771<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3771: 2D textures need to have surfaceSelector = 0.",
+        3771,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3772<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3772: Cube textures need to have surfaceSelector [0..5].",
+        3772,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3773<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3773: Rectangle textures need to have surfaceSelector = 0.",
+        3773,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_3780<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(error(
         activation,
