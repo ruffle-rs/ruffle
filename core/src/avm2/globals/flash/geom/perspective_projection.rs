@@ -1,4 +1,4 @@
-use crate::avm2::error::{argument_error, make_error_2186};
+use crate::avm2::error::{make_error_2182, make_error_2186};
 use crate::avm2::globals::flash::geom::transform::{
     matrix3d_to_object, object_to_perspective_projection,
 };
@@ -97,11 +97,7 @@ pub fn set_field_of_view<'gc>(
 
     let fov = args.get_f64(0);
     if fov <= 0.0 || 180.0 <= fov {
-        return Err(Error::avm_error(argument_error(
-            activation,
-            "Error #2182: Invalid fieldOfView value.  The value must be greater than 0 and less than 180.",
-            2182,
-        )?));
+        return Err(make_error_2182(activation));
     }
 
     sync_from_display_object(activation, this)?;
