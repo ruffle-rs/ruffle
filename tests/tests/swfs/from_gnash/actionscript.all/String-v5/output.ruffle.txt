@@ -319,15 +319,15 @@ PASSED: a.length == 2 [./String.as:1253]
 PASSED: a == "123" [./String.as:1254]
 PASSED: a.length == "another string" [./String.as:1256]
 PASSED: a.length == "another string" [./String.as:1258]
-FAILED: expected: 0 obtained: 2 [./String.as:1271]
-FAILED: expected: "toString" obtained: prototype,toString [./String.as:1277]
+FAILED: expected: 0 obtained: 1 [./String.as:1271]
+PASSED: a.toString() == "toString" [./String.as:1277]
 PASSED: typeof(String.__proto__) == 'object' [./String.as:1279]
 PASSED: typeof(Object.prototype) == 'object' [./String.as:1280]
 PASSED: String.gotcha == 1 [./String.as:1282]
 PASSED: !String.__proto__.hasOwnProperty("gotcha") [./String.as:1284]
 PASSED: String.__proto__.__proto__.hasOwnProperty("gotcha") [./String.as:1285]
 PASSED: String.__proto__.__proto__ == Object.prototype [./String.as:1286]
-FAILED: expected: "gotcha,toString" obtained: gotcha,prototype,toString [./String.as:1289]
+PASSED: a.toString() == "gotcha,toString" [./String.as:1289]
 PASSED: !String.hasOwnProperty('toString') [./String.as:1298]
 PASSED: !String.hasOwnProperty('valueOf') [./String.as:1299]
 PASSED: String.hasOwnProperty('__proto__') [./String.as:1300]
@@ -353,6 +353,6 @@ PASSED: saved1.value == 'string' [./String.as:1332]
 PASSED: saved2.value == 'another string' [./String.as:1333]
 PASSED: saved2.value.prop != saved3.value.prop [./String.as:1337]
 PASSED: saved2.value !== saved3.value [./String.as:1338]
-#passed: 333
-#failed: 19
+#passed: 335
+#failed: 17
 #total tests run: 352
