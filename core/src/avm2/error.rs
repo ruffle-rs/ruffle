@@ -333,6 +333,26 @@ pub fn make_error_1016<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1017<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1017: Scope stack overflow occurred.",
+        1017,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1018<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1018: Scope stack underflow occurred.",
+        1018,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1019<'gc>(
     activation: &mut Activation<'_, 'gc>,
     index: Option<usize>,
