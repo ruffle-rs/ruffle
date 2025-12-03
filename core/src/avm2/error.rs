@@ -810,6 +810,28 @@ pub fn make_error_1108<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1110<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class: Class<'gc>,
+    super_class: Class<'gc>,
+) -> Error<'gc> {
+    let mc = activation.gc();
+
+    let class_name = class.name().to_qualified_name(mc);
+    let super_class_name = super_class.name().to_qualified_name_err_message(mc);
+
+    make_error!(verify_error(
+        activation,
+        &format!(
+            "Error #1110: Class {} cannot extend {}.",
+            class_name, super_class_name
+        ),
+        1110,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1111<'gc>(
     activation: &mut Activation<'_, 'gc>,
     class: Class<'gc>,
