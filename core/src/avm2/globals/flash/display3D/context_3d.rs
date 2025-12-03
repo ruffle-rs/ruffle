@@ -170,11 +170,7 @@ pub fn set_vertex_buffer_at<'gc>(
             } else if &*format == b"bytes4" {
                 Context3DVertexBufferFormat::Bytes4
             } else {
-                return Err(Error::avm_error(argument_error(
-                    activation,
-                    "Error #2008: Parameter vertexStreamFormat must be one of the accepted values.",
-                    2008,
-                )?));
+                return Err(make_error_2008(activation, "vertexStreamFormat"));
             };
 
             Some((buffer.as_vertex_buffer().unwrap(), format))
