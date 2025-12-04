@@ -31,19 +31,14 @@ pub trait ParametersExt<'gc> {
     }
 
     /// Tries to get the value at the given index as an Object.
-    /// The value will be coerced to an Object if it exists.
-    #[expect(dead_code)]
+    /// The value will be coerced to an Object if it exists and is coercible.
     fn try_get_object(
         &self,
         activation: &mut Activation<'_, 'gc>,
         index: usize,
-        undefined_behaviour: UndefinedAs,
     ) -> Result<Option<Object<'gc>>, Error<'gc>> {
         if let Some(value) = self.get_optional(index) {
-            if undefined_behaviour == UndefinedAs::None && value == Value::Undefined {
-                return Ok(None);
-            }
-            Ok(Some(value.coerce_to_object_or_bare(activation)?))
+            value.coerce_to_object(activation)
         } else {
             Ok(None)
         }
