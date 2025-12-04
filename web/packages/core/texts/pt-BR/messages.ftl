@@ -12,7 +12,7 @@ report-bug = Reportar Bug
 update-ruffle = Atualizar Ruffle
 ruffle-demo = Demo Web
 ruffle-desktop = Aplicativo de Desktop
-ruffle-wiki = Ver Wiki do Ruffle
+ruffle-wiki = Ver guia oficial do Ruffle
 enable-hardware-acceleration = Parece que a aceleração de hardware está desabilitada. Embora o Ruffle possa funcionar, ele pode ser muito lento. Você pode descobrir como habilitar a aceleração de hardware seguindo o link abaixo:
 enable-hardware-acceleration-link = FAQ - Aceleração de hardware do Chrome
 view-error-details = Ver detalhes do erro
@@ -35,7 +35,7 @@ error-file-protocol =
 error-javascript-config =
     O Ruffle encontrou um grande problema devido a uma configuração incorreta do JavaScript.
     Se você for o administrador do servidor, convidamos você a verificar os detalhes do erro para descobrir qual parâmetro está com falha.
-    Você também pode consultar o wiki do Ruffle para obter ajuda.
+    Você também pode consultar o guia oficial do Ruffle para obter ajuda.
 error-wasm-not-found =
     Ruffle falhou ao carregar o componente de arquivo ".wasm" necessário.
     Se você é o administrador do servidor, por favor, certifique-se de que o arquivo foi carregado corretamente.
@@ -43,7 +43,7 @@ error-wasm-not-found =
 error-wasm-mime-type =
     Ruffle encontrou um grande problema ao tentar inicializar.
     Este servidor de web não está servindo ".wasm" arquivos com o tipo MIME correto.
-    Se você é o administrador do servidor, por favor consulte o wiki do Ruffle para obter ajuda.
+    Se você é o administrador do servidor, por favor consulte o guia oficial do Ruffle para obter ajuda.
 error-invalid-swf =
     Ruffle não pode analisar o arquivo solicitado.
     O motivo provável é que o arquivo solicitado não seja um SWF válido.

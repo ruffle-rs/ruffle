@@ -44,6 +44,12 @@
     "settings_preferred_renderer_auto": {
         "message": "Automático"
     },
+    "settings_device_font_renderer": {
+        "message": "Renderizador de fontes do dispositivo"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Embutido"
+    },
     "settings_advanced_options": {
         "message": "Opções Avançadas"
     },
