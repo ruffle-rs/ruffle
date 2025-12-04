@@ -36,13 +36,19 @@
         "message": "Duração máxima permitida da execução do ActionScript (em segundos)"
     },
     "settings_player_version": {
-        "message": "Número da versão do reprodutor Flash para emular (entre 1-32)"
+        "message": "Número da versão do reprodutor Flash para emular (entre 1–32)"
     },
     "settings_preferred_renderer": {
         "message": "Renderizador preferido"
     },
     "settings_preferred_renderer_auto": {
         "message": "Automático"
+    },
+    "settings_device_font_renderer": {
+        "message": "Renderizador de fontes do dispositivo"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Embutido"
     },
     "settings_advanced_options": {
         "message": "Opções avançadas"

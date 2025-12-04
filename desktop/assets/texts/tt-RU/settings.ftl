@@ -1,10 +1,11 @@
 network-settings = Челтәр көйләүләре
 player-settings = Плеер көйләүләре
 movie-parameters = Клипны параметрлары
+cookie = Cookie
 proxy = Прокси
 upgrade-http = HTTP’ны HTTPS’ка яңарту
 tcp-connections = TCP тоташулары
-tcp-connections-allow = Рөхсəт итəргə
+tcp-connections-allow = Рөхсəт итәргә
 tcp-connections-ask = Сора
 tcp-connections-deny = Рөхсәт бирмәү
 open-url-mode-allow = Рөхсəт итəргə

@@ -44,6 +44,9 @@
     "settings_preferred_renderer_auto": {
         "message": "Automatisch"
     },
+    "settings_device_font_renderer": {
+        "message": "Toestel lettertyperenderer"
+    },
     "settings_advanced_options": {
         "message": "Geavanceerde opties"
     },

@@ -47,6 +47,9 @@
     "settings_device_font_renderer": {
         "message": "Renderer czcionek urządzenia"
     },
+    "device_font_renderer_embedded": {
+        "message": "Wbudowany"
+    },
     "settings_advanced_options": {
         "message": "Opcje zaawansowane"
     },
