@@ -94,7 +94,7 @@ PASSED: typeof(mc.unloadMovie) == 'function' [./MovieClip.as:181]
 FAILED: expected: 'function' obtained: undefined [./MovieClip.as:182]
 PASSED: typeof(mc.getSWFVersion) == 'function' [./MovieClip.as:183]
 PASSED: mc.getSWFVersion() == OUTPUT_VERSION [./MovieClip.as:184]
-FAILED: expected: Function obtained: [type Function] [./MovieClip.as:185]
+PASSED: MovieClip.constructor == Function [./MovieClip.as:185]
 PASSED: typeof(mc.valueOf) == 'function' [./MovieClip.as:196]
 PASSED: typeof(mc.toString) == 'function' [./MovieClip.as:197]
 PASSED: typeof(mc.valueOf()) == 'movieclip' [./MovieClip.as:199]
@@ -359,6 +359,6 @@ PASSED: arguments.length == 0 [./MovieClip.as:2207]
 FAILED: expected: 'undefined' obtained: string [./MovieClip.as:2212]
 PASSED: _root.var2 == 'val2' [./MovieClip.as:2214]
 PASSED: _root.var3 == 'val3\n' [./MovieClip.as:2215]
-#passed: 313
-#failed: 42
+#passed: 314
+#failed: 41
 #total tests run: 355
