@@ -261,8 +261,10 @@ impl<'gc> Object<'gc> {
             }
         }
 
+        // 'special' method calls appear to skip the `__resolve` fallback logic
+        let call_resolve_fn = !matches!(reason, ExecutionReason::Special);
         let (method, depth) =
-            match search_prototype(Value::Object(self), name, activation, self, true)? {
+            match search_prototype(Value::Object(self), name, activation, self, call_resolve_fn)? {
                 Some((Value::Object(method), depth)) => (method, depth),
                 _ => return Ok(Value::Undefined),
             };
