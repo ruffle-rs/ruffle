@@ -3,6 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{ExecutionName, ExecutionReason};
+use crate::avm1::parameters::ParametersExt as _;
 use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::string::AvmString;
@@ -50,10 +51,10 @@ pub fn call<'gc>(
     func: Object<'gc>,
     myargs: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = match myargs.get(0).unwrap_or(&Value::Undefined) {
-        Value::Undefined | Value::Null => activation.global_object(),
-        this_val => this_val.coerce_to_object_or_bare(activation)?,
-    };
+    let this = myargs
+        .try_get_object(activation, 0)?
+        .unwrap_or_else(|| activation.global_object());
+
     let empty = [];
     let args = match myargs.len() {
         0 => &empty,
@@ -82,10 +83,10 @@ pub fn apply<'gc>(
     func: Object<'gc>,
     myargs: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = match myargs.get(0).unwrap_or(&Value::Undefined) {
-        Value::Undefined | Value::Null => activation.global_object(),
-        this_val => this_val.coerce_to_object_or_bare(activation)?,
-    };
+    let this = myargs
+        .try_get_object(activation, 0)?
+        .unwrap_or_else(|| activation.global_object());
+
     let args_object = myargs.get(1).cloned().unwrap_or(Value::Undefined);
     let length = match args_object {
         Value::Object(a) => a.length(activation)? as usize,
