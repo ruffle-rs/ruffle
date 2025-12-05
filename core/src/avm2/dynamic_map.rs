@@ -102,6 +102,16 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
         self.values.raw_table()
     }
 
+    pub fn insert(&mut self, key: K, value: V) {
+        self.values.insert(
+            key,
+            DynamicProperty {
+                value,
+                enumerable: true,
+            },
+        );
+    }
+
     pub fn remove(&mut self, key: &K) -> Option<DynamicProperty<V>> {
         self.values.remove(key)
     }
@@ -180,30 +190,6 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
 
     pub fn value_at(&self, index: usize) -> Option<&V> {
         self.pair_at(index).map(|p| &p.1.value)
-    }
-}
-
-impl<K, V> DynamicMap<K, V>
-where
-    K: Eq + Hash,
-{
-    pub fn insert(&mut self, key: K, value: V) {
-        self.values.insert(
-            key,
-            DynamicProperty {
-                value,
-                enumerable: true,
-            },
-        );
-    }
-    pub fn insert_no_enum(&mut self, key: K, value: V) {
-        self.values.insert(
-            key,
-            DynamicProperty {
-                value,
-                enumerable: false,
-            },
-        );
     }
 }
 
