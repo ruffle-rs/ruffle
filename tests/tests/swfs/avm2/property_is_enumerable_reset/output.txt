@@ -1,0 +1,23 @@
+before setting property
+    value of prop: undefined
+    is prop enumerable: false
+after setting property
+    value of prop: 99
+    is prop enumerable: true
+    prop iterated over
+after making property not-enumerable
+    value of prop: 99
+    is prop enumerable: false
+after re-setting property
+    value of prop: 99
+    is prop enumerable: false
+after re-setting property (2)
+    value of prop: 89
+    is prop enumerable: false
+after deleting property
+    value of prop: undefined
+    is prop enumerable: false
+after re-setting property (3)
+    value of prop: 12
+    is prop enumerable: true
+    prop iterated over

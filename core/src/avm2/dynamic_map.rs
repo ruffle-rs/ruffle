@@ -1,5 +1,6 @@
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
+use hashbrown::hash_map::Entry;
 use hashbrown::raw::RawTable;
 use std::{cell::Cell, hash::Hash};
 
@@ -65,10 +66,7 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
         &self.values
     }
 
-    pub fn entry(
-        &mut self,
-        key: K,
-    ) -> hashbrown::hash_map::Entry<'_, K, DynamicProperty<V>, FnvBuildHasher> {
+    pub fn entry(&mut self, key: K) -> Entry<'_, K, DynamicProperty<V>, FnvBuildHasher> {
         self.values.entry(key)
     }
 
@@ -100,6 +98,23 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
 
     fn raw(&self) -> &RawTable<(K, DynamicProperty<V>)> {
         self.values.raw_table()
+    }
+
+    pub fn insert(&mut self, key: K, new_value: V) {
+        match self.entry(key) {
+            Entry::Occupied(mut occupied) => {
+                // NOTE: When inserting a new value into an already-occupied entry,
+                // the value of the `enumerable` field isn't reset to `true`
+                let DynamicProperty { value, .. } = occupied.get_mut();
+                *value = new_value;
+            }
+            Entry::Vacant(vacant) => {
+                vacant.insert(DynamicProperty {
+                    value: new_value,
+                    enumerable: true,
+                });
+            }
+        }
     }
 
     pub fn remove(&mut self, key: &K) -> Option<DynamicProperty<V>> {
@@ -180,30 +195,6 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
 
     pub fn value_at(&self, index: usize) -> Option<&V> {
         self.pair_at(index).map(|p| &p.1.value)
-    }
-}
-
-impl<K, V> DynamicMap<K, V>
-where
-    K: Eq + Hash,
-{
-    pub fn insert(&mut self, key: K, value: V) {
-        self.values.insert(
-            key,
-            DynamicProperty {
-                value,
-                enumerable: true,
-            },
-        );
-    }
-    pub fn insert_no_enum(&mut self, key: K, value: V) {
-        self.values.insert(
-            key,
-            DynamicProperty {
-                value,
-                enumerable: false,
-            },
-        );
     }
 }
 
