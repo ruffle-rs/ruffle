@@ -1,0 +1,88 @@
+// obj: "left", class: "right"
+instanceof: false
+"left" coerced to NoisyString!
+typeof cast: null
+// obj: "left", class: Object
+instanceof: false
+"left" coerced to NoisyString!
+typeof cast: null
+// obj: {}, class: "right"
+"right" coerced to NoisyString!
+instanceof: false
+"right" coerced to NoisyString!
+typeof cast: null
+
+// obj: {}, class: { prototype: Object.prototype }
+instanceof: true
+typeof cast: object
+// obj: { __proto__: "left" }, class: { prototype: "right" }
+"right" coerced to NoisyString!
+instanceof: false
+"right" coerced to NoisyString!
+typeof cast: null
+// obj: { __proto__: "proto" }, class: { prototype: "proto" }
+"proto" coerced to NoisyString!
+instanceof: false
+"proto" coerced to NoisyString!
+typeof cast: null
+// obj: { __proto__: null }, class: { prototype: null }
+instanceof: false
+typeof cast: null
+// obj: {}, class: { get prototype(): ... }
+prototype property called!
+.prototype is: property proto
+instanceof: false
+typeof cast: null
+// obj: { __proto__: X }, class: { __proto__: { prototype: X }}
+instanceof: false
+typeof cast: null
+// obj: {}, class: super { prototype: ... }
+.prototype is: super proto
+instanceof: false
+typeof cast: null
+// obj: {}, class: { prototype(SWFv9): ... }
+.prototype is: undefined
+"SWFv9 proto" coerced to NoisyString!
+instanceof: false
+"SWFv9 proto" coerced to NoisyString!
+typeof cast: null
+
+// obj: movieclip, class: "right"
+"right" coerced to NoisyString!
+instanceof: false
+"right" coerced to NoisyString!
+typeof cast: null
+// obj: movieclip, class: Object
+instanceof: true
+typeof cast: movieclip
+// obj: movieclip, class: { prototype: "proto" }
+"proto" coerced to NoisyString!
+instanceof: false
+"proto" coerced to NoisyString!
+typeof cast: null
+// obj: {}, class: MovieClip { prototype: Object.prototype }
+instanceof: true
+typeof cast: object
+// obj: { __proto__: movieclip }, class: { prototype: movieclip }
+instanceof: false
+typeof cast: null
+// kill movieclip
+// obj: movieclip, class: "right"
+"right" coerced to NoisyString!
+instanceof: false
+"right" coerced to NoisyString!
+typeof cast: null
+// obj: movieclip, class: Object
+instanceof: false
+typeof cast: null
+// obj: movieclip, class: { prototype: "proto" }
+"proto" coerced to NoisyString!
+instanceof: false
+"proto" coerced to NoisyString!
+typeof cast: null
+// obj: {}, class: MovieClip { prototype: Object.prototype }
+instanceof: false
+typeof cast: null
+// obj: { __proto__: movieclip }, class: { prototype: movieclip }
+instanceof: false
+typeof cast: null

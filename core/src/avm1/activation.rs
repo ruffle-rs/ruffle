@@ -811,20 +811,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn action_cast_op(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
         let obj = self.context.avm1.pop();
-        let constr = self.context.avm1.pop().coerce_to_object_or_bare(self)?;
+        let constr = self.context.avm1.pop();
+        // For some reason, FP does this useless extra coercion.
+        if obj.is_primitive() {
+            let _ = obj.coerce_to_object(self)?;
+        }
 
-        let is_instance_of = if let Some(obj) = obj.as_object(self) {
-            let prototype = constr
-                .get(istr!(self, "prototype"), self)?
-                .coerce_to_object_or_bare(self)?;
-            obj.is_instance_of(self, constr, prototype)?
-        } else {
-            false
-        };
-
+        let is_instance_of = obj.instance_of(constr, self)?;
         let result = if is_instance_of { obj } else { Value::Null };
         self.context.avm1.push(result);
-
         Ok(FrameControl::Continue)
     }
 
@@ -1458,6 +1453,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
 
             let prototype = constructor
+                // TODO(moulins): should this use `Object::prototype`?
                 .get(istr!(self, "prototype"), self)?
                 .coerce_to_object_or_bare(self)?;
             prototype.set_interfaces(self.gc(), interfaces);
@@ -1467,18 +1463,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_instance_of(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let constr = self.context.avm1.pop().coerce_to_object_or_bare(self)?;
+        let constr = self.context.avm1.pop();
         let obj = self.context.avm1.pop();
-
-        let result = if let Some(obj) = obj.as_object(self) {
-            let prototype = constr
-                .get(istr!(self, "prototype"), self)?
-                .coerce_to_object_or_bare(self)?;
-            obj.is_instance_of(self, constr, prototype)?
-        } else {
-            false
-        };
-
+        let result = obj.instance_of(constr, self)?;
         self.context.avm1.push(result.into());
         Ok(FrameControl::Continue)
     }

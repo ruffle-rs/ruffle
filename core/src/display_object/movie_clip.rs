@@ -1903,6 +1903,7 @@ impl<'gc> MovieClip<'gc> {
                 );
 
                 if let Ok(prototype) = constructor
+                    // TODO(moulins): should this use `Object::prototype`?
                     .get(istr!("prototype"), &mut activation)
                     .and_then(|v| v.coerce_to_object_or_bare(&mut activation))
                 {

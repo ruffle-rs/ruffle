@@ -112,3 +112,4 @@ FAILED: ob instanceof C [./Inheritance.as:560]
 #total tests run: 106
 
 Now your flash player will try to answer the egg/chicken question. Kill it if it hangs your machine
+PASSED: !a instanceof b [./Inheritance.as:640]
