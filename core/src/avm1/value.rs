@@ -129,6 +129,7 @@ impl PartialEq for Value<'_> {
     }
 }
 
+/// Value coercions and conversions.
 impl<'gc> Value<'gc> {
     /// Yields `true` if the given value is a primitive value.
     ///
@@ -186,7 +187,7 @@ impl<'gc> Value<'gc> {
     ///   `undefined`. This is not a special-cased behavior: All values are
     ///   callable in `AVM1`. Values that are not callable objects instead
     ///   return `undefined` rather than yielding a runtime error.
-    pub fn to_primitive_num(
+    fn to_primitive_num(
         self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -257,97 +258,6 @@ impl<'gc> Value<'gc> {
                 }
             }
             _ => self,
-        };
-        Ok(result)
-    }
-
-    /// ECMA-262 2nd edition s. 11.8.5 Abstract relational comparison algorithm
-    pub fn abstract_lt(
-        &self,
-        other: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        // If either parameter's `valueOf` results in a non-movieclip object, immediately return false.
-        // This is the common case for objects because `Object.prototype.valueOf` returns the same object.
-        // For example, `{} < {}` is false.
-        let prim_self = self.to_primitive_num(activation)?;
-        if matches!(prim_self, Value::Object(o) if o.as_display_object().is_none()) {
-            return Ok(false.into());
-        }
-        let prim_other = other.to_primitive_num(activation)?;
-        if matches!(prim_other, Value::Object(o) if o.as_display_object().is_none()) {
-            return Ok(false.into());
-        }
-
-        let result = match (prim_self, prim_other) {
-            (Value::String(a), Value::String(b)) => {
-                let a = a.to_string();
-                let b = b.to_string();
-                a.bytes().lt(b.bytes()).into()
-            }
-            (a, b) => {
-                // Coerce to number and compare, with any NaN resulting in undefined.
-                let a = a.primitive_as_number(activation);
-                let b = b.primitive_as_number(activation);
-                a.partial_cmp(&b).map_or(Value::Undefined, |o| {
-                    Value::Bool(o == std::cmp::Ordering::Less)
-                })
-            }
-        };
-        Ok(result)
-    }
-
-    /// ECMA-262 2nd edition s. 11.9.3 Abstract equality comparison algorithm
-    pub fn abstract_eq(
-        self,
-        other: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<bool, Error<'gc>> {
-        let (a, b) = if activation.swf_version() > 5 {
-            (other, self)
-        } else {
-            // SWFv5 always calls `valueOf` even in Object-Object comparisons.
-            // Object.prototype.valueOf returns `this`, which will do pointer comparison below.
-            // In Object-primitive comparisons, `valueOf` will be called a second time below.
-            (
-                other.to_primitive_num(activation)?,
-                self.to_primitive_num(activation)?,
-            )
-        };
-        let result = match (a, b) {
-            (Value::Undefined | Value::Null, Value::Undefined | Value::Null) => true,
-            (Value::Bool(a), Value::Bool(b)) => a == b,
-            (Value::String(a), Value::String(b)) => a == b,
-            (Value::Object(a), Value::Object(b)) => Object::ptr_eq(a, b),
-            (Value::Number(a), Value::Number(b)) => {
-                // PLAYER-SPECIFIC: NaN == NaN returns true in Flash Player 7+ AVM1, but returns false in Flash Player 6 and lower.
-                // We choose to return true.
-                a == b || (a.is_nan() && b.is_nan())
-            }
-
-            // Bool-to-value-comparison: Coerce bool to 0/1 and compare.
-            (Value::Bool(bool), val) | (val, Value::Bool(bool)) => {
-                val.abstract_eq(Value::Number(bool as i64 as f64), activation)?
-            }
-
-            // Number-to-value comparison: Coerce value to f64 and compare.
-            // Note that "NaN" == NaN returns false.
-            (Value::Number(num), string @ Value::String(_))
-            | (string @ Value::String(_), Value::Number(num)) => {
-                num == string.primitive_as_number(activation)
-            }
-
-            (Value::MovieClip(a), Value::MovieClip(b)) => {
-                a.coerce_to_string(activation) == b.coerce_to_string(activation)
-            }
-
-            // Object-to-value comparison: Call `obj.valueOf` and compare.
-            (obj @ Value::Object(_), val) | (val, obj @ Value::Object(_)) => {
-                let obj_val = obj.to_primitive_num(activation)?;
-                obj_val.is_primitive() && val.abstract_eq(obj_val, activation)?
-            }
-
-            _ => false,
         };
         Ok(result)
     }
@@ -447,19 +357,6 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    pub fn type_of(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Value::Undefined => istr!("undefined"),
-            Value::Null => istr!("null"),
-            Value::Number(_) => istr!("number"),
-            Value::Bool(_) => istr!("boolean"),
-            Value::String(_) => istr!("string"),
-            Value::Object(object) if object.as_function().is_some() => istr!("function"),
-            Value::MovieClip(_) => istr!("movieclip"),
-            Value::Object(_) => istr!("object"),
-        }
-    }
-
     /// Convert `self` to an script object, if possible. Unlike `coerce_to_object`, this
     /// doesn't coerce primitives.
     pub fn as_object(self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
@@ -546,6 +443,114 @@ impl<'gc> Value<'gc> {
             Value::Object(obj) => obj.as_xml_node(),
             _ => None,
         }
+    }
+}
+
+/// Value operators.
+impl<'gc> Value<'gc> {
+    /// ActionScript 2's `typeof self`.
+    pub fn type_of(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+        match self {
+            Value::Undefined => istr!("undefined"),
+            Value::Null => istr!("null"),
+            Value::Number(_) => istr!("number"),
+            Value::Bool(_) => istr!("boolean"),
+            Value::String(_) => istr!("string"),
+            Value::Object(object) if object.as_function().is_some() => istr!("function"),
+            Value::MovieClip(_) => istr!("movieclip"),
+            Value::Object(_) => istr!("object"),
+        }
+    }
+
+    /// ECMA-262 2nd edition s. 11.8.5 Abstract relational comparison algorithm
+    pub fn abstract_lt(
+        &self,
+        other: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        // If either parameter's `valueOf` results in a non-movieclip object, immediately return false.
+        // This is the common case for objects because `Object.prototype.valueOf` returns the same object.
+        // For example, `{} < {}` is false.
+        let prim_self = self.to_primitive_num(activation)?;
+        if matches!(prim_self, Value::Object(o) if o.as_display_object().is_none()) {
+            return Ok(false.into());
+        }
+        let prim_other = other.to_primitive_num(activation)?;
+        if matches!(prim_other, Value::Object(o) if o.as_display_object().is_none()) {
+            return Ok(false.into());
+        }
+
+        let result = match (prim_self, prim_other) {
+            (Value::String(a), Value::String(b)) => {
+                let a = a.to_string();
+                let b = b.to_string();
+                a.bytes().lt(b.bytes()).into()
+            }
+            (a, b) => {
+                // Coerce to number and compare, with any NaN resulting in undefined.
+                let a = a.primitive_as_number(activation);
+                let b = b.primitive_as_number(activation);
+                a.partial_cmp(&b).map_or(Value::Undefined, |o| {
+                    Value::Bool(o == std::cmp::Ordering::Less)
+                })
+            }
+        };
+        Ok(result)
+    }
+
+    /// ECMA-262 2nd edition s. 11.9.3 Abstract equality comparison algorithm
+    pub fn abstract_eq(
+        self,
+        other: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        let (a, b) = if activation.swf_version() > 5 {
+            (other, self)
+        } else {
+            // SWFv5 always calls `valueOf` even in Object-Object comparisons.
+            // Object.prototype.valueOf returns `this`, which will do pointer comparison below.
+            // In Object-primitive comparisons, `valueOf` will be called a second time below.
+            (
+                other.to_primitive_num(activation)?,
+                self.to_primitive_num(activation)?,
+            )
+        };
+        let result = match (a, b) {
+            (Value::Undefined | Value::Null, Value::Undefined | Value::Null) => true,
+            (Value::Bool(a), Value::Bool(b)) => a == b,
+            (Value::String(a), Value::String(b)) => a == b,
+            (Value::Object(a), Value::Object(b)) => Object::ptr_eq(a, b),
+            (Value::Number(a), Value::Number(b)) => {
+                // PLAYER-SPECIFIC: NaN == NaN returns true in Flash Player 7+ AVM1, but returns false in Flash Player 6 and lower.
+                // We choose to return true.
+                a == b || (a.is_nan() && b.is_nan())
+            }
+
+            // Bool-to-value-comparison: Coerce bool to 0/1 and compare.
+            (Value::Bool(bool), val) | (val, Value::Bool(bool)) => {
+                val.abstract_eq(Value::Number(bool as i64 as f64), activation)?
+            }
+
+            // Number-to-value comparison: Coerce value to f64 and compare.
+            // Note that "NaN" == NaN returns false.
+            (Value::Number(num), string @ Value::String(_))
+            | (string @ Value::String(_), Value::Number(num)) => {
+                num == string.primitive_as_number(activation)
+            }
+
+            (Value::MovieClip(a), Value::MovieClip(b)) => {
+                a.coerce_to_string(activation) == b.coerce_to_string(activation)
+            }
+
+            // Object-to-value comparison: Call `obj.valueOf` and compare.
+            (obj @ Value::Object(_), val) | (val, obj @ Value::Object(_)) => {
+                let obj_val = obj.to_primitive_num(activation)?;
+                obj_val.is_primitive() && val.abstract_eq(obj_val, activation)?
+            }
+
+            _ => false,
+        };
+        Ok(result)
     }
 }
 
