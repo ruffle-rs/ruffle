@@ -26,7 +26,7 @@ theme-dark = Escuro
 # See for context https://github.com/FeralInteractive/gamemode
 gamemode = GameMode
 gamemode-tooltip =
-    O GameMode aplica temporariamente um conjunto de otimizações ao seu computador e/ou Ruffle.
+    O GameMode aplica temporariamente um conjunto de otimizações ao seu computador e/ou Ruffle. 
     O Ruffle solicita o GameMode apenas quando um filme está sendo reproduzido.
 gamemode-default = Padrão
 gamemode-default-tooltip = O GameMode será ativado apenas quando a preferência de energia for definida como alta.
