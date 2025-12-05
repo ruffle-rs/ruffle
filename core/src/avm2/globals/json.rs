@@ -241,8 +241,7 @@ impl<'gc> AvmSerializer<'gc> {
                     return Err(make_error_1129(activation));
                 }
                 self.obj_stack.push(obj);
-                let value = if obj.is_of_type(activation.avm2().class_defs().array) {
-                    // TODO: Vectors
+                let value = if obj.as_array_object().is_some() || obj.as_vector_object().is_some() {
                     self.serialize_iterable(activation, obj)?
                 } else {
                     self.serialize_object(activation, obj)?
