@@ -23,8 +23,14 @@
     "settings_log_level_warn": {
         "message": "Varoitukset"
     },
+    "settings_log_level_info": {
+        "message": "Info"
+    },
     "settings_log_level_debug": {
         "message": "Vianjäljitys"
+    },
+    "settings_log_level_trace": {
+        "message": "Trace"
     },
     "settings_max_execution_duration": {
         "message": "ActionScript-suorituksen suurin sallittu kesto (sekunneissa)"
