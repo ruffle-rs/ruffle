@@ -3,7 +3,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
-use crate::avm1::{globals, ArrayBuilder, Object, Value};
+use crate::avm1::{globals, ArrayBuilder, Attribute, Object, Value};
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
 };
@@ -106,6 +106,20 @@ pub fn create_class<'gc>(
 ) -> SystemClass<'gc> {
     let class = context.empty_class(super_proto);
     context.define_properties_on(class.proto, PROTO_DECLS);
+
+    class.constr.set_attributes(
+        context.gc(),
+        None,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::VERSION_6,
+        Attribute::empty(),
+    );
+    class.proto.set_attributes(
+        context.gc(),
+        None,
+        Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::VERSION_6,
+        Attribute::empty(),
+    );
+
     class
 }
 
