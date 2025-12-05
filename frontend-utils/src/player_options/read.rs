@@ -60,6 +60,9 @@ pub fn read_player_options<'a>(
     // Player version
     result.player_version = table.get_integer(cx, "version").map(|x| x as u8);
 
+    // Custom player version string
+    result.custom_player_version_string = table.get_string(cx, "custom_version_string");
+
     // Player runtime
     result.player_runtime = table.parse_from_str(cx, "runtime");
 
@@ -616,6 +619,16 @@ mod tests {
         assert_eq!(
             &PlayerOptions {
                 player_version: Some(26),
+                ..Default::default()
+            },
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
+
+        let result = read("custom_version_string = \"1,2,3,4\"");
+        assert_eq!(
+            &PlayerOptions {
+                custom_player_version_string: Some("1,2,3,4".into()),
                 ..Default::default()
             },
             result.values()
