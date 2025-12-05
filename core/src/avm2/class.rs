@@ -2,7 +2,8 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{
-    make_error_1014, make_error_1053, make_error_1107, verify_error, Error1014Type,
+    make_error_1014, make_error_1053, make_error_1059, make_error_1103, make_error_1107,
+    make_error_1110, make_error_1111, Error1014Type,
 };
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::{scriptobject_allocator, ClassObject, Object};
@@ -618,26 +619,11 @@ impl<'gc> Class<'gc> {
         if let Some(superclass) = superclass {
             // We have to make an exception for `c_class`es
             if superclass.is_final() && !self.is_c_class() {
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    &format!(
-                        "Error #1103: Class {} cannot extend final base class.",
-                        self.name().to_qualified_name(mc)
-                    ),
-                    1103,
-                )?));
+                return Err(make_error_1103(activation, self));
             }
 
             if superclass.is_interface() {
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    &format!(
-                        "Error #1110: Class {} cannot extend {}.",
-                        self.name().to_qualified_name(mc),
-                        superclass.name().to_qualified_name_err_message(mc)
-                    ),
-                    1110,
-                )?));
+                return Err(make_error_1110(activation, self, superclass));
             }
 
             for instance_trait in self.traits() {
@@ -675,11 +661,7 @@ impl<'gc> Class<'gc> {
                                 (_, TraitKind::Class { .. }) => {
                                     if !allow_class_trait {
                                         // Class traits aren't allowed in a class (except `global` classes)
-                                        return Err(Error::avm_error(verify_error(
-                                            activation,
-                                            "Error #1059: ClassInfo is referenced before definition.",
-                                            1059,
-                                        )?));
+                                        return Err(make_error_1059(activation));
                                     }
                                 }
                                 (TraitKind::Getter { .. }, TraitKind::Getter { .. })
@@ -885,23 +867,13 @@ impl<'gc> Class<'gc> {
         self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Box<[Class<'gc>]>, Error<'gc>> {
-        let mc = activation.gc();
-
         let mut interfaces = Vec::with_capacity(self.direct_interfaces().len());
         let mut dedup = HashSet::new();
         let mut queue = vec![self];
         while let Some(cls) = queue.pop() {
             for interface in cls.direct_interfaces() {
                 if !interface.is_interface() {
-                    return Err(Error::avm_error(verify_error(
-                        activation,
-                        &format!(
-                            "Error #1111: {} cannot implement {}.",
-                            self.name().to_qualified_name(mc),
-                            interface.name().to_qualified_name_err_message(mc)
-                        ),
-                        1111,
-                    )?));
+                    return Err(make_error_1111(activation, self, *interface));
                 }
 
                 if dedup.insert(*interface) {

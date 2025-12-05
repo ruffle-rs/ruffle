@@ -1,7 +1,7 @@
 //! `Math` impl
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::type_error;
+use crate::avm2::error::{make_error_1075, make_error_1076};
 use crate::avm2::object::Object;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
@@ -39,22 +39,14 @@ pub fn call_handler<'gc>(
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Err(Error::avm_error(type_error(
-        activation,
-        "Error #1075: Math is not a function.",
-        1075,
-    )?))
+    Err(make_error_1075(activation))
 }
 
 pub fn math_allocator<'gc>(
     _class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    Err(Error::avm_error(type_error(
-        activation,
-        "Error #1076: Math is not a constructor.",
-        1076,
-    )?))
+    Err(make_error_1076(activation))
 }
 
 pub fn round<'gc>(

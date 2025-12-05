@@ -1,7 +1,7 @@
 //! Function builtin and prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{eval_error, type_error};
+use crate::avm2::error::{make_error_1066, make_error_1116};
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::globals::methods::function as function_class_methods;
@@ -37,11 +37,7 @@ pub fn function_constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if !args.is_empty() {
-        return Err(Error::avm_error(eval_error(
-            activation,
-            "Error #1066: The form function('function body') is not supported.",
-            1066,
-        )?));
+        return Err(make_error_1066(activation));
     }
 
     let function_object = create_dummy_function(activation);
@@ -105,11 +101,7 @@ pub fn apply<'gc>(
 
             resolved_args
         } else {
-            return Err(Error::avm_error(type_error(
-                activation,
-                "Error #1116: second argument to Function.prototype.apply must be an array.",
-                1116,
-            )?));
+            return Err(make_error_1116(activation));
         }
     } else {
         // Passing null or undefined results in the function being called with no arguments passed

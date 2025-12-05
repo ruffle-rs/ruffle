@@ -1,4 +1,7 @@
-use crate::avm2::error::{argument_error, error, make_error_2008, make_error_3671};
+use crate::avm2::error::{
+    make_error_2008, make_error_3669, make_error_3670, make_error_3671, make_error_3771,
+    make_error_3772, make_error_3773, make_error_3780, make_error_3781,
+};
 use crate::avm2::globals::methods::flash_geom_matrix_3d as matrix3d_methods;
 use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
@@ -50,11 +53,7 @@ pub fn create_vertex_buffer<'gc>(
         let data_32_per_vertex = args.get_u32(1);
 
         if data_32_per_vertex > 64 {
-            return Err(Error::avm_error(argument_error(
-                activation,
-                "Error #3670: Buffer too big.",
-                3670,
-            )?));
+            return Err(make_error_3670(activation));
         } else if data_32_per_vertex == 0 {
             return Err(make_error_3671(activation));
         }
@@ -89,27 +88,19 @@ pub fn configure_back_buffer<'gc>(
         }
 
         if width < 32 || width > 16384 {
-            return Err(Error::avm_error(error(
-                activation,
-                if old_swf {
-                    "Error #3669: Bad input size."
-                } else {
-                    "Error #3780: Requested width of backbuffer is not in allowed range 32 to 16384."
-                },
-                if old_swf { 3669 } else { 3780 },
-            )?));
+            return Err(if old_swf {
+                make_error_3669(activation)
+            } else {
+                make_error_3780(activation)
+            });
         }
 
         if height < 32 || height > 16384 {
-            return Err(Error::avm_error(error(
-                activation,
-                if old_swf {
-                    "Error #3669: Bad input size."
-                } else {
-                    "Error #3781: Requested height of backbuffer is not in allowed range 32 to 16384."
-                },
-                if old_swf { 3669 } else { 3781 },
-            )?));
+            return Err(if old_swf {
+                make_error_3669(activation)
+            } else {
+                make_error_3781(activation)
+            });
         }
 
         let wants_best_resolution = args.get_bool(4);
@@ -170,11 +161,7 @@ pub fn set_vertex_buffer_at<'gc>(
             } else if &*format == b"bytes4" {
                 Context3DVertexBufferFormat::Bytes4
             } else {
-                return Err(Error::avm_error(argument_error(
-                    activation,
-                    "Error #2008: Parameter vertexStreamFormat must be one of the accepted values.",
-                    2008,
-                )?));
+                return Err(make_error_2008(activation, "vertexStreamFormat"));
             };
 
             Some((buffer.as_vertex_buffer().unwrap(), format))
@@ -622,32 +609,19 @@ pub fn set_render_to_texture<'gc>(
     let surface_selector = args.get_u32(3);
     let color_output_index = args.get_u32(4);
 
-    let mut error = None;
     if texture.instance_class() == activation.avm2().class_defs().cubetexture {
         if surface_selector > 5 {
-            error = Some((
-                3772,
-                "Error #3772: Cube textures need to have surfaceSelector [0..5].",
-            ));
+            return Err(make_error_3772(activation));
         }
     } else if texture.instance_class() == activation.avm2().class_defs().rectangletexture {
         if surface_selector != 0 {
-            error = Some((
-                3773,
-                "Error #3773: Rectangle textures need to have surfaceSelector = 0.",
-            ));
+            return Err(make_error_3773(activation));
         }
     } else {
         // normal Texture or video texture (but the latter should probably not be supported here anyway)
         if surface_selector != 0 {
-            error = Some((
-                3771,
-                "Error #3771: 2D textures need to have surfaceSelector = 0.",
-            ));
+            return Err(make_error_3771(activation));
         }
-    }
-    if let Some((code, message)) = error {
-        return Err(Error::avm_error(argument_error(activation, message, code)?));
     }
 
     if anti_alias != 0 {

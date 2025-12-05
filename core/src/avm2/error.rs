@@ -298,6 +298,16 @@ pub fn make_error_1011<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1013<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1013: Cannot call OP_findproperty when scopeDepth is 0.",
+        1013,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1014<'gc>(
     activation: &mut Activation<'_, 'gc>,
     kind: Error1014Type,
@@ -318,6 +328,26 @@ pub fn make_error_1016<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'
         activation,
         &format!("Error #1016: Descendants operator (..) not supported on type {class_name}",),
         1016,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1017<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1017: Scope stack overflow occurred.",
+        1017,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1018<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1018: Scope stack underflow occurred.",
+        1018,
     ))
 }
 
@@ -358,6 +388,26 @@ pub fn make_error_1021<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1023<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1023: Stack overflow occurred.",
+        1023,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1024<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1024: Stack underflow occurred.",
+        1024,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1025<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
     make_error!(verify_error(
         activation,
@@ -391,6 +441,40 @@ pub fn make_error_1027<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #1027: Method_info exceeds method_count.",
         1027,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1030<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    first_len: usize,
+    second_len: usize,
+) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        &format!(
+            "Error #1030: Stack depth is unbalanced. {} != {}.",
+            first_len, second_len,
+        ),
+        1030,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1031<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    first_len: usize,
+    second_len: usize,
+) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        &format!(
+            "Error #1031: Scope depth is unbalanced. {} != {}.",
+            first_len, second_len,
+        ),
+        1031,
     ))
 }
 
@@ -555,6 +639,16 @@ pub fn make_error_1058<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1059<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1059: ClassInfo is referenced before definition.",
+        1059,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1063<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
@@ -610,6 +704,83 @@ pub fn make_error_1065<'gc>(
         activation,
         &format!("Error #1065: Variable {local_name} is not defined."),
         1065,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1066<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(eval_error(
+        activation,
+        "Error #1066: The form function('function body') is not supported.",
+        1066,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1068<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1068: Scope values cannot be reconciled.",
+        1068,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1070<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class: Class<'gc>,
+    multiname: &Multiname<'gc>,
+) -> Error<'gc> {
+    let class_name = class.name().to_qualified_name_err_message(activation.gc());
+    let multiname_name = multiname.as_uri(activation.strings());
+
+    make_error!(reference_error(
+        activation,
+        &format!("Error #1070: Method {multiname_name} not found on {class_name}",),
+        1070,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1072<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1072: Disp_id 0 is illegal.",
+        1072
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1075<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(type_error(
+        activation,
+        "Error #1075: Math is not a function.",
+        1075,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1076<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(type_error(
+        activation,
+        "Error #1076: Math is not a constructor.",
+        1076,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1078<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1078: Illegal opcode/multiname combination.",
+        1078,
     ))
 }
 
@@ -698,6 +869,21 @@ pub fn make_error_1100<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1103<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'gc>) -> Error<'gc> {
+    let class_name = class.name().to_qualified_name(activation.gc());
+
+    make_error!(verify_error(
+        activation,
+        &format!(
+            "Error #1103: Class {} cannot extend final base class.",
+            class_name
+        ),
+        1103,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1107<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(verify_error(
         activation,
@@ -718,6 +904,50 @@ pub fn make_error_1108<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1110<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class: Class<'gc>,
+    super_class: Class<'gc>,
+) -> Error<'gc> {
+    let mc = activation.gc();
+
+    let class_name = class.name().to_qualified_name(mc);
+    let super_class_name = super_class.name().to_qualified_name_err_message(mc);
+
+    make_error!(verify_error(
+        activation,
+        &format!(
+            "Error #1110: Class {} cannot extend {}.",
+            class_name, super_class_name
+        ),
+        1110,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1111<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class: Class<'gc>,
+    interface: Class<'gc>,
+) -> Error<'gc> {
+    let mc = activation.gc();
+
+    let class_name = class.name().to_qualified_name(mc);
+    let interface_name = interface.name().to_qualified_name_err_message(mc);
+
+    make_error!(verify_error(
+        activation,
+        &format!(
+            "Error #1111: {} cannot implement {}.",
+            class_name, interface_name
+        ),
+        1111,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1112<'gc>(activation: &mut Activation<'_, 'gc>, arg_count: usize) -> Error<'gc> {
     make_error!(argument_error(
         activation,
@@ -731,11 +961,31 @@ pub fn make_error_1112<'gc>(activation: &mut Activation<'_, 'gc>, arg_count: usi
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1113<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
+        1113,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1115<'gc>(activation: &mut Activation<'_, 'gc>, name: &str) -> Error<'gc> {
     make_error!(type_error(
         activation,
         &format!("Error #1115: {name} is not a constructor."),
         1115,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1116<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(type_error(
+        activation,
+        "Error #1116: second argument to Function.prototype.apply must be an array.",
+        1116,
     ))
 }
 
@@ -786,6 +1036,16 @@ pub fn make_error_1123<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1124<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1124: OP_hasnext2 requires object and index to be distinct registers.",
+        1124,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1125<'gc>(
     activation: &mut Activation<'_, 'gc>,
     index: f64,
@@ -815,6 +1075,25 @@ pub fn make_error_1127<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #1127: Type application attempted on a non-parameterized type.",
         1127,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1128<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    class: Class<'gc>,
+    param_count: usize,
+) -> Error<'gc> {
+    let class_name = class.name().to_qualified_name_err_message(activation.gc());
+
+    make_error!(type_error(
+        activation,
+        &format!(
+            "Error #1128: Incorrect number of type parameters for {}. Expected 1, got {}.",
+            class_name, param_count
+        ),
+        1128,
     ))
 }
 
@@ -1019,6 +1298,16 @@ pub fn make_error_2023<'gc>(activation: &mut Activation<'_, 'gc>, class: Class<'
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2024<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #2024: An object cannot be added as a child of itself.",
+        2024,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2025<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(argument_error(
         activation,
@@ -1068,6 +1357,16 @@ pub fn make_error_2058<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #2058: There was an error decompressing the data.",
         2058,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2067<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(
+        activation,
+        "Error #2067: The ExternalInterface is not available in this container. ExternalInterface requires Internet Explorer ActiveX, Firefox, Mozilla 1.7.5 and greater, or other browsers that support NPRuntime.",
+        2067,
     ))
 }
 
@@ -1143,6 +1442,20 @@ pub fn make_error_2099<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2109<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    frame_label: AvmString<'gc>,
+    scene: AvmString<'gc>,
+) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        &format!("Error #2109: Frame label {frame_label} not found in scene {scene}."),
+        2109,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2126<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(argument_error(
         activation,
@@ -1173,6 +1486,16 @@ pub fn make_error_2136<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2150<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #2150: An object cannot be added as a child to one of it's children (or children's children, etc.).",
+        2150,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2162<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(argument_error(
         activation,
@@ -1183,17 +1506,171 @@ pub fn make_error_2162<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_3671<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(argument_error(
+pub fn make_error_2174<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(
         activation,
-        "Error #3671: Buffer has zero size.",
-        3671
+        "Error #2174: Only one download, upload, load or save operation can be active at a time on each FileReference.",
+        2174,
+    ))
+}
+
+// Currently we don't use this, see `globals::flash::system::system::set_clipboard`
+#[allow(dead_code)]
+#[inline(never)]
+#[cold]
+pub fn make_error_2176<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(
+        activation,
+        "Error #2176: Certain actions, such as those that display a pop-up window, may only be invoked upon user interaction, for example by a mouse click or button press.",
+        2176,
     ))
 }
 
 #[inline(never)]
 #[cold]
-pub fn range_error<'gc>(
+pub fn make_error_2180<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #2180: It is illegal to move AVM1 content (AS1 or AS2) to a different part of the displayList when it has been loaded into AVM2 (AS3) content.",
+        2180,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2182<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #2182: Invalid fieldOfView value.  The value must be greater than 0 and less than 180.",
+        2182,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_2186<'gc>(activation: &mut Activation<'_, 'gc>, focal_length: f64) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        &format!("Error #2186: Invalid focalLength {focal_length}."),
+        2186,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3669<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(activation, "Error #3669: Bad input size.", 3669))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3670<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3670: Buffer too big.",
+        3670,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3671<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3671: Buffer has zero size.",
+        3671,
+    ))
+}
+
+// This isn't used if the `jpegxr` feature is disabled, see
+// `globals::flash::display3D::textures::atf_jpegxr`
+#[allow(dead_code)]
+#[inline(never)]
+#[cold]
+pub fn make_error_3675<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3675: Texture format mismatch.",
+        3675,
+    ))
+}
+
+// This isn't used if the `jpegxr` feature is disabled, see
+// `globals::flash::display3D::textures::atf_jpegxr`
+#[allow(dead_code)]
+#[inline(never)]
+#[cold]
+pub fn make_error_3679<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3679: Texture size does not match.",
+        3679,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3771<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3771: 2D textures need to have surfaceSelector = 0.",
+        3771,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3772<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3772: Cube textures need to have surfaceSelector [0..5].",
+        3772,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3773<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3773: Rectangle textures need to have surfaceSelector = 0.",
+        3773,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3780<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(
+        activation,
+        "Error #3780: Requested width of backbuffer is not in allowed range 32 to 16384.",
+        3680,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3781<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(
+        activation,
+        "Error #3781: Requested height of backbuffer is not in allowed range 32 to 16384.",
+        3681,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_3783<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        "Error #3783: A Stage object cannot be added as the child of another object.",
+        3783,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+fn range_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1204,7 +1681,7 @@ pub fn range_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn eval_error<'gc>(
+fn eval_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1215,7 +1692,7 @@ pub fn eval_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn argument_error<'gc>(
+fn argument_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1226,7 +1703,7 @@ pub fn argument_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn security_error<'gc>(
+fn security_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1237,7 +1714,7 @@ pub fn security_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn type_error<'gc>(
+fn type_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1248,7 +1725,7 @@ pub fn type_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn reference_error<'gc>(
+fn reference_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1259,7 +1736,7 @@ pub fn reference_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn verify_error<'gc>(
+fn verify_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1270,7 +1747,7 @@ pub fn verify_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn illegal_operation_error<'gc>(
+fn illegal_operation_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1281,7 +1758,7 @@ pub fn illegal_operation_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn io_error<'gc>(
+fn io_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1292,7 +1769,7 @@ pub fn io_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn eof_error<'gc>(
+fn eof_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1303,7 +1780,7 @@ pub fn eof_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn uri_error<'gc>(
+fn uri_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1314,7 +1791,7 @@ pub fn uri_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn syntax_error<'gc>(
+fn syntax_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
@@ -1325,7 +1802,7 @@ pub fn syntax_error<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn error<'gc>(
+fn error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,

@@ -1,8 +1,9 @@
 use crate::avm2::class::Class;
 use crate::avm2::error::{
     make_error_1011, make_error_1014, make_error_1019, make_error_1020, make_error_1021,
-    make_error_1025, make_error_1026, make_error_1032, make_error_1043, make_error_1054,
-    make_error_1107, verify_error, Error1014Type,
+    make_error_1025, make_error_1026, make_error_1032, make_error_1043, make_error_1051,
+    make_error_1054, make_error_1072, make_error_1078, make_error_1107, make_error_1113,
+    make_error_1124, Error1014Type,
 };
 use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
@@ -752,25 +753,17 @@ fn translate_op<'gc>(
             } else if index_register >= max_locals {
                 return Err(make_error_1025(activation, index_register));
             } else if index_register == object_register {
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1124: OP_hasnext2 requires object and index to be distinct registers.",
-                    1124,
-                )?));
+                return Err(make_error_1124(activation));
             }
         }
 
         // Misc opcode verification
         AbcOp::CallMethod { index, .. } => {
-            return Err(Error::avm_error(if index == 0 {
-                verify_error(activation, "Error #1072: Disp_id 0 is illegal.", 1072)?
+            return Err(if index == 0 {
+                make_error_1072(activation)
             } else {
-                verify_error(
-                    activation,
-                    "Error #1051: Illegal early binding access.",
-                    1051,
-                )?
-            }));
+                make_error_1051(activation)
+            });
         }
 
         AbcOp::FindDef { index } | AbcOp::GetLex { index } => {
@@ -778,11 +771,7 @@ fn translate_op<'gc>(
                 translation_unit.pool_maybe_uninitialized_multiname(activation, index)?;
 
             if multiname.has_lazy_component() {
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1078: Illegal opcode/multiname combination.",
-                    1078,
-                )?));
+                return Err(make_error_1078(activation));
             }
         }
 
@@ -1054,11 +1043,7 @@ fn translate_op<'gc>(
                 // This results in this VerifyError being thrown upon
                 // encountering any `newactivation` op in the bytecode.
 
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
-                    1113,
-                )?));
+                return Err(make_error_1113(activation));
             }
         }
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },
