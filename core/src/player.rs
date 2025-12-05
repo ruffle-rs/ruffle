@@ -2175,6 +2175,7 @@ impl Player {
                         ActivationIdentifier::root("[Construct]"),
                         action.clip,
                     );
+                    // TODO(moulins): should this use `Object::prototype`?
                     if let Ok(prototype) = constructor.get(istr!("prototype"), &mut activation) {
                         if let Some(object) = action.clip.object1() {
                             object.define_value(

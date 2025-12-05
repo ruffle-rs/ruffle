@@ -552,6 +552,26 @@ impl<'gc> Value<'gc> {
         };
         Ok(result)
     }
+
+    /// ActionScript 2's `self instanceof Class`.
+    pub fn instance_of(
+        self,
+        class: Value<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<bool, Error<'gc>> {
+        if !self.is_primitive() {
+            // These coercions happen even if `obj` is a dead `MovieClipReference`.
+            if let Some(class) = class.coerce_to_object(activation)? {
+                if let Some(p) = class.prototype(activation).coerce_to_object(activation)? {
+                    if let Some(obj) = self.as_object(activation) {
+                        return obj.is_instance_of(activation, class, p);
+                    }
+                }
+            }
+        }
+
+        Ok(false)
+    }
 }
 
 /// Calculate `value * 10^exp` through repeated multiplication or division.

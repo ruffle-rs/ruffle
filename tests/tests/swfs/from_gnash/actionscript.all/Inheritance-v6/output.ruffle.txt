@@ -179,3 +179,4 @@ PASSED: super.gg == "moo" [./Inheritance.as:603]
 #total tests run: 173
 
 Now your flash player will try to answer the egg/chicken question. Kill it if it hangs your machine
+PASSED: !a instanceof b [./Inheritance.as:640]

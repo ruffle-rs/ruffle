@@ -325,6 +325,8 @@ impl<'gc> Object<'gc> {
             proto_stack.push(p);
         }
 
+        // TODO(moulins): should we guard against infinite loops here?
+        // A recursive prototype chain will hang Flash Player.
         while let Some(this_proto) = proto_stack.pop() {
             if Object::ptr_eq(this_proto, prototype) {
                 return Ok(true);
@@ -340,6 +342,7 @@ impl<'gc> Object<'gc> {
                         return Ok(true);
                     }
 
+                    // TODO(moulins): should this use `Object::prototype`?
                     if let Value::Object(o) = interface.get(istr!("prototype"), activation)? {
                         proto_stack.push(o);
                     }
@@ -361,6 +364,9 @@ impl<'gc> Object<'gc> {
 
     /// Check if this object is in the prototype chain of the specified test object.
     pub fn is_prototype_of(self, activation: &mut Activation<'_, 'gc>, other: Object<'gc>) -> bool {
+        // TODO(moulins): should we guard against infinite loops here?
+        // A recursive prototype chain will hang Flash Player.
+
         let mut proto = other.proto(activation);
 
         while let Value::Object(proto_ob) = proto {

@@ -1,2 +1,6 @@
 num_frames = 30
+
+# Note: due to https://github.com/ruffle-rs/ruffle/wiki/Flash-Player-Oddities#some-built-in-operators-behave-differently-on-frame-1-than-on-other-frames
+# (which we don't implement), Ruffle traces an extra line at the end of the test.
+# Other checks probably fail for unrelated reasons.
 known_failure = true
