@@ -1,0 +1,19 @@
+num_ticks = 1
+known_failure = true
+
+[[image_comparisons.output.checks]]
+tolerance = 0
+max_outliers = 160
+
+[[image_comparisons.output.checks]]
+tolerance = 128
+max_outliers = 30
+
+[player_options]
+with_renderer = { optional = true, sample_count = 4 }
+
+[fonts.test_font]
+family = "TestFont"
+path = "TestFont.ttf"
+bold = false
+italic = false
