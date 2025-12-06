@@ -487,6 +487,15 @@ impl<'gc> FunctionObject<'gc> {
             Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::VERSION_6,
         );
 
+        // This should be correct, because f.hasOwnProperty("constructor") returns true in flashplayer.
+        let constr_val = fn_proto.get_data_raw(istr!(context, "constructor"));
+        obj.define_value(
+            context.gc(),
+            istr!(context, "constructor"),
+            constr_val,
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+
         if let Some(prototype) = prototype {
             prototype.define_value(
                 context.gc(),
