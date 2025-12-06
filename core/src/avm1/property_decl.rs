@@ -27,7 +27,7 @@ impl<'gc> DeclContext<'_, 'gc> {
     #[inline(never)]
     pub fn define_properties_on(&mut self, this: Object<'gc>, decls: &[Declaration]) {
         for decl in decls {
-            decl.define_on(self.strings, this, self.fn_proto);
+            decl.define_on(self, this);
         }
     }
 
@@ -130,19 +130,20 @@ impl Declaration {
     /// defined a property.
     pub fn define_on<'gc>(
         &self,
-        context: &mut StringContext<'gc>,
+        context: &mut DeclContext<'_, 'gc>,
         this: Object<'gc>,
-        fn_proto: Object<'gc>,
     ) -> Value<'gc> {
         let mc = context.gc();
 
-        let name = context.intern_static(WStr::from_units(self.name));
+        let name = context.strings.intern_static(WStr::from_units(self.name));
         let value = match self.kind {
             DeclKind::Property { getter, setter } => {
                 // Property objects are unobservable by user code, so a bare function is enough.
-                let getter = FunctionObject::native(getter).build(context, fn_proto, None);
-                let setter = setter
-                    .map(|setter| FunctionObject::native(setter).build(context, fn_proto, None));
+                let getter =
+                    FunctionObject::native(getter).build(context.strings, context.fn_proto, None);
+                let setter = setter.map(|setter| {
+                    FunctionObject::native(setter).build(context.strings, context.fn_proto, None)
+                });
                 this.add_property(mc, name.into(), getter, setter, self.attributes);
                 return Value::Undefined;
             }
@@ -152,25 +153,42 @@ impl Declaration {
                 setter,
             } => {
                 // Property objects are unobservable by user code, so a bare function is enough.
-                let getter =
-                    FunctionObject::table_native(native, getter).build(context, fn_proto, None);
+                let getter = FunctionObject::table_native(native, getter).build(
+                    context.strings,
+                    context.fn_proto,
+                    None,
+                );
                 let setter = setter.map(|setter| {
-                    FunctionObject::table_native(native, setter).build(context, fn_proto, None)
+                    FunctionObject::table_native(native, setter).build(
+                        context.strings,
+                        context.fn_proto,
+                        None,
+                    )
                 });
                 this.add_property(mc, name.into(), getter, setter, self.attributes);
                 return Value::Undefined;
             }
             DeclKind::Method(f) | DeclKind::Function(f) => {
-                let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto);
-                FunctionObject::native(f).build(context, fn_proto, p).into()
-            }
-            DeclKind::TableMethod(f, index) | DeclKind::TableFunction(f, index) => {
-                let p = matches!(self.kind, DeclKind::Function(_)).then_some(fn_proto);
-                FunctionObject::table_native(f, index)
-                    .build(context, fn_proto, p)
+                let p = if matches!(self.kind, DeclKind::Function(_)) {
+                    Some(Object::new(context.strings, Some(context.object_proto)))
+                } else {
+                    None
+                };
+                FunctionObject::native(f)
+                    .build(context.strings, context.fn_proto, p)
                     .into()
             }
-            DeclKind::String(s) => context.intern_static(WStr::from_units(s)).into(),
+            DeclKind::TableMethod(f, index) | DeclKind::TableFunction(f, index) => {
+                let p = if matches!(self.kind, DeclKind::TableFunction(_, _)) {
+                    Some(Object::new(context.strings, Some(context.object_proto)))
+                } else {
+                    None
+                };
+                FunctionObject::table_native(f, index)
+                    .build(context.strings, context.fn_proto, p)
+                    .into()
+            }
+            DeclKind::String(s) => context.strings.intern_static(WStr::from_units(s)).into(),
             DeclKind::Bool(b) => b.into(),
             DeclKind::Int(i) => i.into(),
             DeclKind::Float(f) => f.into(),
