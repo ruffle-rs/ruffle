@@ -117,7 +117,7 @@ PASSED: DerivedClass1.var3 == undefined [./Inheritance.as:417]
 PASSED: ! DerivedClass1.prototype.hasOwnProperty('toString') [./Inheritance.as:418]
 PASSED: ! DerivedClass1.prototype.hasOwnProperty('valueOf') [./Inheritance.as:419]
 FAILED: ! DerivedClass1.prototype.hasOwnProperty('constructor') [./Inheritance.as:420]
-FAILED: DerivedClass1.hasOwnProperty('constructor') [./Inheritance.as:421]
+PASSED: DerivedClass1.hasOwnProperty('constructor') [./Inheritance.as:421]
 FAILED: expected: Function obtained: [type Function] [./Inheritance.as:422]
 PASSED: DerivedClass1.prototype.__proto__.constructor == BaseClass1 [./Inheritance.as:425]
 PASSED: DerivedClass1.prototype.__proto__ == BaseClass1.prototype [./Inheritance.as:426]
@@ -174,8 +174,8 @@ PASSED: this.a == 4 [./Inheritance.as:598]
 PASSED: this.b == "string" [./Inheritance.as:599]
 PASSED: super.vv == undefined [./Inheritance.as:602]
 PASSED: super.gg == "moo" [./Inheritance.as:603]
-#passed: 166
-#failed: 7
+#passed: 167
+#failed: 6
 #total tests run: 173
 
 Now your flash player will try to answer the egg/chicken question. Kill it if it hangs your machine

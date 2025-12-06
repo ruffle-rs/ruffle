@@ -3,7 +3,7 @@ SWF5
 [Object.as debug-22403-05c7ba106]
 PASSED: typeof(Object) == 'function' [./Object.as:29]
 PASSED: typeof(Object.prototype) == 'object' [./Object.as:30]
-FAILED: expected: 'function' obtained: undefined [./Object.as:31]
+PASSED: typeof(Object.constructor) == 'function' [./Object.as:31]
 PASSED: typeof(Object.__proto__) == 'undefined' [./Object.as:33]
 PASSED: typeof(Object.__proto__) == 'object' [./Object.as:37]
 PASSED: typeof(Object.registerClass) == 'function' [./Object.as:40]
@@ -25,7 +25,7 @@ PASSED: typeof(Object.prototype.isPropertyEnumerable) == 'function' [./Object.as
 PASSED: typeof(Object.prototype.isPrototypeOf) == 'function' [./Object.as:63]
 PASSED: typeof(Object.prototype.hasOwnProperty) == 'function' [./Object.as:64]
 PASSED: Object.prototype.constructor == Object [./Object.as:66]
-FAILED: expected: 'function' obtained: undefined [./Object.as:67]
+PASSED: typeof(Object.prototype.toString.constructor) == 'function' [./Object.as:67]
 PASSED: typeof(Function) == 'undefined' [./Object.as:73]
 PASSED: Object.prototype.prototype == undefined [./Object.as:75]
 PASSED: Object.prototype.__proto__ == undefined [./Object.as:81]
@@ -43,7 +43,7 @@ PASSED: obj.__proto__.constructor == Object [./Object.as:161]
 PASSED: typeof(obj.toString) == 'function' [./Object.as:164]
 PASSED: typeof(obj.valueOf) == 'function' [./Object.as:165]
 PASSED: typeof(obj.addProperty) == 'function' [./Object.as:166]
-FAILED: Object.hasOwnProperty('constructor') [./Object.as:168]
+PASSED: Object.hasOwnProperty('constructor') [./Object.as:168]
 PASSED: obj.hasOwnProperty('__constructor__') [./Object.as:176]
 PASSED: obj.member == 1 [./Object.as:180]
 PASSED: typeof(obj.toString()) == 'string' [./Object.as:181]
@@ -140,6 +140,6 @@ FAILED: expected: "undefined" obtained: object [./Object.as:1019]
 PASSED: typeof(o) == "object" [./Object.as:1021]
 PASSED: o.toString() == "true" [./Object.as:1022]
 FAILED: expected: "undefined" obtained: object [./Object.as:1026]
-#passed: 128
-#failed: 11
+#passed: 131
+#failed: 8
 #total tests run: 139

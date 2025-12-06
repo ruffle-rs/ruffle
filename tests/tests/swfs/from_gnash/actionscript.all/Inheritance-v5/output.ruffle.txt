@@ -65,7 +65,7 @@ PASSED: SubObj1.prototype != undefined [./Inheritance.as:372]
 PASSED: SubObj1.prototype.constructor == SubObj1 [./Inheritance.as:373]
 FAILED: expected: 'undefined' obtained: function [./Inheritance.as:405]
 PASSED: typeof(DerivedClass1.prototype.constructor) == 'function' [./Inheritance.as:408]
-FAILED: expected: 'function' obtained: undefined [./Inheritance.as:409]
+PASSED: typeof(DerivedClass1.constructor) == 'function' [./Inheritance.as:409]
 PASSED: DerivedClass1.prototype.__proto__.constructor == BaseClass1 [./Inheritance.as:425]
 PASSED: DerivedClass1.prototype.__proto__ == BaseClass1.prototype [./Inheritance.as:426]
 PASSED: obj.derivedClassCtorCalled == 1 [./Inheritance.as:430]
@@ -107,8 +107,8 @@ PASSED: ! ob instanceof A [./Inheritance.as:550]
 FAILED: ob instanceof A [./Inheritance.as:552]
 PASSED: ! ob instanceof C [./Inheritance.as:558]
 FAILED: ob instanceof C [./Inheritance.as:560]
-#passed: 92
-#failed: 14
+#passed: 93
+#failed: 13
 #total tests run: 106
 
 Now your flash player will try to answer the egg/chicken question. Kill it if it hangs your machine
