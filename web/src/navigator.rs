@@ -53,6 +53,7 @@ pub struct WebNavigatorBackend {
     allow_script_access: bool,
     allow_networking: NetworkingAccessMode,
     upgrade_to_https: bool,
+    host_block_list: Vec<String>,
     url_rewrite_rules: Vec<(RegExp, String)>,
     base_url: Option<Url>,
     open_url_mode: OpenUrlMode,
@@ -111,6 +112,7 @@ impl WebNavigatorBackend {
             allow_script_access,
             allow_networking,
             upgrade_to_https,
+            host_block_list: vec!["mochiads.com".into()],
             url_rewrite_rules,
             base_url,
             log_subscriber,
@@ -304,6 +306,19 @@ impl NavigatorBackend for WebNavigatorBackend {
                 return async_return(Err(create_fetch_error(request.url(), e)));
             }
         };
+
+        if let Some(host) = url.host_str()
+            && let Some(blocked_host) = self.host_block_list.iter().find(|blocked| {
+                // Either match the domain exactly or any subdomain.
+                host.strip_suffix(*blocked)
+                    .is_some_and(|before| before.is_empty() || before.ends_with("."))
+            })
+        {
+            return async_return(Err(create_fetch_error(
+                request.url(),
+                Error::BlockedHost(blocked_host.to_owned()),
+            )));
+        }
 
         let credentials = if let Some(host) = url.host_str() {
             if self

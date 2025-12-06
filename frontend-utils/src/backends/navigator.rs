@@ -61,6 +61,8 @@ pub struct ExternalNavigatorBackend<F: FutureSpawner<Error>, I: NavigatorInterfa
 
     upgrade_to_https: bool,
 
+    host_block_list: Vec<String>,
+
     content: Rc<PlayingContent>,
 
     interface: I,
@@ -126,6 +128,7 @@ impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F,
             client,
             base_url,
             upgrade_to_https,
+            host_block_list: vec!["mochiads.com".into()],
             socket_allowed,
             socket_mode,
             content,
@@ -193,6 +196,19 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
                 return async_return(Err(create_fetch_error(request.url(), e)));
             }
         };
+
+        if let Some(host) = processed_url.host_str()
+            && let Some(blocked_host) = self.host_block_list.iter().find(|blocked| {
+                // Either match the domain exactly or any subdomain.
+                host.strip_suffix(*blocked)
+                    .is_some_and(|before| before.is_empty() || before.ends_with("."))
+            })
+        {
+            return async_return(Err(create_fetch_error(
+                request.url(),
+                Error::BlockedHost(blocked_host.to_owned()),
+            )));
+        }
 
         let client = self.client.clone();
 

@@ -177,6 +177,9 @@ pub enum Error {
     #[error("Domain resolution failure: {0}")]
     InvalidDomain(String),
 
+    #[error("Blocked host: {0}")]
+    BlockedHost(String),
+
     #[error("Invalid SWF: {0}")]
     InvalidSwf(#[from] swf::error::Error),
 
