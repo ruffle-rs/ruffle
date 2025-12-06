@@ -28,7 +28,7 @@ pub fn create_class<'gc>(
 
     let decls = OBJECT_DECLS(context);
     let mut define_as_object = |index: usize| -> Object<'gc> {
-        match decls[index].define_on(context.strings, class.constr, context.fn_proto) {
+        match decls[index].define_on(context, class.constr) {
             Value::Object(o) => o,
             _ => panic!("expected object for broadcaster function"),
         }

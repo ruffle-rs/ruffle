@@ -11,7 +11,7 @@ PASSED: typeof(functionObject) == 'object' [./Inheritance.as:47]
 PASSED: functionObject.hasOwnProperty('__constructor__') [./Inheritance.as:48]
 PASSED: functionObject.__constructor__ == Function [./Inheritance.as:49]
 PASSED: functionObject.__proto__ == Function.prototype [./Inheritance.as:57]
-FAILED: expected: Function obtained: [type Function] [./Inheritance.as:58]
+PASSED: functionObject.__proto__.constructor == Function [./Inheritance.as:58]
 PASSED: functionObject.apply != undefined [./Inheritance.as:62]
 PASSED: functionObject.apply == Function.prototype.apply [./Inheritance.as:63]
 PASSED: functionObject.apply == functionObject.__proto__.apply [./Inheritance.as:64]
@@ -101,7 +101,7 @@ PASSED: sobj1 instanceOf Object [./Inheritance.as:369]
 PASSED: sobj1 instanceOf SubObj1 [./Inheritance.as:370]
 PASSED: SubObj1.prototype != undefined [./Inheritance.as:372]
 PASSED: SubObj1.prototype.constructor == SubObj1 [./Inheritance.as:373]
-FAILED: expected: Function obtained: [type Function] [./Inheritance.as:376]
+PASSED: SubObj1.prototype.constructor.__proto__.constructor == Function [./Inheritance.as:376]
 PASSED: typeof(DerivedClass1.prototype.__constructor__) == 'function' [./Inheritance.as:400]
 PASSED: DerivedClass1.prototype.hasOwnProperty('__constructor__') [./Inheritance.as:401]
 PASSED: DerivedClass1.prototype.__constructor__ == BaseClass1 [./Inheritance.as:402]
@@ -118,7 +118,7 @@ PASSED: ! DerivedClass1.prototype.hasOwnProperty('toString') [./Inheritance.as:4
 PASSED: ! DerivedClass1.prototype.hasOwnProperty('valueOf') [./Inheritance.as:419]
 FAILED: ! DerivedClass1.prototype.hasOwnProperty('constructor') [./Inheritance.as:420]
 PASSED: DerivedClass1.hasOwnProperty('constructor') [./Inheritance.as:421]
-FAILED: expected: Function obtained: [type Function] [./Inheritance.as:422]
+PASSED: DerivedClass1.constructor == Function [./Inheritance.as:422]
 PASSED: DerivedClass1.prototype.__proto__.constructor == BaseClass1 [./Inheritance.as:425]
 PASSED: DerivedClass1.prototype.__proto__ == BaseClass1.prototype [./Inheritance.as:426]
 PASSED: obj.derivedClassCtorCalled == 1 [./Inheritance.as:430]
@@ -174,8 +174,8 @@ PASSED: this.a == 4 [./Inheritance.as:598]
 PASSED: this.b == "string" [./Inheritance.as:599]
 PASSED: super.vv == undefined [./Inheritance.as:602]
 PASSED: super.gg == "moo" [./Inheritance.as:603]
-#passed: 161
-#failed: 12
+#passed: 164
+#failed: 9
 #total tests run: 173
 
 Now your flash player will try to answer the egg/chicken question. Kill it if it hangs your machine

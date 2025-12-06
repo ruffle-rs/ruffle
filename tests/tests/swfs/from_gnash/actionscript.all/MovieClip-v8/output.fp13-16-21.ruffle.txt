@@ -98,7 +98,7 @@ PASSED: typeof(mc.unloadMovie) == 'function' [./MovieClip.as:181]
 FAILED: expected: 'function' obtained: undefined [./MovieClip.as:182]
 PASSED: typeof(mc.getSWFVersion) == 'function' [./MovieClip.as:183]
 PASSED: mc.getSWFVersion() == OUTPUT_VERSION [./MovieClip.as:184]
-FAILED: expected: Function obtained: [type Function] [./MovieClip.as:185]
+PASSED: MovieClip.constructor == Function [./MovieClip.as:185]
 PASSED: MovieClip.prototype.hasOwnProperty('loadMovie') [./MovieClip.as:188]
 PASSED: MovieClip.prototype.hasOwnProperty('_lockroot') [./MovieClip.as:189]
 PASSED: !MovieClip.prototype.hasOwnProperty('loadMovieNum') [./MovieClip.as:190]
@@ -1082,6 +1082,6 @@ PASSED: arguments.length == 0 [./MovieClip.as:2207]
 FAILED: expected: 'val1' obtained: undefined [./MovieClip.as:2209]
 PASSED: _root.var2 == 'val2' [./MovieClip.as:2214]
 PASSED: _root.var3 == 'val3\n' [./MovieClip.as:2215]
-#passed: 994
-#failed: 83
+#passed: 995
+#failed: 82
 #total tests run: 1077

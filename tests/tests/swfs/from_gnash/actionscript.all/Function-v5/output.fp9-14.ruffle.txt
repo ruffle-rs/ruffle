@@ -105,9 +105,9 @@ PASSED: typeof(a.constructor) == 'function' [./Function.as:646]
 PASSED: typeof(Email.prototype.__constructor__) == 'undefined' [./Function.as:683]
 PASSED: Email.constructor.toString() == undefined [./Function.as:689]
 PASSED: Function == undefined [./Function.as:690]
-FAILED: expected: 'function' obtained: undefined [./Function.as:692]
-FAILED: expected: 'function' obtained: undefined [./Function.as:693]
-FAILED: expected: 'function' obtained: undefined [./Function.as:694]
+PASSED: typeof(Email.constructor) == 'function' [./Function.as:692]
+PASSED: typeof(Email.constructor.constructor) == 'function' [./Function.as:693]
+PASSED: typeof(Email.constructor.constructor.constructor) == 'function' [./Function.as:694]
 PASSED: typeof(Email.__constructor__) == 'undefined' [./Function.as:707]
 PASSED: ! Email.hasOwnProperty('__constructor__') [./Function.as:708]
 PASSED: typeof(Email.prototype.constructor) == 'function' [./Function.as:712]
@@ -153,6 +153,6 @@ PASSED: testvar2 == 8 [./Function.as:1016]
 PASSED: testvar3 == 7 [./Function.as:1017]
 PASSED: a.count == 2 [./Function.as:1032]
 PASSED: b.count == 1 [./Function.as:1033]
-#passed: 136
-#failed: 14
+#passed: 139
+#failed: 11
 #total tests run: 150
