@@ -178,6 +178,26 @@ impl<'gc> Object<'gc> {
             .map_or(Value::Undefined, |property| property.data())
     }
 
+    /// Gets the value of a data property without activation, ignoring attributes.
+    pub fn get_data_raw(self, name: AvmString<'gc>) -> Value<'gc> {
+        self.0
+            .borrow()
+            .properties
+            .get(name, false)
+            .map(|p| p.data())
+            .unwrap_or(Value::Undefined)
+    }
+
+    /// Gets values of all data properties stored on this object, ignoring attributes.
+    pub fn get_all_property_data(self) -> Vec<Value<'gc>> {
+        self.0
+            .borrow()
+            .properties
+            .iter()
+            .map(|(_, p)| p.data())
+            .collect()
+    }
+
     /// Sets a data property on this object, ignoring attributes.
     ///
     /// Doesn't look up the prototype chain and ignores virtual properties, but still might
