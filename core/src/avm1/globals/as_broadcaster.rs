@@ -11,7 +11,7 @@ use gc_arena::Collect;
 use ruffle_macros::istr;
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    "initialize" => method(initialize; DONT_ENUM | DONT_DELETE);
+    "initialize" => function(initialize; DONT_ENUM | DONT_DELETE);
     "addListener" => function(add_listener; DONT_ENUM | DONT_DELETE);
     "removeListener" => function(remove_listener; DONT_ENUM | DONT_DELETE);
     "broadcastMessage" => function(broadcast_message; DONT_ENUM | DONT_DELETE);
