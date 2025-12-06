@@ -161,7 +161,13 @@ impl TextFormat {
             .map(|s| s.decode(encoding).into_owned())
             .or_else(|| font.map(|font| WString::from_utf8(font.descriptor().name())))
             .unwrap_or_else(|| WString::from_utf8("Times New Roman"));
-        let align = et.layout().map(|l| l.align);
+        let align = if et.is_html() {
+            // For some reason, when HTML is enabled in the SWF tag, align is
+            // always left.  This does not apply to dynamically enabling HTML.
+            Some(swf::TextAlign::Left)
+        } else {
+            et.layout().map(|l| l.align)
+        };
         let left_margin = et.layout().map(|l| l.left_margin.to_pixels());
         let right_margin = et.layout().map(|l| l.right_margin.to_pixels());
         let indent = et.layout().map(|l| l.indent.to_pixels().round_ties_even());
@@ -629,7 +635,7 @@ impl FormatSpans {
     /// presentational markup and CSS stylesheets.
     pub fn from_html(
         html: &WStr,
-        default_format: TextFormat,
+        mut default_format: TextFormat,
         style_sheet: Option<StyleSheet<'_>>,
         is_multiline: bool,
         condense_white: bool,
@@ -638,6 +644,12 @@ impl FormatSpans {
         // For SWF version 6, the multiline property exists and may be changed,
         // but its value is ignored and fields always behave as multiline.
         let is_multiline = is_multiline || swf_version <= 6;
+
+        if swf_version < 8 {
+            // For SWF<8, Flash Player always assumes left align for HTML, even
+            // if HTML is set dynamically.
+            default_format.align = Some(swf::TextAlign::Left);
+        }
 
         let mut format_stack = vec![default_format.clone()];
         let mut text = WString::new();
