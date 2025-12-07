@@ -9,13 +9,13 @@ use crate::string::AvmString;
 use ruffle_common::sandbox::SandboxType;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "PolicyFileResolver" => method(policy_file_resolver);
     "allowDomain" => method(allow_domain);
     "allowInsecureDomain" => method(allow_insecure_domain);
     "loadPolicyFile" => method(load_policy_file);
+    "chooseLocalSwfPath" => property(get_choose_local_swf_path);
     "escapeDomain" => method(escape_domain);
     "sandboxType" => property(get_sandbox_type);
-    "chooseLocalSwfPath" => property(get_choose_local_swf_path);
+    "PolicyFileResolver" => method(policy_file_resolver);
 };
 
 pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {

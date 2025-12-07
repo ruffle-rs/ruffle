@@ -11,9 +11,9 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "getBeginIndex" => method(get_begin_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getEndIndex" => method(get_end_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getCaretIndex" => method(get_caret_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setSelection" => method(set_selection; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setFocus" => method(set_focus; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getFocus" => method(get_focus; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setFocus" => method(set_focus; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setSelection" => method(set_selection; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
 pub fn create<'gc>(

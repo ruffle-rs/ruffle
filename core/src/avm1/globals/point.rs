@@ -10,14 +10,14 @@ use crate::string::AvmString;
 use ruffle_macros::istr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "toString" => method(to_string);
-    "clone" => method(clone);
-    "equals" => method(equals);
-    "add" => method(add);
-    "subtract" => method(subtract);
-    "normalize" => method(normalize);
-    "offset" => method(offset);
     "length" => property(length; READ_ONLY);
+    "clone" => method(clone);
+    "offset" => method(offset);
+    "equals" => method(equals);
+    "subtract" => method(subtract);
+    "add" => method(add);
+    "normalize" => method(normalize);
+    "toString" => method(to_string);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
@@ -87,17 +87,17 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        this.set(istr!("x"), 0.into(), activation)?;
         this.set(istr!("y"), 0.into(), activation)?;
+        this.set(istr!("x"), 0.into(), activation)?;
     } else {
-        this.set(
-            istr!("x"),
-            args.get(0).unwrap_or(&Value::Undefined).to_owned(),
-            activation,
-        )?;
         this.set(
             istr!("y"),
             args.get(1).unwrap_or(&Value::Undefined).to_owned(),
+            activation,
+        )?;
+        this.set(
+            istr!("x"),
+            args.get(0).unwrap_or(&Value::Undefined).to_owned(),
             activation,
         )?;
     }

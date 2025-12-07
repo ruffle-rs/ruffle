@@ -10,19 +10,19 @@ use crate::avm1::{ArrayBuilder, NativeObject, Object, Value};
 use crate::string::{utils as string_utils, AvmString, WString};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "toString" => method(to_string_value_of; DONT_ENUM | DONT_DELETE);
     "valueOf" => method(to_string_value_of; DONT_ENUM | DONT_DELETE);
+    "toString" => method(to_string_value_of; DONT_ENUM | DONT_DELETE);
+    "toUpperCase" => method(to_upper_case; DONT_ENUM | DONT_DELETE);
+    "toLowerCase" => method(to_lower_case; DONT_ENUM | DONT_DELETE);
     "charAt" => method(char_at; DONT_ENUM | DONT_DELETE);
     "charCodeAt" => method(char_code_at; DONT_ENUM | DONT_DELETE);
     "concat" => method(concat; DONT_ENUM | DONT_DELETE);
     "indexOf" => method(index_of; DONT_ENUM | DONT_DELETE);
     "lastIndexOf" => method(last_index_of; DONT_ENUM | DONT_DELETE);
     "slice" => method(slice; DONT_ENUM | DONT_DELETE);
+    "substring" => method(substring; DONT_ENUM | DONT_DELETE);
     "split" => method(split; DONT_ENUM | DONT_DELETE);
     "substr" => method(substr; DONT_ENUM | DONT_DELETE);
-    "substring" => method(substring; DONT_ENUM | DONT_DELETE);
-    "toLowerCase" => method(to_lower_case; DONT_ENUM | DONT_DELETE);
-    "toUpperCase" => method(to_upper_case; DONT_ENUM | DONT_DELETE);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
