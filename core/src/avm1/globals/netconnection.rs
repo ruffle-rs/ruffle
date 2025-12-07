@@ -152,14 +152,15 @@ pub fn constructor<'gc>(
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "isConnected" => property(is_connected);
     "protocol" => property(protocol);
-    "uri" => property(uri);
-
-    "addHeader" => method(add_header; DONT_ENUM | DONT_DELETE);
-    "call" => method(call; DONT_ENUM | DONT_DELETE);
-    "close" => method(close; DONT_ENUM | DONT_DELETE);
     "connect" => method(connect; DONT_ENUM | DONT_DELETE);
+    "close" => method(close; DONT_ENUM | DONT_DELETE);
+    "call" => method(call; DONT_ENUM | DONT_DELETE);
+    "addHeader" => method(add_header; DONT_ENUM | DONT_DELETE);
+
+    // TODO Looks like isConnected & uri are not built-in properties.
+    "isConnected" => property(is_connected);
+    "uri" => property(uri);
 };
 
 pub fn create_class<'gc>(

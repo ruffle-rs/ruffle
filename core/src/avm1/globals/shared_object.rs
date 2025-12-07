@@ -30,13 +30,15 @@ impl SharedObject {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "clear" => method(clear; DONT_ENUM | DONT_DELETE);
-    "close" => method(close; DONT_ENUM | DONT_DELETE);
     "connect" => method(connect; DONT_ENUM | DONT_DELETE);
-    "flush" => method(flush; DONT_ENUM | DONT_DELETE);
-    "getSize" => method(get_size; DONT_ENUM | DONT_DELETE);
     "send" => method(send; DONT_ENUM | DONT_DELETE);
+    "flush" => method(flush; DONT_ENUM | DONT_DELETE);
+    "close" => method(close; DONT_ENUM | DONT_DELETE);
+    "getSize" => method(get_size; DONT_ENUM | DONT_DELETE);
     "setFps" => method(set_fps; DONT_ENUM | DONT_DELETE);
+    "clear" => method(clear; DONT_ENUM | DONT_DELETE);
+
+    // TODO Looks like onStatus & onSync are not built-in properties.
     "onStatus" => method(on_status; DONT_ENUM | DONT_DELETE);
     "onSync" => method(on_sync; DONT_ENUM | DONT_DELETE);
 };

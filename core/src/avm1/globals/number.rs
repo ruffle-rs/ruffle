@@ -11,8 +11,8 @@ use crate::avm1::{NativeObject, Object, Value};
 use crate::string::AvmString;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
     "valueOf" => method(value_of; DONT_ENUM | DONT_DELETE);
+    "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {

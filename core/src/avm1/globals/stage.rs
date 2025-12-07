@@ -13,11 +13,11 @@ use ruffle_macros::istr;
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
     "align" => property(align, set_align);
-    "height" => property(height);
     "scaleMode" => property(scale_mode, set_scale_mode);
-    "displayState" => property(display_state, set_display_state);
-    "showMenu" => property(show_menu, set_show_menu);
+    "height" => property(height);
     "width" => property(width);
+    "showMenu" => property(show_menu, set_show_menu);
+    "displayState" => property(display_state, set_display_state);
 };
 
 pub fn create<'gc>(

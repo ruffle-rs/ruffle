@@ -8,8 +8,8 @@ use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{NativeObject, Object, Value};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
     "valueOf" => method(value_of; DONT_ENUM | DONT_DELETE);
+    "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
 };
 
 pub fn create_class<'gc>(
