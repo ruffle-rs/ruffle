@@ -103,9 +103,7 @@ package {
                 var arrayLength:uint = a.length;
 
                 for (var i:uint = 0; i < arrayLength; i ++) {
-                    if (a[i] === void 0 || a[i] === null) {
-                        result += a[i];
-                    } else {
+                    if (a[i] !== void 0 && a[i] !== null) {
                         result += a[i].toLocaleString();
                     }
 
