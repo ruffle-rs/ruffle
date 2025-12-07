@@ -10,27 +10,27 @@ use crate::avm1::{NativeObject, Object, Value};
 use crate::string::{AvmString, WStr};
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "localName" => property(local_name);
-    "nodeName" => property(node_name, set_node_value);
-    "nodeType" => property(node_type);
-    "nodeValue" => property(node_value, set_node_value);
-    "prefix" => property(prefix);
+    "cloneNode" => method(clone_node);
+    "removeNode" => method(remove_node);
+    "insertBefore" => method(insert_before);
+    "appendChild" => method(append_child);
+    "hasChildNodes" => method(has_child_nodes);
+    "toString" => method(to_string);
+    "getNamespaceForPrefix" => method(get_namespace_for_prefix);
+    "getPrefixForNamespace" => method(get_prefix_for_namespace);
+    "attributes" => property(attributes);
     "childNodes" => property(child_nodes);
     "firstChild" => property(first_child);
     "lastChild" => property(last_child);
+    "nextSibling" => property(next_sibling);
+    "nodeName" => property(node_name, set_node_value);
+    "nodeType" => property(node_type);
+    "nodeValue" => property(node_value, set_node_value);
     "parentNode" => property(parent_node);
     "previousSibling" => property(previous_sibling);
-    "nextSibling" => property(next_sibling);
-    "attributes" => property(attributes);
+    "prefix" => property(prefix);
+    "localName" => property(local_name);
     "namespaceURI" => property(namespace_uri);
-    "appendChild" => method(append_child);
-    "insertBefore" => method(insert_before);
-    "cloneNode" => method(clone_node);
-    "getNamespaceForPrefix" => method(get_namespace_for_prefix);
-    "getPrefixForNamespace" => method(get_prefix_for_namespace);
-    "hasChildNodes" => method(has_child_nodes);
-    "removeNode" => method(remove_node);
-    "toString" => method(to_string);
 };
 
 pub fn create_class<'gc>(
