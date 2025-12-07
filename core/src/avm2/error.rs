@@ -1,15 +1,18 @@
-use ruffle_wstr::WString;
+use crate::avm2::activation::Activation;
+use crate::avm2::class::Class;
+use crate::avm2::function::display_function;
+use crate::avm2::method::Method;
+use crate::avm2::multiname::Multiname;
+use crate::avm2::object::{ClassObject, ErrorObject};
+use crate::avm2::value::Value;
+use crate::string::AvmString;
 
-use crate::avm2::{Activation, AvmString, Class, Multiname, Value};
 use quick_xml::errors::{Error as XmlError, SyntaxError as XmlSyntaxError};
 use quick_xml::events::attributes::AttrError as XmlAttrError;
 use ruffle_macros::istr;
+use ruffle_wstr::WString;
 use std::fmt::{Debug, Display};
 use std::mem::size_of;
-
-use super::function::display_function;
-use super::method::Method;
-use super::ClassObject;
 
 /// An error generated while handling AVM2 logic
 #[repr(transparent)]
@@ -63,10 +66,7 @@ const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() <= 16);
 
 macro_rules! make_error {
     ($expression:expr) => {
-        match $expression {
-            Ok(err) => Error::avm_error(err),
-            Err(err) => err,
-        }
+        Error::avm_error($expression.into())
     };
 }
 
@@ -77,7 +77,6 @@ pub fn make_null_or_undefined_error<'gc>(
     value: Value<'gc>,
     name: Option<&Multiname<'gc>>,
 ) -> Error<'gc> {
-    let class = activation.avm2().classes().typeerror;
     if matches!(value, Value::Undefined) {
         make_error_1010(activation, name)
     } else {
@@ -89,7 +88,7 @@ pub fn make_null_or_undefined_error<'gc>(
                 name.to_qualified_name(activation.gc())
             ));
         }
-        make_error!(error_constructor(activation, class, &msg, 1009))
+        make_error!(type_error(activation, &msg, 1009))
     }
 }
 
@@ -1674,7 +1673,7 @@ fn range_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().rangeerror;
     error_constructor(activation, class, message, code)
 }
@@ -1685,7 +1684,7 @@ fn eval_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().evalerror;
     error_constructor(activation, class, message, code)
 }
@@ -1696,7 +1695,7 @@ fn argument_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().argumenterror;
     error_constructor(activation, class, message, code)
 }
@@ -1707,7 +1706,7 @@ fn security_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().securityerror;
     error_constructor(activation, class, message, code)
 }
@@ -1718,7 +1717,7 @@ fn type_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().typeerror;
     error_constructor(activation, class, message, code)
 }
@@ -1729,7 +1728,7 @@ fn reference_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().referenceerror;
     error_constructor(activation, class, message, code)
 }
@@ -1740,7 +1739,7 @@ fn verify_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().verifyerror;
     error_constructor(activation, class, message, code)
 }
@@ -1751,7 +1750,7 @@ fn illegal_operation_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().illegaloperationerror;
     error_constructor(activation, class, message, code)
 }
@@ -1762,7 +1761,7 @@ fn io_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().ioerror;
     error_constructor(activation, class, message, code)
 }
@@ -1773,7 +1772,7 @@ fn eof_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().eoferror;
     error_constructor(activation, class, message, code)
 }
@@ -1784,7 +1783,7 @@ fn uri_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().urierror;
     error_constructor(activation, class, message, code)
 }
@@ -1795,18 +1794,14 @@ fn syntax_error<'gc>(
     activation: &mut Activation<'_, 'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().syntaxerror;
     error_constructor(activation, class, message, code)
 }
 
 #[inline(never)]
 #[cold]
-fn error<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    message: &str,
-    code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+fn error<'gc>(activation: &mut Activation<'_, 'gc>, message: &str, code: u32) -> ErrorObject<'gc> {
     let class = activation.avm2().classes().error;
     error_constructor(activation, class, message, code)
 }
@@ -1816,10 +1811,10 @@ fn error_constructor<'gc>(
     class: ClassObject<'gc>,
     message: &str,
     code: u32,
-) -> Result<Value<'gc>, Error<'gc>> {
+) -> ErrorObject<'gc> {
     let message = AvmString::new_utf8(activation.gc(), message);
 
-    class.construct(activation, &[message.into(), code.into()])
+    ErrorObject::from_info(activation, class, message, code)
 }
 
 impl std::fmt::Display for Error<'_> {

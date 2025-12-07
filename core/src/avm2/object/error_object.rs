@@ -2,12 +2,13 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::call_stack::CallStack;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::error as error_slots;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::Error;
-use crate::string::{WStr, WString};
+use crate::string::{AvmString, WStr, WString};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_common::utils::HasPrefixField;
@@ -18,16 +19,9 @@ pub fn error_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let base = ScriptObjectData::new(class);
+    let error_object = ErrorObject::new(activation, class);
 
-    // Stack trace is always collected for debugging purposes.
-    let call_stack = activation.avm2().call_stack().borrow().clone();
-
-    Ok(ErrorObject(Gc::new(
-        activation.gc(),
-        ErrorObjectData { base, call_stack },
-    ))
-    .into())
+    Ok(error_object.into())
 }
 
 #[derive(Clone, Collect, Copy)]
@@ -58,6 +52,43 @@ pub struct ErrorObjectData<'gc> {
 }
 
 impl<'gc> ErrorObject<'gc> {
+    /// Allocates a new `ErrorObject` for the given class, without running the
+    /// class initializer.
+    pub fn new(activation: &mut Activation<'_, 'gc>, class: ClassObject<'gc>) -> Self {
+        let base = ScriptObjectData::new(class);
+
+        // Stack trace is always collected for debugging purposes.
+        let call_stack = activation.avm2().call_stack().borrow().clone();
+
+        ErrorObject(Gc::new(
+            activation.gc(),
+            ErrorObjectData { base, call_stack },
+        ))
+    }
+
+    /// Allocates and constructs a new `ErrorObject` for the given class, using
+    /// the provided error message and id.
+    pub fn from_info(
+        activation: &mut Activation<'_, 'gc>,
+        class: ClassObject<'gc>,
+        message: AvmString<'gc>,
+        error_id: u32,
+    ) -> Self {
+        let allocated_object = Self::new(activation, class);
+
+        let arguments = &[message.into(), error_id.into()];
+
+        class
+            .call_init(
+                allocated_object.into(),
+                FunctionArgs::from_slice(arguments),
+                activation,
+            )
+            .expect("Error constructors are infallible");
+
+        allocated_object
+    }
+
     pub fn display(self) -> WString {
         let name = match self.base().get_slot(error_slots::NAME) {
             Value::String(string) => string.as_wstr(),
