@@ -1093,6 +1093,12 @@ Testing __proto__()
 testing _global.Camera(function)
 Trying to construct _global.Camera
 Object was constructed
+Testing setCursor()
+Testing setLoopback()
+Testing setMotionLevel()
+Testing setKeyFrameInterval()
+Testing setQuality()
+Testing setMode()
 Testing constructor()
 Testing __constructor__()
 testing _global.Camera.__constructor__(undefined)

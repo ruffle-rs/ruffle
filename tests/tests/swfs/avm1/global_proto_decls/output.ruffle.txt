@@ -1564,9 +1564,17 @@ Testing _global.Camera
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
+  names, own, READ_ONLY, type=[object]
+  get, own, type=[function]
   prototype, own, type=[object]
   __proto__, own, type=[object]
 Testing _global.Camera.prototype
+  setCursor, own, DONT_ENUM, type=[function]
+  setLoopback, own, DONT_ENUM, type=[function]
+  setMotionLevel, own, DONT_ENUM, type=[function]
+  setKeyFrameInterval, own, DONT_ENUM, type=[function]
+  setQuality, own, DONT_ENUM, type=[function]
+  setMode, own, DONT_ENUM, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.NetStream
