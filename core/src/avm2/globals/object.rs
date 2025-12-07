@@ -60,19 +60,27 @@ pub fn has_own_property<'gc>(
 
 /// `Object.prototype.isPrototypeOf`
 pub fn is_prototype_of<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(this) = this.as_object() {
-        let mut target_proto = args.get_value(0);
+        let target_proto = args.get_value(0);
 
-        while let Value::Object(proto) = target_proto {
-            if Object::ptr_eq(this, proto) {
-                return Ok(true.into());
+        // `null` and `undefined` have no prototype
+        if matches!(target_proto, Value::Undefined | Value::Null) {
+            return Ok(false.into());
+        }
+
+        let mut target_proto = Some(target_proto);
+        while let Some(proto) = target_proto {
+            if let Some(proto) = proto.as_object() {
+                if Object::ptr_eq(this, proto) {
+                    return Ok(true.into());
+                }
             }
 
-            target_proto = proto.proto().map(|o| o.into()).unwrap_or(Value::Undefined);
+            target_proto = proto.proto(activation).map(|o| o.into());
         }
     }
 
