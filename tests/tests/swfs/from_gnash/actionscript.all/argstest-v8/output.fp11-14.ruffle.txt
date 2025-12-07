@@ -374,28 +374,8 @@ testing _global.flash.text.TextRenderer.__constructor__(undefined)
 Testing __proto__()
 testing _global.System(object)
 testing _global.System.IME(object)
-testing _global.System.IME.setEnabled(function)
-Trying to construct _global.System.IME.setEnabled
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.System.IME.setConversionMode(function)
-Trying to construct _global.System.IME.setConversionMode
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.System.IME.setCompositionString(function)
-Trying to construct _global.System.IME.setCompositionString
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.System.IME.getEnabled(function)
-Trying to construct _global.System.IME.getEnabled
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.System.IME.getConversionMode(function)
-Trying to construct _global.System.IME.getConversionMode
+testing _global.System.IME.onIMEComposition(function)
+Trying to construct _global.System.IME.onIMEComposition
 Object was constructed
 Testing __constructor__()
 Testing __proto__()
@@ -404,19 +384,39 @@ Trying to construct _global.System.IME.doConversion
 Object was constructed
 Testing __constructor__()
 Testing __proto__()
-testing _global.System.IME.onIMEComposition(function)
-Trying to construct _global.System.IME.onIMEComposition
+testing _global.System.IME.setCompositionString(function)
+Trying to construct _global.System.IME.setCompositionString
 Object was constructed
 Testing __constructor__()
 Testing __proto__()
-testing _global.System.IME.UNKNOWN(string)
-testing _global.System.IME.KOREAN(string)
-testing _global.System.IME.JAPANESE_KATAKANA_HALF(string)
-testing _global.System.IME.JAPANESE_KATAKANA_FULL(string)
-testing _global.System.IME.JAPANESE_HIRAGANA(string)
-testing _global.System.IME.CHINESE(string)
-testing _global.System.IME.ALPHANUMERIC_HALF(string)
+testing _global.System.IME.setConversionMode(function)
+Trying to construct _global.System.IME.setConversionMode
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.System.IME.getConversionMode(function)
+Trying to construct _global.System.IME.getConversionMode
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.System.IME.setEnabled(function)
+Trying to construct _global.System.IME.setEnabled
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.System.IME.getEnabled(function)
+Trying to construct _global.System.IME.getEnabled
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
 testing _global.System.IME.ALPHANUMERIC_FULL(string)
+testing _global.System.IME.ALPHANUMERIC_HALF(string)
+testing _global.System.IME.CHINESE(string)
+testing _global.System.IME.JAPANESE_HIRAGANA(string)
+testing _global.System.IME.JAPANESE_KATAKANA_FULL(string)
+testing _global.System.IME.JAPANESE_KATAKANA_HALF(string)
+testing _global.System.IME.KOREAN(string)
+testing _global.System.IME.UNKNOWN(string)
 testing _global.System.IME.broadcastMessage(function)
 Trying to construct _global.System.IME.broadcastMessage
 Object was constructed
