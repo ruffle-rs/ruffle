@@ -380,16 +380,6 @@ Testing __constructor__()
 testing _global.Button.__constructor__(undefined)
 Testing __proto__()
 testing _global.Key(object)
-testing _global.Key.getCode(function)
-Trying to construct _global.Key.getCode
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Key.getAscii(function)
-Trying to construct _global.Key.getAscii
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
 testing _global.Key.isToggled(function)
 Trying to construct _global.Key.isToggled
 Object was constructed
@@ -400,25 +390,35 @@ Trying to construct _global.Key.isDown
 Object was constructed
 Testing __constructor__()
 Testing __proto__()
-testing _global.Key.UP(number)
-testing _global.Key.TAB(number)
+testing _global.Key.getCode(function)
+Trying to construct _global.Key.getCode
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Key.getAscii(function)
+Trying to construct _global.Key.getAscii
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Key.ALT(number)
+testing _global.Key.ENTER(number)
 testing _global.Key.SPACE(number)
-testing _global.Key.SHIFT(number)
+testing _global.Key.UP(number)
+testing _global.Key.DOWN(number)
+testing _global.Key.LEFT(number)
 testing _global.Key.RIGHT(number)
 testing _global.Key.PGUP(number)
 testing _global.Key.PGDN(number)
-testing _global.Key.LEFT(number)
-testing _global.Key.INSERT(number)
 testing _global.Key.HOME(number)
-testing _global.Key.ESCAPE(number)
-testing _global.Key.ENTER(number)
 testing _global.Key.END(number)
-testing _global.Key.DOWN(number)
-testing _global.Key.DELETEKEY(number)
+testing _global.Key.TAB(number)
 testing _global.Key.CONTROL(number)
-testing _global.Key.CAPSLOCK(number)
+testing _global.Key.SHIFT(number)
+testing _global.Key.ESCAPE(number)
+testing _global.Key.INSERT(number)
+testing _global.Key.DELETEKEY(number)
 testing _global.Key.BACKSPACE(number)
-testing _global.Key.ALT(number)
+testing _global.Key.CAPSLOCK(number)
 testing _global.Key.broadcastMessage(function)
 Trying to construct _global.Key.broadcastMessage
 Object was constructed
