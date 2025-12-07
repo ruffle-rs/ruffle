@@ -1086,6 +1086,13 @@ Testing __proto__()
 testing _global.Microphone(function)
 Trying to construct _global.Microphone
 Object was constructed
+Testing setEncodeQuality()
+Testing setFramesPerPacket()
+Testing setCodec()
+Testing setUseEchoSuppression()
+Testing setGain()
+Testing setRate()
+Testing setSilenceLevel()
 Testing constructor()
 Testing __constructor__()
 testing _global.Microphone.__constructor__(undefined)
