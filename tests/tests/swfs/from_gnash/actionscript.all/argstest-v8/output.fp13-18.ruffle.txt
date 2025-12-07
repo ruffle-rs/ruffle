@@ -973,83 +973,8 @@ Testing __constructor__()
 testing _global.Sound.__constructor__(undefined)
 Testing __proto__()
 testing _global.Math(object)
-testing _global.Math.round(function)
-Trying to construct _global.Math.round
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.random(function)
-Trying to construct _global.Math.random
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.min(function)
-Trying to construct _global.Math.min
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.max(function)
-Trying to construct _global.Math.max
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
 testing _global.Math.pow(function)
 Trying to construct _global.Math.pow
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.atan2(function)
-Trying to construct _global.Math.atan2
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.log(function)
-Trying to construct _global.Math.log
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.tan(function)
-Trying to construct _global.Math.tan
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.sqrt(function)
-Trying to construct _global.Math.sqrt
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.sin(function)
-Trying to construct _global.Math.sin
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.floor(function)
-Trying to construct _global.Math.floor
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.exp(function)
-Trying to construct _global.Math.exp
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.cos(function)
-Trying to construct _global.Math.cos
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.ceil(function)
-Trying to construct _global.Math.ceil
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.atan(function)
-Trying to construct _global.Math.atan
-Object was constructed
-Testing __constructor__()
-Testing __proto__()
-testing _global.Math.asin(function)
-Trying to construct _global.Math.asin
 Object was constructed
 Testing __constructor__()
 Testing __proto__()
@@ -1058,19 +983,94 @@ Trying to construct _global.Math.acos
 Object was constructed
 Testing __constructor__()
 Testing __proto__()
+testing _global.Math.asin(function)
+Trying to construct _global.Math.asin
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.atan(function)
+Trying to construct _global.Math.atan
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.ceil(function)
+Trying to construct _global.Math.ceil
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.floor(function)
+Trying to construct _global.Math.floor
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.random(function)
+Trying to construct _global.Math.random
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.round(function)
+Trying to construct _global.Math.round
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.sqrt(function)
+Trying to construct _global.Math.sqrt
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.log(function)
+Trying to construct _global.Math.log
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.exp(function)
+Trying to construct _global.Math.exp
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.tan(function)
+Trying to construct _global.Math.tan
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.atan2(function)
+Trying to construct _global.Math.atan2
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.cos(function)
+Trying to construct _global.Math.cos
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.sin(function)
+Trying to construct _global.Math.sin
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.max(function)
+Trying to construct _global.Math.max
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
+testing _global.Math.min(function)
+Trying to construct _global.Math.min
+Object was constructed
+Testing __constructor__()
+Testing __proto__()
 testing _global.Math.abs(function)
 Trying to construct _global.Math.abs
 Object was constructed
 Testing __constructor__()
 Testing __proto__()
-testing _global.Math.SQRT2(number)
-testing _global.Math.SQRT1_2(number)
-testing _global.Math.PI(number)
-testing _global.Math.LOG2E(number)
-testing _global.Math.LOG10E(number)
-testing _global.Math.LN2(number)
-testing _global.Math.LN10(number)
 testing _global.Math.E(number)
+testing _global.Math.LN10(number)
+testing _global.Math.LN2(number)
+testing _global.Math.LOG10E(number)
+testing _global.Math.LOG2E(number)
+testing _global.Math.PI(number)
+testing _global.Math.SQRT1_2(number)
+testing _global.Math.SQRT2(number)
 testing _global.Array(function)
 Trying to construct _global.Array
 Object was constructed

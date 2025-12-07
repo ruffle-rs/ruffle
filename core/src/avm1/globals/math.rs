@@ -18,32 +18,32 @@ macro_rules! wrap_std {
 }
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "E" => float(consts::E; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "LN10" => float(consts::LN_10; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "LN2" => float(consts::LN_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "LOG10E" => float(consts::LOG10_E; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "LOG2E" => float(consts::LOG2_E; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "PI" => float(consts::PI; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "SQRT1_2" => float(consts::FRAC_1_SQRT_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "SQRT2" => float(consts::SQRT_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "SQRT1_2" => float(consts::FRAC_1_SQRT_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "PI" => float(consts::PI; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "LOG2E" => float(consts::LOG2_E; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "LOG10E" => float(consts::LOG10_E; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "LN2" => float(consts::LN_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "LN10" => float(consts::LN_10; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "E" => float(consts::E; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "abs" => method(wrap_std!(f64::abs); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "acos" => method(wrap_std!(f64::acos); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "asin" => method(wrap_std!(f64::asin); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "atan" => method(wrap_std!(f64::atan); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "ceil" => method(wrap_std!(f64::ceil); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "cos" => method(wrap_std!(f64::cos); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "exp" => method(wrap_std!(f64::exp); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "floor" => method(wrap_std!(f64::floor); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "sin" => method(wrap_std!(f64::sin); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "sqrt" => method(wrap_std!(f64::sqrt); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "tan" => method(wrap_std!(f64::tan); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "log" => method(wrap_std!(f64::ln); DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "atan2" => method(atan2; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "pow" => method(pow; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "max" => method(max; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "min" => method(min; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "random" => method(random; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "max" => method(max; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "sin" => method(wrap_std!(f64::sin); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "cos" => method(wrap_std!(f64::cos); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "atan2" => method(atan2; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "tan" => method(wrap_std!(f64::tan); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "exp" => method(wrap_std!(f64::exp); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "log" => method(wrap_std!(f64::ln); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "sqrt" => method(wrap_std!(f64::sqrt); DONT_ENUM | DONT_DELETE | READ_ONLY);
     "round" => method(round; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "random" => method(random; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "floor" => method(wrap_std!(f64::floor); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "ceil" => method(wrap_std!(f64::ceil); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "atan" => method(wrap_std!(f64::atan); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "asin" => method(wrap_std!(f64::asin); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "acos" => method(wrap_std!(f64::acos); DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "pow" => method(pow; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
 pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
