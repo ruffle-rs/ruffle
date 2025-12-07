@@ -731,6 +731,12 @@ Testing _global.Camera
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Camera.prototype
+  setCursor, DONT_DELETE
+  setLoopback, DONT_DELETE
+  setMotionLevel, DONT_DELETE
+  setKeyFrameInterval, DONT_DELETE
+  setQuality, DONT_DELETE
+  setMode, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.NetStream
   apply, DONT_DELETE

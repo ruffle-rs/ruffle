@@ -6,9 +6,9 @@ PASSED: cameraObj [./Camera.as:44]
 PASSED: cameraObj2 [./Camera.as:46]
 PASSED: cameraObj != cameraObj2 [./Camera.as:47]
 PASSED: typeof(cameraObj) == 'object' [./Camera.as:48]
-FAILED: expected: "function" obtained: undefined [./Camera.as:49]
-FAILED: expected: "function" obtained: undefined [./Camera.as:50]
-FAILED: expected: "function" obtained: undefined [./Camera.as:51]
+PASSED: typeof(cameraObj.setCursor) == "function" [./Camera.as:49]
+PASSED: typeof(cameraObj.setKeyFrameInterval) == "function" [./Camera.as:50]
+PASSED: typeof(cameraObj.setLoopback) == "function" [./Camera.as:51]
 PASSED: !Camera.prototype.hasOwnProperty("activityLevel") [./Camera.as:54]
 PASSED: !Camera.prototype.hasOwnProperty("bandwidth") [./Camera.as:55]
 PASSED: !Camera.prototype.hasOwnProperty("currentFps") [./Camera.as:56]
@@ -21,9 +21,9 @@ PASSED: !Camera.prototype.hasOwnProperty("motionTimeout") [./Camera.as:62]
 PASSED: !Camera.prototype.hasOwnProperty("muted") [./Camera.as:63]
 PASSED: !Camera.prototype.hasOwnProperty("name") [./Camera.as:64]
 PASSED: !Camera.prototype.hasOwnProperty("quality") [./Camera.as:65]
-FAILED: Camera.get [./Camera.as:70]
+PASSED: Camera.get [./Camera.as:70]
 PASSED: cameraObj.get == undefined [./Camera.as:71]
-Camera.get() returns: undefined
+Camera.get() returns: null
 PASSED: !Camera.prototype.hasOwnProperty("names") [./Camera.as:78]
 PASSED: !Camera.prototype.hasOwnProperty("get") [./Camera.as:79]
 PASSED: !Camera.prototype.hasOwnProperty("activityLevel") [./Camera.as:98]
@@ -85,6 +85,6 @@ FAILED: expected: 18000 obtained: undefined [./Camera.as:184]
 FAILED: expected: 75 obtained: undefined [./Camera.as:185]
 FAILED: expected: 18000 obtained: undefined [./Camera.as:189]
 FAILED: expected: 100 obtained: undefined [./Camera.as:190]
-#passed: 37
-#failed: 46
+#passed: 41
+#failed: 42
 #total tests run: 83
