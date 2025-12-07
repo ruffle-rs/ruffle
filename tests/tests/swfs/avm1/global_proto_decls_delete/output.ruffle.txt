@@ -724,6 +724,13 @@ Testing _global.Microphone
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Microphone.prototype
+  setEncodeQuality, DONT_DELETE
+  setFramesPerPacket, DONT_DELETE
+  setCodec, DONT_DELETE
+  setUseEchoSuppression, DONT_DELETE
+  setGain, DONT_DELETE
+  setRate, DONT_DELETE
+  setSilenceLevel, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Camera
   apply, DONT_DELETE

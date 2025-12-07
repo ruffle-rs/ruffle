@@ -1555,9 +1555,18 @@ Testing _global.Microphone
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
+  names, own, READ_ONLY, type=[object]
+  get, own, type=[function]
   prototype, own, type=[object]
   __proto__, own, type=[object]
 Testing _global.Microphone.prototype
+  setEncodeQuality, own, DONT_ENUM, type=[function]
+  setFramesPerPacket, own, DONT_ENUM, type=[function]
+  setCodec, own, DONT_ENUM, type=[function]
+  setUseEchoSuppression, own, DONT_ENUM, type=[function]
+  setGain, own, DONT_ENUM, type=[function]
+  setRate, own, DONT_ENUM, type=[function]
+  setSilenceLevel, own, DONT_ENUM, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.Camera
