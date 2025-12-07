@@ -63,63 +63,62 @@ macro_rules! mc_setter {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "attachAudio" => method(mc_method!(attach_audio); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "attachBitmap" => method(mc_method!(attach_bitmap); DONT_ENUM | DONT_DELETE | VERSION_8);
-    "attachMovie" => method(mc_method!(attach_movie); DONT_ENUM | DONT_DELETE);
-    "beginFill" => method(mc_method!(begin_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "beginBitmapFill" => method(mc_method!(begin_bitmap_fill); DONT_ENUM | DONT_DELETE | VERSION_8);
-    "beginGradientFill" => method(mc_method!(begin_gradient_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "clear" => method(mc_method!(clear); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "createEmptyMovieClip" => method(mc_method!(create_empty_movie_clip); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "createTextField" => method(mc_method!(create_text_field); DONT_ENUM | DONT_DELETE);
-    "curveTo" => method(mc_method!(curve_to); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "duplicateMovieClip" => method(mc_method!(duplicate_movie_clip); DONT_ENUM | DONT_DELETE);
-    "endFill" => method(mc_method!(end_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "getBounds" => method(mc_method!(get_bounds); DONT_ENUM | DONT_DELETE);
-    "getBytesLoaded" => method(mc_method!(get_bytes_loaded); DONT_ENUM | DONT_DELETE);
-    "getBytesTotal" => method(mc_method!(get_bytes_total); DONT_ENUM | DONT_DELETE);
-    "getDepth" => method(globals::get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
-    "getInstanceAtDepth" => method(mc_method!(get_instance_at_depth); DONT_ENUM | DONT_DELETE | VERSION_7);
-    "getNextHighestDepth" => method(mc_method!(get_next_highest_depth); DONT_ENUM | DONT_DELETE | VERSION_7);
-    "getRect" => method(mc_method!(get_rect); DONT_ENUM | DONT_DELETE | VERSION_8);
-    "getSWFVersion" => method(mc_method!(get_swf_version); DONT_ENUM | DONT_DELETE);
-    "getURL" => method(mc_method!(get_url); DONT_ENUM | DONT_DELETE);
-    "globalToLocal" => method(mc_method!(global_to_local); DONT_ENUM | DONT_DELETE);
-    "gotoAndPlay" => method(mc_method!(goto_and_play); DONT_ENUM | DONT_DELETE);
-    "gotoAndStop" => method(mc_method!(goto_and_stop); DONT_ENUM | DONT_DELETE);
-    "hitTest" => method(mc_method!(hit_test); DONT_ENUM | DONT_DELETE);
-    "lineGradientStyle" => method(mc_method!(line_gradient_style); DONT_ENUM | DONT_DELETE | VERSION_8);
-    "lineStyle" => method(mc_method!(line_style); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "lineTo" => method(mc_method!(line_to); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "loadMovie" => method(mc_method!(load_movie); DONT_ENUM | DONT_DELETE);
-    "loadVariables" => method(mc_method!(load_variables); DONT_ENUM | DONT_DELETE);
-    "localToGlobal" => method(mc_method!(local_to_global); DONT_ENUM | DONT_DELETE);
-    "moveTo" => method(mc_method!(move_to); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "nextFrame" => method(mc_method!(next_frame); DONT_ENUM | DONT_DELETE);
-    "play" => method(mc_method!(play); DONT_ENUM | DONT_DELETE);
-    "prevFrame" => method(mc_method!(prev_frame); DONT_ENUM | DONT_DELETE);
-    "removeMovieClip" => method(remove_movie_clip; DONT_ENUM | DONT_DELETE);
-    "setMask" => method(mc_method!(set_mask); DONT_ENUM | DONT_DELETE | VERSION_6);
-    "startDrag" => method(mc_method!(start_drag); DONT_ENUM | DONT_DELETE);
-    "stop" => method(mc_method!(stop); DONT_ENUM | DONT_DELETE);
-    "stopDrag" => method(mc_method!(stop_drag); DONT_ENUM | DONT_DELETE);
-    "swapDepths" => method(mc_method!(swap_depths); DONT_ENUM | DONT_DELETE);
-    "unloadMovie" => method(mc_method!(unload_movie); DONT_ENUM | DONT_DELETE);
-
-    "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM | VERSION_8);
-    "cacheAsBitmap" => property(mc_getter!(cache_as_bitmap), mc_setter!(set_cache_as_bitmap); DONT_DELETE | DONT_ENUM | VERSION_8);
-    "filters" => property(mc_getter!(filters), mc_setter!(set_filters); DONT_DELETE | DONT_ENUM | VERSION_8);
-    "opaqueBackground" => property(mc_getter!(opaque_background), mc_setter!(set_opaque_background); DONT_DELETE | DONT_ENUM | VERSION_8);
-    "enabled" => bool(true; DONT_ENUM);
-    "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
-    "scrollRect" => property(mc_getter!(scroll_rect), mc_setter!(set_scroll_rect); DONT_DELETE | DONT_ENUM | VERSION_8);
-    "scale9Grid" => property(mc_getter!(scale_9_grid), mc_setter!(set_scale_9_grid); DONT_DELETE | DONT_ENUM | VERSION_8);
-    "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
     "useHandCursor" => bool(true; DONT_ENUM);
-    // NOTE: `focusEnabled` is not a built-in property of MovieClip.
-    // NOTE: `tabEnabled` is not a built-in property of MovieClip.
+    "enabled" => bool(true; DONT_ENUM);
     // NOTE: `tabIndex` is not enumerable in MovieClip, contrary to Button and TextField
     "tabIndex" => property(mc_getter!(tab_index), mc_setter!(set_tab_index); DONT_ENUM | VERSION_6);
+    "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
+    "cacheAsBitmap" => property(mc_getter!(cache_as_bitmap), mc_setter!(set_cache_as_bitmap); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "opaqueBackground" => property(mc_getter!(opaque_background), mc_setter!(set_opaque_background); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "scrollRect" => property(mc_getter!(scroll_rect), mc_setter!(set_scroll_rect); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "filters" => property(mc_getter!(filters), mc_setter!(set_filters); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "transform" => property(mc_getter!(transform), mc_setter!(set_transform); DONT_ENUM | VERSION_8);
+    "blendMode" => property(mc_getter!(blend_mode), mc_setter!(set_blend_mode); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "scale9Grid" => property(mc_getter!(scale_9_grid), mc_setter!(set_scale_9_grid); DONT_DELETE | DONT_ENUM | VERSION_8);
+    "getURL" => method(mc_method!(get_url); DONT_ENUM | DONT_DELETE);
+    "unloadMovie" => method(mc_method!(unload_movie); DONT_ENUM | DONT_DELETE);
+    "loadVariables" => method(mc_method!(load_variables); DONT_ENUM | DONT_DELETE);
+    "loadMovie" => method(mc_method!(load_movie); DONT_ENUM | DONT_DELETE);
+    "attachMovie" => method(mc_method!(attach_movie); DONT_ENUM | DONT_DELETE);
+    "swapDepths" => method(mc_method!(swap_depths); DONT_ENUM | DONT_DELETE);
+    "localToGlobal" => method(mc_method!(local_to_global); DONT_ENUM | DONT_DELETE);
+    "globalToLocal" => method(mc_method!(global_to_local); DONT_ENUM | DONT_DELETE);
+    "hitTest" => method(mc_method!(hit_test); DONT_ENUM | DONT_DELETE);
+    "getBounds" => method(mc_method!(get_bounds); DONT_ENUM | DONT_DELETE);
+    "getBytesTotal" => method(mc_method!(get_bytes_total); DONT_ENUM | DONT_DELETE);
+    "getBytesLoaded" => method(mc_method!(get_bytes_loaded); DONT_ENUM | DONT_DELETE);
+    "attachAudio" => method(mc_method!(attach_audio); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "getDepth" => method(globals::get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
+    "setMask" => method(mc_method!(set_mask); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "play" => method(mc_method!(play); DONT_ENUM | DONT_DELETE);
+    "stop" => method(mc_method!(stop); DONT_ENUM | DONT_DELETE);
+    "nextFrame" => method(mc_method!(next_frame); DONT_ENUM | DONT_DELETE);
+    "prevFrame" => method(mc_method!(prev_frame); DONT_ENUM | DONT_DELETE);
+    "gotoAndPlay" => method(mc_method!(goto_and_play); DONT_ENUM | DONT_DELETE);
+    "gotoAndStop" => method(mc_method!(goto_and_stop); DONT_ENUM | DONT_DELETE);
+    "duplicateMovieClip" => method(mc_method!(duplicate_movie_clip); DONT_ENUM | DONT_DELETE);
+    "removeMovieClip" => method(remove_movie_clip; DONT_ENUM | DONT_DELETE);
+    "startDrag" => method(mc_method!(start_drag); DONT_ENUM | DONT_DELETE);
+    "stopDrag" => method(mc_method!(stop_drag); DONT_ENUM | DONT_DELETE);
+    "getNextHighestDepth" => method(mc_method!(get_next_highest_depth); DONT_ENUM | DONT_DELETE | VERSION_7);
+    "getInstanceAtDepth" => method(mc_method!(get_instance_at_depth); DONT_ENUM | DONT_DELETE | VERSION_7);
+    "getSWFVersion" => method(mc_method!(get_swf_version); DONT_ENUM | DONT_DELETE);
+    "attachBitmap" => method(mc_method!(attach_bitmap); DONT_ENUM | DONT_DELETE | VERSION_8);
+    "getRect" => method(mc_method!(get_rect); DONT_ENUM | DONT_DELETE | VERSION_8);
+    "createEmptyMovieClip" => method(mc_method!(create_empty_movie_clip); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "beginFill" => method(mc_method!(begin_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "beginGradientFill" => method(mc_method!(begin_gradient_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "moveTo" => method(mc_method!(move_to); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "lineTo" => method(mc_method!(line_to); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "curveTo" => method(mc_method!(curve_to); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "lineStyle" => method(mc_method!(line_style); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "endFill" => method(mc_method!(end_fill); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "clear" => method(mc_method!(clear); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "lineGradientStyle" => method(mc_method!(line_gradient_style); DONT_ENUM | DONT_DELETE | VERSION_8);
+    "beginBitmapFill" => method(mc_method!(begin_bitmap_fill); DONT_ENUM | DONT_DELETE | VERSION_8);
+    "createTextField" => method(mc_method!(create_text_field); DONT_ENUM | DONT_DELETE);
+    // NOTE: `focusEnabled` is not a built-in property of MovieClip.
+    // NOTE: `tabEnabled` is not a built-in property of MovieClip.
     // NOTE: `tabChildren` is not a built-in property of MovieClip.
 };
 
