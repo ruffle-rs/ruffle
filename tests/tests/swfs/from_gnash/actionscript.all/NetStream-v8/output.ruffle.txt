@@ -18,13 +18,13 @@ FAILED: ! NetStream.prototype.hasOwnProperty('bytesLoaded') [./NetStream.as:71]
 PASSED: ! netstreamObj.hasOwnProperty('bytesLoaded') [./NetStream.as:72]
 FAILED: ! NetStream.prototype.hasOwnProperty('bytesTotal') [./NetStream.as:74]
 PASSED: ! netstreamObj.hasOwnProperty('bytesTotal') [./NetStream.as:75]
-FAILED: NetStream.prototype.hasOwnProperty('close') [./NetStream.as:77]
+PASSED: NetStream.prototype.hasOwnProperty('close') [./NetStream.as:77]
 PASSED: ! netstreamObj.hasOwnProperty('close') [./NetStream.as:78]
 PASSED: NetStream.prototype.hasOwnProperty('pause') [./NetStream.as:80]
 PASSED: ! netstreamObj.hasOwnProperty('pause') [./NetStream.as:81]
 PASSED: NetStream.prototype.hasOwnProperty('play') [./NetStream.as:83]
 PASSED: ! netstreamObj.hasOwnProperty('play') [./NetStream.as:84]
-FAILED: expected: 'function' obtained: undefined [./NetStream.as:91]
+PASSED: typeof(netstreamObj.close) == 'function' [./NetStream.as:91]
 PASSED: typeof(netstreamObj.setBufferTime) == 'function' [./NetStream.as:93]
 PASSED: typeof(netstreamObj.pause) == 'function' [./NetStream.as:102]
 PASSED: typeof(netstreamObj.play) == 'function' [./NetStream.as:104]
@@ -75,6 +75,6 @@ PASSED: ! NetStream.prototype.hasOwnProperty('currentFps') [./NetStream.as:221]
 FAILED: NetStream.prototype.hasOwnProperty('currentFps') [./NetStream.as:223]
 PASSED: !NetStream.prototype.hasOwnProperty('currentFps') [./NetStream.as:227]
 FAILED: NetStream.prototype.hasOwnProperty('currentFps') [./NetStream.as:229]
-#passed: 51
-#failed: 23
+#passed: 53
+#failed: 21
 #total tests run: 74
