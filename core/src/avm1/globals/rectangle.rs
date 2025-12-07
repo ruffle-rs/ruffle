@@ -9,28 +9,28 @@ use crate::string::AvmString;
 use ruffle_macros::istr;
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "toString" => method(to_string);
-    "isEmpty" => method(is_empty);
-    "setEmpty" => method(set_empty);
     "clone" => method(clone);
-    "contains" => method(contains);
-    "containsPoint" => method(contains_point);
-    "containsRectangle" => method(contains_rectangle);
-    "intersects" => method(intersects);
-    "union" => method(union);
+    "setEmpty" => method(set_empty);
+    "isEmpty" => method(is_empty);
+    "left" => property(get_left, set_left);
+    "right" => property(get_right, set_right);
+    "top" => property(get_top, set_top);
+    "bottom" => property(get_bottom, set_bottom);
+    "topLeft" => property(get_top_left, set_top_left);
+    "bottomRight" => property(get_bottom_right, set_bottom_right);
+    "size" => property(get_size, set_size);
     "inflate" => method(inflate);
     "inflatePoint" => method(inflate_point);
     "offset" => method(offset);
     "offsetPoint" => method(offset_point);
+    "contains" => method(contains);
+    "containsPoint" => method(contains_point);
+    "containsRectangle" => method(contains_rectangle);
     "intersection" => method(intersection);
+    "intersects" => method(intersects);
+    "union" => method(union);
     "equals" => method(equals);
-    "left" => property(get_left, set_left);
-    "top" => property(get_top, set_top);
-    "right" => property(get_right, set_right);
-    "bottom" => property(get_bottom, set_bottom);
-    "size" => property(get_size, set_size);
-    "topLeft" => property(get_top_left, set_top_left);
-    "bottomRight" => property(get_bottom_right, set_bottom_right);
+    "toString" => method(to_string);
 };
 
 pub fn create_class<'gc>(
@@ -48,10 +48,10 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        this.set(istr!("x"), 0.into(), activation)?;
-        this.set(istr!("y"), 0.into(), activation)?;
-        this.set(istr!("width"), 0.into(), activation)?;
         this.set(istr!("height"), 0.into(), activation)?;
+        this.set(istr!("width"), 0.into(), activation)?;
+        this.set(istr!("y"), 0.into(), activation)?;
+        this.set(istr!("x"), 0.into(), activation)?;
     } else {
         this.set(
             istr!("x"),
