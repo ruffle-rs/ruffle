@@ -16,14 +16,6 @@ use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use url::Url;
 
-// There are two undocumented functions in FileReference: convertToPPT and deleteConvertedPPT.
-// Until further reason is given, they will be unimplemented.
-// See:
-// ASSetPropFlags(flash.net.FileReference.prototype, null, 6, 1);
-// for(var k in flash.net.FileReference.prototype) {
-// 	trace(k);
-// }
-
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
 pub struct FileReferenceObject<'gc>(Gc<'gc, FileReferenceData<'gc>>);
@@ -92,17 +84,17 @@ pub struct FileReferenceData<'gc> {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
+    "name" => property(name; DONT_ENUM);
+    "type" => property(file_type; DONT_ENUM);
+    "size" => property(size; DONT_ENUM);
+    "modificationDate" => property(modification_date; DONT_ENUM);
     "creationDate" => property(creation_date; DONT_ENUM);
     "creator" => property(creator; DONT_ENUM);
-    "modificationDate" => property(modification_date; DONT_ENUM);
-    "name" => property(name; DONT_ENUM);
     "postData" => property(post_data, set_post_data; DONT_ENUM);
-    "size" => property(size; DONT_ENUM);
-    "type" => property(file_type; DONT_ENUM);
     "browse" => method(browse; DONT_ENUM);
-    "cancel" => method(cancel; DONT_ENUM);
-    "download" => method(download; DONT_ENUM);
     "upload" => method(upload; DONT_ENUM);
+    "download" => method(download; DONT_ENUM);
+    "cancel" => method(cancel; DONT_ENUM);
 };
 
 const OBJECT_DECLS: &[Declaration] = declare_properties! {};
