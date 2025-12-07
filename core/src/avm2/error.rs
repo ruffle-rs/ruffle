@@ -1,16 +1,16 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::call_stack::CallStack;
 use crate::avm2::class::Class;
 use crate::avm2::function::display_function;
 use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
 use crate::avm2::object::{ClassObject, ErrorObject};
 use crate::avm2::value::Value;
-use crate::string::AvmString;
+use crate::string::{AvmString, WString};
 
 use quick_xml::errors::{Error as XmlError, SyntaxError as XmlSyntaxError};
 use quick_xml::events::attributes::AttrError as XmlAttrError;
 use ruffle_macros::istr;
-use ruffle_wstr::WString;
 use std::fmt::{Debug, Display};
 use std::mem::size_of;
 
@@ -19,10 +19,18 @@ use std::mem::size_of;
 pub struct Error<'gc>(Box<ErrorData<'gc>>);
 
 enum ErrorData<'gc> {
-    /// A thrown error. This can be produced by an explicit 'throw'
-    /// opcode, or by a native implementation that throws an exception.
-    /// This can be caught by any catch blocks created by ActionScript code
-    AvmError(Value<'gc>),
+    /// A thrown error. This can be produced by an explicit 'throw' opcode.
+    /// This can be caught by any catch blocks created by ActionScript code.
+    AvmValue(Value<'gc>, CallStack<'gc>),
+
+    /// A thrown `ErrorObject`. This can be produced by an explicit 'throw'
+    /// opcode, or by a native implementation that throws an exception. This can
+    /// be caught by any catch blocks created by ActionScript code. This is
+    /// mostly equivalent to the `AvmValue` enum variant; the only difference is
+    /// that the call stack used for `AvmError`s is the call stack of the
+    /// `ErrorObject`, not a separately stored call stack.
+    AvmError(ErrorObject<'gc>),
+
     /// An internal VM error. This cannot be caught by ActionScript code -
     /// it will either be logged by Ruffle, or cause the player to
     /// stop executing.
@@ -30,34 +38,62 @@ enum ErrorData<'gc> {
 }
 
 impl<'gc> Error<'gc> {
-    pub fn avm_error(error: Value<'gc>) -> Self {
-        Error(Box::new(ErrorData::AvmError(error)))
+    fn new(data: ErrorData<'gc>) -> Self {
+        Error(Box::new(data))
+    }
+
+    pub fn from_value(activation: &mut Activation<'_, 'gc>, error: Value<'gc>) -> Self {
+        // If we're passed an `ErrorObject`, create an `ErrorData::AvmError`.
+        // Otherwise, create an `ErrorData::AvmValue`.
+
+        if let Some(error) = error.as_object().and_then(|o| o.as_error_object()) {
+            Self::from_error_object(error)
+        } else {
+            let call_stack = activation.avm2().capture_call_stack();
+            Error::new(ErrorData::AvmValue(error, call_stack))
+        }
+    }
+
+    pub fn from_error_object(error: ErrorObject<'gc>) -> Self {
+        Error::new(ErrorData::AvmError(error))
     }
 
     pub fn rust_error(error: Box<dyn std::error::Error>) -> Self {
-        Error(Box::new(ErrorData::RustError(error)))
+        Error::new(ErrorData::RustError(error))
     }
 
     pub fn as_avm_error(&self) -> Option<Value<'gc>> {
         match &*self.0 {
-            ErrorData::AvmError(value) => Some(*value),
-            _ => None,
+            ErrorData::AvmValue(value, _) => Some(*value),
+            ErrorData::AvmError(error) => Some((*error).into()),
+            ErrorData::RustError(_) => None,
         }
     }
 }
 
 impl Debug for Error<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        if let ErrorData::AvmError(error) = &*self.0 {
-            if let Some(error) = error.as_object().and_then(|obj| obj.as_error_object()) {
-                return write!(f, "{}", error.display_full());
-            }
+        let (error, call_stack) = match &*self.0 {
+            ErrorData::AvmValue(value, call_stack) => (*value, call_stack),
+            ErrorData::AvmError(error) => ((*error).into(), error.call_stack()),
+            ErrorData::RustError(error) => return write!(f, "RustError({error:?})"),
+        };
+
+        let mut output = WString::new();
+
+        // If we have an `ErrorObject`, we can properly display it.
+        // If not, just use the `Debug` impl for `Value`.
+        // TODO: This should just call the `toString` method on the error value.
+        if let Some(error) = error.as_object().and_then(|obj| obj.as_error_object()) {
+            output.push_str(&error.display());
+        } else {
+            output.push_utf8(&format!("{:?}", error));
         }
 
-        match &*self.0 {
-            ErrorData::AvmError(error) => write!(f, "AvmError({error:?})"),
-            ErrorData::RustError(error) => write!(f, "RustError({error:?})"),
-        }
+        // Also write the call stack that was included with the error
+        call_stack.display(&mut output);
+
+        write!(f, "{}", output)
     }
 }
 
@@ -66,7 +102,7 @@ const _: () = assert!(size_of::<Result<Value<'_>, Error<'_>>>() <= 16);
 
 macro_rules! make_error {
     ($expression:expr) => {
-        Error::avm_error($expression.into())
+        Error::from_error_object($expression)
     };
 }
 

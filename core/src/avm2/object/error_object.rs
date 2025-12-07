@@ -58,7 +58,7 @@ impl<'gc> ErrorObject<'gc> {
         let base = ScriptObjectData::new(class);
 
         // Stack trace is always collected for debugging purposes.
-        let call_stack = activation.avm2().call_stack().borrow().clone();
+        let call_stack = activation.avm2().capture_call_stack();
 
         ErrorObject(Gc::new(
             activation.gc(),

@@ -844,12 +844,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         method: Method<'gc>,
         ip: usize,
-        error: Error<'gc>,
+        original_error: Error<'gc>,
     ) -> Result<usize, Error<'gc>> {
-        let error = if let Some(error) = error.as_avm_error() {
+        let error = if let Some(error) = original_error.as_avm_error() {
             error
         } else {
-            return Err(error);
+            return Err(original_error);
         };
 
         let verified_info = method.get_verified_info();
@@ -869,7 +869,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 if matches {
                     #[cfg(feature = "avm_debug")]
-                    tracing::info!(target: "avm_caught", "Caught exception: {:?}", Error::avm_error(error));
+                    tracing::info!(target: "avm_caught", "Caught exception: {:?}", original_error);
 
                     self.reset_stack();
                     self.push_stack(error);
@@ -880,7 +880,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         }
 
-        Err(Error::avm_error(error))
+        Err(original_error)
     }
 
     #[inline(always)]
@@ -2911,6 +2911,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_throw(&mut self) -> Result<(), Error<'gc>> {
         let error_val = self.pop_stack();
-        Err(Error::avm_error(error_val))
+        Err(Error::from_value(self, error_val))
     }
 }
