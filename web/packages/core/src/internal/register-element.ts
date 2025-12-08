@@ -86,6 +86,40 @@ export function registerElement(
                 continue;
             } else {
                 window.customElements.define(externalName, elementClass);
+
+                if (elementName === "ruffle-embed") {
+                    const orig = Object.getOwnPropertyDescriptor(
+                        Document.prototype,
+                        "embeds",
+                    );
+
+                    if (orig && orig.get) {
+                        Object.defineProperty(Document.prototype, "embeds", {
+                            get() {
+                                const nodes = this.querySelectorAll(
+                                    "embed, ruffle-embed",
+                                );
+
+                                const list = Array.from(nodes) as Element[];
+                                (list as unknown as HTMLCollection).item = (
+                                    i: number,
+                                ): Element | null => list[i] ?? null;
+
+                                (list as unknown as HTMLCollection).namedItem =
+                                    (name: string): Element | null =>
+                                        list.find((el) => {
+                                            const htmlEl = el as HTMLElement;
+                                            return (
+                                                htmlEl.getAttribute("name") ===
+                                                    name || htmlEl.id === name
+                                            );
+                                        }) ?? null;
+
+                                return list;
+                            },
+                        });
+                    }
+                }
             }
 
             privateRegistry[elementName] = {
