@@ -2,8 +2,9 @@ use crate::avm1::{
     ActivationIdentifier as Avm1ActivationIdentifier, Object as Avm1Object, Value as Avm1Value,
 };
 use crate::avm2::{
-    Activation as Avm2Activation, Error as Avm2Error, LoaderInfoObject, Multiname as Avm2Multiname,
-    Object as Avm2Object, StageObject as Avm2StageObject, TObject as _, Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, Error as Avm2Error, LoaderInfoObject,
+    Multiname as Avm2Multiname, Object as Avm2Object, StageObject as Avm2StageObject, TObject as _,
+    Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
@@ -2331,8 +2332,6 @@ pub trait TDisplayObject<'gc>:
 
     #[no_dynamic]
     fn set_on_parent_field(self, context: &mut UpdateContext<'gc>) {
-        //TODO: Don't report missing property errors.
-        //TODO: Don't attempt to set properties if object was placed without a name.
         if self.has_explicit_name() {
             if let Some(parent) = self.parent().and_then(|p| p.object2()) {
                 let parent = Avm2Value::from(parent);
@@ -2344,16 +2343,19 @@ pub trait TDisplayObject<'gc>:
                             .library_for_movie(self.movie())
                             .unwrap()
                             .avm2_domain();
+
                         let mut activation = Avm2Activation::from_domain(context, domain);
                         let multiname =
                             Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
-                        if let Err(e) =
-                            parent.init_property(&multiname, child.into(), &mut activation)
-                        {
-                            tracing::error!(
-                                "Got error when setting AVM2 child named \"{}\": {}",
-                                &name,
-                                e
+                        let set_result =
+                            parent.init_property(&multiname, child.into(), &mut activation);
+
+                        if let Err(err) = set_result {
+                            Avm2::uncaught_error(
+                                &mut activation,
+                                Some(self),
+                                err,
+                                &format!("Error setting AVM2 child named \"{}\"", name),
                             );
                         }
                     }
