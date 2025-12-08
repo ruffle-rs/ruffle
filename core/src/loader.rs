@@ -1339,9 +1339,7 @@ pub fn load_sound_avm2<'gc>(
             match response {
                 Ok((body, _, _, _)) => {
                     let handle = uc.audio.register_mp3(&body)?;
-                    if let Err(e) = sound.set_sound(uc, handle) {
-                        tracing::error!("Encountered AVM2 error when setting sound: {}", e);
-                    }
+                    sound.set_sound(uc, handle);
 
                     let total_len = body.len();
 

@@ -40,7 +40,7 @@ pub fn init<'gc>(
                 .library_for_movie_mut(movie)
                 .character_by_id(symbol)
             {
-                sound_object.set_sound(activation.context, sound)?;
+                sound_object.set_sound(activation.context, sound);
             } else {
                 tracing::warn!("Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}", class_def.name().local_name(), symbol);
             }
@@ -178,7 +178,7 @@ pub fn play<'gc>(
             sound_transform,
             sound_channel,
         };
-        if sound_object.play(queued_play, activation)? {
+        if sound_object.play(queued_play, activation) {
             return Ok(sound_channel.into());
         }
         // If we start playing a loaded sound with an invalid position,
@@ -297,7 +297,7 @@ pub fn load_compressed_data_from_byte_array<'gc>(
     Avm2::dispatch_event(activation.context, progress_evt, this_object);
 
     this.read_and_call_id3_event(activation, bytes);
-    this.set_sound(activation.context, handle)?;
+    this.set_sound(activation.context, handle);
 
     Ok(Value::Undefined)
 }
