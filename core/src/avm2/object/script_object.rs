@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::dynamic_map::{DynamicKey, DynamicMap};
 use crate::avm2::error;
-use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Error, Multiname, QName};
@@ -483,14 +483,29 @@ pub fn get_dynamic_property<'gc>(
 
     // follow the prototype chain
     let mut proto = prototype;
-    while let Some(obj) = proto {
-        let obj = obj.base();
+    while let Some(this_proto) = proto {
+        // First search dynamic properties
+        let obj = this_proto.base();
         let values = obj.values();
         let value = values.as_hashmap().get(&key);
         if let Some(value) = value {
             return Ok(Some(value.value));
         }
-        proto = obj.proto();
+
+        // Special-case: `Array.prototype` is an instance of `Array`, so to make
+        // sure that property lookups work correctly it, also check dynamic
+        // array elements (if this prototype is an `Array`).
+        //
+        // This special-case doesn't apply to anything else (e.g. Vector elements).
+        if let Some(array) = this_proto.as_array_object() {
+            if let Some(index) = ArrayObject::as_array_index(&local_name) {
+                if let Some(value) = array.get_index_property(index) {
+                    return Ok(Some(value));
+                }
+            }
+        }
+
+        proto = this_proto.proto();
     }
 
     Ok(None)
