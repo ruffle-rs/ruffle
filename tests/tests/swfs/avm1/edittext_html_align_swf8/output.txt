@@ -3,7 +3,9 @@ Default text formats:
     center
     center
     left
+    center
   Indent:
+    10
     10
     10
     10
@@ -11,11 +13,14 @@ Default text formats:
     10
     10
     10
+    10
   Right margin:
     10
     10
     10
+    10
   Leading:
+    5
     5
     5
     5
@@ -24,7 +29,9 @@ Actual text formats:
     center
     center
     left
+    center
   Indent:
+    10
     10
     10
     10
@@ -32,11 +39,14 @@ Actual text formats:
     10
     10
     10
+    10
   Right margin:
     10
     10
     10
+    10
   Leading:
+    5
     5
     5
     5
