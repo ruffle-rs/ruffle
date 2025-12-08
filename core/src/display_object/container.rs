@@ -758,19 +758,35 @@ impl<'gc> ChildContainer<'gc> {
                                 let current_val =
                                     parent_obj.get_property(&multiname, &mut activation);
                                 match current_val {
-                                    Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {}
+                                    Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {
+                                        // When the `get_property` returns null
+                                        // or undefined, FP doesn't attempt to
+                                        // set it to `null`. This is observable:
+                                        // a setter method won't get called.
+                                    }
                                     Ok(_other) => {
                                         let res = parent_obj.set_property(
                                             &multiname,
                                             Avm2Value::Null,
                                             &mut activation,
                                         );
-                                        if let Err(e) = res {
-                                            tracing::error!("Failed to set child {} ({:?}) to null on parent obj {:?}: {:?}", name, child, parent_obj, e);
+                                        if let Err(err) = res {
+                                            Avm2::uncaught_error(
+                                                &mut activation,
+                                                Some(child),
+                                                err,
+                                                &format!(
+                                                    "Error setting AVM2 child named \"{}\" to null",
+                                                    name
+                                                ),
+                                            );
                                         }
                                     }
-                                    Err(e) => {
-                                        tracing::error!("Failed to get current value of child {} ({:?}) on parent obj {:?}: {:?}", name, child, parent_obj, e);
+                                    Err(_) => {
+                                        // In FP, errors when accessing the
+                                        // original value are completely
+                                        // swallowed. They don't make it to
+                                        // flashlog or to uncaught error events.
                                     }
                                 }
                             }
