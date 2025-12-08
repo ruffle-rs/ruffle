@@ -16,6 +16,21 @@ use std::mem::swap;
 
 pub use crate::avm2::object::array_allocator;
 
+pub fn init_custom_prototype<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let this = this.as_class_object().unwrap();
+
+    let prototype_array_object = ArrayObject::for_prototype(activation.context, this);
+
+    this.link_prototype(activation.context, prototype_array_object);
+
+    Ok(Value::Undefined)
+}
+
 /// Implements `Array`'s instance initializer.
 pub fn array_initializer<'gc>(
     activation: &mut Activation<'_, 'gc>,

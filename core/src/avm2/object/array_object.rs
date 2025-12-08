@@ -85,6 +85,27 @@ impl<'gc> ArrayObject<'gc> {
         ))
     }
 
+    pub fn for_prototype(
+        context: &mut UpdateContext<'gc>,
+        array_class: ClassObject<'gc>,
+    ) -> Object<'gc> {
+        let object_class = context.avm2.classes().object;
+        let base = ScriptObjectData::custom_new(
+            array_class.inner_class_definition(),
+            Some(object_class.prototype()),
+            array_class.instance_vtable(),
+        );
+
+        ArrayObject(Gc::new(
+            context.gc(),
+            ArrayObjectData {
+                base,
+                array: RefLock::new(ArrayStorage::new(0)),
+            },
+        ))
+        .into()
+    }
+
     pub fn as_array_index(local_name: &WStr) -> Option<usize> {
         // TODO: this should use a custom implementation instead of `parse()`,
         // see `script_object::maybe_int_property`

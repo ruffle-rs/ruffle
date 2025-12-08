@@ -8,10 +8,14 @@ package {
         public static const RETURNINDEXEDARRAY:uint = 8;
         public static const NUMERIC:uint = 16;
 
+        private static native function initCustomPrototype();
+
         // FIXME avmplus allows for calling some of these prototype functions on any
         // Array-like object (for example, `Array.prototype.sort.call(myVector)` works),
         // but currently we only support calling them on real Arrays
         {
+            initCustomPrototype();
+
             prototype.concat = function(...rest):Array {
                 var a:Array = this;
                 return a.AS3::concat.apply(a, rest);
