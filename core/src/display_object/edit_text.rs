@@ -2191,10 +2191,14 @@ impl<'gc> EditText<'gc> {
             Ok(object) => {
                 self.set_object(Some(object.into()), context.gc());
             }
-            Err(e) => tracing::error!(
-                "Got error when constructing AVM2 side of dynamic text field: {}",
-                e
-            ),
+            Err(err) => {
+                Avm2::uncaught_error(
+                    &mut activation,
+                    Some(self.into()),
+                    err,
+                    "Error running AVM2 construction for dynamic text",
+                );
+            }
         }
     }
 
