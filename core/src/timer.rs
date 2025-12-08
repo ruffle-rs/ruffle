@@ -9,7 +9,7 @@ use crate::avm1::{Activation, ActivationIdentifier, Object as Avm1Object, Value 
 use crate::avm2::error::make_null_or_undefined_error;
 use crate::avm2::object::FunctionObject as Avm2FunctionObject;
 use crate::avm2::{
-    Activation as Avm2Activation, Error as Avm2Error, FunctionArgs, Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, Error as Avm2Error, FunctionArgs, Value as Avm2Value,
 };
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
@@ -159,8 +159,13 @@ impl<'gc> Timers<'gc> {
 
                     match run_closure() {
                         Ok(v) => v.coerce_to_boolean(),
-                        Err(e) => {
-                            tracing::error!("Unhandled AVM2 error in timer callback: {e:?}",);
+                        Err(err) => {
+                            Avm2::uncaught_error(
+                                &mut avm2_activation,
+                                None, // TODO do we need to set this?
+                                err,
+                                "Error in AVM2 timer callback",
+                            );
                             false
                         }
                     }
