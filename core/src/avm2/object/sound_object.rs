@@ -140,11 +140,7 @@ impl<'gc> SoundObject<'gc> {
     }
 
     /// Returns `true` if a `SoundChannel` should be returned back to the AVM2 caller.
-    pub fn play(
-        self,
-        queued: QueuedPlay<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<bool, Error<'gc>> {
+    pub fn play(self, queued: QueuedPlay<'gc>, activation: &mut Activation<'_, 'gc>) -> bool {
         let mut sound_data = unlock!(
             Gc::write(activation.gc(), self.0),
             SoundObjectData,
@@ -156,29 +152,26 @@ impl<'gc> SoundObject<'gc> {
                 // Avoid to enqueue more unloaded sounds than the maximum allowed to be played
                 if queued_plays.len() >= AudioManager::MAX_SOUNDS {
                     tracing::warn!("Sound.play: too many unloaded sounds queued");
-                    return Ok(false);
+                    return false;
                 }
 
                 queued_plays.push(queued);
+
                 // We don't know the length yet, so return the `SoundChannel`
-                Ok(true)
+                true
             }
             SoundData::Loaded { sound } => play_queued(queued, *sound, activation.context),
         }
     }
 
-    pub fn set_sound(
-        self,
-        context: &mut UpdateContext<'gc>,
-        sound: SoundHandle,
-    ) -> Result<(), Error<'gc>> {
+    pub fn set_sound(self, context: &mut UpdateContext<'gc>, sound: SoundHandle) {
         let mut sound_data =
             unlock!(Gc::write(context.gc(), self.0), SoundObjectData, sound_data).borrow_mut();
 
         match &mut *sound_data {
             SoundData::NotLoaded { queued_plays } => {
                 for queued in std::mem::take(queued_plays) {
-                    play_queued(queued, sound, context)?;
+                    play_queued(queued, sound, context);
                 }
                 *sound_data = SoundData::Loaded { sound };
             }
@@ -187,7 +180,6 @@ impl<'gc> SoundObject<'gc> {
             }
         }
         self.set_loading_state(SoundLoadingState::Loaded);
-        Ok(())
     }
 
     pub fn id3(self) -> Option<Object<'gc>> {
@@ -280,7 +272,7 @@ fn play_queued<'gc>(
     queued: QueuedPlay<'gc>,
     sound: SoundHandle,
     context: &mut UpdateContext<'gc>,
-) -> Result<bool, Error<'gc>> {
+) -> bool {
     if let Some(duration) = context.audio.get_sound_duration(sound) {
         if queued.position > duration {
             tracing::error!(
@@ -288,7 +280,7 @@ fn play_queued<'gc>(
                 queued.position,
                 duration
             );
-            return Ok(false);
+            return false;
         }
     }
 
@@ -303,7 +295,8 @@ fn play_queued<'gc>(
 
         context.attach_avm2_sound_channel(instance, queued.sound_channel);
     }
-    Ok(true)
+
+    true
 }
 
 impl<'gc> TObject<'gc> for SoundObject<'gc> {
