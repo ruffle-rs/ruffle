@@ -58,7 +58,7 @@ clap = { version = "4.5.53", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
 gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "08e08414249d5914dfc3b402d7eadc133e00ce56" }
-slotmap = "1.0.7"
+slotmap = "1.1.1"
 async-channel = "2.5.0"
 bitflags = "2.10.0"
 bytemuck = "1.24.0"
