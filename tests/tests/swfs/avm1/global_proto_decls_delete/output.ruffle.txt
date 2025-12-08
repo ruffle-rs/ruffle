@@ -1,0 +1,310 @@
+Testing _global.TextSnapshot
+  __proto__, DONT_DELETE
+Testing _global.PrintJob
+  __proto__, DONT_DELETE
+Testing _global.MovieClipLoader
+  __proto__, DONT_DELETE
+Testing _global.LocalConnection
+  __proto__, DONT_DELETE
+Testing _global.flash
+  __proto__, DONT_DELETE
+Testing _global.System
+  __proto__, DONT_DELETE
+Testing _global.Accessibility
+  updateProperties, DONT_DELETE
+  sendEvent, DONT_DELETE
+  isActive, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Accessibility.updateProperties
+  __proto__, DONT_DELETE
+Testing _global.Accessibility.sendEvent
+  __proto__, DONT_DELETE
+Testing _global.Accessibility.isActive
+  __proto__, DONT_DELETE
+Testing _global.Video
+  __proto__, DONT_DELETE
+Testing _global.Stage
+  broadcastMessage, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Stage.broadcastMessage
+  __proto__, DONT_DELETE
+Testing _global.Stage.removeListener
+  __proto__, DONT_DELETE
+Testing _global.Stage.addListener
+  __proto__, DONT_DELETE
+Testing _global.TextFormat
+  __proto__, DONT_DELETE
+Testing _global.TextField
+  __proto__, DONT_DELETE
+Testing _global.Button
+  __proto__, DONT_DELETE
+Testing _global.Key
+  isToggled, DONT_DELETE
+  isDown, DONT_DELETE
+  getCode, DONT_DELETE
+  getAscii, DONT_DELETE
+  ALT, DONT_DELETE
+  ENTER, DONT_DELETE
+  SPACE, DONT_DELETE
+  UP, DONT_DELETE
+  DOWN, DONT_DELETE
+  LEFT, DONT_DELETE
+  RIGHT, DONT_DELETE
+  PGUP, DONT_DELETE
+  PGDN, DONT_DELETE
+  HOME, DONT_DELETE
+  END, DONT_DELETE
+  TAB, DONT_DELETE
+  CONTROL, DONT_DELETE
+  SHIFT, DONT_DELETE
+  ESCAPE, DONT_DELETE
+  INSERT, DONT_DELETE
+  DELETEKEY, DONT_DELETE
+  BACKSPACE, DONT_DELETE
+  CAPSLOCK, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Key.isToggled
+  __proto__, DONT_DELETE
+Testing _global.Key.isDown
+  __proto__, DONT_DELETE
+Testing _global.Key.getCode
+  __proto__, DONT_DELETE
+Testing _global.Key.getAscii
+  __proto__, DONT_DELETE
+Testing _global.Key.ALT
+Testing _global.Key.ENTER
+Testing _global.Key.SPACE
+Testing _global.Key.UP
+Testing _global.Key.DOWN
+Testing _global.Key.LEFT
+Testing _global.Key.RIGHT
+Testing _global.Key.PGUP
+Testing _global.Key.PGDN
+Testing _global.Key.HOME
+Testing _global.Key.END
+Testing _global.Key.TAB
+Testing _global.Key.CONTROL
+Testing _global.Key.SHIFT
+Testing _global.Key.ESCAPE
+Testing _global.Key.INSERT
+Testing _global.Key.DELETEKEY
+Testing _global.Key.BACKSPACE
+Testing _global.Key.CAPSLOCK
+Testing _global.Key.broadcastMessage
+  __proto__, DONT_DELETE
+Testing _global.Key.removeListener
+  __proto__, DONT_DELETE
+Testing _global.Key.addListener
+  __proto__, DONT_DELETE
+Testing _global.Mouse
+  hide, DONT_DELETE
+  show, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Mouse.hide
+  __proto__, DONT_DELETE
+Testing _global.Mouse.show
+  __proto__, DONT_DELETE
+Testing _global.Mouse.broadcastMessage
+  __proto__, DONT_DELETE
+Testing _global.Mouse.removeListener
+  __proto__, DONT_DELETE
+Testing _global.Mouse.addListener
+  __proto__, DONT_DELETE
+Testing _global.Selection
+  setSelection, DONT_DELETE
+  setFocus, DONT_DELETE
+  getFocus, DONT_DELETE
+  getCaretIndex, DONT_DELETE
+  getEndIndex, DONT_DELETE
+  getBeginIndex, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Selection.setSelection
+  __proto__, DONT_DELETE
+Testing _global.Selection.setFocus
+  __proto__, DONT_DELETE
+Testing _global.Selection.getFocus
+  __proto__, DONT_DELETE
+Testing _global.Selection.getCaretIndex
+  __proto__, DONT_DELETE
+Testing _global.Selection.getEndIndex
+  __proto__, DONT_DELETE
+Testing _global.Selection.getBeginIndex
+  __proto__, DONT_DELETE
+Testing _global.Selection.broadcastMessage
+  __proto__, DONT_DELETE
+Testing _global.Selection.removeListener
+  __proto__, DONT_DELETE
+Testing _global.Selection.addListener
+  __proto__, DONT_DELETE
+Testing _global.LoadVars
+  __proto__, DONT_DELETE
+Testing _global.XML
+  __proto__, DONT_DELETE
+Testing _global.XMLNode
+  __proto__, DONT_DELETE
+Testing _global.Sound
+  __proto__, DONT_DELETE
+Testing _global.Math
+  pow, DONT_DELETE
+  acos, DONT_DELETE
+  asin, DONT_DELETE
+  atan, DONT_DELETE
+  ceil, DONT_DELETE
+  floor, DONT_DELETE
+  random, DONT_DELETE
+  round, DONT_DELETE
+  sqrt, DONT_DELETE
+  log, DONT_DELETE
+  exp, DONT_DELETE
+  tan, DONT_DELETE
+  atan2, DONT_DELETE
+  cos, DONT_DELETE
+  sin, DONT_DELETE
+  max, DONT_DELETE
+  min, DONT_DELETE
+  abs, DONT_DELETE
+  E, DONT_DELETE
+  LN10, DONT_DELETE
+  LN2, DONT_DELETE
+  LOG10E, DONT_DELETE
+  LOG2E, DONT_DELETE
+  PI, DONT_DELETE
+  SQRT1_2, DONT_DELETE
+  SQRT2, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Math.pow
+  __proto__, DONT_DELETE
+Testing _global.Math.acos
+  __proto__, DONT_DELETE
+Testing _global.Math.asin
+  __proto__, DONT_DELETE
+Testing _global.Math.atan
+  __proto__, DONT_DELETE
+Testing _global.Math.ceil
+  __proto__, DONT_DELETE
+Testing _global.Math.floor
+  __proto__, DONT_DELETE
+Testing _global.Math.random
+  __proto__, DONT_DELETE
+Testing _global.Math.round
+  __proto__, DONT_DELETE
+Testing _global.Math.sqrt
+  __proto__, DONT_DELETE
+Testing _global.Math.log
+  __proto__, DONT_DELETE
+Testing _global.Math.exp
+  __proto__, DONT_DELETE
+Testing _global.Math.tan
+  __proto__, DONT_DELETE
+Testing _global.Math.atan2
+  __proto__, DONT_DELETE
+Testing _global.Math.cos
+  __proto__, DONT_DELETE
+Testing _global.Math.sin
+  __proto__, DONT_DELETE
+Testing _global.Math.max
+  __proto__, DONT_DELETE
+Testing _global.Math.min
+  __proto__, DONT_DELETE
+Testing _global.Math.abs
+  __proto__, DONT_DELETE
+Testing _global.Math.E
+Testing _global.Math.LN10
+Testing _global.Math.LN2
+Testing _global.Math.LOG10E
+Testing _global.Math.LOG2E
+Testing _global.Math.PI
+Testing _global.Math.SQRT1_2
+Testing _global.Math.SQRT2
+Testing _global.Array
+  __proto__, DONT_DELETE
+Testing _global.String
+  fromCharCode, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Date
+  UTC, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Boolean
+  __proto__, DONT_DELETE
+Testing _global.Number
+  POSITIVE_INFINITY, DONT_DELETE
+  NEGATIVE_INFINITY, DONT_DELETE
+  NaN, DONT_DELETE
+  MIN_VALUE, DONT_DELETE
+  MAX_VALUE, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Error
+  __proto__, DONT_DELETE
+Testing _global.ContextMenu
+  __proto__, DONT_DELETE
+Testing _global.ContextMenuItem
+  __proto__, DONT_DELETE
+Testing _global.SharedObject
+  __proto__, DONT_DELETE
+Testing _global.Microphone
+  __proto__, DONT_DELETE
+Testing _global.Camera
+  __proto__, DONT_DELETE
+Testing _global.NetStream
+  __proto__, DONT_DELETE
+Testing _global.NetConnection
+  __proto__, DONT_DELETE
+Testing _global.Color
+  __proto__, DONT_DELETE
+Testing _global.AsBroadcaster
+  broadcastMessage, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  initialize, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.XMLSocket
+  __proto__, DONT_DELETE
+Testing _global.MovieClip
+  __proto__, DONT_DELETE
+Testing _global.Function
+  __proto__, DONT_DELETE
+Testing _global.Object
+  registerClass, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.setTimeout
+  __proto__, DONT_DELETE
+Testing _global.clearInterval
+  __proto__, DONT_DELETE
+Testing _global.clearTimeout
+  __proto__, DONT_DELETE
+Testing _global.setInterval
+  __proto__, DONT_DELETE
+Testing _global.isFinite
+  __proto__, DONT_DELETE
+Testing _global.isNaN
+  __proto__, DONT_DELETE
+Testing _global.updateAfterEvent
+  __proto__, DONT_DELETE
+Testing _global.trace
+  __proto__, DONT_DELETE
+Testing _global.parseFloat
+  __proto__, DONT_DELETE
+Testing _global.parseInt
+  __proto__, DONT_DELETE
+Testing _global.unescape
+  __proto__, DONT_DELETE
+Testing _global.escape
+  __proto__, DONT_DELETE
+Testing _global.ASSetPropFlags
+  __proto__, DONT_DELETE
+Testing _global.ASnative
+  __proto__, DONT_DELETE
+Testing _global.Infinity
+Testing _global.NaN
+Done

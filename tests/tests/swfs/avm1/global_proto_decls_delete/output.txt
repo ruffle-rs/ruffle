@@ -1,0 +1,920 @@
+Testing _global.TextSnapshot
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.TextSnapshot.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.PrintJob
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.PrintJob.prototype
+  send, DONT_DELETE
+  addPage, DONT_DELETE
+  start, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.MovieClipLoader
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.MovieClipLoader.prototype
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  unloadClip, DONT_DELETE
+  getProgress, DONT_DELETE
+  loadClip, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.LocalConnection
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.LocalConnection.prototype
+  isPerUser, DONT_DELETE
+  domain, DONT_DELETE
+  close, DONT_DELETE
+  send, DONT_DELETE
+  connect, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.textRenderer
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.textRenderer.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SoundCodec
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility
+  updateProperties, DONT_DELETE
+  sendEvent, DONT_DELETE
+  isActive, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.updateProperties
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.sendEvent
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.isActive
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Video
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Video.prototype
+  clear, DONT_DELETE
+  attachVideo, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage._listeners
+Testing _global.Stage.removeListener
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.removeListener.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.addListener
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.addListener.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.broadcastMessage
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.TextFormat
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.TextFormat.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.TextField
+  StyleSheet, DONT_DELETE
+  getFontList, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.TextField.prototype
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  replaceText, DONT_DELETE
+  getDepth, DONT_DELETE
+  setNewTextFormat, DONT_DELETE
+  getNewTextFormat, DONT_DELETE
+  removeTextField, DONT_DELETE
+  setTextFormat, DONT_DELETE
+  getTextFormat, DONT_DELETE
+  replaceSel, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Button
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Button.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  isAccessible, DONT_DELETE
+  isToggled, DONT_DELETE
+  isDown, DONT_DELETE
+  getCode, DONT_DELETE
+  getAscii, DONT_DELETE
+  ALT, DONT_DELETE
+  ENTER, DONT_DELETE
+  SPACE, DONT_DELETE
+  UP, DONT_DELETE
+  DOWN, DONT_DELETE
+  LEFT, DONT_DELETE
+  RIGHT, DONT_DELETE
+  PGUP, DONT_DELETE
+  PGDN, DONT_DELETE
+  HOME, DONT_DELETE
+  END, DONT_DELETE
+  TAB, DONT_DELETE
+  CONTROL, DONT_DELETE
+  SHIFT, DONT_DELETE
+  ESCAPE, DONT_DELETE
+  INSERT, DONT_DELETE
+  DELETEKEY, DONT_DELETE
+  BACKSPACE, DONT_DELETE
+  CAPSLOCK, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key._listeners
+Testing _global.Key.removeListener
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.removeListener.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.addListener
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.addListener.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.broadcastMessage
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.isAccessible
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.isToggled
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.isDown
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.getCode
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.getAscii
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.ALT
+Testing _global.Key.ENTER
+Testing _global.Key.SPACE
+Testing _global.Key.UP
+Testing _global.Key.DOWN
+Testing _global.Key.LEFT
+Testing _global.Key.RIGHT
+Testing _global.Key.PGUP
+Testing _global.Key.PGDN
+Testing _global.Key.HOME
+Testing _global.Key.END
+Testing _global.Key.TAB
+Testing _global.Key.CONTROL
+Testing _global.Key.SHIFT
+Testing _global.Key.ESCAPE
+Testing _global.Key.INSERT
+Testing _global.Key.DELETEKEY
+Testing _global.Key.BACKSPACE
+Testing _global.Key.CAPSLOCK
+Testing _global.Mouse
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  setTrailerMode, DONT_DELETE
+  setTrailerPosition, DONT_DELETE
+  setTrailer, DONT_DELETE
+  hide, DONT_DELETE
+  show, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse._listeners
+Testing _global.Mouse.removeListener
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.removeListener.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.addListener
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.addListener.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.broadcastMessage
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.setTrailerMode
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.setTrailerPosition
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.setTrailer
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.hide
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.show
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  setSelection, DONT_DELETE
+  setFocus, DONT_DELETE
+  getFocus, DONT_DELETE
+  getCaretIndex, DONT_DELETE
+  getEndIndex, DONT_DELETE
+  getBeginIndex, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection._listeners
+Testing _global.Selection.removeListener
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.removeListener.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.addListener
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.addListener.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.broadcastMessage
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.setSelection
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.setFocus
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.getFocus
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.getCaretIndex
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.getEndIndex
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.getBeginIndex
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.LoadVars
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.LoadVars.prototype
+  addRequestHeader, DONT_DELETE
+  onData, DONT_DELETE
+  onLoad, DONT_DELETE
+  contentType, DONT_DELETE
+  toString, DONT_DELETE
+  getBytesTotal, DONT_DELETE
+  getBytesLoaded, DONT_DELETE
+  decode, DONT_DELETE
+  sendAndLoad, DONT_DELETE
+  send, DONT_DELETE
+  load, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.XML
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.XML.prototype
+  namespaceURI, DONT_DELETE
+  localName, DONT_DELETE
+  prefix, DONT_DELETE
+  previousSibling, DONT_DELETE
+  parentNode, DONT_DELETE
+  nodeValue, DONT_DELETE
+  nodeType, DONT_DELETE
+  nodeName, DONT_DELETE
+  nextSibling, DONT_DELETE
+  lastChild, DONT_DELETE
+  firstChild, DONT_DELETE
+  childNodes, DONT_DELETE
+  attributes, DONT_DELETE
+  getPrefixForNamespace, DONT_DELETE
+  getNamespaceForPrefix, DONT_DELETE
+  toString, DONT_DELETE
+  hasChildNodes, DONT_DELETE
+  appendChild, DONT_DELETE
+  insertBefore, DONT_DELETE
+  removeNode, DONT_DELETE
+  cloneNode, DONT_DELETE
+Testing _global.XMLNode
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.XMLNode.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Sound
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Sound.prototype
+  checkPolicyFile, DONT_DELETE
+  areSoundsInaccessible, DONT_DELETE
+  getBytesTotal, DONT_DELETE
+  getBytesLoaded, DONT_DELETE
+  loadSound, DONT_DELETE
+  setPosition, DONT_DELETE
+  getPosition, DONT_DELETE
+  setDuration, DONT_DELETE
+  getDuration, DONT_DELETE
+  start, DONT_DELETE
+  attachSound, DONT_DELETE
+  stop, DONT_DELETE
+  setVolume, DONT_DELETE
+  setTransform, DONT_DELETE
+  setPan, DONT_DELETE
+  getVolume, DONT_DELETE
+  getTransform, DONT_DELETE
+  getPan, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math
+  pow, DONT_DELETE
+  acos, DONT_DELETE
+  asin, DONT_DELETE
+  atan, DONT_DELETE
+  ceil, DONT_DELETE
+  floor, DONT_DELETE
+  random, DONT_DELETE
+  round, DONT_DELETE
+  sqrt, DONT_DELETE
+  log, DONT_DELETE
+  exp, DONT_DELETE
+  tan, DONT_DELETE
+  atan2, DONT_DELETE
+  cos, DONT_DELETE
+  sin, DONT_DELETE
+  max, DONT_DELETE
+  min, DONT_DELETE
+  abs, DONT_DELETE
+  E, DONT_DELETE
+  LN10, DONT_DELETE
+  LN2, DONT_DELETE
+  LOG10E, DONT_DELETE
+  LOG2E, DONT_DELETE
+  PI, DONT_DELETE
+  SQRT1_2, DONT_DELETE
+  SQRT2, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.pow
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.acos
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.asin
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.atan
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.ceil
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.floor
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.random
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.round
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.sqrt
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.log
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.exp
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.tan
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.atan2
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.cos
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.sin
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.max
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.min
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.abs
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.E
+Testing _global.Math.LN10
+Testing _global.Math.LN2
+Testing _global.Math.LOG10E
+Testing _global.Math.LOG2E
+Testing _global.Math.PI
+Testing _global.Math.SQRT1_2
+Testing _global.Math.SQRT2
+Testing _global.Array
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Array.prototype
+  sortOn, DONT_DELETE
+  reverse, DONT_DELETE
+  sort, DONT_DELETE
+  toString, DONT_DELETE
+  splice, DONT_DELETE
+  join, DONT_DELETE
+  slice, DONT_DELETE
+  unshift, DONT_DELETE
+  shift, DONT_DELETE
+  concat, DONT_DELETE
+  pop, DONT_DELETE
+  push, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.String
+  fromCharCode, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.String.prototype
+  substr, DONT_DELETE
+  split, DONT_DELETE
+  substring, DONT_DELETE
+  slice, DONT_DELETE
+  lastIndexOf, DONT_DELETE
+  indexOf, DONT_DELETE
+  concat, DONT_DELETE
+  charCodeAt, DONT_DELETE
+  charAt, DONT_DELETE
+  toLowerCase, DONT_DELETE
+  toUpperCase, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Date
+  UTC, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Date.prototype
+  valueOf, DONT_DELETE
+  setUTCMilliseconds, DONT_DELETE
+  setUTCSeconds, DONT_DELETE
+  setUTCMinutes, DONT_DELETE
+  setUTCHours, DONT_DELETE
+  setUTCDate, DONT_DELETE
+  setUTCMonth, DONT_DELETE
+  setUTCFullYear, DONT_DELETE
+  getUTCMilliseconds, DONT_DELETE
+  getUTCSeconds, DONT_DELETE
+  getUTCMinutes, DONT_DELETE
+  getUTCHours, DONT_DELETE
+  getUTCDay, DONT_DELETE
+  getUTCDate, DONT_DELETE
+  getUTCMonth, DONT_DELETE
+  getUTCYear, DONT_DELETE
+  getUTCFullYear, DONT_DELETE
+  setYear, DONT_DELETE
+  toString, DONT_DELETE
+  getTimezoneOffset, DONT_DELETE
+  setTime, DONT_DELETE
+  getTime, DONT_DELETE
+  setMilliseconds, DONT_DELETE
+  setSeconds, DONT_DELETE
+  setMinutes, DONT_DELETE
+  setHours, DONT_DELETE
+  setDate, DONT_DELETE
+  setMonth, DONT_DELETE
+  setFullYear, DONT_DELETE
+  getMilliseconds, DONT_DELETE
+  getSeconds, DONT_DELETE
+  getMinutes, DONT_DELETE
+  getHours, DONT_DELETE
+  getDay, DONT_DELETE
+  getDate, DONT_DELETE
+  getMonth, DONT_DELETE
+  getYear, DONT_DELETE
+  getFullYear, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Boolean
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Boolean.prototype
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Number
+  MAX_VALUE, DONT_DELETE
+  MIN_VALUE, DONT_DELETE
+  NEGATIVE_INFINITY, DONT_DELETE
+  POSITIVE_INFINITY, DONT_DELETE
+  NaN, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Number.prototype
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.o
+Warning: 'i' has no property 'prototype'
+Testing _global.clearRequestHeaders
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.clearRequestHeaders.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.addRequestHeader
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.addRequestHeader.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.showRedrawRegions
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.setTimeout
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.clearInterval
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.clearTimeout
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.setInterval
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.isFinite
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.isNaN
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.updateAfterEvent
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.trace
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.parseFloat
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.parseInt
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.unescape
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.escape
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ASSetNativeAccessor
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ASSetNative
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ASSetPropFlags
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.RemoteLSOUsage
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.RemoteLSOUsage.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AssetCache
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AssetCache.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AsSetupError
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AsSetupError.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Error
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Error.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ContextMenu
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ContextMenu.prototype
+  hideBuiltInItems, DONT_DELETE
+  copy, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ContextMenuItem
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ContextMenuItem.prototype
+  copy, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SharedObject
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SharedObject.prototype
+  clear, DONT_DELETE
+  setFps, DONT_DELETE
+  getSize, DONT_DELETE
+  close, DONT_DELETE
+  flush, DONT_DELETE
+  send, DONT_DELETE
+  connect, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Microphone
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Microphone.prototype
+  setEncodeQuality, DONT_DELETE
+  setFramesPerPacket, DONT_DELETE
+  setCodec, DONT_DELETE
+  setUseEchoSuppression, DONT_DELETE
+  setGain, DONT_DELETE
+  setRate, DONT_DELETE
+  setSilenceLevel, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Camera
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Camera.prototype
+  setCursor, DONT_DELETE
+  setLoopback, DONT_DELETE
+  setMotionLevel, DONT_DELETE
+  setKeyFrameInterval, DONT_DELETE
+  setQuality, DONT_DELETE
+  setMode, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.NetStream
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.NetStream.prototype
+  backBufferTime, DONT_DELETE
+  maxPauseBufferTime, DONT_DELETE
+  checkPolicyFile, DONT_DELETE
+  getInfo, DONT_DELETE
+  setBufferTime, DONT_DELETE
+  send, DONT_DELETE
+  attachVideo, DONT_DELETE
+  attachAudio, DONT_DELETE
+  close, DONT_DELETE
+  onPeerConnect, DONT_DELETE
+  seek, DONT_DELETE
+  pause, DONT_DELETE
+  receiveVideo, DONT_DELETE
+  receiveAudio, DONT_DELETE
+  play2, DONT_DELETE
+  play, DONT_DELETE
+  publish, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.NetConnection
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.NetConnection.prototype
+  farNonce, DONT_DELETE
+  nearNonce, DONT_DELETE
+  addHeader, DONT_DELETE
+  call, DONT_DELETE
+  close, DONT_DELETE
+  connect, DONT_DELETE
+  protocol, DONT_DELETE
+  usingTLS, DONT_DELETE
+  connectedProxyType, DONT_DELETE
+  proxyType, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Color
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Color.prototype
+  getTransform, DONT_DELETE
+  getRGB, DONT_DELETE
+  setTransform, DONT_DELETE
+  setRGB, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AsBroadcaster
+  initialize, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AsBroadcaster.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.XMLSocket
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.XMLSocket.prototype
+  setTimeout, DONT_DELETE
+  getTimeout, DONT_DELETE
+  onData, DONT_DELETE
+  close, DONT_DELETE
+  send, DONT_DELETE
+  connect, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.MovieClip
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.MovieClip.prototype
+  getTextSnapshot, DONT_DELETE
+  createTextField, DONT_DELETE
+  beginBitmapFill, DONT_DELETE
+  beginMeshFill, DONT_DELETE
+  lineGradientStyle, DONT_DELETE
+  clear, DONT_DELETE
+  endFill, DONT_DELETE
+  lineStyle, DONT_DELETE
+  curveTo, DONT_DELETE
+  lineTo, DONT_DELETE
+  moveTo, DONT_DELETE
+  beginGradientFill, DONT_DELETE
+  beginFill, DONT_DELETE
+  createEmptyMovieClip, DONT_DELETE
+  getRect, DONT_DELETE
+  attachBitmap, DONT_DELETE
+  getSWFVersion, DONT_DELETE
+  getInstanceAtDepth, DONT_DELETE
+  getNextHighestDepth, DONT_DELETE
+  stopDrag, DONT_DELETE
+  startDrag, DONT_DELETE
+  removeMovieClip, DONT_DELETE
+  duplicateMovieClip, DONT_DELETE
+  gotoAndStop, DONT_DELETE
+  gotoAndPlay, DONT_DELETE
+  prevFrame, DONT_DELETE
+  nextFrame, DONT_DELETE
+  stop, DONT_DELETE
+  play, DONT_DELETE
+  setMask, DONT_DELETE
+  getDepth, DONT_DELETE
+  attachVideo, DONT_DELETE
+  attachAudio, DONT_DELETE
+  getBytesLoaded, DONT_DELETE
+  getBytesTotal, DONT_DELETE
+  getBounds, DONT_DELETE
+  hitTest, DONT_DELETE
+  globalToLocal, DONT_DELETE
+  localToGlobal, DONT_DELETE
+  swapDepths, DONT_DELETE
+  attachMovie, DONT_DELETE
+  loadMovie, DONT_DELETE
+  loadVariables, DONT_DELETE
+  unloadMovie, DONT_DELETE
+  getURL, DONT_DELETE
+  meth, DONT_DELETE
+  scale9Grid, DONT_DELETE
+  forceSmoothing, DONT_DELETE
+  blendMode, DONT_DELETE
+  transform, DONT_DELETE
+  filters, DONT_DELETE
+  scrollRect, DONT_DELETE
+  opaqueBackground, DONT_DELETE
+  cacheAsBitmap, DONT_DELETE
+  _lockroot, DONT_DELETE
+  tabIndex, DONT_DELETE
+  enabled, DONT_DELETE
+  useHandCursor, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Infinity
+Testing _global.NaN
+Testing _global.enableDebugConsole
+Testing _global.Function
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Function.prototype
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Object
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  registerClass, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Object.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ASconstructor
+Testing _global.ASnative
+Done
