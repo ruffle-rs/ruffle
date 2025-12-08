@@ -8,7 +8,7 @@ use crate::avm2::script::Script;
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, LoaderInfoObject,
-    Object as Avm2Object, StageObject as Avm2StageObject,
+    Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::backend::audio::{AudioManager, SoundInstanceHandle};
 use crate::backend::navigator::Request;
@@ -672,8 +672,16 @@ impl<'gc> MovieClip<'gc> {
                 self.movie(),
             ) {
                 Ok(res) => return Ok(res),
-                Err(e) => {
-                    tracing::warn!("Error loading ABC file: {e:?}");
+                Err(err) => {
+                    // TODO can we skip this Activation construction?
+                    let mut temp_activation = Avm2Activation::from_nothing(context);
+
+                    Avm2::uncaught_error(
+                        &mut temp_activation,
+                        Some(self.into()),
+                        err,
+                        "Error loading AVM2 ABC",
+                    );
                     return Ok(None);
                 }
             }
@@ -708,8 +716,16 @@ impl<'gc> MovieClip<'gc> {
                 self.movie(),
             ) {
                 Ok(res) => return Ok(res),
-                Err(e) => {
-                    tracing::warn!("Error loading ABC file: {e:?}");
+                Err(err) => {
+                    // TODO can we skip this Activation construction?
+                    let mut temp_activation = Avm2Activation::from_nothing(context);
+
+                    Avm2::uncaught_error(
+                        &mut temp_activation,
+                        Some(self.into()),
+                        err,
+                        "Error loading AVM2 ABC",
+                    );
                 }
             }
         }
@@ -2038,13 +2054,11 @@ impl<'gc> MovieClip<'gc> {
                 class_object.call_init(object.into(), Avm2FunctionArgs::empty(), &mut activation);
 
             if let Err(e) = result {
-                tracing::error!(
-                    "Got \"{:?}\" when constructing AVM2 side of movie clip of type {}",
+                Avm2::uncaught_error(
+                    &mut activation,
+                    Some(self.into()),
                     e,
-                    class_object
-                        .inner_class_definition()
-                        .name()
-                        .to_qualified_name(context.gc())
+                    "Error running AVM2 construction for movie clip",
                 );
             }
         }
@@ -2370,6 +2384,8 @@ impl<'gc> MovieClip<'gc> {
 
                     if is_fresh_frame {
                         if let Some(callable) = self.frame_script(frame_id) {
+                            let callable = Avm2Value::from(callable);
+
                             self.0.last_queued_script_frame.set(Some(frame_id));
                             self.0.has_pending_script.set(false);
                             self.0
@@ -2382,15 +2398,18 @@ impl<'gc> MovieClip<'gc> {
                                 .unwrap()
                                 .avm2_domain();
 
-                            if let Err(e) = Avm2::run_stack_frame_for_callable(
-                                callable,
+                            let mut activation = Avm2Activation::from_domain(context, domain);
+
+                            if let Err(e) = callable.call(
+                                &mut activation,
                                 avm2_object.into(),
-                                domain,
-                                context,
+                                Avm2FunctionArgs::empty(),
                             ) {
-                                tracing::error!(
-                                    "Error occurred when running AVM2 frame script: {}",
-                                    e
+                                Avm2::uncaught_error(
+                                    &mut activation,
+                                    Some(self.into()),
+                                    e,
+                                    "Error running AVM2 frame script",
                                 );
                             }
 
@@ -4274,15 +4293,28 @@ impl<'gc, 'a> MovieClip<'gc> {
                             }
                         }
                     }
-                    Err(e) => tracing::error!(
-                        "Got AVM2 error when attempting to lookup symbol class: {e:?}",
-                    ),
+                    Err(err) => {
+                        Avm2::uncaught_error(
+                            &mut activation,
+                            Some(self.into()),
+                            err,
+                            "Error attempting to lookup AVM2 symbol class",
+                        );
+                    }
                 }
             }
         }
         for script in eager_scripts {
-            if let Err(e) = script.globals(context) {
-                tracing::error!("Error running eager script: {:?}", e);
+            if let Err(err) = script.globals(context) {
+                // TODO can we skip this Activation construction?
+                let mut temp_activation = Avm2Activation::from_nothing(context);
+
+                Avm2::uncaught_error(
+                    &mut temp_activation,
+                    Some(self.into()),
+                    err,
+                    "Error running AVM2 eager script",
+                );
             }
         }
         Ok(())
