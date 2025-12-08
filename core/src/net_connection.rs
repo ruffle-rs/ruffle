@@ -54,8 +54,15 @@ impl ResponderHandle {
         match self {
             ResponderHandle::Avm2(handle) => {
                 let object = context.dynamic_root.fetch(handle);
-                if let Err(e) = object.send_callback(context, callback, &message) {
-                    tracing::error!("Unhandled error sending {callback:?} callback: {e}");
+                let mut activation = Avm2Activation::from_nothing(context);
+
+                if let Err(err) = object.send_callback(&mut activation, callback, &message) {
+                    Avm2::uncaught_error(
+                        &mut activation,
+                        None, // TODO we need to set this, but how?
+                        err,
+                        "Error running AVM2 NetConnection callback",
+                    );
                 }
             }
             ResponderHandle::Avm1(handle) => {
