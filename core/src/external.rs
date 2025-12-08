@@ -8,7 +8,7 @@ use crate::avm2::object::{
     ArrayObject as Avm2ArrayObject, FunctionObject as Avm2FunctionObject, Object as Avm2Object,
     ScriptObject as Avm2ScriptObject, TObject as _,
 };
-use crate::avm2::{FunctionArgs, Value as Avm2Value};
+use crate::avm2::{Avm2, FunctionArgs, Value as Avm2Value};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::Collect;
@@ -324,10 +324,12 @@ impl<'gc> Callback<'gc> {
                 );
                 match result.and_then(|value| Value::from_avm2(&mut activation, value)) {
                     Ok(result) => result,
-                    Err(e) => {
-                        tracing::error!(
-                            "Unhandled error in External Interface callback {name}: {:?}",
-                            e
+                    Err(err) => {
+                        Avm2::uncaught_error(
+                            &mut activation,
+                            None, // TODO do we need to set this?
+                            err,
+                            "Error in AVM2 external interface callback",
                         );
                         Value::Null
                     }
