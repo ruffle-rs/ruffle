@@ -19,7 +19,7 @@ use crate::avm2::script::{Script, TranslationUnit};
 use crate::avm2::stack::Stack;
 use crate::character::Character;
 use crate::context::UpdateContext;
-use crate::display_object::{MovieClip, TDisplayObject};
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
@@ -470,20 +470,6 @@ impl<'gc> Avm2<'gc> {
             .retain(|x| x.upgrade(context.gc_context).is_some());
     }
 
-    pub fn run_stack_frame_for_callable(
-        callable: Object<'gc>,
-        receiver: Value<'gc>,
-        domain: Domain<'gc>,
-        context: &mut UpdateContext<'gc>,
-    ) -> Result<(), String> {
-        let mut evt_activation = Activation::from_domain(context, domain);
-        Value::from(callable)
-            .call(&mut evt_activation, receiver, FunctionArgs::empty())
-            .map_err(|e| format!("{e:?}"))?;
-
-        Ok(())
-    }
-
     pub fn lookup_class_for_character(
         activation: &mut Activation<'_, 'gc>,
         movie_clip: MovieClip<'gc>,
@@ -702,5 +688,20 @@ impl<'gc> Avm2<'gc> {
 
     pub fn set_optimizer_enabled(&mut self, value: bool) {
         self.optimizer_enabled = value;
+    }
+
+    // Report an uncaught AVM2 error.
+    // TODO should the `display_object` parameter be optional or not?
+    #[cold]
+    #[inline(never)]
+    pub fn uncaught_error(
+        _activation: &mut Activation<'_, 'gc>,
+        _display_object: Option<DisplayObject<'gc>>,
+        error: Error<'gc>,
+        info: &str,
+    ) {
+        tracing::error!("{}: {:?}", info, error);
+
+        // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
     }
 }
