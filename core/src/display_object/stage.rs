@@ -832,7 +832,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             Ok(avm2_stage) => {
                 // Always create 4 Stage3D instances for now, which matches the flash projector behavior
                 let stage3ds: Vec<Avm2Object<'gc>> = (0..4)
-                    .map(|_| Stage3DObject::new(&mut activation).into())
+                    .map(|_| Stage3DObject::new(activation.context).into())
                     .collect();
 
                 let write = Gc::write(activation.gc(), self.0);
