@@ -270,6 +270,23 @@ impl NavigatorBackend for WebNavigatorBackend {
                     form.set_target(target);
                 }
 
+                if navmethod == NavigationMethod::Get {
+                    // Browsers will clobber any query string with "the whole form input", so we need to re-add them here
+                    for (key, value) in url.query_pairs() {
+                        let hidden: HtmlInputElement = document
+                            .create_element("input")
+                            .expect("create_element() must succeed")
+                            .dyn_into()
+                            .expect("create_element(\"input\") didn't give us an input");
+
+                        hidden.set_type("hidden");
+                        hidden.set_name(&key);
+                        hidden.set_value(&value);
+
+                        let _ = form.append_child(&hidden);
+                    }
+                }
+
                 for (key, value) in formvars {
                     let hidden: HtmlInputElement = document
                         .create_element("input")
