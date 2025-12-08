@@ -817,30 +817,18 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     ) {
         let stage_constr = context.avm2.classes().stage;
 
-        // TODO: Replace this when we have a convenience method for constructing AVM2 native objects.
         // TODO: We should only do this if the movie is actually an AVM2 movie.
         // This is necessary for DisplayObject and EventDispatcher super-constructors to run.
-        let global_domain = context.avm2.stage_domain();
-        let mut activation = Avm2Activation::from_domain(context, global_domain);
-        let avm2_stage = Avm2StageObject::for_display_object_childless(
-            &mut activation,
-            self.into(),
-            stage_constr,
-        );
+        let avm2_stage =
+            Avm2StageObject::for_display_object(context.gc(), self.into(), stage_constr);
 
-        match avm2_stage {
-            Ok(avm2_stage) => {
-                // Always create 4 Stage3D instances for now, which matches the flash projector behavior
-                let stage3ds: Vec<Avm2Object<'gc>> = (0..4)
-                    .map(|_| Stage3DObject::new(activation.context).into())
-                    .collect();
+        // Always create 4 Stage3D instances for now, which matches the flash projector behavior
+        let stage3ds: Vec<Avm2Object<'gc>> =
+            (0..4).map(|_| Stage3DObject::new(context).into()).collect();
 
-                let write = Gc::write(activation.gc(), self.0);
-                unlock!(write, StageData, avm2_object).set(Some(avm2_stage));
-                unlock!(write, StageData, stage3ds).replace(stage3ds);
-            }
-            Err(e) => tracing::error!("Unable to construct AVM2 Stage: {}", e),
-        }
+        let write = Gc::write(context.gc(), self.0);
+        unlock!(write, StageData, avm2_object).set(Some(avm2_stage));
+        unlock!(write, StageData, stage3ds).replace(stage3ds);
     }
 
     fn id(self) -> CharacterId {
