@@ -1,6 +1,7 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, ClassObject as Avm2ClassObject, StageObject as Avm2StageObject,
+    Activation as Avm2Activation, Avm2, ClassObject as Avm2ClassObject,
+    StageObject as Avm2StageObject,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::DisplayObjectBase;
@@ -159,8 +160,13 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 class_object,
             ) {
                 Ok(object) => self.set_object2(activation.context, object),
-                Err(e) => {
-                    tracing::error!("Got error when constructing AVM2 side of shape: {}", e)
+                Err(err) => {
+                    Avm2::uncaught_error(
+                        &mut activation,
+                        Some(self.into()),
+                        err,
+                        "Error running AVM2 construction for shape",
+                    );
                 }
             }
 
