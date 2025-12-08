@@ -2,7 +2,6 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::{Activation, Error};
-use crate::context::UpdateContext;
 use crate::net_connection::ResponderCallback;
 use flash_lso::types::Value as AMFValue;
 use gc_arena::barrier::unlock;
@@ -64,7 +63,7 @@ impl<'gc> ResponderObject<'gc> {
 
     pub fn send_callback(
         self,
-        context: &mut UpdateContext<'gc>,
+        activation: &mut Activation<'_, 'gc>,
         callback: ResponderCallback,
         message: &AMFValue,
     ) -> Result<(), Error<'gc>> {
@@ -74,10 +73,9 @@ impl<'gc> ResponderObject<'gc> {
         };
 
         if let Some(function) = function {
-            let mut activation = Activation::from_nothing(context);
-            let value = crate::avm2::amf::deserialize_value(&mut activation, message)?;
+            let value = crate::avm2::amf::deserialize_value(activation, message)?;
             let args = &[value];
-            function.call(&mut activation, self.into(), FunctionArgs::from_slice(args))?;
+            function.call(activation, self.into(), FunctionArgs::from_slice(args))?;
         }
 
         Ok(())
