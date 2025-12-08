@@ -154,6 +154,7 @@ impl TextFormat {
         context: &mut UpdateContext<'_>,
     ) -> Self {
         let encoding = swf_movie.encoding();
+        let swf_version = swf_movie.version();
         let movie_library = context.library.library_for_movie_mut(swf_movie);
         let font = et.font_id().and_then(|fid| movie_library.get_font(fid));
         let font_class = et
@@ -161,7 +162,7 @@ impl TextFormat {
             .map(|s| s.decode(encoding).into_owned())
             .or_else(|| font.map(|font| WString::from_utf8(font.descriptor().name())))
             .unwrap_or_else(|| WString::from_utf8("Times New Roman"));
-        let align = if et.is_html() {
+        let align = if et.is_html() && swf_version < 8 {
             // For some reason, when HTML is enabled in the SWF tag, align is
             // always left.  This does not apply to dynamically enabling HTML.
             Some(swf::TextAlign::Left)
