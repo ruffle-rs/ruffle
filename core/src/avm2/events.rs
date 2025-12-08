@@ -4,6 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
 use crate::avm2::object::{EventObject, FunctionObject, Object, TObject as _};
+use crate::avm2::Avm2;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
@@ -410,11 +411,13 @@ fn dispatch_event_to_target<'gc>(
         let args = &[event.into()];
         let result = handler.call(activation, global.into(), FunctionArgs::from_slice(args));
         if let Err(err) = result {
-            tracing::error!(
-                "Error dispatching event {:?} to handler {:?} : {:?}",
-                event,
-                handler,
+            let event_name = event.event().event_type();
+
+            Avm2::uncaught_error(
+                activation,
+                None, // TODO we need to set this, but how?
                 err,
+                &format!("Error dispatching event \"{}\"", event_name),
             );
         }
     }
