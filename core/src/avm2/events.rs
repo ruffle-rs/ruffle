@@ -4,7 +4,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
 use crate::avm2::object::{EventObject, FunctionObject, Object, TObject as _};
-use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
@@ -364,7 +363,7 @@ fn dispatch_event_to_target<'gc>(
     current_target: Object<'gc>,
     event: EventObject<'gc>,
     simulate_dispatch: bool,
-) -> Result<(), Error<'gc>> {
+) {
     avm_debug!(
         activation.context.avm2,
         "Event dispatch: {} to {current_target:?}",
@@ -375,7 +374,7 @@ fn dispatch_event_to_target<'gc>(
 
     if dispatch_list.is_none() {
         // Objects with no dispatch list act as if they had an empty one
-        return Ok(());
+        return;
     }
 
     let dispatch_list = dispatch_list.unwrap();
@@ -398,7 +397,7 @@ fn dispatch_event_to_target<'gc>(
     drop(evtmut);
 
     if simulate_dispatch {
-        return Ok(());
+        return;
     }
 
     for handler in handlers.iter() {
@@ -419,8 +418,6 @@ fn dispatch_event_to_target<'gc>(
             );
         }
     }
-
-    Ok(())
 }
 
 pub fn dispatch_event<'gc>(
@@ -428,7 +425,7 @@ pub fn dispatch_event<'gc>(
     this: Object<'gc>,
     event: EventObject<'gc>,
     simulate_dispatch: bool,
-) -> Result<bool, Error<'gc>> {
+) -> bool {
     let target = this.get_slot(slots::TARGET).as_object().unwrap_or(this);
 
     let mut ancestor_list = Vec::new();
@@ -460,7 +457,7 @@ pub fn dispatch_event<'gc>(
             *ancestor,
             event,
             simulate_dispatch,
-        )?;
+        );
     }
 
     event
@@ -468,7 +465,7 @@ pub fn dispatch_event<'gc>(
         .set_phase(EventPhase::AtTarget);
 
     if !event.event().is_propagation_stopped() {
-        dispatch_event_to_target(activation, this, target, target, event, simulate_dispatch)?;
+        dispatch_event_to_target(activation, this, target, target, event, simulate_dispatch);
     }
 
     event
@@ -488,12 +485,12 @@ pub fn dispatch_event<'gc>(
                 *ancestor,
                 event,
                 simulate_dispatch,
-            )?;
+            );
         }
     }
 
-    let handled = event.event().target.is_some();
-    Ok(handled)
+    // If the target is set, the event was handled
+    event.event().target.is_some()
 }
 
 /// Like `dispatch_event`, but does not run the Capturing and Bubbling phases,
@@ -503,14 +500,12 @@ pub fn broadcast_event<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     event: EventObject<'gc>,
-) -> Result<(), Error<'gc>> {
+) {
     let target = this.get_slot(slots::TARGET).as_object().unwrap_or(this);
 
     event
         .event_mut(activation.gc())
         .set_phase(EventPhase::AtTarget);
 
-    dispatch_event_to_target(activation, this, target, target, event, false)?;
-
-    Ok(())
+    dispatch_event_to_target(activation, this, target, target, event, false);
 }

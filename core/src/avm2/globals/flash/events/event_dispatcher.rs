@@ -131,7 +131,7 @@ pub fn dispatch_event_internal<'gc>(
     // AS3-side typing guarantees that the event is actually an Event
     let event = event.as_event_object().unwrap();
 
-    events::dispatch_event(activation, this, event, false)?;
+    events::dispatch_event(activation, this, event, false);
 
     let not_canceled = !event.event().is_cancelled();
     Ok(not_canceled.into())
