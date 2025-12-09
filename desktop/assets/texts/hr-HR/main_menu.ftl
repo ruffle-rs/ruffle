@@ -8,3 +8,20 @@
 # Some items may be also be duplicated here, like "About Ruffle" in the menu and "About Ruffle" elsewhere as the header of the about menu.
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
+file-menu = Datoteka
+file-menu-open-quick = Otvori...
+file-menu-close = Zatvori
+file-menu-reload = Ponovno učitaj
+file-menu-recents-empty = Nema nedavnih unosa
+file-menu-export = Izvoz...
+controls-menu = Kontrole
+controls-menu-suspend = Obustavi
+controls-menu-resume = Nastavi
+controls-menu-step-once = Korakni jednom
+controls-menu-volume = Kontrole glasnoće
+help-menu = Pomoć
+help-menu-join-discord = Pridruži se Discordu
+help-menu-report-a-bug = Prijavi grešku...
+help-menu-sponsor-development = Razvoj sponzora...
+help-menu-translate-ruffle = Prevedi Ruffle...
+help-menu-about = O Ruffleu

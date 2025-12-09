@@ -1,0 +1,16 @@
+preferences-dialog = Postavke Rufflea
+preference-locked-by-cli = Samo za čitanje (postavljeno pomoću CLI-ja)
+graphics-backend = Grafički backend
+graphics-backend-default = Zadano
+graphics-power-low = Nizak (npr. iGPU)
+graphics-power-high = Visoko (npr. GPU)
+language = Jezik
+audio-output-device-default = Zadano sustav
+enable-openh264 = Omogući OpenH264
+show-license = Prikaži licencu
+openh264-license = OpenH264 licenca
+storage-backend-disk = Disk
+storage-backend-memory = Memorija
+recent-clear = Očisti
+ime-enabled = Način unosa
+ime-enabled-default = Zadano
