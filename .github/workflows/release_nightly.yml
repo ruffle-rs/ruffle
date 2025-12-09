@@ -517,8 +517,6 @@ jobs:
         run: npm publish --tag latest --access public --provenance
         continue-on-error: true
         working-directory: web/packages/selfhosted/dist
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Package selfhosted
         run: zip -r "${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip" .
