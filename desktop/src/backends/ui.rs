@@ -361,8 +361,9 @@ impl UiBackend for DesktopUiBackend {
         let mut dialog = AsyncFileDialog::new();
 
         for filter in filters {
-            if cfg!(target_os = "macos") && filter.mac_type.is_some() {
-                let mac_type = filter.mac_type.expect("Checked above");
+            if cfg!(target_os = "macos")
+                && let Some(mac_type) = filter.mac_type
+            {
                 let extensions: Vec<&str> = mac_type.split(';').collect();
                 dialog = dialog.add_filter(&filter.description, &extensions);
             } else {
