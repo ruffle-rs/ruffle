@@ -81,18 +81,8 @@ fn panic_hook(info: &PanicHookInfo) {
         }
     });
 
-    // [NA] Let me just point out that PanicInfo::message() exists but isn't stable and that sucks.
-    let panic_text = info.to_string();
-    let message = if let Some(text) = panic_text.strip_prefix("panicked at '") {
-        let location = info.location().map(|l| l.to_string()).unwrap_or_default();
-        if let Some(text) = text.strip_suffix(&format!("', {location}")) {
-            text.trim()
-        } else {
-            text.trim()
-        }
-    } else {
-        panic_text.trim()
-    };
+    let message = info.payload_as_str().unwrap_or("panic occurred");
+
     if rfd::MessageDialog::new()
         .set_level(rfd::MessageLevel::Error)
         .set_title("Ruffle")
