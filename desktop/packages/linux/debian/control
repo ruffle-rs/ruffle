@@ -10,6 +10,11 @@ Build-Depends:
  libasound2-dev,
  libudev-dev,
  jq,
+ nodejs,
+ librust-wasm-bindgen-dev,
+ default-jdk-headless,
+ binaryen,
+ libjxr-dev,
 Standards-Version: 4.7.2
 Homepage: https://ruffle.rs/
 #Vcs-Browser: https://github.com/ruffle-rs/ruffle
@@ -21,5 +26,11 @@ Depends:
  ${shlibs:Depends},
  ${misc:Depends},
 Description: A Flash Player emulator written in Rust
+ Ruffle is an Adobe Flash Player emulator written in the Rust programming
+ language. Ruffle targets both the desktop and the web using WebAssembly.
+
+Package: webext-ruffle-flash-emulator
+Architecture: all
+Description: A Flash Player emulator written in Rust (web extensions)
  Ruffle is an Adobe Flash Player emulator written in the Rust programming
  language. Ruffle targets both the desktop and the web using WebAssembly.

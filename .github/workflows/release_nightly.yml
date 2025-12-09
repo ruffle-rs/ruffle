@@ -720,9 +720,15 @@ jobs:
       - name: Get prebuilt binaries
         run: |
           gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-${{ matrix.arch }}.tar.gz"
+          gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension.zip"
+          gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-unsigned.xpi"
           tar -xf "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-${{ matrix.arch }}.tar.gz" ruffle
           rm "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-${{ matrix.arch }}.tar.gz"
-          mv ruffle ruffle_desktop
+          mkdir -p web/packages/extension/dist
+          mv "${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension.zip" web/packages/extension/dist/ruffle_extension.zip
+          mv "${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-unsigned.xpi" web/packages/extension/dist/firefox_unsigned.xpi
+          mkdir -p target/release
+          mv ruffle target/release/ruffle_desktop
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build Packages
@@ -743,6 +749,7 @@ jobs:
           mv ../ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_${{ matrix.build_name }}.changes ./
           mv ../ruffle-desktop_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_${{ matrix.build_name }}.deb ./
           mv ../ruffle-desktop-dbgsym_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_${{ matrix.build_name }}.ddeb ./
+          mv ../webext-ruffle-flash-emulator_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_all.deb ./
       - name: Upload Source package as build artifact
         if: runner.arch == 'X64'
         uses: actions/upload-artifact@v5
@@ -754,6 +761,13 @@ jobs:
             ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}.dsc
             ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_source.buildinfo
             ruffle_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_source.changes
+      - name: Upload Extension Package as build artifact
+        if: runner.arch == 'X64'
+        uses: actions/upload-artifact@v5
+        with:
+          name: deb-all
+          path: |
+            webext-ruffle-flash-emulator_${{ steps.profiling.outputs.version }}-${{ steps.profiling.outputs.revision }}_all.deb
       - name: Upload Packages as build artifact
         uses: actions/upload-artifact@v5
         with:
@@ -772,6 +786,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           merge-multiple: true
+          pattern: deb-*
           run-id: ${{ needs.build-debian-packages.outputs.run_id }}
           path: download/${{ needs.create-nightly-release.outputs.tag_name }}
       - name: Generate trivial source
@@ -783,7 +798,7 @@ jobs:
           apt-ftparchive release . > Release
       - name: Upload packages
         run: |
-          gh release upload -R ${{ github.repository }} "${{ needs.create-nightly-release.outputs.tag_name }}" `find download -name 'ruffle*.deb'` `find download -name 'ruffle*.ddeb'`
+          gh release upload -R ${{ github.repository }} "${{ needs.create-nightly-release.outputs.tag_name }}" `find download -name '*ruffle*.deb'` `find download -name 'ruffle*.ddeb'`
           gh release upload -R ${{ github.repository }} "${{ needs.create-nightly-release.outputs.tag_name }}" `find download -name 'ruffle*.orig.tar.gz'` `find download -name 'ruffle*.debian.tar.xz'` `find download -name 'ruffle*.dsc'` download/${{ needs.create-nightly-release.outputs.tag_name }}/Packages download/${{ needs.create-nightly-release.outputs.tag_name }}/Sources download/${{ needs.create-nightly-release.outputs.tag_name }}/Release
         env:
           GITHUB_TOKEN: ${{ secrets.PGITHUB_TOKEN }}
