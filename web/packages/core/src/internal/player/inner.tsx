@@ -2558,3 +2558,116 @@ function detectBrowserDirection(): string {
 
     return "ltr";
 }
+
+type NamedAccessValue = HTMLElement | HTMLCollectionOf<HTMLElement>;
+
+/**
+ *
+ * @param v The value to check if is an HTMLCollectionOf<HTMLElement>
+ *
+ * @returns If the value is a collection
+ */
+function isCollection(
+    v: NamedAccessValue | undefined,
+): v is HTMLCollectionOf<HTMLElement> {
+    return !!v && "item" in v && "length" in v;
+}
+
+/**
+ *
+ * @param items The items to convert to an HTMLCollectionOf<HTMLElement>
+ *
+ * @returns An HTMLCollectionOf<HTMLElement>
+ */
+function makeCollection(items: HTMLElement[]): HTMLCollectionOf<HTMLElement> {
+    return {
+        length: items.length,
+        item: (i: number) => items[i] ?? null,
+        namedItem: (n: string) =>
+            items.find((e) => e.getAttribute("name") === n) ?? null,
+        [Symbol.iterator]: function* () {
+            yield* items;
+        },
+    } as unknown as HTMLCollectionOf<HTMLElement>;
+}
+
+const docMap = document as unknown as Record<string, NamedAccessValue>;
+
+/**
+ * Clear a property on document based on embed/object name
+ *
+ * @param el The embed/object element
+ * @param name The name for which to remove the property from document
+ */
+export function clearDocumentNamedAccessor(
+    el: HTMLElement,
+    name: string | undefined | null,
+) {
+    if (!name) {
+        return;
+    }
+    const existing = docMap[name];
+
+    if (
+        existing instanceof HTMLCollection ||
+        (existing instanceof HTMLElement &&
+            (existing.tagName === "EMBED" || existing.tagName === "OBJECT"))
+    ) {
+        return;
+    }
+
+    // Simple case: single element
+    if (existing === el) {
+        Reflect.deleteProperty(document, name);
+        return;
+    }
+    if (isCollection(existing)) {
+        const items = [...existing].filter((x) => x !== el);
+        if (items.length === 0) {
+            Reflect.deleteProperty(document, name);
+        } else if (items.length === 1 && items[0]) {
+            docMap[name] = items[0];
+        } else {
+            docMap[name] = makeCollection(items);
+        }
+    }
+}
+
+/**
+ * Define a property on document based on embed/object name
+ *
+ * @param el The embed/object element
+ * @param name The name for which to define the property on document
+ */
+export function defineDocumentNamedAccessor(
+    el: HTMLElement,
+    name: string | null | undefined,
+) {
+    if (!name) {
+        return;
+    }
+
+    const existing = docMap[name];
+
+    if (
+        existing instanceof HTMLCollection ||
+        (existing instanceof HTMLElement &&
+            (existing.tagName === "EMBED" || existing.tagName === "OBJECT"))
+    ) {
+        return;
+    }
+
+    if (!existing) {
+        docMap[name] = el;
+        return;
+    }
+
+    const items = isCollection(existing)
+        ? [...existing].filter((x) => x !== el)
+        : existing === el
+          ? []
+          : [existing];
+
+    items.push(el);
+    docMap[name] = makeCollection(items);
+}
