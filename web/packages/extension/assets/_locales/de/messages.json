@@ -38,6 +38,12 @@
     "settings_preferred_renderer_auto": {
         "message": "Automatisch"
     },
+    "settings_device_font_renderer": {
+        "message": "Geräte-Schriftart-Renderer"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Eingebettet"
+    },
     "settings_advanced_options": {
         "message": "Erweiterte Einstellungen"
     },

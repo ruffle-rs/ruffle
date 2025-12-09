@@ -30,7 +30,7 @@
         "message": "Foutopsporing"
     },
     "settings_log_level_trace": {
-        "message": "Traceren"
+        "message": "Traceer"
     },
     "settings_max_execution_duration": {
         "message": "Maximum toegestane ActionScript uitvoeringsduur (in seconden)"
@@ -108,7 +108,7 @@
         "message": "Instellingen opgeslagen"
     },
     "onboarding_page": {
-        "message": "Eerste-gebruik pagina"
+        "message": "Introductiepagina"
     },
     "permissions_grant": {
         "message": "Geef Ruffle toegang tot mijn gegevens op alle websites"

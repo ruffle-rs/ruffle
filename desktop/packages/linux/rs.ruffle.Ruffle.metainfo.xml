@@ -11,6 +11,7 @@
     <name xml:lang="fi">Ruffle</name>
     <name xml:lang="fr">Ruffle</name>
     <name xml:lang="he">Ruffle</name>
+    <name xml:lang="hr">Ruffle</name>
     <name xml:lang="hu">Ruffle</name>
     <name xml:lang="ja">Ruffle</name>
     <name xml:lang="ko">Ruffle</name>
@@ -62,6 +63,7 @@
         <name xml:lang="fi">Ruffle-tiimi</name>
         <name xml:lang="fr">L'équipe de Ruffle</name>
         <name xml:lang="he">צוות Ruffle</name>
+        <name xml:lang="hr">Tim Ruffle</name>
         <name xml:lang="hu">A Ruffle csapata</name>
         <name xml:lang="ja">Ruffleチーム</name>
         <name xml:lang="ko">Ruffle 팀</name>
@@ -189,6 +191,7 @@
         <keyword xml:lang="fi">flash</keyword>
         <keyword xml:lang="fr">flash</keyword>
         <keyword xml:lang="he">פלאש</keyword>
+        <keyword xml:lang="hr">flash</keyword>
         <keyword xml:lang="hu">flash</keyword>
         <keyword xml:lang="it">flash</keyword>
         <keyword xml:lang="ja">flash</keyword>
@@ -216,6 +219,7 @@
         <keyword xml:lang="fi">swf</keyword>
         <keyword xml:lang="fr">swf</keyword>
         <keyword xml:lang="he">swf</keyword>
+        <keyword xml:lang="hr">swf</keyword>
         <keyword xml:lang="hu">swf</keyword>
         <keyword xml:lang="it">swf</keyword>
         <keyword xml:lang="ja">swf</keyword>
@@ -243,6 +247,7 @@
         <keyword xml:lang="fi">toistin</keyword>
         <keyword xml:lang="fr">lecteur</keyword>
         <keyword xml:lang="he">נגן</keyword>
+        <keyword xml:lang="hr">igrač</keyword>
         <keyword xml:lang="hu">lejátszó</keyword>
         <keyword xml:lang="id">pemutar</keyword>
         <keyword xml:lang="it">riproduttore</keyword>
@@ -270,6 +275,7 @@
         <keyword xml:lang="fi">emulaattori</keyword>
         <keyword xml:lang="fr">émulateur</keyword>
         <keyword xml:lang="he">אמולטור</keyword>
+        <keyword xml:lang="hr">emulator</keyword>
         <keyword xml:lang="hu">emulátor</keyword>
         <keyword xml:lang="it">emulatore</keyword>
         <keyword xml:lang="ja">エミュレーター</keyword>

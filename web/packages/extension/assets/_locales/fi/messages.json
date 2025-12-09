@@ -23,6 +23,9 @@
     "settings_log_level_warn": {
         "message": "Varoitukset"
     },
+    "settings_log_level_info": {
+        "message": "Info"
+    },
     "settings_log_level_debug": {
         "message": "Vianjäljitys"
     },
