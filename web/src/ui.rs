@@ -365,8 +365,9 @@ impl UiBackend for WebUiBackend {
                 let navigator = window.navigator();
                 let platform = navigator.platform().expect("navigator.platform");
 
-                if platform.contains("Mac") && filter.mac_type.is_some() {
-                    let mac_type = filter.mac_type.expect("Cant fail");
+                if platform.contains("Mac")
+                    && let Some(mac_type) = filter.mac_type
+                {
                     let extensions: Vec<&str> = mac_type.split(';').collect();
                     dialog = dialog.add_filter(&filter.description, &extensions);
                 } else {
