@@ -13,6 +13,12 @@ describe("Document embeds", () => {
             });
         }
 
+        async function documentEmbedsSelfIdentity() {
+            return await browser.execute(() => {
+                return document.embeds === document.embeds;
+            });
+        }
+
         async function removeEl(selector: string) {
             const el = await $(selector);
             await browser.execute((element) => {
@@ -33,6 +39,8 @@ describe("Document embeds", () => {
             browser,
             await browser.$("#test-container").$("ruffle-embed#emb3"),
         );
+        const documentEmbedsIdentity = await documentEmbedsSelfIdentity();
+        expect(documentEmbedsIdentity).to.equal(true);
         const embeds1 = await countDocumentEmbeds();
         expect(embeds1).to.equal(3);
         await removeEl("#emb1");
