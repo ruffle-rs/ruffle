@@ -341,8 +341,7 @@ impl<'gc> Object<'gc> {
                     return Ok(true);
                 }
 
-                // TODO(moulins): should this use `Object::prototype`?
-                if let Value::Object(o) = interface.get(istr!("prototype"), activation)? {
+                if let Value::Object(o) = interface.prototype(activation) {
                     proto_stack.push(o);
                 }
             }
