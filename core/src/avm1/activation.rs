@@ -1428,7 +1428,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn action_implements_op(&mut self) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let constructor = self.context.avm1.pop().coerce_to_object_or_bare(self)?;
+        // Old Flash Players used to coerce primitives as well. However, this was changed and
+        // now the following is logged:
+        // Parameters of primitive types are no longer coerced into the required type - Object.
+        let constructor = self.context.avm1.pop().as_object(self);
+        if constructor.is_none() {
+            avm_warn!(self, "ImplementsOp: primitive not coerced into object");
+        }
+
         let count = self.context.avm1.pop();
         // Old Flash Players (at least FP9) used to coerce objects as well. However, this was
         // changed at some point and instead the following is logged:
@@ -1446,18 +1453,21 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if count > 0 {
             let mut interfaces = Vec::with_capacity(count);
 
-            // TODO: If one of the interfaces is not an object, do we leave the
-            // whole stack dirty, or...?
             for _ in 0..count {
-                interfaces.push(self.context.avm1.pop().coerce_to_object_or_bare(self)?);
+                // Old Flash Players used to coerce primitives as well. However, this was changed and
+                // now the following is logged:
+                // Parameters of primitive types are no longer coerced into the required type - Object.
+                if let Some(obj) = self.context.avm1.pop().as_object(self) {
+                    interfaces.push(obj);
+                } else {
+                    avm_warn!(self, "ImplementsOp: primitive not coerced into object");
+                }
             }
 
-            let prototype = constructor
-                // TODO(moulins): should this use `Object::prototype`?
-                .get(istr!(self, "prototype"), self)?
-                .coerce_to_object_or_bare(self)?;
-            
-            if self.swf_version >= 7 {
+            if let Some(prototype) = constructor
+                .filter(|_| self.swf_version >= 7)
+                .and_then(|o| o.prototype(self).as_object(self))
+            {
                 prototype.set_interfaces(self.gc(), interfaces);
             }
         }
