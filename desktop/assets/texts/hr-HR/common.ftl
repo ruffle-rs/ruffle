@@ -1,3 +1,5 @@
+language-name = Hrvatski
+browse = Pretraži
 save = Spremi
 cancel = Otkaži
 remove = Ukloni
