@@ -1456,7 +1456,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 // TODO(moulins): should this use `Object::prototype`?
                 .get(istr!(self, "prototype"), self)?
                 .coerce_to_object_or_bare(self)?;
-            prototype.set_interfaces(self.gc(), interfaces);
+            
+            if self.swf_version >= 7 {
+                prototype.set_interfaces(self.gc(), interfaces);
+            }
         }
 
         Ok(FrameControl::Continue)

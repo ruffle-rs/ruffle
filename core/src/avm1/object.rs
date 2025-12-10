@@ -336,16 +336,14 @@ impl<'gc> Object<'gc> {
                 proto_stack.push(p);
             }
 
-            if activation.swf_version() >= 7 {
-                for interface in this_proto.interfaces() {
-                    if Object::ptr_eq(interface, constructor) {
-                        return Ok(true);
-                    }
+            for interface in this_proto.interfaces() {
+                if Object::ptr_eq(interface, constructor) {
+                    return Ok(true);
+                }
 
-                    // TODO(moulins): should this use `Object::prototype`?
-                    if let Value::Object(o) = interface.get(istr!("prototype"), activation)? {
-                        proto_stack.push(o);
-                    }
+                // TODO(moulins): should this use `Object::prototype`?
+                if let Value::Object(o) = interface.get(istr!("prototype"), activation)? {
+                    proto_stack.push(o);
                 }
             }
         }
