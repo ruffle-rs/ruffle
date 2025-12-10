@@ -1,0 +1,47 @@
+network-settings = Postavke mreže
+player-settings = Postavke plejera
+movie-parameters = Parametri filma
+custom-base-url = Prilagođeni osnovni URL
+referer-url = URL reference
+cookie = Kolačić
+proxy = Proksi
+upgrade-http = Nadogradite HTTP na HTTPS
+tcp-connections = TCP veze
+tcp-connections-allow = Dozvoli
+tcp-connections-ask = Pitajte
+tcp-connections-deny = Odbaci
+open-url-mode = Otvori linkove
+open-url-mode-allow = Dozvoli
+open-url-mode-confirm = Pitajte
+open-url-mode-deny = Odbaci
+max-execution-duration = Maksimalno trajanje izvršenja
+max-execution-duration-suffix = { " " } sekundi
+quality = Kvalitet
+quality-high8x8 = Visoka (8x8)
+quality-high8x8linear = Visoka (8x8) linearna
+quality-high16x16 = Visoka (16x16)
+letterbox = Poštanski sandučić
+letterbox-on = Uključeno
+letterbox-fullscreen = Samo cijeli ekran
+letterbox-off = Isključeno
+align = Poravnanje pozornice
+align-center = Centar
+align-left = Lijevo
+align-right = Desno
+align-top = Vrh
+align-bottom = Dno
+align-top-left = Gore lijevo
+align-bottom-left = Dolje lijevo
+align-top-right = Gore desno
+align-bottom-right = Dolje desno
+scale-mode = Metoda skaliranja
+scale-mode-noscale = Neskalirano (100%)
+scale-mode-noscale-tooltip =
+    Prikazuje film u originalnoj veličini, bez ikakvog zumiranja.
+    
+    Odgovara StageScaleMode.NO_SCALE
+scale-mode-showall = Zumiraj da stane
+player-runtime-flash = Flash Player
+player-runtime-air = Adobe AIR
+custom-framerate-suffix = { " " } sličica u sekundi
+dummy-external-interface = Lažno vanjsko sučelje
