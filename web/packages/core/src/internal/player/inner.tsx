@@ -2580,15 +2580,55 @@ function isCollection(
  * @returns An HTMLCollectionOf<HTMLElement>
  */
 function makeCollection(items: HTMLElement[]): HTMLCollectionOf<HTMLElement> {
-    return {
-        length: items.length,
-        item: (i: number) => items[i] ?? null,
-        namedItem: (n: string) =>
-            items.find((e) => e.getAttribute("name") === n) ?? null,
-        [Symbol.iterator]: function* () {
-            yield* items;
+    const base = Object.create(
+        HTMLCollection.prototype,
+    ) as HTMLCollectionOf<HTMLElement>;
+
+    Object.defineProperty(base, "length", {
+        get() {
+            return items.length;
         },
-    } as unknown as HTMLCollectionOf<HTMLElement>;
+        enumerable: true,
+        configurable: true,
+    });
+
+    base.item = (index: number): HTMLElement | null => {
+        return items[index] ?? null;
+    };
+
+    base.namedItem = (name: string): HTMLElement | null => {
+        return items.find((el) => el.getAttribute("name") === name) ?? null;
+    };
+
+    (base as Iterable<HTMLElement>)[Symbol.iterator] =
+        function* (): Iterator<HTMLElement> {
+            for (const el of items) {
+                yield el;
+            }
+        };
+
+    const proxy = new Proxy(base, {
+        get(target, prop, receiver) {
+            if (typeof prop === "string") {
+                const index = Number(prop);
+                if (!Number.isNaN(index) && index >= 0) {
+                    return items[index];
+                }
+            }
+            return Reflect.get(target, prop, receiver);
+        },
+        has(target, prop) {
+            if (typeof prop === "string") {
+                const index = Number(prop);
+                if (!Number.isNaN(index) && index >= 0) {
+                    return index < items.length;
+                }
+            }
+            return Reflect.has(target, prop);
+        },
+    });
+
+    return proxy as HTMLCollectionOf<HTMLElement>;
 }
 
 const docMap = document as unknown as Record<string, NamedAccessValue>;
@@ -2609,7 +2649,10 @@ export function clearDocumentNamedAccessor(
     const existing = docMap[name];
 
     if (
-        existing instanceof HTMLCollection ||
+        (existing instanceof HTMLCollection &&
+            Array.from(existing).every((el) =>
+                ["EMBED", "OBJECT"].includes(el.tagName),
+            )) ||
         (existing instanceof HTMLElement &&
             (existing.tagName === "EMBED" || existing.tagName === "OBJECT"))
     ) {
@@ -2650,7 +2693,10 @@ export function defineDocumentNamedAccessor(
     const existing = docMap[name];
 
     if (
-        existing instanceof HTMLCollection ||
+        (existing instanceof HTMLCollection &&
+            Array.from(existing).every((el) =>
+                ["EMBED", "OBJECT"].includes(el.tagName),
+            )) ||
         (existing instanceof HTMLElement &&
             (existing.tagName === "EMBED" || existing.tagName === "OBJECT"))
     ) {
