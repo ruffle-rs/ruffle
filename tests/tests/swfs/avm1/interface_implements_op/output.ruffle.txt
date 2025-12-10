@@ -5,20 +5,15 @@ InterfaceA.prototype is: [object Object]
 obj instanceof InterfaceA: false
 // MyClass implements InterfaceA
 obj instanceof InterfaceA: true
-InterfaceA.prototype getter called!
 obj instanceof fake InterfaceA: true
 obj instanceof { __proto__: InterfaceA }: false
 in swf6 { obj instanceof InterfaceA }: true
 // MyClass implements InterfaceB
 obj instanceof InterfaceA: true
-InterfaceA.prototype getter called!
 obj instanceof InterfaceB: false
 // InterfaceA implements NestedInterfaceA
-InterfaceA.prototype getter called!
-InterfaceA.prototype getter called!
 obj instanceof NestedInterfaceA: true
 // NestedInterfaceA extends X
-InterfaceA.prototype getter called!
 obj instance of X: true
 
 // MyClass2 implements InterfaceInt, InterfaceString, InterfaceRoot, FakeInterfaceA, McInterfaceB
@@ -26,22 +21,15 @@ obj instanceof InterfaceInt: true
 "hello" coerced to NoisyString!
 obj instanceof InterfaceString: true
 obj instanceof InterfaceRoot: true
-InterfaceInt.prototype getter called!
 obj instanceof InterfaceA: true
 obj instanceof FakeInterfaceA: true
-InterfaceInt.prototype getter called!
 obj instanceof InterfaceB: true
 obj instanceof McInterfaceB: true
 
 // null implements MyClass
 // "left" implements MyClass3
-"left" coerced to NoisyString!
 // "left" implements "right"
-"left" coerced to NoisyString!
-"right" coerced to NoisyString!
 // MyClass3 implements "right", InterfaceA
-"right" coerced to NoisyString!
-InterfaceA.prototype getter called!
 obj instanceof NoisyString: false
 obj instanceof InterfaceA: true
 
