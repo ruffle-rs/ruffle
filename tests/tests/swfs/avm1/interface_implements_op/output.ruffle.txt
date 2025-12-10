@@ -8,7 +8,7 @@ obj instanceof InterfaceA: true
 InterfaceA.prototype getter called!
 obj instanceof fake InterfaceA: true
 obj instanceof { __proto__: InterfaceA }: false
-in swf6 { obj instanceof InterfaceA }: false
+in swf6 { obj instanceof InterfaceA }: true
 // MyClass implements InterfaceB
 obj instanceof InterfaceA: true
 InterfaceA.prototype getter called!
