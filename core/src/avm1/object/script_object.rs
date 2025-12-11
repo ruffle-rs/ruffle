@@ -13,6 +13,7 @@ use core::{fmt, mem};
 use gc_arena::lock::RefLock;
 use gc_arena::{Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable};
 use ruffle_macros::istr;
+use std::cell::Ref;
 
 use super::super_object::SuperObject;
 
@@ -800,20 +801,18 @@ impl<'gc> Object<'gc> {
     }
 
     /// Enumerate all interfaces implemented by this object.
-    pub(super) fn interfaces(self) -> Vec<Object<'gc>> {
-        if self.as_super_object().is_some() {
-            // `super` does not implement interfaces
-            return vec![];
-        }
-
-        self.0.borrow().interfaces.clone().unwrap_or_default()
+    pub(super) fn interfaces(self) -> Ref<'gc, [Object<'gc>]> {
+        Ref::map(self.0.borrow(), |this| match &this.interfaces {
+            Some(slice) => slice.as_slice(),
+            None => &[],
+        })
     }
 
     /// Set the interface list for this object. (Only useful for prototypes.)
     /// Calling this a second time will have no effect.
     pub fn set_interfaces(self, gc_context: &Mutation<'gc>, iface_list: Vec<Object<'gc>>) {
         if self.as_super_object().is_some() {
-            // `super` probably cannot have interfaces set on it
+            // `super` cannot have interfaces set on it
             return;
         }
 
