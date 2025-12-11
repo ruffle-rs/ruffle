@@ -1,0 +1,7 @@
+about-ruffle = О Ruffle-у
+about-ruffle-version = Верзија
+about-ruffle-channel = Канал
+about-ruffle-build-time = Време саграђивања
+about-ruffle-build-features = Карактеристике саграђивања
+about-ruffle-visit-website = Веб-сајт
+about-ruffle-visit-github = ГитХаб
