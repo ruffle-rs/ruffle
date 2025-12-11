@@ -12,6 +12,7 @@ describe("Object for old IE must work everywhere", () => {
 
     it("polyfills with ruffle", async () => {
         await injectRuffleAndWait(browser);
+        await browser.$("<ruffle-object />").waitForExist();
         const actual = await browser
             .$("#test-container")
             .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
