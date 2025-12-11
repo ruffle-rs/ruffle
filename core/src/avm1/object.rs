@@ -320,7 +320,7 @@ impl<'gc> Object<'gc> {
         // TODO(moulins): should we guard against infinite loops here?
         // A recursive prototype and/or interface chain will hang Flash Player.
 
-        let mut interface_stack = vec![];
+        let mut interface_stack = smallvec::SmallVec::<[_; 4]>::new();
         let mut this = self;
 
         while let Value::Object(this_proto) = this.proto(activation) {
@@ -331,7 +331,7 @@ impl<'gc> Object<'gc> {
                     return Ok(true);
                 }
 
-                interface_stack.extend(interface.interfaces());
+                interface_stack.extend(interface.interfaces().iter().cloned());
             }
 
             this = this_proto;
