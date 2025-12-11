@@ -564,7 +564,7 @@ impl<'gc> Value<'gc> {
             if let Some(class) = class.coerce_to_object(activation)? {
                 if let Some(p) = class.prototype(activation).coerce_to_object(activation)? {
                     if let Some(obj) = self.as_object(activation) {
-                        return obj.is_instance_of(activation, class, p);
+                        return obj.is_instance_of(activation, p);
                     }
                 }
             }

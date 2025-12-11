@@ -310,41 +310,31 @@ impl<'gc> Object<'gc> {
     /// they are already linked.
     ///
     /// Because ActionScript 2.0 added interfaces, this function cannot simply
-    /// check the prototype chain and call it a day. Each interface represents
-    /// a new, parallel prototype chain which also needs to be checked. You
-    /// can't implement interfaces within interfaces (fortunately), but if you
-    /// somehow could this would support that, too.
+    /// check the prototype chain and call it a day: each step in the chain has
+    /// its own attached 'interface tree' which also needs to be checked.
     pub fn is_instance_of(
         self,
         activation: &mut Activation<'_, 'gc>,
-        constructor: Object<'gc>,
         prototype: Object<'gc>,
     ) -> Result<bool, Error<'gc>> {
-        let mut proto_stack = vec![];
-        if let Value::Object(p) = self.proto(activation) {
-            proto_stack.push(p);
-        }
-
         // TODO(moulins): should we guard against infinite loops here?
-        // A recursive prototype chain will hang Flash Player.
-        while let Some(this_proto) = proto_stack.pop() {
-            if Object::ptr_eq(this_proto, prototype) {
-                return Ok(true);
-            }
+        // A recursive prototype and/or interface chain will hang Flash Player.
 
-            if let Value::Object(p) = this_proto.proto(activation) {
-                proto_stack.push(p);
-            }
+        let mut interface_stack = vec![];
+        let mut this = self;
 
-            for interface in this_proto.interfaces() {
-                if Object::ptr_eq(interface, constructor) {
+        while let Value::Object(this_proto) = this.proto(activation) {
+            interface_stack.push(this_proto);
+
+            while let Some(interface) = interface_stack.pop() {
+                if Object::ptr_eq(interface, prototype) {
                     return Ok(true);
                 }
 
-                if let Value::Object(o) = interface.prototype(activation) {
-                    proto_stack.push(o);
-                }
+                interface_stack.extend(interface.interfaces());
             }
+
+            this = this_proto;
         }
 
         Ok(false)
