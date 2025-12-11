@@ -1458,7 +1458,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 // now the following is logged:
                 // Parameters of primitive types are no longer coerced into the required type - Object.
                 if let Some(obj) = self.context.avm1.pop().as_object(self) {
-                    interfaces.push(obj);
+                    if let Value::Object(prototype) = obj.prototype(self) {
+                        interfaces.push(prototype);
+                    }
                 } else {
                     avm_warn!(self, "ImplementsOp: primitive not coerced into object");
                 }
