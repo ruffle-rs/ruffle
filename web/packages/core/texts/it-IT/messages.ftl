@@ -28,7 +28,7 @@ error-wasm-not-found =
     Se il problema persiste, potrebbe essere necessario utilizzare l'impostazione "publicPath": si prega di consultare il wiki Ruffle per aiuto.
 error-wasm-mime-type =
     Ruffle ha incontrato un problema importante durante il tentativo di inizializzazione.
-    Questo server web non serve ". asm" file con il tipo MIME corretto.
+    Questo server web non serve ".wasm" file con il tipo MIME corretto.
     Se sei l'amministratore del server, consulta la wiki Ruffle per aiuto.
 error-swf-fetch =
     Ruffle non è riuscito a caricare il file Flash SWF.
