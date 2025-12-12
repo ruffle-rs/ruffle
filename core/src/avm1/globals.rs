@@ -673,6 +673,7 @@ pub fn create_globals<'gc>(
         (globals, b"Accessibility", accessibility, Attribute::DONT_ENUM),
         (globals, b"System", system, Attribute::DONT_ENUM),
         (globals, b"flash", flash, Attribute::DONT_ENUM | Attribute::VERSION_8),
+        (globals, b"textRenderer", text_renderer.constr, Attribute::empty()),
         (globals, b"LocalConnection", local_connection.constr, Attribute::DONT_ENUM),
         (globals, b"MovieClipLoader", movie_clip_loader.constr, Attribute::DONT_ENUM),
         (globals, b"PrintJob", print_job.constr, Attribute::DONT_ENUM),

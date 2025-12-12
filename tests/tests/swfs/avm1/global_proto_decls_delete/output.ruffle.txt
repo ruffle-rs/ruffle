@@ -6,6 +6,8 @@ Testing _global.MovieClipLoader
   __proto__, DONT_DELETE
 Testing _global.LocalConnection
   __proto__, DONT_DELETE
+Testing _global.textRenderer
+  __proto__, DONT_DELETE
 Testing _global.flash
   __proto__, DONT_DELETE
 Testing _global.System
