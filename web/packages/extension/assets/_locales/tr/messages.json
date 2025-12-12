@@ -44,6 +44,12 @@
     "settings_preferred_renderer_auto": {
         "message": "Otomatik"
     },
+    "settings_device_font_renderer": {
+        "message": "Cihaz yazı tipi oluşturucusu"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Gömülü"
+    },
     "settings_advanced_options": {
         "message": "Gelişmiş Seçenekler"
     },
