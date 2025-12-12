@@ -350,6 +350,10 @@ impl<'gc> Avm1<'gc> {
         value
     }
 
+    pub fn truncate_stack(&mut self, new_height: usize) {
+        self.stack.truncate(new_height);
+    }
+
     #[inline(always)]
     pub fn is_case_sensitive(swf_version: u8) -> bool {
         swf_version >= 7

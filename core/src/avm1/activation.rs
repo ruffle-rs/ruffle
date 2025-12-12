@@ -2153,24 +2153,37 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         action: &Try,
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
-        let mut result = self.run_actions(parent_data.to_unbounded_subslice(action.try_body));
+        let try_actions = parent_data.to_unbounded_subslice(action.try_body);
+
+        let old_height = self.context.avm1.stack_len();
+        let mut result = self.run_actions(try_actions);
+
+        if matches!(result, Err(Error::ThrownValue(_))) {
+            // If there was an error thrown, and there were are extra items on the
+            // stack after running the `try`, remove them now.
+            self.context.avm1.truncate_stack(old_height);
+        }
 
         if let Some((catch_vars, actions)) = &action.catch_body {
+            // The content of the Catch body is run regardless of whether an
+            // error was thrown or not.
+            let mut activation = Activation::from_action(
+                self.context,
+                self.id.child("[Catch]"),
+                self.swf_version,
+                self.scope,
+                self.constant_pool,
+                self.base_clip,
+                self.this,
+                self.callee,
+                &[],
+            );
+
+            activation.local_registers = self.local_registers;
+
+            // However, the error variable/register is only set when an error
+            // was actually thrown.
             if let Err(Error::ThrownValue(value)) = &result {
-                let mut activation = Activation::from_action(
-                    self.context,
-                    self.id.child("[Catch]"),
-                    self.swf_version,
-                    self.scope,
-                    self.constant_pool,
-                    self.base_clip,
-                    self.this,
-                    self.callee,
-                    &[],
-                );
-
-                activation.local_registers = self.local_registers;
-
                 match catch_vars {
                     CatchVar::Var(name) => {
                         let name =
@@ -2181,9 +2194,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         activation.set_current_register(*id, value.to_owned())
                     }
                 }
-
-                result = activation.run_actions(parent_data.to_unbounded_subslice(actions));
             }
+
+            result = activation.run_actions(parent_data.to_unbounded_subslice(actions));
         }
 
         if let Some(actions) = action.finally_body {
