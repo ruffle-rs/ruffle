@@ -58,6 +58,13 @@ Testing constructor()
 Testing __constructor__()
 testing _global.LocalConnection.__constructor__(undefined)
 Testing __proto__()
+testing _global.textRenderer(function)
+Trying to construct _global.textRenderer
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+testing _global.textRenderer.__constructor__(undefined)
+Testing __proto__()
 testing _global.flash(object)
 testing _global.flash.external(object)
 testing _global.flash.external.ExternalInterface(function)

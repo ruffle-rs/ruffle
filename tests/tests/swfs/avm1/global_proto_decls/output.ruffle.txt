@@ -50,6 +50,12 @@ Testing _global.LocalConnection.prototype
   domain, own, DONT_ENUM, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
+Testing _global.textRenderer
+  prototype, own, type=[object]
+  __proto__, own, type=[object]
+Testing _global.textRenderer.prototype
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.flash
   external, own, type=[object]
   net, own, type=[object]
