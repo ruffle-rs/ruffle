@@ -13,8 +13,8 @@
         "checkTypes": "tsc --noemit"
     },
     "dependencies": {
-        "react": "^19.2.1",
-        "react-dom": "^19.2.1",
+        "react": "^19.2.3",
+        "react-dom": "^19.2.3",
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
