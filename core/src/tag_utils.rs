@@ -16,9 +16,6 @@ pub enum Error {
     #[error("Couldn't register font: {0}")]
     InvalidFont(#[from] ttf_parser::FaceParsingError),
 
-    #[error("Attempted to set symbol classes on movie without any")]
-    NoSymbolClasses,
-
     #[error("Attempted to preload video frames into non-video character {0}")]
     PreloadVideoIntoInvalidCharacter(CharacterId),
 
