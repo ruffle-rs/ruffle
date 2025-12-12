@@ -1,0 +1,42 @@
+name: Update changelog on PR merge
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - master
+
+jobs:
+  update:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
+    steps:
+      - id: check-title
+        run: |
+          PR_TITLE="${{ github.event.pull_request.title }}"
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          PR_AUTHOR=${{ github.event.pull_request.user.login }}
+          ALLOWED_PREFIXES="^(core|desktop|web|avm1|avm2|docs|chore|tests): " # more tags here
+          if [[ ! "$PR_TITLE" =~ $ALLOWED_PREFIXES ]]; then
+            echo "skip_collect=true" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+          echo "entry=$PR_TITLE" >> $GITHUB_OUTPUT
+          echo "number=$PR_NUMBER" >> $GITHUB_OUTPUT
+          echo "author=$PR_AUTHOR" >> $GITHUB_OUTPUT
+      - name: Checkout repository
+        if: steps.check-title.outputs.skip_collect != 'true'
+        uses: actions/checkout@v6
+      - name: Write to first line and push
+        if: steps.check-title.outputs.skip_collect != 'true'
+        run: |
+          touch .github/changelog.entries
+          sed -i "1i ${{ steps.check-title.outputs.entry }} by ${{ steps.check-title.outputs.author }} in #${{ steps.check-title.outputs.number }}" .github/changelog.entries
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/changelog.entries
+          git commit -m "ci: update changelog.entries"
+          git push
