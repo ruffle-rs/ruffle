@@ -19,7 +19,7 @@ use crate::avm2::script::{Script, TranslationUnit};
 use crate::avm2::stack::Stack;
 use crate::character::Character;
 use crate::context::UpdateContext;
-use crate::display_object::{MovieClip, TDisplayObject};
+use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use crate::PlayerRuntime;
@@ -361,20 +361,8 @@ impl<'gc> Avm2<'gc> {
         simulate_dispatch: bool,
     ) -> bool {
         let mut activation = Activation::from_nothing(context);
-        match events::dispatch_event(&mut activation, target, event, simulate_dispatch) {
-            Err(err) => {
-                let event_name = event.event().event_type();
 
-                tracing::error!(
-                    "Encountered AVM2 error when dispatching `{}` event: {:?}",
-                    event_name,
-                    err,
-                );
-                // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
-                false
-            }
-            Ok(handled) => handled,
-        }
+        events::dispatch_event(&mut activation, target, event, simulate_dispatch)
     }
 
     /// Add an object to the broadcast list.
@@ -447,17 +435,10 @@ impl<'gc> Avm2<'gc> {
                 .copied();
 
             if let Some(object) = object.and_then(|obj| obj.upgrade(context.gc())) {
-                let mut activation = Activation::from_nothing(context);
-
                 if object.is_of_type(on_type.inner_class_definition()) {
-                    if let Err(err) = events::broadcast_event(&mut activation, object, event) {
-                        tracing::error!(
-                            "Encountered AVM2 error when broadcasting `{}` event: {:?}",
-                            event_name,
-                            err,
-                        );
-                        // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
-                    }
+                    let mut activation = Activation::from_nothing(context);
+
+                    events::broadcast_event(&mut activation, object, event);
                 }
             }
         }
@@ -468,20 +449,6 @@ impl<'gc> Avm2<'gc> {
             .entry(event_name)
             .or_default()
             .retain(|x| x.upgrade(context.gc_context).is_some());
-    }
-
-    pub fn run_stack_frame_for_callable(
-        callable: Object<'gc>,
-        receiver: Value<'gc>,
-        domain: Domain<'gc>,
-        context: &mut UpdateContext<'gc>,
-    ) -> Result<(), String> {
-        let mut evt_activation = Activation::from_domain(context, domain);
-        Value::from(callable)
-            .call(&mut evt_activation, receiver, FunctionArgs::empty())
-            .map_err(|e| format!("{e:?}"))?;
-
-        Ok(())
     }
 
     pub fn lookup_class_for_character(
@@ -702,5 +669,20 @@ impl<'gc> Avm2<'gc> {
 
     pub fn set_optimizer_enabled(&mut self, value: bool) {
         self.optimizer_enabled = value;
+    }
+
+    // Report an uncaught AVM2 error.
+    // TODO should the `display_object` parameter be optional or not?
+    #[cold]
+    #[inline(never)]
+    pub fn uncaught_error(
+        _activation: &mut Activation<'_, 'gc>,
+        _display_object: Option<DisplayObject<'gc>>,
+        error: Error<'gc>,
+        info: &str,
+    ) {
+        tracing::error!("{}: {:?}", info, error);
+
+        // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
     }
 }

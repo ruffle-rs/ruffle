@@ -2,7 +2,7 @@
 
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, BitmapDataObject as Avm2BitmapDataObject,
+    Activation as Avm2Activation, Avm2, BitmapDataObject as Avm2BitmapDataObject,
     ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs,
     StageObject as Avm2StageObject,
 };
@@ -331,13 +331,24 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
 
                 let mut activation = Avm2Activation::from_nothing(context);
 
-                let bitmap = Avm2StageObject::for_display_object_childless(
+                let bitmap_obj =
+                    Avm2StageObject::for_display_object(activation.gc(), self.into(), bitmap_cls);
+
+                let call_result = bitmap_cls.call_init(
+                    bitmap_obj.into(),
+                    Avm2FunctionArgs::empty(),
                     &mut activation,
-                    self.into(),
-                    bitmap_cls,
-                )
-                .expect("can't throw from post_instantiation -_-");
-                self.set_avm2_object(activation.gc(), Some(bitmap));
+                );
+                if let Err(err) = call_result {
+                    Avm2::uncaught_error(
+                        &mut activation,
+                        Some(self.into()),
+                        err,
+                        "Error running AVM2 construction for bitmap",
+                    );
+                };
+
+                self.set_avm2_object(activation.gc(), Some(bitmap_obj));
 
                 // Use a dummy BitmapData when calling the constructor on the user subclass
                 // - the constructor should see an invalid BitmapData before calling 'super',
@@ -361,8 +372,13 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
                     Avm2FunctionArgs::from_slice(args),
                     &mut activation,
                 );
-                if let Err(e) = call_result {
-                    tracing::error!("Got error when constructing AVM2 side of bitmap: {}", e);
+                if let Err(err) = call_result {
+                    Avm2::uncaught_error(
+                        &mut activation,
+                        Some(self.into()),
+                        err,
+                        "Error running AVM2 construction for bitmap data",
+                    );
                 }
 
                 self.set_bitmap_data(activation.context, bitmap_data_obj.get_bitmap_data());
