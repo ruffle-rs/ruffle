@@ -349,6 +349,7 @@ impl<'gc> MovieClip<'gc> {
         let data = MovieClipData::new(shared, activation.gc());
         data.flags.set(MovieClipFlags::PLAYING);
         data.base.base.set_is_root(true);
+        data.base.base.set_instantiated_by_timeline(true);
 
         let mc = MovieClip(Gc::new(activation.gc(), data));
         if let Some(loader_info) = loader_info {

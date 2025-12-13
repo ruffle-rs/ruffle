@@ -1599,6 +1599,9 @@ impl<'gc> MovieLoader<'gc> {
 
                     mc.replace_with_movie(uc, Some(movie.clone()), true, loader_info);
 
+                    // Loaded movies are considered to be timeline-instantiated
+                    mc.set_instantiated_by_timeline(true);
+
                     if matches!(vm_data, MovieLoaderVMData::Avm2 { .. })
                         && !movie.is_action_script_3()
                     {
