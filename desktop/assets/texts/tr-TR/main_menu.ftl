@@ -17,6 +17,7 @@ file-menu-recents = Son kullanılanlar
 file-menu-recents-empty = Yeni giriş yok
 file-menu-preferences = Tercihler...
 file-menu-exit = Çıkış Yap
+file-menu-export = Dışa aktar...
 controls-menu = Denetim
 controls-menu-suspend = Duraklat
 controls-menu-resume = Devam Et

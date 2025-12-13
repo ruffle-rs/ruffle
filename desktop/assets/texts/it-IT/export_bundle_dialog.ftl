@@ -1,2 +1,11 @@
+export-bundle-dialog-title = Esporta pacchetto Ruffle
+export-bundle-dialog-bundle-name = Nome del pacchetto:
+export-bundle-dialog-files-description = Seleziona i file per il pacchetto:
+export-bundle-dialog-files-select-all = Seleziona Tutto
+export-bundle-dialog-export = Esporta
+export-bundle-dialog-exporting = Esportazione in corso...
 export-bundle-dialog-exporting-failed = Esporto fallito.
 export-bundle-dialog-error-user-canceled = Cancellato dall'utente.
+export-bundle-dialog-error-failed-to-show-picker = Fallito a mostrare la selezione file.
+export-bundle-dialog-error-io-error = Errore nella scrittura del pacchetto.
+export-bundle-dialog-info-title = Cos'è un pacchetto Ruffle?
