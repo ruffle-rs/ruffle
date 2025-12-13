@@ -1,7 +1,47 @@
+InterfaceA.prototype getter called!
+InterfaceA.prototype is: [object Object]
+
 // MyClass implements <nothing>
 obj instanceof InterfaceA: false
 // MyClass implements InterfaceA
 obj instanceof InterfaceA: true
+obj instanceof fake InterfaceA: true
+obj instanceof { __proto__: InterfaceA }: false
+in swf6 { obj instanceof InterfaceA }: true
 // MyClass implements InterfaceB
 obj instanceof InterfaceA: true
 obj instanceof InterfaceB: false
+// InterfaceA implements NestedInterfaceA
+obj instanceof NestedInterfaceA: true
+// NestedInterfaceA extends X
+obj instance of X: false
+
+// MyClass2 implements InterfaceInt, InterfaceString, InterfaceRoot, FakeInterfaceA, McInterfaceB
+obj instanceof InterfaceInt: false
+"hello" coerced to NoisyString!
+obj instanceof InterfaceString: false
+obj instanceof InterfaceRoot: false
+obj instanceof InterfaceA: true
+obj instanceof FakeInterfaceA: true
+obj instanceof InterfaceB: true
+obj instanceof McInterfaceB: true
+
+// null implements MyClass
+// "left" implements MyClass3
+// "left" implements "right"
+// MyClass3 implements "right", InterfaceA
+obj instanceof NoisyString: false
+obj instanceof InterfaceA: true
+
+// MyClass4 implements undefined
+obj instanceof undefined: false
+// MyClass4 implements InterfaceA
+obj instanceof InterfaceA: false
+
+"trigger" coerced to NoisyString!
+Lazily: MyClass5 implements LazyInterfaceA!
+obj instanceof LazyInterfaceA: true
+
+// MyClass6 implements LazyInterfaceB
+// LazyInterfaceB.prototype = {}
+obj instanceof LazyInterfaceB: false

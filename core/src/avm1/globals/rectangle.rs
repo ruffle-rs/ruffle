@@ -620,12 +620,11 @@ fn equals<'gc>(
         let other_width = other.get(istr!("width"), activation)?;
         let other_height = other.get(istr!("height"), activation)?;
         let proto = activation.prototypes().rectangle;
-        let constructor = activation.prototypes().rectangle_constructor;
         return Ok((this_x == other_x
             && this_y == other_y
             && this_width == other_width
             && this_height == other_height
-            && other.is_instance_of(activation, constructor, proto)?)
+            && other.is_instance_of(activation, proto)?)
         .into());
     }
 
