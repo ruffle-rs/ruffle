@@ -1,0 +1,21 @@
+[
+  { "type": "FocusGained" },
+  { "type": "Wait" },
+
+  { "type": "KeyDown", "key": { "Char": "w" } },
+  { "type": "KeyUp", "key": { "Char": "w" } },
+
+  { "type": "KeyUp", "key": { "Char": "a" } },
+
+  { "type": "KeyDown", "key": { "Char": "w" } },
+  { "type": "KeyDown", "key": "LeftShift" },
+  { "type": "KeyUp", "key": { "Char": "W" } },
+  { "type": "KeyUp", "key": "LeftShift" },
+
+  { "type": "KeyUp", "key": { "Char": "x" } },
+
+  { "type": "KeyDown", "key": { "Char": "b" } },
+  { "type": "KeyUp", "key": { "Char": "b" } },
+
+  { "type": "FocusLost" }
+]
