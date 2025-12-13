@@ -1,4 +1,3 @@
-context-menu-play = Pokreni
 context-menu-rewind = Premotati
 context-menu-forward = Naprijed
 context-menu-back = Natrag
