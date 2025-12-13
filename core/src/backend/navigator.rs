@@ -63,6 +63,16 @@ pub enum FetchReason {
     Other,
 }
 
+impl FetchReason {
+    pub fn all() -> &'static [FetchReason] {
+        &[
+            FetchReason::LoadSwf,
+            FetchReason::UrlLoader,
+            FetchReason::Other,
+        ]
+    }
+}
+
 impl NavigationMethod {
     /// Convert an SWF method enum into a NavigationMethod.
     pub fn from_send_vars_method(s: SendVarsMethod) -> Option<Self> {
