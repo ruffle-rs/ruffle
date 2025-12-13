@@ -1,5 +1,5 @@
-network-settings = Postavke mreže
-player-settings = Postavke plejera
+network-settings = Podešavanja mreže
+player-settings = Podešavanja plejera
 movie-parameters = Parametri filma
 custom-base-url = Prilagođeni osnovni URL
 spoof-swf-url = Lažni SWF URL
@@ -26,52 +26,52 @@ quality-low = Nisko
 quality-medium = Srednji
 quality-high = Visoko
 quality-best = Najbolji
-quality-high8x8 = Visoka (8x8)
+quality-high8x8 = Visoko (8x8)
 quality-high8x8linear = Visoka (8x8) linearna
-quality-high16x16 = Visoka (16x16)
-quality-high16x16linear = Visoka (16x16) Linearna
-letterbox = Poštanski sandučić
+quality-high16x16 = Visoko (16x16)
+quality-high16x16linear = Visoko (16x16) Linearno
+letterbox = Poštansko sanduče
 letterbox-on = Uključeno
-letterbox-fullscreen = Samo cijeli ekran
+letterbox-fullscreen = Samo ceo ekran
 letterbox-off = Isključeno
-align = Poravnanje pozornice
+align = Poravnanje scene
 align-center = Centar
-align-left = Lijevo
+align-left = Levo
 align-right = Desno
 align-top = Vrh
 align-bottom = Dno
-align-top-left = Gore lijevo
-align-bottom-left = Dolje lijevo
+align-top-left = Gore levo
+align-bottom-left = Dole levo
 align-top-right = Gore desno
-align-bottom-right = Dolje desno
+align-bottom-right = Dole desno
 align-force = Sila
-scale-mode = Metoda skaliranja
+scale-mode = Metod skaliranja
 scale-mode-noscale = Neskalirano (100%)
 scale-mode-noscale-tooltip =
     Prikazuje film u originalnoj veličini, bez ikakvog zumiranja.
     
     Odgovara StageScaleMode.NO_SCALE
-scale-mode-showall = Zumiraj da stane
+scale-mode-showall = Zumiraj da bi se uklopio
 scale-mode-showall-tooltip =
-    Zumira film kako bi što više ispunio prozor bez izrezivanja, održavajući omjer širine i visine.
+    Zumira film kako bi popunio što veći deo prozora bez isecanja, zadržavajući odnos širine i visine.
     
-    Odgovara StageScaleMode.SHOW_ALL
-scale-mode-exactfit = Rastegnite da odgovara
+    Podudara se sa StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Rastegnite da bi odgovaralo
 scale-mode-exactfit-tooltip =
-    Osigurava da film ispuni cijeli prozor, zanemarujući omjer širine i visine.
+    Obezbeđuje da film ispunjava ceo prozor, ignorišući odnos širine i visine.
     
-    Odgovara StageScaleMode.EXACT_FIT
-scale-mode-noborder = Skrati da odgovara
+    Podudara se sa StageScaleMode.EXACT_FIT
+scale-mode-noborder = Skratite da odgovara
 scale-mode-noborder-tooltip =
-    Ispunjava cijeli prozor uz zadržavanje omjera širine i visine, po potrebi izrezujući film.
+    Popunjava ceo prozor uz zadržavanje odnosa širine i visine, po potrebi isecavajući film.
     
-    Odgovara StageScaleMode.NO_BORDER
+    Podudara se sa StageScaleMode.NO_BORDER
 scale-mode-force = Sila
-scale-mode-force-tooltip = Sprečava promjenu metode skaliranja filma, zaključavajući je na odabranu postavku.
-player-version = Verzija igrača
-player-runtime = Vrijeme igranja igrača
+scale-mode-force-tooltip = Sprečava promenu metoda skaliranja filma, zaključavajući ga na izabrano podešavanje.
+player-version = Verzija plejera
+player-runtime = Vreme igranja igrača
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
-custom-framerate = Prilagođena brzina kadrova u sekundi
-custom-framerate-suffix = { " " } sličica u sekundi
-dummy-external-interface = Lažno vanjsko sučelje
+custom-framerate = Prilagođena brzina kadrova
+custom-framerate-suffix = { " " } kadrova u sekundi
+dummy-external-interface = Lažni eksterni interfejs

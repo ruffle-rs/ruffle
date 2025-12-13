@@ -18,12 +18,18 @@ open-url-mode-deny = Odbij
 load-behavior = Ponašanje opterećenja
 load-behavior-streaming = Tokovanje
 load-behavior-delayed = Odgođeno
+load-behavior-blocking = Blokirati
 max-execution-duration = Maksimalno trajanje izvršenja
 max-execution-duration-suffix = { " " } sekundi
 quality = Kvaliteta
+quality-low = Nizak
+quality-medium = Srednji
+quality-high = Visok
+quality-best = Najbolji
 quality-high8x8 = Visoka (8x8)
 quality-high8x8linear = Visoka (8x8) linearna
 quality-high16x16 = Visoka (16x16)
+quality-high16x16linear = Visok (16x16) Linearan
 letterbox = Poštanski sandučić
 letterbox-on = Uključeno
 letterbox-fullscreen = Samo cijeli zaslon
@@ -38,9 +44,32 @@ align-top-left = Gore lijevo
 align-bottom-left = Dolje lijevo
 align-top-right = Gore desno
 align-bottom-right = Dolje desno
+align-force = Sila
 scale-mode = Način skaliranja
 scale-mode-noscale = Neskalirano (100%)
+scale-mode-noscale-tooltip =
+    Prikazuje film u izvornoj veličini, bez ikakvog zumiranja.
+    
+    Odgovara StageScaleMode.NO_SCALE
+scale-mode-showall = Zumiraj da stane
+scale-mode-showall-tooltip =
+    Zumira film kako bi što više ispunio prozor bez obrezivanja, održavajući omjer slike.
+    
+    Odgovara StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Rastegnite da stane
+scale-mode-exactfit-tooltip =
+    Osigurava da film ispuni cijeli prozor, zanemarujući omjer slike.
+    
+    Odgovara StageScaleMode.EXACT_FIT
+scale-mode-noborder = Obreži da stane
+scale-mode-noborder-tooltip =
+    Ispunjava cijeli prozor uz zadržavanje omjera slike, po potrebi obrezujući film.
+    
+    Odgovara StageScaleMode.NO_BORDER
+scale-mode-force = Sila
+scale-mode-force-tooltip = Sprječava promjenu načina skaliranja filma, zaključavajući ga na odabranu postavku.
 player-version = Verzija igrača
+player-runtime = Vrijeme izvođenja igrača
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = Prilagođena brzina sličica u sekundi

@@ -1,4 +1,5 @@
 language-name = Srpski (latinica)
+start = Početak
 browse = Pretraga
 save = Sačuvaj
 cancel = Otkaži
