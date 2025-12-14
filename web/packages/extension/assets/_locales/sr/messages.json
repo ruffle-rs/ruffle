@@ -104,6 +104,9 @@
     "save_settings": {
         "message": "Sačuvaj podešavanja"
     },
+    "settings_saved": {
+        "message": "Sačuvana podešavanja"
+    },
     "onboarding_page": {
         "message": "Stranica za uvođenje u posao"
     },

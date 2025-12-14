@@ -3,6 +3,8 @@ player-settings = Impostazioni Del Riproduttore
 movie-parameters = Parametri Del Film
 custom-base-url = Url Di Base Personalizzato
 spoof-swf-url = URL SWF Spoof
+referer-url = URL referente
+cookie = Cookie
 proxy = Proxy
 upgrade-http = Aggiorna HTTP a HTTPS
 tcp-connections = Connessioni TCP
@@ -44,8 +46,32 @@ align-top-right = Sopra-Destra
 align-bottom-right = Sotto-Destra
 align-force = Forza
 scale-mode = Modalità Scala
+scale-mode-noscale = Non ridimensionato (100%)
+scale-mode-noscale-tooltip =
+    Mostra il film nella sua forma originale, senza zoom.
+    
+    Corrisponde a StageScaleMode.NO_SCALE
+scale-mode-showall = Adatta per ingrandire
+scale-mode-showall-tooltip =
+    Ingrandisce il film per riempire il più possibile la finestra senza ritagliarlo, mantenendo le proporzioni.
+    
+    Corrisponde a StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Adatta per allargare
+scale-mode-exactfit-tooltip =
+    Assicura che il film riempia l'intera finestra, ignorando le proporzioni.
+    
+    Corrisponde a StageScaleMode.EXACT_FIT
+scale-mode-noborder = Adatta per Ritaglio
+scale-mode-noborder-tooltip =
+    Riempe l'intera finestra mentre mantiene le proporzioni, ritagliando il film se è necessario.
+    
+    Corrisponde a StageScaleMode.NO_BORDER
 scale-mode-force = Forza
+scale-mode-force-tooltip = Previene il Film a cambiare la modalità di scala, bloccandola sulla opzione scelta.
 player-version = Versione Riproduttore
+player-runtime = Durata del Riproduttore
+player-runtime-flash = Flash Player
+player-runtime-air = Adobe AIR
 custom-framerate = Framerate Personalizzato
 custom-framerate-suffix = { " " } fps
 dummy-external-interface = Interfaccia Esterna Dummy

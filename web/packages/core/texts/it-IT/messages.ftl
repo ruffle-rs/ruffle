@@ -1,6 +1,7 @@
 message-cant-embed =
     Ruffle non è stato in grado di eseguire il Flash incorporato in questa pagina.
     Puoi provare ad aprire il file in una scheda separata, per evitare questo problema.
+message-restored-from-bfcache = Il tuo browser ha restaurato il contenuto del flash da una sessione precedente. Per iniziare da capo, ricarica la pagina.
 panic-title = Qualcosa è andato storto :(
 more-info = Maggiori informazioni
 run-anyway = Esegui comunque
@@ -11,13 +12,20 @@ ruffle-demo = Demo Web
 ruffle-desktop = Applicazione Desktop
 ruffle-wiki = Visualizza la wiki di Ruffle
 enable-hardware-acceleration = Sembra che l'accelerazione hardware sia disabilitata. Sebbene Ruffle possa funzionare, potrebbe essere molto lento. Puoi scoprire come abilitare l'accelerazione hardware seguendo il link seguente:
+enable-hardware-acceleration-link = FAQ - Accelerazione hardware di Chrome
 view-error-details = Visualizza Dettagli Errore
 open-in-new-tab = Apri in una nuova scheda
 click-to-unmute = Clicca per riattivare l'audio
 clipboard-message-title = Copiando e incollando su Ruffle
+clipboard-message-description =
+    { $variant ->
+      *[unsupported] Il tuo browser non ha supporto per accesso completo degli Appunti,
+       [access-denied] Accesso agli appunti e stato negato,
+    } ma puoi sempre usare le scorciatoie al loro posto:
 clipboard-message-copy = { " " } per copiare
 clipboard-message-cut = { " " } per tagliare
 clipboard-message-paste = { " " } per incollare
+error-canvas-reload = Impossibile ricaricare con il canvas renderer quando è in uso.
 error-file-protocol =
     Sembra che tu stia eseguendo Ruffle sul protocollo "file:".
     Questo non funziona come browser blocca molte funzionalità di lavoro per motivi di sicurezza.
@@ -34,6 +42,9 @@ error-wasm-mime-type =
     Ruffle ha incontrato un problema importante durante il tentativo di inizializzazione.
     Questo server web non serve ".wasm" file con il tipo MIME corretto.
     Se sei l'amministratore del server, consulta la wiki di Ruffle per aiuto.
+error-invalid-swf =
+    Ruffle non può leggere il file richiesto.
+    La ragione più probabile è che il file non è un SWF valido.
 error-swf-fetch =
     Ruffle non è riuscito a caricare il file Flash SWF.
     La ragione più probabile è che il file non esiste più, quindi non c'è nulla che Ruffle possa caricare.
@@ -56,7 +67,7 @@ error-wasm-download =
     Altrimenti, contatta l'amministratore del sito.
 error-wasm-disabled-on-edge =
     Ruffle non ha caricato il componente di file ".wasm" richiesto.
-    Per risolvere il problema, prova ad aprire le impostazioni del tuo browser, facendo clic su "Privacy, search, and services", scorrendo verso il basso e disattivando "Migliora la tua sicurezza sul web".
+    Per risolvere il problema, prova ad aprire le impostazioni del tuo browser, facendo clic su "Privacy, ricerca e servizi", scorrendo verso il basso e disattivando "Migliora la tua sicurezza sul web".
     Questo permetterà al tuo browser di caricare i file ".wasm" richiesti.
     Se il problema persiste, potresti dover usare un browser diverso.
 error-wasm-unsupported-browser =

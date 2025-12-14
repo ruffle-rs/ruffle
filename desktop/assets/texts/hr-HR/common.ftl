@@ -1,4 +1,5 @@
 language-name = Hrvatski
+start = Početak
 browse = Pretraži
 save = Spremi
 cancel = Otkaži

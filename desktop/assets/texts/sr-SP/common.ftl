@@ -1,4 +1,5 @@
 language-name = Српски
+start = Почетак
 browse = Претрага
 save = Сачувај
 cancel = Откажи
