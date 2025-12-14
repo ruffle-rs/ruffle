@@ -5,6 +5,7 @@ use crate::avm1::error::Error;
 use crate::avm1::globals::shared_object::{deserialize_value, serialize};
 use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{ActivationIdentifier, ExecutionReason, NativeObject, Object, Value};
+use crate::avm1_stub;
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::local_connection::{LocalConnectionHandle, LocalConnections};
@@ -129,10 +130,11 @@ impl<'gc> LocalConnection<'gc> {
 }
 
 const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "domain" => method(domain; DONT_DELETE | DONT_ENUM);
     "connect" => method(connect; DONT_DELETE | DONT_ENUM);
-    "close" => method(close; DONT_DELETE | DONT_ENUM);
     "send" => method(send; DONT_DELETE | DONT_ENUM);
+    "close" => method(close; DONT_DELETE | DONT_ENUM);
+    "domain" => method(domain; DONT_DELETE | DONT_ENUM);
+    "isPerUser" => property(is_per_user; DONT_DELETE | DONT_ENUM);
 };
 
 pub fn create_class<'gc>(
@@ -245,5 +247,14 @@ pub fn close<'gc>(
     if let Some(local_connection) = LocalConnection::cast(this.into()) {
         local_connection.disconnect(activation);
     }
+    Ok(Value::Undefined)
+}
+
+pub fn is_per_user<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "LocalConnection", "isPerUser");
     Ok(Value::Undefined)
 }
