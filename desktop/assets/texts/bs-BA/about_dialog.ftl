@@ -6,3 +6,4 @@ about-ruffle-build-features = Karakteristike sagrađivanja
 about-ruffle-visit-website = Web stranica
 about-ruffle-visit-github = GitHub
 about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Sponzorirajte

@@ -203,6 +203,7 @@
     <keywords>
         <keyword>flash</keyword>
         <keyword xml:lang="ar">فلاش</keyword>
+        <keyword xml:lang="bs">fleš</keyword>
         <keyword xml:lang="cs">flash</keyword>
         <keyword xml:lang="de">flash</keyword>
         <keyword xml:lang="es">flash</keyword>
@@ -221,6 +222,7 @@
         <keyword xml:lang="ro">flash</keyword>
         <keyword xml:lang="ru">flash</keyword>
         <keyword xml:lang="sk">flash</keyword>
+        <keyword xml:lang="sr">fleš</keyword>
         <keyword xml:lang="sv">flash</keyword>
         <keyword xml:lang="th">flash</keyword>
         <keyword xml:lang="tr">flash</keyword>
@@ -263,7 +265,7 @@
         <keyword xml:lang="ar">مشغل</keyword>
         <keyword xml:lang="bs">igrač</keyword>
         <keyword xml:lang="cs">přehrávač</keyword>
-        <keyword xml:lang="de">Spieler</keyword>
+        <keyword xml:lang="de">spieler</keyword>
         <keyword xml:lang="es">reproductor</keyword>
         <keyword xml:lang="fi">toistin</keyword>
         <keyword xml:lang="fr">lecteur</keyword>
@@ -293,7 +295,7 @@
         <keyword xml:lang="ar">محاكي</keyword>
         <keyword xml:lang="bs">emulator</keyword>
         <keyword xml:lang="cs">emulátor</keyword>
-        <keyword xml:lang="de">Emulator</keyword>
+        <keyword xml:lang="de">emulator</keyword>
         <keyword xml:lang="es">emulador</keyword>
         <keyword xml:lang="fi">emulaattori</keyword>
         <keyword xml:lang="fr">émulateur</keyword>
