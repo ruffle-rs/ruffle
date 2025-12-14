@@ -1,6 +1,9 @@
 context-menu-rewind = Premotaj unazad
 context-menu-forward = Napred
 context-menu-back = Nazad
+context-menu-quality-low = Kvalitet: Nizak
+context-menu-quality-medium = Kvalitet: Srednji
+context-menu-quality-high = Kvalitet: Visok
 context-menu-cut = Iseci
 context-menu-copy = Kopija
 context-menu-paste = Zalepi

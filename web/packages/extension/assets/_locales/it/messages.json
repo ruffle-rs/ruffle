@@ -26,6 +26,9 @@
     "settings_log_level_info": {
         "message": "Info"
     },
+    "settings_log_level_trace": {
+        "message": "Traccia"
+    },
     "settings_max_execution_duration": {
         "message": "Durata massima consentita di esecuzione ActionScript (in secondi)"
     },
@@ -33,13 +36,16 @@
         "message": "Numero di versione del Flash Player da emulare (intervallo 1-32)"
     },
     "settings_preferred_renderer": {
-        "message": "Renditore preferito"
+        "message": "Renderer preferito"
     },
     "settings_preferred_renderer_auto": {
         "message": "Automatico"
     },
     "settings_device_font_renderer": {
         "message": "Dispositivo di renderizzazione della fonte"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Incorporato"
     },
     "settings_advanced_options": {
         "message": "Opzioni avanzate"
