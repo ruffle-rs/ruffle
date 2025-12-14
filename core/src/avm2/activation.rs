@@ -166,14 +166,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             let global = self.global_scope();
 
-            if global
-                .as_object()
-                .is_some_and(|o| o.base().has_own_dynamic_property(name))
-            {
-                Ok(Some(global))
-            } else {
-                Ok(None)
+            // Check global scope and its prototypes recursively
+            // NOTE: We still have to check prototypes if the global scope is
+            // a primitive
+
+            let mut proto = Some(global);
+            while let Some(current_proto) = proto {
+                if let Some(current_proto) = current_proto.as_object() {
+                    if current_proto.base().has_own_dynamic_property(name) {
+                        return Ok(Some(global));
+                    }
+                }
+
+                proto = current_proto.proto(self).map(|o| o.into());
             }
+
+            Ok(None)
         }
     }
 
