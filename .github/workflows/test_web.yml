@@ -145,7 +145,7 @@ jobs:
           npm run build --workspace=ruffle-selfhosted
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: selfhosted-dist
           path: web/packages/selfhosted/dist
