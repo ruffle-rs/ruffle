@@ -172,7 +172,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Download artifact
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: selfhosted-dist
           path: web/packages/selfhosted/dist
