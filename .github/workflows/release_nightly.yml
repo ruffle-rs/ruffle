@@ -240,17 +240,17 @@ jobs:
           ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Download aarch64 binary
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: macos-aarch64
 
       - name: Download x86_64 binary
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: macos-x86_64
 
       - name: Download Safari extension
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           name: macos-safari
 
