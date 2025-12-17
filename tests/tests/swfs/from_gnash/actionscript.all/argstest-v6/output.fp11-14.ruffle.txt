@@ -920,6 +920,112 @@ Testing constructor()
 Testing __constructor__()
 testing _global.Number.__constructor__(undefined)
 Testing __proto__()
+testing _global.setTimeout(function)
+Trying to construct _global.setTimeout
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
+testing _global.clearInterval(function)
+Trying to construct _global.clearInterval
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
+testing _global.clearTimeout(function)
+Trying to construct _global.clearTimeout
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
+testing _global.setInterval(function)
+Trying to construct _global.setInterval
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
+testing _global.isFinite(function)
+Trying to construct _global.isFinite
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
+testing _global.isNaN(function)
+Trying to construct _global.isNaN
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
+testing _global.updateAfterEvent(function)
+Trying to construct _global.updateAfterEvent
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
+testing _global.trace(function)
+
+1
+1
+1
+1
+Trying to construct _global.trace
+
+Object was constructed
+Testing constructor()
+
+1
+1
+1
+1
+
+
+1
+1
+1
+1
+Testing __constructor__()
+
+1
+1
+1
+1
+
+
+1
+1
+1
+1
+Testing __proto__()
+testing _global.parseFloat(function)
+Trying to construct _global.parseFloat
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
+testing _global.parseInt(function)
+Trying to construct _global.parseInt
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
+testing _global.unescape(function)
+Trying to construct _global.unescape
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
+testing _global.escape(function)
+Trying to construct _global.escape
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
+testing _global.ASSetPropFlags(function)
+Trying to construct _global.ASSetPropFlags
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
 testing _global.Error(function)
 Trying to construct _global.Error
 Object was constructed
@@ -1116,6 +1222,8 @@ Testing constructor()
 Testing __constructor__()
 testing _global.MovieClip.__constructor__(undefined)
 Testing __proto__()
+testing _global.Infinity(number)
+testing _global.NaN(number)
 testing _global.Function(function)
 Trying to construct _global.Function
 Object was constructed
@@ -1140,118 +1248,10 @@ Testing constructor()
 Testing __constructor__()
 testing _global.Object.__constructor__(undefined)
 Testing __proto__()
-testing _global.setTimeout(function)
-Trying to construct _global.setTimeout
-Object was constructed
-Testing constructor()
-Testing __constructor__()
-Testing __proto__()
-testing _global.clearInterval(function)
-Trying to construct _global.clearInterval
-Object was constructed
-Testing constructor()
-Testing __constructor__()
-Testing __proto__()
-testing _global.clearTimeout(function)
-Trying to construct _global.clearTimeout
-Object was constructed
-Testing constructor()
-Testing __constructor__()
-Testing __proto__()
-testing _global.setInterval(function)
-Trying to construct _global.setInterval
-Object was constructed
-Testing constructor()
-Testing __constructor__()
-Testing __proto__()
-testing _global.isFinite(function)
-Trying to construct _global.isFinite
-Object was constructed
-Testing constructor()
-Testing __constructor__()
-Testing __proto__()
-testing _global.isNaN(function)
-Trying to construct _global.isNaN
-Object was constructed
-Testing constructor()
-Testing __constructor__()
-Testing __proto__()
-testing _global.updateAfterEvent(function)
-Trying to construct _global.updateAfterEvent
-Object was constructed
-Testing constructor()
-Testing __constructor__()
-Testing __proto__()
-testing _global.trace(function)
-
-1
-1
-1
-1
-Trying to construct _global.trace
-
-Object was constructed
-Testing constructor()
-
-1
-1
-1
-1
-
-
-1
-1
-1
-1
-Testing __constructor__()
-
-1
-1
-1
-1
-
-
-1
-1
-1
-1
-Testing __proto__()
-testing _global.parseFloat(function)
-Trying to construct _global.parseFloat
-Object was constructed
-Testing constructor()
-Testing __constructor__()
-Testing __proto__()
-testing _global.parseInt(function)
-Trying to construct _global.parseInt
-Object was constructed
-Testing constructor()
-Testing __constructor__()
-Testing __proto__()
-testing _global.unescape(function)
-Trying to construct _global.unescape
-Object was constructed
-Testing constructor()
-Testing __constructor__()
-Testing __proto__()
-testing _global.escape(function)
-Trying to construct _global.escape
-Object was constructed
-Testing constructor()
-Testing __constructor__()
-Testing __proto__()
-testing _global.ASSetPropFlags(function)
-Trying to construct _global.ASSetPropFlags
-Object was constructed
-Testing constructor()
-Testing __constructor__()
-Testing __proto__()
 testing _global.ASnative(function)
 Trying to construct _global.ASnative
 Object was constructed
 Testing constructor()
 Testing __constructor__()
 Testing __proto__()
-testing _global.Infinity(number)
-testing _global.NaN(number)
 PASSED: Nothing crashed gnash

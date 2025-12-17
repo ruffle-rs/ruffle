@@ -246,6 +246,32 @@ Testing _global.Number
   MIN_VALUE, DONT_DELETE
   MAX_VALUE, DONT_DELETE
   __proto__, DONT_DELETE
+Testing _global.setTimeout
+  __proto__, DONT_DELETE
+Testing _global.clearInterval
+  __proto__, DONT_DELETE
+Testing _global.clearTimeout
+  __proto__, DONT_DELETE
+Testing _global.setInterval
+  __proto__, DONT_DELETE
+Testing _global.isFinite
+  __proto__, DONT_DELETE
+Testing _global.isNaN
+  __proto__, DONT_DELETE
+Testing _global.updateAfterEvent
+  __proto__, DONT_DELETE
+Testing _global.trace
+  __proto__, DONT_DELETE
+Testing _global.parseFloat
+  __proto__, DONT_DELETE
+Testing _global.parseInt
+  __proto__, DONT_DELETE
+Testing _global.unescape
+  __proto__, DONT_DELETE
+Testing _global.escape
+  __proto__, DONT_DELETE
+Testing _global.ASSetPropFlags
+  __proto__, DONT_DELETE
 Testing _global.Error
   __proto__, DONT_DELETE
 Testing _global.ContextMenu
@@ -274,39 +300,13 @@ Testing _global.XMLSocket
   __proto__, DONT_DELETE
 Testing _global.MovieClip
   __proto__, DONT_DELETE
+Testing _global.Infinity
+Testing _global.NaN
 Testing _global.Function
   __proto__, DONT_DELETE
 Testing _global.Object
   registerClass, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.setTimeout
-  __proto__, DONT_DELETE
-Testing _global.clearInterval
-  __proto__, DONT_DELETE
-Testing _global.clearTimeout
-  __proto__, DONT_DELETE
-Testing _global.setInterval
-  __proto__, DONT_DELETE
-Testing _global.isFinite
-  __proto__, DONT_DELETE
-Testing _global.isNaN
-  __proto__, DONT_DELETE
-Testing _global.updateAfterEvent
-  __proto__, DONT_DELETE
-Testing _global.trace
-  __proto__, DONT_DELETE
-Testing _global.parseFloat
-  __proto__, DONT_DELETE
-Testing _global.parseInt
-  __proto__, DONT_DELETE
-Testing _global.unescape
-  __proto__, DONT_DELETE
-Testing _global.escape
-  __proto__, DONT_DELETE
-Testing _global.ASSetPropFlags
-  __proto__, DONT_DELETE
 Testing _global.ASnative
   __proto__, DONT_DELETE
-Testing _global.Infinity
-Testing _global.NaN
 Done

@@ -596,11 +596,31 @@ pub fn create_globals<'gc>(
     // Top-level
     let globals = Object::new_without_proto(context.gc());
     let decls = declare_properties! {
-        // 'true' builtins; what are their ordering?
+        // ASnative doesn't seem to have an ASnative index (searched in `ASnative(0..10000, 0..10000)`).
+        "ASnative" => method(asnative::asnative; DONT_ENUM);
+        // TODO: ASconstructor
+        "Object" => object(object.constr; DONT_ENUM);
+        "Function" => object(function.constr; DONT_ENUM | VERSION_6);
+        // TODO: enableDebugConsole - is this only present in the debugger version of FP?
         "NaN" => property(get_nan; DONT_ENUM);
         "Infinity" => property(get_infinity; DONT_ENUM);
-        // Doesn't seem to have an index (searched in `ASnative(0..10000, 0..10000)`).
-        "ASnative" => method(asnative::asnative; DONT_ENUM);
+
+        // Starting from here, FP defines these through its embedded `playerglobals.swf`
+        "MovieClip" => object(movie_clip.constr; DONT_ENUM);
+        "XMLSocket" => object(xml_socket.constr; DONT_ENUM);
+        "AsBroadcaster" => object(as_broadcaster.constr; DONT_ENUM);
+        "Color" => object(color.constr; DONT_ENUM);
+        "NetConnection" => object(netconnection.constr; DONT_ENUM);
+        "NetStream" => object(netstream.constr; DONT_ENUM);
+        "Camera" => object(camera.constr; DONT_ENUM);
+        "Microphone" => object(microphone.constr; DONT_ENUM);
+        "SharedObject" => object(shared_object.constr; DONT_ENUM);
+        "ContextMenuItem" => object(context_menu_item.constr; DONT_ENUM);
+        "ContextMenu" => object(context_menu.constr; DONT_ENUM);
+        "Error" => object(error.constr; DONT_ENUM);
+        // TODO: AsSetupError
+        // TODO: AssetCache
+        // TODO: RemoteLSOUsage
 
         "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM); // TODO: (1, 0)
         // TODO: ASSetNative - (4, 0)
@@ -621,22 +641,11 @@ pub fn create_globals<'gc>(
         "clearTimeout" => method(clear_interval; DONT_ENUM); // TODO: (250, 1)
         // FIXME: this should the **same** function object as `clearTimeout`, not a copy
         "clearInterval" => method(clear_interval; DONT_ENUM); // TODO: (250, 1)
-        "setTimeout" => method(set_timeout; DONT_ENUM); // TODO: (1021, 1)
+        "setTimeout" => method(set_timeout; DONT_ENUM); // TODO: (250, 2)
+        // TODO: showRedrawRegions - (1021, 1)
+        // TODO: addRequestHeader
+        // TODO: clearRequestHeaders
 
-        "Object" => object(object.constr; DONT_ENUM);
-        "Function" => object(function.constr; DONT_ENUM | VERSION_6);
-        "MovieClip" => object(movie_clip.constr; DONT_ENUM);
-        "XMLSocket" => object(xml_socket.constr; DONT_ENUM);
-        "AsBroadcaster" => object(as_broadcaster.constr; DONT_ENUM);
-        "Color" => object(color.constr; DONT_ENUM);
-        "NetConnection" => object(netconnection.constr; DONT_ENUM);
-        "NetStream" => object(netstream.constr; DONT_ENUM);
-        "Camera" => object(camera.constr; DONT_ENUM);
-        "Microphone" => object(microphone.constr; DONT_ENUM);
-        "SharedObject" => object(shared_object.constr; DONT_ENUM);
-        "ContextMenuItem" => object(context_menu_item.constr; DONT_ENUM);
-        "ContextMenu" => object(context_menu.constr; DONT_ENUM);
-        "Error" => object(error.constr; DONT_ENUM);
         "Number" => object(number.constr; DONT_ENUM);
         "Boolean" => object(boolean.constr; DONT_ENUM);
         "Date" => object(date.constr; DONT_ENUM);
