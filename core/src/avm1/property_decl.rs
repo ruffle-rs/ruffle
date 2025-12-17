@@ -130,7 +130,6 @@ pub enum DeclKind<'gc> {
     /// Declares a static float value.
     Float(f64),
     /// Declares an object value (can't be used in static contexts).
-    #[expect(unused)]
     Object(Object<'gc>),
 }
 

@@ -1,7 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
+use crate::avm1::property_decl::DeclContext;
 use crate::avm1::{Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, StringContext, WStr, WString};
@@ -71,35 +70,6 @@ mod video;
 pub(crate) mod xml;
 mod xml_node;
 pub(crate) mod xml_socket;
-
-const GLOBAL_DECLS: StaticDeclarations = declare_static_properties! {
-    // 'true' builtins; what are their ordering?
-    "NaN" => property(get_nan; DONT_ENUM);
-    "Infinity" => property(get_infinity; DONT_ENUM);
-    // Doesn't seem to have an index (searched in `ASnative(0..10000, 0..10000)`).
-    "ASnative" => method(asnative::asnative; DONT_ENUM);
-
-    "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM); // TODO: (1, 0)
-    // TODO: ASSetNative - (4, 0)
-    // TODO: ASSetAccessor - (4, 1)
-
-    use fn method;
-    "escape" => method(ESCAPE; DONT_ENUM);
-    "unescape" => method(UNESCAPE; DONT_ENUM);
-    "parseInt" => method(PARSE_INT; DONT_ENUM);
-    "parseFloat" => method(PARSE_FLOAT; DONT_ENUM);
-    "trace" => method(TRACE; DONT_ENUM);
-
-    use default;
-    "updateAfterEvent" => method(update_after_event; DONT_ENUM); // TODO: (9, 0)
-    "isNaN" => method(is_nan; DONT_ENUM); // TODO: (200, 18)
-    "isFinite" => method(is_finite; DONT_ENUM); // TODO: (200, 19)
-    "setInterval" => method(set_interval; DONT_ENUM); // TODO: (250, 0)
-    "clearTimeout" => method(clear_interval; DONT_ENUM); // TODO: (250, 1)
-    // FIXME: this should the **same** function object as `clearTimeout`, not a copy
-    "clearInterval" => method(clear_interval; DONT_ENUM); // TODO: (250, 1)
-    "setTimeout" => method(set_timeout; DONT_ENUM); // TODO: (1021, 1)
-};
 
 mod method {
     pub const ESCAPE: u16 = 0;
@@ -623,111 +593,154 @@ pub fn create_globals<'gc>(
 
     let text_renderer = text_renderer::create_class(context, object.proto);
 
+    // Top-level
     let globals = Object::new_without_proto(context.gc());
-    context.define_properties_on(globals, GLOBAL_DECLS(context));
+    let decls = declare_properties! {
+        // 'true' builtins; what are their ordering?
+        "NaN" => property(get_nan; DONT_ENUM);
+        "Infinity" => property(get_infinity; DONT_ENUM);
+        // Doesn't seem to have an index (searched in `ASnative(0..10000, 0..10000)`).
+        "ASnative" => method(asnative::asnative; DONT_ENUM);
 
-    type GlobalDefinition<'gc> = (Object<'gc>, &'static [u8], Object<'gc>, Attribute);
-    #[inline(never)]
-    fn define_globals<'gc>(context: &mut StringContext<'gc>, defs: &[GlobalDefinition<'gc>]) {
-        for &(obj, field, value, attrs) in defs {
-            let field = context.intern_static(WStr::from_units(field));
-            obj.define_value(context.gc(), field, value.into(), attrs);
-        }
-    }
+        "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM); // TODO: (1, 0)
+        // TODO: ASSetNative - (4, 0)
+        // TODO: ASSetAccessor - (4, 1)
 
-    #[rustfmt::skip]
-    define_globals(context.strings, &[
-        // Top-level
-        (globals, b"Object", object.constr, Attribute::DONT_ENUM),
-        (globals, b"Function", function.constr, Attribute::DONT_ENUM | Attribute::VERSION_6),
-        (globals, b"MovieClip", movie_clip.constr, Attribute::DONT_ENUM),
-        (globals, b"XMLSocket", xml_socket.constr, Attribute::DONT_ENUM),
-        (globals, b"AsBroadcaster", as_broadcaster.constr, Attribute::DONT_ENUM),
-        (globals, b"Color", color.constr, Attribute::DONT_ENUM),
-        (globals, b"NetConnection", netconnection.constr, Attribute::DONT_ENUM),
-        (globals, b"NetStream", netstream.constr, Attribute::DONT_ENUM),
-        (globals, b"Camera", camera.constr, Attribute::DONT_ENUM),
-        (globals, b"Microphone", microphone.constr, Attribute::DONT_ENUM),
-        (globals, b"SharedObject", shared_object.constr, Attribute::DONT_ENUM),
-        (globals, b"ContextMenuItem", context_menu_item.constr, Attribute::DONT_ENUM),
-        (globals, b"ContextMenu", context_menu.constr, Attribute::DONT_ENUM),
-        (globals, b"Error", error.constr, Attribute::DONT_ENUM),
-        (globals, b"Number", number.constr, Attribute::DONT_ENUM),
-        (globals, b"Boolean", boolean.constr, Attribute::DONT_ENUM),
-        (globals, b"Date", date.constr, Attribute::DONT_ENUM),
-        (globals, b"String", string.constr, Attribute::DONT_ENUM),
-        (globals, b"Array", array.constr, Attribute::DONT_ENUM),
-        (globals, b"Math", math, Attribute::DONT_ENUM),
-        (globals, b"Sound", sound.constr, Attribute::DONT_ENUM),
-        (globals, b"XMLNode", xmlnode.constr, Attribute::DONT_ENUM),
-        (globals, b"XML", xml.constr, Attribute::DONT_ENUM),
-        (globals, b"LoadVars", load_vars.constr, Attribute::DONT_ENUM),
-        (globals, b"Selection", selection, Attribute::DONT_ENUM),
-        (globals, b"Mouse", mouse, Attribute::DONT_ENUM),
-        (globals, b"Key", key, Attribute::DONT_ENUM),
-        (globals, b"Button", button.constr, Attribute::DONT_ENUM),
-        (globals, b"TextField", text_field.constr, Attribute::DONT_ENUM),
-        (globals, b"TextFormat", text_format.constr, Attribute::DONT_ENUM),
-        (globals, b"Stage", stage, Attribute::DONT_ENUM),
-        (globals, b"Video", video.constr, Attribute::DONT_ENUM),
-        (globals, b"Accessibility", accessibility, Attribute::DONT_ENUM),
-        (globals, b"System", system, Attribute::DONT_ENUM),
-        (globals, b"flash", flash, Attribute::DONT_ENUM | Attribute::VERSION_8),
-        (globals, b"textRenderer", text_renderer.constr, Attribute::empty()),
-        (globals, b"LocalConnection", local_connection.constr, Attribute::DONT_ENUM),
-        (globals, b"MovieClipLoader", movie_clip_loader.constr, Attribute::DONT_ENUM),
-        (globals, b"PrintJob", print_job.constr, Attribute::DONT_ENUM),
-        (globals, b"TextSnapshot", text_snapshot.constr, Attribute::DONT_ENUM),
+        use fn method;
+        "escape" => method(ESCAPE; DONT_ENUM);
+        "unescape" => method(UNESCAPE; DONT_ENUM);
+        "parseInt" => method(PARSE_INT; DONT_ENUM);
+        "parseFloat" => method(PARSE_FLOAT; DONT_ENUM);
+        "trace" => method(TRACE; DONT_ENUM);
 
-        // flash
-        (flash, b"text", text, Attribute::empty()),
-        (flash, b"display", display, Attribute::empty()),
-        (flash, b"filters", filters, Attribute::empty()),
-        (flash, b"geom", geom, Attribute::empty()),
-        (flash, b"net", net, Attribute::empty()),
-        (flash, b"external", external, Attribute::empty()),
+        use default;
+        "updateAfterEvent" => method(update_after_event; DONT_ENUM); // TODO: (9, 0)
+        "isNaN" => method(is_nan; DONT_ENUM); // TODO: (200, 18)
+        "isFinite" => method(is_finite; DONT_ENUM); // TODO: (200, 19)
+        "setInterval" => method(set_interval; DONT_ENUM); // TODO: (250, 0)
+        "clearTimeout" => method(clear_interval; DONT_ENUM); // TODO: (250, 1)
+        // FIXME: this should the **same** function object as `clearTimeout`, not a copy
+        "clearInterval" => method(clear_interval; DONT_ENUM); // TODO: (250, 1)
+        "setTimeout" => method(set_timeout; DONT_ENUM); // TODO: (1021, 1)
 
-        // flash.display
-        (display, b"BitmapData", bitmap_data.constr, Attribute::empty()),
+        "Object" => object(object.constr; DONT_ENUM);
+        "Function" => object(function.constr; DONT_ENUM | VERSION_6);
+        "MovieClip" => object(movie_clip.constr; DONT_ENUM);
+        "XMLSocket" => object(xml_socket.constr; DONT_ENUM);
+        "AsBroadcaster" => object(as_broadcaster.constr; DONT_ENUM);
+        "Color" => object(color.constr; DONT_ENUM);
+        "NetConnection" => object(netconnection.constr; DONT_ENUM);
+        "NetStream" => object(netstream.constr; DONT_ENUM);
+        "Camera" => object(camera.constr; DONT_ENUM);
+        "Microphone" => object(microphone.constr; DONT_ENUM);
+        "SharedObject" => object(shared_object.constr; DONT_ENUM);
+        "ContextMenuItem" => object(context_menu_item.constr; DONT_ENUM);
+        "ContextMenu" => object(context_menu.constr; DONT_ENUM);
+        "Error" => object(error.constr; DONT_ENUM);
+        "Number" => object(number.constr; DONT_ENUM);
+        "Boolean" => object(boolean.constr; DONT_ENUM);
+        "Date" => object(date.constr; DONT_ENUM);
+        "String" => object(string.constr; DONT_ENUM);
+        "Array" => object(array.constr; DONT_ENUM);
+        "Math" => object(math; DONT_ENUM);
+        "Sound" => object(sound.constr; DONT_ENUM);
+        "XMLNode" => object(xmlnode.constr; DONT_ENUM);
+        "XML" => object(xml.constr; DONT_ENUM);
+        "LoadVars" => object(load_vars.constr; DONT_ENUM);
+        "Selection" => object(selection; DONT_ENUM);
+        "Mouse" => object(mouse; DONT_ENUM);
+        "Key" => object(key; DONT_ENUM);
+        "Button" => object(button.constr; DONT_ENUM);
+        "TextField" => object(text_field.constr; DONT_ENUM);
+        "TextFormat" => object(text_format.constr; DONT_ENUM);
+        "Stage" => object(stage; DONT_ENUM);
+        "Video" => object(video.constr; DONT_ENUM);
+        "Accessibility" => object(accessibility; DONT_ENUM);
+        "System" => object(system; DONT_ENUM);
+        "flash" => object(flash; DONT_ENUM | VERSION_8);
+        "textRenderer" => object(text_renderer.constr);
+        "LocalConnection" => object(local_connection.constr; DONT_ENUM);
+        "MovieClipLoader" => object(movie_clip_loader.constr; DONT_ENUM);
+        "PrintJob" => object(print_job.constr; DONT_ENUM);
+        "TextSnapshot" => object(text_snapshot.constr; DONT_ENUM);
+    };
+    context.define_properties_on(globals, decls);
 
-        // flash.external
-        (external, b"ExternalInterface", external_interface.constr, Attribute::empty()),
+    // flash
+    let decls = declare_properties! {
+        "text" => object(text);
+        "display" => object(display);
+        "filters" => object(filters);
+        "geom" => object(geom);
+        "net" => object(net);
+        "external" => object(external);
+    };
+    context.define_properties_on(flash, decls);
 
-        // flash.filters
-        (filters, b"BitmapFilter", bitmap_filter.constr, Attribute::empty()),
-        (filters, b"DropShadowFilter", drop_shadow_filter.constr, Attribute::empty()),
-        (filters, b"BlurFilter", blur_filter.constr, Attribute::empty()),
-        (filters, b"GlowFilter", glow_filter.constr, Attribute::empty()),
-        (filters, b"BevelFilter", bevel_filter.constr, Attribute::empty()),
-        (filters, b"GradientGlowFilter", gradient_glow_filter.constr, Attribute::empty()),
-        (filters, b"GradientBevelFilter", gradient_bevel_filter.constr, Attribute::empty()),
-        (filters, b"ConvolutionFilter", convolution_filter.constr, Attribute::empty()),
-        (filters, b"ColorMatrixFilter", color_matrix_filter.constr, Attribute::empty()),
-        (filters, b"DisplacementMapFilter", displacement_map_filter.constr, Attribute::empty()),
+    // flash.display
+    let decls = declare_properties! {
+        "BitmapData" => object(bitmap_data.constr);
+    };
+    context.define_properties_on(display, decls);
 
-        // flash.geom
-        (geom, b"Rectangle", rectangle.constr, Attribute::empty()),
-        (geom, b"Point", point.constr, Attribute::empty()),
-        (geom, b"Matrix", matrix.constr, Attribute::empty()),
-        (geom, b"ColorTransform", color_transform.constr, Attribute::empty()),
-        (geom, b"Transform", transform.constr, Attribute::empty()),
+    // flash.external
+    let decls = declare_properties! {
+        "ExternalInterface" => object(external_interface.constr);
+    };
+    context.define_properties_on(external, decls);
 
-        // flash.net
-        (net, b"FileReference", file_reference.constr, Attribute::empty()),
-        (net, b"FileReferenceList", file_reference_list.constr, Attribute::empty()),
+    // flash.filters
+    let decls = declare_properties! {
+        "BitmapFilter" => object(bitmap_filter.constr);
+        "DropShadowFilter" => object(drop_shadow_filter.constr);
+        "BlurFilter" => object(blur_filter.constr);
+        "GlowFilter" => object(glow_filter.constr);
+        "BevelFilter" => object(bevel_filter.constr);
+        "GradientGlowFilter" => object(gradient_glow_filter.constr);
+        "GradientBevelFilter" => object(gradient_bevel_filter.constr);
+        "ConvolutionFilter" => object(convolution_filter.constr);
+        "ColorMatrixFilter" => object(color_matrix_filter.constr);
+        "DisplacementMapFilter" => object(displacement_map_filter.constr);
+    };
+    context.define_properties_on(filters, decls);
 
-        // flash.text
-        (text, b"TextRenderer", text_renderer.constr, Attribute::empty()),
+    // flash.geom
+    let decls = declare_properties! {
+        "Rectangle" => object(rectangle.constr);
+        "Point" => object(point.constr);
+        "Matrix" => object(matrix.constr);
+        "ColorTransform" => object(color_transform.constr);
+        "Transform" => object(transform.constr);
+    };
+    context.define_properties_on(geom, decls);
 
-        // System
-        (system, b"capabilities", system_capabilities, Attribute::empty()),
-        (system, b"Product", system_product.constr, Attribute::empty()),
-        (system, b"security", system_security, Attribute::empty()),
-        (system, b"IME", system_ime, Attribute::empty()),
+    // flash.net
+    let decls = declare_properties! {
+        "FileReference" => object(file_reference.constr);
+        "FileReferenceList" => object(file_reference_list.constr);
+    };
+    context.define_properties_on(net, decls);
 
-        // TextField
-        (text_field.constr, b"StyleSheet", style_sheet.constr, Attribute::DONT_ENUM | Attribute::VERSION_7),
-    ]);
+    // flash.text
+    let decls = declare_properties! {
+        "TextRenderer" => object(text_renderer.constr);
+    };
+    context.define_properties_on(text, decls);
+
+    // System
+    let decls = declare_properties! {
+        "capabilities" => object(system_capabilities);
+        "Product" => object(system_product.constr);
+        "security" => object(system_security);
+        "IME" => object(system_ime);
+    };
+    context.define_properties_on(system, decls);
+
+    // TextField
+    let decls = declare_properties! {
+        "StyleSheet" => object(style_sheet.constr; DONT_ENUM | VERSION_7);
+    };
+    context.define_properties_on(text_field.constr, decls);
 
     (
         SystemPrototypes {
