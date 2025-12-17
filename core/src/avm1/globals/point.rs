@@ -3,13 +3,13 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::string::AvmString;
 
 use ruffle_macros::istr;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "length" => property(length; READ_ONLY);
     "clone" => method(clone);
     "offset" => method(offset);
@@ -20,7 +20,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string);
 };
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "distance" => method(distance);
     "polar" => method(polar);
     "interpolate" => method(interpolate);
@@ -31,8 +31,8 @@ pub fn create_class<'gc>(
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.class(constructor, super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
-    context.define_properties_on(class.constr, OBJECT_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
     class
 }
 

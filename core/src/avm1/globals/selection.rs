@@ -3,11 +3,11 @@ use ruffle_macros::istr;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{DeclContext, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 use crate::display_object::{EditText, TDisplayObject, TInteractiveObject, TextSelection};
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "getBeginIndex" => method(get_begin_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getEndIndex" => method(get_end_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getCaretIndex" => method(get_caret_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -23,7 +23,7 @@ pub fn create<'gc>(
 ) -> Object<'gc> {
     let selection = Object::new(context.strings, Some(context.object_proto));
     broadcaster_fns.initialize(context.strings, selection, array_proto);
-    context.define_properties_on(selection, OBJECT_DECLS);
+    context.define_properties_on(selection, OBJECT_DECLS(context));
     selection
 }
 

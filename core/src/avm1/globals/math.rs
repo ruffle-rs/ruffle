@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{DeclContext, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 
 use std::f64::consts;
@@ -17,7 +17,7 @@ macro_rules! wrap_std {
     };
 }
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "SQRT2" => float(consts::SQRT_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "SQRT1_2" => float(consts::FRAC_1_SQRT_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "PI" => float(consts::PI; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -48,7 +48,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 
 pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
     let math = Object::new(context.strings, Some(context.object_proto));
-    context.define_properties_on(math, OBJECT_DECLS);
+    context.define_properties_on(math, OBJECT_DECLS(context));
     math
 }
 

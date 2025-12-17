@@ -2,7 +2,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{globals, ArrayBuilder, Object, Value};
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
@@ -53,7 +53,7 @@ macro_rules! tf_setter {
     };
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "replaceSel" => method(tf_method!(replace_sel); DONT_ENUM | DONT_DELETE | VERSION_6);
     "getTextFormat" => method(tf_method!(get_text_format); DONT_ENUM | DONT_DELETE | VERSION_6);
     "setTextFormat" => method(tf_method!(set_text_format); DONT_ENUM | DONT_DELETE | VERSION_6);
@@ -105,7 +105,7 @@ pub fn create_class<'gc>(
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.empty_class(super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
 

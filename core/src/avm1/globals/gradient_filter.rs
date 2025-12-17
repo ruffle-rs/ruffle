@@ -3,7 +3,7 @@
 use crate::avm1::clamp::Clamp;
 use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
@@ -385,7 +385,7 @@ impl<'gc> GradientFilter<'gc> {
     }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     use fn method;
     "distance" => property(GET_DISTANCE, SET_DISTANCE; VERSION_8);
     "angle" => property(GET_ANGLE, SET_ANGLE; VERSION_8);
@@ -409,7 +409,7 @@ pub fn create_bevel_class<'gc>(
         None,
         super_proto,
     );
-    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
 
@@ -422,7 +422,7 @@ pub fn create_glow_class<'gc>(
         None,
         super_proto,
     );
-    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
 

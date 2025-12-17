@@ -1,7 +1,7 @@
 //! flash.geom.ColorTransform object
 
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc};
@@ -79,7 +79,7 @@ impl From<ColorTransformObject> for ColorTransform {
     }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "alphaMultiplier" => property(get_alpha_multiplier, set_alpha_multiplier);
     "redMultiplier" => property(get_red_multiplier, set_red_multiplier);
     "greenMultiplier" => property(get_green_multiplier, set_green_multiplier);
@@ -98,7 +98,7 @@ pub fn create_class<'gc>(
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.native_class(constructor, None, super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
 

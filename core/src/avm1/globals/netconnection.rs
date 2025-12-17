@@ -1,5 +1,5 @@
 use crate::avm1::globals::shared_object::{deserialize_value, serialize};
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{
     Activation, ActivationIdentifier, Error, ExecutionReason, NativeObject, Object, Value,
 };
@@ -151,14 +151,14 @@ pub fn constructor<'gc>(
     Ok(Value::Undefined)
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "protocol" => property(protocol);
     "connect" => method(connect; DONT_ENUM | DONT_DELETE);
     "close" => method(close; DONT_ENUM | DONT_DELETE);
     "call" => method(call; DONT_ENUM | DONT_DELETE);
     "addHeader" => method(add_header; DONT_ENUM | DONT_DELETE);
 
-    // TODO Looks like isConnected & uri are not built-in properties.
+        // TODO Looks like isConnected & uri are not built-in properties.
     "isConnected" => property(is_connected);
     "uri" => property(uri);
 };
@@ -168,7 +168,7 @@ pub fn create_class<'gc>(
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.class(constructor, super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
 

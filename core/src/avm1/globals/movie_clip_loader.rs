@@ -4,14 +4,14 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{ArrayBuilder, Object, Value};
 use crate::backend::navigator::Request;
 use crate::display_object::TDisplayObject;
 use crate::loader::MovieLoaderVMData;
 use ruffle_macros::istr;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "loadClip" => method(load_clip; DONT_ENUM | DONT_DELETE);
     "unloadClip" => method(unload_clip; DONT_ENUM | DONT_DELETE);
     "getProgress" => method(get_progress; DONT_ENUM | DONT_DELETE);
@@ -24,7 +24,7 @@ pub fn create_class<'gc>(
     array_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.class(constructor, super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
     broadcaster_fns.initialize(context.strings, class.proto, array_proto);
     class
 }

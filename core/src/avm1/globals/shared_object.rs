@@ -1,4 +1,4 @@
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
@@ -29,7 +29,7 @@ impl SharedObject {
     }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "connect" => method(connect; DONT_ENUM | DONT_DELETE);
     "send" => method(send; DONT_ENUM | DONT_DELETE);
     "flush" => method(flush; DONT_ENUM | DONT_DELETE);
@@ -43,7 +43,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "onSync" => method(on_sync; DONT_ENUM | DONT_DELETE);
 };
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "deleteAll" => method(delete_all; DONT_ENUM);
     "getDiskUsage" => method(get_disk_usage; DONT_ENUM);
     "getLocal" => method(get_local);
@@ -55,8 +55,8 @@ pub fn create_class<'gc>(
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.class(constructor, super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
-    context.define_properties_on(class.constr, OBJECT_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
     class
 }
 

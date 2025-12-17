@@ -1,4 +1,4 @@
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, ExecutionReason, NativeObject, Object, Value};
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
@@ -53,7 +53,7 @@ impl<'gc> XmlSocket<'gc> {
     }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "timeout" => property(get_timeout, set_timeout);
     "close" => method(close);
     "connect" => method(connect);
@@ -69,7 +69,7 @@ pub fn create_class<'gc>(
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.class(constructor, super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
 

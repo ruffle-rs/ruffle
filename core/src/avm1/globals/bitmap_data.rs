@@ -5,7 +5,7 @@ use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::object::NativeObject;
 use crate::avm1::parameters::{ParametersExt, UndefinedAs};
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, Object, Value};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
@@ -18,7 +18,7 @@ use crate::{avm1_stub, avm_error};
 use ruffle_macros::istr;
 use ruffle_render::transform::Transform;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "height" => property(height);
     "width" => property(width);
     "transparent" => property(get_transparent);
@@ -49,7 +49,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "compare" => method(compare);
 };
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "loadBitmap" => method(load_bitmap);
     "RED_CHANNEL" => int(1);
     "GREEN_CHANNEL" => int(2);
@@ -62,8 +62,8 @@ pub fn create_class<'gc>(
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.native_class(constructor, None, super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
-    context.define_properties_on(class.constr, OBJECT_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
     class
 }
 

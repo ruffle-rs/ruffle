@@ -3,13 +3,13 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::avm_warn;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     use fn method;
     "watch" => method(WATCH; DONT_ENUM | DONT_DELETE | VERSION_6);
     "unwatch" => method(UNWATCH; DONT_ENUM | DONT_DELETE | VERSION_6);
@@ -21,7 +21,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "isPropertyEnumerable" => method(IS_PROPERTY_ENUMERABLE; DONT_DELETE | DONT_ENUM | VERSION_6);
 };
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     use fn method;
     "registerClass" => method(REGISTER_CLASS; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
@@ -37,8 +37,8 @@ pub fn create_class<'gc>(context: &mut DeclContext<'_, 'gc>) -> SystemClass<'gc>
         Some(function),
         context.object_proto,
     );
-    context.define_properties_on(class.proto, PROTO_DECLS);
-    context.define_properties_on(class.constr, OBJECT_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
     class
 }
 

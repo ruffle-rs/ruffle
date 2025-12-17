@@ -5,7 +5,7 @@ use std::cell::{Cell, RefCell};
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::backend::ui::{FileDialogResult, FileFilter};
@@ -83,7 +83,7 @@ pub struct FileReferenceData<'gc> {
     data: RefCell<Vec<u8>>,
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "name" => property(name; DONT_ENUM);
     "type" => property(file_type; DONT_ENUM);
     "size" => property(size; DONT_ENUM);
@@ -97,7 +97,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "cancel" => method(cancel; DONT_ENUM);
 };
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {};
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {};
 
 pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
@@ -106,9 +106,9 @@ pub fn create_class<'gc>(
     array_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.class(constructor, super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
     broadcaster_fns.initialize(context.strings, class.proto, array_proto);
-    context.define_properties_on(class.constr, OBJECT_DECLS);
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
     class
 }
 

@@ -5,13 +5,13 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{DeclContext, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 use crate::display_object::StageDisplayState;
 use crate::string::{AvmString, WStr, WString};
 use ruffle_macros::istr;
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "align" => property(align, set_align);
     "scaleMode" => property(scale_mode, set_scale_mode);
     "height" => property(height);
@@ -27,7 +27,7 @@ pub fn create<'gc>(
 ) -> Object<'gc> {
     let stage = Object::new(context.strings, Some(context.object_proto));
     broadcaster_functions.initialize(context.strings, stage, array_proto);
-    context.define_properties_on(stage, OBJECT_DECLS);
+    context.define_properties_on(stage, OBJECT_DECLS(context));
     stage
 }
 

@@ -6,7 +6,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
@@ -14,7 +14,7 @@ use crate::string::AvmString;
 use ruffle_macros::istr;
 use swf::Fixed8;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "setRGB" => method(set_rgb; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "setTransform" => method(set_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getRGB" => method(get_rgb; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -26,7 +26,7 @@ pub fn create_class<'gc>(
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.class(constructor, super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
 

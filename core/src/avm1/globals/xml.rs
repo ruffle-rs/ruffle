@@ -3,7 +3,7 @@
 use std::cell::Cell;
 
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm_warn;
@@ -252,7 +252,7 @@ impl<'gc> Xml<'gc> {
     }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "createElement" => method(create_element);
     "createTextNode" => method(create_text_node);
     "parseXML" => method(parse_xml);
@@ -275,7 +275,7 @@ pub fn create_class<'gc>(
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.native_class(constructor, None, super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
 

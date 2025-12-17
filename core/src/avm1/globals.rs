@@ -1,7 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, StringContext, WStr, WString};
@@ -72,7 +72,7 @@ pub(crate) mod xml;
 mod xml_node;
 pub(crate) mod xml_socket;
 
-const GLOBAL_DECLS: &[Declaration] = declare_properties! {
+const GLOBAL_DECLS: StaticDeclarations = declare_static_properties! {
     // 'true' builtins; what are their ordering?
     "NaN" => property(get_nan; DONT_ENUM);
     "Infinity" => property(get_infinity; DONT_ENUM);
@@ -624,7 +624,7 @@ pub fn create_globals<'gc>(
     let text_renderer = text_renderer::create_class(context, object.proto);
 
     let globals = Object::new_without_proto(context.gc());
-    context.define_properties_on(globals, GLOBAL_DECLS);
+    context.define_properties_on(globals, GLOBAL_DECLS(context));
 
     type GlobalDefinition<'gc> = (Object<'gc>, &'static [u8], Object<'gc>, Attribute);
     #[inline(never)]
