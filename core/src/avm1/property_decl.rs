@@ -25,7 +25,7 @@ impl<'gc> DeclContext<'_, 'gc> {
     }
 
     #[inline(never)]
-    pub fn define_properties_on(&mut self, this: Object<'gc>, decls: &[Declaration]) {
+    pub fn define_properties_on(&mut self, this: Object<'gc>, decls: &[Declaration<'gc>]) {
         for decl in decls {
             decl.define_on(self.strings, this, self.fn_proto);
         }
@@ -79,18 +79,26 @@ pub struct SystemClass<'gc> {
     pub constr: Object<'gc>,
 }
 
+/// A list of static [`Declaration`]s.
+///
+/// Morally, this is `&'static [for<'gc> Declaration<'gc>]`, but due to Rust's limitations
+/// we need to emulate it using a function type. Rust also requires the `'gc` lifetime to be
+/// mentioned in the arguments, which is why the `fn` takes a `DeclContext` even though it
+/// isn't useful at runtime.
+pub type StaticDeclarations = for<'gc> fn(&DeclContext<'_, 'gc>) -> &'gc [Declaration<'gc>];
+
 /// The declaration of a property, method, or simple field, that
 /// can be defined on a [`Object`].
 #[derive(Copy, Clone)]
-pub struct Declaration {
+pub struct Declaration<'gc> {
     pub name: &'static [u8],
-    pub kind: DeclKind,
+    pub kind: DeclKind<'gc>,
     pub attributes: Attribute,
 }
 
 /// All the possible types of a [`Declaration`].
 #[derive(Copy, Clone)]
-pub enum DeclKind {
+pub enum DeclKind<'gc> {
     /// Declares a property with a getter and an optional setter.
     TableProperty {
         native: TableNativeFunction,
@@ -121,14 +129,17 @@ pub enum DeclKind {
     Int(i32),
     /// Declares a static float value.
     Float(f64),
+    /// Declares an object value (can't be used in static contexts).
+    #[expect(unused)]
+    Object(Object<'gc>),
 }
 
-impl Declaration {
+impl<'gc> Declaration<'gc> {
     #[inline(never)]
     /// Defines the field represented by this declaration on a [`Object`].
     /// Returns the value defined on the object, or `undefined` if this declaration
     /// defined a property.
-    pub fn define_on<'gc>(
+    pub fn define_on(
         &self,
         context: &mut StringContext<'gc>,
         this: Object<'gc>,
@@ -174,6 +185,7 @@ impl Declaration {
             DeclKind::Bool(b) => b.into(),
             DeclKind::Int(i) => i.into(),
             DeclKind::Float(f) => f.into(),
+            DeclKind::Object(o) => o.into(),
         };
 
         this.define_value(mc, name, value, self.attributes);
@@ -186,7 +198,7 @@ impl Declaration {
 /// # Usage:
 ///
 /// ```rust,ignore
-/// const DECLS: &'static [Declaration] = declare_properties! {
+/// const DECLS: StaticDeclarations = declare_static_properties! {
 ///     "length" => property(get_length);
 ///     "filters" => property(get_filters, set_filters);
 ///     "to_string" => method(to_string);
@@ -217,17 +229,22 @@ impl Declaration {
 ///   }
 /// }
 /// ```
-macro_rules! declare_properties {
+macro_rules! declare_static_properties {
     ( $($tts:tt)* ) => {
-        const {
-            const fn __assert_ascii(s: &str) -> &[u8] {
-                assert!(s.is_ascii());
-                s.as_bytes()
-            }
+        |_: &$crate::avm1::property_decl::DeclContext<'_, '_>| const { declare_properties!($($tts)*) }
+    }
+}
 
-            __declare_properties!(@stmt [default] [/* out */] $($tts)*)
+/// Like `declare_static_properties`, but can be used outside of const contexts.
+macro_rules! declare_properties {
+    ( $($tts:tt)* ) => {{
+        const fn __assert_ascii(s: &str) -> &[u8] {
+            assert!(s.is_ascii());
+            s.as_bytes()
         }
-    };
+
+        __declare_properties!(@stmt [default] [/* out */] $($tts)*)
+    }};
 }
 
 // Internal implementation
@@ -276,7 +293,7 @@ macro_rules! __declare_properties {
         [$($args:tt)*] $(; $($attributes:ident)|*)?
     ) => {
         $crate::avm1::property_decl::Declaration {
-            name: __assert_ascii($name),
+            name: const { __assert_ascii($name) },
             kind: __declare_properties!(@kind [$($mode)*] $kind ($($args)*)),
             attributes: $crate::avm1::property::Attribute::from_bits_truncate(
                 0 $($(| $crate::avm1::property::Attribute::$attributes.bits())*)?
@@ -329,10 +346,10 @@ macro_rules! __declare_properties {
         $crate::avm1::property_decl::DeclKind::Function($function)
     };
     (@kind [fn $($path:ident)::+] function($function:ident)) => {
-        $crate::avm1::property_decl::DeclKind::TableFunction($($path)::+, $($path::)+$method)
+        $crate::avm1::property_decl::DeclKind::TableFunction($($path)::+, $($path::)+$function)
     };
     (@kind $_mode:tt string($string:expr)) => {
-        $crate::avm1::property_decl::DeclKind::String(__assert_ascii($string))
+        $crate::avm1::property_decl::DeclKind::String(const { __assert_ascii($string) })
     };
     (@kind $_mode:tt bool($boolean:expr)) => {
         $crate::avm1::property_decl::DeclKind::Bool($boolean)
@@ -342,6 +359,9 @@ macro_rules! __declare_properties {
     };
     (@kind $_mode:tt float($float:expr)) => {
         $crate::avm1::property_decl::DeclKind::Float($float)
+    };
+    (@kind $_mode:tt object($obj:expr)) => {
+        $crate::avm1::property_decl::DeclKind::Object($obj)
     };
 }
 

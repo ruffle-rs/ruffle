@@ -2,11 +2,11 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::external::{Callback, ExternalInterface, Value as ExternalValue};
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "available" => property(get_available; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "addCallback" => method(add_callback; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "call" => method(call; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -18,7 +18,7 @@ pub fn create_class<'gc>(
 ) -> SystemClass<'gc> {
     // It's a custom prototype but it's empty.
     let class = context.empty_class(super_proto);
-    context.define_properties_on(class.constr, OBJECT_DECLS);
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
     class
 }
 

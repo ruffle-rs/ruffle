@@ -1,5 +1,5 @@
 use crate::avm1::clamp::Clamp;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, NativeObject, Object, Value};
 use crate::locale::{get_current_date_time, get_timezone};
 use crate::string::AvmString;
@@ -291,7 +291,7 @@ impl fmt::Display for Date {
     }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     use fn method;
     "getFullYear" => method(GET_FULL_YEAR; DONT_ENUM | DONT_DELETE);
     "getYear" => method(GET_YEAR; DONT_ENUM | DONT_DELETE);
@@ -334,7 +334,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "valueOf" => method(GET_TIME; DONT_ENUM | DONT_DELETE);
 };
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     use fn method;
     "UTC" => method(UTC; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
@@ -344,8 +344,8 @@ pub fn create_class<'gc>(
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.native_class(table_constructor!(method), Some(function), super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
-    context.define_properties_on(class.constr, OBJECT_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
     class
 }
 

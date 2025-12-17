@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::parameters::{ParametersExt, UndefinedAs};
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
@@ -39,7 +39,7 @@ type CompareFn<'a, 'gc> = Box<
         ) -> Result<Ordering, Error<'gc>>,
 >;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "push" => method(push; DONT_ENUM | DONT_DELETE);
     "pop" => method(pop; DONT_ENUM | DONT_DELETE);
     "concat" => method(concat; DONT_ENUM | DONT_DELETE);
@@ -54,7 +54,7 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "sortOn" => method(sort_on; DONT_ENUM | DONT_DELETE);
 };
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "CASEINSENSITIVE" => int(SortOptions::CASE_INSENSITIVE.bits());
     "DESCENDING" => int(SortOptions::DESCENDING.bits());
     "UNIQUESORT" => int(SortOptions::UNIQUE_SORT.bits());
@@ -68,12 +68,12 @@ pub fn create_class<'gc>(
 ) -> SystemClass<'gc> {
     let proto = ArrayBuilder::new_with_proto(context.strings, super_proto).with([]);
     let class = context.native_class_with_proto(constructor, Some(array), proto);
-    context.define_properties_on(proto, PROTO_DECLS);
+    context.define_properties_on(proto, PROTO_DECLS(context));
 
     // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
     // when run in Flash Player 7. Make these conditional if we add a parameter to control
     // target Flash Player version.
-    context.define_properties_on(class.constr, OBJECT_DECLS);
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
 
     class
 }

@@ -1,10 +1,10 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{DeclContext, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "exactSettings" => property(get_exact_settings, set_exact_settings; VERSION_6);
     "useCodepage" => property(get_use_code_page, set_use_code_page);
     "setClipboard" => method(set_clipboard);
@@ -15,7 +15,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 
 pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
     let system = Object::new(context.strings, Some(context.object_proto));
-    context.define_properties_on(system, OBJECT_DECLS);
+    context.define_properties_on(system, OBJECT_DECLS(context));
     system
 }
 

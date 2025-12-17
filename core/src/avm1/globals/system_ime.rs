@@ -1,11 +1,11 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{DeclContext, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 use crate::string::AvmString;
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "UNKNOWN" => string("UNKNOWN"; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "KOREAN" => string("KOREAN"; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "JAPANESE_KATAKANA_HALF" => string("JAPANESE_KATAKANA_HALF"; DONT_ENUM | DONT_DELETE | READ_ONLY);
@@ -31,7 +31,7 @@ pub fn create<'gc>(
 ) -> Object<'gc> {
     let ime = Object::new(context.strings, Some(context.object_proto));
     broadcaster_functions.initialize(context.strings, ime, array_proto);
-    context.define_properties_on(ime, OBJECT_DECLS);
+    context.define_properties_on(ime, OBJECT_DECLS(context));
     ime
 }
 

@@ -4,13 +4,13 @@ use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, ArrayBuilder, Object, Value};
 use crate::string::{AvmString, StringContext};
 use gc_arena::Collect;
 use ruffle_macros::istr;
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "initialize" => method(initialize; DONT_ENUM | DONT_DELETE);
     "addListener" => function(add_listener; DONT_ENUM | DONT_DELETE);
     "removeListener" => function(remove_listener; DONT_ENUM | DONT_DELETE);
@@ -26,8 +26,9 @@ pub fn create_class<'gc>(
     // returned in such cases.
     let class = context.empty_class(super_proto);
 
+    let decls = OBJECT_DECLS(context);
     let mut define_as_object = |index: usize| -> Object<'gc> {
-        match OBJECT_DECLS[index].define_on(context.strings, class.constr, context.fn_proto) {
+        match decls[index].define_on(context.strings, class.constr, context.fn_proto) {
             Value::Object(o) => o,
             _ => panic!("expected object for broadcaster function"),
         }

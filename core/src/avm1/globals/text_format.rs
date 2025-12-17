@@ -1,7 +1,7 @@
 //! `TextFormat` impl
 
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
@@ -44,7 +44,7 @@ macro_rules! method {
     };
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "getTextExtent" => method(method!(get_text_extent); DONT_ENUM | DONT_DELETE);
     "font" => property(getter!(font), setter!(set_font));
     "size" => property(getter!(size), setter!(set_size));
@@ -72,7 +72,7 @@ pub fn create_class<'gc>(
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
     let class = context.native_class(constructor, None, super_proto);
-    context.define_properties_on(class.proto, PROTO_DECLS);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
 

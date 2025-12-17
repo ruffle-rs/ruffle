@@ -1,6 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{DeclContext, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::prelude::TDisplayObject;
@@ -8,7 +8,7 @@ use crate::string::AvmString;
 
 use ruffle_common::sandbox::SandboxType;
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "allowDomain" => method(allow_domain);
     "allowInsecureDomain" => method(allow_insecure_domain);
     "loadPolicyFile" => method(load_policy_file);
@@ -20,7 +20,7 @@ const OBJECT_DECLS: &[Declaration] = declare_properties! {
 
 pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
     let security = Object::new(context.strings, Some(context.object_proto));
-    context.define_properties_on(security, OBJECT_DECLS);
+    context.define_properties_on(security, OBJECT_DECLS(context));
     security
 }
 
