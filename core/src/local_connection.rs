@@ -158,7 +158,7 @@ impl<'gc> LocalConnections<'gc> {
             None
         } else {
             self.connections.insert(key.to_owned(), connection.into());
-            Some(LocalConnectionHandle(key.to_owned()))
+            Some(LocalConnectionHandle(key))
         }
     }
 

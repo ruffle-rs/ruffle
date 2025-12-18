@@ -491,7 +491,7 @@ impl<'gc> Avm2<'gc> {
         name: AvmString<'gc>,
         id: u16,
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
-        let movie = movie_clip.movie().clone();
+        let movie = movie_clip.movie();
 
         let class_object = domain
             .get_defined_value_handling_vector(activation, name)?

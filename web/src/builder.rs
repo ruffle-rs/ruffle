@@ -478,7 +478,7 @@ impl RuffleInstanceBuilder {
         };
 
         player.register_device_font(FontDefinition::FontFile {
-            name: name.to_string(),
+            name,
             is_bold: face.is_bold(),
             is_italic: face.is_italic(),
             data: FontFileData::new(bytes),
@@ -630,7 +630,7 @@ impl RuffleInstanceBuilder {
         &self,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
     ) -> Box<dyn AudioBackend> {
-        if let Ok(audio) = audio::WebAudioBackend::new(log_subscriber.clone()) {
+        if let Ok(audio) = audio::WebAudioBackend::new(log_subscriber) {
             Box::new(audio)
         } else {
             tracing::error!("Unable to create audio backend. No audio will be played.");
@@ -648,7 +648,7 @@ impl RuffleInstanceBuilder {
             self.upgrade_to_https,
             self.url_rewrite_rules.clone(),
             self.base_url.clone(),
-            log_subscriber.clone(),
+            log_subscriber,
             self.open_url_mode,
             self.socket_proxy.clone(),
             self.credential_allow_list.clone(),

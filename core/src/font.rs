@@ -1221,13 +1221,11 @@ impl Glyph {
         let transform = context.transform_stack.transform();
         match glyph_handle {
             GlyphHandle::Shape(shape_handle) => {
-                context
-                    .commands
-                    .render_shape(shape_handle.clone(), transform);
+                context.commands.render_shape(shape_handle, transform);
             }
             GlyphHandle::Bitmap(bitmap_handle) => {
                 context.commands.render_bitmap(
-                    bitmap_handle.clone(),
+                    bitmap_handle,
                     transform,
                     true,
                     ruffle_render::bitmap::PixelSnapping::Auto,
