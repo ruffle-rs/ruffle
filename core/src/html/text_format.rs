@@ -716,7 +716,7 @@ impl FormatSpans {
             };
 
             if let Some(style) = style_sheet.get_style(selector) {
-                style.clone().mix_with(format)
+                style.mix_with(format)
             } else {
                 format
             }

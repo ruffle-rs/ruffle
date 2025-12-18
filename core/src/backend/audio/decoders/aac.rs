@@ -22,7 +22,7 @@ pub struct AacSubstreamDecoder {
 
 impl AacSubstreamDecoder {
     pub fn new(stream_info: &SoundStreamInfo, data_stream: Substream) -> Result<Self, Error> {
-        let tag_reader = SubstreamTagReader::new(stream_info, data_stream.clone());
+        let tag_reader = SubstreamTagReader::new(stream_info, data_stream);
         let layout = if stream_info.stream_format.is_stereo {
             audio::Layout::Stereo
         } else {

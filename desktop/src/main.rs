@@ -145,7 +145,7 @@ fn main() -> Result<(), Error> {
     init();
 
     let opt = Opt::parse();
-    let preferences = GlobalPreferences::load(opt.clone())?;
+    let preferences = GlobalPreferences::load(opt)?;
 
     let logs_path = &preferences.cli.cache_directory.join("log");
     let log_path = preferences.log_filename_pattern().create_path(logs_path);

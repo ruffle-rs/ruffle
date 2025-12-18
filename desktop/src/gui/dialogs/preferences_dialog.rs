@@ -631,9 +631,7 @@ fn graphics_power_name(
 }
 
 fn language_name(language: &LanguageIdentifier) -> String {
-    optional_text(language, "language-name")
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| language.to_string())
+    optional_text(language, "language-name").unwrap_or_else(|| language.to_string())
 }
 
 fn theme_preference_name(

@@ -138,11 +138,11 @@ impl GuiController {
         let gui = RuffleGui::new(
             Arc::downgrade(&window),
             event_loop,
-            initial_movie_url.clone(),
+            initial_movie_url,
             LaunchOptions::from(&preferences),
             preferences.clone(),
         );
-        let system_fonts = load_system_fonts(font_database, preferences.language().to_owned());
+        let system_fonts = load_system_fonts(font_database, preferences.language());
         egui_winit.egui_ctx().set_fonts(system_fonts);
 
         egui_extras::install_image_loaders(egui_winit.egui_ctx());

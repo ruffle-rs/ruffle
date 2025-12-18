@@ -171,13 +171,7 @@ impl DesktopUiBackend {
     ) -> Result<Self, Error> {
         // The window handle is only relevant to linux/wayland
         // If it fails it'll fallback to x11 or wlr-data-control
-        let clipboard = Clipboard::new(
-            window
-                .clone()
-                .display_handle()
-                .ok()
-                .map(|handle| handle.as_raw()),
-        );
+        let clipboard = Clipboard::new(window.display_handle().ok().map(|handle| handle.as_raw()));
         Ok(Self {
             window,
             event_loop,
@@ -354,7 +348,7 @@ impl UiBackend for DesktopUiBackend {
     fn close_virtual_keyboard(&self) {}
 
     fn language(&self) -> LanguageIdentifier {
-        self.preferences.language().clone()
+        self.preferences.language()
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {

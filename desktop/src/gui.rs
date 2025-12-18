@@ -66,7 +66,7 @@ impl RuffleGui {
                 preferences.clone(),
                 default_launch_options.clone(),
                 default_path,
-                window.clone(),
+                window,
                 event_loop.clone(),
             ),
             menu_bar: MenuBar::new(
