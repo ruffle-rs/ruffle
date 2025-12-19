@@ -363,6 +363,10 @@ impl<'gc> Sockets<'gc> {
                                     // to be used when the next packet arrives.
                                     xml_socket.read_buffer().extend(data);
                                 }
+                            } else {
+                                // No null byte in this packet, store entire data in read buffer
+                                // to be combined with subsequent packets
+                                xml_socket.read_buffer().extend(data);
                             }
                         }
                     }

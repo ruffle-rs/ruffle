@@ -1,0 +1,7 @@
+connected
+true
+data:
+HelloWorld!
+data:
+This is a test
+closed
