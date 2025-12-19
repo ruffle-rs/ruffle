@@ -23,12 +23,10 @@ pub fn optimize<'gc>(
     code: &mut Vec<Op<'gc>>,
     method_exceptions: &mut [Exception<'gc>],
     resolved_parameters: &[ResolvedParamConfig<'gc>],
-    jump_targets: &HashSet<usize>,
+    mut jump_targets: HashSet<usize>,
 ) -> Result<(), Error<'gc>> {
     let code_slice = Cell::from_mut(code.as_mut_slice());
     let code_slice = code_slice.as_slice_of_cells();
-
-    let mut jump_targets = jump_targets.clone();
 
     // We run the preprocess peephole before assembling blocks because it removes
     // zero-length jumps, which usually reduces the number of blocks in obfuscated code.
