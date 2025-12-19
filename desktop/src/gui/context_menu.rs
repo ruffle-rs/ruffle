@@ -41,7 +41,7 @@ impl ContextMenu {
         let area = Area::new(Id::new("context_menu"))
             .order(Order::Foreground)
             .fixed_pos(self.position.unwrap_or_default())
-            .constrain_to(egui_ctx.screen_rect())
+            .constrain_to(egui_ctx.content_rect())
             .interactable(true)
             .show(egui_ctx, |ui| {
                 set_menu_style(ui.style_mut());
