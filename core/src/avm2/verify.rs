@@ -516,7 +516,7 @@ pub fn verify_method<'gc>(
         &mut verified_code,
         &mut new_exceptions,
         resolved_param_config,
-        &jump_targets,
+        jump_targets,
     )?;
 
     Ok(VerifiedMethodInfo {
