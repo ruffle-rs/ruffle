@@ -1,5 +1,5 @@
+use enumset::EnumSet;
 use std::borrow::Cow;
-use std::collections::HashSet;
 use url::Url;
 
 use crate::backend::navigator::{ErrorResponse, FetchReason};
@@ -19,7 +19,7 @@ pub enum UrlRewriteStage {
 #[derive(Debug, Clone)]
 pub struct UrlRewriteRule {
     pub stage: UrlRewriteStage,
-    pub fetch_reasons: HashSet<FetchReason>,
+    pub fetch_reasons: EnumSet<FetchReason>,
     pub host: String,
     pub replacement: String,
 }
@@ -27,13 +27,13 @@ pub struct UrlRewriteRule {
 impl UrlRewriteRule {
     pub fn new(
         stage: UrlRewriteStage,
-        fetch_reasons: Vec<FetchReason>,
+        fetch_reasons: EnumSet<FetchReason>,
         host: impl ToString,
         replacement: impl ToString,
     ) -> Self {
         Self {
             stage,
-            fetch_reasons: fetch_reasons.into_iter().collect(),
+            fetch_reasons,
             host: host.to_string(),
             replacement: replacement.to_string(),
         }
@@ -42,14 +42,14 @@ impl UrlRewriteRule {
 
 #[derive(Debug, Clone)]
 pub struct UrlBlockRule {
-    pub fetch_reasons: HashSet<FetchReason>,
+    pub fetch_reasons: EnumSet<FetchReason>,
     pub host: String,
 }
 
 impl UrlBlockRule {
-    pub fn new(fetch_reasons: &[FetchReason], host: impl ToString) -> Self {
+    pub fn new(fetch_reasons: EnumSet<FetchReason>, host: impl ToString) -> Self {
         Self {
-            fetch_reasons: fetch_reasons.iter().cloned().collect(),
+            fetch_reasons,
             host: host.to_string(),
         }
     }
@@ -96,7 +96,7 @@ impl CompatibilityRules {
                     name: "kongregate_sitelock".to_string(),
                     domain_rewrite_rules: vec![UrlRewriteRule::new(
                         UrlRewriteStage::AfterResponse,
-                        vec![FetchReason::LoadSwf],
+                        EnumSet::only(FetchReason::LoadSwf),
                         "*.konggames.com",
                         "chat.kongregate.com",
                     )],
@@ -109,7 +109,7 @@ impl CompatibilityRules {
                     name: "fpdownload".to_string(),
                     domain_rewrite_rules: vec![UrlRewriteRule::new(
                         UrlRewriteStage::BeforeRequest,
-                        vec![FetchReason::UrlLoader],
+                        EnumSet::only(FetchReason::UrlLoader),
                         "fpdownload.adobe.com",
                         "cdn.ruffle.rs",
                     )],
@@ -120,10 +120,7 @@ impl CompatibilityRules {
                 RuleSet {
                     name: "mochiads".to_string(),
                     domain_rewrite_rules: vec![],
-                    domain_block_rules: vec![UrlBlockRule::new(
-                        FetchReason::all(),
-                        "*.mochiads.com",
-                    )],
+                    domain_block_rules: vec![UrlBlockRule::new(EnumSet::all(), "*.mochiads.com")],
                 },
             ],
         }
@@ -146,7 +143,7 @@ impl CompatibilityRules {
 
         for rule_set in &self.rule_sets {
             for rule in &rule_set.domain_rewrite_rules {
-                if rule.stage != stage || !rule.fetch_reasons.contains(&fetch_reason) {
+                if rule.stage != stage || !rule.fetch_reasons.contains(fetch_reason) {
                     continue;
                 }
 
@@ -170,7 +167,7 @@ impl CompatibilityRules {
 
             if stage == UrlRewriteStage::BeforeRequest {
                 for rule in &rule_set.domain_block_rules {
-                    if !rule.fetch_reasons.contains(&fetch_reason) {
+                    if !rule.fetch_reasons.contains(fetch_reason) {
                         continue;
                     }
 

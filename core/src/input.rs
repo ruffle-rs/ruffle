@@ -3,6 +3,7 @@ use crate::events::{
     MouseWheelDelta, NamedKey, PhysicalKey, PlayerEvent, TextControlCode,
 };
 use chrono::{DateTime, TimeDelta, Utc};
+use enumset::EnumSet;
 use std::collections::{HashMap, HashSet};
 
 pub enum KeyCodeMappingType {
@@ -311,8 +312,8 @@ impl InputManager {
         self.is_key_down(button.into())
     }
 
-    pub fn get_mouse_down_buttons(&self) -> HashSet<MouseButton> {
-        let mut buttons = HashSet::new();
+    pub fn get_mouse_down_buttons(&self) -> EnumSet<MouseButton> {
+        let mut buttons = EnumSet::new();
         if self.is_mouse_down(MouseButton::Left) {
             buttons.insert(MouseButton::Left);
         }
