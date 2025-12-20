@@ -93,10 +93,10 @@
         "message": "Recarregar guia para aplicar as alterações"
     },
     "open_player_page": {
-        "message": "Abrir Reprodutor SWF"
+        "message": "Abrir reprodutor SWF"
     },
     "open_settings_page": {
-        "message": "Abrir Página de Configurações"
+        "message": "Abrir página de configurações"
     },
     "settings_page": {
         "message": "Página de configurações"
@@ -105,7 +105,7 @@
         "message": "Coloca o Flash de volta na web onde ele pertence."
     },
     "save_settings": {
-        "message": "Salvar Configurações"
+        "message": "Salvar configurações"
     },
     "settings_saved": {
         "message": "Configurações salvas"

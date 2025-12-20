@@ -1,10 +1,10 @@
-about-ruffle = Informazioni Su Ruffle
+about-ruffle = Informazioni su Ruffle
 about-ruffle-version = Versione
 about-ruffle-channel = Canale
-about-ruffle-build-time = Tempo Di Costruzione
-about-ruffle-build-features = Funzioni Di Build
-about-ruffle-commit-ref = Alias del Commit
-about-ruffle-commit-time = Tempo Di Commit
+about-ruffle-build-time = Tempo di costruzione
+about-ruffle-build-features = Funzioni di build
+about-ruffle-commit-ref = Alias del commit
+about-ruffle-commit-time = Tempo di commit
 about-ruffle-visit-website = Sito web
 about-ruffle-visit-github = GitHub
 about-ruffle-visit-discord = Discord

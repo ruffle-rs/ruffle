@@ -1,1 +1,1 @@
-context-menu-exit-fullscreen = Ieșire din Ecran Complet
+context-menu-exit-fullscreen = Ieșire din ecran complet

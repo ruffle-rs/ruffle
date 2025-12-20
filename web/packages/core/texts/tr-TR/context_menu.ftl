@@ -1,6 +1,6 @@
 context-menu-download-swf = .swf'i indir
 context-menu-copy-debug-info = Hata ayıklama bilgisini kopyala
-context-menu-open-save-manager = Kayıt Yöneticisini Aç
+context-menu-open-save-manager = Kayıt yöneticisini aç
 context-menu-about-ruffle =
     { $flavor ->
         [extension] Ruffle Uzantısı Hakkında ({ $version })

@@ -51,7 +51,7 @@
         "message": "Embutido"
     },
     "settings_advanced_options": {
-        "message": "Opções Avançadas"
+        "message": "Opções avançadas"
     },
     "settings_reset": {
         "message": "Redefinir opções"
@@ -93,13 +93,13 @@
         "message": "Recarregar separador para aplicar"
     },
     "open_player_page": {
-        "message": "Abrir Leitor de SWF"
+        "message": "Abrir leitor de SWF"
     },
     "open_settings_page": {
         "message": "Abrir página de opções"
     },
     "settings_page": {
-        "message": "Página de Opções"
+        "message": "Página de opções"
     },
     "description": {
         "message": "Traz o Flash de volta à web, onde deve estar."

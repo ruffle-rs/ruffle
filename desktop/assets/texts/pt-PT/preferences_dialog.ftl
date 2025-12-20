@@ -1,5 +1,5 @@
 preferences-dialog = Preferências do Ruffle
-preference-locked-by-cli = Apenas leitura (Definido por CLI)
+preference-locked-by-cli = Apenas leitura (definido por CLI)
 graphics-backend = Motor gráfico
 graphics-backend-default = Padrão
 graphics-power = Preferência de energia
@@ -9,7 +9,7 @@ language = Idioma
 audio-output-device = Dispositivo de saída de áudio
 audio-output-device-default = Padrão do sistema
 enable-openh264 = Ativar OpenH264
-show-license = Mostrar Licença
+show-license = Mostrar licença
 openh264-license = Licença do OpenH264
 log-filename-pattern = Nome do ficheiro de registo
 log-filename-pattern-single-file = Ficheiro único (ruffle.log)

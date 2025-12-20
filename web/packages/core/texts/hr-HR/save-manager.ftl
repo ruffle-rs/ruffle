@@ -4,6 +4,7 @@ save-reload-prompt =
     [delete] izbrišete
     *[replace] zamijenite
     } ovu datoteku za spremanje bez potencijalnog sukoba jest ponovno učitavanje ovog sadržaja. Želite li ipak nastaviti?
+save-download = Preuzmite
 save-replace = Zamijeni
 save-delete = Izbriši
 save-backup-all = Preuzmi sve spremljene datoteke

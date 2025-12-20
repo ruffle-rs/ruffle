@@ -39,4 +39,4 @@ debug-menu-open-movie-list = Mostrar películas conocidas
 debug-menu-open-domain-list = Mostrar dominios
 debug-menu-search-display-objects = Buscar los objetos de rendimiento...
 view-menu = Ver
-view-menu-fullscreen = Pantalla Completa
+view-menu-fullscreen = Pantalla completa

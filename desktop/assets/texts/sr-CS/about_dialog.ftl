@@ -5,4 +5,5 @@ about-ruffle-build-time = Vreme sagrađivanja
 about-ruffle-build-features = Karakteristike sagrađivanja
 about-ruffle-visit-website = Veb-sajt
 about-ruffle-visit-github = GitHab
+about-ruffle-visit-discord = Discord
 about-ruffle-visit-sponsor = Sponzorirajte

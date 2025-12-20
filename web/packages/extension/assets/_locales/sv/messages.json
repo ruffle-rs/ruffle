@@ -45,7 +45,7 @@
         "message": "Automatisk"
     },
     "settings_advanced_options": {
-        "message": "Avancerade Inställningar"
+        "message": "Avancerade inställningar"
     },
     "settings_reset": {
         "message": "Nollställ inställningar"
@@ -84,13 +84,13 @@
         "message": "Ruffle kan ej köras i skyddade webbläsarsidor."
     },
     "action_reload": {
-        "message": "Ladda om Fliken för att Applicera Ändringar"
+        "message": "Ladda om fliken för att applicera ändringar"
     },
     "open_player_page": {
         "message": "Öppna SWF-spelare"
     },
     "open_settings_page": {
-        "message": "Öppna Inställningar"
+        "message": "Öppna inställningar"
     },
     "settings_page": {
         "message": "Inställningar"
@@ -99,10 +99,10 @@
         "message": "Återställer Flash på webben där det hör hemma."
     },
     "save_settings": {
-        "message": "Spara Inställningar"
+        "message": "Spara inställningar"
     },
     "settings_saved": {
-        "message": "Inställningar Sparade"
+        "message": "Inställningar sparade"
     },
     "permissions_grant": {
         "message": "Ge Ruffle tillåtelse att få tillgång till min data på alla sidor"

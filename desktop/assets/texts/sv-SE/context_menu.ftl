@@ -1,1 +1,1 @@
-context-menu-exit-fullscreen = Gå Ur Helskärm
+context-menu-exit-fullscreen = Gå ur helskärm

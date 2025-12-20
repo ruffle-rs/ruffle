@@ -90,22 +90,22 @@
         "message": "Aggiorna la tab per applicare i cambiamenti"
     },
     "open_player_page": {
-        "message": "Apri Riproduttore SWF"
+        "message": "Apri riproduttore SWF"
     },
     "open_settings_page": {
-        "message": "Apri la Pagina Impostazioni"
+        "message": "Apri la pagina impostazioni"
     },
     "settings_page": {
-        "message": "Pagina Impostazioni"
+        "message": "Pagina impostazioni"
     },
     "description": {
         "message": "Rimettere Flash sul web dove appartiene."
     },
     "save_settings": {
-        "message": "Salva Impostazioni"
+        "message": "Salva impostazioni"
     },
     "settings_saved": {
-        "message": "Impostazioni Salvate"
+        "message": "Impostazioni salvate"
     },
     "onboarding_page": {
         "message": "Pagina di onboarding"

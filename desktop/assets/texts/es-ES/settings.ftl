@@ -1,7 +1,7 @@
 network-settings = Configuración de red
 player-settings = Configuración de reproducción
 movie-parameters = Parámetros de película
-custom-base-url = URL Base personalizada
+custom-base-url = URL base personalizada
 spoof-swf-url = Falsificar URL de SWF
 referer-url = URL de origen
 cookie = Cookie
@@ -71,4 +71,4 @@ player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = Velocidad personalizada de rendimiento
 custom-framerate-suffix = { " " } fps
-dummy-external-interface = Interfaz Externa Falsa
+dummy-external-interface = Interfaz externa falsa

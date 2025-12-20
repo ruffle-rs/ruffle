@@ -45,10 +45,10 @@
         "message": "Automático"
     },
     "settings_advanced_options": {
-        "message": "Opciones Avanzadas"
+        "message": "Opciones avanzadas"
     },
     "settings_reset": {
-        "message": "Reiniciar Configuración"
+        "message": "Reiniciar configuración"
     },
     "settings_reset_confirm": {
         "message": "¿Está seguro de que desea restaurar la configuración de Ruffle a sus valores predeterminados originales?"
@@ -87,7 +87,7 @@
         "message": "Recargar la pestaña para aplicar los cambios"
     },
     "open_player_page": {
-        "message": "Abrir Reproductor de SWF"
+        "message": "Abrir reproductor de SWF"
     },
     "open_settings_page": {
         "message": "Abrir la página de configuración"
