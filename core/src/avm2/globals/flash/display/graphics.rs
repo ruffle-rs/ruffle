@@ -22,6 +22,7 @@ use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::{AvmString, WStr};
 use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
+use ruffle_wstr::FromWStr;
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{
     Color, FillStyle, Fixed16, Fixed8, Gradient, GradientInterpolation, GradientRecord,
@@ -1048,11 +1049,10 @@ pub fn draw_triangles<'gc>(
 
             let uvt_data = args.try_get_object(2);
 
-            let culling = {
-                let culling = args.get_string(activation, 3);
-                TriangleCulling::from_string(culling)
-                    .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?
-            };
+            let culling = args
+                .get_string(activation, 3)
+                .parse()
+                .map_err(|_| make_error_2004(activation, Error2004Type::ArgumentError))?;
 
             draw_triangles_internal(
                 activation,
@@ -1075,19 +1075,23 @@ enum TriangleCulling {
     Negative,
 }
 
-impl TriangleCulling {
-    fn from_string(value: AvmString) -> Option<Self> {
-        if &value == b"none" {
-            Some(Self::None)
-        } else if &value == b"positive" {
-            Some(Self::Positive)
-        } else if &value == b"negative" {
-            Some(Self::Negative)
+impl FromWStr for TriangleCulling {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"none" {
+            Ok(Self::None)
+        } else if s == b"positive" {
+            Ok(Self::Positive)
+        } else if s == b"negative" {
+            Ok(Self::Negative)
         } else {
-            None
+            Err(())
         }
     }
+}
 
+impl TriangleCulling {
     fn cull(self, (a, b, c): Triangle) -> bool {
         fn triangle_orientation((a, b, c): Triangle) -> i64 {
             let ax = a.x.get() as i64;
@@ -1580,14 +1584,11 @@ fn handle_graphics_triangle_path<'gc>(
     drawing: &mut Drawing,
     obj: &Object<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let culling = {
-        let culling = obj
-            .get_slot(graphics_triangle_path_slots::_CULLING)
-            .coerce_to_string(activation)?;
-
-        TriangleCulling::from_string(culling)
-            .ok_or_else(|| make_error_2008(activation, "culling"))?
-    };
+    let culling = obj
+        .get_slot(graphics_triangle_path_slots::_CULLING)
+        .coerce_to_string(activation)?
+        .parse()
+        .map_err(|_| make_error_2008(activation, "culling"))?;
 
     let vertices = obj
         .get_slot(graphics_triangle_path_slots::VERTICES)

@@ -1,5 +1,5 @@
-use std::fmt::{self, Display, Formatter};
 use ruffle_wstr::{FromWStr, WStr};
+use std::fmt::{self, Display, Formatter};
 
 /// Like `swf::BlendMode`, but contains variants that cannot be read from
 /// a SWF (currently, just `Shader`).
