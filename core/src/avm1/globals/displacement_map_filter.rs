@@ -212,17 +212,10 @@ impl<'gc> DisplacementMapFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let mode = value.coerce_to_string(activation)?;
-
-            let mode = if &mode == b"clamp" {
-                DisplacementMapFilterMode::Clamp
-            } else if &mode == b"ignore" {
-                DisplacementMapFilterMode::Ignore
-            } else if &mode == b"color" {
-                DisplacementMapFilterMode::Color
-            } else {
-                DisplacementMapFilterMode::Wrap
-            };
+            let mode = value
+                .coerce_to_string(activation)?
+                .parse()
+                .unwrap_or(DisplacementMapFilterMode::Wrap);
 
             self.0.mode.set(mode);
         }
