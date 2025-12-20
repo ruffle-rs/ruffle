@@ -22,9 +22,7 @@ use crate::string::AvmString;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use crate::{avm2_stub_getter, avm2_stub_setter};
-use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::filters::Filter;
-use std::str::FromStr;
 
 /// Initializes a DisplayObject created from ActionScript.
 /// This should be called from the AVM2 class's native allocator
@@ -849,13 +847,10 @@ pub fn set_blend_mode<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let mode = args.get_string_non_null(activation, 0, "blendMode")?;
-
-        if let Ok(mode) = ExtendedBlendMode::from_str(&mode.to_string()) {
-            dobj.set_blend_mode(mode);
-        } else {
-            tracing::error!("Unknown blend mode {}", mode);
-            return Err(make_error_2008(activation, "blendMode"));
-        }
+        let mode = mode
+            .parse()
+            .map_err(|_| make_error_2008(activation, "blendMode"))?;
+        dobj.set_blend_mode(mode);
     }
     Ok(Value::Undefined)
 }

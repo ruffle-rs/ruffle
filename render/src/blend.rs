@@ -1,7 +1,5 @@
-use std::{
-    fmt::{self, Display, Formatter},
-    str::FromStr,
-};
+use std::fmt::{self, Display, Formatter};
+use ruffle_wstr::{FromWStr, WStr};
 
 /// Like `swf::BlendMode`, but contains variants that cannot be read from
 /// a SWF (currently, just `Shader`).
@@ -25,29 +23,43 @@ pub enum ExtendedBlendMode {
     Shader,
 }
 
-impl FromStr for ExtendedBlendMode {
+impl FromWStr for ExtendedBlendMode {
     type Err = ();
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mode = match s {
-            "normal" => ExtendedBlendMode::Normal,
-            "layer" => ExtendedBlendMode::Layer,
-            "multiply" => ExtendedBlendMode::Multiply,
-            "screen" => ExtendedBlendMode::Screen,
-            "lighten" => ExtendedBlendMode::Lighten,
-            "darken" => ExtendedBlendMode::Darken,
-            "difference" => ExtendedBlendMode::Difference,
-            "add" => ExtendedBlendMode::Add,
-            "subtract" => ExtendedBlendMode::Subtract,
-            "invert" => ExtendedBlendMode::Invert,
-            "alpha" => ExtendedBlendMode::Alpha,
-            "erase" => ExtendedBlendMode::Erase,
-            "overlay" => ExtendedBlendMode::Overlay,
-            "hardlight" => ExtendedBlendMode::HardLight,
-            "shader" => ExtendedBlendMode::Shader,
-            _ => return Err(()),
-        };
-        Ok(mode)
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"normal" {
+            Ok(ExtendedBlendMode::Normal)
+        } else if s == b"layer" {
+            Ok(ExtendedBlendMode::Layer)
+        } else if s == b"multiply" {
+            Ok(ExtendedBlendMode::Multiply)
+        } else if s == b"screen" {
+            Ok(ExtendedBlendMode::Screen)
+        } else if s == b"lighten" {
+            Ok(ExtendedBlendMode::Lighten)
+        } else if s == b"darken" {
+            Ok(ExtendedBlendMode::Darken)
+        } else if s == b"difference" {
+            Ok(ExtendedBlendMode::Difference)
+        } else if s == b"add" {
+            Ok(ExtendedBlendMode::Add)
+        } else if s == b"subtract" {
+            Ok(ExtendedBlendMode::Subtract)
+        } else if s == b"invert" {
+            Ok(ExtendedBlendMode::Invert)
+        } else if s == b"alpha" {
+            Ok(ExtendedBlendMode::Alpha)
+        } else if s == b"erase" {
+            Ok(ExtendedBlendMode::Erase)
+        } else if s == b"overlay" {
+            Ok(ExtendedBlendMode::Overlay)
+        } else if s == b"hardlight" {
+            Ok(ExtendedBlendMode::HardLight)
+        } else if s == b"shader" {
+            Ok(ExtendedBlendMode::Shader)
+        } else {
+            Err(())
+        }
     }
 }
 
