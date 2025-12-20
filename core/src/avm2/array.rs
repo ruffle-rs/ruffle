@@ -93,15 +93,7 @@ impl<'gc> ArrayStorage<'gc> {
 
     /// Convert a set of arguments into array storage.
     pub fn from_args(values: &[Value<'gc>]) -> Self {
-        let storage = values
-            .iter()
-            .map(|v| Some(*v))
-            .collect::<Vec<Option<Value<'gc>>>>();
-
-        ArrayStorage::Dense {
-            storage,
-            occupied_count: values.len(),
-        }
+        Self::from_iter(values.iter().copied())
     }
 
     /// Wrap an existing storage Vec in an `ArrayStorage`.
@@ -609,12 +601,9 @@ where
         I: IntoIterator<Item = V>,
     {
         let storage: Vec<_> = values.into_iter().map(|v| Some(v.into())).collect();
-
-        let occupied_count = storage.iter().filter(|v| v.is_some()).count();
-
         ArrayStorage::Dense {
+            occupied_count: storage.len(),
             storage,
-            occupied_count,
         }
     }
 }
