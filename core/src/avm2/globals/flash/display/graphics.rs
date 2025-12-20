@@ -226,31 +226,17 @@ fn parse_gradient_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
     gradient_type: AvmString<'gc>,
 ) -> Result<GradientType, Error<'gc>> {
-    if &gradient_type == b"linear" {
-        Ok(GradientType::Linear)
-    } else if &gradient_type == b"radial" {
-        Ok(GradientType::Radial)
-    } else {
-        Err(make_error_2008(activation, "type"))
-    }
+    gradient_type
+        .parse()
+        .map_err(|_| make_error_2008(activation, "type"))
 }
 
 fn parse_interpolation_method(gradient_type: AvmString) -> GradientInterpolation {
-    if &gradient_type == b"linearRGB" {
-        GradientInterpolation::LinearRgb
-    } else {
-        GradientInterpolation::Rgb
-    }
+    gradient_type.parse().unwrap_or(GradientInterpolation::Rgb)
 }
 
 fn parse_spread_method(spread_method: AvmString) -> GradientSpread {
-    if &spread_method == b"repeat" {
-        GradientSpread::Repeat
-    } else if &spread_method == b"reflect" {
-        GradientSpread::Reflect
-    } else {
-        GradientSpread::Pad
-    }
+    spread_method.parse().unwrap_or(GradientSpread::Pad)
 }
 
 /// Implements `Graphics.clear`
@@ -1006,13 +992,9 @@ pub fn draw_path<'gc>(
     let data = args.get_object(activation, 1, "data")?;
     let winding = args.get_string(activation, 2);
 
-    let fill_rule = if winding == WStr::from_units(b"nonZero") {
-        FillRule::NonZero
-    } else if winding == WStr::from_units(b"evenOdd") {
-        FillRule::EvenOdd
-    } else {
-        return Err(make_error_2008(activation, "winding"));
-    };
+    let fill_rule = winding
+        .parse()
+        .map_err(|_| make_error_2008(activation, "winding"))?;
 
     // FIXME - implement fill behavior described in the Flash docs
     // (which is different from just running each command sequentially on `Graphics`)
@@ -1489,13 +1471,9 @@ fn handle_igraphics_data<'gc>(
             .get_slot(graphics_path_slots::_WINDING)
             .coerce_to_string(activation)?;
 
-        let fill_rule = if winding == WStr::from_units(b"nonZero") {
-            FillRule::NonZero
-        } else if winding == WStr::from_units(b"evenOdd") {
-            FillRule::EvenOdd
-        } else {
-            unreachable!("AS3 setter guarantees value of winding");
-        };
+        let fill_rule = winding
+            .parse()
+            .expect("AS3 setter guarantees value of winding");
 
         if let (Some(commands), Some(data)) = (commands, data) {
             process_commands(
