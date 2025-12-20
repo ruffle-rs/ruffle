@@ -1700,6 +1700,24 @@ pub enum TextAlign {
     Justify = 3,
 }
 
+impl FromWStr for TextAlign {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"left" {
+            Ok(TextAlign::Left)
+        } else if s == b"right" {
+            Ok(TextAlign::Right)
+        } else if s == b"center" {
+            Ok(TextAlign::Center)
+        } else if s == b"justify" {
+            Ok(TextAlign::Justify)
+        } else {
+            Err(())
+        }
+    }
+}
+
 impl TextAlign {
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
@@ -1742,6 +1760,22 @@ pub enum TextGridFit {
     None = 0,
     Pixel = 1,
     SubPixel = 2,
+}
+
+impl FromWStr for TextGridFit {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"none" {
+            Ok(TextGridFit::None)
+        } else if s == b"pixel" {
+            Ok(TextGridFit::Pixel)
+        } else if s == b"subpixel" {
+            Ok(TextGridFit::SubPixel)
+        } else {
+            Err(())
+        }
+    }
 }
 
 impl TextGridFit {

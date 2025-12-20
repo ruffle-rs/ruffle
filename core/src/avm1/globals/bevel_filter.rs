@@ -5,6 +5,7 @@ use crate::avm1::property_decl::{DeclContext, Declaration, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
+use ruffle_wstr::{FromWStr, WStr};
 use std::cell::Cell;
 use swf::{BevelFilterFlags, Color, Fixed16, Fixed8, GradientFilterFlags};
 
@@ -14,6 +15,22 @@ pub enum BevelFilterType {
     Inner,
     Outer,
     Full,
+}
+
+impl FromWStr for BevelFilterType {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"inner" {
+            Ok(BevelFilterType::Inner)
+        } else if s == b"outer" {
+            Ok(BevelFilterType::Outer)
+        } else if s == b"full" {
+            Ok(BevelFilterType::Full)
+        } else {
+            Err(())
+        }
+    }
 }
 
 impl BevelFilterType {
@@ -362,15 +379,10 @@ impl<'gc> BevelFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let type_ = value.coerce_to_string(activation)?;
-
-            let type_ = if &type_ == b"inner" {
-                BevelFilterType::Inner
-            } else if &type_ == b"outer" {
-                BevelFilterType::Outer
-            } else {
-                BevelFilterType::Full
-            };
+            let type_ = value
+                .coerce_to_string(activation)?
+                .parse()
+                .unwrap_or(BevelFilterType::Full);
 
             self.0.type_.set(type_);
         }
