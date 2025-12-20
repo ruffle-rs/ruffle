@@ -17,7 +17,7 @@ use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::Error;
 use crate::avm2_stub_method;
-use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
+use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::{Character, CompressedBitmap};
@@ -1409,12 +1409,10 @@ pub fn threshold<'gc>(
             let mask = args.get_u32(6);
             let copy_source = args.get_bool(7);
 
-            let operation = if let Some(operation) = ThresholdOperation::from_wstr(&operation) {
-                operation
-            } else {
+            let operation = operation
+                .parse()
                 // It's wrong but this is what Flash says.
-                return Err(make_error_2005(activation, 0, "Operation"));
-            };
+                .map_err(|_| make_error_2005(activation, 0, "Operation"))?;
 
             let (src_min_x, src_min_y, src_width, src_height) =
                 get_rectangle_x_y_width_height(activation, source_rect)?;
