@@ -1,6 +1,7 @@
 use crate::display_object::InteractiveObject;
 use crate::input::InputEvent;
 use crate::string::{AvmString, StringContext};
+use enumset::EnumSetType;
 use ruffle_macros::istr;
 use std::str::FromStr;
 use swf::ClipEventFlag;
@@ -622,7 +623,7 @@ impl KeyCode {
 }
 
 /// Subset of `KeyCode` that contains only mouse buttons.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, EnumSetType)]
 pub enum MouseButton {
     Unknown,
     Left,

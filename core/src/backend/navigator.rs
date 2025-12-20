@@ -5,6 +5,7 @@ use crate::socket::{ConnectionState, SocketAction, SocketHandle};
 use crate::string::WStr;
 use async_channel::{Receiver, Sender};
 use encoding_rs::Encoding;
+use enumset::EnumSetType;
 use indexmap::IndexMap;
 use std::any::Any;
 use std::borrow::Cow;
@@ -56,21 +57,11 @@ pub enum SocketMode {
     Ask,
 }
 
-#[derive(Clone, Copy, Debug, Eq, PartialEq, Hash)]
+#[derive(EnumSetType, Debug)]
 pub enum FetchReason {
     LoadSwf,
     UrlLoader,
     Other,
-}
-
-impl FetchReason {
-    pub fn all() -> &'static [FetchReason] {
-        &[
-            FetchReason::LoadSwf,
-            FetchReason::UrlLoader,
-            FetchReason::Other,
-        ]
-    }
 }
 
 impl NavigationMethod {

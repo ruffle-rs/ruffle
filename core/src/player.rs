@@ -58,6 +58,7 @@ use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use crate::DEFAULT_PLAYER_VERSION;
 use async_channel::Sender;
+use enumset::EnumSet;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, DynamicRootSet, Mutation, Rootable};
 use ruffle_macros::istr;
@@ -67,7 +68,7 @@ use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::TransformStack;
 use ruffle_video::backend::VideoBackend;
 use std::cell::RefCell;
-use std::collections::{HashMap, HashSet, VecDeque};
+use std::collections::{HashMap, VecDeque};
 use std::fmt;
 use std::ops::{Deref, DerefMut};
 use std::rc::{Rc, Weak as RcWeak};
@@ -1063,9 +1064,7 @@ impl Player {
         let changed_mouse_buttons = self
             .input
             .get_mouse_down_buttons()
-            .symmetric_difference(&prev_mouse_buttons)
-            .cloned()
-            .collect();
+            .symmetrical_difference(prev_mouse_buttons);
 
         if cfg!(feature = "avm_debug") {
             match event {
@@ -1382,7 +1381,7 @@ impl Player {
 
             // This fires button rollover/press events, which should run after the above mouseMove events.
             if self.update_mouse_state(
-                &changed_mouse_buttons,
+                changed_mouse_buttons,
                 is_mouse_moved,
                 &mut player_event_handled,
             ) {
@@ -1416,7 +1415,7 @@ impl Player {
         }
 
         if let InputEvent::MouseLeave = event {
-            if self.update_mouse_state(&changed_mouse_buttons, true, &mut player_event_handled) {
+            if self.update_mouse_state(changed_mouse_buttons, true, &mut player_event_handled) {
                 self.needs_render = true;
             }
         }
@@ -1518,7 +1517,7 @@ impl Player {
     /// Updates the hover state of buttons.
     fn update_mouse_state(
         &mut self,
-        changed_mouse_buttons: &HashSet<MouseButton>,
+        changed_mouse_buttons: EnumSet<MouseButton>,
         is_mouse_moved: bool,
         player_event_handled: &mut bool,
     ) -> bool {
@@ -1607,7 +1606,7 @@ impl Player {
                     context.mouse_data.hovered.is_none() && context.mouse_data.pressed.is_none();
                 if !object_removed {
                     mouse_cursor_needs_check = false;
-                    if changed_mouse_buttons.contains(&MouseButton::Left) {
+                    if changed_mouse_buttons.contains(MouseButton::Left) {
                         // The object is pressed/released and may be removed immediately, we need to check
                         // in the next frame if it still exists. If it doesn't, we'll update the cursor.
                         mouse_cursor_needs_check = true;
@@ -1616,7 +1615,7 @@ impl Player {
                     mouse_cursor_needs_check = false;
                     new_cursor = MouseCursor::Arrow;
                 } else if !context.input.is_mouse_down(MouseButton::Left)
-                    && (is_mouse_moved || changed_mouse_buttons.contains(&MouseButton::Left))
+                    && (is_mouse_moved || changed_mouse_buttons.contains(MouseButton::Left))
                 {
                     // In every other case, the cursor remains until the user interacts with the mouse again.
                     new_cursor = MouseCursor::Arrow;
@@ -1750,7 +1749,7 @@ impl Player {
             }
             // Handle presses and releases.
             for button in [MouseButton::Left, MouseButton::Middle, MouseButton::Right] {
-                if !changed_mouse_buttons.contains(&button) {
+                if !changed_mouse_buttons.contains(button) {
                     continue;
                 }
 
@@ -2386,7 +2385,7 @@ impl Player {
         self.mutate_with_update_context(|context| {
             Self::update_drag(context);
         });
-        self.update_mouse_state(&HashSet::new(), false, &mut false);
+        self.update_mouse_state(EnumSet::empty(), false, &mut false);
 
         // GC
         self.gc_arena.borrow_mut().collect_debt();
