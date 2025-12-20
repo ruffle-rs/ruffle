@@ -142,14 +142,11 @@ pub fn set_endian<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(socket) = this.as_socket() {
-        let endian = args.get_string(activation, 0);
-        if &endian == b"bigEndian" {
-            socket.set_endian(Endian::Big);
-        } else if &endian == b"littleEndian" {
-            socket.set_endian(Endian::Little);
-        } else {
-            return Err(make_error_2008(activation, "endian"));
-        }
+        let endian = args
+            .get_string(activation, 0)
+            .parse()
+            .map_err(|_| make_error_2008(activation, "endian"))?;
+        socket.set_endian(endian);
     }
 
     Ok(Value::Undefined)
