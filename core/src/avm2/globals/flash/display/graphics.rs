@@ -312,17 +312,8 @@ pub fn end_fill<'gc>(
 }
 
 fn caps_to_cap_style(caps: Option<AvmString>) -> LineCapStyle {
-    if let Some(caps) = caps {
-        if &caps == b"none" {
-            LineCapStyle::None
-        } else if &caps == b"square" {
-            LineCapStyle::Square
-        } else {
-            LineCapStyle::Round
-        }
-    } else {
-        LineCapStyle::Round
-    }
+    caps.and_then(|s| s.parse().ok())
+        .unwrap_or(LineCapStyle::Round)
 }
 
 fn joints_to_join_style(joints: Option<AvmString>, miter_limit: f64) -> LineJoinStyle {

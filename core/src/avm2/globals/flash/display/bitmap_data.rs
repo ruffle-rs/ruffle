@@ -25,7 +25,6 @@ use crate::ecma_conversions::round_to_even;
 use crate::swf::BlendMode;
 use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
-use std::str::FromStr;
 use swf::{Rectangle, Twips};
 
 // Computes the integer x,y,width,height values from
@@ -935,7 +934,7 @@ pub fn draw<'gc>(
         }
 
         if let Some(mode) = args.try_get_string(3) {
-            if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
+            if let Ok(mode) = mode.parse() {
                 blend_mode = mode;
             } else {
                 tracing::error!("Unknown blend mode {:?}", mode);
@@ -1016,7 +1015,7 @@ pub fn draw_with_quality<'gc>(
         }
 
         if let Some(mode) = args.try_get_string(3) {
-            if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
+            if let Ok(mode) = mode.parse() {
                 blend_mode = mode;
             } else {
                 tracing::error!("Unknown blend mode {:?}", mode);

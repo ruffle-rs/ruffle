@@ -7,10 +7,10 @@
 use crate::string::SwfStr;
 use bitflags::bitflags;
 use enum_map::Enum;
+use ruffle_wstr::{FromWStr, WStr};
 use std::borrow::Cow;
 use std::fmt::{self, Display, Formatter};
 use std::num::NonZeroU8;
-use std::str::FromStr;
 
 mod bevel_filter;
 mod blur_filter;
@@ -422,28 +422,41 @@ impl Display for BlendMode {
     }
 }
 
-impl FromStr for BlendMode {
+impl FromWStr for BlendMode {
     type Err = ();
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mode = match s {
-            "normal" => BlendMode::Normal,
-            "layer" => BlendMode::Layer,
-            "multiply" => BlendMode::Multiply,
-            "screen" => BlendMode::Screen,
-            "lighten" => BlendMode::Lighten,
-            "darken" => BlendMode::Darken,
-            "difference" => BlendMode::Difference,
-            "add" => BlendMode::Add,
-            "subtract" => BlendMode::Subtract,
-            "invert" => BlendMode::Invert,
-            "alpha" => BlendMode::Alpha,
-            "erase" => BlendMode::Erase,
-            "overlay" => BlendMode::Overlay,
-            "hardlight" => BlendMode::HardLight,
-            _ => return Err(()),
-        };
-        Ok(mode)
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"normal" {
+            Ok(BlendMode::Normal)
+        } else if s == b"layer" {
+            Ok(BlendMode::Layer)
+        } else if s == b"multiply" {
+            Ok(BlendMode::Multiply)
+        } else if s == b"screen" {
+            Ok(BlendMode::Screen)
+        } else if s == b"lighten" {
+            Ok(BlendMode::Lighten)
+        } else if s == b"darken" {
+            Ok(BlendMode::Darken)
+        } else if s == b"difference" {
+            Ok(BlendMode::Difference)
+        } else if s == b"add" {
+            Ok(BlendMode::Add)
+        } else if s == b"subtract" {
+            Ok(BlendMode::Subtract)
+        } else if s == b"invert" {
+            Ok(BlendMode::Invert)
+        } else if s == b"alpha" {
+            Ok(BlendMode::Alpha)
+        } else if s == b"erase" {
+            Ok(BlendMode::Erase)
+        } else if s == b"overlay" {
+            Ok(BlendMode::Overlay)
+        } else if s == b"hardlight" {
+            Ok(BlendMode::HardLight)
+        } else {
+            Err(())
+        }
     }
 }
 
@@ -789,6 +802,22 @@ impl GradientSpread {
     }
 }
 
+impl FromWStr for GradientSpread {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"pad" {
+            Ok(GradientSpread::Pad)
+        } else if s == b"reflect" {
+            Ok(GradientSpread::Reflect)
+        } else if s == b"repeat" {
+            Ok(GradientSpread::Repeat)
+        } else {
+            Err(())
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, Eq, FromPrimitive, PartialEq, Hash)]
 pub enum GradientInterpolation {
     Rgb = 0,
@@ -803,6 +832,20 @@ impl GradientInterpolation {
             2 | 3 => 0,
             n => n,
         })
+    }
+}
+
+impl FromWStr for GradientInterpolation {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"linearRGB" {
+            Ok(GradientInterpolation::LinearRgb)
+        } else if s == b"rgb" {
+            Ok(GradientInterpolation::Rgb)
+        } else {
+            Err(())
+        }
     }
 }
 
@@ -1006,6 +1049,22 @@ impl LineCapStyle {
     #[inline]
     pub fn from_u8(n: u8) -> Option<Self> {
         num_traits::FromPrimitive::from_u8(n)
+    }
+}
+
+impl FromWStr for LineCapStyle {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"round" {
+            Ok(LineCapStyle::Round)
+        } else if s == b"none" {
+            Ok(LineCapStyle::None)
+        } else if s == b"square" {
+            Ok(LineCapStyle::Square)
+        } else {
+            Err(())
+        }
     }
 }
 
