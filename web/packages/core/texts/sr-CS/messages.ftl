@@ -9,6 +9,7 @@ more-info = Dodatne informacije
 run-anyway = Ipak pokreni
 continue = Nastavi
 report-bug = Prijavi grešku
+update-ruffle = Ažurirajte Ruffle
 ruffle-demo = Veb demo
 ruffle-desktop = Desktop aplikacija
 ruffle-wiki = Pogledajte Ruffle Wiki

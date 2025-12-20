@@ -1,1 +1,1 @@
-context-menu-exit-fullscreen = Salir de Pantalla Completa
+context-menu-exit-fullscreen = Salir de pantalla completa

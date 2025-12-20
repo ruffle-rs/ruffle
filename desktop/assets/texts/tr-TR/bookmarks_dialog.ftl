@@ -1,4 +1,4 @@
-bookmarks-dialog = Yer İşaretlerini yönet
+bookmarks-dialog = Yer işaretlerini yönet
 bookmark-dialog-add = Yer işareti ekle
 bookmarks-dialog-name = Ad
 bookmarks-dialog-location = Konum

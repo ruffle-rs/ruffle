@@ -72,6 +72,6 @@ player-version = Verzia prehrávača
 player-runtime = Doba behu prehrávača
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
-custom-framerate = Vlastný Framerate
+custom-framerate = Vlastný framerate
 custom-framerate-suffix = { " " } fps
 dummy-external-interface = Falošné externé rozhranie

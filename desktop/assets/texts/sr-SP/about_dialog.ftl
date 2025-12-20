@@ -5,4 +5,5 @@ about-ruffle-build-time = Време саграђивања
 about-ruffle-build-features = Карактеристике саграђивања
 about-ruffle-visit-website = Веб-сајт
 about-ruffle-visit-github = ГитХаб
+about-ruffle-visit-discord = Discord
 about-ruffle-visit-sponsor = Спонзорирајте

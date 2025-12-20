@@ -1,4 +1,4 @@
-open-dialog = Öppna Fil eller URL
+open-dialog = Öppna fil eller URL
 open-dialog-path = Fil eller URL
 open-dialog-add-parameter = Lägg till
 open-dialog-remove-parameter = Ta bort

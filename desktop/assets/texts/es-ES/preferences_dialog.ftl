@@ -1,8 +1,8 @@
-preferences-dialog = Menú de Preferencias
+preferences-dialog = Menú de preferencias
 preference-locked-by-cli = Leer solamente (puesto por la terminal de mandatos)
 graphics-backend = Mecanismo/motor de los gráficos
 graphics-backend-default = Predeterminado
-graphics-power = Preferencias de Poder
+graphics-power = Preferencias de poder
 graphics-power-low = Bajo (para gráficos integrados)
 graphics-power-high = Alto (para gráficos dedicados)
 language = Idioma
