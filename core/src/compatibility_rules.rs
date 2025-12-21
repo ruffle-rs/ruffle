@@ -1,5 +1,6 @@
 use enumset::EnumSet;
 use std::borrow::Cow;
+use url::ParseError as UrlParseError;
 use url::Url;
 
 use crate::backend::navigator::{ErrorResponse, FetchReason};
@@ -134,6 +135,12 @@ impl CompatibilityRules {
     ) -> Result<Option<String>, ErrorResponse> {
         let mut url = match Url::parse(&original_url) {
             Ok(url) => url,
+            Err(UrlParseError::RelativeUrlWithoutBase) => {
+                // This is an "expected" error that happens when a SWF provides
+                // a relative path instead of an absolute URL. Avoid logging a
+                // warning when we hit this case.
+                return Ok(None);
+            }
             Err(e) => {
                 tracing::warn!("Couldn't rewrite swf url {original_url}: {e}");
                 return Ok(None);
