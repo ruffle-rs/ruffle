@@ -73,7 +73,14 @@ impl ClickEventData {
 }
 
 pub struct InputManager {
-    key_descriptors_down: HashSet<KeyDescriptor>,
+    /// Tracks which physical keys are currently pressed, identified by (physical key, location).
+    ///
+    /// We use physical keys rather than logical keys because the logical key can change
+    /// between key-down and key-up events. For example, if you press 'w', then press Shift,
+    /// then release 'w', the key-up event will report 'W' (uppercase) even though 'w'
+    /// (lowercase) was pressed. By tracking physical keys, we correctly match key-up
+    /// events to their corresponding key-down events regardless of modifier state changes.
+    keys_down_phys_loc: HashSet<(PhysicalKey, KeyLocation)>,
 
     keys_down: HashSet<KeyCode>,
     keys_toggled: HashSet<KeyCode>,
@@ -90,7 +97,7 @@ pub struct InputManager {
 impl InputManager {
     pub fn new(gamepad_button_mapping: HashMap<GamepadButton, KeyCode>) -> Self {
         Self {
-            key_descriptors_down: HashSet::new(),
+            keys_down_phys_loc: HashSet::new(),
             keys_down: HashSet::new(),
             keys_toggled: HashSet::new(),
             last_key: KeyCode::UNKNOWN,
@@ -157,11 +164,13 @@ impl InputManager {
             }
 
             PlayerEvent::KeyDown { key } => {
-                self.key_descriptors_down.insert(key);
+                self.keys_down_phys_loc
+                    .insert((key.physical_key, key.key_location));
 
                 let key_code = self.map_to_key_code(key)?;
                 let key_char = self.map_to_key_char(key);
                 let key_location = self.map_to_key_location(key);
+
                 InputEvent::KeyDown {
                     key_code,
                     key_char,
@@ -169,10 +178,13 @@ impl InputManager {
                 }
             }
             PlayerEvent::KeyUp { key } => {
-                if !self.key_descriptors_down.remove(&key) {
+                if !self
+                    .keys_down_phys_loc
+                    .remove(&(key.physical_key, key.key_location))
+                {
                     // Ignore spurious KeyUp events that may happen e.g. during IME.
                     // We assume that in order for a key to generate KeyUp, it had to
-                    // generate KeyDown for the same exact KeyDescriptor.
+                    // generate KeyDown for the same physical key and location.
 
                     // TODO Apparently this behavior is platform-dependent and
                     //   doesn't happen on Windows. We cannot remove it fully
@@ -184,6 +196,7 @@ impl InputManager {
                 let key_code = self.map_to_key_code(key)?;
                 let key_char = self.map_to_key_char(key);
                 let key_location = self.map_to_key_location(key);
+
                 InputEvent::KeyUp {
                     key_code,
                     key_char,
