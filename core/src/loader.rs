@@ -29,7 +29,6 @@ use crate::display_object::{
     TInteractiveObject,
 };
 use crate::events::ClipEvent;
-use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::limits::ExecutionLimit;
 use crate::player::{Player, PostFrameCallback};
 use crate::streams::{NetStream, NetStreamHandle};
@@ -1881,7 +1880,12 @@ impl<'gc> MovieLoader<'gc> {
                 // we add the loaded clip as a child. The frame constructor should see
                 // 'this.parent == null' and 'this.stage == null'
                 dobj.post_instantiation(uc, None, Instantiator::Movie, false);
-                catchup_display_object_to_frame(uc, dobj);
+
+                if dobj.movie().is_action_script_3() {
+                    dobj.enter_frame(uc);
+                    dobj.construct_frame(uc);
+                }
+
                 // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
                 // and consequently are observed to have their currentFrame lag one
                 // frame behind objects placed by the timeline (even if they were
