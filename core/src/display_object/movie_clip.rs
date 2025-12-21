@@ -438,6 +438,7 @@ impl<'gc> MovieClip<'gc> {
     /// `true` if both `init` and `complete` have been fired
     pub fn try_fire_loaderinfo_events(self, context: &mut UpdateContext<'gc>) -> bool {
         if self.0.initialized()
+            && !self.avm2_constructor_failed()
             && let Some(loader_info) = self.loader_info()
         {
             return loader_info.fire_init_and_complete_events(context, 0, false);
@@ -868,6 +869,14 @@ impl<'gc> MovieClip<'gc> {
         self.clip_actions()
             .iter()
             .any(|handler| handler.events.contains(ClipEventFlag::UNLOAD))
+    }
+
+    pub fn avm2_constructor_failed(self) -> bool {
+        self.0.avm2_constructor_failed()
+    }
+
+    pub fn set_avm2_constructor_failed(self) {
+        self.0.set_avm2_constructor_failed();
     }
 
     /// Queues up a goto to the specified frame.
@@ -2110,6 +2119,8 @@ impl<'gc> MovieClip<'gc> {
                 class_object.call_init(object.into(), Avm2FunctionArgs::empty(), &mut activation);
 
             if let Err(e) = result {
+                self.set_avm2_constructor_failed();
+
                 Avm2::uncaught_error(
                     &mut activation,
                     Some(self.into()),
@@ -3315,6 +3326,14 @@ impl<'gc> MovieClipData<'gc> {
 
     fn unset_loop_queued(&self) {
         self.set_flag(MovieClipFlags::LOOP_QUEUED, false);
+    }
+
+    fn avm2_constructor_failed(&self) -> bool {
+        self.contains_flag(MovieClipFlags::AVM2_CONSTRUCTOR_FAILED)
+    }
+
+    fn set_avm2_constructor_failed(&self) {
+        self.set_flag(MovieClipFlags::AVM2_CONSTRUCTOR_FAILED, true);
     }
 
     fn play(&self) {
@@ -4939,6 +4958,9 @@ bitflags! {
 
         /// Whether this `MovieClip` has been post-instantiated yet.
         const POST_INSTANTIATED = 1 << 6;
+
+        /// Whether the AVM2 constructor of this `MovieClip` threw an error.
+        const AVM2_CONSTRUCTOR_FAILED = 1 << 7;
     }
 }
 
