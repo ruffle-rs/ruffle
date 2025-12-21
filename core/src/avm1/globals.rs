@@ -646,6 +646,12 @@ pub fn create_globals<'gc>(
         // TODO: addRequestHeader
         // TODO: clearRequestHeaders
 
+        // The variable "o" is being used in Flash's globals to make referring
+        // to symbols more concise.  However, it's not being deleted at the very
+        // end, but instead set to `null`, which means that in every SWF, the
+        // variable "o" is `null` and not `undefined`.
+        "o" => null();
+
         "Number" => object(number.constr; DONT_ENUM);
         "Boolean" => object(boolean.constr; DONT_ENUM);
         "Date" => object(date.constr; DONT_ENUM);

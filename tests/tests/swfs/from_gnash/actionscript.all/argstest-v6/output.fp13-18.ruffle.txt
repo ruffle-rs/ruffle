@@ -920,6 +920,7 @@ Testing constructor()
 Testing __constructor__()
 testing _global.Number.__constructor__(undefined)
 Testing __proto__()
+testing _global.o(null)
 testing _global.setTimeout(function)
 Trying to construct _global.setTimeout
 Object was constructed

@@ -943,6 +943,7 @@ Testing _global.Number.prototype
   toString, DONT_DELETE
   valueOf, DONT_DELETE
   __proto__, DONT_DELETE
+Testing _global.o
 Testing _global.setTimeout
   apply, DONT_DELETE
   call, DONT_DELETE

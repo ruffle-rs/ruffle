@@ -131,6 +131,8 @@ pub enum DeclKind<'gc> {
     Float(f64),
     /// Declares an object value (can't be used in static contexts).
     Object(Object<'gc>),
+    /// Declares a static null value.
+    Null,
 }
 
 impl<'gc> Declaration<'gc> {
@@ -185,6 +187,7 @@ impl<'gc> Declaration<'gc> {
             DeclKind::Int(i) => i.into(),
             DeclKind::Float(f) => f.into(),
             DeclKind::Object(o) => o.into(),
+            DeclKind::Null => Value::Null,
         };
 
         this.define_value(mc, name, value, self.attributes);
@@ -361,6 +364,9 @@ macro_rules! __declare_properties {
     };
     (@kind $_mode:tt object($obj:expr)) => {
         $crate::avm1::property_decl::DeclKind::Object($obj)
+    };
+    (@kind $_mode:tt null()) => {
+        $crate::avm1::property_decl::DeclKind::Null
     };
 }
 
