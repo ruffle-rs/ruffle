@@ -1990,9 +1990,9 @@ impl<'gc> MovieLoader<'gc> {
             // 'this.parent == null' and 'this.stage == null'
             mc.post_instantiation(uc, None, Instantiator::Movie, false);
 
-            if dobj.movie().is_action_script_3() {
-                dobj.enter_frame(uc);
-                dobj.construct_frame(uc);
+            if mc.movie().is_action_script_3() {
+                mc.enter_frame(uc);
+                mc.construct_frame(uc);
             }
 
             // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
