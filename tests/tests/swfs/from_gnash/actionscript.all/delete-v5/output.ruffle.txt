@@ -20,9 +20,9 @@ PASSED: a == undefined [./delete.as:44]
 PASSED: !delete a [./delete.as:45]
 PASSED: typeof(func.prototype) == 'object' [./delete.as:54]
 PASSED: func.prototype.appended_value == 4 [./delete.as:55]
-FAILED: !delete func.prototype [./delete.as:57]
-FAILED: expected: 'object' obtained: undefined [./delete.as:58]
-FAILED: expected: 4 obtained:  [./delete.as:59]
+PASSED: !delete func.prototype [./delete.as:57]
+PASSED: typeof(func.prototype) == 'object' [./delete.as:58]
+PASSED: func.prototype.appended_value == 4 [./delete.as:59]
 PASSED: obj.a == 1 [./delete.as:67]
 PASSED: delete obj.a [./delete.as:68]
 PASSED: typeof(obj.a) == 'undefined' [./delete.as:69]
@@ -55,6 +55,6 @@ FAILED: expected: "hi" obtained:  [./delete.as:278]
 FAILED: expected: "hi" obtained:  [./delete.as:282]
 FAILED: expected: true obtained: false [./delete.as:284]
 PASSED: _root.e == undefined [./delete.as:285]
-#passed: 38
-#failed: 16
+#passed: 41
+#failed: 13
 #total tests run: 54
