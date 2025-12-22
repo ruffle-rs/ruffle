@@ -35,10 +35,10 @@ PASSED: o.valueOf() == undefined [./Instance.as:97]
 PASSED: !o instanceOf Object [./Instance.as:98]
 PASSED: typeof(o) == "undefined" [./Instance.as:104]
 PASSED: o == undefined [./Instance.as:105]
-FAILED: expected: "object" obtained: undefined [./Instance.as:110]
+PASSED: typeof(Object.prototype) == "object" [./Instance.as:110]
 FAILED: expected: "object" obtained: number [./Instance.as:112]
 FAILED: expected: "[object Object]" obtained: 6 [./Instance.as:113]
-FAILED: expected: "object" obtained: undefined [./Instance.as:116]
+FAILED: expected: "object" obtained: number [./Instance.as:116]
 PASSED: typeof(String.prototype) == "number" [./Instance.as:120]
 PASSED: String.prototype == 8 [./Instance.as:121]
 PASSED: s == undefined [./Instance.as:126]
@@ -47,6 +47,6 @@ PASSED: typeof(s) == "object" [./Instance.as:129]
 PASSED: !s instanceOf String [./Instance.as:130]
 PASSED: s == undefined [./Instance.as:136]
 PASSED: c.__proto__ == 8 [./Instance.as:142]
-#passed: 42
-#failed: 4
+#passed: 43
+#failed: 3
 #total tests run: 46

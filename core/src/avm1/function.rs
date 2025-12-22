@@ -490,7 +490,7 @@ impl<'gc> FunctionObject<'gc> {
                 context.gc(),
                 istr!(context, "prototype"),
                 prototype.into(),
-                Attribute::empty(),
+                Attribute::DONT_DELETE,
             );
         }
 
