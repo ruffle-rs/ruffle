@@ -261,22 +261,6 @@ impl PixelBenderWgpuShader {
     }
 }
 
-enum BorrowedOrOwnedTexture<'a> {
-    Borrowed(&'a wgpu::Texture),
-    Owned(wgpu::Texture),
-}
-
-impl std::ops::Deref for BorrowedOrOwnedTexture<'_> {
-    type Target = wgpu::Texture;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            BorrowedOrOwnedTexture::Borrowed(t) => t,
-            BorrowedOrOwnedTexture::Owned(t) => t,
-        }
-    }
-}
-
 /// The texture format to use for the temporary texture we create when reading/writing
 /// from raw bytes (ByteArray to Vector.<Number>). We use a Float texture to be able to
 /// pass in floating-point values directly, without converting on the host side.
@@ -297,13 +281,11 @@ pub(super) fn temporary_texture_format_for_channels(channels: u32) -> wgpu::Text
 fn image_input_as_texture<'a>(
     descriptors: &Descriptors,
     input: &'a ImageInputTexture<'a>,
-) -> BorrowedOrOwnedTexture<'a> {
+) -> Cow<'a, wgpu::Texture> {
     match input {
-        ImageInputTexture::Bitmap(handle) => {
-            BorrowedOrOwnedTexture::Borrowed(&as_texture(handle).texture)
-        }
+        ImageInputTexture::Bitmap(handle) => Cow::Borrowed(&as_texture(handle).texture),
         ImageInputTexture::TextureRef(raw_texture) => {
-            BorrowedOrOwnedTexture::Borrowed(raw_texture_as_texture(*raw_texture))
+            Cow::Borrowed(raw_texture_as_texture(*raw_texture))
         }
         ImageInputTexture::Bytes {
             width,
@@ -357,7 +339,7 @@ fn image_input_as_texture<'a>(
                 },
                 extent,
             );
-            BorrowedOrOwnedTexture::Owned(fresh_texture)
+            Cow::Owned(fresh_texture)
         }
     }
 }
@@ -468,13 +450,12 @@ pub(super) fn run_pixelbender_shader_impl(
         match input {
             PixelBenderShaderArgument::ImageInput { index, texture, .. } => {
                 let input_texture = &image_input_as_texture(descriptors, texture.as_ref().unwrap());
-                let same_source_dest =
-                    if let BorrowedOrOwnedTexture::Borrowed(input_texture) = input_texture {
-                        std::ptr::eq(*input_texture, target)
-                    } else {
-                        // When we create a fresh texture, it can never be equal to the pre-existing target
-                        false
-                    };
+                let same_source_dest = if let Cow::Borrowed(input_texture) = input_texture {
+                    std::ptr::eq(*input_texture, target)
+                } else {
+                    // When we create a fresh texture, it can never be equal to the pre-existing target
+                    false
+                };
                 if same_source_dest {
                     // The input is the same as the output - we need to clone the input.
                     // We will write to the original output, and use a clone of the input as a texture input binding
