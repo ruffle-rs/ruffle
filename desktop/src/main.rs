@@ -18,6 +18,8 @@ mod preferences;
 #[cfg(feature = "tracy")]
 mod tracy;
 mod util;
+#[cfg(windows)]
+mod windows;
 
 use crate::preferences::GlobalPreferences;
 use anyhow::{Context, Error};
@@ -56,23 +58,6 @@ static RUFFLE_VERSION: &str = concat!(
     env!("VERGEN_GIT_COMMIT_DATE"),
     ")"
 );
-
-fn init() {
-    // When linked with the windows subsystem windows won't automatically attach
-    // to the console of the parent process, so we do it explicitly. This fails
-    // silently if the parent has no console.
-    #[cfg(windows)]
-    unsafe {
-        use windows_sys::Win32::System::Console::{ATTACH_PARENT_PROCESS, AttachConsole};
-        AttachConsole(ATTACH_PARENT_PROCESS);
-    }
-
-    let prev_hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(move |info| {
-        prev_hook(info);
-        panic_hook(info);
-    }));
-}
 
 fn panic_hook(info: &PanicHookInfo) {
     CALLSTACK.with(|callstack| {
@@ -133,16 +118,15 @@ fn panic_hook(info: &PanicHookInfo) {
     }
 }
 
-fn shutdown() {
-    // Without explicitly detaching the console cmd won't redraw it's prompt.
-    #[cfg(windows)]
-    unsafe {
-        windows_sys::Win32::System::Console::FreeConsole();
-    }
-}
-
 fn main() -> Result<(), Error> {
-    init();
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        prev_hook(info);
+        panic_hook(info);
+    }));
+
+    #[cfg(windows)]
+    let _console = windows::Console::attach();
 
     let opt = Opt::parse();
     let preferences = GlobalPreferences::load(opt)?;
@@ -188,7 +172,7 @@ fn main() -> Result<(), Error> {
     if let Err(error) = &result {
         eprintln!("{:?}", error)
     }
-    shutdown();
+
     result
 }
 
