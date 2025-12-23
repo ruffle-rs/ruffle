@@ -27,7 +27,7 @@ ruffle_render = { path = "../render", default-features = false }
 async-channel = { workspace = true }
 async-io = { version = "2.6.0", optional = true }
 futures-lite = "2.6.1"
-reqwest = { version = "0.12.26", default-features = false, features = [
+reqwest = { version = "0.12.28", default-features = false, features = [
     "rustls-tls",
     "cookies",
     "charset",
