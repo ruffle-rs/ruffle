@@ -652,10 +652,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let start_clip = self.target_clip_or_root();
         let source_clip = self.resolve_target_display_object(start_clip, source, true)?;
 
-        if let Some(movie_clip) = source_clip.and_then(|o| o.as_movie_clip()) {
-            globals::movie_clip::clone_sprite(movie_clip, self.context, target, depth, None);
-        } else {
-            avm_warn!(self, "CloneSprite: Source is not a movie clip");
+        if let Some(source_clip) = source_clip {
+            globals::movie_clip::clone_sprite(source_clip, self.context, target, depth, None);
         }
 
         Ok(FrameControl::Continue)
