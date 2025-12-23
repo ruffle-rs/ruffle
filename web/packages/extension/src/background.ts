@@ -22,7 +22,7 @@ async function isHeaderConditionSupported() {
                     action: {
                         type:
                             chrome.declarativeNetRequest.RuleActionType
-                                ?.BLOCK ?? "block",
+                                ?.ALLOW ?? "allow",
                     },
                 },
             ],
@@ -43,7 +43,7 @@ async function isHeaderConditionSupported() {
                     action: {
                         type:
                             chrome.declarativeNetRequest.RuleActionType
-                                ?.BLOCK ?? "block",
+                                ?.ALLOW ?? "allow",
                     },
                 },
             ],
