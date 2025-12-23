@@ -931,7 +931,13 @@ fn duplicate_movie_clip<'gc>(
     // `duplicateMovieClip` method uses biased depth compared to `CloneSprite`.
     let depth = depth.wrapping_add(AVM_DEPTH_BIAS);
 
-    let new_clip = clone_sprite(movie_clip, activation.context, name, depth, init_object);
+    let new_clip = clone_sprite(
+        movie_clip.as_displayobject(),
+        activation.context,
+        name,
+        depth,
+        init_object,
+    );
 
     // On SWF<6 undefined is returned.
     if activation.swf_version() < 6 {
@@ -943,14 +949,19 @@ fn duplicate_movie_clip<'gc>(
         .map_or(Value::Undefined, |o| o.into()))
 }
 
+/// Clone the given display object with `CloneSprite` semantics.
+///
+/// It can be inferred from the docs that `duplicateMovieClip()` works only
+/// with MovieClips, but that's not the case.  It works with all display
+/// objects (including buttons and text).
 pub fn clone_sprite<'gc>(
-    movie_clip: MovieClip<'gc>,
+    sprite: DisplayObject<'gc>,
     context: &mut UpdateContext<'gc>,
     target: AvmString<'gc>,
     depth: Depth,
     init_object: Option<Object<'gc>>,
-) -> Option<MovieClip<'gc>> {
-    let Some(parent) = movie_clip.avm1_parent().and_then(|o| o.as_movie_clip()) else {
+) -> Option<DisplayObject<'gc>> {
+    let Some(parent) = sprite.avm1_parent().and_then(|o| o.as_movie_clip()) else {
         // Can't duplicate the root!
         return None;
     };
@@ -962,39 +973,58 @@ pub fn clone_sprite<'gc>(
     }
 
     let movie = parent.movie();
-    let new_clip = if movie_clip.id() != 0 {
+    let cloned_sprite = if sprite.id() != 0 {
         // Clip from SWF; instantiate a new copy.
         let library = context.library.library_for_movie(movie).unwrap();
         library
-            .instantiate_by_id(movie_clip.id(), context.gc())
+            .instantiate_by_id(sprite.id(), context.gc())
             .unwrap()
-            .as_movie_clip()
-            .unwrap()
+    } else if sprite.as_movie_clip().is_some() {
+        // Dynamically created MovieClip; create a new empty movie clip.
+        MovieClip::new(movie, context.gc()).as_displayobject()
+    } else if let Some(et) = sprite.as_edit_text() {
+        // Dynamically created TextField; create a new text field.
+        // TODO This is not covered by tests, we need to make sure what's
+        //   being cloned for text fields.
+        EditText::new(
+            context,
+            movie,
+            et.x().to_pixels(),
+            et.y().to_pixels(),
+            et.width(),
+            et.height(),
+        )
+        .as_displayobject()
     } else {
-        // Dynamically created clip; create a new empty movie clip.
-        MovieClip::new(movie, context.gc())
+        return None;
     };
-    new_clip.set_placed_by_avm1_script(true);
+    cloned_sprite.set_placed_by_avm1_script(true);
 
     // Set name and attach to parent.
-    new_clip.set_name(context.gc(), target);
-    parent.replace_at_depth(context, new_clip.into(), depth);
+    cloned_sprite.set_name(context.gc(), target);
+    parent.replace_at_depth(context, cloned_sprite, depth);
 
     // Copy display properties from previous clip to new clip.
-    new_clip.set_matrix(movie_clip.base().matrix());
-    new_clip.set_color_transform(movie_clip.base().color_transform());
+    cloned_sprite.set_matrix(sprite.base().matrix());
+    cloned_sprite.set_color_transform(sprite.base().color_transform());
 
-    new_clip.init_clip_event_handlers(movie_clip.clip_actions().into());
+    // Copy properties of MovieClip
+    if let (Some(cloned_sprite), Some(sprite)) =
+        (cloned_sprite.as_movie_clip(), sprite.as_movie_clip())
+    {
+        cloned_sprite.init_clip_event_handlers(sprite.clip_actions().into());
 
-    if let Some(drawing) = movie_clip.drawing().as_deref().cloned() {
-        *new_clip.drawing_mut() = drawing;
+        if let Some(drawing) = sprite.drawing().as_deref().cloned() {
+            *cloned_sprite.drawing_mut() = drawing;
+        }
     }
+
     // TODO: Any other properties we should copy...?
     // Definitely not Object properties.
 
-    new_clip.post_instantiation(context, init_object, Instantiator::Avm1, true);
+    cloned_sprite.post_instantiation(context, init_object, Instantiator::Avm1, true);
 
-    Some(new_clip)
+    Some(cloned_sprite)
 }
 
 fn get_bytes_loaded<'gc>(
