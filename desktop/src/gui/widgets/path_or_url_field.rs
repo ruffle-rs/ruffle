@@ -45,7 +45,10 @@ impl PathOrUrlField {
 
     pub fn ui(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> &mut Self {
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-            if ui.button(text(locale, "browse")).clicked() {
+            if ui
+                .button(text(locale, "path-or-url-field-open-file"))
+                .clicked()
+            {
                 let dir = self
                     .result
                     .as_ref()
