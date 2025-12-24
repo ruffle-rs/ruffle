@@ -791,23 +791,32 @@ impl<'gc> EditText<'gc> {
     /// coordinate space into this object's local space.
     fn layout_to_local_matrix(self) -> Matrix {
         let bounds = self.0.bounds.get();
-        Matrix::translate(
+        let matrix = Matrix::translate(
             bounds.x_min + Self::GUTTER - Twips::from_pixels(self.0.hscroll.get()),
             bounds.y_min + Self::GUTTER - self.0.vertical_scroll_offset(),
-        )
+        );
+
+        if self.font_type() == FontType::Device {
+            // Device text cannot be scaled independently in x/y.
+            // Here we have to make sure the independent x/y scale applied for
+            // the local coordinate space is reversed, leaving only y scale
+            // and keeping the original aspect ratio in x.
+            let m = self.local_to_global_matrix();
+            let device_font_scale_x = m.d / m.a;
+            matrix * Matrix::scale(device_font_scale_x, 1.0f32)
+        } else {
+            matrix
+        }
     }
 
     /// Returns the matrix for transforming from this object's
     /// local space into its layout coordinate space.
-    fn local_to_layout_matrix(self) -> Matrix {
-        // layout_to_local contains only a translation,
-        // no need to inverse the matrix generically.
-        let Matrix { tx, ty, .. } = self.layout_to_local_matrix();
-        Matrix::translate(-tx, -ty)
+    fn local_to_layout_matrix(self) -> Option<Matrix> {
+        self.layout_to_local_matrix().inverse()
     }
 
-    fn local_to_layout(self, local: Point<Twips>) -> Point<Twips> {
-        self.local_to_layout_matrix() * local
+    fn local_to_layout(self, local: Point<Twips>) -> Option<Point<Twips>> {
+        Some(self.local_to_layout_matrix()? * local)
     }
 
     pub fn replace_text(
@@ -969,6 +978,7 @@ impl<'gc> EditText<'gc> {
     /// The returned tuple should be interpreted as width, then height.
     pub fn measure_text(self, _context: &mut UpdateContext<'gc>) -> (Twips, Twips) {
         let text_size = self.0.layout.borrow().text_size();
+        let text_size = self.layout_to_local_matrix() * text_size;
         (text_size.width(), text_size.height())
     }
 
@@ -1588,7 +1598,7 @@ impl<'gc> EditText<'gc> {
     /// Characters are divided in half, the last line is extended, etc.
     pub fn screen_position_to_index(self, position: Point<Twips>) -> Option<usize> {
         let position = self.global_to_local(position)?;
-        let position = self.local_to_layout(position);
+        let position = self.local_to_layout(position)?;
 
         // TODO We can use binary search for both y and x here
 
@@ -2261,13 +2271,15 @@ impl<'gc> EditText<'gc> {
         let line = layout.lines().get(line)?;
         let bounds = line.bounds();
 
+        // TODO What about internal bounds?
+        let bounds = self.layout_to_local_matrix() * bounds;
         Some(LayoutMetrics {
             ascent: line.ascent(),
             descent: line.descent(),
             leading: line.leading(),
             width: bounds.width(),
             height: bounds.height() + line.leading(),
-            x: bounds.offset_x() + Self::GUTTER,
+            x: bounds.offset_x(),
         })
     }
 
@@ -2302,7 +2314,7 @@ impl<'gc> EditText<'gc> {
             return None;
         }
 
-        let position = self.local_to_layout(position);
+        let position = self.local_to_layout(position)?;
 
         Some(
             self.0
