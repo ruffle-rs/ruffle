@@ -357,4 +357,8 @@ impl<'gc> VectorStorage<'gc> {
         // NOTE: no fixed check here for bug compatibility
         Ok(self.storage.splice(range, replace_with).collect())
     }
+
+    pub fn storage(&self) -> &Vec<Value<'gc>> {
+        &self.storage
+    }
 }

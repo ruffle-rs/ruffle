@@ -1541,6 +1541,19 @@ pub fn make_error_2162<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2165<'gc>(activation: &mut Activation<'_, 'gc>, input_name: &str) -> Error<'gc> {
+    make_error!(argument_error(
+        activation,
+        &format!(
+            "Error #2165: The Shader input {} does not have enough data.",
+            input_name
+        ),
+        2165,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2174<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
     make_error!(error(
         activation,
