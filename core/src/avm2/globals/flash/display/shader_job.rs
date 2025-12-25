@@ -1,5 +1,5 @@
 use crate::avm2::bytearray::Endian;
-use crate::avm2::error::make_error_2162;
+use crate::avm2::error::{make_error_2162, make_error_2165};
 use crate::avm2::globals::slots::{
     flash_display_shader as shader_slots, flash_display_shader_input as shader_input_slots,
     flash_display_shader_job as shader_job_slots,
@@ -18,7 +18,9 @@ use ruffle_render::pixel_bender::{
     PixelBenderParam, PixelBenderParamQualifier, PixelBenderShaderHandle, PixelBenderType,
     OUT_COORD_NAME,
 };
-use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
+use ruffle_render::pixel_bender_support::{
+    FloatPixelData, ImageInputTexture, PixelBenderShaderArgument,
+};
 
 pub fn get_shader_args<'gc>(
     shader_obj: Object<'gc>,
@@ -134,28 +136,30 @@ pub fn get_shader_args<'gc>(
                                 bitmap.bitmap_handle(activation.gc(), activation.context.renderer),
                             )
                         } else if let Some(byte_array) = input.as_bytearray() {
-                            let expected_len = (width * height * input_channels) as usize
-                                * std::mem::size_of::<f32>();
-                            assert_eq!(byte_array.len(), expected_len);
                             assert_eq!(byte_array.endian(), Endian::Little);
-                            ImageInputTexture::Bytes {
+
+                            let (bytes, _) = byte_array.bytes().as_chunks::<4>();
+                            let floats = bytemuck::cast_slice::<[u8; 4], f32>(bytes);
+
+                            make_float_texture(
+                                activation,
+                                name,
+                                floats,
                                 width,
                                 height,
-                                channels: input_channels,
-                                bytes: byte_array.read_at(0, byte_array.len()).unwrap().to_vec(),
-                            }
+                                input_channels,
+                            )?
                         } else if let Some(vector) = input.as_vector_storage() {
-                            let expected_len = (width * height * input_channels) as usize;
-                            assert_eq!(vector.length(), expected_len);
-                            ImageInputTexture::Bytes {
+                            let values: &[Value<'gc>] = vector.storage().as_ref();
+
+                            make_float_texture(
+                                activation,
+                                name,
+                                values,
                                 width,
                                 height,
-                                channels: input_channels,
-                                bytes: vector
-                                    .iter()
-                                    .flat_map(|val| (val.as_f64() as f32).to_le_bytes())
-                                    .collect(),
-                            }
+                                input_channels,
+                            )?
                         } else {
                             panic!("Unexpected input object {input:?}");
                         };
@@ -176,6 +180,56 @@ pub fn get_shader_args<'gc>(
         })
         .collect::<Result<Vec<PixelBenderShaderArgument<'_>>, Error<'gc>>>()?;
     Ok((shader_handle.clone(), args))
+}
+
+trait PixelSource {
+    fn collect<const N: usize>(&self, num_pixels: usize) -> Option<Vec<[f32; N]>>;
+}
+
+impl PixelSource for &[f32] {
+    fn collect<const N: usize>(&self, num_pixels: usize) -> Option<Vec<[f32; N]>> {
+        let (floats, _) = self.as_chunks::<N>();
+        Some(floats.get(..num_pixels)?.to_vec())
+    }
+}
+
+impl<'gc> PixelSource for &[Value<'gc>] {
+    fn collect<const N: usize>(&self, num_pixels: usize) -> Option<Vec<[f32; N]>> {
+        let (chunks, _) = self.as_chunks::<N>();
+        Some(
+            chunks
+                .get(..num_pixels)?
+                .iter()
+                .map(|vals| vals.map(|val| val.as_f64() as f32))
+                .collect(),
+        )
+    }
+}
+
+fn make_float_texture<'gc, S: PixelSource>(
+    activation: &mut Activation<'_, 'gc>,
+    shader_name: &str,
+    source: S,
+    width: u32,
+    height: u32,
+    input_channels: u32,
+) -> Result<ImageInputTexture<'static>, Error<'gc>> {
+    let num_pixels = (width * height) as usize;
+    let err = || make_error_2165(activation, shader_name);
+
+    let data = match input_channels {
+        1 => FloatPixelData::R(source.collect::<1>(num_pixels).ok_or_else(err)?),
+        2 => FloatPixelData::Rg(source.collect::<2>(num_pixels).ok_or_else(err)?),
+        3 => FloatPixelData::Rgb(source.collect::<3>(num_pixels).ok_or_else(err)?),
+        4 => FloatPixelData::Rgba(source.collect::<4>(num_pixels).ok_or_else(err)?),
+        _ => panic!("Unexpected number of channels: {input_channels}"),
+    };
+
+    Ok(ImageInputTexture::Floats {
+        width,
+        height,
+        data,
+    })
 }
 
 /// Implements `ShaderJob.start`.

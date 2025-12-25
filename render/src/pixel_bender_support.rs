@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use crate::backend::RawTexture;
 use crate::bitmap::BitmapHandle;
 use crate::pixel_bender::PixelBenderType;
@@ -25,12 +27,51 @@ pub enum PixelBenderShaderArgument<'a> {
 pub enum ImageInputTexture<'a> {
     Bitmap(BitmapHandle),
     TextureRef(&'a dyn RawTexture),
-    Bytes {
+    Floats {
         width: u32,
         height: u32,
-        channels: u32,
-        bytes: Vec<u8>,
+        data: FloatPixelData,
     },
+}
+
+#[derive(Debug, Clone)]
+pub enum FloatPixelData {
+    R(Vec<[f32; 1]>),
+    Rg(Vec<[f32; 2]>),
+    Rgb(Vec<[f32; 3]>),
+    Rgba(Vec<[f32; 4]>),
+}
+
+impl FloatPixelData {
+    pub fn channel_count(&self) -> u32 {
+        match self {
+            Self::R(_) => 1,
+            Self::Rg(_) => 2,
+            Self::Rgb(_) => 3,
+            Self::Rgba(_) => 4,
+        }
+    }
+
+    pub fn padded_data(&self) -> Cow<'_, [f32]> {
+        match self {
+            Self::R(r) => Cow::Borrowed(r.as_flattened()),
+            Self::Rg(rg) => Cow::Borrowed(rg.as_flattened()),
+            // We're going to be using an Rgba32Float texture, so we need to pad the bytes
+            // with zeros for the alpha channel. The PixelBender code will only ever try to
+            // use the first 3 channels (since it was compiled with a 3-channel input),
+            // so it doesn't matter what value we choose here.
+            Self::Rgb(rgb) => {
+                let rgba = rgb
+                    .iter()
+                    .copied()
+                    .flat_map(|[r, g, b]| [r, g, b, 0.0])
+                    .collect();
+
+                Cow::Owned(rgba)
+            }
+            Self::Rgba(rgba) => Cow::Borrowed(rgba.as_flattened()),
+        }
+    }
 }
 
 impl PartialEq for ImageInputTexture<'_> {
