@@ -12,6 +12,7 @@ describe("Object with ruffle-embed tag", () => {
 
     it("already polyfilled with ruffle", async () => {
         await injectRuffleAndWait(browser);
+        await browser.$("<ruffle-embed />").waitForExist();
         const actual = await browser
             .$("#test-container")
             .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
