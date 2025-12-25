@@ -1,0 +1,17 @@
+<languageVersion : 1.0;>
+
+kernel Passthrough4
+<   namespace : "Ruffle Tests";
+    vendor : "Ruffle";
+    version : 1;
+    description : "Passthrough shader with 4 channel input";
+>
+{
+    input image4 src;
+    output pixel4 dst;
+
+    void evaluatePixel()
+    {
+        dst = sampleNearest(src, outCoord());
+    }
+}
