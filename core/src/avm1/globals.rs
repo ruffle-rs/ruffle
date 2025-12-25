@@ -1,10 +1,12 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::DeclContext;
+use crate::avm1::Attribute;
 use crate::avm1::{Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, StringContext, WStr, WString};
 use gc_arena::Collect;
+use ruffle_macros::istr;
 use std::str;
 
 mod accessibility;
@@ -516,6 +518,33 @@ pub fn create_globals<'gc>(
 
     let object = object::create_class(context);
     let function = function::create_class(context);
+
+    let patch_constructor = |obj: Object<'gc>| {
+        obj.define_value(
+            context.gc(),
+            istr!(context.strings, "constructor"),
+            function.constr.into(),
+            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+        );
+    };
+
+    let patch_proto_methods = |proto: Object<'gc>| {
+        for val in proto.get_all_property_data() {
+            if let Value::Object(o) = val {
+                if o.as_function().is_some() {
+                    patch_constructor(o);
+                }
+            }
+        }
+    };
+
+    // function.proto does not need to be patched because its constructor was set in function::build.
+    patch_constructor(object.constr);
+    patch_constructor(function.constr);
+
+    patch_proto_methods(object.proto);
+    patch_proto_methods(function.proto);
+
     let (broadcaster_fns, as_broadcaster) = as_broadcaster::create_class(context, object.proto);
 
     let flash = Object::new(context.strings, Some(object.proto));
