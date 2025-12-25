@@ -11,7 +11,9 @@ use ruffle_render::pixel_bender::{
     OUT_COORD_NAME, PixelBenderParam, PixelBenderShader, PixelBenderShaderHandle,
     PixelBenderShaderImpl, PixelBenderType,
 };
-use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
+use ruffle_render::pixel_bender_support::{
+    ImageInputTexture, PixelBenderShaderArgument,
+};
 use smallvec::{SmallVec, smallvec_inline};
 use wgpu::util::{DeviceExt, StagingBelt};
 use wgpu::{
@@ -287,32 +289,22 @@ fn image_input_as_texture<'a>(
         ImageInputTexture::TextureRef(raw_texture) => {
             Cow::Borrowed(raw_texture_as_texture(*raw_texture))
         }
-        ImageInputTexture::Bytes {
+        ImageInputTexture::Floats {
             width,
             height,
-            channels,
-            bytes,
+            data,
         } => {
             let extent = wgpu::Extent3d {
                 width: *width,
                 height: *height,
                 depth_or_array_layers: 1,
             };
-            let texture_format = temporary_texture_format_for_channels(*channels);
-            // We're going to be using an Rgba32Float texture, so we need to pad the bytes
-            // with zeros for the alpha channel. The PixelBender code will only ever try to
-            // use the first 3 channels (since it was compiled with a 3-channel input),
-            // so it doesn't matter what value we choose here.
-            let padded_bytes = if *channels == 3 {
-                let mut padded_bytes = Vec::with_capacity(bytes.len() * 4 / 3);
-                for chunk in bytes.chunks_exact(12) {
-                    padded_bytes.extend_from_slice(chunk);
-                    padded_bytes.extend_from_slice(&[0, 0, 0, 0]);
-                }
-                Cow::Owned(padded_bytes)
-            } else {
-                Cow::Borrowed(bytes)
-            };
+
+            let texture_format =
+                crate::pixel_bender::temporary_texture_format_for_channels(data.channel_count());
+            let padded_data = data.padded_data();
+
+            let padded_bytes = bytemuck::cast_slice::<f32, u8>(padded_data.as_ref());
 
             let fresh_texture = descriptors.device.create_texture(&TextureDescriptor {
                 label: Some("Temporary PixelBender output texture"),
@@ -331,7 +323,7 @@ fn image_input_as_texture<'a>(
                     origin: wgpu::Origin3d::ZERO,
                     aspect: wgpu::TextureAspect::All,
                 },
-                &padded_bytes,
+                padded_bytes,
                 wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(padded_bytes.len() as u32 / height),
