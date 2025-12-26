@@ -660,7 +660,9 @@ impl<'gc> Library<'gc> {
                 let name = font.descriptor().name().to_owned();
                 let is_bold = font.descriptor().bold();
                 let is_italic = font.descriptor().italic();
-                tracing::debug!("Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from swf tag");
+                tracing::debug!(
+                    "Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from swf tag"
+                );
                 self.device_fonts.register(font);
             }
             FontDefinition::FontFile {
@@ -675,7 +677,9 @@ impl<'gc> Library<'gc> {
                     Font::from_font_file(gc_context, descriptor, data, index, FontType::Device)
                 {
                     let name = font.descriptor().name().to_owned();
-                    tracing::debug!("Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from file");
+                    tracing::debug!(
+                        "Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from file"
+                    );
                     self.device_fonts.register(font);
                 } else {
                     warn!("Failed to load device font from file");
@@ -689,7 +693,9 @@ impl<'gc> Library<'gc> {
             } => {
                 let descriptor = FontDescriptor::from_parts(&name, is_bold, is_italic);
                 let font = Font::from_renderer(gc_context, descriptor, font_renderer);
-                tracing::debug!("Loaded new externally rendered font \"{name}\" (bold: {is_bold}, italic: {is_italic})");
+                tracing::debug!(
+                    "Loaded new externally rendered font \"{name}\" (bold: {is_bold}, italic: {is_italic})"
+                );
                 self.device_fonts.register(font);
             }
         }

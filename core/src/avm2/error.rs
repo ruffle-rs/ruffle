@@ -152,12 +152,12 @@ pub fn make_reference_error<'gc>(
         .to_qualified_name_err_message(activation.gc());
 
     let msg = match code {
-        ReferenceErrorCode::AssignToMethod => format!(
-            "Error #1037: Cannot assign to a method {qualified_name} on {class_name}.",
-        ),
-        ReferenceErrorCode::InvalidWrite => format!(
-            "Error #1056: Cannot create property {qualified_name} on {class_name}.",
-        ),
+        ReferenceErrorCode::AssignToMethod => {
+            format!("Error #1037: Cannot assign to a method {qualified_name} on {class_name}.")
+        }
+        ReferenceErrorCode::InvalidWrite => {
+            format!("Error #1056: Cannot create property {qualified_name} on {class_name}.")
+        }
         ReferenceErrorCode::InvalidRead => format!(
             "Error #1069: Property {qualified_name} not found on {class_name} and there is no default value.",
         ),
@@ -170,9 +170,9 @@ pub fn make_reference_error<'gc>(
         ReferenceErrorCode::InvalidNsRead => format!(
             "Error #1081: Property {qualified_name} not found on {class_name} and there is no default value.",
         ),
-        ReferenceErrorCode::InvalidDelete => format!(
-            "Error #1120: Cannot delete property {qualified_name} on {class_name}.",
-        ),
+        ReferenceErrorCode::InvalidDelete => {
+            format!("Error #1120: Cannot delete property {qualified_name} on {class_name}.")
+        }
     };
 
     let class = activation.avm2().classes().referenceerror;
@@ -234,7 +234,9 @@ pub fn make_unknown_ns_error<'gc>(
     make_error!(if ns.is_empty() {
         type_error(
             activation,
-            &format!("Error #1084: Element or attribute (\":{local_name}\") does not match QName production: QName::=(NCName':')?NCName."),
+            &format!(
+                "Error #1084: Element or attribute (\":{local_name}\") does not match QName production: QName::=(NCName':')?NCName."
+            ),
             1084,
         )
     } else {
@@ -834,7 +836,9 @@ pub fn make_error_1080<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 pub fn make_error_1085<'gc>(activation: &mut Activation<'_, 'gc>, tag: &str) -> Error<'gc> {
     make_error!(type_error(
         activation,
-        &format!("Error #1085: The element type \"{tag}\" must be terminated by the matching end-tag \"</{tag}>\"."),
+        &format!(
+            "Error #1085: The element type \"{tag}\" must be terminated by the matching end-tag \"</{tag}>\"."
+        ),
         1085,
     ))
 }
@@ -1247,7 +1251,9 @@ pub fn make_error_2005<'gc>(
 ) -> Error<'gc> {
     make_error!(argument_error(
         activation,
-        &format!("Error #2005: Parameter {param_index} is of the incorrect type. Should be type {param_name}."),
+        &format!(
+            "Error #2005: Parameter {param_index} is of the incorrect type. Should be type {param_name}."
+        ),
         2005,
     ))
 }

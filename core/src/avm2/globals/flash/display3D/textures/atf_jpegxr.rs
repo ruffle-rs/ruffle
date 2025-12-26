@@ -163,7 +163,7 @@ pub fn do_compressed_upload<'gc>(
             dxt5.clone()
         }
         ATFTextureData::Unknown(_) => {
-            return Err(format!("Unsupported ATF format: {:?}", atf_texture.format).into())
+            return Err(format!("Unsupported ATF format: {:?}", atf_texture.format).into());
         }
     };
 

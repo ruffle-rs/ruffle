@@ -259,8 +259,7 @@ impl<'gc> FocusTracker<'gc> {
             EventObject::focus_event(&mut activation, event_type, true, related_object, key_code);
         Avm2::dispatch_event(activation.context, event, target.into());
 
-        let canceled = event.event().is_cancelled();
-        canceled
+        event.event().is_cancelled()
     }
 
     fn roll_over(context: &mut UpdateContext<'gc>, new: Option<InteractiveObject<'gc>>) {

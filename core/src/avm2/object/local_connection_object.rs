@@ -144,7 +144,12 @@ impl<'gc> LocalConnectionObject<'gc> {
                     let event_name = istr!("asyncError");
                     let async_error_event_cls = activation.avm2().classes().asyncerrorevent;
 
-                    let text = AvmString::new_utf8(activation.gc(), format!("Error #2095: flash.net.LocalConnection was unable to invoke callback {method_name}."));
+                    let text = AvmString::new_utf8(
+                        activation.gc(),
+                        format!(
+                            "Error #2095: flash.net.LocalConnection was unable to invoke callback {method_name}."
+                        ),
+                    );
 
                     let event = EventObject::from_class_and_args(
                         &mut activation,
@@ -161,7 +166,9 @@ impl<'gc> LocalConnectionObject<'gc> {
                     Avm2::dispatch_event(activation.context, event, self.into());
                 }
                 _ => {
-                    tracing::error!("Unhandled error dispatching AVM2 LocalConnection method call to '{method_name}': {e}");
+                    tracing::error!(
+                        "Unhandled error dispatching AVM2 LocalConnection method call to '{method_name}': {e}"
+                    );
                 }
             }
         }

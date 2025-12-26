@@ -526,7 +526,9 @@ pub fn deserialize_value_impl<'gc>(
             if let Some(o) = object_map.get(r) {
                 (*o).into()
             } else {
-                tracing::error!("AMF3 deserializer got an object reference {r:?} to an object we've not seen yet");
+                tracing::error!(
+                    "AMF3 deserializer got an object reference {r:?} to an object we've not seen yet"
+                );
                 Value::Undefined
             }
         }
