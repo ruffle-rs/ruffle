@@ -1,4 +1,5 @@
 use h263_rs_yuv::bt601::yuv420_to_rgba;
+use ruffle_wstr::{FromWStr, WStr};
 use std::any::Any;
 use std::borrow::Cow;
 use std::fmt::Debug;
@@ -64,6 +65,22 @@ pub enum PixelSnapping {
 
     /// Never snap the bitmap to the pixel grid
     Never,
+}
+
+impl FromWStr for PixelSnapping {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"always" {
+            Ok(PixelSnapping::Always)
+        } else if s == b"auto" {
+            Ok(PixelSnapping::Auto)
+        } else if s == b"never" {
+            Ok(PixelSnapping::Never)
+        } else {
+            Err(())
+        }
+    }
 }
 
 impl PixelSnapping {

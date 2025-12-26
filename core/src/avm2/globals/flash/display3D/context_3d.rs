@@ -12,12 +12,10 @@ use crate::avm2::TObject as _;
 use crate::avm2::Value;
 use crate::avm2_stub_method;
 use ruffle_macros::istr;
-use ruffle_render::backend::Context3DWrapMode;
 use ruffle_render::backend::{
-    BufferUsage, Context3DBlendFactor, Context3DCompareMode, Context3DTextureFormat,
-    Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
+    BufferUsage, Context3DProfile, Context3DTextureFilter, Context3DTriangleFace,
+    Context3DVertexBufferFormat, ProgramType,
 };
-use ruffle_render::backend::{Context3DProfile, Context3DTextureFilter};
 use swf::{Rectangle, Twips};
 
 pub fn create_index_buffer<'gc>(
@@ -424,8 +422,9 @@ pub fn create_texture<'gc>(
         let format = args.get_string_non_null(activation, 2, "textureFormat")?;
         let optimize_for_render_to_texture = args.get_bool(3);
         let streaming_levels = args.get_i32(4) as u32;
-        let format = Context3DTextureFormat::from_wstr(&format)
-            .ok_or_else(|| make_error_2008(activation, "textureFormat"))?;
+        let format = format
+            .parse()
+            .map_err(|_| make_error_2008(activation, "textureFormat"))?;
 
         let class = activation.avm2().classes().texture;
 
@@ -455,8 +454,9 @@ pub fn create_rectangle_texture<'gc>(
         let height = args.get_i32(1) as u32;
         let format = args.get_string_non_null(activation, 2, "textureFormat")?;
         let optimize_for_render_to_texture = args.get_bool(3);
-        let format = Context3DTextureFormat::from_wstr(&format)
-            .ok_or_else(|| make_error_2008(activation, "textureFormat"))?;
+        let format = format
+            .parse()
+            .map_err(|_| make_error_2008(activation, "textureFormat"))?;
 
         let class = activation.avm2().classes().rectangletexture;
 
@@ -486,8 +486,9 @@ pub fn create_cube_texture<'gc>(
         let format = args.get_string_non_null(activation, 1, "textureFormat")?;
         let optimize_for_render_to_texture = args.get_bool(2);
         let streaming_levels = args.get_i32(3) as u32;
-        let format = Context3DTextureFormat::from_wstr(&format)
-            .ok_or_else(|| make_error_2008(activation, "textureFormat"))?;
+        let format = format
+            .parse()
+            .map_err(|_| make_error_2008(activation, "textureFormat"))?;
 
         return context.create_cube_texture(
             size,
@@ -561,8 +562,9 @@ pub fn set_depth_test<'gc>(
         // This is a native method, so all of the arguments have been checked and coerced for us
         let depth_mask = args.get_bool(0);
         let pass_compare_mode = args.get_string_non_null(activation, 1, "passCompareMode")?;
-        let pass_compare_mode = Context3DCompareMode::from_wstr(&pass_compare_mode)
-            .ok_or_else(|| make_error_2008(activation, "passCompareMode"))?;
+        let pass_compare_mode = pass_compare_mode
+            .parse()
+            .map_err(|_| make_error_2008(activation, "passCompareMode"))?;
 
         context.set_depth_test(depth_mask, pass_compare_mode);
     }
@@ -581,11 +583,13 @@ pub fn set_blend_factors<'gc>(
         let source_factor = args.get_string_non_null(activation, 0, "sourceFactor")?;
         let destination_factor = args.get_string_non_null(activation, 1, "destinationFactor")?;
 
-        let source_factor = Context3DBlendFactor::from_wstr(&source_factor)
-            .ok_or_else(|| make_error_2008(activation, "sourceFactor"))?;
+        let source_factor = source_factor
+            .parse()
+            .map_err(|_| make_error_2008(activation, "sourceFactor"))?;
 
-        let destination_factor = Context3DBlendFactor::from_wstr(&destination_factor)
-            .ok_or_else(|| make_error_2008(activation, "destinationFactor"))?;
+        let destination_factor = destination_factor
+            .parse()
+            .map_err(|_| make_error_2008(activation, "destinationFactor"))?;
 
         context.set_blend_factors(source_factor, destination_factor);
     }
@@ -677,11 +681,13 @@ pub fn set_sampler_state_at<'gc>(
         let filter = args.get_string_non_null(activation, 2, "filter")?;
         let mip_filter = args.get_string_non_null(activation, 3, "mipfilter")?;
 
-        let wrap = Context3DWrapMode::from_wstr(&wrap)
-            .ok_or_else(|| make_error_2008(activation, "wrap"))?;
+        let wrap = wrap
+            .parse()
+            .map_err(|_| make_error_2008(activation, "wrap"))?;
 
-        let filter = Context3DTextureFilter::from_wstr(&filter)
-            .ok_or_else(|| make_error_2008(activation, "filter"))?;
+        let filter = filter
+            .parse()
+            .map_err(|_| make_error_2008(activation, "filter"))?;
 
         if matches!(
             filter,
