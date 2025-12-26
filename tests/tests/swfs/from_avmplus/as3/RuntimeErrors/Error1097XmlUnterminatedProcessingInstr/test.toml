@@ -1,1 +1,3 @@
+# This test can pass when https://github.com/tafia/quick-xml/pull/924 is released.
 num_ticks = 1
+known_failure = true
