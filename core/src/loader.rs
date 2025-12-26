@@ -1265,7 +1265,35 @@ pub fn load_sound_avm1<'gc>(
 
     Box::pin(async move {
         let fetch = player.lock().unwrap().fetch(request, FetchReason::Other);
-        let response = wait_for_full_response(fetch).await;
+        let mut response = fetch.await.map_err(|error| error.error)?;
+
+        let mut body = Vec::new();
+        let mut total_loaded = 0u64;
+
+        loop {
+            let chunk = response.next_chunk().await?;
+            match chunk {
+                Some(chunk_data) => {
+                    let chunk_len = chunk_data.len();
+                    total_loaded += chunk_len as u64;
+                    body.extend_from_slice(&chunk_data);
+
+                    player.lock().unwrap().update(|uc| -> Result<(), Error> {
+                        let sound_object = sound_object.fetch(uc);
+
+                        let NativeObject::Sound(sound) = sound_object.native() else {
+                            panic!("NativeObject must be Sound");
+                        };
+
+                        // Update bytes_loaded as we receive chunks
+                        sound.set_bytes_loaded(total_loaded);
+
+                        Ok(())
+                    })?;
+                }
+                None => break,
+            }
+        }
 
         // Fire the load handler.
         player.lock().unwrap().update(|uc| {
@@ -1277,10 +1305,8 @@ pub fn load_sound_avm1<'gc>(
 
             let mut activation = Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
 
-            let success = response
-                .map_err(|e| e.error)
-                .and_then(|(body, _, _, _)| {
-                    let handle = activation.context.audio.register_mp3(&body)?;
+            let success = match activation.context.audio.register_mp3(&body) {
+                Ok(handle) => {
                     sound.load_sound(&mut activation, sound_object, handle);
                     sound.set_duration(Some(0));
                     sound.load_id3(&mut activation, sound_object, &body)?;
@@ -1290,9 +1316,10 @@ pub fn load_sound_avm1<'gc>(
                         .get_sound_duration(handle)
                         .map(|d| d.round() as u32);
                     sound.set_duration(duration);
-                    Ok(())
-                })
-                .is_ok();
+                    true
+                }
+                Err(_) => false,
+            };
 
             let _ = sound_object.call_method(
                 istr!("onLoad"),
