@@ -2,7 +2,7 @@
 name = "ruffle_web_safari"
 description = "Native binary for the Safari Web Extension"
 authors.workspace = true
-edition = "2024"
+edition.workspace = true
 homepage.workspace = true
 license.workspace = true
 repository.workspace = true

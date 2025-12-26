@@ -42,7 +42,11 @@ pub fn init<'gc>(
             {
                 sound_object.set_sound(activation.context, sound);
             } else {
-                tracing::warn!("Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}", class_def.name().local_name(), symbol);
+                tracing::warn!(
+                    "Attempted to construct subclass of Sound, {}, which is associated with non-Sound character {}",
+                    class_def.name().local_name(),
+                    symbol
+                );
             }
         }
     }
