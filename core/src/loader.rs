@@ -1268,14 +1268,14 @@ pub fn load_sound_avm1<'gc>(
         let mut response = fetch.await.map_err(|error| error.error)?;
 
         let mut body = Vec::new();
-        let mut total_loaded = 0u64;
+        let mut total_loaded = 0u32;
 
         loop {
             let chunk = response.next_chunk().await?;
             match chunk {
                 Some(chunk_data) => {
                     let chunk_len = chunk_data.len();
-                    total_loaded += chunk_len as u64;
+                    total_loaded = total_loaded.saturating_add(chunk_len as u32);
                     body.extend_from_slice(&chunk_data);
 
                     player.lock().unwrap().update(|uc| -> Result<(), Error> {

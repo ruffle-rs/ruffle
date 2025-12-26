@@ -76,7 +76,7 @@ struct SoundData<'gc> {
     is_streaming: Cell<bool>,
 
     /// Number of bytes loaded for this sound.
-    bytes_loaded: Cell<u64>,
+    bytes_loaded: Cell<u32>,
 }
 
 impl fmt::Debug for Sound<'_> {
@@ -150,11 +150,11 @@ impl<'gc> Sound<'gc> {
         self.0.is_streaming.set(is_streaming);
     }
 
-    pub fn bytes_loaded(self) -> u64 {
+    pub fn bytes_loaded(self) -> u32 {
         self.0.bytes_loaded.get()
     }
 
-    pub fn set_bytes_loaded(self, bytes_loaded: u64) {
+    pub fn set_bytes_loaded(self, bytes_loaded: u32) {
         self.0.bytes_loaded.set(bytes_loaded);
     }
 
