@@ -6,9 +6,14 @@ graphics-power = Preferenza di alimentazione
 graphics-power-low = Basso (es. GPU integrata)
 graphics-power-high = Alto (es. GPU)
 language = Lingua
+audio-output-device = Dispositivi di audio output
+audio-output-device-default = Predefinito dal sistema
 enable-openh264 = Abilita OpenH264
 show-license = Visualizza licenza
 openh264-license = Licenza OpenH264
+log-filename-pattern = Nome del log file
+log-filename-pattern-single-file = File singolo (ruffle.log)
+log-filename-pattern-with-timestamp = Con marca temporale
 storage-backend = Locazione dei dati salvati
 storage-backend-disk = Disco
 storage-backend-memory = Memoria
@@ -24,7 +29,9 @@ gamemode-tooltip =
     GameMode applica temporaneamente un set di ottimizzazioni per il tuo computer e/o Ruffle.
     Ruffle richiede GameMode solo se viene riprodotto un film.
 gamemode-default = Predefinito
+gamemode-default-tooltip = GameMode sarà abilitata solo se la preferenza di alimentazione e messo su Alto.
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Metodo di input
 ime-enabled-experimental = (sperimentale)
+ime-enabled-tooltip = Un metodo di input consente di immettere caratteri che non sono disponibili nella tastiera, per esempio caratteri Cinesi, Giapponesi o Coreani.
 ime-enabled-default = Predefinito

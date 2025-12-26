@@ -1,3 +1,4 @@
+context-menu-play = Pokrenite
 context-menu-rewind = Premotaj unazad
 context-menu-forward = Napred
 context-menu-back = Nazad
