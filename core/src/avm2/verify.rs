@@ -213,7 +213,7 @@ pub fn verify_method<'gc>(
                     }
                 }
 
-                AbcOp::LookupSwitch(ref lookup_switch) => {
+                AbcOp::LookupSwitch(lookup_switch) => {
                     check_target(&seen_targets, lookup_switch.default_offset, false)?;
                     let default_offset = lookup_switch.default_offset + previous_position;
 

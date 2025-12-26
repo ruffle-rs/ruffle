@@ -68,7 +68,7 @@ pub fn init<'gc>(
         Err(e) => {
             return Err(Error::rust_error(
                 format!("Failed to parse XML: {e:?}").into(),
-            ))
+            ));
         }
     }
 
@@ -235,7 +235,7 @@ pub fn children<'gc>(
     let children = list.children();
     let mut sub_children = Vec::new();
     for child in &*children {
-        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+        if let E4XNodeKind::Element { children, .. } = &*child.node().kind() {
             sub_children.extend(children.iter().map(|node| E4XOrXml::E4X(*node)));
         }
     }
@@ -303,7 +303,7 @@ pub fn attribute<'gc>(
     let children = list.children();
     let mut sub_children = Vec::new();
     for child in &*children {
-        if let E4XNodeKind::Element { ref attributes, .. } = &*child.node().kind() {
+        if let E4XNodeKind::Element { attributes, .. } = &*child.node().kind() {
             if let Some(found) = attributes
                 .iter()
                 .find(|node| node.matches_name(&multiname))
@@ -335,7 +335,7 @@ pub fn attributes<'gc>(
 
     let mut child_attrs = Vec::new();
     for child in list.children().iter() {
-        if let E4XNodeKind::Element { ref attributes, .. } = &*child.node().kind() {
+        if let E4XNodeKind::Element { attributes, .. } = &*child.node().kind() {
             child_attrs.extend(attributes.iter().map(|node| E4XOrXml::E4X(*node)));
         }
     }
@@ -376,7 +376,7 @@ pub fn text<'gc>(
     let xml_list = this.as_xml_list_object().unwrap();
     let mut nodes = Vec::new();
     for child in xml_list.children().iter() {
-        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+        if let E4XNodeKind::Element { children, .. } = &*child.node().kind() {
             nodes.extend(
                 children
                     .iter()
@@ -400,7 +400,7 @@ pub fn comments<'gc>(
     let xml_list = this.as_xml_list_object().unwrap();
     let mut nodes = Vec::new();
     for child in xml_list.children().iter() {
-        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+        if let E4XNodeKind::Element { children, .. } = &*child.node().kind() {
             nodes.extend(
                 children
                     .iter()
@@ -465,7 +465,7 @@ pub fn processing_instructions<'gc>(
     let multiname = name_to_multiname(activation, args.get_value(0), false)?;
     let mut nodes = Vec::new();
     for child in xml_list.children().iter() {
-        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+        if let E4XNodeKind::Element { children, .. } = &*child.node().kind() {
             nodes.extend(
                 children
                     .iter()

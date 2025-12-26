@@ -360,8 +360,9 @@ impl<'gc> RegExp<'gc> {
             for c in m.captures.iter().filter_map(Option::as_ref) {
                 storage.push(context.strings.substring(text, c.clone()).into());
                 if storage.length() >= limit {
-                    break; // Intentional bug to match Flash.
-                           // Causes adding parts past limit.
+                    // Intentional bug to match Flash.
+                    // Causes adding parts past limit.
+                    break;
                 }
             }
 
