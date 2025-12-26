@@ -217,7 +217,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             // NOTE: We have to check load progress here because this function
             // is called unconditionally at the end of every frame.
             let (should_complete, from_url) = match &*self.0.loaded_stream.borrow() {
-                LoaderStream::Swf(ref movie, root) => (
+                LoaderStream::Swf(movie, root) => (
                     root.as_movie_clip()
                         .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
                         .unwrap_or(true),

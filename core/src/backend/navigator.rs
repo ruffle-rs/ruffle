@@ -656,7 +656,7 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
                     "Unable to create path out of URL",
                     url.as_str(),
                     "",
-                )))
+                )));
             }
         }
     } else if let Some(base_path) = base_path {

@@ -1122,10 +1122,7 @@ impl<'gc> E4XNode<'gc> {
         }
 
         {
-            let E4XNodeKind::Element {
-                ref mut namespaces, ..
-            } = &mut *self.kind_mut(gc)
-            else {
+            let E4XNodeKind::Element { namespaces, .. } = &mut *self.kind_mut(gc) else {
                 unreachable!("must be an element");
             };
 
@@ -1156,10 +1153,7 @@ impl<'gc> E4XNode<'gc> {
         }
 
         // 2.g. For each attr in x.[[Attributes]]
-        if let E4XNodeKind::Element {
-            ref mut attributes, ..
-        } = &mut *self.kind_mut(gc)
-        {
+        if let E4XNodeKind::Element { attributes, .. } = &mut *self.kind_mut(gc) {
             for attr in attributes.iter_mut() {
                 // 2.g.i. If attr.[[Name]].[[Prefix]] == N.prefix, let attr.[[Name]].prefix = undefined
                 match attr.namespace() {

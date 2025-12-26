@@ -794,7 +794,8 @@ impl<'gc> Avm2MousePick<'gc> {
     #[must_use]
     pub fn combine_with_parent(&self, parent: DisplayObjectContainer<'gc>) -> Avm2MousePick<'gc> {
         let parent_int = DisplayObject::from(parent).as_interactive().unwrap();
-        let res = match self {
+
+        match self {
             Avm2MousePick::Hit(target) => {
                 // If the parent has `mouseChildren=true` then propagate the existing
                 // Avm2MousePick::Hit, leaving the target unchanged. This is unaffected
@@ -834,8 +835,7 @@ impl<'gc> Avm2MousePick<'gc> {
             }
             // A miss in a child always stays a miss, regardless of parent settings.
             Avm2MousePick::Miss => Avm2MousePick::Miss,
-        };
-        res
+        }
     }
 }
 
