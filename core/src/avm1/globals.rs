@@ -11,6 +11,9 @@ mod accessibility;
 pub(super) mod array;
 pub(crate) mod as_broadcaster;
 mod asnative;
+mod automation_action_generator;
+mod automation_configuration;
+mod automation_stage_capture;
 pub(crate) mod bevel_filter;
 mod bitmap_data;
 mod bitmap_filter;
@@ -525,6 +528,7 @@ pub fn create_globals<'gc>(
     let display = Object::new(context.strings, Some(object.proto));
     let net = Object::new(context.strings, Some(object.proto));
     let text = Object::new(context.strings, Some(object.proto));
+    let automation = Object::new(context.strings, Some(object.proto));
 
     let button = button::create_class(context, object.proto);
     let movie_clip = movie_clip::create_class(context, object.proto);
@@ -592,6 +596,10 @@ pub fn create_globals<'gc>(
     let accessibility = accessibility::create(context);
 
     let text_renderer = text_renderer::create_class(context, object.proto);
+
+    let stage_capture = automation_stage_capture::create_class(context, object.proto);
+    let action_generator = automation_action_generator::create_class(context, object.proto);
+    let automation_configuration = automation_configuration::create_class(context, object.proto);
 
     // Top-level
     let globals = Object::new_without_proto(context.gc());
@@ -683,8 +691,17 @@ pub fn create_globals<'gc>(
         "geom" => object(geom);
         "net" => object(net);
         "external" => object(external);
+        "automation" => object(automation);
     };
     context.define_properties_on(flash, decls);
+
+    // flash.automation
+    let decls = declare_properties! {
+        "StageCapture" => object(stage_capture.constr);
+        "ActionGenerator" => object(action_generator.constr);
+        "Configuration" => object(automation_configuration.constr);
+    };
+    context.define_properties_on(automation, decls);
 
     // flash.display
     let decls = declare_properties! {
