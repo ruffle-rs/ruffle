@@ -71,7 +71,7 @@ struct SoundData<'gc> {
     duration: Cell<Option<u32>>,
 
     /// Whether this sound is an external streaming MP3.
-    /// This will be true if `Sound.loadSound` was called with `isStreaming` of `true`.
+    /// This will be true if `Sound.loadSound` was called with `isStreaming` on `true`.
     /// A streaming sound can only have a single active instance.
     is_streaming: Cell<bool>,
 }
@@ -445,11 +445,20 @@ fn get_bytes_loaded<'gc>(
 
 fn get_bytes_total<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Sound", "getBytesTotal");
-    Ok(1.into())
+    if activation.swf_version() >= 6 {
+        if let NativeObject::Sound(sound) = this.native() {
+            if let Some(sound_handle) = sound.sound() {
+                if let Some(length) = activation.context.audio.get_sound_size(sound_handle) {
+                    return Ok(length.into());
+                }
+            }
+            return Ok(1.into());
+        }
+    }
+    Ok(Value::Undefined)
 }
 
 fn get_pan<'gc>(
