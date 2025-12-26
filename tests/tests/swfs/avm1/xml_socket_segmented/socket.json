@@ -1,0 +1,29 @@
+[
+  {
+    "type": "Send",
+    "payload": [ 72, 101, 108, 108, 111 ]
+  },
+  {
+    "type": "Send",
+    "payload": [ 87, 111, 114, 108, 100, 33, 0 ]
+  },
+  {
+    "type": "Send",
+    "payload": [ 84, 104, 105, 115 ]
+  },
+  {
+    "type": "Send",
+    "payload": [ 32, 105, 115 ]
+  },
+  {
+    "type": "Send",
+    "payload": [ 32, 97, 32 ]
+  },
+  {
+    "type": "Send",
+    "payload": [ 116, 101, 115, 116, 0 ]
+  },
+  {
+    "type": "Disconnect"
+  }
+]
