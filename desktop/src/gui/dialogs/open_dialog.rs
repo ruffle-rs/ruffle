@@ -325,7 +325,7 @@ impl OpenDialog {
             .open(&mut keep_open)
             .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
             .collapsible(false)
-            .resizable(false)
+            .default_width(200.0)
             .show(egui_ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
                     Grid::new("open-file-options")
