@@ -1431,6 +1431,7 @@ Testing _global.Number.prototype
   valueOf, own, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
+Testing _global.o
 Testing _global.setTimeout
   apply, type=[function]
   call, type=[function]
