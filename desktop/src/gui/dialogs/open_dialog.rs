@@ -75,7 +75,11 @@ impl OpenDialog {
             defaults.proxy.as_ref().map(Url::to_string),
             UrlField::new("socks5://localhost:8080"),
         );
-        let path = PathOrUrlField::new(default_url, "path/to/movie.swf", picker);
+        let path = PathOrUrlField::new(
+            default_url,
+            LocalizableText::LocalizedText("open-dialog-path"),
+            picker,
+        );
         let script_timeout = OptionalField::new(
             defaults
                 .player
@@ -328,10 +332,9 @@ impl OpenDialog {
             .show(egui_ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
                     Grid::new("open-file-options")
-                        .num_columns(2)
+                        .num_columns(1)
                         .striped(true)
                         .show(ui, |ui| {
-                            ui.label(text(locale, "open-dialog-path"));
                             is_valid &= self.path.ui(locale, ui).result().is_some();
                             ui.end_row();
                         });

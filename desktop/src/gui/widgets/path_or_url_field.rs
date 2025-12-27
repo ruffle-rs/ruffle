@@ -1,4 +1,4 @@
-use crate::gui::{FilePicker, text};
+use crate::gui::{FilePicker, LocalizableText, text};
 use egui::{TextEdit, Ui};
 use std::path::Path;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -9,11 +9,11 @@ pub struct PathOrUrlField {
     picker: FilePicker,
     value: Arc<Mutex<String>>,
     result: Option<Url>,
-    hint: &'static str,
+    hint: LocalizableText,
 }
 
 impl PathOrUrlField {
-    pub fn new(default: Option<Url>, hint: &'static str, picker: FilePicker) -> Self {
+    pub fn new(default: Option<Url>, hint: LocalizableText, picker: FilePicker) -> Self {
         if let Some(default) = default {
             Self {
                 picker,
@@ -71,7 +71,7 @@ impl PathOrUrlField {
             ui.add_sized(
                 ui.available_size(),
                 TextEdit::singleline(&mut value)
-                    .hint_text(self.hint)
+                    .hint_text(self.hint.localize(locale))
                     .text_color_opt(if self.result.is_none() {
                         Some(ui.style().visuals.error_fg_color)
                     } else {
