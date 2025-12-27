@@ -1260,6 +1260,24 @@ pub fn load_sound_avm1<'gc>(
     request: Request,
     is_streaming: bool,
 ) -> OwnedFuture<(), Error> {
+    // For local files, try to read the file length immediately
+    let url_str = request.url();
+    if let Ok(resolved_url) = uc.navigator.resolve_url(&url_str) {
+        if resolved_url.scheme() == "file" {
+            // Strip query parameters for file path conversion
+            let mut filesystem_url = resolved_url.clone();
+            filesystem_url.set_query(None);
+                
+            if let Ok(path) = filesystem_url.to_file_path() {
+                if let Ok(metadata) = std::fs::metadata(&path) {
+                    if let NativeObject::Sound(sound) = sound_object.native() {
+                        sound.set_bytes_total(Some(metadata.len() as u32));
+                    }
+                }
+            }
+        }
+    }
+
     let player = uc.player_handle();
     let sound_object = ObjectHandle::stash(uc, sound_object);
 
@@ -1307,6 +1325,7 @@ pub fn load_sound_avm1<'gc>(
 
             let success = match activation.context.audio.register_mp3(&body) {
                 Ok(handle) => {
+                    sound.set_bytes_total(Some(body.len() as u32));
                     sound.load_sound(&mut activation, sound_object, handle);
                     sound.set_duration(Some(0));
                     sound.load_id3(&mut activation, sound_object, &body)?;

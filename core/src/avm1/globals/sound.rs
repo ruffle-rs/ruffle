@@ -77,6 +77,9 @@ struct SoundData<'gc> {
 
     /// Number of bytes loaded for this sound.
     bytes_loaded: Cell<u32>,
+
+    /// Total number of bytes for this sound.
+    bytes_total: Cell<Option<u32>>,
 }
 
 impl fmt::Debug for Sound<'_> {
@@ -102,6 +105,7 @@ impl<'gc> Sound<'gc> {
                 duration: Cell::new(None),
                 is_streaming: Cell::new(false),
                 bytes_loaded: Cell::new(0),
+                bytes_total: Cell::new(None),
             },
         ))
     }
@@ -156,6 +160,14 @@ impl<'gc> Sound<'gc> {
 
     pub fn set_bytes_loaded(self, bytes_loaded: u32) {
         self.0.bytes_loaded.set(bytes_loaded);
+    }
+
+    pub fn bytes_total(self) -> Option<u32> {
+        self.0.bytes_total.get()
+    }
+
+    pub fn set_bytes_total(self, bytes_total: Option<u32>) {
+        self.0.bytes_total.set(bytes_total);
     }
 
     fn play(self, play: QueuedPlay<'gc>, context: &mut UpdateContext<'gc>) {
@@ -466,12 +478,9 @@ fn get_bytes_total<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if activation.swf_version() >= 6 {
         if let NativeObject::Sound(sound) = this.native() {
-            if let Some(sound_handle) = sound.sound() {
-                if let Some(length) = activation.context.audio.get_sound_size(sound_handle) {
-                    return Ok(length.into());
-                }
+            if let Some(total) = sound.bytes_total() {
+                return Ok(total.into());
             }
-            return Ok(1.into());
         }
     }
     Ok(Value::Undefined)
