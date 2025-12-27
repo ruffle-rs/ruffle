@@ -77,7 +77,6 @@ impl BookmarkAddDialog {
                                     url: self
                                         .url
                                         .result()
-                                        .cloned()
                                         .expect("is_valid() ensured value exists"),
                                 })
                             }) {
@@ -276,14 +275,14 @@ impl BookmarksDialog {
                     }
                     ui.end_row();
 
-                    let previous_url = bookmark.url.result().cloned();
+                    let previous_url = bookmark.url.result();
 
                     ui.label(text(locale, "bookmarks-dialog-location"));
                     let current_url = bookmark.url.ui(locale, ui).result();
 
                     // TODO: Change the UrlOrPathField widget to return a response instead, so we can update when we lose the focus, removes the need to clone every redraw.
-                    if let Some(url) = current_url
-                        && previous_url.as_ref() != current_url
+                    if previous_url != current_url
+                        && let Some(url) = current_url
                         && let Err(e) = self.preferences.write_bookmarks(|writer| {
                             writer.set_url(bookmark.index, url.clone());
                         })

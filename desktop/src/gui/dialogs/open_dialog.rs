@@ -290,7 +290,7 @@ impl OpenDialog {
         }
     }
 
-    pub fn url(&self) -> Option<&Url> {
+    pub fn url(&self) -> Option<Url> {
         self.path.result()
     }
 
@@ -307,10 +307,7 @@ impl OpenDialog {
         if let Some(url) = self.path.result()
             && self
                 .event_loop
-                .send_event(RuffleEvent::Open(
-                    url.clone(),
-                    Box::new(self.options.clone()),
-                ))
+                .send_event(RuffleEvent::Open(url, Box::new(self.options.clone())))
                 .is_ok()
         {
             return true;
