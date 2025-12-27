@@ -854,8 +854,15 @@ impl<'gc> MovieClip<'gc> {
                 // AVM2 does not allow a clip to see while it is executing a frame script.
                 // The goto is instead queued and run once the frame script is completed.
                 self.0.queued_goto_frame.set(Some(frame));
+
+                // If we have a frame script on that frame, add ourselves to the
+                // frame script cleanup queue so that that frame script is
+                // correctly run.
+                if self.has_frame_script(frame) {
+                    context.frame_script_cleanup_queue.push_back(self);
+                }
             } else {
-                self.run_goto(context, frame, GotoType::Explicit);
+                self.run_goto(context, frame, false);
             }
         } else if self.movie().is_action_script_3() {
             // Despite not running, the goto still overwrites the currently enqueued frame.
@@ -1293,7 +1300,7 @@ impl<'gc> MovieClip<'gc> {
                     self.0.increment_current_frame();
                 }
             }
-            NextFrame::First => return self.run_goto(context, 1, GotoType::Implicit),
+            NextFrame::First => return self.run_goto(context, 1, true),
             NextFrame::Same => self.stop(context),
         }
 
@@ -1536,14 +1543,7 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    fn run_goto(
-        mut self,
-        context: &mut UpdateContext<'gc>,
-        frame: FrameNumber,
-        goto_type: GotoType,
-    ) {
-        let is_implicit = matches!(goto_type, GotoType::Implicit);
-
+    fn run_goto(mut self, context: &mut UpdateContext<'gc>, frame: FrameNumber, is_implicit: bool) {
         if cfg!(feature = "timeline_debug") {
             tracing::debug!(
                 "[{}]: {} from frame {} to frame {}",
@@ -1796,28 +1796,14 @@ impl<'gc> MovieClip<'gc> {
             .filter(|params| params.frame >= frame)
             .for_each(|goto| run_goto_command(self, context, goto));
 
-        match goto_type {
-            GotoType::Implicit => {}
-
-            GotoType::ExplicitQueued if self.swf_version() <= 9 => {
-                // Specifically for gotos that were queued because they were
-                // called in a framescript in SWFv9, we *only* run frame
-                // scripts, not a full inner goto frame.
-                self.check_has_pending_script();
-                self.run_frame_scripts(context);
-
-                // NOTE: FP doesn't use call recursion to implement this, so
-                // having a `nextFrame` on frame 1 and `prevFrame` on frame 2
-                // won't cause a stack overflow. However, it will hang the player.
-            }
-
+        if !is_implicit {
             // On AVM2, all explicit gotos act the same way as a normal new frame,
             // save for the lack of an enterFrame event. Since this must happen
             // before AS3 continues execution, this is effectively a "recursive
             // frame".
             //
             // Our queued place tags will now run at this time, too.
-            _ => run_inner_goto_frame(context, &removed_frame_scripts, self),
+            run_inner_goto_frame(context, &removed_frame_scripts, self);
         }
 
         self.assert_expected_tag_end(hit_target_frame);
@@ -2423,7 +2409,7 @@ impl<'gc> MovieClip<'gc> {
 
         let goto_frame = self.0.queued_goto_frame.take();
         if let Some(frame) = goto_frame {
-            self.run_goto(context, frame, GotoType::ExplicitQueued);
+            self.run_goto(context, frame, false);
         }
     }
 
@@ -4922,10 +4908,4 @@ impl ClipEventHandler {
             action_data,
         }
     }
-}
-
-enum GotoType {
-    Implicit,
-    Explicit,
-    ExplicitQueued,
 }
