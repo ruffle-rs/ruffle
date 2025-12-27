@@ -1515,15 +1515,14 @@ impl<'gc> MovieLoader<'gc> {
         {
             use crate::avm2::globals::slots::flash_system_loader_context as loader_context_slots;
 
-            let domain = context
+            context
                 .map(|o| o.get_slot(loader_context_slots::APPLICATION_DOMAIN))
                 .and_then(|v| v.as_object())
                 .and_then(|o| o.as_application_domain())
                 .unwrap_or_else(|| {
                     let parent_domain = default_domain;
                     Avm2Domain::movie_domain(uc, parent_domain)
-                });
-            domain
+                })
         } else {
             // This is necessary when the MovieLoaderData is AVM1,
             // but loaded an AVM2 SWF (mixed AVM).
