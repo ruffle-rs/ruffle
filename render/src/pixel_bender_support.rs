@@ -25,12 +25,19 @@ pub enum PixelBenderShaderArgument<'a> {
 pub enum ImageInputTexture<'a> {
     Bitmap(BitmapHandle),
     TextureRef(&'a dyn RawTexture),
-    Bytes {
+    Floats {
         width: u32,
         height: u32,
-        channels: u32,
-        bytes: Vec<u8>,
+        data: FloatPixelData,
     },
+}
+
+#[derive(Debug, Clone)]
+pub enum FloatPixelData {
+    R(Vec<[f32; 1]>),
+    Rg(Vec<[f32; 2]>),
+    Rgb(Vec<[f32; 3]>),
+    Rgba(Vec<[f32; 4]>),
 }
 
 impl PartialEq for ImageInputTexture<'_> {
