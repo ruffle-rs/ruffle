@@ -27,7 +27,7 @@ impl PathOrUrlFieldValue {
 
     fn from_path(path: PathBuf) -> Self {
         Self {
-            representation: path.to_string_lossy().into_owned(),
+            representation: Self::path_to_representation(&path),
             url: Url::from_file_path(path).ok(),
         }
     }
@@ -41,6 +41,23 @@ impl PathOrUrlFieldValue {
                 url: Url::parse(&string).ok(),
                 representation: string,
             }
+        }
+    }
+
+    /// When the user picked a directory, we want to show the directory, but
+    /// encode the real path we want to play.
+    fn from_picked_directory(directory: PathBuf, content: PathBuf) -> Self {
+        Self {
+            url: Url::from_file_path(content).ok(),
+            representation: Self::path_to_representation(&directory),
+        }
+    }
+
+    fn path_to_representation(path: &Path) -> String {
+        if let Some(name) = path.file_name() {
+            name.to_string_lossy().into_owned()
+        } else {
+            path.to_string_lossy().into_owned()
         }
     }
 }
@@ -70,20 +87,37 @@ impl PathOrUrlField {
 
     pub fn ui(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> &mut Self {
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+            let dir = Self::lock_value(&self.value)
+                .url
+                .as_ref()
+                .filter(|url| url.scheme() == "file")
+                .and_then(|url| url.to_file_path().ok())
+                .map(|mut path| {
+                    path.pop();
+                    path
+                });
+
+            if ui
+                .button(text(locale, "path-or-url-field-open-directory"))
+                .clicked()
+            {
+                let dir = dir.clone();
+                let value = self.value.clone();
+                let picker = self.picker.clone();
+                tokio::spawn(async move {
+                    if let Some((directory, content)) =
+                        picker.pick_ruffle_directory_and_content(dir).await
+                    {
+                        *Self::lock_value(&value) =
+                            PathOrUrlFieldValue::from_picked_directory(directory, content);
+                    }
+                });
+            }
+
             if ui
                 .button(text(locale, "path-or-url-field-open-file"))
                 .clicked()
             {
-                let dir = Self::lock_value(&self.value)
-                    .url
-                    .as_ref()
-                    .filter(|url| url.scheme() == "file")
-                    .and_then(|url| url.to_file_path().ok())
-                    .map(|mut path| {
-                        path.pop();
-                        path
-                    });
-
                 let value = self.value.clone();
                 let picker = self.picker.clone();
                 tokio::spawn(async move {
