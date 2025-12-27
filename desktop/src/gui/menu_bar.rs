@@ -1,4 +1,4 @@
-use crate::custom_event::RuffleEvent;
+use crate::custom_event::{OpenType, RuffleEvent};
 use crate::gui::dialogs::Dialogs;
 use crate::gui::{DebugMessage, text};
 use crate::player::LaunchOptions;
@@ -58,7 +58,7 @@ impl MenuBar {
             dialogs.open_file_advanced();
         }
         if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_OPEN)) {
-            self.open_file();
+            self.browse_and_open(OpenType::File);
         }
         if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_QUIT)) {
             self.request_exit();
@@ -212,7 +212,15 @@ impl MenuBar {
                 .clicked()
             {
                 ui.close();
-                self.open_file();
+                self.browse_and_open(OpenType::File);
+            }
+
+            if Button::new(text(locale, "file-menu-open-directory"))
+                .ui(ui)
+                .clicked()
+            {
+                ui.close();
+                self.browse_and_open(OpenType::Directory);
             }
 
             if Button::new(text(locale, "file-menu-open-advanced"))
@@ -223,6 +231,7 @@ impl MenuBar {
                 ui.close();
                 dialogs.open_file_advanced();
             }
+            ui.separator();
 
             if ui
                 .add_enabled(player_exists, Button::new(text(locale, "file-menu-reload")))
@@ -481,12 +490,11 @@ impl MenuBar {
         });
     }
 
-    fn open_file(&mut self) {
-        let _ = self
-            .event_loop
-            .send_event(RuffleEvent::BrowseAndOpen(Box::new(
-                self.default_launch_options.clone(),
-            )));
+    fn browse_and_open(&mut self, open_type: OpenType) {
+        let _ = self.event_loop.send_event(RuffleEvent::BrowseAndOpen(
+            Box::new(self.default_launch_options.clone()),
+            open_type,
+        ));
     }
 
     fn close_movie(&mut self, ui: &mut egui::Ui) {
