@@ -7,6 +7,7 @@ pub mod network_access_dialog;
 mod open_dialog;
 mod open_url_dialog;
 mod preferences_dialog;
+pub mod select_path_dialog;
 mod volume_controls;
 
 use crate::custom_event::RuffleEvent;
@@ -21,6 +22,7 @@ use open_dialog::OpenDialog;
 use open_url_dialog::OpenUrlDialog;
 use preferences_dialog::PreferencesDialog;
 use ruffle_core::Player;
+use select_path_dialog::{SelectPathDialog, SelectPathDialogConfiguration};
 use std::{collections::VecDeque, sync::Weak};
 use unic_langid::LanguageIdentifier;
 use url::Url;
@@ -39,6 +41,7 @@ pub struct Dialogs {
     open_url_dialog: Option<OpenUrlDialog>,
     message_dialog: Option<MessageDialog>,
     export_bundle_dialog: Option<ExportBundleDialog>,
+    pick_path_dialog: Option<SelectPathDialog>,
 
     // Use a queue for the following dialogs in order to:
     //  1. support handling multiple instances of them,
@@ -65,6 +68,7 @@ pub enum DialogDescriptor {
     NetworkAccess(NetworkAccessDialogConfiguration),
     FilesystemAccess(FilesystemAccessDialogConfiguration),
     ExportBundle(Box<ExportBundleDialogConfiguration>),
+    SelectPath(SelectPathDialogConfiguration),
 }
 
 impl Dialogs {
@@ -83,6 +87,7 @@ impl Dialogs {
             open_url_dialog: None,
             message_dialog: None,
             export_bundle_dialog: None,
+            pick_path_dialog: None,
 
             network_access_dialog_queue: VecDeque::new(),
             filesystem_access_dialog: None,
@@ -189,6 +194,9 @@ impl Dialogs {
                 self.export_bundle_dialog =
                     Some(ExportBundleDialog::new(*config, self.file_picker()))
             }
+            DialogDescriptor::SelectPath(config) => {
+                self.pick_path_dialog = Some(SelectPathDialog::new(config));
+            }
         }
     }
 
@@ -209,6 +217,7 @@ impl Dialogs {
         self.show_network_access_dialog(locale, egui_ctx);
         self.show_filesystem_access_dialog(locale, egui_ctx);
         self.show_export_bundle_dialog(locale, egui_ctx);
+        self.show_pick_path_dialog(locale, egui_ctx);
     }
 
     fn show_open_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
@@ -339,6 +348,17 @@ impl Dialogs {
         };
         if !keep_open {
             self.export_bundle_dialog = None;
+        }
+    }
+
+    fn show_pick_path_dialog(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) {
+        let keep_open = if let Some(dialog) = &mut self.pick_path_dialog {
+            dialog.show(locale, egui_ctx)
+        } else {
+            true
+        };
+        if !keep_open {
+            self.pick_path_dialog = None;
         }
     }
 }
