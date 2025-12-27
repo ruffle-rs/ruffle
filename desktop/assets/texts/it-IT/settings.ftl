@@ -46,8 +46,30 @@ align-top-right = Sopra-destra
 align-bottom-right = Sotto-destra
 align-force = Forzato
 scale-mode = Modalità scala
+scale-mode-noscale = Non ridimensionato (100%)
+scale-mode-noscale-tooltip =
+    Mostra il film nella sua forma originale, senza zoom.
+    
+    Corrisponde a StageScaleMode.NO_SCALE
+scale-mode-showall = Adatta per ingrandire
+scale-mode-showall-tooltip =
+    Ingrandisce il film per riempire il più possibile la finestra senza ritagliarlo, mantenendo le proporzioni.
+    
+    Corrisponde a StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Adatta per allargare
+scale-mode-exactfit-tooltip =
+    Assicura che il film riempia l'intera finestra, ignorando le proporzioni.
+    
+    Corrisponde a StageScaleMode.EXACT_FIT
+scale-mode-noborder = Adatta per Ritaglio
+scale-mode-noborder-tooltip =
+    Riempe l'intera finestra mentre mantiene le proporzioni, ritagliando il film se è necessario.
+    
+    Corrisponde a StageScaleMode.NO_BORDER
 scale-mode-force = Forzato
+scale-mode-force-tooltip = Previene il Film a cambiare la modalità di scala, bloccandola sulla opzione scelta.
 player-version = Versione riproduttore
+player-runtime = Durata del riproduttore
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = Framerate personalizzato
