@@ -1260,12 +1260,58 @@ pub fn load_sound_avm1<'gc>(
     request: Request,
     is_streaming: bool,
 ) -> OwnedFuture<(), Error> {
+    // For local files, try to read the file length immediately
+    let url_str = request.url();
+    if let Ok(resolved_url) = uc.navigator.resolve_url(&url_str) {
+        if resolved_url.scheme() == "file" {
+            // Strip query parameters for file path conversion
+            let mut filesystem_url = resolved_url.clone();
+            filesystem_url.set_query(None);
+                
+            if let Ok(path) = filesystem_url.to_file_path() {
+                if let Ok(metadata) = std::fs::metadata(&path) {
+                    if let NativeObject::Sound(sound) = sound_object.native() {
+                        sound.set_bytes_total(Some(metadata.len() as u32));
+                    }
+                }
+            }
+        }
+    }
+
     let player = uc.player_handle();
     let sound_object = ObjectHandle::stash(uc, sound_object);
 
     Box::pin(async move {
         let fetch = player.lock().unwrap().fetch(request, FetchReason::Other);
-        let response = wait_for_full_response(fetch).await;
+        let mut response = fetch.await.map_err(|error| error.error)?;
+
+        let mut body = Vec::new();
+        let mut total_loaded = 0u32;
+
+        loop {
+            let chunk = response.next_chunk().await?;
+            match chunk {
+                Some(chunk_data) => {
+                    let chunk_len = chunk_data.len();
+                    total_loaded = total_loaded.saturating_add(chunk_len as u32);
+                    body.extend_from_slice(&chunk_data);
+
+                    player.lock().unwrap().update(|uc| -> Result<(), Error> {
+                        let sound_object = sound_object.fetch(uc);
+
+                        let NativeObject::Sound(sound) = sound_object.native() else {
+                            panic!("NativeObject must be Sound");
+                        };
+
+                        // Update bytes_loaded as we receive chunks
+                        sound.set_bytes_loaded(total_loaded);
+
+                        Ok(())
+                    })?;
+                }
+                None => break,
+            }
+        }
 
         // Fire the load handler.
         player.lock().unwrap().update(|uc| {
@@ -1277,10 +1323,9 @@ pub fn load_sound_avm1<'gc>(
 
             let mut activation = Activation::from_stub(uc, ActivationIdentifier::root("[Loader]"));
 
-            let success = response
-                .map_err(|e| e.error)
-                .and_then(|(body, _, _, _)| {
-                    let handle = activation.context.audio.register_mp3(&body)?;
+            let success = match activation.context.audio.register_mp3(&body) {
+                Ok(handle) => {
+                    sound.set_bytes_total(Some(body.len() as u32));
                     sound.load_sound(&mut activation, sound_object, handle);
                     sound.set_duration(Some(0));
                     sound.load_id3(&mut activation, sound_object, &body)?;
@@ -1290,9 +1335,10 @@ pub fn load_sound_avm1<'gc>(
                         .get_sound_duration(handle)
                         .map(|d| d.round() as u32);
                     sound.set_duration(duration);
-                    Ok(())
-                })
-                .is_ok();
+                    true
+                }
+                Err(_) => false,
+            };
 
             let _ = sound_object.call_method(
                 istr!("onLoad"),
