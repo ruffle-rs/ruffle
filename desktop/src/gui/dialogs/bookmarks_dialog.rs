@@ -1,5 +1,5 @@
 use crate::gui::widgets::path_or_url_field::PathOrUrlField;
-use crate::gui::{FilePicker, text};
+use crate::gui::{FilePicker, LocalizableText, text};
 use crate::preferences::GlobalPreferences;
 use crate::{custom_event::RuffleEvent, player::LaunchOptions};
 use egui::{Align2, Button, Grid, Label, Layout, Sense, Ui, Widget, Window};
@@ -28,7 +28,11 @@ impl BookmarkAddDialog {
                 .map(|x| ruffle_frontend_utils::url_to_readable_name(x).into_owned())
                 .unwrap_or_default(),
             // TODO: hint.
-            url: PathOrUrlField::new(initial_url, "", picker),
+            url: PathOrUrlField::new(
+                initial_url,
+                LocalizableText::NonLocalizedText("".into()),
+                picker,
+            ),
         }
     }
 
@@ -222,7 +226,7 @@ impl BookmarksDialog {
                                     name: bookmark.name.clone(),
                                     url: PathOrUrlField::new(
                                         Some(bookmark.url.clone()),
-                                        "",
+                                        LocalizableText::NonLocalizedText("".into()),
                                         self.picker.clone(),
                                     ),
                                 });
