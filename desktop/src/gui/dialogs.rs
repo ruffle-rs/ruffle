@@ -163,7 +163,7 @@ impl Dialogs {
         self.is_about_visible = true;
     }
 
-    pub fn saved_movie_url(&self) -> Option<&Url> {
+    pub fn saved_movie_url(&self) -> Option<Url> {
         self.open_dialog.url()
     }
 
