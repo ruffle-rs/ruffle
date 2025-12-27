@@ -51,9 +51,9 @@ version = "0.1.0"
 [workspace.dependencies]
 tracing = "0.1.43"
 tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
-naga = { version = "26.0.0", features = ["wgsl-out"] }
-wgpu = "26.0.1"
-egui = { git = "https://github.com/emilk/egui.git", branch = "main" }
+naga = { version = "27.0.3", features = ["wgsl-out"] }
+wgpu = "27.0.1"
+egui = "0.33.3"
 clap = { version = "4.5.53", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
@@ -98,7 +98,7 @@ bitstream-io = "4.9.0"
 indicatif = "0.18"
 rayon = "1.11.0"
 sha2 = "0.10.9"
-indexmap = "2.11.4"
+indexmap = "2.12.0"
 fnv = "1.0.7"
 hashbrown = { version = "0.14.5", features = ["raw"] }
 fluent-templates = "0.13.2"

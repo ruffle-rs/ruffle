@@ -85,7 +85,6 @@ unknown-git = "deny"
 github = [
     "ruffle-rs",
     "kyren", # for `gc-arena`
-    "emilk", # for `egui`
 ]
 
 [advisories]
