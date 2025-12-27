@@ -1,4 +1,4 @@
-use crate::gui::widgets::PathOrUrlField;
+use crate::gui::widgets::path_or_url_field::PathOrUrlField;
 use crate::gui::{FilePicker, text};
 use crate::preferences::GlobalPreferences;
 use crate::{custom_event::RuffleEvent, player::LaunchOptions};

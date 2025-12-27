@@ -1,11 +1,9 @@
-use crate::gui::text;
+use crate::gui::{FilePicker, text};
 use egui::{TextEdit, Ui};
 use std::path::Path;
 use std::sync::{Arc, Mutex, MutexGuard};
 use unic_langid::LanguageIdentifier;
 use url::Url;
-
-use super::FilePicker;
 
 pub struct PathOrUrlField {
     picker: FilePicker,
