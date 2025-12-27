@@ -5,6 +5,11 @@ use ruffle_core::events::PlayerNotification;
 use crate::gui::DialogDescriptor;
 use crate::player::{LaunchOptions, PlayerRunnable};
 
+pub enum OpenType {
+    File,
+    Directory,
+}
+
 /// User-defined events.
 pub enum RuffleEvent {
     /// Indicates that a task is ready to be polled.
@@ -14,7 +19,7 @@ pub enum RuffleEvent {
     OnMetadata(ruffle_core::swf::HeaderExt),
 
     /// The user requested to pick and then open a file.
-    BrowseAndOpen(Box<LaunchOptions>),
+    BrowseAndOpen(Box<LaunchOptions>, OpenType),
 
     /// The user requested to open a movie.
     Open(url::Url, Box<LaunchOptions>),
