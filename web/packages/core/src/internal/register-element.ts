@@ -86,6 +86,126 @@ export function registerElement(
                 continue;
             } else {
                 window.customElements.define(externalName, elementClass);
+
+                if (elementName === "ruffle-embed") {
+                    const orig = Object.getOwnPropertyDescriptor(
+                        Document.prototype,
+                        "embeds",
+                    );
+                    if (orig?.get) {
+                        const CACHE_SYM: unique symbol = Symbol(
+                            "ruffle_embeds_cache",
+                        );
+                        interface CachedCollection extends HTMLCollection {
+                            [CACHE_SYM]?: true;
+                        }
+                        Object.defineProperty(Document.prototype, "embeds", {
+                            get(this: Document): CachedCollection {
+                                const existing = (
+                                    this as unknown as Record<
+                                        symbol,
+                                        HTMLCollection
+                                    >
+                                )[CACHE_SYM];
+                                if (existing) {
+                                    return existing;
+                                }
+
+                                const nodes = (): NodeListOf<Element> =>
+                                    this.querySelectorAll(
+                                        "embed, ruffle-embed",
+                                    );
+
+                                const base = Object.create(
+                                    HTMLCollection.prototype,
+                                ) as HTMLCollection;
+
+                                Object.defineProperty(base, "length", {
+                                    enumerable: true,
+                                    configurable: true,
+                                    get() {
+                                        return nodes().length;
+                                    },
+                                });
+
+                                base.item = function (
+                                    index: number,
+                                ): Element | null {
+                                    return nodes()[index] ?? null;
+                                };
+
+                                base.namedItem = function (
+                                    name: string,
+                                ): Element | null {
+                                    const list = nodes();
+                                    for (const el of list) {
+                                        const htmlEl = el as HTMLElement;
+                                        if (
+                                            name &&
+                                            (htmlEl.getAttribute("name") ===
+                                                name ||
+                                                htmlEl.id === name)
+                                        ) {
+                                            return htmlEl;
+                                        }
+                                    }
+                                    return null;
+                                };
+
+                                (base as Iterable<Element>)[Symbol.iterator] =
+                                    function* (): Iterator<Element> {
+                                        for (const el of nodes()) {
+                                            yield el;
+                                        }
+                                    };
+
+                                const proxy = new Proxy(base, {
+                                    get(target, prop, receiver) {
+                                        if (typeof prop === "string") {
+                                            const index = Number(prop);
+                                            if (
+                                                !Number.isNaN(index) &&
+                                                index >= 0
+                                            ) {
+                                                return nodes()[index];
+                                            }
+                                        }
+                                        return Reflect.get(
+                                            target,
+                                            prop,
+                                            receiver,
+                                        );
+                                    },
+                                    has(target, prop) {
+                                        if (typeof prop === "string") {
+                                            const index = Number(prop);
+                                            if (
+                                                !Number.isNaN(index) &&
+                                                index >= 0
+                                            ) {
+                                                return index < nodes().length;
+                                            }
+                                        }
+                                        return Reflect.has(target, prop);
+                                    },
+                                }) as CachedCollection;
+
+                                proxy[CACHE_SYM] = true;
+
+                                (
+                                    this as unknown as Record<
+                                        symbol,
+                                        CachedCollection
+                                    >
+                                )[CACHE_SYM] = proxy;
+
+                                return proxy;
+                            },
+                            configurable: true,
+                            enumerable: true,
+                        });
+                    }
+                }
             }
 
             privateRegistry[elementName] = {
