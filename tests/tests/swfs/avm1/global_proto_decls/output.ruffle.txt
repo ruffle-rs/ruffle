@@ -834,13 +834,13 @@ Testing _global.Button
   __proto__, own, type=[object]
 Testing _global.Button.prototype
   tabIndex, own, READ_ONLY, type=[undefined]
-  cacheAsBitmap, own, DONT_ENUM, READ_ONLY, type=[undefined]
-  filters, own, DONT_ENUM, READ_ONLY, type=[undefined]
-  scale9Grid, own, DONT_ENUM, READ_ONLY, type=[undefined]
   blendMode, own, READ_ONLY, type=[undefined]
-  getDepth, own, READ_ONLY, type=[function]
-  useHandCursor, own, type=[boolean]
+  cacheAsBitmap, own, READ_ONLY, type=[undefined]
+  filters, own, READ_ONLY, type=[undefined]
+  scale9Grid, own, READ_ONLY, type=[undefined]
+  getDepth, own, type=[function]
   enabled, own, type=[boolean]
+  useHandCursor, own, type=[boolean]
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.Key
