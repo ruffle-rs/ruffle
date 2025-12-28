@@ -29,19 +29,19 @@ function callAndRecurse(prop, name) {
     name = name + "." + prop;
     var i = eval(name);
 
+    if (typeof(i) == "object") {
+        ASSetPropFlags(i, null, 0, 1);
+        for (p in i) {
+            callAndRecurse(p, name);
+        }
+    }
+
     trace("Testing " + name);
     testDecls(i);
 
     if (i.prototype) {
         trace("Testing " + name + ".prototype");
         testDecls(i.prototype);
-    }
-
-    if (typeof(i) == "object") {
-        ASSetPropFlags(i, null, 0, 1);
-        for (p in i) {
-            callAndRecurse(p, name);
-        }
     }
 };
 
