@@ -309,7 +309,10 @@ impl<'gc> Value<'gc> {
                 istr!("0")
             }
             Value::Object(object) => {
-                if let Some(object) = object.as_display_object_no_super() {
+                if let NativeObject::String(string) = object.native() {
+                    // Strings do not have toString() called on them.
+                    string
+                } else if let Some(object) = object.as_display_object_no_super() {
                     // StageObjects are special-cased to return their path.
                     AvmString::new(activation.gc(), object.path())
                 } else {
