@@ -132,11 +132,6 @@ Testing _global.Button
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Button.prototype
-  cacheAsBitmap, DONT_DELETE
-  filters, DONT_DELETE
-  scale9Grid, DONT_DELETE
-  blendMode, DONT_DELETE
-  getDepth, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Key
   isToggled, DONT_DELETE

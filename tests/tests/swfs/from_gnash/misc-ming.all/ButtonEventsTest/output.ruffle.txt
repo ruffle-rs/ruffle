@@ -4,9 +4,12 @@ PASSED: typeof(square1.button.useHandCursor)  ==  'boolean' [ButtonEventsTest.c:
 PASSED: square1.button.useHandCursor  ==  true [ButtonEventsTest.c:483]
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -19,9 +22,12 @@ instance6
 instance5
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -34,9 +40,12 @@ instance6
 instance5
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -49,9 +58,12 @@ instance6
 instance5
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -100,9 +112,12 @@ PASSED: / == /
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -133,9 +148,12 @@ PASSED:  ==
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -155,9 +173,12 @@ PASSED: / == /
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -177,9 +198,12 @@ PASSED: / == /
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -195,9 +219,12 @@ instance5
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -213,9 +240,12 @@ instance5
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -230,9 +260,12 @@ instance12
 instance5
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -252,9 +285,12 @@ PASSED: / == /
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -297,9 +333,12 @@ PASSED: / == /
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -321,9 +360,12 @@ PASSED:  ==
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -343,9 +385,12 @@ PASSED: / == /
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -365,9 +410,12 @@ PASSED: / == /
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -383,9 +431,12 @@ instance5
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -401,9 +452,12 @@ instance5
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -418,9 +472,12 @@ instance20
 instance5
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -440,9 +497,12 @@ PASSED: / == /
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -484,9 +544,12 @@ PASSED: / == /
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -508,9 +571,12 @@ PASSED:  ==
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -530,9 +596,12 @@ PASSED: / == /
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -552,9 +621,12 @@ PASSED: / == /
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -570,9 +642,12 @@ instance5
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -588,9 +663,12 @@ instance5
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -605,9 +683,12 @@ instance28
 instance5
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
@@ -627,9 +708,12 @@ PASSED: / == /
 PASSED: / == /
 tabIndex
 blendMode
+cacheAsBitmap
+filters
+scale9Grid
 getDepth
-useHandCursor
 enabled
+useHandCursor
 onKeyUp
 onKeyDown
 onSetFocus
