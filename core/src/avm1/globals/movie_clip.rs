@@ -984,15 +984,13 @@ pub fn clone_sprite<'gc>(
         MovieClip::new(movie, context.gc()).as_displayobject()
     } else if let Some(et) = sprite.as_edit_text() {
         // Dynamically created TextField; create a new text field.
-        // TODO This is not covered by tests, we need to make sure what's
-        //   being cloned for text fields.
         EditText::new(
             context,
             movie,
             et.x().to_pixels(),
             et.y().to_pixels(),
-            et.width(),
-            et.height(),
+            0.0,
+            0.0,
         )
         .as_displayobject()
     } else {
@@ -1017,6 +1015,13 @@ pub fn clone_sprite<'gc>(
         if let Some(drawing) = sprite.drawing().as_deref().cloned() {
             *cloned_sprite.drawing_mut() = drawing;
         }
+    }
+
+    // Copy properties of TextField
+    if let (Some(cloned_sprite), Some(sprite)) =
+        (cloned_sprite.as_edit_text(), sprite.as_edit_text())
+    {
+        cloned_sprite.set_editable(sprite.is_editable());
     }
 
     // TODO: Any other properties we should copy...?
