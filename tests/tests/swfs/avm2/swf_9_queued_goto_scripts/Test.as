@@ -29,7 +29,7 @@ package {
 
         public function frame3():void {
             trace("frame3");
-            stop();
+            gotoAndStop(3);
         }
 
         public function frame4():void {
