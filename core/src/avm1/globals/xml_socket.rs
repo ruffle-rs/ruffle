@@ -7,6 +7,7 @@ use crate::string::AvmString;
 use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use std::cell::{Cell, RefCell, RefMut};
+use std::collections::VecDeque;
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -14,7 +15,7 @@ struct XmlSocketData {
     handle: Cell<Option<SocketHandle>>,
     /// Connection timeout in milliseconds.
     timeout: Cell<u32>,
-    read_buffer: RefCell<Vec<u8>>,
+    read_buffer: RefCell<VecDeque<u8>>,
 }
 
 #[derive(Copy, Clone, Debug, Collect)]
@@ -39,7 +40,7 @@ impl<'gc> XmlSocket<'gc> {
         self.0.timeout.set(new_timeout);
     }
 
-    pub fn read_buffer(&self) -> RefMut<'_, Vec<u8>> {
+    pub fn read_buffer(&self) -> RefMut<'_, VecDeque<u8>> {
         self.0.read_buffer.borrow_mut()
     }
 
@@ -239,7 +240,7 @@ fn constructor<'gc>(
             handle: Cell::new(None),
             // Default timeout is 20_000 milliseconds (20 seconds)
             timeout: Cell::new(20000),
-            read_buffer: RefCell::new(Vec::new()),
+            read_buffer: RefCell::new(VecDeque::new()),
         },
     ));
 

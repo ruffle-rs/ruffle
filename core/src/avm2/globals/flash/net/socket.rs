@@ -401,11 +401,14 @@ pub fn read_object<'gc>(
 
         let mut bytes = socket.read_buffer();
 
+        // AMF parsing requires contiguous data.
+        let bytes_slice = bytes.make_contiguous();
+
         let (bytes_left, value) = match socket.object_encoding() {
             ObjectEncoding::Amf0 => {
                 let mut decoder = AMF0Decoder::default();
                 let (extra, amf) = decoder
-                    .parse_single_element(&bytes)
+                    .parse_single_element(bytes_slice)
                     .map_err(|_| "Error: Invalid object")?;
                 (
                     extra.len(),
@@ -415,7 +418,7 @@ pub fn read_object<'gc>(
             ObjectEncoding::Amf3 => {
                 let mut decoder = AMF3Decoder::default();
                 let (extra, amf) = decoder
-                    .parse_single_element(&bytes)
+                    .parse_single_element(bytes_slice)
                     .map_err(|_| "Error: Invalid object")?;
                 (
                     extra.len(),
