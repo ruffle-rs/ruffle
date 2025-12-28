@@ -791,6 +791,22 @@ impl<'gc> MovieClip<'gc> {
         unlock!(Gc::write(mc, self.0), MovieClipData, drop_target).set(drop_target);
     }
 
+    pub fn has_pending_script(self) -> bool {
+        self.0.has_pending_script.get()
+    }
+
+    pub fn set_has_pending_script(self, value: bool) {
+        self.0.has_pending_script.set(value);
+    }
+
+    pub fn last_queued_script_frame(self) -> Option<FrameNumber> {
+        self.0.last_queued_script_frame.get()
+    }
+
+    pub fn set_last_queued_script_frame(self, frame: Option<FrameNumber>) {
+        self.0.last_queued_script_frame.set(frame);
+    }
+
     pub fn set_programmatically_played(self) {
         if self.header_frames() > 1 {
             self.0.set_programmatically_played()
@@ -1398,11 +1414,11 @@ impl<'gc> MovieClip<'gc> {
         }
 
         self.0.queued_script_frame.set(self.0.current_frame.get());
-        if self.0.last_queued_script_frame.get() != Some(self.0.current_frame.get()) {
+        if self.last_queued_script_frame() != Some(self.0.current_frame.get()) {
             // We explicitly clear this variable since AS3 may later GOTO back
             // to the already-ran frame. Since the frame number *has* changed
             // in the meantime, it should absolutely run again.
-            self.0.last_queued_script_frame.set(None);
+            self.set_last_queued_script_frame(None);
         }
     }
 
@@ -2342,19 +2358,11 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    pub fn run_frame_script_cleanup(context: &mut UpdateContext<'gc>) {
-        while let Some(clip) = context.frame_script_cleanup_queue.pop_front() {
-            clip.0.has_pending_script.set(true);
-            clip.0.last_queued_script_frame.set(None);
-            clip.run_local_frame_scripts(context);
-        }
-    }
-
-    fn run_local_frame_scripts(self, context: &mut UpdateContext<'gc>) {
+    pub fn run_local_frame_scripts(self, context: &mut UpdateContext<'gc>) {
         let avm2_object = self.0.object2.get();
 
         if let Some(avm2_object) = avm2_object
-            && self.0.has_pending_script.get()
+            && self.has_pending_script()
         {
             let frame_id = self.0.queued_script_frame.get();
             // If we are already executing frame scripts, then we shouldn't
@@ -2367,13 +2375,13 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
             {
-                let is_fresh_frame = self.0.last_queued_script_frame.get() != Some(frame_id);
+                let is_fresh_frame = self.last_queued_script_frame() != Some(frame_id);
 
                 if is_fresh_frame && let Some(callable) = self.frame_script(frame_id) {
                     let callable = Avm2Value::from(callable);
 
-                    self.0.last_queued_script_frame.set(Some(frame_id));
-                    self.0.has_pending_script.set(false);
+                    self.set_last_queued_script_frame(Some(frame_id));
+                    self.set_has_pending_script(false);
                     self.0
                         .set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
 
@@ -2413,7 +2421,7 @@ impl<'gc> MovieClip<'gc> {
 
     fn check_has_pending_script(self) {
         let has_pending_script = self.has_frame_script(self.0.current_frame.get());
-        self.0.has_pending_script.set(has_pending_script);
+        self.set_has_pending_script(has_pending_script);
     }
 }
 
