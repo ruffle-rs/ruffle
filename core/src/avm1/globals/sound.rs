@@ -76,7 +76,10 @@ struct SoundData<'gc> {
     is_streaming: Cell<bool>,
 
     /// Number of bytes loaded for this sound.
-    bytes_loaded: Cell<u64>,
+    bytes_loaded: Cell<u32>,
+
+    /// Total number of bytes for this sound.
+    bytes_total: Cell<Option<u32>>,
 }
 
 impl fmt::Debug for Sound<'_> {
@@ -102,6 +105,7 @@ impl<'gc> Sound<'gc> {
                 duration: Cell::new(None),
                 is_streaming: Cell::new(false),
                 bytes_loaded: Cell::new(0),
+                bytes_total: Cell::new(None),
             },
         ))
     }
@@ -150,12 +154,20 @@ impl<'gc> Sound<'gc> {
         self.0.is_streaming.set(is_streaming);
     }
 
-    pub fn bytes_loaded(self) -> u64 {
+    pub fn bytes_loaded(self) -> u32 {
         self.0.bytes_loaded.get()
     }
 
-    pub fn set_bytes_loaded(self, bytes_loaded: u64) {
+    pub fn set_bytes_loaded(self, bytes_loaded: u32) {
         self.0.bytes_loaded.set(bytes_loaded);
+    }
+
+    pub fn bytes_total(self) -> Option<u32> {
+        self.0.bytes_total.get()
+    }
+
+    pub fn set_bytes_total(self, bytes_total: Option<u32>) {
+        self.0.bytes_total.set(bytes_total);
     }
 
     fn play(self, play: QueuedPlay<'gc>, context: &mut UpdateContext<'gc>) {
@@ -447,31 +459,24 @@ fn set_duration<'gc>(
 }
 
 fn get_bytes_loaded<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() >= 6 {
-        if let NativeObject::Sound(sound) = this.native() {
-            return Ok(sound.bytes_loaded().into());
-        }
+    if let NativeObject::Sound(sound) = this.native() {
+        return Ok(sound.bytes_loaded().into());
     }
     Ok(Value::Undefined)
 }
 
 fn get_bytes_total<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() >= 6 {
-        if let NativeObject::Sound(sound) = this.native() {
-            if let Some(sound_handle) = sound.sound() {
-                if let Some(length) = activation.context.audio.get_sound_size(sound_handle) {
-                    return Ok(length.into());
-                }
-            }
-            return Ok(1.into());
+    if let NativeObject::Sound(sound) = this.native() {
+        if let Some(total) = sound.bytes_total() {
+            return Ok(total.into());
         }
     }
     Ok(Value::Undefined)

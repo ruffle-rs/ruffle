@@ -1260,6 +1260,12 @@ pub fn load_sound_avm1<'gc>(
     request: Request,
     is_streaming: bool,
 ) -> OwnedFuture<(), Error> {
+    if let Some(file_length) = uc.navigator.estimate_file_length(&request) {
+        if let NativeObject::Sound(sound) = sound_object.native() {
+            sound.set_bytes_total(Some(file_length));
+        }
+    }
+
     let player = uc.player_handle();
     let sound_object = ObjectHandle::stash(uc, sound_object);
 
@@ -1268,14 +1274,14 @@ pub fn load_sound_avm1<'gc>(
         let mut response = fetch.await.map_err(|error| error.error)?;
 
         let mut body = Vec::new();
-        let mut total_loaded = 0u64;
+        let mut total_loaded = 0u32;
 
         loop {
             let chunk = response.next_chunk().await?;
             match chunk {
                 Some(chunk_data) => {
                     let chunk_len = chunk_data.len();
-                    total_loaded += chunk_len as u64;
+                    total_loaded = total_loaded.saturating_add(chunk_len as u32);
                     body.extend_from_slice(&chunk_data);
 
                     player.lock().unwrap().update(|uc| -> Result<(), Error> {
@@ -1307,6 +1313,7 @@ pub fn load_sound_avm1<'gc>(
 
             let success = match activation.context.audio.register_mp3(&body) {
                 Ok(handle) => {
+                    sound.set_bytes_total(Some(body.len() as u32));
                     sound.load_sound(&mut activation, sound_object, handle);
                     sound.set_duration(Some(0));
                     sound.load_id3(&mut activation, sound_object, &body)?;
