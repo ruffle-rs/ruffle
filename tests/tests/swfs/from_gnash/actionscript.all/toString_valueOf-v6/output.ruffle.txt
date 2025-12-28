@@ -57,8 +57,8 @@ PASSED: str3 == 102 [./toString_valueOf.as:182]
 FAILED: expected: "_level0" obtained:  [./toString_valueOf.as:188]
 FAILED: expected: "[type Function]" obtained:  [./toString_valueOf.as:192]
 FAILED: expected: "false" obtained:  [./toString_valueOf.as:196]
-FAILED: expected: 10 obtained: NaN [./toString_valueOf.as:201]
-FAILED: expected: 2 obtained: NaN [./toString_valueOf.as:202]
+PASSED: parseInt(str1) == 10 [./toString_valueOf.as:201]
+PASSED: parseInt(str2) == 2 [./toString_valueOf.as:202]
 PASSED: typeof(str3) == "string" [./toString_valueOf.as:204]
 PASSED: str3 == "TO_VALUETO_VALUE" [./toString_valueOf.as:206]
 PASSED: typeof(x) == "string" [./toString_valueOf.as:213]
@@ -150,6 +150,6 @@ PASSED: typeof(a) == "string" [./toString_valueOf.as:491]
 PASSED: a == "[type Object]" [./toString_valueOf.as:492]
 PASSED: ts() == "[object Object]" [./toString_valueOf.as:496]
 PASSED: s.toString() == "[object Object]" [./toString_valueOf.as:499]
-#passed: 144
-#failed: 5
+#passed: 146
+#failed: 3
 #total tests run: 149

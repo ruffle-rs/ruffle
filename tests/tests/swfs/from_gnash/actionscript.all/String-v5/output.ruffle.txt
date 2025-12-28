@@ -306,8 +306,8 @@ PASSED: !delete Object.prototype.toString [./String.as:1200]
 PASSED: delete Object.prototype.toString [./String.as:1203]
 PASSED: typeof(s.toString) == 'undefined' [./String.as:1204]
 PASSED: g+' ' == "teststring " [./String.as:1217]
-FAILED: expected: "test" obtained: fake [./String.as:1218]
-FAILED: expected: "test" obtained: fake [./String.as:1220]
+PASSED: g.substr(0,4) == "test" [./String.as:1218]
+PASSED: g.substr(0,4) == "test" [./String.as:1220]
 PASSED: o.substr(0,4) == undefined [./String.as:1223]
 PASSED: o.substr(0,4) == "fake" [./String.as:1225]
 PASSED: r == "s:hello" [./String.as:1236]
@@ -353,6 +353,6 @@ PASSED: saved1.value == 'string' [./String.as:1332]
 PASSED: saved2.value == 'another string' [./String.as:1333]
 PASSED: saved2.value.prop != saved3.value.prop [./String.as:1337]
 PASSED: saved2.value !== saved3.value [./String.as:1338]
-#passed: 335
-#failed: 17
+#passed: 337
+#failed: 15
 #total tests run: 352
