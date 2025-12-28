@@ -11,9 +11,7 @@ use ruffle_render::pixel_bender::{
     OUT_COORD_NAME, PixelBenderParam, PixelBenderShader, PixelBenderShaderHandle,
     PixelBenderShaderImpl, PixelBenderType,
 };
-use ruffle_render::pixel_bender_support::{
-    ImageInputTexture, PixelBenderShaderArgument,
-};
+use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
 use smallvec::{SmallVec, smallvec_inline};
 use wgpu::util::{DeviceExt, StagingBelt};
 use wgpu::{
