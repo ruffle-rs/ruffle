@@ -2081,12 +2081,10 @@ impl<'gc> MovieClip<'gc> {
         callable: Option<Avm2Object<'gc>>,
         context: &mut UpdateContext<'gc>,
     ) {
-        let write = Gc::write(context.gc(), self.0);
-        let current_frame = write.current_frame();
-        let mut frame_scripts =
-            RefMut::map(unlock!(write, MovieClipData, cell).borrow_mut(), |r| {
-                &mut r.frame_scripts
-            });
+        let current_frame = self.current_frame();
+
+        let write = unlock!(Gc::write(context.gc(), self.0), MovieClipData, cell);
+        let mut frame_scripts = RefMut::map(write.borrow_mut(), |r| &mut r.frame_scripts);
 
         let index = frame_id as usize;
         if let Some(callable) = callable {
@@ -2100,8 +2098,8 @@ impl<'gc> MovieClip<'gc> {
                 } else {
                     // Ensure newly registered frame scripts are executed,
                     // even if the frame is repeated due to goto.
-                    write.last_queued_script_frame.set(None);
-                    write.has_pending_script.set(true);
+                    self.set_last_queued_script_frame(None);
+                    self.set_has_pending_script(true);
                 }
             }
         } else if frame_scripts.len() > index {
