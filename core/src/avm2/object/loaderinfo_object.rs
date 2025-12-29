@@ -10,10 +10,7 @@ use crate::loader::ContentType;
 use crate::tag_utils::SwfMovie;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{
-    lock::{Lock, RefLock},
-    Collect, Gc, GcWeak, Mutation,
-};
+use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, Ref};
 use std::sync::Arc;
@@ -96,8 +93,6 @@ pub struct LoaderInfoObjectData<'gc> {
 
     uncaught_error_events: Object<'gc>,
 
-    cached_avm1movie: Lock<Option<Object<'gc>>>,
-
     content_type: Cell<ContentType>,
 
     expose_content: Cell<bool>,
@@ -144,7 +139,6 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .construct(activation, &[])?
                     .as_object()
                     .unwrap(),
-                cached_avm1movie: Lock::new(None),
                 content_type: Cell::new(ContentType::Unknown),
                 expose_content: Cell::new(false),
                 errored: Cell::new(false),
