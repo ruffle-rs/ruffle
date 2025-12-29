@@ -166,25 +166,39 @@ impl TextFormat {
             // For some reason, when HTML is enabled in the SWF tag, align is
             // always left, unless there's initial text and the SWF version is 8+.
             // This does not apply to enabling HTML dynamically.
-            Some(swf::TextAlign::Left)
+            swf::TextAlign::Left
         } else {
-            et.layout().map(|l| l.align)
+            et.layout().map(|l| l.align).unwrap_or_default()
         };
-        let left_margin = et.layout().map(|l| l.left_margin.to_pixels());
-        let right_margin = et.layout().map(|l| l.right_margin.to_pixels());
-        let indent = et.layout().map(|l| l.indent.to_pixels().round_ties_even());
-        let leading = et.layout().map(|l| l.leading.to_pixels());
+        let left_margin = et
+            .layout()
+            .map(|l| l.left_margin.to_pixels())
+            .unwrap_or_default();
+        let right_margin = et
+            .layout()
+            .map(|l| l.right_margin.to_pixels())
+            .unwrap_or_default();
+        let indent = et
+            .layout()
+            .map(|l| l.indent.to_pixels().round_ties_even())
+            .unwrap_or_default();
+        let leading = et
+            .layout()
+            .map(|l| l.leading.to_pixels())
+            .unwrap_or_default();
 
         // TODO: Text fields that don't specify a font are assumed to be 12px
         // Times New Roman non-bold, non-italic. This will need to be revised
         // when we start supporting device fonts.
         Self {
             font: Some(font_class),
-            size: et.height().map(|h| h.to_pixels()),
-            color: et
-                .color()
-                .map(|color| swf::Color::from_rgb(color.to_rgb(), 0)),
-            align,
+            size: Some(et.height().map(|h| h.to_pixels()).unwrap_or(12.0)),
+            color: Some(
+                et.color()
+                    .map(|color| swf::Color::from_rgb(color.to_rgb(), 0))
+                    .unwrap_or_else(|| swf::Color::TRANSPARENT),
+            ),
+            align: Some(align),
             bold: if et.is_html() {
                 Some(false)
             } else {
@@ -197,12 +211,12 @@ impl TextFormat {
             },
             underline: Some(false),
             display: Some(TextDisplay::Block),
-            left_margin,
-            right_margin,
-            indent,
+            left_margin: Some(left_margin),
+            right_margin: Some(right_margin),
+            indent: Some(indent),
             block_indent: Some(0.0), // TODO: This isn't specified by the tag itself
             kerning: Some(false),
-            leading,
+            leading: Some(leading),
             letter_spacing: Some(0.0), // TODO: This isn't specified by the tag itself
             tab_stops: Some(vec![]),   // TODO: Are there default tab stops?
             bullet: Some(false),       // TODO: Default tab stops?
