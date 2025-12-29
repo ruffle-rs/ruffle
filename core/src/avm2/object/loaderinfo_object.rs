@@ -2,8 +2,8 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{EventObject, Object, TObject};
-use crate::avm2::{Avm2, Error, Value};
+use crate::avm2::object::{EventObject, Object, StageObject, TObject};
+use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::loader::ContentType;
@@ -81,7 +81,7 @@ pub struct LoaderInfoObjectData<'gc> {
     /// The loaded stream that this gets its info from.
     loaded_stream: RefLock<LoaderStream<'gc>>,
 
-    loader: Option<Object<'gc>>,
+    loader: Option<StageObject<'gc>>,
 
     /// Whether or not we've fired our 'init' event
     init_event_fired: Cell<bool>,
@@ -113,7 +113,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     pub fn not_yet_loaded(
         activation: &mut Activation<'_, 'gc>,
         movie: Arc<SwfMovie>,
-        loader: Option<Object<'gc>>,
+        loader: Option<StageObject<'gc>>,
         root_clip: Option<DisplayObject<'gc>>,
         is_stage: bool,
     ) -> Result<Self, Error<'gc>> {
@@ -154,7 +154,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         Ok(object)
     }
 
-    pub fn loader(self) -> Option<Object<'gc>> {
+    pub fn loader(self) -> Option<StageObject<'gc>> {
         self.0.loader
     }
 
@@ -287,7 +287,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         // error if the loader hadn't loaded it.
         let _ = crate::avm2::globals::flash::display::display_object_container::remove_child_at(
             activation,
-            Value::Object(loader),
+            loader.into(),
             &[0.into()],
         );
     }
