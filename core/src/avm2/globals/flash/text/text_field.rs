@@ -780,6 +780,10 @@ pub fn get_text_format<'gc>(
         let mut begin_index = args.get_i32(0);
         let mut end_index = args.get_i32(1);
 
+        if end_index >= 0 && (begin_index >= end_index || begin_index < 0) {
+            return Err(make_error_2006(activation));
+        }
+
         if begin_index < 0 {
             begin_index = 0;
         }
