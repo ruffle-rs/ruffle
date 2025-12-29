@@ -187,9 +187,6 @@ impl TextFormat {
             .map(|l| l.leading.to_pixels())
             .unwrap_or_default();
 
-        // TODO: Text fields that don't specify a font are assumed to be 12px
-        // Times New Roman non-bold, non-italic. This will need to be revised
-        // when we start supporting device fonts.
         Self {
             font: Some(font_class),
             size: Some(et.height().map(|h| h.to_pixels()).unwrap_or(12.0)),
@@ -214,14 +211,12 @@ impl TextFormat {
             left_margin: Some(left_margin),
             right_margin: Some(right_margin),
             indent: Some(indent),
-            block_indent: Some(0.0), // TODO: This isn't specified by the tag itself
+            block_indent: Some(0.0),
             kerning: Some(false),
             leading: Some(leading),
-            letter_spacing: Some(0.0), // TODO: This isn't specified by the tag itself
-            tab_stops: Some(vec![]),   // TODO: Are there default tab stops?
-            bullet: Some(false),       // TODO: Default tab stops?
-
-            // TODO: These are probably empty strings by default
+            letter_spacing: Some(0.0),
+            tab_stops: Some(vec![]),
+            bullet: Some(false),
             url: Some(WString::new()),
             target: Some(WString::new()),
         }
