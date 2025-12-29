@@ -34,7 +34,7 @@ pub fn initialize_for_allocator<'gc>(
     context: &mut UpdateContext<'gc>,
     dobj: DisplayObject<'gc>,
     class: ClassObject<'gc>,
-) -> Object<'gc> {
+) -> StageObject<'gc> {
     let obj = StageObject::for_display_object(context.gc(), dobj, class);
     dobj.set_placed_by_avm2_script(true);
     dobj.set_object2(context, obj);
@@ -51,7 +51,7 @@ pub fn initialize_for_allocator<'gc>(
     dobj.base().set_skip_next_enter_frame(true);
     dobj.on_construction_complete(context);
 
-    obj.into()
+    obj
 }
 
 /// Implements `alpha`'s getter.
