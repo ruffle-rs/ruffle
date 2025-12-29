@@ -45,7 +45,7 @@ pub fn loader_allocator<'gc>(
     let loader_info = LoaderInfoObject::not_yet_loaded(
         activation,
         Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
-        Some(loader.into()),
+        Some(loader),
         None,
         false,
     )?;
