@@ -22,11 +22,7 @@ pub fn text_field_allocator<'gc>(
     let movie = activation.caller_movie_or_root();
     let display_object = EditText::new(activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
 
-    Ok(initialize_for_allocator(
-        activation.context,
-        display_object,
-        class,
-    ))
+    Ok(initialize_for_allocator(activation.context, display_object, class).into())
 }
 
 pub fn get_always_show_selection<'gc>(
