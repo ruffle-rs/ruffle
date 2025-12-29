@@ -5,7 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{EventObject, Object, StageObject, TObject};
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use crate::display_object::DisplayObject;
+use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::loader::ContentType;
 use crate::tag_utils::SwfMovie;
 use core::fmt;
@@ -269,27 +269,27 @@ impl<'gc> LoaderInfoObject<'gc> {
         self.0.content_type.set(content_type);
     }
 
-    pub fn unload(self, activation: &mut Activation<'_, 'gc>) {
+    pub fn unload(self, context: &mut UpdateContext<'gc>) {
         // Reset properties
-        let movie = &activation.context.root_swf;
+        let movie = &context.root_swf;
         let empty_swf = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
         let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
-        self.set_loader_stream(loader_stream, activation.gc());
+        self.set_loader_stream(loader_stream, context.gc());
         self.set_errored(false);
         self.reset_init_and_complete_events();
 
-        let loader = self
+        let mut loader = self
             .0
             .loader
-            .expect("LoaderInfo must have been created by Loader");
+            .expect("LoaderInfo must have been created by Loader")
+            .display_object()
+            .as_container()
+            .unwrap();
 
-        // Remove the Loader's content element, and ignore the resulting
-        // error if the loader hadn't loaded it.
-        let _ = crate::avm2::globals::flash::display::display_object_container::remove_child_at(
-            activation,
-            loader.into(),
-            &[0.into()],
-        );
+        // Remove the Loader's content element if it exists.
+        if let Some(child) = loader.child_by_index(0) {
+            loader.remove_child(context, child);
+        }
     }
 }
 
