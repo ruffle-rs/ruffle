@@ -1,0 +1,130 @@
+child.defaultTextFormat
+  align = left;
+  blockIndent = 0;
+  bold = false;
+  bullet = false;
+  color = 0;
+  font = Times New Roman;
+  indent = 0;
+  italic = false;
+  kerning = false;
+  leading = 0;
+  leftMargin = 0;
+  letterSpacing = 0;
+  rightMargin = 0;
+  size = 12;
+  tabStops = ;
+  target = ;
+  underline = false;
+  url = ;
+child.getTextFormat()
+  align = null;
+  blockIndent = null;
+  bold = null;
+  bullet = null;
+  color = null;
+  font = null;
+  indent = null;
+  italic = null;
+  kerning = null;
+  leading = null;
+  leftMargin = null;
+  letterSpacing = null;
+  rightMargin = null;
+  size = null;
+  tabStops = null;
+  target = null;
+  underline = null;
+  url = null;
+child.getTextFormat()
+  align = left;
+  blockIndent = 0;
+  bold = false;
+  bullet = false;
+  color = 0;
+  font = Times New Roman;
+  indent = 0;
+  italic = false;
+  kerning = false;
+  leading = 0;
+  leftMargin = 0;
+  letterSpacing = 0;
+  rightMargin = 0;
+  size = 12;
+  tabStops = ;
+  target = ;
+  underline = false;
+  url = ;
+child.getTextFormat(0,0)
+RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test()
+child.getTextFormat(0,1)
+  align = left;
+  blockIndent = 0;
+  bold = false;
+  bullet = false;
+  color = 0;
+  font = Times New Roman;
+  indent = 0;
+  italic = false;
+  kerning = false;
+  leading = 0;
+  leftMargin = 0;
+  letterSpacing = 0;
+  rightMargin = 0;
+  size = 12;
+  tabStops = ;
+  target = ;
+  underline = false;
+  url = ;
+child.getTextFormat(1,1)
+RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test()
+child.getTextFormat(1,0)
+RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test()
+child.getTextFormat(-1,0)
+RangeError: Error #2006: The supplied index is out of bounds.
+	at flash.text::TextField/getTextFormat()
+	at Test()
+child.getTextFormat(0,-1)
+  align = left;
+  blockIndent = 0;
+  bold = false;
+  bullet = false;
+  color = 0;
+  font = Times New Roman;
+  indent = 0;
+  italic = false;
+  kerning = false;
+  leading = 0;
+  leftMargin = 0;
+  letterSpacing = 0;
+  rightMargin = 0;
+  size = 12;
+  tabStops = ;
+  target = ;
+  underline = false;
+  url = ;
+child.getTextFormat()
+  align = null;
+  blockIndent = null;
+  bold = null;
+  bullet = null;
+  color = null;
+  font = null;
+  indent = null;
+  italic = null;
+  kerning = null;
+  leading = null;
+  leftMargin = null;
+  letterSpacing = null;
+  rightMargin = null;
+  size = null;
+  tabStops = null;
+  target = null;
+  underline = null;
+  url = null;
