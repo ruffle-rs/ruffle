@@ -24,6 +24,7 @@
     <name xml:lang="ro">Ruffle</name>
     <name xml:lang="ru">Ruffle</name>
     <name xml:lang="sk">Ruffle</name>
+    <name xml:lang="sl">Ruffle</name>
     <name xml:lang="sr">Ruffle</name>
     <name xml:lang="sv">Ruffle</name>
     <name xml:lang="th">Ruffle</name>
@@ -83,6 +84,7 @@
         <name xml:lang="ro">Echipa Ruffle</name>
         <name xml:lang="ru">Команда Ruffle</name>
         <name xml:lang="sk">Ruffle Tím</name>
+        <name xml:lang="sl">Ekipa Ruffle</name>
         <name xml:lang="sr">Ruffle Tim</name>
         <name xml:lang="sv">Ruffle Teamet</name>
         <name xml:lang="th">ทีมงาน Ruffle</name>
@@ -222,6 +224,7 @@
         <keyword xml:lang="ro">flash</keyword>
         <keyword xml:lang="ru">flash</keyword>
         <keyword xml:lang="sk">flash</keyword>
+        <keyword xml:lang="sl">flash</keyword>
         <keyword xml:lang="sr">fleš</keyword>
         <keyword xml:lang="sv">flash</keyword>
         <keyword xml:lang="th">flash</keyword>
@@ -252,6 +255,7 @@
         <keyword xml:lang="ro">swf</keyword>
         <keyword xml:lang="ru">swf</keyword>
         <keyword xml:lang="sk">swf</keyword>
+        <keyword xml:lang="sl">swf</keyword>
         <keyword xml:lang="sr">swf</keyword>
         <keyword xml:lang="sv">swf</keyword>
         <keyword xml:lang="th">swf</keyword>
@@ -283,6 +287,7 @@
         <keyword xml:lang="ro">reproducător</keyword>
         <keyword xml:lang="ru">прои́грыватель</keyword>
         <keyword xml:lang="sk">prehrávač</keyword>
+        <keyword xml:lang="sl">predvajalnik</keyword>
         <keyword xml:lang="sr">igrač</keyword>
         <keyword xml:lang="sv">player</keyword>
         <keyword xml:lang="tr">oynatıcı</keyword>
@@ -312,6 +317,7 @@
         <keyword xml:lang="ro">emulator</keyword>
         <keyword xml:lang="ru">эмуля́тор</keyword>
         <keyword xml:lang="sk">emulátor</keyword>
+        <keyword xml:lang="sl">emulator</keyword>
         <keyword xml:lang="sr">emulator</keyword>
         <keyword xml:lang="sv">emulator</keyword>
         <keyword xml:lang="th">โปรแกรมเลียนแบบ</keyword>

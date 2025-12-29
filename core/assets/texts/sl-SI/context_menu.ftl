@@ -1,0 +1,9 @@
+context-menu-play = Predvajaj
+context-menu-rewind = Previj nazaj
+context-menu-forward = Naprej
+context-menu-back = Nazaj
+context-menu-cut = Izreži
+context-menu-copy = Kopiraj
+context-menu-paste = Prilepi
+context-menu-delete = Izbriši
+context-menu-select-all = Izberi vse
