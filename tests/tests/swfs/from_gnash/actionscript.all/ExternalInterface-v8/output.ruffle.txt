@@ -95,7 +95,7 @@ FAILED: expected: '<array><property id="0"><undefined/></property><property id="
 FAILED: expected: "<number>123.456</number>" obtained: undefined [./ExternalInterface.as:259]
 FAILED: expected: '<object><property id="namespaceURI"><null/></property><property id="localName"><null/></property><property id="prefix"><null/></property><property id="previousSibling"><null/></property><property id="parentNode"><null/></property><property id="nodeValue"><null/></property><property id="nodeType"><number>1</number></property><property id="nodeName"><null/></property><property id="nextSibling"><null/></property><property id="lastChild"><null/></property><property id="firstChild"><null/></property><property id="childNodes"><array></array></property><property id="attributes"><null/></property><property id="getPrefixForNamespace"><null/></property><property id="getNamespaceForPrefix"><null/></property><property id="toString"><null/></property><property id="hasChildNodes"><null/></property><property id="appendChild"><null/></property><property id="insertBefore"><null/></property><property id="removeNode"><null/></property><property id="cloneNode"><null/></property><property id="xmlDecl"><undefined/></property><property id="status"><number>0</number></property><property id="loaded"><undefined/></property><property id="ignoreWhite"><false/></property><property id="docTypeDecl"><undefined/></property><property id="contentType"><string>application/x-www-form-urlencoded</string></property><property id="addRequestHeader"><null/></property><property id="getBytesTotal"><null/></property><property id="getBytesLoaded"><null/></property><property id="onData"><null/></property><property id="onLoad"><null/></property><property id="sendAndLoad"><null/></property><property id="send"><null/></property><property id="load"><null/></property><property id="parseXML"><null/></property><property id="createTextNode"><null/></property><property id="createElement"><null/></property></object>' obtained: undefined [./ExternalInterface.as:265]
 PASSED: ret == rout [./ExternalInterface.as:277]
-FAILED: expected: "& ß+ü &nbsp; < << <>''\"" obtained: undefined [./ExternalInterface.as:286]
+PASSED: ret == "& ß+ü &nbsp; < << <>''\"" [./ExternalInterface.as:286]
 PASSED: typeof(val) == 'undefined' [./ExternalInterface.as:290]
 PASSED: typeof(val) == 'undefined' [./ExternalInterface.as:293]
 PASSED: typeof(val) == 'undefined' [./ExternalInterface.as:296]
@@ -113,6 +113,6 @@ PASSED: EI._toAS(o) == undefined [./ExternalInterface.as:341]
 FAILED: expected: "function" obtained: undefined [./ExternalInterface.as:344]
 FAILED: expected: 'object' obtained: undefined [./ExternalInterface.as:347]
 PASSED: EI.func1 == undefined [./ExternalInterface.as:354]
-#passed: 87
-#failed: 25
+#passed: 88
+#failed: 24
 #total tests run: 112
