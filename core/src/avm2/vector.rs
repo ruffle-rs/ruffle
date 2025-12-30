@@ -342,8 +342,19 @@ impl<'gc> VectorStorage<'gc> {
     }
 
     /// Replace this vector's storage with new values.
+    ///
+    /// See also [`Self::replace_storage_with_iter`] to avoid unnecessarily collecting to a Vec.
     pub fn replace_storage(&mut self, new_storage: Vec<Value<'gc>>) {
         self.storage = new_storage;
+    }
+
+    /// Replace the contents of the vector's storage with the contents of an iterator, reusing the existing allocation if possible.
+    pub fn replace_storage_with_iter<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = Value<'gc>>,
+    {
+        self.storage.clear();
+        self.storage.extend(iter);
     }
 
     pub fn splice<R>(
