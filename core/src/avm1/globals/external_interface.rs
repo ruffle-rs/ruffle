@@ -1,7 +1,11 @@
 //! flash.external.ExternalInterface object
 
+use ruffle_common::avm_string::AvmString;
+use ruffle_wstr::WStr;
+
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
@@ -157,10 +161,27 @@ pub fn call_out<'gc>(
 pub fn escape_xml<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "flash.external.ExternalInterface", "_escapeXML");
-    Ok(Value::Undefined)
+    let Some(arg) = args.try_get_string(activation, 0, UndefinedAs::Some)? else {
+        return Ok(Value::Null);
+    };
+
+    Ok(escape_xml_inner(activation, arg.as_wstr()))
+}
+
+fn escape_xml_inner<'gc>(activation: &mut Activation<'_, 'gc>, arg: &WStr) -> Value<'gc> {
+    let result = arg
+        .replace(b'&', WStr::from_units(b"&amp;"))
+        .replace(b'"', WStr::from_units(b"&quot;"))
+        .replace(b'\'', WStr::from_units(b"&apos;"))
+        .replace(b'<', WStr::from_units(b"&lt;"))
+        .replace(b'>', WStr::from_units(b"&gt;"));
+    if result.is_empty() {
+        Value::Null
+    } else {
+        AvmString::new(activation.gc(), result).into()
+    }
 }
 
 pub fn unescape_xml<'gc>(
