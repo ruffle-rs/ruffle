@@ -1,13 +1,14 @@
 //! flash.external.ExternalInterface object
 
 use ruffle_common::avm_string::AvmString;
-use ruffle_wstr::WStr;
+use ruffle_macros::istr;
+use ruffle_wstr::{WStr, WString};
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
-use crate::avm1::{Object, Value};
+use crate::avm1::{NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::external::{Callback, ExternalInterface, Value as ExternalValue};
 
@@ -252,49 +253,137 @@ pub fn call_in<'gc>(
 pub fn array_to_xml<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(
-        activation,
-        "flash.external.ExternalInterface",
-        "_arrayToXML"
-    );
-    Ok(Value::Undefined)
+    let arg = args.get_object(activation, 0)?;
+    let result = array_to_xml_inner(activation, arg)?;
+    Ok(AvmString::new(activation.gc(), result).into())
+}
+
+fn array_to_xml_inner<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    arg: Object<'gc>,
+) -> Result<WString, Error<'gc>> {
+    let mut result = WString::new();
+    result.push_utf8_bytes(b"<array>");
+    let length = arg.length(activation)?;
+    for index in 0..length {
+        let value = arg.get_element(activation, index);
+        result.push_utf8_bytes(b"<property id=\"");
+        result.push_utf8(&index.to_string());
+        result.push_utf8_bytes(b"\">");
+        result.push_str(&to_xml_inner(activation, value)?);
+        result.push_utf8_bytes(b"</property>");
+    }
+    result.push_utf8_bytes(b"</array>");
+
+    Ok(result)
 }
 
 pub fn arguments_to_xml<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(
-        activation,
-        "flash.external.ExternalInterface",
-        "_argumentsToXML"
-    );
-    Ok(Value::Undefined)
+    let arg = args.get_object(activation, 0)?;
+    let result = arguments_to_xml_inner(activation, arg)?;
+    Ok(AvmString::new(activation.gc(), result).into())
+}
+
+fn arguments_to_xml_inner<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    arg: Object<'gc>,
+) -> Result<WString, Error<'gc>> {
+    let mut result = WString::new();
+    result.push_utf8_bytes(b"<arguments>");
+    let length = arg.length(activation)?;
+    for index in 1..length {
+        let value = arg.get_element(activation, index);
+        result.push_str(&to_xml_inner(activation, value)?);
+    }
+    result.push_utf8_bytes(b"</arguments>");
+
+    Ok(result)
 }
 
 pub fn object_to_xml<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(
-        activation,
-        "flash.external.ExternalInterface",
-        "_objectToXML"
-    );
-    Ok(Value::Undefined)
+    let arg = args.get_object(activation, 0)?;
+    let result = object_to_xml_inner(activation, arg)?;
+    Ok(AvmString::new(activation.gc(), result).into())
+}
+
+fn object_to_xml_inner<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    arg: Object<'gc>,
+) -> Result<WString, Error<'gc>> {
+    let mut result = WString::new();
+    result.push_utf8_bytes(b"<object>");
+    for (name, value) in arg.own_properties() {
+        result.push_utf8_bytes(b"<property id=\"");
+        result.push_str(&name);
+        result.push_utf8_bytes(b"\">");
+        result.push_str(&to_xml_inner(activation, value)?);
+        result.push_utf8_bytes(b"</property>");
+    }
+    result.push_utf8_bytes(b"</object>");
+
+    Ok(result)
 }
 
 pub fn to_xml<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "flash.external.ExternalInterface", "_toXML");
-    Ok(Value::Undefined)
+    let arg = args.get_value(0);
+    let result = to_xml_inner(activation, arg)?;
+    Ok(AvmString::new(activation.gc(), result).into())
+}
+
+fn to_xml_inner<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    arg: Value<'gc>,
+) -> Result<WString, Error<'gc>> {
+    Ok(match arg {
+        Value::Undefined => WString::from_utf8("<undefined/>"),
+        Value::Null => WString::from_utf8("<null/>"),
+        Value::Bool(true) => WString::from_utf8("<true/>"),
+        Value::Bool(false) => WString::from_utf8("<false/>"),
+        Value::Number(_) => {
+            let mut result = WString::from_utf8("<number>");
+            result.push_str(arg.coerce_to_string(activation)?.as_wstr());
+            result.push_utf8_bytes(b"</number>");
+            result
+        }
+        Value::String(string) => {
+            let string = escape_xml_inner(activation, string.as_wstr())
+                .coerce_to_string(activation)?
+                .as_wstr();
+            let mut result = WString::from_utf8("<string>");
+            result.push_str(string);
+            result.push_utf8_bytes(b"</string>");
+            result
+        }
+        _ => {
+            let Some(object) = arg.as_object(activation) else {
+                // TODO What to do in this case? This is hit when the MCR fails to resolve.
+                return Ok(WString::from_utf8("<null/>"));
+            };
+
+            if object.has_own_property(activation, istr!("length")) {
+                // Yes, `new String("hello")` serializes to an array with 5 undefined elements.
+                array_to_xml_inner(activation, object)?
+            } else if let NativeObject::Function(_) = object.native() {
+                WString::from_utf8("<null/>")
+            } else {
+                object_to_xml_inner(activation, object)?
+            }
+        }
+    })
 }
 
 pub fn object_to_as<'gc>(
