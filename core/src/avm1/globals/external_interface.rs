@@ -187,14 +187,27 @@ fn escape_xml_inner<'gc>(activation: &mut Activation<'_, 'gc>, arg: &WStr) -> Va
 pub fn unescape_xml<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(
-        activation,
-        "flash.external.ExternalInterface",
-        "_unescapeXML"
-    );
-    Ok(Value::Undefined)
+    let Some(arg) = args.try_get_string(activation, 0, UndefinedAs::Some)? else {
+        return Ok(Value::Null);
+    };
+
+    Ok(unescape_xml_inner(activation, arg.as_wstr()))
+}
+
+fn unescape_xml_inner<'gc>(activation: &mut Activation<'_, 'gc>, arg: &WStr) -> Value<'gc> {
+    let result = arg
+        .replace(WStr::from_units(b"&gt;"), WStr::from_units(b">"))
+        .replace(WStr::from_units(b"&lt;"), WStr::from_units(b"<"))
+        .replace(WStr::from_units(b"&apos;"), WStr::from_units(b"'"))
+        .replace(WStr::from_units(b"&quot;"), WStr::from_units(b"\""))
+        .replace(WStr::from_units(b"&amp;"), WStr::from_units(b"&"));
+    if result.is_empty() {
+        Value::Null
+    } else {
+        AvmString::new(activation.gc(), result).into()
+    }
 }
 
 pub fn js_quote_string<'gc>(
