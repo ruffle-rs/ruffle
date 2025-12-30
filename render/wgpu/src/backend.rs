@@ -38,6 +38,19 @@ use swf::Color;
 use tracing::instrument;
 use wgpu::SubmissionIndex;
 
+/// Returns wgpu instance flags with indirect call validation disabled.
+///
+/// wgpu's indirect call validation runs a compute shader that uses `array<u32>`,
+/// which requires the `DYNAMIC_ARRAY_SIZE` feature. However, wgpu runs this shader
+/// without first checking if the device supports that feature, causing device
+/// creation to fail on GPUs that lack it. Since Ruffle doesn't use indirect draws,
+/// disabling this validation has no functional impact.
+///
+/// See <https://github.com/gfx-rs/wgpu/issues/8799>
+pub fn get_wgpu_instance_flags() -> wgpu::InstanceFlags {
+    wgpu::InstanceFlags::default().difference(wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL)
+}
+
 pub struct WgpuRenderBackend<T: RenderTarget> {
     pub(crate) descriptors: Arc<Descriptors>,
     target: T,
@@ -67,6 +80,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         };
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends,
+            flags: get_wgpu_instance_flags(),
             backend_options: wgpu::BackendOptions {
                 gl: wgpu::GlBackendOptions {
                     // See <https://github.com/gfx-rs/wgpu/releases/tag/v25.0.0>
@@ -108,6 +122,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         }
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: backend,
+            flags: get_wgpu_instance_flags(),
             ..Default::default()
         });
         let surface = unsafe { instance.create_surface_unsafe(window)? };
@@ -153,6 +168,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
         }
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: backend,
+            flags: get_wgpu_instance_flags(),
             ..Default::default()
         });
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
