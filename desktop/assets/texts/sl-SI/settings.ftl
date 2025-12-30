@@ -45,31 +45,32 @@ align-bottom-left = Spodaj-levo
 align-top-right = Zgoraj-desno
 align-bottom-right = Spodaj-desno
 align-force = Prisili
-scale-mode = Način prikaza
+scale-mode = Način prileganja
 scale-mode-noscale = Nepreoblikovano (100%)
 scale-mode-noscale-tooltip =
     Prikaže film v originalni velikosti, brez povečave.
-
+    
     Ustrezna nastavitev je StageScaleMode.NO_SCALE
 scale-mode-showall = Povečaj, da se prilega
 scale-mode-showall-tooltip =
     Poveča film, da čim bolj zapolni okno brez obrezovanja, pri čemer ohrani razmerje stranic.
-
+    
     Ustrezna nastavitev je StageScaleMode.SHOW_ALL
 scale-mode-exactfit = Raztegni, da se prilega
 scale-mode-exactfit-tooltip =
     Zagotovi, da film zapolni celotno okno, ne glede na razmerje stranic.
-
+    
     Ustrezna nastavitev je StageScaleMode.EXACT_FIT
 scale-mode-noborder = Obreži, da se prilega
 scale-mode-noborder-tooltip =
     Zapolni celotno okno ob ohranitvi razmerja stranic, po potrebi pa film obreže.
-
+    
     Ustrezna nastavitev je StageScaleMode.NO_BORDER
 scale-mode-force = Prisili
 scale-mode-force-tooltip = Preprečuje, da bi film spremenil način merjenja, in ga zaklene na izbrano nastavitev.
 player-version = Različica predvajalnika
 player-runtime = Sistem za izvajanje predvajalnika
+player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = Prilagojena slikovna frekvenca
 custom-framerate-suffix = { " " } fps

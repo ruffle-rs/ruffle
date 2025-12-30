@@ -1,3 +1,4 @@
+language-name = Slovenščina
 start = Začni
 browse = Prebrskaj
 save = Shrani

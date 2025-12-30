@@ -57,7 +57,7 @@ error-wasm-download =
     Altrimenti, contatta l'amministratore del sito.
 error-wasm-disabled-on-edge =
     Ruffle non ha caricato il componente di file ".wasm" richiesto.
-    Per risolvere il problema, prova ad aprire le impostazioni del tuo browser, facendo clic su "Privacy, search, and services", scorrendo verso il basso e disattivando "Migliora la tua sicurezza sul web".
+    Per risolvere il problema, prova ad aprire le impostazioni del tuo browser, facendo clic su "Privacy, ricerca e servizi", scorrendo verso il basso e disattivando "Migliora la tua sicurezza sul web".
     Questo permetterà al tuo browser di caricare i file ".wasm" richiesti.
     Se il problema persiste, potresti dover usare un browser diverso.
 error-wasm-unsupported-browser =
