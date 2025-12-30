@@ -639,7 +639,7 @@ pub fn sort<'gc>(
 
         if !options.contains(SortOptions::UNIQUE_SORT) || unique_sort_satisfied {
             let mut vs = this.as_vector_storage_mut(activation.gc()).unwrap();
-            vs.replace_storage(values.into_iter().collect());
+            vs.replace_storage(values);
         }
 
         return Ok(this.into());
