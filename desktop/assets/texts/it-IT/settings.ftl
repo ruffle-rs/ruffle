@@ -46,6 +46,19 @@ align-top-right = Sopra-destra
 align-bottom-right = Sotto-destra
 align-force = Forzato
 scale-mode = Modalità scala
+scale-mode-noscale = Non ridimensionato (100%)
+scale-mode-noscale-tooltip =
+    Mostra il film nella sua forma originale, senza zoom.
+
+    Corrisponde a StageScaleMode.NO_SCALE
+scale-mode-showall-tooltip =
+    Ingrandisce il film per riempire il più possibile la finestra senza ritagliarlo, mantenendo le proporzioni.
+
+    Corrisponde a StageScaleMode.SHOW_ALL
+scale-mode-exactfit-tooltip =
+    Assicura che il film riempia l'intera finestra, ignorando le proporzioni.
+
+    Corrisponde a StageScaleMode.EXACT_FIT
 scale-mode-force = Forzato
 player-version = Versione riproduttore
 player-runtime-flash = Flash Player
