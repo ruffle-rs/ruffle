@@ -200,14 +200,18 @@ pub fn unescape_xml<'gc>(
 pub fn js_quote_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(
-        activation,
-        "flash.external.ExternalInterface",
-        "_jsQuoteString"
-    );
-    Ok(Value::Undefined)
+    let Some(arg) = args.try_get_string(activation, 0, UndefinedAs::Some)? else {
+        return Ok(Value::Null);
+    };
+
+    let result = arg.replace(b'"', WStr::from_units(b"\\\""));
+    if result.is_empty() {
+        Ok(Value::Null)
+    } else {
+        Ok(AvmString::new(activation.gc(), result).into())
+    }
 }
 
 pub fn use_set_return_value_hack<'gc>(
