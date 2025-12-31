@@ -101,18 +101,18 @@ PASSED: typeof(val) == 'undefined' [./ExternalInterface.as:293]
 PASSED: typeof(val) == 'undefined' [./ExternalInterface.as:296]
 PASSED: typeof(val) == 'undefined' [./ExternalInterface.as:299]
 PASSED: typeof(val) == 'undefined' [./ExternalInterface.as:302]
-FAILED: expected: false obtained: undefined [./ExternalInterface.as:310]
-FAILED: expected: true obtained: undefined [./ExternalInterface.as:314]
-FAILED: expected: "NaN" obtained: undefined [./ExternalInterface.as:318]
-FAILED: expected: 45 obtained: undefined [./ExternalInterface.as:320]
-FAILED: expected: 23 obtained: undefined [./ExternalInterface.as:325]
+PASSED: EI._toAS(o) == false [./ExternalInterface.as:310]
+PASSED: EI._toAS(o) == true [./ExternalInterface.as:314]
+PASSED: EI._toAS(o).toString() == "NaN" [./ExternalInterface.as:318]
+PASSED: EI._toAS(o) == 45 [./ExternalInterface.as:320]
+PASSED: EI._toAS(o) == 23 [./ExternalInterface.as:325]
 PASSED: EI._toAS(o) == undefined [./ExternalInterface.as:330]
 PASSED: EI._toAS(o) == undefined [./ExternalInterface.as:332]
 PASSED: EI._toAS(o) == null [./ExternalInterface.as:336]
 PASSED: EI._toAS(o) == undefined [./ExternalInterface.as:341]
 FAILED: expected: "function" obtained: undefined [./ExternalInterface.as:344]
-FAILED: expected: 'object' obtained: undefined [./ExternalInterface.as:347]
+PASSED: typeOf(val) == 'object' [./ExternalInterface.as:347]
 PASSED: EI.func1 == undefined [./ExternalInterface.as:354]
-#passed: 104
-#failed: 8
+#passed: 110
+#failed: 2
 #total tests run: 112
