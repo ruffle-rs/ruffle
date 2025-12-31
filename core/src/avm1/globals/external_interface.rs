@@ -391,12 +391,21 @@ pub fn object_to_as<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let result = activation
+        .prototypes()
+        .object_constructor
+        .construct(activation, &[])?;
+    let Value::Object(result) = result else {
+        return Ok(result);
+    };
+
     avm1_stub!(
         activation,
         "flash.external.ExternalInterface",
         "_objectToAS"
     );
-    Ok(Value::Undefined)
+
+    Ok(result.into())
 }
 
 pub fn array_to_as<'gc>(
@@ -404,17 +413,93 @@ pub fn array_to_as<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let result = activation
+        .prototypes()
+        .array_constructor
+        .construct(activation, &[])?;
+    let Value::Object(result) = result else {
+        return Ok(result);
+    };
+
     avm1_stub!(activation, "flash.external.ExternalInterface", "_arrayToAS");
-    Ok(Value::Undefined)
+
+    Ok(result.into())
 }
 
 pub fn to_as<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "flash.external.ExternalInterface", "_toAS");
-    Ok(Value::Undefined)
+    let arg = args.get_object(activation, 0)?;
+
+    let node_name_prop = AvmString::new_utf8(activation.gc(), "nodeName");
+    let first_child_prop = AvmString::new_utf8(activation.gc(), "firstChild");
+
+    let node_name = match arg.get(node_name_prop, activation)? {
+        Value::String(string) => Some(string),
+        Value::Object(object) => match object.native() {
+            NativeObject::String(string) => Some(string),
+            _ => None,
+        },
+        _ => None,
+    };
+    let Some(node_name) = node_name else {
+        return Ok(Value::Undefined);
+    };
+
+    if node_name.as_wstr() == b"null" {
+        Ok(Value::Null)
+    } else if node_name.as_wstr() == b"true" {
+        Ok(Value::Bool(true))
+    } else if node_name.as_wstr() == b"false" {
+        Ok(Value::Bool(false))
+    } else if node_name.as_wstr() == b"string" {
+        let node_value = arg
+            .get(first_child_prop, activation)?
+            .coerce_to_string(activation)?;
+        Ok(node_value.into())
+    } else if node_name.as_wstr() == b"number" {
+        let node_value = arg
+            .get(first_child_prop, activation)?
+            .coerce_to_string(activation)?;
+        let number = Value::String(node_value).coerce_to_f64(activation)?;
+        Ok(number.into())
+    } else if node_name.as_wstr() == b"array" {
+        avm1_stub!(
+            activation,
+            "flash.external.ExternalInterface",
+            "_toAS",
+            "<array/>"
+        );
+        Ok(Value::Undefined)
+    } else if node_name.as_wstr() == b"object" {
+        avm1_stub!(
+            activation,
+            "flash.external.ExternalInterface",
+            "_toAS",
+            "<object/>"
+        );
+        Ok(Value::Undefined)
+    } else if node_name.as_wstr() == b"arguments" {
+        avm1_stub!(
+            activation,
+            "flash.external.ExternalInterface",
+            "_toAS",
+            "<arguments/>"
+        );
+        Ok(Value::Undefined)
+    } else if node_name.as_wstr() == b"class" {
+        avm1_stub!(
+            activation,
+            "flash.external.ExternalInterface",
+            "_toAS",
+            "<class/>"
+        );
+        Ok(Value::Undefined)
+    } else {
+        Ok(Value::Undefined)
+    }
 }
 
 pub fn arguments_to_as<'gc>(
@@ -422,12 +507,21 @@ pub fn arguments_to_as<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let result = activation
+        .prototypes()
+        .array_constructor
+        .construct(activation, &[])?;
+    let Value::Object(result) = result else {
+        return Ok(result);
+    };
+
     avm1_stub!(
         activation,
         "flash.external.ExternalInterface",
         "_argumentsToAS"
     );
-    Ok(Value::Undefined)
+
+    Ok(result.into())
 }
 
 pub fn array_to_js<'gc>(
