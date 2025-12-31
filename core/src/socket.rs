@@ -320,13 +320,10 @@ impl<'gc> Sockets<'gc> {
                             // The read buffer should never contain null bytes at this point,
                             // since they are always processed immediately. Therefore, we
                             // only need to check the new data for null bytes.
-                            if !data.contains(&0) {
-                                // No null bytes in new data, just buffer it.
-                                xml_socket.read_buffer().extend(data);
-                            } else {
-                                // Null byte(s) found - extend buffer and process messages.
-                                xml_socket.read_buffer().extend(data);
+                            let has_null = data.contains(&0);
+                            xml_socket.read_buffer().extend(data);
 
+                            if has_null {
                                 // Process complete messages (null-terminated) one at a time.
                                 // We release the buffer borrow before each AS call to avoid
                                 // conflicts if AS code accesses the socket.
