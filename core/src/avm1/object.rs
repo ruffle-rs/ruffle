@@ -22,7 +22,7 @@ use crate::avm1::globals::xml::Xml;
 use crate::avm1::globals::xml_socket::XmlSocket;
 use crate::avm1::object::super_object::SuperObject;
 use crate::avm1::xml::XmlNode;
-use crate::avm1::{Activation, Error, Value};
+use crate::avm1::{Activation, Attribute, Error, Value};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::{
     Avm1Button, DisplayObject, EditText, MovieClip, TDisplayObject as _, Video,
@@ -212,6 +212,21 @@ impl<'gc> Object<'gc> {
         let name = name.into();
         if name.is_empty() {
             return Ok(());
+        }
+
+        if name == istr!("__proto__") {
+            if let NativeObject::Function(_) = self.native() {
+                let attributes = if activation.swf_version() < 6 {
+                    // Explicit overwriting in swfv5 makes __proto__ of function objects visible to swfv5.
+                    Attribute::DONT_ENUM | Attribute::DONT_DELETE
+                } else {
+                    // After explicit overwriting in swfv6 and above, __proto__ of function objects remains invisible to swfv5.
+                    Attribute::DONT_ENUM | Attribute::DONT_DELETE | Attribute::VERSION_6
+                };
+
+                self.define_value(activation.gc(), name, value, attributes);
+                return Ok(());
+            }
         }
 
         let mut value = value;

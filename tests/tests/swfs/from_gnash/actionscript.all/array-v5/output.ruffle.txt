@@ -58,8 +58,8 @@ PASSED: a[5] == undefined [./array.as:150]
 PASSED: a[4] == 9 [./array.as:151]
 PASSED: a.join() == "200,551,7,8,9" [./array.as:152]
 PASSED: a.join() == "9,8,7,551,200" [./array.as:154]
-FAILED: expected: undefined obtained: 9,8,7,551,200 [./array.as:160]
-FAILED: expected: undefined obtained: 9,8,7,551,200 [./array.as:161]
+PASSED: Array.prototype.join.apply(a) == undefined [./array.as:160]
+PASSED: a.join.apply(a) == undefined [./array.as:161]
 PASSED: a.join("test") == "9test8test7test551test200" [./array.as:163]
 PASSED: typeof(Array.UNIQUE) == 'undefined' [./array.as:166]
 PASSED: (undefined|1) == 1 [./array.as:172]
@@ -555,6 +555,6 @@ PASSED: ret == "" [./array.as:1699]
 creating new object
 X ctor
 PASSED: ret == "Array data" [./array.as:1710]
-#passed: 524
-#failed: 28
+#passed: 526
+#failed: 26
 #total tests run: 552

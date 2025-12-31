@@ -11,7 +11,7 @@ use gc_arena::Collect;
 use ruffle_macros::istr;
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    "initialize" => method(initialize; DONT_ENUM | DONT_DELETE);
+    "initialize" => function(initialize; DONT_ENUM | DONT_DELETE);
     "addListener" => function(add_listener; DONT_ENUM | DONT_DELETE);
     "removeListener" => function(remove_listener; DONT_ENUM | DONT_DELETE);
     "broadcastMessage" => function(broadcast_message; DONT_ENUM | DONT_DELETE);
@@ -28,7 +28,7 @@ pub fn create_class<'gc>(
 
     let decls = OBJECT_DECLS(context);
     let mut define_as_object = |index: usize| -> Object<'gc> {
-        match decls[index].define_on(context.strings, class.constr, context.fn_proto) {
+        match decls[index].define_on(context, class.constr) {
             Value::Object(o) => o,
             _ => panic!("expected object for broadcaster function"),
         }

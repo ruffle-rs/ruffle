@@ -12,7 +12,7 @@ PASSED: functionObject.__proto__.constructor == Function [./Inheritance.as:58]
 PASSED: functionObject.prototype == undefined [./Inheritance.as:70]
 PASSED: userFunc.prototype.constructor == userFunc [./Inheritance.as:82]
 PASSED: userFunc.prototype.apply == undefined [./Inheritance.as:83]
-FAILED: expected: Function.prototype.apply obtained: [type Function] [./Inheritance.as:84]
+PASSED: userFunc.apply == Function.prototype.apply [./Inheritance.as:84]
 PASSED: Ball.prototype.constructor == Ball [./Inheritance.as:98]
 PASSED: myBall.gravity == 9.8 [./Inheritance.as:106]
 PASSED: myBall.radius == 3 [./Inheritance.as:107]
@@ -107,8 +107,8 @@ PASSED: ! ob instanceof A [./Inheritance.as:550]
 FAILED: ob instanceof A [./Inheritance.as:552]
 PASSED: ! ob instanceof C [./Inheritance.as:558]
 FAILED: ob instanceof C [./Inheritance.as:560]
-#passed: 92
-#failed: 14
+#passed: 93
+#failed: 13
 #total tests run: 106
 
 Now your flash player will try to answer the egg/chicken question. Kill it if it hangs your machine

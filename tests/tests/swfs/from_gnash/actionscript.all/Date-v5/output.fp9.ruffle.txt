@@ -5,7 +5,7 @@ PASSED: typeof(Date) == 'function' [./Date.as:29]
 PASSED: typeof(Date.prototype) == 'object' [./Date.as:30]
 PASSED: typeof(Date.prototype.__proto__) == 'object' [./Date.as:31]
 PASSED: Date.prototype.__proto__ == Object.prototype [./Date.as:32]
-FAILED: expected: 'undefined' obtained: object [./Date.as:79]
+PASSED: typeof(Date.__proto__) == 'undefined' [./Date.as:79]
 PASSED: Date.UTC(2000,0,1).valueOf() == 946684800000.0 [./Date.as:86]
 PASSED: d [./Date.as:91]
 PASSED: d.getDate [./Date.as:94]
@@ -105,7 +105,7 @@ PASSED: d.getUTCSeconds() == 0 [./Date.as:253]
 PASSED: d.getUTCMilliseconds() == 0 [./Date.as:254]
 PASSED: d.getSeconds() == 0 [./Date.as:265]
 PASSED: d.getMilliseconds() == 0 [./Date.as:266]
-FAILED: expected: Date.toString() obtained:  [./Date.as:269]
+PASSED: Date.toLocaleString() == Date.toString() [./Date.as:269]
 PASSED: d.valueOf() == 1 [./Date.as:274]
 PASSED: d.valueOf() == 0 [./Date.as:276]
 PASSED: d.valueOf() == 12345.0 [./Date.as:279]
@@ -310,6 +310,6 @@ PASSED: o.valueOf().toString() == "NaN" [./Date.as:703]
 PASSED: o.valueOf().toString() == "NaN" [./Date.as:703]
 PASSED: o.valueOf().toString() == "NaN" [./Date.as:703]
 PASSED: o.valueOf().toString() == "NaN" [./Date.as:703]
-#passed: 300
-#failed: 7
+#passed: 302
+#failed: 5
 #total tests run: 307
