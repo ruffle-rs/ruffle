@@ -19,6 +19,20 @@ pub enum Endian {
     Little,
 }
 
+impl FromWStr for Endian {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"bigEndian" {
+            Ok(Endian::Big)
+        } else if s == b"littleEndian" {
+            Ok(Endian::Little)
+        } else {
+            Err(())
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompressionAlgorithm {
     Zlib,

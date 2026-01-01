@@ -771,14 +771,9 @@ pub fn set_grid_fit_type<'gc>(
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
     let old_settings = this.render_settings();
-    let new_type = value.coerce_to_string(activation)?;
 
-    if &new_type == b"pixel" {
-        this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::Pixel));
-    } else if &new_type == b"subpixel" {
-        this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::SubPixel));
-    } else if &new_type == b"none" {
-        this.set_render_settings(old_settings.with_grid_fit(swf::TextGridFit::None));
+    if let Ok(new_type) = value.coerce_to_string(activation)?.parse() {
+        this.set_render_settings(old_settings.with_grid_fit(new_type));
     } // NOTE: In AS2 invalid values do nothing.
 
     Ok(())

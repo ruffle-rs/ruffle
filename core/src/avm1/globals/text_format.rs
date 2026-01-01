@@ -454,14 +454,11 @@ fn set_display<'gc>(
         return Ok(());
     }
 
-    let value = value.coerce_to_string(activation)?;
-    let display = if &value == b"inline" {
-        crate::html::TextDisplay::Inline
-    } else if &value == b"none" {
-        crate::html::TextDisplay::None
-    } else {
-        crate::html::TextDisplay::Block
-    };
+    let display = value
+        .coerce_to_string(activation)?
+        .parse()
+        .unwrap_or(crate::html::TextDisplay::Block);
+
     text_format.display = Some(display);
     Ok(())
 }
