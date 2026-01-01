@@ -510,10 +510,7 @@ pub fn remove_namespace<'gc>(
 
     // 6. If ns.prefix == undefined
     if ns.prefix.is_none() {
-        let E4XNodeKind::Element {
-            ref mut namespaces, ..
-        } = &mut *node.kind_mut(activation.gc())
-        else {
+        let E4XNodeKind::Element { namespaces, .. } = &mut *node.kind_mut(activation.gc()) else {
             unreachable!()
         };
         // 6.a. If there exists a namespace n ∈ x.[[InScopeNamespaces]],
@@ -521,10 +518,7 @@ pub fn remove_namespace<'gc>(
         namespaces.retain(|namespace| namespace.uri != ns.uri);
     } else {
         // 7. Else
-        let E4XNodeKind::Element {
-            ref mut namespaces, ..
-        } = &mut *node.kind_mut(activation.gc())
-        else {
+        let E4XNodeKind::Element { namespaces, .. } = &mut *node.kind_mut(activation.gc()) else {
             unreachable!()
         };
         // 7.a. If there exists a namespace n ∈ x.[[InScopeNamespaces]],

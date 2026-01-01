@@ -32,6 +32,7 @@ use ruffle_render::tessellator::ShapeTessellator;
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use swf::Color;
 use tracing::instrument;
@@ -1011,12 +1012,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     fn create_empty_texture(
         &mut self,
-        width: u32,
-        height: u32,
+        width: NonZeroU32,
+        height: NonZeroU32,
     ) -> Result<BitmapHandle, BitmapError> {
-        if width == 0 || height == 0 {
-            return Err(BitmapError::InvalidSize);
-        }
+        let width = width.get();
+        let height = height.get();
+
         if width > self.descriptors.limits.max_texture_dimension_2d
             || height > self.descriptors.limits.max_texture_dimension_2d
         {

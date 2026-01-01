@@ -332,7 +332,7 @@ impl AudioMixer {
     }
 
     /// Transforms a `Stream` into a new `Stream` that matches the output sample rate.
-    fn make_resampler(&self, mut stream: impl Stream) -> impl Stream {
+    fn make_resampler<S: Stream>(&self, mut stream: S) -> impl Stream + use<S> {
         // TODO: Allow interpolator to be user-configurable?
         let left = stream.next();
         let right = stream.next();
@@ -396,11 +396,11 @@ impl AudioMixer {
     }
 
     /// Creates a `Stream` that decodes and resamples a timeline "stream" sound.
-    fn make_stream_from_swf_slice<'a>(
+    fn make_stream_from_swf_slice(
         &self,
         stream_info: &swf::SoundStreamHead,
         data_stream: SwfSlice,
-    ) -> Result<Box<dyn 'a + Stream>, DecodeError> {
+    ) -> Result<Box<dyn Stream>, DecodeError> {
         // Instantiate a decoder for the compression that the sound data uses.
         let clip_stream_decoder = decoders::make_stream_decoder(stream_info, data_stream)?;
 

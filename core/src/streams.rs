@@ -1073,9 +1073,7 @@ impl<'gc> NetStream<'gc> {
         }
 
         match &mut *source.stream_type.borrow_mut() {
-            Some(NetStreamType::Flv {
-                ref mut frame_id, ..
-            }) => *frame_id += 1,
+            Some(NetStreamType::Flv { frame_id, .. }) => *frame_id += 1,
             _ => unreachable!(),
         };
     }
