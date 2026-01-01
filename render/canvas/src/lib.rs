@@ -19,6 +19,7 @@ use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::any::Any;
 use std::borrow::Cow;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use swf::{BlendMode, Color, ColorTransform, Point, Twips};
 use wasm_bindgen::{Clamped, JsCast, JsValue};
@@ -585,8 +586,13 @@ impl RenderBackend for WebCanvasRenderBackend {
         Err(Error::Unimplemented("Sync handle resolution".into()))
     }
 
-    fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error> {
-        let bitmap_data = BitmapData::empty(width, height).map_err(Error::JavascriptError)?;
+    fn create_empty_texture(
+        &mut self,
+        width: NonZeroU32,
+        height: NonZeroU32,
+    ) -> Result<BitmapHandle, Error> {
+        let bitmap_data =
+            BitmapData::empty(width.get(), height.get()).map_err(Error::JavascriptError)?;
         Ok(BitmapHandle(Arc::new(bitmap_data)))
     }
 }

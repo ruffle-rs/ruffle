@@ -23,6 +23,7 @@ use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::any::Any;
 use std::borrow::Cow;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use swf::{BlendMode, Color, Twips};
 use thiserror::Error;
@@ -1222,8 +1223,8 @@ impl RenderBackend for WebGlRenderBackend {
 
     fn create_empty_texture(
         &mut self,
-        width: u32,
-        height: u32,
+        width: NonZeroU32,
+        height: NonZeroU32,
     ) -> Result<BitmapHandle, BitmapError> {
         let texture = self
             .gl
@@ -1243,8 +1244,8 @@ impl RenderBackend for WebGlRenderBackend {
 
         Ok(BitmapHandle(Arc::new(RegistryData {
             gl: self.gl.clone(),
-            width,
-            height,
+            width: width.get(),
+            height: height.get(),
             texture,
         })))
     }
