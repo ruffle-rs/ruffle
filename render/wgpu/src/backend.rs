@@ -66,6 +66,8 @@ impl WgpuRenderBackend<SwapChainTarget> {
         };
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends,
+            flags: wgpu::InstanceFlags::default()
+                .difference(wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL),
             backend_options: wgpu::BackendOptions {
                 gl: wgpu::GlBackendOptions {
                     // See <https://github.com/gfx-rs/wgpu/releases/tag/v25.0.0>
@@ -107,6 +109,8 @@ impl WgpuRenderBackend<SwapChainTarget> {
         }
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: backend,
+            flags: wgpu::InstanceFlags::default()
+                .difference(wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL),
             ..Default::default()
         });
         let surface = unsafe { instance.create_surface_unsafe(window)? };
@@ -152,6 +156,8 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
         }
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: backend,
+            flags: wgpu::InstanceFlags::default()
+                .difference(wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL),
             ..Default::default()
         });
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
