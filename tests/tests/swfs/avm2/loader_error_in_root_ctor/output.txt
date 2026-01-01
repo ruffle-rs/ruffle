@@ -1,0 +1,2 @@
+Hello from loaded SWF!
+null
