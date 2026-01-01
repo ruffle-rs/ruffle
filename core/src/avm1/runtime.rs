@@ -464,7 +464,11 @@ impl<'gc> Avm1<'gc> {
                     .update_pending_removals();
             } else {
                 // TODO Investigate it. This situation seems impossible, yet it happens.
-                tracing::warn!("AVM1 object pending removal doesn't have a parent, object={:?}, pending removal={:?}", child, out);
+                tracing::warn!(
+                    "AVM1 object pending removal doesn't have a parent, object={:?}, pending removal={:?}",
+                    child,
+                    out
+                );
             }
         }
     }

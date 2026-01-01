@@ -42,7 +42,7 @@ resolver = "2"
 
 [workspace.package]
 authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
-edition = "2021"
+edition = "2024"
 homepage = "https://ruffle.rs"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ruffle-rs/ruffle"
