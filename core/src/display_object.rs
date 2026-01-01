@@ -24,6 +24,7 @@ use ruffle_render::transform::{Transform, TransformStack};
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::num::NonZero;
 use std::sync::Arc;
 use swf::{ColorTransform, Fixed8};
 
@@ -162,15 +163,16 @@ impl BitmapCache {
         } else {
             actual_width < 2880 && actual_height < 2880
         };
+
         if renderer.is_offscreen_supported()
-            && actual_width > 0
-            && actual_height > 0
+            && let Some(actual_width) = NonZero::new(actual_width)
+            && let Some(actual_height) = NonZero::new(actual_height)
             && acceptable_size
         {
             let handle = renderer.create_empty_texture(actual_width, actual_height);
             self.bitmap = handle.ok().map(|handle| BitmapInfo {
-                width: actual_width,
-                height: actual_height,
+                width: actual_width.get(),
+                height: actual_height.get(),
                 handle,
             });
         } else {

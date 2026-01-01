@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 
 use crate::backend::{
@@ -135,7 +136,11 @@ impl RenderBackend for NullRenderer {
         ))
     }
 
-    fn create_empty_texture(&mut self, _width: u32, _height: u32) -> Result<BitmapHandle, Error> {
+    fn create_empty_texture(
+        &mut self,
+        _width: NonZeroU32,
+        _height: NonZeroU32,
+    ) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(Arc::new(NullBitmapHandle)))
     }
 }

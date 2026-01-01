@@ -13,6 +13,7 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::fmt::Debug;
+use std::num::NonZeroU32;
 use std::rc::Rc;
 use std::sync::Arc;
 use swf::{Color, Rectangle, Twips};
@@ -76,7 +77,11 @@ pub trait RenderBackend: Any {
         cache_entries: Vec<BitmapCacheEntry>,
     );
 
-    fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error>;
+    fn create_empty_texture(
+        &mut self,
+        width: NonZeroU32,
+        height: NonZeroU32,
+    ) -> Result<BitmapHandle, Error>;
 
     fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, Error>;
     fn update_texture(
