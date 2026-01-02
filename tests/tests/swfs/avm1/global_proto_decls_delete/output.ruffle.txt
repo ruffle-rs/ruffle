@@ -2,15 +2,6 @@ Testing _global.TextSnapshot
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.TextSnapshot.prototype
-  getTextRunInfo, DONT_DELETE
-  setSelectColor, DONT_DELETE
-  findText, DONT_DELETE
-  hitTestTextNearPos, DONT_DELETE
-  getSelectedText, DONT_DELETE
-  getText, DONT_DELETE
-  getSelected, DONT_DELETE
-  setSelected, DONT_DELETE
-  getCount, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.PrintJob
   prototype, DONT_DELETE
