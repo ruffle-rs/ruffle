@@ -1,19 +1,19 @@
 1. Click the mouse anywhere!
-_level0.Dejagnu.instance1.onMouseDown
-PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
-_level0.Dejagnu.onMouseDown
+_level0.clip2.onMouseDown
 PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
 _level0.clip1.onMouseDown
 PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
-_level0.clip2.onMouseDown
-PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
-PASSED: countMC == 4 [./PrototypeEventListeners.as:66]
-2. Click the mouse anywhere!
 _level0.Dejagnu.instance1.onMouseDown
 PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
 _level0.Dejagnu.onMouseDown
 PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
+PASSED: countMC == 4 [./PrototypeEventListeners.as:66]
+2. Click the mouse anywhere!
 _level0.clip2.onMouseDown
+PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
+_level0.Dejagnu.instance1.onMouseDown
+PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
+_level0.Dejagnu.onMouseDown
 PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
 PASSED: countMC == 3 [./PrototypeEventListeners.as:80]
 3. Press a key!
