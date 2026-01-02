@@ -1,4 +1,4 @@
-use crate::custom_event::RuffleEvent;
+use crate::custom_event::{OpenType, RuffleEvent};
 use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
@@ -559,15 +559,19 @@ impl ApplicationHandler<RuffleEvent> for App {
                 }
             }
 
-            (Some(main_window), RuffleEvent::BrowseAndOpen(options)) => {
+            (Some(main_window), RuffleEvent::BrowseAndOpen(options, open_type)) => {
                 let event_loop = main_window.event_loop_proxy.clone();
                 let picker = main_window.gui.file_picker();
                 tokio::spawn(async move {
-                    if let Some(url) = picker
-                        .pick_ruffle_file(None)
-                        .await
-                        .and_then(|p| Url::from_file_path(p).ok())
-                    {
+                    let picked = match open_type {
+                        OpenType::File => picker.pick_ruffle_file(None).await,
+                        OpenType::Directory => picker
+                            .pick_ruffle_directory_and_content(None)
+                            .await
+                            .map(|(_, content)| content),
+                    };
+
+                    if let Some(url) = picked.and_then(|p| Url::from_file_path(p).ok()) {
                         let _ = event_loop.send_event(RuffleEvent::Open(url, options));
                     }
                 });

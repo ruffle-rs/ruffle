@@ -1,5 +1,5 @@
 use crate::custom_event::RuffleEvent;
-use crate::gui::widgets::PathOrUrlField;
+use crate::gui::widgets::path_or_url_field::PathOrUrlField;
 use crate::gui::{FilePicker, LocalizableText, text};
 use crate::player::LaunchOptions;
 use egui::{
@@ -75,7 +75,11 @@ impl OpenDialog {
             defaults.proxy.as_ref().map(Url::to_string),
             UrlField::new("socks5://localhost:8080"),
         );
-        let path = PathOrUrlField::new(default_url, "path/to/movie.swf", picker);
+        let path = PathOrUrlField::new(
+            default_url,
+            LocalizableText::LocalizedText("open-dialog-path"),
+            picker,
+        );
         let script_timeout = OptionalField::new(
             defaults
                 .player
@@ -286,7 +290,7 @@ impl OpenDialog {
         }
     }
 
-    pub fn url(&self) -> Option<&Url> {
+    pub fn url(&self) -> Option<Url> {
         self.path.result()
     }
 
@@ -303,10 +307,7 @@ impl OpenDialog {
         if let Some(url) = self.path.result()
             && self
                 .event_loop
-                .send_event(RuffleEvent::Open(
-                    url.clone(),
-                    Box::new(self.options.clone()),
-                ))
+                .send_event(RuffleEvent::Open(url, Box::new(self.options.clone())))
                 .is_ok()
         {
             return true;
@@ -324,14 +325,13 @@ impl OpenDialog {
             .open(&mut keep_open)
             .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
             .collapsible(false)
-            .resizable(false)
+            .default_width(200.0)
             .show(egui_ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
                     Grid::new("open-file-options")
-                        .num_columns(2)
+                        .num_columns(1)
                         .striped(true)
                         .show(ui, |ui| {
-                            ui.label(text(locale, "open-dialog-path"));
                             is_valid &= self.path.ui(locale, ui).result().is_some();
                             ui.end_row();
                         });

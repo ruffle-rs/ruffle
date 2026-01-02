@@ -492,7 +492,7 @@ impl GuiController {
         self.gui
             .dialogs
             .open_dialog(DialogDescriptor::ExportBundle(Box::new(
-                ExportBundleDialogConfiguration::new(movie_url.clone(), player_options),
+                ExportBundleDialogConfiguration::new(movie_url, player_options),
             )));
         self.gui.on_player_destroyed();
     }

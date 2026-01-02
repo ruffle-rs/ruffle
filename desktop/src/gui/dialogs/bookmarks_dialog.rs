@@ -1,5 +1,5 @@
-use crate::gui::widgets::PathOrUrlField;
-use crate::gui::{FilePicker, text};
+use crate::gui::widgets::path_or_url_field::PathOrUrlField;
+use crate::gui::{FilePicker, LocalizableText, text};
 use crate::preferences::GlobalPreferences;
 use crate::{custom_event::RuffleEvent, player::LaunchOptions};
 use egui::{Align2, Button, Grid, Label, Layout, Sense, Ui, Widget, Window};
@@ -28,7 +28,11 @@ impl BookmarkAddDialog {
                 .map(|x| ruffle_frontend_utils::url_to_readable_name(x).into_owned())
                 .unwrap_or_default(),
             // TODO: hint.
-            url: PathOrUrlField::new(initial_url, "", picker),
+            url: PathOrUrlField::new(
+                initial_url,
+                LocalizableText::NonLocalizedText("".into()),
+                picker,
+            ),
         }
     }
 
@@ -73,7 +77,6 @@ impl BookmarkAddDialog {
                                     url: self
                                         .url
                                         .result()
-                                        .cloned()
                                         .expect("is_valid() ensured value exists"),
                                 })
                             }) {
@@ -222,7 +225,7 @@ impl BookmarksDialog {
                                     name: bookmark.name.clone(),
                                     url: PathOrUrlField::new(
                                         Some(bookmark.url.clone()),
-                                        "",
+                                        LocalizableText::NonLocalizedText("".into()),
                                         self.picker.clone(),
                                     ),
                                 });
@@ -272,14 +275,14 @@ impl BookmarksDialog {
                     }
                     ui.end_row();
 
-                    let previous_url = bookmark.url.result().cloned();
+                    let previous_url = bookmark.url.result();
 
                     ui.label(text(locale, "bookmarks-dialog-location"));
                     let current_url = bookmark.url.ui(locale, ui).result();
 
                     // TODO: Change the UrlOrPathField widget to return a response instead, so we can update when we lose the focus, removes the need to clone every redraw.
-                    if let Some(url) = current_url
-                        && previous_url.as_ref() != current_url
+                    if previous_url != current_url
+                        && let Some(url) = current_url
                         && let Err(e) = self.preferences.write_bookmarks(|writer| {
                             writer.set_url(bookmark.index, url.clone());
                         })
