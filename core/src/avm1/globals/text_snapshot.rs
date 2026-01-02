@@ -7,15 +7,15 @@ use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "getCount" => method(get_count; DONT_DELETE | VERSION_6);
-    "setSelected" => method(set_selected; DONT_DELETE | VERSION_6);
-    "getSelected" => method(get_selected; DONT_DELETE | VERSION_6);
-    "getText" => method(get_text; DONT_DELETE | VERSION_6);
-    "getSelectedText" => method(get_selected_text; DONT_DELETE | VERSION_6);
-    "hitTestTextNearPos" => method(hit_test_text_near_pos; DONT_DELETE | VERSION_6);
-    "findText" => method(find_text; DONT_DELETE | VERSION_6);
-    "setSelectColor" => method(set_select_color; DONT_DELETE | VERSION_6);
-    "getTextRunInfo" => method(get_text_run_info; DONT_DELETE | VERSION_6);
+    "getCount" => method(get_count; VERSION_6);
+    "setSelected" => method(set_selected; VERSION_6);
+    "getSelected" => method(get_selected; VERSION_6);
+    "getText" => method(get_text; VERSION_6);
+    "getSelectedText" => method(get_selected_text; VERSION_6);
+    "hitTestTextNearPos" => method(hit_test_text_near_pos; VERSION_6);
+    "findText" => method(find_text; VERSION_6);
+    "setSelectColor" => method(set_select_color; VERSION_6);
+    "getTextRunInfo" => method(get_text_run_info; VERSION_6);
 };
 
 pub fn create_class<'gc>(
