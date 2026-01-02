@@ -1,3 +1,4 @@
+context-menu-play = Početak
 context-menu-rewind = Premotavanje unazad
 context-menu-forward = Naprijed
 context-menu-back = Nazad
