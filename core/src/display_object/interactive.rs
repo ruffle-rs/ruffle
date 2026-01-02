@@ -19,6 +19,7 @@ use crate::display_object::{
 use crate::events::{ClipEvent, ClipEventResult, MouseButton};
 use crate::string::AvmString;
 use bitflags::bitflags;
+use either::Either;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
@@ -235,7 +236,15 @@ pub trait TInteractiveObject<'gc>:
     ) -> ClipEventResult {
         if event.propagates() {
             if let Some(container) = self.as_displayobject().as_container() {
-                for child in container.iter_render_list() {
+                // Mouse events fire in reverse order (high depth to low depth).
+                // Button and key events fire in render list order (low depth to high depth).
+                let children = if event.is_mouse_event() {
+                    Either::Left(container.iter_render_list().rev())
+                } else {
+                    Either::Right(container.iter_render_list())
+                };
+
+                for child in children {
                     if let Some(interactive) = child.as_interactive() {
                         if interactive.handle_clip_event(context, event) == ClipEventResult::Handled
                         {
