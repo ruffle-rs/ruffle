@@ -31,7 +31,7 @@ gamemode-tooltip =
 gamemode-default = Privzeto
 gamemode-default-tooltip = GameMode bo omogočen samo, če je nastavitev porabe energije nastavljena na visoko.
 # See for context https://wiki.archlinux.org/title/Input_method
-ime-enabled = Način vnosa
+ime-enabled = Vnosna metoda
 ime-enabled-experimental = (poskusno)
-ime-enabled-tooltip = Metoda vnosa omogoča vnos znakov, ki niso na voljo na tipkovnici, na primer kitajskih, japonskih ali korejskih znakov.
+ime-enabled-tooltip = Vnosna metoda omogoča vnos znakov, ki niso na voljo na tipkovnici, na primer kitajskih, japonskih ali korejskih znakov.
 ime-enabled-default = Privzeto

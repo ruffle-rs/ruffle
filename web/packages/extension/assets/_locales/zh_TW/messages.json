@@ -44,6 +44,12 @@
     "settings_preferred_renderer_auto": {
         "message": "自動"
     },
+    "settings_device_font_renderer": {
+        "message": "裝置字型渲染器"
+    },
+    "device_font_renderer_embedded": {
+        "message": "內嵌的"
+    },
     "settings_advanced_options": {
         "message": "進階選項"
     },
