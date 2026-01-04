@@ -33,6 +33,7 @@ bookmarks-menu = Zaznamki
 bookmarks-menu-add = Dodaj...
 bookmarks-menu-manage = Upravljaj zaznamke...
 debug-menu = Orodja za odpravljanje napak
+debug-menu-open-stage = Ogled informacij odra
 debug-menu-open-root-movie-clip = Poglej korenski MovieClip
 debug-menu-open-movie = Ogled filma
 debug-menu-open-movie-list = Pokaži znane filme
