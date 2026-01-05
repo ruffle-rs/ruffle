@@ -26,7 +26,10 @@ impl CanvasFontRenderer {
     const SCALE: f64 = 20.0;
 
     pub fn new(italic: bool, bold: bool, font_family: &str) -> Result<Self, JsValue> {
-        // TODO Firefox <105, Safari <16.4 do not support OffscreenCanvas
+        if !Self::is_offscreen_canvas_supported() {
+            return Err(JsValue::from_str("OffscreenCanvas unsupported"));
+        }
+
         let canvas = OffscreenCanvas::new(1024, 1024)?;
 
         let ctx = canvas.get_context("2d")?.expect("2d context");
@@ -49,6 +52,15 @@ impl CanvasFontRenderer {
             ascent,
             descent,
         })
+    }
+
+    // TODO Remove it when we stop supporting Firefox <105, Safari <16.4
+    fn is_offscreen_canvas_supported() -> bool {
+        let global = js_sys::global();
+        match js_sys::Reflect::get(&global, &JsValue::from_str("OffscreenCanvas")) {
+            Ok(value) => !value.is_undefined(),
+            Err(_) => false,
+        }
     }
 
     fn to_font_str(italic: bool, bold: bool, size: f64, font_family: &str) -> String {
