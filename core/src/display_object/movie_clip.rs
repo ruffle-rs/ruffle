@@ -860,15 +860,15 @@ impl<'gc> MovieClip<'gc> {
         // Clamp frame number in bounds.
         let frame = frame.max(1);
 
-        // In AS3, no-op gotos have side effects that are visible to user code.
-        // Hence, we have to run them anyway.
-        if frame != self.current_frame() {
-            if self
-                .0
-                .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
-            {
-                // AVM2 does not allow a clip to see while it is executing a frame script.
-                // The goto is instead queued and run once the frame script is completed.
+        // AVM2 does not allow a clip to goto while it is executing a frame script.
+        // The goto is instead queued and run once the frame script is completed.
+        if self
+            .0
+            .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
+        {
+            // In SWFv9, frame-script-queued gotos to the current frame are ignored.
+
+            if self.swf_version() > 9 || frame != self.current_frame() {
                 self.0.queued_goto_frame.set(Some(frame));
 
                 // If we have a frame script on that frame, add ourselves to the
@@ -877,9 +877,17 @@ impl<'gc> MovieClip<'gc> {
                 if self.has_frame_script(frame) {
                     context.frame_script_cleanup_queue.push_back(self);
                 }
-            } else {
-                self.run_goto(context, frame, false);
             }
+        } else {
+            self.goto_frame_now(context, frame)
+        }
+    }
+
+    fn goto_frame_now(self, context: &mut UpdateContext<'gc>, frame: FrameNumber) {
+        // In AS3, no-op gotos have side effects that are visible to user
+        // code. Hence, we have to run them anyway.
+        if frame != self.current_frame() {
+            self.run_goto(context, frame, false);
         } else if self.movie().is_action_script_3() {
             // Despite not running, the goto still overwrites the currently enqueued frame.
             self.0.queued_goto_frame.set(None);
@@ -2415,7 +2423,15 @@ impl<'gc> MovieClip<'gc> {
 
         let goto_frame = self.0.queued_goto_frame.take();
         if let Some(frame) = goto_frame {
-            self.run_goto(context, frame, false);
+            self.goto_frame_now(context, frame);
+
+            // In SWFv9, the `goto_frame_now` above won't run `construct_frame`, so
+            // we need to manually run `construct_frame` to ensure that children
+            // are constructed. This prevents situations such as a frame script
+            // queued to run on this frame seeing not-yet-constructed children.
+            if self.swf_version() <= 9 {
+                self.construct_frame(context);
+            }
         }
     }
 
