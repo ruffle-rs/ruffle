@@ -54,7 +54,7 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 naga = { version = "27.0.3", features = ["wgsl-out"] }
 wgpu = "27.0.1"
 egui = "0.33.3"
-clap = { version = "4.5.53", features = ["derive"] }
+clap = { version = "4.5.54", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
 gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "08e08414249d5914dfc3b402d7eadc133e00ce56" }
@@ -74,13 +74,13 @@ num-derive = "0.4.2"
 num-traits = "0.2.19"
 serde = "1.0.228"
 thiserror = "2.0.17"
-url = "2.5.7"
+url = "2.5.8"
 quick-xml = "0.37.5"
 regress = { git = "https://github.com/ruffle-rs/regras3", rev = "5fcb02513c5ab4e00df4346459f5a8d0521d8fed" }
 # Make sure to match wasm-bindgen-cli version to this everywhere.
 wasm-bindgen = "=0.2.101"
 walkdir = "2.5.0"
-tokio = "1.48.0"
+tokio = "1.49.0"
 # Switching from the `async-std` to the `tokio` runtime, which we depend on anyway.
 rfd = { version = "0.16.0", default-features = false, features = ["tokio", "wayland", "xdg-portal"] }
 memmap2 = "0.9.9"
