@@ -1,4 +1,4 @@
-import { injectRuffleAndWait, openTest, playAndMonitor } from "../../utils.js";
+import { injectRuffleAndWait, openTest } from "../../utils.js";
 import { expect } from "chai";
 
 describe("Document embeds", () => {
@@ -6,19 +6,7 @@ describe("Document embeds", () => {
         await openTest(browser, `polyfill/document_embeds`);
     });
 
-    it("Accesses the right number of elements with ruffle", async () => {
-        async function countDocumentEmbeds() {
-            return await browser.execute(() => {
-                return document.embeds?.length ?? 0;
-            });
-        }
-
-        async function documentEmbedsSelfIdentity() {
-            return await browser.execute(() => {
-                return document.embeds === document.embeds;
-            });
-        }
-
+    it("accesses the right number of elements with ruffle", async () => {
         async function removeEl(selector: string) {
             const el = await $(selector);
             await browser.execute((element) => {
@@ -27,24 +15,42 @@ describe("Document embeds", () => {
         }
 
         await injectRuffleAndWait(browser);
-        await playAndMonitor(
-            browser,
-            await browser.$("#test-container").$("ruffle-embed#emb1"),
-        );
-        await playAndMonitor(
-            browser,
-            await browser.$("#test-container").$("ruffle-embed#emb2"),
-        );
-        await playAndMonitor(
-            browser,
-            await browser.$("#test-container").$("ruffle-embed#emb3"),
-        );
-        const documentEmbedsIdentity = await documentEmbedsSelfIdentity();
-        expect(documentEmbedsIdentity).to.equal(true);
-        const embeds1 = await countDocumentEmbeds();
-        expect(embeds1).to.equal(3);
+        await browser
+            .$("#test-container")
+            .$("ruffle-embed#emb1")
+            .waitForExist();
+        await browser
+            .$("#test-container")
+            .$("ruffle-embed#emb2")
+            .waitForExist();
+        await browser
+            .$("#test-container")
+            .$("ruffle-embed#emb3")
+            .waitForExist();
+
+        expect(
+            await browser.execute(() => document.embeds === document.embeds),
+        ).to.equal(true);
+
+        expect(
+            await browser.execute(() => document.embeds?.length ?? 0),
+        ).to.equal(3);
+
         await removeEl("#emb1");
-        const embeds2 = await countDocumentEmbeds();
-        expect(embeds2).to.equal(2);
+
+        expect(
+            await browser.execute(() => document.embeds?.length ?? 0),
+        ).to.equal(2);
+
+        await browser.execute(() => {
+            const embed = document.createElement("embed");
+            embed.src = "about:blank";
+            embed.type = "text/html";
+            document.body.appendChild(embed);
+        });
+
+        expect(
+            await browser.execute(() => document.embeds?.length ?? 0),
+        ).to.equal(3);
     });
 });

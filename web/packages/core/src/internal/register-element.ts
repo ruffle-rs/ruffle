@@ -101,12 +101,12 @@ export function registerElement(
                         }
                         Object.defineProperty(Document.prototype, "embeds", {
                             get(this: Document): CachedCollection {
-                                const existing = (
+                                const documentWithCache =
                                     this as unknown as Record<
                                         symbol,
-                                        HTMLCollection
-                                    >
-                                )[CACHE_SYM];
+                                        CachedCollection
+                                    >;
+                                const existing = documentWithCache[CACHE_SYM];
                                 if (existing) {
                                     return existing;
                                 }
@@ -192,12 +192,7 @@ export function registerElement(
 
                                 proxy[CACHE_SYM] = true;
 
-                                (
-                                    this as unknown as Record<
-                                        symbol,
-                                        CachedCollection
-                                    >
-                                )[CACHE_SYM] = proxy;
+                                documentWithCache[CACHE_SYM] = proxy;
 
                                 return proxy;
                             },
