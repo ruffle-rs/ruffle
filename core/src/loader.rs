@@ -1599,6 +1599,22 @@ impl<'gc> MovieLoader<'gc> {
 
                     mc.replace_with_movie(uc, Some(movie.clone()), true, loader_info);
 
+                    // Update the MovieClip's script object prototype to match the new movie's version.
+                    // This is needed because the level clip may have been created by a loader with
+                    // a different SWF version, and its script object was set up with the wrong prototype.
+                    if !movie.is_action_script_3() {
+                        if let Some(object) = mc.object1() {
+                            let new_proto = uc.avm1.prototypes(mc.swf_version()).movie_clip;
+
+                            object.define_value(
+                                uc.gc(),
+                                istr!(uc, "__proto__"),
+                                new_proto.into(),
+                                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+                            );
+                        }
+                    }
+
                     // Loaded movies are considered to be timeline-instantiated
                     mc.set_instantiated_by_timeline(true);
 
