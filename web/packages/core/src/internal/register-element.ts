@@ -111,10 +111,21 @@ export function registerElement(
                                     return existing;
                                 }
 
-                                const nodes = (): NodeListOf<Element> =>
-                                    this.querySelectorAll(
-                                        "embed, ruffle-embed",
+                                const nodes = (): NodeListOf<Element> => {
+                                    const selectors: string[] = ["embed"];
+
+                                    for (let i = 0; i <= tries; i++) {
+                                        selectors.push(
+                                            i === 0
+                                                ? "ruffle-embed"
+                                                : `ruffle-embed-${i}`,
+                                        );
+                                    }
+
+                                    return this.querySelectorAll(
+                                        selectors.join(", "),
                                     );
+                                };
 
                                 const base = Object.create(
                                     HTMLCollection.prototype,
