@@ -32,7 +32,7 @@
         "eslint-plugin-prettier": "^5.5.4",
         "eslint-plugin-react-hooks": "^7.0.1",
         "eslint-plugin-react-refresh": "^0.4.26",
-        "globals": "^16.5.0",
+        "globals": "^17.0.0",
         "mocha": "^11.7.5",
         "prettier": "^3.7.4",
         "stylelint": "^16.26.1",
