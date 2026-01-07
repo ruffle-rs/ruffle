@@ -53,7 +53,17 @@ package flash.text.engine {
             return 12.0;
         }
 
+        public function get totalAscent():Number {
+            stub_getter("flash.text.engine.TextLine", "ascent");
+            return 12.0;
+        }
+
         public function get descent():Number {
+            stub_getter("flash.text.engine.TextLine", "descent");
+            return 3.0;
+        }
+
+        public function get totalDescent():Number {
             stub_getter("flash.text.engine.TextLine", "descent");
             return 3.0;
         }
