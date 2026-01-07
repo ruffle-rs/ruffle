@@ -137,6 +137,7 @@ panic = "unwind"
 
 [profile.release]
 panic = "abort"
+#incremental = true
 
 [profile.dev.package.h263-rs]
 opt-level = 3
