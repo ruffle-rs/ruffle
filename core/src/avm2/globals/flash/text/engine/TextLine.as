@@ -53,8 +53,20 @@ package flash.text.engine {
             return 12.0;
         }
 
+        [API("670")]
+        public function get totalAscent():Number {
+            stub_getter("flash.text.engine.TextLine", "totalAscent");
+            return 12.0;
+        }
+
         public function get descent():Number {
             stub_getter("flash.text.engine.TextLine", "descent");
+            return 3.0;
+        }
+
+        [API("670")]
+        public function get totalDescent():Number {
+            stub_getter("flash.text.engine.TextLine", "totalDescent");
             return 3.0;
         }
 
