@@ -1,6 +1,7 @@
 //! `MovieClip` display object and support code.
 use crate::avm1::Avm1;
 use crate::avm1::globals::AVM_DEPTH_BIAS;
+use crate::avm1::object_reference::MovieClipReference;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
 use crate::avm2::Activation as Avm2Activation;
@@ -175,6 +176,13 @@ pub struct MovieClipData<'gc> {
     object1: Lock<Option<Avm1Object<'gc>>>,
     object2: Lock<Option<Avm2StageObject<'gc>>>,
 
+    /// When a MovieClip is passed around in AVM1, it is usually passed as a `MovieClipReference`,
+    /// however we need to resolve this reference into a concrete `Object` in various places.
+    /// Because references hold observable state, we need to ensure that when we convert this clip
+    /// back into a Reference that we generate the *original* reference, rather than a fresh one.
+    /// This stores the original reference that produced this clip.
+    original_reference: Lock<Option<MovieClipReference<'gc>>>,
+
     drop_target: Lock<Option<DisplayObject<'gc>>>,
 
     /// A DisplayObject (doesn't need to be visible) to use for hit tests instead of this clip.
@@ -244,6 +252,7 @@ impl<'gc> MovieClipData<'gc> {
             audio_stream: Cell::new(None),
             object1: Lock::new(None),
             object2: Lock::new(None),
+            original_reference: Lock::new(None),
             clip_event_handlers: OnceCell::new(),
             clip_event_flags: Cell::new(ClipEventFlag::empty()),
             flags: Cell::new(MovieClipFlags::empty()),
@@ -2414,6 +2423,17 @@ impl<'gc> MovieClip<'gc> {
     fn check_has_pending_script(self) {
         let has_pending_script = self.has_frame_script(self.0.current_frame.get());
         self.0.has_pending_script.set(has_pending_script);
+    }
+
+    /// Mark this `MovieClip` as being originated from resolving the given `MovieClipReference`.
+    pub fn set_original_reference(self, mc: &Mutation<'gc>, reference: MovieClipReference<'gc>) {
+        let write = Gc::write(mc, self.0);
+        unlock!(write, MovieClipData, original_reference).set(Some(reference));
+    }
+
+    /// Get the originating `MovieClipReference` of this `MovieClip`, if it exists.
+    pub fn original_reference(self) -> Option<MovieClipReference<'gc>> {
+        self.0.original_reference.get()
     }
 }
 

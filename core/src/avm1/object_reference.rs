@@ -1,4 +1,4 @@
-use super::{Activation, Object, object::ObjectWeak};
+use super::{Activation, NativeObject, Object, object::ObjectWeak};
 use crate::{
     display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer},
     string::{AvmString, WStr, WString},
@@ -71,13 +71,20 @@ impl<'gc> MovieClipReference<'gc> {
         activation: &mut Activation<'_, 'gc>,
         object: Object<'gc>,
     ) -> Option<Self> {
+        // If we are creating a reference to a clip which itself was formed by resolving a reference,
+        // then return that original reference.
+        if let NativeObject::MovieClip(mc) = object.native()
+            && let Some(original_ref) = mc.original_reference()
+        {
+            return Some(original_ref);
+        }
+
         // We can't use as_display_object here as we explicitly don't want to convert `SuperObjects`
         let display_object = object.as_display_object_no_super()?;
         let (path, cached) = if let DisplayObject::MovieClip(mc) = display_object {
             (mc.path(), display_object.object1()?)
         } else if activation.swf_version() <= 5 {
             let display_object = Self::process_swf5_references(activation, display_object)?;
-
             (display_object.path(), display_object.object1()?)
         } else {
             return None;
@@ -176,7 +183,12 @@ impl<'gc> MovieClipReference<'gc> {
 
     /// Convert this reference to an `Object`
     pub fn coerce_to_object(self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
-        let (_, object, _) = self.resolve_reference(activation)?;
+        let (cached, object, display_object) = self.resolve_reference(activation)?;
+        // Track the original reference used to produce this clip, so we can get it back later.
+        // Only do this if the cache was invalid, as that's the state we need to preserve.
+        if !cached && let Some(mc) = display_object.as_movie_clip() {
+            mc.set_original_reference(activation.gc(), self);
+        }
         Some(object)
     }
 
