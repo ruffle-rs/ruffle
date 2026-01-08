@@ -1,3 +1,7 @@
+// Temporarily allow this to ease migration to Rust 2024 edition.
+// TODO: Remove this once all instances are fixed.
+#![allow(clippy::collapsible_if)]
+
 use crate::Player;
 use crate::avm1::Object as Avm1Object;
 use crate::avm1::globals::netconnection::NetConnection as Avm1NetConnectionObject;

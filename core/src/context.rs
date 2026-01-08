@@ -1,5 +1,9 @@
 //! Contexts and helper types passed between functions.
 
+// Temporarily allow this to ease migration to Rust 2024 edition.
+// TODO: Remove this once all instances are fixed.
+#![allow(clippy::collapsible_if)]
+
 use crate::PlayerMode;
 use crate::avm_rng::AvmRng;
 use crate::avm1::Attribute;
