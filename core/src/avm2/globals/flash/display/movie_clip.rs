@@ -128,22 +128,23 @@ fn labels_for_scene<'gc>(
         length: scene_length,
     } = scene;
     let frame_label_class = activation.context.avm2.classes().framelabel;
-    let labels = mc.labels_in_range(*scene_start, scene_start + scene_length);
-    let mut frame_labels = Vec::with_capacity(labels.len());
 
-    for (name, frame) in labels {
-        let name: Value<'gc> = AvmString::new(activation.gc(), name).into();
-        let local_frame = frame - scene_start + 1;
-        let args = [name, local_frame.into()];
-        let frame_label = frame_label_class.construct(activation, &args)?;
+    let frame_labels = mc
+        .labels_in_range(*scene_start, scene_start + scene_length)
+        .into_iter()
+        .map(|(name, frame)| {
+            let name: Value<'gc> = AvmString::new(activation.gc(), name).into();
+            let local_frame = frame - scene_start + 1;
+            let args = [name, local_frame.into()];
 
-        frame_labels.push(Some(frame_label));
-    }
+            frame_label_class.construct(activation, &args)
+        })
+        .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
 
     Ok((
         scene_name.to_string(),
         *scene_length,
-        ArrayObject::from_storage(activation.context, ArrayStorage::from_storage(frame_labels)),
+        ArrayObject::from_storage(activation.context, frame_labels),
     ))
 }
 
@@ -260,27 +261,23 @@ pub fn get_scenes<'gc>(
             });
         }
 
-        let mut scene_objects = Vec::with_capacity(mc_scenes.len());
-        for scene in mc_scenes {
-            let (scene_name, scene_length, scene_labels) =
-                labels_for_scene(activation, mc, &scene)?;
-            let scene_class = activation.context.avm2.classes().scene;
-            let args = [
-                AvmString::new_utf8(activation.gc(), scene_name).into(),
-                scene_labels.into(),
-                scene_length.into(),
-            ];
+        let scene_objects = mc_scenes
+            .into_iter()
+            .map(|scene| {
+                let (scene_name, scene_length, scene_labels) =
+                    labels_for_scene(activation, mc, &scene)?;
+                let scene_class = activation.context.avm2.classes().scene;
+                let args = [
+                    AvmString::new_utf8(activation.gc(), scene_name).into(),
+                    scene_labels.into(),
+                    scene_length.into(),
+                ];
 
-            let scene = scene_class.construct(activation, &args)?;
+                scene_class.construct(activation, &args)
+            })
+            .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
 
-            scene_objects.push(Some(scene));
-        }
-
-        return Ok(ArrayObject::from_storage(
-            activation.context,
-            ArrayStorage::from_storage(scene_objects),
-        )
-        .into());
+        return Ok(ArrayObject::from_storage(activation.context, scene_objects).into());
     }
 
     Ok(Value::Undefined)

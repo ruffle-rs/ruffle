@@ -1,4 +1,3 @@
-use crate::avm2::array::ArrayStorage;
 use crate::avm2::object::{ArrayObject, DateObject, ScriptObject, TObject as _};
 use crate::avm2::Value as Avm2Value;
 use crate::context::UpdateContext;
@@ -30,12 +29,11 @@ fn avm2_array_from_flv_values<'gc>(
     context: &mut UpdateContext<'gc>,
     values: Vec<FlvValue>,
 ) -> Avm2Value<'gc> {
-    let storage = ArrayStorage::from_storage(
-        values
-            .iter()
-            .map(|v| Some(v.clone().to_avm2_value(context)))
-            .collect::<Vec<Option<Avm2Value<'gc>>>>(),
-    );
+    let storage = values
+        .iter()
+        .cloned()
+        .map(|v| v.to_avm2_value(context))
+        .collect();
 
     ArrayObject::from_storage(context, storage).into()
 }

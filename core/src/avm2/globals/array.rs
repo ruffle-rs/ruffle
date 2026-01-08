@@ -963,9 +963,7 @@ fn sort_postprocess<'gc>(
         if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
             return Ok(build_array(
                 activation,
-                ArrayStorage::from_storage(
-                    values.iter().map(|(i, _v)| Some((*i).into())).collect(),
-                ),
+                values.iter().map(|&(i, _)| i).collect(),
             ));
         } else {
             if let Some(mut old_array) = this.as_array_storage_mut(activation.gc()) {
