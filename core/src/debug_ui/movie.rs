@@ -157,14 +157,10 @@ impl MovieWindow {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Information, "Information");
 
-                    if let Some(library) = context.library.library_for_movie(movie.clone()) {
-                        if !library.characters().is_empty() {
-                            ui.selectable_value(
-                                &mut self.open_panel,
-                                Panel::Characters,
-                                "Characters",
-                            );
-                        }
+                    if let Some(library) = context.library.library_for_movie(movie.clone())
+                        && !library.characters().is_empty()
+                    {
+                        ui.selectable_value(&mut self.open_panel, Panel::Characters, "Characters");
                     }
                 });
                 ui.separator();

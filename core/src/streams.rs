@@ -1,7 +1,3 @@
-// Temporarily allow this to ease migration to Rust 2024 edition.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::collapsible_if)]
-
 //! NetStream implementation
 
 use crate::avm1::{
@@ -807,22 +803,22 @@ impl<'gc> NetStream<'gc> {
     /// avoid audio underruns.
     fn commit_sound_stream(self, context: &mut UpdateContext<'gc>) -> Result<(), NetstreamError> {
         let source = self.source();
-        if !Self::sound_currently_playing(context, source.sound_instance.get()) {
-            if let Some((substream, sound_stream_head)) = &mut *source.audio_stream.borrow_mut() {
-                let sound_instance = if let Some(mc) = self.0.attached_to.get() {
-                    context.audio_manager.start_substream(
-                        context.audio,
-                        substream.clone(),
-                        mc,
-                        sound_stream_head,
-                    )?
-                } else {
-                    context
-                        .audio
-                        .start_substream(substream.clone(), sound_stream_head)?
-                };
-                source.sound_instance.set(Some(sound_instance));
-            }
+        if !Self::sound_currently_playing(context, source.sound_instance.get())
+            && let Some((substream, sound_stream_head)) = &mut *source.audio_stream.borrow_mut()
+        {
+            let sound_instance = if let Some(mc) = self.0.attached_to.get() {
+                context.audio_manager.start_substream(
+                    context.audio,
+                    substream.clone(),
+                    mc,
+                    sound_stream_head,
+                )?
+            } else {
+                context
+                    .audio
+                    .start_substream(substream.clone(), sound_stream_head)?
+            };
+            source.sound_instance.set(Some(sound_instance));
         }
 
         Ok(())
@@ -1135,36 +1131,35 @@ impl<'gc> NetStream<'gc> {
             // Any errors while trying to lookup or call AVM2 properties are silently swallowed.
         }
 
-        if tag_needs_preloading {
-            if let (
+        if tag_needs_preloading
+            && let (
                 Some(width),
                 Some(height),
                 Some(video_codec_id),
                 Some(frame_rate),
                 Some(duration),
             ) = (width, height, video_codec_id, frame_rate, duration)
-            {
-                let num_frames = frame_rate * duration;
-                if let Some(video_codec) = VideoCodec::from_u8(video_codec_id as u8) {
-                    match context.video.register_video_stream(
-                        num_frames as u32,
-                        (width as u16, height as u16),
-                        video_codec,
-                        VideoDeblocking::UseVideoPacketValue,
-                    ) {
-                        Ok(stream_handle) => match &mut *source.stream_type.borrow_mut() {
-                            Some(NetStreamType::Flv { video_stream, .. }) => {
-                                *video_stream = Some(stream_handle)
-                            }
-                            _ => unreachable!(),
-                        },
-                        Err(e) => {
-                            tracing::error!("Got error when registering FLV video stream: {}", e)
+        {
+            let num_frames = frame_rate * duration;
+            if let Some(video_codec) = VideoCodec::from_u8(video_codec_id as u8) {
+                match context.video.register_video_stream(
+                    num_frames as u32,
+                    (width as u16, height as u16),
+                    video_codec,
+                    VideoDeblocking::UseVideoPacketValue,
+                ) {
+                    Ok(stream_handle) => match &mut *source.stream_type.borrow_mut() {
+                        Some(NetStreamType::Flv { video_stream, .. }) => {
+                            *video_stream = Some(stream_handle)
                         }
+                        _ => unreachable!(),
+                    },
+                    Err(e) => {
+                        tracing::error!("Got error when registering FLV video stream: {}", e)
                     }
-                } else {
-                    tracing::error!("FLV video stream has invalid codec ID {}", video_codec_id);
                 }
+            } else {
+                tracing::error!("FLV video stream has invalid codec ID {}", video_codec_id);
             }
         }
     }
