@@ -1,20 +1,20 @@
 //! AVM2 classes
 
-use crate::avm2::activation::Activation;
-use crate::avm2::error::{
-    make_error_1014, make_error_1053, make_error_1059, make_error_1103, make_error_1107,
-    make_error_1110, make_error_1111, Error1014Type,
-};
-use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
-use crate::avm2::object::{scriptobject_allocator, ClassObject, Object};
-use crate::avm2::script::TranslationUnit;
-use crate::avm2::traits::{Trait, TraitKind};
-use crate::avm2::value::Value;
-use crate::avm2::vtable::VTable;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
 use crate::avm2::QName;
+use crate::avm2::activation::Activation;
+use crate::avm2::error::{
+    Error1014Type, make_error_1014, make_error_1053, make_error_1059, make_error_1103,
+    make_error_1107, make_error_1110, make_error_1111,
+};
+use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
+use crate::avm2::object::{ClassObject, Object, scriptobject_allocator};
+use crate::avm2::script::TranslationUnit;
+use crate::avm2::traits::{Trait, TraitKind};
+use crate::avm2::value::Value;
+use crate::avm2::vtable::VTable;
 use crate::context::UpdateContext;
 use crate::string::{AvmString, WString};
 use bitflags::bitflags;

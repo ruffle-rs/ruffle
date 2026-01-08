@@ -1,6 +1,6 @@
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::{avm2_stub_getter, avm2_stub_setter};
 
 pub fn get_dynamic_property_writer<'gc>(

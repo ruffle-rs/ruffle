@@ -1,10 +1,10 @@
 //! Core event structure
 
+use crate::avm2::Avm2;
 use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
 use crate::avm2::object::{EventObject, FunctionObject, Object, TObject as _};
-use crate::avm2::Avm2;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use fnv::FnvHashMap;

@@ -441,8 +441,8 @@ impl AudioMixer {
             + dasp::sample::FromSample<i16>,
     {
         use dasp::{
-            frame::{Frame, Stereo},
             Sample,
+            frame::{Frame, Stereo},
         };
         use std::ops::DerefMut;
 

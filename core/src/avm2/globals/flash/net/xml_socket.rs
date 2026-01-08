@@ -1,6 +1,6 @@
+use crate::avm2::Activation;
 use crate::avm2::error::Error;
 use crate::avm2::value::Value;
-use crate::avm2::Activation;
 use crate::string::AvmString;
 use ruffle_macros::istr;
 

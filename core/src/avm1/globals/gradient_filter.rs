@@ -8,7 +8,7 @@ use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use std::cell::{Cell, RefCell};
-use swf::{Color, Fixed16, Fixed8, GradientFilterFlags, GradientRecord};
+use swf::{Color, Fixed8, Fixed16, GradientFilterFlags, GradientRecord};
 
 const MAX_COLORS: usize = 16;
 

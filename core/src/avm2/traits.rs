@@ -1,15 +1,15 @@
 //! Active trait definitions
 
+use crate::avm2::Error;
+use crate::avm2::Multiname;
+use crate::avm2::QName;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::value::{abc_default_value, Value};
-use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::QName;
+use crate::avm2::value::{Value, abc_default_value};
 use bitflags::bitflags;
 use gc_arena::{Collect, Gc};
 use swf::avm2::types::{

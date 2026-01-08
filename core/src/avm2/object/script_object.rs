@@ -10,10 +10,10 @@ use crate::avm2::vtable::VTable;
 use crate::avm2::{Error, Multiname, QName};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
-use gc_arena::barrier::{unlock, Write};
+use gc_arena::barrier::{Write, unlock};
 use gc_arena::{
-    lock::{Lock, RefLock},
     Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable,
+    lock::{Lock, RefLock},
 };
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;

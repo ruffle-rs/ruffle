@@ -2,13 +2,13 @@
 
 use ruffle_macros::istr;
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_1100;
 use crate::avm2::object::{ArrayObject, Object, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::regexp::RegExpFlags;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::string::AvmString;
 
 pub use crate::avm2::object::reg_exp_allocator;

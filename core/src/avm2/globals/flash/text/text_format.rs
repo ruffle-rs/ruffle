@@ -1,9 +1,9 @@
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2007, make_error_2008};
 use crate::avm2::object::ArrayObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextDisplay;
 use crate::string::{AvmString, WStr};

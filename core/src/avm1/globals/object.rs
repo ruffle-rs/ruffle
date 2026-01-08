@@ -1,11 +1,11 @@
 //! Object prototype
 
+use crate::avm_warn;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
-use crate::avm_warn;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 

@@ -1,17 +1,17 @@
 //! Boxed QNames
 
-use crate::avm2::activation::Activation;
-use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::TObject;
-use crate::avm2::value::Value;
 use crate::avm2::AvmString;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
+use crate::avm2::activation::Activation;
+use crate::avm2::object::TObject;
+use crate::avm2::object::script_object::ScriptObjectData;
+use crate::avm2::value::Value;
 use crate::string::StringContext;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::Ref;

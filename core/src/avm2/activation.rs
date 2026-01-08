@@ -1,5 +1,7 @@
 //! Activation frames
 
+use crate::avm2::Multiname;
+use crate::avm2::Namespace;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
@@ -17,19 +19,17 @@ use crate::avm2::object::{
 };
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::op::{LookupSwitch, Op};
-use crate::avm2::scope::{search_scope_stack, Scope, ScopeChain};
+use crate::avm2::scope::{Scope, ScopeChain, search_scope_stack};
 use crate::avm2::script::Script;
 use crate::avm2::stack::StackFrame;
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString, HasStringContext, StringContext};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Gc;
 use ruffle_macros::istr;
-use std::cmp::{min, Ordering};
+use std::cmp::{Ordering, min};
 use std::sync::Arc;
 use swf::avm2::types::MethodFlags as AbcMethodFlags;
 

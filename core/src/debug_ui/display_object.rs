@@ -6,9 +6,9 @@ pub use search::DisplayObjectSearchWindow;
 use crate::avm2::object::TObject as _;
 use crate::bitmap::bitmap_data::DirtyState;
 use crate::context::UpdateContext;
+use crate::debug_ui::Message;
 use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::movie::open_movie_button;
-use crate::debug_ui::Message;
 use crate::display_object::{
     AutoSizeMode, Avm2Button, Bitmap, ButtonState, DisplayObject, EditText, InteractiveObject,
     LayoutDebugBoxesFlag, MovieClip, RenderMask, Stage, TDisplayObject, TDisplayObjectContainer,
@@ -1510,13 +1510,9 @@ impl DisplayObjectWindow {
                         .library
                         .library_for_movie(object.movie())
                         .and_then(|l| {
-                            l.export_characters().iter().find_map(|(k, v)| {
-                                if *v == id {
-                                    Some(k)
-                                } else {
-                                    None
-                                }
-                            })
+                            l.export_characters()
+                                .iter()
+                                .find_map(|(k, v)| if *v == id { Some(k) } else { None })
                         })
                 {
                     ui.label(format!("{id} {name}"));

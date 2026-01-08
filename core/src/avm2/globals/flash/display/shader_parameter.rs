@@ -1,9 +1,9 @@
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::slots::flash_display_shader_input as input_slots;
 use crate::avm2::globals::slots::flash_display_shader_parameter as parameter_slots;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::pixel_bender::PixelBenderTypeExt;
 use crate::string::AvmString;
 

@@ -1,11 +1,11 @@
 //! `flash.display.Bitmap` builtin/prototype
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::flash::display::bitmap_data::fill_bitmap_data_from_symbol;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::{BitmapDataObject, ClassObject, Object};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use ruffle_macros::istr;
 use ruffle_render::bitmap::PixelSnapping;
 

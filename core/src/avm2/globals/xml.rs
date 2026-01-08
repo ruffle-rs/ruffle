@@ -2,7 +2,7 @@
 
 use ruffle_macros::istr;
 
-use crate::avm2::e4x::{name_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
+use crate::avm2::e4x::{E4XNamespace, E4XNode, E4XNodeKind, name_to_multiname};
 use crate::avm2::error::{make_error_1088, make_error_1117};
 pub use crate::avm2::object::xml_allocator;
 use crate::avm2::object::{E4XOrXml, QNameObject, TObject, XmlListObject, XmlObject};

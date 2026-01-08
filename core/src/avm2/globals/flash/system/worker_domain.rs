@@ -1,10 +1,10 @@
 //! `flash.system.WorkerDomain` native methods
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::{WorkerDomainObject, WorkerObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2_stub_method;
 
 /// Implements `WorkerDomain.createWorker`

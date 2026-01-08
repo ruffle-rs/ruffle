@@ -1,11 +1,11 @@
 //! DisplayObject-specific AVM1 operations.
 
+use crate::avm_warn;
+use crate::avm1::Value;
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::property_map::PropertyMap;
-use crate::avm1::Value;
-use crate::avm_warn;
 use crate::display_object::{
     DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };

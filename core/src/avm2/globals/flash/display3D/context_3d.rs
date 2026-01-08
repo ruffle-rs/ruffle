@@ -1,3 +1,7 @@
+use crate::avm2::Activation;
+use crate::avm2::Error;
+use crate::avm2::TObject as _;
+use crate::avm2::Value;
 use crate::avm2::error::{
     make_error_2008, make_error_3669, make_error_3670, make_error_3671, make_error_3771,
     make_error_3772, make_error_3773, make_error_3780, make_error_3781,
@@ -6,10 +10,6 @@ use crate::avm2::globals::methods::flash_geom_matrix_3d as matrix3d_methods;
 use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
 use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::Activation;
-use crate::avm2::Error;
-use crate::avm2::TObject as _;
-use crate::avm2::Value;
 use crate::avm2_stub_method;
 use ruffle_macros::istr;
 use ruffle_render::backend::Context3DWrapMode;

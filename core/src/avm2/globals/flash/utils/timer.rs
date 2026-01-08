@@ -1,10 +1,10 @@
 //! `flash.utils.Timer` native methods
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::slots::flash_utils_timer as slots;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::timer::TimerCallback;
 
 /// Implements `Timer.stop`

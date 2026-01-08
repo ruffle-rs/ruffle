@@ -9,15 +9,15 @@ use crate::string::{AvmString, StringContext, WStr, WString};
 
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    lock::{Lock, RefLock},
     Collect, Gc, Mutation,
+    lock::{Lock, RefLock},
 };
 
 use quick_xml::{
+    Error as XmlError, NsReader,
     errors::IllFormedError,
     events::{BytesStart, Event},
     name::ResolveResult,
-    Error as XmlError, NsReader,
 };
 use ruffle_common::xml::custom_unescape;
 use ruffle_macros::istr;

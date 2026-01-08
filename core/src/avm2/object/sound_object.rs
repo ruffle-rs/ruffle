@@ -1,12 +1,12 @@
 //! Object representation for sounds
 
+use crate::avm2::Avm2;
+use crate::avm2::Error;
+use crate::avm2::EventObject;
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::slots::flash_media_id3info as id3_slots;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
-use crate::avm2::Avm2;
-use crate::avm2::Error;
-use crate::avm2::EventObject;
 use crate::backend::audio::{AudioManager, SoundHandle};
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
@@ -14,8 +14,8 @@ use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    lock::{Lock, RefLock},
     Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable,
+    lock::{Lock, RefLock},
 };
 use id3::{Tag, TagLike};
 use ruffle_common::utils::HasPrefixField;

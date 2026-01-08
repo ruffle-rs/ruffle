@@ -1,16 +1,17 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
+use crate::PlayerRuntime;
 use crate::avm2::bytearray::ObjectEncoding;
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
 use crate::avm2::e4x::XmlSettings;
 use crate::avm2::error::{
-    make_error_1014, make_error_1047, make_error_1107, make_error_2022, make_error_2023,
-    Error1014Type,
+    Error1014Type, make_error_1014, make_error_1047, make_error_1107, make_error_2022,
+    make_error_2023,
 };
 use crate::avm2::function::exec;
 use crate::avm2::globals::{
-    init_builtin_system_class_defs, init_builtin_system_classes, init_native_system_classes,
-    SystemClassDefs, SystemClasses,
+    SystemClassDefs, SystemClasses, init_builtin_system_class_defs, init_builtin_system_classes,
+    init_native_system_classes,
 };
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::object::FunctionObject;
@@ -22,14 +23,13 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
-use crate::PlayerRuntime;
 
 use fnv::FnvHashMap;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, Gc, Mutation};
 use std::sync::Arc;
-use swf::avm2::read::Reader;
 use swf::DoAbc2Flag;
+use swf::avm2::read::Reader;
 
 #[macro_export]
 macro_rules! avm_debug {

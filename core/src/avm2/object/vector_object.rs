@@ -1,16 +1,16 @@
 //! Vector storage object
 
+use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_1125, make_reference_error, Error, ReferenceErrorCode};
+use crate::avm2::error::{Error, ReferenceErrorCode, make_error_1125, make_reference_error};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::Multiname;
 use crate::string::WStr;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefMut};
 

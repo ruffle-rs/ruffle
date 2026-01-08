@@ -1616,7 +1616,7 @@ mod tests {
     use super::*;
     use crate::string::WStr;
     use flate2::read::DeflateDecoder;
-    use gc_arena::{arena::rootless_mutate, Mutation};
+    use gc_arena::{Mutation, arena::rootless_mutate};
     use std::io::Read;
     use swf::Twips;
 

@@ -1,6 +1,7 @@
 //! Whole script representation
 
 use super::api_version::ApiVersion;
+use crate::PlayerRuntime;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
@@ -15,7 +16,6 @@ use crate::avm2::{Avm2, Multiname, Namespace};
 use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
-use crate::PlayerRuntime;
 use gc_arena::barrier::field;
 use gc_arena::lock::OnceLock;
 use gc_arena::{Collect, Gc, Mutation};

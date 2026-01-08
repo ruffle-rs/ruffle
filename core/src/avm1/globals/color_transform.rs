@@ -113,8 +113,16 @@ fn constructor<'gc>(
             for (arg, value) in args.iter().zip(&mut values) {
                 *value = arg.coerce_to_f64(activation)?;
             }
-            let [red_multiplier, green_multiplier, blue_multiplier, alpha_multiplier, red_offset, green_offset, blue_offset, alpha_offset] =
-                values;
+            let [
+                red_multiplier,
+                green_multiplier,
+                blue_multiplier,
+                alpha_multiplier,
+                red_offset,
+                green_offset,
+                blue_offset,
+                alpha_offset,
+            ] = values;
             ColorTransformObject {
                 red_multiplier: Cell::new(red_multiplier),
                 green_multiplier: Cell::new(green_multiplier),

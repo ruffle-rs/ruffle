@@ -1,8 +1,8 @@
 //! `flash.system.Security` native methods
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2_stub_method;
 use crate::string::AvmString;
 use url::Url;

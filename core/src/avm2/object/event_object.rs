@@ -1,18 +1,18 @@
 //! Object representation for events
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::events::Event;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ScriptObject, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::display_object::{DisplayObject, InteractiveObject, TInteractiveObject};
 use crate::events::{KeyCode, MouseButton};
 use crate::string::AvmString;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::{Ref, RefMut};

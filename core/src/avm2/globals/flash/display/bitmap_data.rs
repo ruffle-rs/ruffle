@@ -1,10 +1,11 @@
 //! `flash.display.BitmapData` builtin/prototype
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{
-    make_error_2004, make_error_2005, make_error_2008, make_error_2015, make_error_2027,
-    Error2004Type,
+    Error2004Type, make_error_2004, make_error_2005, make_error_2008, make_error_2015,
+    make_error_2027,
 };
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::globals::slots::{
@@ -15,7 +16,6 @@ use crate::avm2::object::{BitmapDataObject, ByteArrayObject, Object, TObject, Ve
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::Error;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};

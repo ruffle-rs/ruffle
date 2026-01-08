@@ -1,5 +1,6 @@
 //! Function builtin and prototype
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_1066, make_error_1116};
 use crate::avm2::function::FunctionArgs;
@@ -8,7 +9,6 @@ use crate::avm2::globals::methods::function as function_class_methods;
 use crate::avm2::object::FunctionObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 
 /// Create a dummy function using Function.createDummyFunction. The Function class
 /// must be stored properly in SystemClasses; otherwise, this method will panic.

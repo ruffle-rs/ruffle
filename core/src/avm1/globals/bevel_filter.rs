@@ -6,7 +6,7 @@ use crate::avm1::{Activation, Error, Object, Value};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use std::cell::Cell;
-use swf::{BevelFilterFlags, Color, Fixed16, Fixed8, GradientFilterFlags};
+use swf::{BevelFilterFlags, Color, Fixed8, Fixed16, GradientFilterFlags};
 
 #[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]

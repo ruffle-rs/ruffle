@@ -5,7 +5,7 @@ use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::Cell;
-use swf::{Color, DropShadowFilterFlags, Fixed16, Fixed8};
+use swf::{Color, DropShadowFilterFlags, Fixed8, Fixed16};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]

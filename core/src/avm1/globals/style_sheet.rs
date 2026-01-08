@@ -4,7 +4,7 @@ use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
 use crate::avm1::{ArrayBuilder, ExecutionReason, NativeObject};
 use crate::backend::navigator::Request;
-use crate::html::{transform_dashes_to_camel_case, CssStream, StyleSheet, TextFormat};
+use crate::html::{CssStream, StyleSheet, TextFormat, transform_dashes_to_camel_case};
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;

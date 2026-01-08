@@ -1,5 +1,7 @@
 //! `flash.media.Sound` builtin/prototype
 
+use crate::avm2::Avm2;
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2037, make_error_2084};
 use crate::avm2::globals::methods::flash_media_sound as sound_methods;
@@ -9,8 +11,6 @@ use crate::avm2::object::{
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Avm2;
-use crate::avm2::Error;
 use crate::backend::navigator::Request;
 use crate::character::Character;
 use crate::display_object::SoundTransform;

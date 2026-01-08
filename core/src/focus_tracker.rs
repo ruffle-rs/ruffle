@@ -1,3 +1,4 @@
+use crate::Player;
 use crate::avm1::Avm1;
 use crate::avm1::Value;
 use crate::avm2::{Activation, Avm2, EventObject};
@@ -7,7 +8,6 @@ pub use crate::display_object::{
 };
 use crate::display_object::{EditText, InteractiveObject, TInteractiveObject};
 use crate::events::{ClipEvent, KeyCode};
-use crate::Player;
 use either::Either;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;

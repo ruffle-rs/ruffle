@@ -1,5 +1,6 @@
-use crate::avm1::globals::netconnection::NetConnection as Avm1NetConnectionObject;
+use crate::Player;
 use crate::avm1::Object as Avm1Object;
+use crate::avm1::globals::netconnection::NetConnection as Avm1NetConnectionObject;
 use crate::avm2::object::{
     NetConnectionObject as Avm2NetConnectionObject, ResponderObject as Avm2ResponderObject,
 };
@@ -9,12 +10,11 @@ use crate::backend::navigator::{
 };
 use crate::context::UpdateContext;
 use crate::loader::Error;
-use crate::Player;
 use flash_lso::packet::{Header, Message, Packet};
 use flash_lso::types::{AMFVersion, Value as AmfValue};
 use gc_arena::collect::Trace;
 use gc_arena::{Collect, DynamicRoot, Gc, Rootable};
-use slotmap::{new_key_type, SlotMap};
+use slotmap::{SlotMap, new_key_type};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use std::sync::{Arc, Mutex};

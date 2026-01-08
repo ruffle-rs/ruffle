@@ -1,11 +1,11 @@
 //! Video class
 
+use crate::avm1::Object;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::value::Value;
-use crate::avm1::Object;
 use crate::display_object::Video;
 
 macro_rules! video_method {

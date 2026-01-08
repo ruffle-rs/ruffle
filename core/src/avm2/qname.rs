@@ -9,8 +9,8 @@ use gc_arena::{Collect, Mutation};
 use std::fmt::Debug;
 use swf::avm2::types::{Index, Multiname as AbcMultiname};
 
-use super::api_version::ApiVersion;
 use super::Multiname;
+use super::api_version::ApiVersion;
 
 /// Qualified name.
 /// NOTE: this struct doesn't actually directly correspond to an AVM2 QName concept.

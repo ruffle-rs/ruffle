@@ -5,7 +5,7 @@ use std::cell::{Ref, RefMut};
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::error::{make_error_1065, make_error_1504, Error};
+use crate::avm2::error::{Error, make_error_1065, make_error_1504};
 use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::script::Script;

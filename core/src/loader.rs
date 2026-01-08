@@ -38,12 +38,12 @@ use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use chardetng::EncodingDetector;
 use encoding_rs::{UTF_8, WINDOWS_1252};
-use gc_arena::collect::Trace;
 use gc_arena::Collect;
+use gc_arena::collect::Trace;
 use indexmap::IndexMap;
 use ruffle_macros::istr;
-use ruffle_render::utils::{determine_jpeg_tag_format, JpegTagFormat};
-use slotmap::{new_key_type, SlotMap};
+use ruffle_render::utils::{JpegTagFormat, determine_jpeg_tag_format};
+use slotmap::{SlotMap, new_key_type};
 use std::borrow::Borrow;
 use std::fmt;
 use std::str::FromStr;
@@ -51,7 +51,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 use swf::read::{extract_swz, read_compression_type};
 use thiserror::Error;
-use url::{form_urlencoded, ParseError, Url};
+use url::{ParseError, Url, form_urlencoded};
 
 new_key_type! {
     pub struct LoaderHandle;

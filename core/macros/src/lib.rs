@@ -6,8 +6,8 @@ use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::{
-    parse_macro_input, parse_quote, DeriveInput, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait,
-    LitStr, Meta, Pat, TraitItem, Visibility,
+    DeriveInput, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, LitStr, Meta, Pat, TraitItem,
+    Visibility, parse_macro_input, parse_quote,
 };
 
 /// Define an enum whose variants each implement a trait.

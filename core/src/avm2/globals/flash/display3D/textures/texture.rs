@@ -1,10 +1,10 @@
 use ruffle_render::backend::Context3DTextureFormat;
 
 use super::atf_jpegxr::do_compressed_upload;
-use crate::avm2::object::TextureObject;
-use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::Value;
+use crate::avm2::object::TextureObject;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapData;

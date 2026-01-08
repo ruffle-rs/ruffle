@@ -1,5 +1,5 @@
 use gc_arena::{Collect, Gc};
-use ruffle_wstr::{panic_on_invalid_length, ptr as wptr, wstr_impl_traits, WStr, WString};
+use ruffle_wstr::{WStr, WString, panic_on_invalid_length, ptr as wptr, wstr_impl_traits};
 use std::cell::Cell;
 use std::ops::Deref;
 

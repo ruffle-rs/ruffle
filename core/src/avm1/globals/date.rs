@@ -10,11 +10,7 @@ use std::fmt;
 #[inline]
 fn rem_euclid_i32(lhs: f64, rhs: i32) -> i32 {
     let result = (lhs % f64::from(rhs)).clamp_to_i32();
-    if result < 0 {
-        result + rhs
-    } else {
-        result
-    }
+    if result < 0 { result + rhs } else { result }
 }
 
 /// Date and time, represented by milliseconds since epoch.

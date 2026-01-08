@@ -1,10 +1,10 @@
-use egui::{collapsing_header::CollapsingState, CollapsingHeader, TextEdit, Ui, Window};
+use egui::{CollapsingHeader, TextEdit, Ui, Window, collapsing_header::CollapsingState};
 
 use crate::{avm2::Domain, context::UpdateContext};
 
 use super::{
-    handle::{AVM2ObjectHandle, DomainHandle},
     Message,
+    handle::{AVM2ObjectHandle, DomainHandle},
 };
 
 #[derive(Debug, Default)]

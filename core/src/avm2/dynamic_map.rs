@@ -4,7 +4,7 @@ use hashbrown::hash_map::Entry;
 use hashbrown::raw::RawTable;
 use std::{cell::Cell, hash::Hash};
 
-use super::{string::AvmString, Object};
+use super::{Object, string::AvmString};
 
 #[derive(Debug, Collect, Copy, Clone)]
 #[collect(no_drop)]

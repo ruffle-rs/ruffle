@@ -14,7 +14,7 @@ use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
-use gc_arena::barrier::{unlock, Write};
+use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
@@ -45,8 +45,8 @@ mod video;
 use crate::avm1::Activation;
 use crate::display_object::bitmap::BitmapWeak;
 pub use crate::display_object::container::{
-    dispatch_added_event_only, dispatch_added_to_stage_event_only, DisplayObjectContainer,
-    TDisplayObjectContainer,
+    DisplayObjectContainer, TDisplayObjectContainer, dispatch_added_event_only,
+    dispatch_added_to_stage_event_only,
 };
 pub use avm1_button::{Avm1Button, ButtonState, ButtonTracking};
 pub use avm2_button::Avm2Button;

@@ -1,11 +1,11 @@
 //! `MovieClip` display object and support code.
-use crate::avm1::globals::AVM_DEPTH_BIAS;
 use crate::avm1::Avm1;
+use crate::avm1::globals::AVM_DEPTH_BIAS;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
+use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::script::Script;
-use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, LoaderInfoObject,
     Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value,
@@ -16,7 +16,7 @@ use crate::backend::ui::MouseCursor;
 use crate::binary_data::BinaryData;
 use crate::character::{BitmapCharacter, Character, CompressedBitmap};
 use crate::context::{ActionType, RenderContext, UpdateContext};
-use crate::display_object::container::{dispatch_removed_event, ChildContainer};
+use crate::display_object::container::{ChildContainer, dispatch_removed_event};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
@@ -27,7 +27,7 @@ use crate::display_object::{
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
 use crate::font::{Font, FontType};
-use crate::frame_lifecycle::{run_inner_goto_frame, FramePhase};
+use crate::frame_lifecycle::{FramePhase, run_inner_goto_frame};
 use crate::library::MovieLibrary;
 use crate::limits::ExecutionLimit;
 use crate::loader::LoadManager;
@@ -54,8 +54,8 @@ use std::sync::Arc;
 use swf::extensions::ReadSwfExt;
 use swf::{ClipEventFlag, DefineBitsLossless, FrameLabelData, TagCode, UTF_8};
 
-use super::interactive::Avm2MousePick;
 use super::BitmapClass;
+use super::interactive::Avm2MousePick;
 
 type FrameNumber = u16;
 

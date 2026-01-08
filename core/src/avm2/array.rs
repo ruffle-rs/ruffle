@@ -470,8 +470,8 @@ impl<'gc> ArrayStorage<'gc> {
     pub fn iter<'a>(
         &'a self,
     ) -> impl DoubleEndedIterator<Item = Option<Value<'gc>>>
-           + ExactSizeIterator<Item = Option<Value<'gc>>>
-           + 'a {
+    + ExactSizeIterator<Item = Option<Value<'gc>>>
+    + 'a {
         let index_back = self.length();
         ArrayStorageIterator {
             storage: self,

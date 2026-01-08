@@ -5,7 +5,7 @@ use core::fmt;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::object::{search_prototype, ExecutionName};
+use crate::avm1::object::{ExecutionName, search_prototype};
 use crate::avm1::{NativeObject, Object, Value};
 use crate::string::AvmString;
 use gc_arena::Collect;

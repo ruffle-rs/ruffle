@@ -1,9 +1,9 @@
 //! Object representation for sounds
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
-use crate::avm2::Error;
 use crate::backend::audio::SoundInstanceHandle;
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;

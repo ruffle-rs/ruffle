@@ -15,7 +15,7 @@ use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use std::{borrow::Cow, cell::Cell, num::NonZeroU8};
-use swf::{avm1::types::FunctionFlags, SwfStr};
+use swf::{SwfStr, avm1::types::FunctionFlags};
 
 /// Represents a function defined in Ruffle's code.
 pub type NativeFunction = for<'gc> fn(

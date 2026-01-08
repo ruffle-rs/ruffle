@@ -14,7 +14,7 @@ use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
 use crate::display_object::DisplayObject;
 use crate::swf::BlendMode;
-use crate::{avm1_stub, avm_error};
+use crate::{avm_error, avm1_stub};
 use ruffle_macros::istr;
 use ruffle_render::transform::Transform;
 

@@ -26,7 +26,7 @@ use crate::html::{
     FormatSpans, Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, Position, TextFormat,
 };
 use crate::prelude::*;
-use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
+use crate::string::{AvmString, SwfStrExt as _, WStr, WString, utils as string_utils};
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::{AvmObject, Instantiator};
 use chrono::DateTime;

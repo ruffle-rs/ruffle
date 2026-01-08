@@ -1,12 +1,12 @@
+use crate::avm1::Object;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::NativeObject;
-use crate::avm1::Object;
 use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::{
-    f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
-    f64_to_wrapping_u8,
+    f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u8, f64_to_wrapping_u16,
+    f64_to_wrapping_u32,
 };
 use crate::string::{AvmAtom, AvmString, Integer, WStr};
 use gc_arena::Collect;
@@ -964,13 +964,13 @@ fn string_to_f64(mut s: &WStr, swf_version: u8) -> f64 {
 #[cfg(test)]
 #[expect(clippy::unreadable_literal)] // Large numeric literals in tests
 mod test {
+    use crate::avm1::Value;
     use crate::avm1::error::Error;
     use crate::avm1::function::FunctionObject;
     use crate::avm1::globals::create_globals;
     use crate::avm1::object::Object;
     use crate::avm1::property::Attribute;
     use crate::avm1::test_utils::with_avm;
-    use crate::avm1::Value;
     use crate::string::AvmString;
     use ruffle_macros::istr;
 

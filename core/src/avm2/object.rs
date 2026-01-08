@@ -1,5 +1,8 @@
 //! AVM2 objects.
 
+use crate::avm2::Error;
+use crate::avm2::Multiname;
+use crate::avm2::Namespace;
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::bytearray::ByteArrayStorage;
@@ -13,9 +16,6 @@ use crate::avm2::regexp::RegExp;
 use crate::avm2::value::{Hint, Value};
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::vtable::VTable;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::display_object::DisplayObject;
 use crate::html::TextFormat;
@@ -73,30 +73,30 @@ mod worker_object;
 mod xml_list_object;
 mod xml_object;
 
-pub use crate::avm2::object::array_object::{array_allocator, ArrayObject, ArrayObjectWeak};
+pub use crate::avm2::object::array_object::{ArrayObject, ArrayObjectWeak, array_allocator};
 pub use crate::avm2::object::bitmapdata_object::{
-    bitmap_data_allocator, BitmapDataObject, BitmapDataObjectWeak,
+    BitmapDataObject, BitmapDataObjectWeak, bitmap_data_allocator,
 };
 pub use crate::avm2::object::bytearray_object::{
-    byte_array_allocator, ByteArrayObject, ByteArrayObjectWeak,
+    ByteArrayObject, ByteArrayObjectWeak, byte_array_allocator,
 };
 pub use crate::avm2::object::class_object::{ClassObject, ClassObjectWeak};
 pub use crate::avm2::object::context3d_object::{Context3DObject, Context3DObjectWeak};
-pub use crate::avm2::object::date_object::{date_allocator, DateObject, DateObjectWeak};
+pub use crate::avm2::object::date_object::{DateObject, DateObjectWeak, date_allocator};
 pub use crate::avm2::object::dictionary_object::{
-    dictionary_allocator, DictionaryObject, DictionaryObjectWeak,
+    DictionaryObject, DictionaryObjectWeak, dictionary_allocator,
 };
 pub use crate::avm2::object::dispatch_object::{DispatchObject, DispatchObjectWeak};
 pub use crate::avm2::object::domain_object::{
-    application_domain_allocator, DomainObject, DomainObjectWeak,
+    DomainObject, DomainObjectWeak, application_domain_allocator,
 };
-pub use crate::avm2::object::error_object::{error_allocator, ErrorObject, ErrorObjectWeak};
-pub use crate::avm2::object::event_object::{event_allocator, EventObject, EventObjectWeak};
+pub use crate::avm2::object::error_object::{ErrorObject, ErrorObjectWeak, error_allocator};
+pub use crate::avm2::object::event_object::{EventObject, EventObjectWeak, event_allocator};
 pub use crate::avm2::object::file_reference_object::{
-    file_reference_allocator, FileReference, FileReferenceObject, FileReferenceObjectHandle,
-    FileReferenceObjectWeak,
+    FileReference, FileReferenceObject, FileReferenceObjectHandle, FileReferenceObjectWeak,
+    file_reference_allocator,
 };
-pub use crate::avm2::object::font_object::{font_allocator, FontObject, FontObjectWeak};
+pub use crate::avm2::object::font_object::{FontObject, FontObjectWeak, font_allocator};
 pub use crate::avm2::object::function_object::{FunctionObject, FunctionObjectWeak};
 pub use crate::avm2::object::index_buffer_3d_object::{
     IndexBuffer3DObject, IndexBuffer3DObjectWeak,
@@ -105,65 +105,65 @@ pub use crate::avm2::object::loaderinfo_object::{
     LoaderInfoObject, LoaderInfoObjectWeak, LoaderStream,
 };
 pub use crate::avm2::object::local_connection_object::{
-    local_connection_allocator, LocalConnectionObject, LocalConnectionObjectWeak,
+    LocalConnectionObject, LocalConnectionObjectWeak, local_connection_allocator,
 };
 pub use crate::avm2::object::message_channel_object::{
     MessageChannelObject, MessageChannelObjectWeak,
 };
 pub use crate::avm2::object::namespace_object::{NamespaceObject, NamespaceObjectWeak};
 pub use crate::avm2::object::net_connection_object::{
-    net_connection_allocator, NetConnectionObject, NetConnectionObjectWeak,
+    NetConnectionObject, NetConnectionObjectWeak, net_connection_allocator,
 };
 pub use crate::avm2::object::netstream_object::{
-    netstream_allocator, NetStreamObject, NetStreamObjectWeak,
+    NetStreamObject, NetStreamObjectWeak, netstream_allocator,
 };
 pub use crate::avm2::object::program_3d_object::{Program3DObject, Program3DObjectWeak};
-pub use crate::avm2::object::proxy_object::{proxy_allocator, ProxyObject, ProxyObjectWeak};
+pub use crate::avm2::object::proxy_object::{ProxyObject, ProxyObjectWeak, proxy_allocator};
 pub use crate::avm2::object::qname_object::{QNameObject, QNameObjectWeak};
-pub use crate::avm2::object::regexp_object::{reg_exp_allocator, RegExpObject, RegExpObjectWeak};
+pub use crate::avm2::object::regexp_object::{RegExpObject, RegExpObjectWeak, reg_exp_allocator};
 pub use crate::avm2::object::responder_object::{
-    responder_allocator, ResponderObject, ResponderObjectWeak,
+    ResponderObject, ResponderObjectWeak, responder_allocator,
 };
 pub use crate::avm2::object::script_object::{
-    get_dynamic_property, scriptobject_allocator, ScriptObject, ScriptObjectData,
-    ScriptObjectHandle, ScriptObjectWeak, ScriptObjectWrapper,
+    ScriptObject, ScriptObjectData, ScriptObjectHandle, ScriptObjectWeak, ScriptObjectWrapper,
+    get_dynamic_property, scriptobject_allocator,
 };
 pub use crate::avm2::object::security_domain_object::{
     SecurityDomainObject, SecurityDomainObjectWeak,
 };
 pub use crate::avm2::object::shader_data_object::{
-    shader_data_allocator, ShaderDataObject, ShaderDataObjectWeak,
+    ShaderDataObject, ShaderDataObjectWeak, shader_data_allocator,
 };
 pub use crate::avm2::object::shared_object_object::{SharedObjectObject, SharedObjectObjectWeak};
-pub use crate::avm2::object::socket_object::{socket_allocator, SocketObject, SocketObjectWeak};
+pub use crate::avm2::object::socket_object::{SocketObject, SocketObjectWeak, socket_allocator};
 pub use crate::avm2::object::sound_object::{
-    sound_allocator, QueuedPlay, SoundLoadingState, SoundObject, SoundObjectHandle, SoundObjectWeak,
+    QueuedPlay, SoundLoadingState, SoundObject, SoundObjectHandle, SoundObjectWeak, sound_allocator,
 };
 pub use crate::avm2::object::soundchannel_object::{
-    sound_channel_allocator, SoundChannelObject, SoundChannelObjectWeak,
+    SoundChannelObject, SoundChannelObjectWeak, sound_channel_allocator,
 };
 pub use crate::avm2::object::soundtransform_object::{
-    sound_transform_allocator, SoundTransformObject, SoundTransformObjectWeak,
+    SoundTransformObject, SoundTransformObjectWeak, sound_transform_allocator,
 };
-pub use crate::avm2::object::stage3d_object::{Stage3DObject, Stage3DObjectWeak};
 pub use crate::avm2::object::stage_object::{StageObject, StageObjectWeak};
+pub use crate::avm2::object::stage3d_object::{Stage3DObject, Stage3DObjectWeak};
 pub use crate::avm2::object::stylesheet_object::{
-    style_sheet_allocator, StyleSheetObject, StyleSheetObjectWeak,
+    StyleSheetObject, StyleSheetObjectWeak, style_sheet_allocator,
 };
 pub use crate::avm2::object::textformat_object::{
-    textformat_allocator, TextFormatObject, TextFormatObjectWeak,
+    TextFormatObject, TextFormatObjectWeak, textformat_allocator,
 };
 pub use crate::avm2::object::texture_object::{TextureObject, TextureObjectWeak};
-pub use crate::avm2::object::vector_object::{vector_allocator, VectorObject, VectorObjectWeak};
+pub use crate::avm2::object::vector_object::{VectorObject, VectorObjectWeak, vector_allocator};
 pub use crate::avm2::object::vertex_buffer_3d_object::{
     VertexBuffer3DObject, VertexBuffer3DObjectWeak,
 };
 pub use crate::avm2::object::worker_domain_object::{WorkerDomainObject, WorkerDomainObjectWeak};
 pub use crate::avm2::object::worker_object::{WorkerObject, WorkerObjectWeak};
 pub use crate::avm2::object::xml_list_object::{
-    xml_list_allocator, E4XOrXml, XmlListObject, XmlListObjectWeak,
+    E4XOrXml, XmlListObject, XmlListObjectWeak, xml_list_allocator,
 };
-pub use crate::avm2::object::xml_object::{xml_allocator, XmlObject, XmlObjectWeak};
+pub use crate::avm2::object::xml_object::{XmlObject, XmlObjectWeak, xml_allocator};
 use crate::font::Font;
 
 /// Represents an object that can be directly interacted with by the AVM2

@@ -23,8 +23,8 @@ use std::any::Any;
 use std::fmt::Debug;
 use swf::{
     BevelFilter, BevelFilterFlags, BlurFilter, BlurFilterFlags, Color, ColorMatrixFilter,
-    ConvolutionFilter, ConvolutionFilterFlags, DropShadowFilter, DropShadowFilterFlags, Fixed16,
-    Fixed8, GlowFilter, GlowFilterFlags, GradientFilter, GradientFilterFlags, GradientRecord,
+    ConvolutionFilter, ConvolutionFilterFlags, DropShadowFilter, DropShadowFilterFlags, Fixed8,
+    Fixed16, GlowFilter, GlowFilterFlags, GradientFilter, GradientFilterFlags, GradientRecord,
 };
 
 pub trait FilterAvm2Ext {

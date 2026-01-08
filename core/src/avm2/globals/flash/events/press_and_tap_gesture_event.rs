@@ -1,8 +1,8 @@
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::flash::events::mouse_event;
 use crate::avm2::globals::slots::flash_events_press_and_tap_gesture_event as slots;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 
 pub fn get_tap_stage_x<'gc>(
     activation: &mut Activation<'_, 'gc>,

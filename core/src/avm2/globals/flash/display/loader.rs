@@ -2,6 +2,7 @@
 
 use indexmap::IndexMap;
 
+use crate::avm2::ClassObject;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2007;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
@@ -13,7 +14,6 @@ use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject as _;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::ClassObject;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};

@@ -1,5 +1,6 @@
 //! Array class
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::error::{make_error_1005, make_error_1125};
@@ -7,7 +8,6 @@ use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{ArrayObject, Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::string::AvmString;
 use bitflags::bitflags;
 use ruffle_macros::istr;

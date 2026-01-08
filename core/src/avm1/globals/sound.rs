@@ -21,7 +21,7 @@ use crate::character::Character;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, SoundTransform, TDisplayObject};
 use crate::string::AvmString;
-use crate::{avm1_stub, avm_warn};
+use crate::{avm_warn, avm1_stub};
 
 #[derive(Debug, Collect)]
 #[collect(no_drop)]

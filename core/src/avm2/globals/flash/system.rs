@@ -9,10 +9,10 @@ pub mod system;
 pub mod worker;
 pub mod worker_domain;
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 
 /// Implements `flash.system.fscommand` method
 pub fn fscommand<'gc>(

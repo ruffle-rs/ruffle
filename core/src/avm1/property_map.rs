@@ -4,10 +4,10 @@
 //! the insertion order of properties, which is necessary for accurate
 //! enumeration order.
 
-use crate::string::{utils as string_utils, AvmString, WStr};
+use crate::string::{AvmString, WStr, utils as string_utils};
 use fnv::FnvBuildHasher;
-use gc_arena::collect::Trace;
 use gc_arena::Collect;
+use gc_arena::collect::Trace;
 use indexmap::{Equivalent, IndexMap};
 use std::hash::{Hash, Hasher};
 

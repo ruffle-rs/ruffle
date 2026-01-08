@@ -15,8 +15,8 @@ use crate::avm2_stub_method;
 use ruffle_render::backend::{PixelBenderOutput, PixelBenderTarget};
 use ruffle_render::bitmap::PixelRegion;
 use ruffle_render::pixel_bender::{
-    PixelBenderParam, PixelBenderParamQualifier, PixelBenderShaderHandle, PixelBenderType,
-    OUT_COORD_NAME,
+    OUT_COORD_NAME, PixelBenderParam, PixelBenderParamQualifier, PixelBenderShaderHandle,
+    PixelBenderType,
 };
 use ruffle_render::pixel_bender_support::{
     FloatPixelData, ImageInputTexture, PixelBenderShaderArgument,

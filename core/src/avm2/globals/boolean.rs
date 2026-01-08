@@ -1,9 +1,9 @@
 //! `Boolean` impl
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 
 pub fn boolean_constructor<'gc>(
     _activation: &mut Activation<'_, 'gc>,

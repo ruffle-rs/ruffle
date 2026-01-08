@@ -1,5 +1,5 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_1032, Error};
+use crate::avm2::error::{Error, make_error_1032};
 use crate::avm2::script::TranslationUnit;
 use crate::string::{AvmAtom, AvmString, StringContext};
 use gc_arena::{Collect, Gc};

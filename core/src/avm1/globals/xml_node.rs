@@ -5,7 +5,7 @@ use ruffle_macros::istr;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
-use crate::avm1::xml::{XmlNode, TEXT_NODE};
+use crate::avm1::xml::{TEXT_NODE, XmlNode};
 use crate::avm1::{NativeObject, Object, Value};
 use crate::string::{AvmString, WStr};
 

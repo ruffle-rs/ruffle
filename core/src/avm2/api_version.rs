@@ -1,7 +1,7 @@
 use std::sync::LazyLock;
 
 use crate::PlayerRuntime;
-use enum_map::{enum_map, Enum, EnumMap};
+use enum_map::{Enum, EnumMap, enum_map};
 
 // Based on https://github.com/adobe/avmplus/blob/master/core/api-versions.h
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, FromPrimitive, Enum)]

@@ -1,8 +1,8 @@
 //! `flash.ui.Keyboard` builtin/prototype
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2_stub_getter;
 use crate::string::AvmString;
 

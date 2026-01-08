@@ -2,7 +2,7 @@ use super::interner::AvmAtom;
 use super::repr::AvmStringRepr;
 
 use gc_arena::{Collect, Gc, Mutation};
-use ruffle_wstr::{wstr_impl_traits, WStr, WString};
+use ruffle_wstr::{WStr, WString, wstr_impl_traits};
 use std::borrow::Cow;
 use std::ops::Deref;
 

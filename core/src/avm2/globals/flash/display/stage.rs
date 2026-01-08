@@ -1,12 +1,12 @@
 //! `flash.display.Stage` builtin/prototype
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2008;
 use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::Error;
 use crate::avm2_stub_getter;
 use crate::display_object::{
     StageDisplayState, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
