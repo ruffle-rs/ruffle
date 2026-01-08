@@ -1,5 +1,9 @@
 //! Special handling for AVM2 orphan objects
 
+// Temporarily allow this to ease migration to Rust 2024 edition.
+// TODO: Remove this once all instances are fixed.
+#![allow(clippy::collapsible_if)]
+
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use gc_arena::{Collect, Mutation};

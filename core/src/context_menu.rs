@@ -4,6 +4,10 @@
 //! are stored aside when the menu is open. This way the context menu
 //! items work even if the movie changed `object.menu` in the meantime.
 
+// Temporarily allow this to ease migration to Rust 2024 edition.
+// TODO: Remove this once all instances are fixed.
+#![allow(clippy::collapsible_if)]
+
 use crate::avm1;
 use crate::avm2;
 use crate::context::UpdateContext;

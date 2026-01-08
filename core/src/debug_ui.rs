@@ -1,3 +1,7 @@
+// Temporarily allow this to ease migration to Rust 2024 edition.
+// TODO: Remove this once all instances are fixed.
+#![allow(clippy::collapsible_if)]
+
 mod avm1;
 mod avm2;
 mod common;
