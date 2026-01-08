@@ -791,6 +791,22 @@ impl<'gc> MovieClip<'gc> {
         unlock!(Gc::write(mc, self.0), MovieClipData, drop_target).set(drop_target);
     }
 
+    pub fn has_pending_script(self) -> bool {
+        self.0.has_pending_script.get()
+    }
+
+    pub fn set_has_pending_script(self, value: bool) {
+        self.0.has_pending_script.set(value);
+    }
+
+    pub fn last_queued_script_frame(self) -> Option<FrameNumber> {
+        self.0.last_queued_script_frame.get()
+    }
+
+    pub fn set_last_queued_script_frame(self, frame: Option<FrameNumber>) {
+        self.0.last_queued_script_frame.set(frame);
+    }
+
     pub fn set_programmatically_played(self) {
         if self.header_frames() > 1 {
             self.0.set_programmatically_played()
@@ -844,15 +860,15 @@ impl<'gc> MovieClip<'gc> {
         // Clamp frame number in bounds.
         let frame = frame.max(1);
 
-        // In AS3, no-op gotos have side effects that are visible to user code.
-        // Hence, we have to run them anyway.
-        if frame != self.current_frame() {
-            if self
-                .0
-                .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
-            {
-                // AVM2 does not allow a clip to see while it is executing a frame script.
-                // The goto is instead queued and run once the frame script is completed.
+        // AVM2 does not allow a clip to goto while it is executing a frame script.
+        // The goto is instead queued and run once the frame script is completed.
+        if self
+            .0
+            .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
+        {
+            // In SWFv9, frame-script-queued gotos to the current frame are ignored.
+
+            if self.swf_version() > 9 || frame != self.current_frame() {
                 self.0.queued_goto_frame.set(Some(frame));
 
                 // If we have a frame script on that frame, add ourselves to the
@@ -861,9 +877,17 @@ impl<'gc> MovieClip<'gc> {
                 if self.has_frame_script(frame) {
                     context.frame_script_cleanup_queue.push_back(self);
                 }
-            } else {
-                self.run_goto(context, frame, false);
             }
+        } else {
+            self.goto_frame_now(context, frame)
+        }
+    }
+
+    fn goto_frame_now(self, context: &mut UpdateContext<'gc>, frame: FrameNumber) {
+        // In AS3, no-op gotos have side effects that are visible to user
+        // code. Hence, we have to run them anyway.
+        if frame != self.current_frame() {
+            self.run_goto(context, frame, false);
         } else if self.movie().is_action_script_3() {
             // Despite not running, the goto still overwrites the currently enqueued frame.
             self.0.queued_goto_frame.set(None);
@@ -1398,11 +1422,11 @@ impl<'gc> MovieClip<'gc> {
         }
 
         self.0.queued_script_frame.set(self.0.current_frame.get());
-        if self.0.last_queued_script_frame.get() != Some(self.0.current_frame.get()) {
+        if self.last_queued_script_frame() != Some(self.0.current_frame.get()) {
             // We explicitly clear this variable since AS3 may later GOTO back
             // to the already-ran frame. Since the frame number *has* changed
             // in the meantime, it should absolutely run again.
-            self.0.last_queued_script_frame.set(None);
+            self.set_last_queued_script_frame(None);
         }
     }
 
@@ -2065,12 +2089,10 @@ impl<'gc> MovieClip<'gc> {
         callable: Option<Avm2Object<'gc>>,
         context: &mut UpdateContext<'gc>,
     ) {
-        let write = Gc::write(context.gc(), self.0);
-        let current_frame = write.current_frame();
-        let mut frame_scripts =
-            RefMut::map(unlock!(write, MovieClipData, cell).borrow_mut(), |r| {
-                &mut r.frame_scripts
-            });
+        let current_frame = self.current_frame();
+
+        let write = unlock!(Gc::write(context.gc(), self.0), MovieClipData, cell);
+        let mut frame_scripts = RefMut::map(write.borrow_mut(), |r| &mut r.frame_scripts);
 
         let index = frame_id as usize;
         if let Some(callable) = callable {
@@ -2084,8 +2106,8 @@ impl<'gc> MovieClip<'gc> {
                 } else {
                     // Ensure newly registered frame scripts are executed,
                     // even if the frame is repeated due to goto.
-                    write.last_queued_script_frame.set(None);
-                    write.has_pending_script.set(true);
+                    self.set_last_queued_script_frame(None);
+                    self.set_has_pending_script(true);
                 }
             }
         } else if frame_scripts.len() > index {
@@ -2342,19 +2364,11 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    pub fn run_frame_script_cleanup(context: &mut UpdateContext<'gc>) {
-        while let Some(clip) = context.frame_script_cleanup_queue.pop_front() {
-            clip.0.has_pending_script.set(true);
-            clip.0.last_queued_script_frame.set(None);
-            clip.run_local_frame_scripts(context);
-        }
-    }
-
-    fn run_local_frame_scripts(self, context: &mut UpdateContext<'gc>) {
+    pub fn run_local_frame_scripts(self, context: &mut UpdateContext<'gc>) {
         let avm2_object = self.0.object2.get();
 
         if let Some(avm2_object) = avm2_object {
-            if self.0.has_pending_script.get() {
+            if self.has_pending_script() {
                 let frame_id = self.0.queued_script_frame.get();
                 // If we are already executing frame scripts, then we shouldn't
                 // run frame scripts recursively. This is because AVM2 can run
@@ -2366,14 +2380,14 @@ impl<'gc> MovieClip<'gc> {
                     .0
                     .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
                 {
-                    let is_fresh_frame = self.0.last_queued_script_frame.get() != Some(frame_id);
+                    let is_fresh_frame = self.last_queued_script_frame() != Some(frame_id);
 
                     if is_fresh_frame {
                         if let Some(callable) = self.frame_script(frame_id) {
                             let callable = Avm2Value::from(callable);
 
-                            self.0.last_queued_script_frame.set(Some(frame_id));
-                            self.0.has_pending_script.set(false);
+                            self.set_last_queued_script_frame(Some(frame_id));
+                            self.set_has_pending_script(false);
                             self.0
                                 .set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
 
@@ -2409,13 +2423,21 @@ impl<'gc> MovieClip<'gc> {
 
         let goto_frame = self.0.queued_goto_frame.take();
         if let Some(frame) = goto_frame {
-            self.run_goto(context, frame, false);
+            self.goto_frame_now(context, frame);
+
+            // In SWFv9, the `goto_frame_now` above won't run `construct_frame`, so
+            // we need to manually run `construct_frame` to ensure that children
+            // are constructed. This prevents situations such as a frame script
+            // queued to run on this frame seeing not-yet-constructed children.
+            if self.swf_version() <= 9 {
+                self.construct_frame(context);
+            }
         }
     }
 
     fn check_has_pending_script(self) {
         let has_pending_script = self.has_frame_script(self.0.current_frame.get());
-        self.0.has_pending_script.set(has_pending_script);
+        self.set_has_pending_script(has_pending_script);
     }
 }
 

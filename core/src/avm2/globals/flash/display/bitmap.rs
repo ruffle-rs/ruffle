@@ -34,11 +34,9 @@ pub fn bitmap_allocator<'gc>(
                 &activation.caller_movie_or_root(),
             )
             .into();
-            return Ok(initialize_for_allocator(
-                activation.context,
-                display_object,
-                orig_class,
-            ));
+            return Ok(
+                initialize_for_allocator(activation.context, display_object, orig_class).into(),
+            );
         }
 
         if let Some((movie, symbol)) = activation
@@ -66,11 +64,9 @@ pub fn bitmap_allocator<'gc>(
                     &activation.caller_movie_or_root(),
                 );
 
-                return Ok(initialize_for_allocator(
-                    activation.context,
-                    child.into(),
-                    orig_class,
-                ));
+                return Ok(
+                    initialize_for_allocator(activation.context, child.into(), orig_class).into(),
+                );
             }
         }
         class_def = class.super_class();
