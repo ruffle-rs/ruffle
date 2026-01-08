@@ -57,21 +57,22 @@ fn deserialize_json_inner<'gc>(
             obj.into()
         }
         JsonValue::Array(js_arr) => {
-            let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(js_arr.len());
-            for (key, val) in js_arr.iter().enumerate() {
-                let val = deserialize_json_inner(activation, val.clone(), reviver)?;
-                let args = &[key.into(), val];
+            let storage = js_arr
+                .iter()
+                .enumerate()
+                .map(|(key, val)| {
+                    let val = deserialize_json_inner(activation, val.clone(), reviver)?;
+                    let args = &[key.into(), val];
 
-                let mapped_val = match reviver {
-                    None => val,
-                    Some(reviver) => {
-                        reviver.call(activation, Value::Null, FunctionArgs::from_slice(args))?
+                    match reviver {
+                        None => Ok(val),
+                        Some(reviver) => {
+                            reviver.call(activation, Value::Null, FunctionArgs::from_slice(args))
+                        }
                     }
-                };
+                })
+                .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
 
-                arr.push(Some(mapped_val));
-            }
-            let storage = ArrayStorage::from_storage(arr);
             let array = ArrayObject::from_storage(activation.context, storage);
             array.into()
         }

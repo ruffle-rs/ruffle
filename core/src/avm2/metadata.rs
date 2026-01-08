@@ -1,7 +1,6 @@
-use crate::avm2::array::ArrayStorage;
 use crate::avm2::object::{ArrayObject, Object, ScriptObject, TObject};
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::{Activation, Error, Value};
+use crate::avm2::{Activation, Error};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 
@@ -83,18 +82,18 @@ impl<'gc> Metadata<'gc> {
         let object = ScriptObject::new_object(context);
         object.set_dynamic_property(name_str, self.name.into(), context.gc());
 
-        let values = self
+        let storage = self
             .items
             .iter()
             .map(|item| {
                 let value_object = ScriptObject::new_object(context);
                 value_object.set_dynamic_property(key_str, item.key.into(), context.gc());
                 value_object.set_dynamic_property(value_str, item.value.into(), context.gc());
-                Some(value_object.into())
+                value_object
             })
-            .collect::<Vec<Option<Value<'gc>>>>();
+            .collect();
 
-        let values_array = ArrayObject::from_storage(context, ArrayStorage::from_storage(values));
+        let values_array = ArrayObject::from_storage(context, storage);
         object.set_dynamic_property(value_str, values_array.into(), context.gc());
         object
     }
