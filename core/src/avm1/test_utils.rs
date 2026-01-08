@@ -1,7 +1,7 @@
 use crate::avm1::{
+    Object,
     activation::{Activation, ActivationIdentifier},
     error::Error,
-    Object,
 };
 use crate::display_object::TDisplayObject;
 

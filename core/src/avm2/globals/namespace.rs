@@ -2,14 +2,14 @@
 
 use ruffle_macros::istr;
 
+use crate::avm2::Error;
+use crate::avm2::Namespace;
 use crate::avm2::activation::Activation;
 use crate::avm2::e4x::is_xml_name;
 use crate::avm2::error::make_error_1098;
 use crate::avm2::object::{NamespaceObject, Object};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::Namespace;
 
 /// Implements a custom constructor for `Namespace`.
 pub fn namespace_constructor<'gc>(

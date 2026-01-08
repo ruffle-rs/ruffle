@@ -1,7 +1,7 @@
-use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::Error;
 use crate::avm2::Value;
+use crate::avm2::parameters::ParametersExt;
 
 use super::texture::do_copy;
 

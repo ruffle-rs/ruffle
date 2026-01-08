@@ -7,9 +7,9 @@ mod text_format;
 
 pub use dimensions::Position;
 pub use layout::{
-    lower_from_text_spans, Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics,
+    Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, lower_from_text_spans,
 };
-pub use style_sheet::{parse_font_list, transform_dashes_to_camel_case, CssStream, StyleSheet};
+pub use style_sheet::{CssStream, StyleSheet, parse_font_list, transform_dashes_to_camel_case};
 pub use text_format::{FormatSpans, TextDisplay, TextFormat, TextSpan};
 
 mod style_sheet;

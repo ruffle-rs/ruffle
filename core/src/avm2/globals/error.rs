@@ -1,10 +1,10 @@
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 pub use crate::avm2::object::error_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::{avm2_stub_method, PlayerMode};
+use crate::{PlayerMode, avm2_stub_method};
 
 pub fn get_error_message<'gc>(
     activation: &mut Activation<'_, 'gc>,

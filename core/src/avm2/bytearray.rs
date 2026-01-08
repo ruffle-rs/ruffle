@@ -1,10 +1,10 @@
-use crate::avm2::error::{make_error_2006, make_error_2030};
 use crate::avm2::Activation;
 use crate::avm2::Error;
+use crate::avm2::error::{make_error_2006, make_error_2030};
 use crate::context::UpdateContext;
 use crate::string::{FromWStr, WStr};
-use flate2::read::*;
 use flate2::Compression;
+use flate2::read::*;
 use gc_arena::Collect;
 use std::cell::Cell;
 use std::cmp;

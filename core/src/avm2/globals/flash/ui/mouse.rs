@@ -1,8 +1,8 @@
 //! `flash.ui.Mouse` builtin
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 
 pub fn hide<'gc>(
     activation: &mut Activation<'_, 'gc>,

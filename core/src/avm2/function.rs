@@ -1,11 +1,11 @@
+use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_1063, Error};
+use crate::avm2::error::{Error, make_error_1063};
 use crate::avm2::method::{Method, MethodKind, ParamConfig};
 use crate::avm2::object::{ClassObject, FunctionObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
 use crate::string::WString;
 use gc_arena::{Collect, Gc};
 use std::borrow::Cow;

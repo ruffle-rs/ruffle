@@ -1,7 +1,7 @@
 //! Object representation for XML objects
 
 use crate::avm2::activation::Activation;
-use crate::avm2::e4x::{string_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
+use crate::avm2::e4x::{E4XNamespace, E4XNode, E4XNodeKind, string_to_multiname};
 use crate::avm2::error::make_error_1087;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::multiname::NamespaceSet;
@@ -12,7 +12,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_wstr::WString;
 

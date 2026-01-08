@@ -1,17 +1,17 @@
 //! `flash.display.LoaderInfo` builtin/prototype
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::Endian;
 use crate::avm2::error::make_error_2099;
 use crate::avm2::object::{DomainObject, LoaderStream, ScriptObject, TObject as _};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::display_object::TDisplayObject;
 use crate::loader::ContentType;
 use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method};
 use std::sync::Arc;
-use swf::{write_swf, Compression};
+use swf::{Compression, write_swf};
 use url::Url;
 
 /// `actionScriptVersion` getter

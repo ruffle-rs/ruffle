@@ -4,7 +4,7 @@ use crate::avm1::function::{Avm1Function, ExecutionReason, FunctionObject};
 use crate::avm1::property::Attribute;
 use crate::avm1::runtime::skip_actions;
 use crate::avm1::scope::{Scope, ScopeClass};
-use crate::avm1::{fscommand, globals, scope, ArrayBuilder, Object, Value};
+use crate::avm1::{ArrayBuilder, Object, Value, fscommand, globals, scope};
 use crate::backend::navigator::{NavigationMethod, Request};
 use crate::context::UpdateContext;
 use crate::display_object::{

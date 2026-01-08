@@ -1,8 +1,8 @@
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Hint;
-use crate::avm2::Error;
 use crate::context::UpdateContext;
 use chrono::{DateTime, Utc};
 use core::fmt;

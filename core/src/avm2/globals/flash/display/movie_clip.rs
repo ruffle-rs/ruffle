@@ -1,12 +1,12 @@
 //! `flash.display.MovieClip` builtin/prototype
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::error::make_error_2109;
 use crate::avm2::object::ArrayObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::display_object::{MovieClip, Scene};
 use crate::string::{AvmString, WString};
 

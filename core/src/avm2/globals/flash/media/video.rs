@@ -1,4 +1,4 @@
-use crate::avm2::error::{make_error_2136, Error};
+use crate::avm2::error::{Error, make_error_2136};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, ClassObject, Object, Value};

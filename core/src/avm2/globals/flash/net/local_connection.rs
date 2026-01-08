@@ -1,6 +1,6 @@
 use crate::avm2::amf::serialize_value;
 use crate::avm2::error::{
-    make_error_2004, make_error_2082, make_error_2083, make_error_2085, Error2004Type,
+    Error2004Type, make_error_2004, make_error_2082, make_error_2083, make_error_2085,
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};

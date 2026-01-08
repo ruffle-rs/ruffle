@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::e4x::{string_to_multiname, E4XNamespace, E4XNode, E4XNodeKind};
+use crate::avm2::e4x::{E4XNamespace, E4XNode, E4XNodeKind, string_to_multiname};
 use crate::avm2::error::make_error_1089;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::script_object::ScriptObjectData;
@@ -10,8 +10,8 @@ use crate::avm2::{Error, Multiname, Namespace};
 use crate::string::AvmString;
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
+    lock::{Lock, RefLock},
 };
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;

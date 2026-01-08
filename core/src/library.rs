@@ -19,7 +19,7 @@ use crate::font::DefaultFont;
 use fnv::{FnvHashMap, FnvHashSet};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
-use weak_table::{traits::WeakElement, PtrWeakKeyHashMap, WeakValueHashMap};
+use weak_table::{PtrWeakKeyHashMap, WeakValueHashMap, traits::WeakElement};
 
 #[derive(Clone)]
 struct MovieSymbol(Arc<SwfMovie>, CharacterId);

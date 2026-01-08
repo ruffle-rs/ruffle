@@ -1,9 +1,9 @@
 //! `flash.crypto` namespace
 
-use crate::avm2::error::{make_error_2004, Error2004Type};
+use crate::avm2::error::{Error2004Type, make_error_2004};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
-use rand::{rngs::OsRng, TryRngCore};
+use rand::{TryRngCore, rngs::OsRng};
 
 /// Implements `flash.crypto.generateRandomBytes`
 pub fn generate_random_bytes<'gc>(

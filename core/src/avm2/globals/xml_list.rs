@@ -2,13 +2,13 @@
 
 pub use crate::avm2::object::xml_list_allocator;
 use crate::avm2::{
-    e4x::{name_to_multiname, simple_content_to_string, E4XNode, E4XNodeKind},
+    Activation, Error, TObject, Value,
+    e4x::{E4XNode, E4XNodeKind, name_to_multiname, simple_content_to_string},
     error::make_error_1086,
     globals::methods::xml as xml_methods,
     multiname::Multiname,
     object::{E4XOrXml, XmlListObject, XmlObject},
     parameters::ParametersExt,
-    Activation, Error, TObject, Value,
 };
 use crate::string::AvmString;
 

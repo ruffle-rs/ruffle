@@ -1,6 +1,6 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::TObject;
+use crate::avm2::object::script_object::ScriptObjectData;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_common::utils::HasPrefixField;

@@ -1,10 +1,10 @@
 //! Storage for AS3 Vectors
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::error::{make_error_1125, make_error_1126};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use gc_arena::Collect;
 use std::cmp::{max, min};
 use std::ops::RangeBounds;

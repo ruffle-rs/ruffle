@@ -1,8 +1,8 @@
+use crate::avm2::Activation;
 use crate::avm2::bytearray::{ByteArrayError, Endian, ObjectEncoding};
-use crate::avm2::error::{make_error_2006, Error};
+use crate::avm2::error::{Error, make_error_2006};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
-use crate::avm2::Activation;
 use crate::socket::SocketHandle;
 use gc_arena::GcWeak;
 use gc_arena::{Collect, Gc};

@@ -3,7 +3,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::matrix::gradient_object_to_matrix;
-use crate::avm1::globals::{self, bitmap_filter, AVM_DEPTH_BIAS, AVM_MAX_DEPTH};
+use crate::avm1::globals::{self, AVM_DEPTH_BIAS, AVM_MAX_DEPTH, bitmap_filter};
 use crate::avm1::object::NativeObject;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{self, ArrayBuilder, Object, Value};
@@ -14,7 +14,7 @@ use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::vminterface::Instantiator;
-use crate::{avm1_stub, avm_error, avm_warn};
+use crate::{avm_error, avm_warn, avm1_stub};
 use ruffle_macros::istr;
 use ruffle_render::shape_utils::{DrawCommand, GradientType};
 use swf::{

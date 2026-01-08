@@ -1,5 +1,6 @@
 //! Object representation for Error objects
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::call_stack::CallStack;
 use crate::avm2::function::FunctionArgs;
@@ -7,7 +8,6 @@ use crate::avm2::globals::slots::error as error_slots;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::string::{AvmString, WStr, WString};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};

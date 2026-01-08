@@ -5,8 +5,8 @@ use crate::avm1::{Activation, ArrayBuilder, Attribute, Error, NativeObject, Obje
 use crate::string::{AvmString, StringContext, WStr, WString};
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    lock::{Lock, RefLock},
     Collect, Gc, Mutation,
+    lock::{Lock, RefLock},
 };
 use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;

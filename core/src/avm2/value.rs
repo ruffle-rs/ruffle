@@ -6,7 +6,7 @@ use crate::avm2::error::{
     make_error_1006, make_error_1007, make_error_1034, make_error_1050, make_error_1064,
     make_error_1115,
 };
-use crate::avm2::function::{exec, FunctionArgs};
+use crate::avm2::function::{FunctionArgs, exec};
 use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;

@@ -1,5 +1,5 @@
-use crate::avm2::object::{ArrayObject, DateObject, ScriptObject, TObject as _};
 use crate::avm2::Value as Avm2Value;
+use crate::avm2::object::{ArrayObject, DateObject, ScriptObject, TObject as _};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 

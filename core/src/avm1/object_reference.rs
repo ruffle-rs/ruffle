@@ -1,4 +1,4 @@
-use super::{object::ObjectWeak, Activation, Object};
+use super::{Activation, Object, object::ObjectWeak};
 use crate::{
     display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer},
     string::{AvmString, WStr, WString},

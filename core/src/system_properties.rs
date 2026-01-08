@@ -1,7 +1,7 @@
 use crate::context::UpdateContext;
 use bitflags::bitflags;
 use core::fmt;
-use fluent_templates::{langid, LanguageIdentifier};
+use fluent_templates::{LanguageIdentifier, langid};
 
 /// Available cpu architectures
 pub enum CpuArchitecture {
@@ -304,19 +304,11 @@ impl SystemProperties {
     }
 
     fn encode_capability(&self, cap: SystemCapabilities) -> &str {
-        if self.has_capability(cap) {
-            "t"
-        } else {
-            "f"
-        }
+        if self.has_capability(cap) { "t" } else { "f" }
     }
 
     fn encode_not_capability(&self, cap: SystemCapabilities) -> &str {
-        if self.has_capability(cap) {
-            "f"
-        } else {
-            "t"
-        }
+        if self.has_capability(cap) { "f" } else { "t" }
     }
 
     fn encode_string(&self, s: &str) -> String {

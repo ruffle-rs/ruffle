@@ -9,14 +9,14 @@ use crate::{
 };
 use gc_arena::Collect;
 pub use ruffle_common::buffer::Substream;
-use slotmap::{new_key_type, Key, SlotMap};
+use slotmap::{Key, SlotMap, new_key_type};
 
 #[cfg(feature = "audio")]
 pub mod decoders;
 pub mod swf {
     pub use swf::{
-        read, AudioCompression, CharacterId, Sound, SoundEnvelope, SoundEnvelopePoint, SoundEvent,
-        SoundFormat, SoundInfo, SoundStreamHead,
+        AudioCompression, CharacterId, Sound, SoundEnvelope, SoundEnvelopePoint, SoundEvent,
+        SoundFormat, SoundInfo, SoundStreamHead, read,
     };
 }
 

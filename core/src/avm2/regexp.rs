@@ -3,10 +3,10 @@
 use std::borrow::Cow;
 use std::num::NonZero;
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::FunctionObject;
-use crate::avm2::Error;
 use crate::avm2::{ArrayObject, ArrayStorage, Value};
 use crate::context::UpdateContext;
 use crate::string::WString;

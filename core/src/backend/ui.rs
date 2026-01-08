@@ -4,8 +4,8 @@ use crate::{
     font::{FontFileData, FontQuery, FontRenderer},
 };
 use chrono::{DateTime, Utc};
-use fluent_templates::loader::langid;
 pub use fluent_templates::LanguageIdentifier;
+use fluent_templates::loader::langid;
 use std::{any::Any, borrow::Cow};
 use url::Url;
 

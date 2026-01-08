@@ -4,12 +4,12 @@
 //! public methods, but are the class that the script global scope is an
 //! instance of.
 
+use crate::avm2::QName;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{BuiltinType, Class, ClassAttributes};
 use crate::avm2::error::Error;
 use crate::avm2::method::Method;
 use crate::avm2::traits::Trait;
-use crate::avm2::QName;
 use ruffle_macros::istr;
 
 /// Construct `global`'s class.

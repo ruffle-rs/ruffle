@@ -1,7 +1,7 @@
 use either::Either;
 use ruffle_render::pixel_bender::{PixelBenderType, PixelBenderTypeOpcode};
 
-use crate::avm2::error::{make_error_2004, Error2004Type};
+use crate::avm2::error::{Error2004Type, make_error_2004};
 use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Object, Value};
 use crate::context::UpdateContext;
 use crate::ecma_conversions::f64_to_wrapping_i32;

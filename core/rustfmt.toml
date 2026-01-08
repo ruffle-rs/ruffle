@@ -1,2 +1,0 @@
-# This is temporary to ease transitioning the core crate to edition 2024
-style_edition = "2021"

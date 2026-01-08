@@ -11,8 +11,8 @@ use crate::tag_utils::SwfMovie;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
+    lock::{Lock, RefLock},
 };
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, Ref};

@@ -1,9 +1,9 @@
 use crate::avm1::globals::style_sheet::StyleSheetObject;
 use crate::avm1::{Activation, ActivationIdentifier, Error, NativeObject, Object, Value};
 use crate::context::UpdateContext;
+use crate::debug_ui::Message;
 use crate::debug_ui::display_object::open_display_object_button;
 use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};
-use crate::debug_ui::Message;
 use crate::string::AvmString;
 use egui::{Grid, Id, TextBuffer, TextEdit, Ui, Window};
 use gc_arena::Mutation;

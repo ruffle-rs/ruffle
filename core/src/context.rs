@@ -1,12 +1,13 @@
 //! Contexts and helper types passed between functions.
 
+use crate::PlayerMode;
+use crate::avm_rng::AvmRng;
 use crate::avm1::Attribute;
 use crate::avm1::Avm1;
 use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
-use crate::avm2::api_version::ApiVersion;
 use crate::avm2::Activation as Avm2Activation;
+use crate::avm2::api_version::ApiVersion;
 use crate::avm2::{Avm2, LoaderInfoObject, SharedObjectObject, SoundChannelObject};
-use crate::avm_rng::AvmRng;
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     log::LogBackend,
@@ -38,7 +39,6 @@ use crate::system_properties::SystemProperties;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
-use crate::PlayerMode;
 use async_channel::Sender;
 use core::fmt;
 use gc_arena::{Collect, Mutation};

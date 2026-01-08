@@ -1,6 +1,6 @@
 use crate::avm1::{
-    globals::xml_socket::XmlSocket, Activation as Avm1Activation, ActivationIdentifier,
-    ExecutionReason, Object as Avm1Object,
+    Activation as Avm1Activation, ActivationIdentifier, ExecutionReason, Object as Avm1Object,
+    globals::xml_socket::XmlSocket,
 };
 use crate::avm2::object::{EventObject, SocketObject};
 use crate::avm2::{Activation as Avm2Activation, Avm2};
@@ -8,11 +8,11 @@ use crate::backend::navigator::NavigatorBackend;
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 
-use async_channel::{unbounded, Receiver, Sender as AsyncSender, Sender};
-use gc_arena::collect::Trace;
+use async_channel::{Receiver, Sender as AsyncSender, Sender, unbounded};
 use gc_arena::Collect;
+use gc_arena::collect::Trace;
 use ruffle_macros::istr;
-use slotmap::{new_key_type, SlotMap};
+use slotmap::{SlotMap, new_key_type};
 use std::{
     cell::{Cell, RefCell},
     time::Duration,

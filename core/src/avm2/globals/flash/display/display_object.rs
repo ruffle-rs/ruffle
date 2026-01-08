@@ -1,5 +1,6 @@
 //! `flash.display.DisplayObject` builtin/prototype
 
+use crate::avm2::StageObject;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_2005, make_error_2007, make_error_2008, make_error_2078};
 use crate::avm2::filters::FilterAvm2Ext;
@@ -12,7 +13,6 @@ use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
 use crate::avm2::object::{Object, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::StageObject;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
 use crate::context::UpdateContext;

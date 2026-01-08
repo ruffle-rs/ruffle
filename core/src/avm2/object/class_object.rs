@@ -1,11 +1,15 @@
 //! Class object impl
 
+use crate::avm2::Error;
+use crate::avm2::Multiname;
+use crate::avm2::QName;
+use crate::avm2::TranslationUnit;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{AllocatorFn, Class, CustomConstructorFn};
 use crate::avm2::error::{
     self, make_error_1070, make_error_1107, make_error_1112, make_error_1127, make_error_1128,
 };
-use crate::avm2::function::{exec, FunctionArgs};
+use crate::avm2::function::{FunctionArgs, exec};
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::ScriptObjectData;
@@ -14,17 +18,13 @@ use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::QName;
-use crate::avm2::TranslationUnit;
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
+    lock::{Lock, RefLock},
 };
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;

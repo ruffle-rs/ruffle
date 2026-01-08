@@ -1,5 +1,6 @@
 //! Function object impl
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_1064;
 use crate::avm2::function::{BoundMethod, FunctionArgs};
@@ -8,12 +9,11 @@ use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 

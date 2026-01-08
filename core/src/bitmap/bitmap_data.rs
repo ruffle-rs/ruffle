@@ -428,7 +428,7 @@ mod wrapper {
     use ruffle_render::commands::CommandHandler;
     use std::cell::Ref;
 
-    use super::{copy_pixels_to_bitmapdata, BitmapRawData, DirtyState};
+    use super::{BitmapRawData, DirtyState, copy_pixels_to_bitmapdata};
 
     /// A wrapper type that ensures that we always wait for a pending
     /// GPU -> CPU sync to complete (using `sync_handle`) before accessing

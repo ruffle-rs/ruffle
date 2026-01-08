@@ -11,7 +11,7 @@ use crate::string::AvmString;
 use core::fmt;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::RefCell;

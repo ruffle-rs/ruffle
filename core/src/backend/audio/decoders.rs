@@ -11,7 +11,7 @@ mod pcm;
 
 pub use adpcm::AdpcmDecoder;
 #[cfg(feature = "mp3")]
-pub use mp3::{mp3_metadata, Mp3Decoder};
+pub use mp3::{Mp3Decoder, mp3_metadata};
 #[cfg(feature = "nellymoser")]
 pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;

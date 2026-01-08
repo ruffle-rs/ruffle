@@ -592,38 +592,48 @@ mod tests {
         let mut input = InputManager::new(HashMap::new());
 
         // Spurious KeyUp for 'a' - no preceding KeyDown
-        assert!(input
-            .process_event(PlayerEvent::KeyUp {
-                key: key('a', PhysicalKey::KeyA)
-            })
-            .is_none());
+        assert!(
+            input
+                .process_event(PlayerEvent::KeyUp {
+                    key: key('a', PhysicalKey::KeyA)
+                })
+                .is_none()
+        );
 
         // Normal KeyDown 'w'
-        assert!(input
-            .process_event(PlayerEvent::KeyDown {
-                key: key('w', PhysicalKey::KeyW)
-            })
-            .is_some());
+        assert!(
+            input
+                .process_event(PlayerEvent::KeyDown {
+                    key: key('w', PhysicalKey::KeyW)
+                })
+                .is_some()
+        );
 
         // Spurious KeyUp for 'b' - different key, never pressed
-        assert!(input
-            .process_event(PlayerEvent::KeyUp {
-                key: key('b', PhysicalKey::KeyB)
-            })
-            .is_none());
+        assert!(
+            input
+                .process_event(PlayerEvent::KeyUp {
+                    key: key('b', PhysicalKey::KeyB)
+                })
+                .is_none()
+        );
 
         // Valid KeyUp for 'w'
-        assert!(input
-            .process_event(PlayerEvent::KeyUp {
-                key: key('w', PhysicalKey::KeyW)
-            })
-            .is_some());
+        assert!(
+            input
+                .process_event(PlayerEvent::KeyUp {
+                    key: key('w', PhysicalKey::KeyW)
+                })
+                .is_some()
+        );
 
         // Duplicate KeyUp for 'w' - already released
-        assert!(input
-            .process_event(PlayerEvent::KeyUp {
-                key: key('w', PhysicalKey::KeyW)
-            })
-            .is_none());
+        assert!(
+            input
+                .process_event(PlayerEvent::KeyUp {
+                    key: key('w', PhysicalKey::KeyW)
+                })
+                .is_none()
+        );
     }
 }

@@ -7,7 +7,7 @@ use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{ArrayBuilder, NativeObject, Object, Value};
-use crate::string::{utils as string_utils, AvmString, WString};
+use crate::string::{AvmString, WString, utils as string_utils};
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "valueOf" => method(to_string_value_of; DONT_ENUM | DONT_DELETE);
@@ -388,11 +388,7 @@ fn to_upper_case<'gc>(
 /// Normalizes an  index parameter used in `String` functions such as `substring`.
 /// The returned index will be within the range of `[0, len]`.
 fn string_index(i: i32, len: usize) -> usize {
-    if i < 0 {
-        0
-    } else {
-        (i as usize).min(len)
-    }
+    if i < 0 { 0 } else { (i as usize).min(len) }
 }
 
 /// Normalizes an wrapping index parameter used in `String` functions such as `slice`.

@@ -2,11 +2,11 @@
 
 use std::cell::Cell;
 
+use crate::avm_warn;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
-use crate::avm1::xml::{XmlNode, ELEMENT_NODE, TEXT_NODE};
+use crate::avm1::xml::{ELEMENT_NODE, TEXT_NODE, XmlNode};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
-use crate::avm_warn;
 use crate::backend::navigator::Request;
 use crate::string::{AvmString, StringContext, WStr, WString};
 use gc_arena::barrier::unlock;
@@ -14,7 +14,7 @@ use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc};
 use quick_xml::errors::IllFormedError;
 use quick_xml::events::attributes::AttrError;
-use quick_xml::{events::Event, Reader};
+use quick_xml::{Reader, events::Event};
 use ruffle_common::xml::custom_unescape;
 use ruffle_macros::istr;
 

@@ -1,10 +1,10 @@
 //! `Class` builtin/prototype
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_1115;
 use crate::avm2::object::{ClassObject, Object};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 
 pub fn class_allocator<'gc>(
     _class: ClassObject<'gc>,

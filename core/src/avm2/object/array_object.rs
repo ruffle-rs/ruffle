@@ -1,17 +1,17 @@
 //! Array-structured objects
 
+use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::context::UpdateContext;
 use crate::string::{AvmString, WStr};
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefMut};
 

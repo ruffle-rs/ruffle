@@ -1,8 +1,8 @@
 //! `flash.events.Event` builtin/prototype
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 
 pub use crate::avm2::object::event_allocator;
 use crate::avm2::parameters::ParametersExt;

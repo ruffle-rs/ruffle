@@ -1,15 +1,15 @@
 //! AVM2 methods
 
+use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::error::{make_error_1014, make_error_1027, make_error_1107, Error, Error1014Type};
+use crate::avm2::error::{Error, Error1014Type, make_error_1014, make_error_1027, make_error_1107};
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::value::{abc_default_value, Value};
+use crate::avm2::value::{Value, abc_default_value};
 use crate::avm2::verify::VerifiedMethodInfo;
-use crate::avm2::Multiname;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
-use gc_arena::barrier::{unlock, Write};
+use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::OnceLock;
 use gc_arena::{Collect, Gc};
 use std::borrow::Cow;

@@ -1,13 +1,13 @@
 //! Application Domain objects for scripts
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::domain::Domain;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
-use crate::avm2::Error;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
 
 /// A class instance allocator that allocates AppDomain objects.

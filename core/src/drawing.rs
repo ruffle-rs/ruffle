@@ -3,7 +3,7 @@ use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::shape_utils::{
-    cubic_curve_bounds, quadratic_curve_bounds, DistilledShape, DrawCommand, DrawPath, FillRule,
+    DistilledShape, DrawCommand, DrawPath, FillRule, cubic_curve_bounds, quadratic_curve_bounds,
 };
 use std::cell::OnceCell;
 use swf::{FillStyle, LineStyle, Point, Rectangle, Twips};

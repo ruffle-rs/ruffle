@@ -1,9 +1,9 @@
 //! Object representation for `ShaderData`
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
-use crate::avm2::Error;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_common::utils::HasPrefixField;

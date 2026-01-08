@@ -1,7 +1,7 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{ExecutionName, ExecutionReason, FunctionObject};
-use crate::avm1::object::{stage_object, NativeObject};
+use crate::avm1::object::{NativeObject, stage_object};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{ObjectPtr, Value};

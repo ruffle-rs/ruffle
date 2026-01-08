@@ -15,7 +15,7 @@ use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
 use gc_arena::Collect;
-use std::collections::{binary_heap::PeekMut, BinaryHeap};
+use std::collections::{BinaryHeap, binary_heap::PeekMut};
 
 /// Manages the collection of timers.
 #[derive(Collect)]
