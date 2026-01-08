@@ -1,5 +1,9 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
+// Temporarily allow this to ease migration to Rust 2024 edition.
+// TODO: Remove this once all instances are fixed.
+#![allow(clippy::collapsible_if)]
+
 use crate::PlayerRuntime;
 use crate::avm2::bytearray::ObjectEncoding;
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
