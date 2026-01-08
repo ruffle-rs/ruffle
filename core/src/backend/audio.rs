@@ -392,10 +392,10 @@ impl<'gc> AudioManager<'gc> {
                 // Sounds still playing; update position for AVM1 sounds.
                 // AVM2 sounds do not update position and instead grab the position on demand.
 
-                if let Some(object) = sound.avm1_object {
-                    if let NativeObject::Sound(sound) = object.native() {
-                        sound.set_position(pos.round() as u32);
-                    }
+                if let Some(object) = sound.avm1_object
+                    && let NativeObject::Sound(sound) = object.native()
+                {
+                    sound.set_position(pos.round() as u32);
                 }
                 true
             } else {

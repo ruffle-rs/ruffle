@@ -1,7 +1,3 @@
-// Temporarily allow this to ease migration to Rust 2024 edition.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::collapsible_if)]
-
 use crate::context::RenderContext;
 use crate::drawing::Drawing;
 use crate::html::TextSpan;
@@ -329,16 +325,15 @@ impl FontFace {
         let face = ttf_parser::Face::parse(&self.data, self.font_index)
             .expect("Font was already checked to be valid");
 
-        if let (Some(left_glyph), Some(right_glyph)) =
-            (face.glyph_index(left), face.glyph_index(right))
+        if let Some(kern) = face.tables().kern
+            && let (Some(left_glyph), Some(right_glyph)) =
+                (face.glyph_index(left), face.glyph_index(right))
         {
-            if let Some(kern) = face.tables().kern {
-                for subtable in kern.subtables {
-                    if subtable.horizontal {
-                        if let Some(value) = subtable.glyphs_kerning(left_glyph, right_glyph) {
-                            return Twips::new(value as i32);
-                        }
-                    }
+            for subtable in kern.subtables {
+                if subtable.horizontal
+                    && let Some(value) = subtable.glyphs_kerning(left_glyph, right_glyph)
+                {
+                    return Twips::new(value as i32);
                 }
             }
         }
@@ -1032,13 +1027,13 @@ enum SwfGlyphOrShape {
 
 impl SwfGlyphOrShape {
     fn shape(&mut self) -> (&mut swf::Shape, &mut Option<ShapeHandle>) {
-        if let Self::Glyph(_) = self {
-            if let Self::Glyph(glyph) = core::mem::replace(self, Self::Poisoned) {
-                *self = Self::Shape {
-                    shape: ruffle_render::shape_utils::swf_glyph_to_shape(glyph),
-                    handle: None,
-                };
-            }
+        if let Self::Glyph(_) = self
+            && let Self::Glyph(glyph) = core::mem::replace(self, Self::Poisoned)
+        {
+            *self = Self::Shape {
+                shape: ruffle_render::shape_utils::swf_glyph_to_shape(glyph),
+                handle: None,
+            };
         }
 
         match self {

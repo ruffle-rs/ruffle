@@ -1,9 +1,5 @@
 //! Special handling for AVM2 orphan objects
 
-// Temporarily allow this to ease migration to Rust 2024 edition.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::collapsible_if)]
-
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use gc_arena::{Collect, Mutation};
@@ -112,10 +108,5 @@ fn valid_orphan<'gc>(
     dobj: DisplayObjectWeak<'gc>,
     mc: &Mutation<'gc>,
 ) -> Option<DisplayObject<'gc>> {
-    if let Some(dobj) = dobj.upgrade(mc) {
-        if dobj.parent().is_none() {
-            return Some(dobj);
-        }
-    }
-    None
+    dobj.upgrade(mc).filter(|dobj| dobj.parent().is_none())
 }

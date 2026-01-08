@@ -1,7 +1,3 @@
-// Temporarily allow this to ease migration to Rust 2024 edition.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::collapsible_if)]
-
 use enumset::EnumSet;
 use std::borrow::Cow;
 use url::ParseError as UrlParseError;
@@ -158,20 +154,17 @@ impl CompatibilityRules {
                     continue;
                 }
 
-                if let Some(host) = url.host_str() {
-                    if domain_matches(&rule.host, host) {
-                        tracing::info!(
-                            "Rewriting swf url due to compatibility ruleset '{}'",
-                            rule_set.name
-                        );
-                        if let Err(e) = url.set_host(Some(&rule.replacement)) {
-                            tracing::warn!(
-                                "Couldn't rewrite swf host to {}: {e}",
-                                rule.replacement
-                            );
-                        } else {
-                            rewritten = true;
-                        }
+                if let Some(host) = url.host_str()
+                    && domain_matches(&rule.host, host)
+                {
+                    tracing::info!(
+                        "Rewriting swf url due to compatibility ruleset '{}'",
+                        rule_set.name
+                    );
+                    if let Err(e) = url.set_host(Some(&rule.replacement)) {
+                        tracing::warn!("Couldn't rewrite swf host to {}: {e}", rule.replacement);
+                    } else {
+                        rewritten = true;
                     }
                 }
             }
@@ -182,18 +175,18 @@ impl CompatibilityRules {
                         continue;
                     }
 
-                    if let Some(host) = url.host_str() {
-                        if domain_matches(&rule.host, host) {
-                            tracing::info!(
-                                "Blocking url due to compatibility ruleset '{}'",
-                                rule_set.name
-                            );
+                    if let Some(host) = url.host_str()
+                        && domain_matches(&rule.host, host)
+                    {
+                        tracing::info!(
+                            "Blocking url due to compatibility ruleset '{}'",
+                            rule_set.name
+                        );
 
-                            return Err(ErrorResponse {
-                                url: original_url.to_string(),
-                                error: crate::loader::Error::BlockedHost(rule.host.clone()),
-                            });
-                        }
+                        return Err(ErrorResponse {
+                            url: original_url.to_string(),
+                            error: crate::loader::Error::BlockedHost(rule.host.clone()),
+                        });
                     }
                 }
             }

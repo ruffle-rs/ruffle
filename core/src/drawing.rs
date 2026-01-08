@@ -1,7 +1,3 @@
-// Temporarily allow this to ease migration to Rust 2024 edition.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::collapsible_if)]
-
 use crate::context::RenderContext;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, BitmapSize, BitmapSource};
@@ -360,10 +356,10 @@ impl Drawing {
         }
 
         // The pending fill will auto-close.
-        if let Some(fill) = &self.current_fill {
-            if shape_utils::draw_command_fill_hit_test(&fill.commands, fill.rule, point) {
-                return true;
-            }
+        if let Some(fill) = &self.current_fill
+            && shape_utils::draw_command_fill_hit_test(&fill.commands, fill.rule, point)
+        {
+            return true;
         }
 
         for line in &self.pending_lines {
@@ -409,14 +405,14 @@ impl Drawing {
 
     // Ensures that the path is closed for a pending fill.
     pub fn close_path(&mut self) {
-        if let Some(fill) = &mut self.current_fill {
-            if self.cursor != self.fill_start {
-                fill.commands.push(DrawCommand::LineTo(self.fill_start));
-                if let Some(line) = &mut self.current_line {
-                    line.commands.push(DrawCommand::LineTo(self.fill_start));
-                }
-                self.mark_dirty();
+        if let Some(fill) = &mut self.current_fill
+            && self.cursor != self.fill_start
+        {
+            fill.commands.push(DrawCommand::LineTo(self.fill_start));
+            if let Some(line) = &mut self.current_line {
+                line.commands.push(DrawCommand::LineTo(self.fill_start));
             }
+            self.mark_dirty();
         }
     }
 }
