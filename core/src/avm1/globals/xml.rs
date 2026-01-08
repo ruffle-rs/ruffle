@@ -140,91 +140,178 @@ impl<'gc> Xml<'gc> {
     ) -> Result<(), quick_xml::Error> {
         let data_utf8 = data.to_utf8_lossy();
         let mut parser = Reader::from_str(&data_utf8);
+        // Flash is lenient with lone ampersands in text content
+        parser.config_mut().allow_dangling_amp = true;
         let mut open_tags = vec![self.root()];
+        // Buffer for accumulating text content across Text, CData, and GeneralRef events.
+        // quick-xml emits these as separate events, but Flash joins them into a single text node.
+        let mut text_buffer: Vec<u8> = Vec::new();
 
         self.0.status.set(XmlStatus::NoError);
 
         loop {
-            let event = parser.read_event().map_err(|error| {
-                self.0.status.set(match error {
-                    quick_xml::Error::Syntax(_)
-                    | quick_xml::Error::InvalidAttr(AttrError::ExpectedEq(_))
-                    | quick_xml::Error::InvalidAttr(AttrError::Duplicated(_, _)) => {
-                        XmlStatus::ElementMalformed
+            let event = match parser.read_event() {
+                Ok(event) => event,
+                Err(error) => {
+                    // Flush any buffered text before returning on error
+                    if !text_buffer.is_empty() {
+                        Self::handle_text_cdata(&text_buffer, ignore_white, &open_tags, activation);
+                        text_buffer.clear();
                     }
-                    quick_xml::Error::IllFormed(
-                        IllFormedError::MismatchedEndTag { .. }
-                        | IllFormedError::UnmatchedEndTag { .. },
-                    ) => XmlStatus::MismatchedEnd,
-                    quick_xml::Error::IllFormed(IllFormedError::MissingDeclVersion(_)) => {
-                        XmlStatus::DeclNotTerminated
-                    }
-                    quick_xml::Error::InvalidAttr(AttrError::UnquotedValue(_)) => {
-                        XmlStatus::AttributeNotTerminated
-                    }
-                    _ => XmlStatus::OutOfMemory,
-                    // Not accounted for:
-                    // quick_xml::Error::UnexpectedToken(_)
-                    // quick_xml::Error::UnexpectedBang
-                    // quick_xml::Error::TextNotFound
-                    // quick_xml::Error::EscapeError(_)
-                });
-                error
-            })?;
+                    self.0.status.set(match error {
+                        quick_xml::Error::Syntax(_)
+                        | quick_xml::Error::InvalidAttr(AttrError::ExpectedEq(_))
+                        | quick_xml::Error::InvalidAttr(AttrError::Duplicated(_, _)) => {
+                            XmlStatus::ElementMalformed
+                        }
+                        quick_xml::Error::IllFormed(
+                            IllFormedError::MismatchedEndTag { .. }
+                            | IllFormedError::UnmatchedEndTag { .. },
+                        ) => XmlStatus::MismatchedEnd,
+                        quick_xml::Error::IllFormed(IllFormedError::MissingDeclVersion(_)) => {
+                            XmlStatus::DeclNotTerminated
+                        }
+                        quick_xml::Error::InvalidAttr(AttrError::UnquotedValue(_)) => {
+                            XmlStatus::AttributeNotTerminated
+                        }
+                        _ => XmlStatus::OutOfMemory,
+                        // Not accounted for:
+                        // quick_xml::Error::UnexpectedToken(_)
+                        // quick_xml::Error::UnexpectedBang
+                        // quick_xml::Error::TextNotFound
+                        // quick_xml::Error::EscapeError(_)
+                    });
+                    return Err(error);
+                }
+            };
 
             match event {
-                Event::Start(bs) => {
-                    let child =
-                        XmlNode::from_start_event(activation, bs, self.id_map(), parser.decoder())?;
-                    open_tags
-                        .last()
-                        .unwrap()
-                        .append_child(activation.gc(), child);
-                    open_tags.push(child);
-                }
-                Event::Empty(bs) => {
-                    let child =
-                        XmlNode::from_start_event(activation, bs, self.id_map(), parser.decoder())?;
-                    open_tags
-                        .last()
-                        .unwrap()
-                        .append_child(activation.gc(), child);
-                }
-                Event::End(_) => {
-                    open_tags.pop();
-                }
+                // Text and GeneralRef events are joined into a single text node,
+                // since GeneralRef is now emitted separately for entity references.
                 Event::Text(bt) => {
-                    Self::handle_text_cdata(
-                        custom_unescape(&bt.into_inner(), parser.decoder())?.as_bytes(),
-                        ignore_white,
-                        &open_tags,
-                        activation,
-                    );
+                    let unescaped = custom_unescape(&bt.into_inner(), parser.decoder())?;
+                    text_buffer.extend(unescaped.as_bytes());
                 }
-                Event::CData(bt) => {
-                    // This is already unescaped
-                    Self::handle_text_cdata(&bt.into_inner(), ignore_white, &open_tags, activation);
+                Event::GeneralRef(br) => {
+                    // Resolve character references: numeric (&#229;) and named (&amp;)
+                    match br.resolve_char_ref() {
+                        Ok(Some(ch)) => {
+                            // Numeric ref resolved to a character
+                            let mut buf = [0u8; 4];
+                            text_buffer.extend(ch.encode_utf8(&mut buf).as_bytes());
+                        }
+                        Ok(None) | Err(_) => {
+                            // Named entity ref - try to unescape standard XML entities
+                            let inner = br.into_inner();
+                            let mut entity = Vec::with_capacity(inner.len() + 2);
+                            entity.push(b'&');
+                            entity.extend_from_slice(inner.as_ref());
+                            entity.push(b';');
+                            match quick_xml::escape::unescape(
+                                std::str::from_utf8(&entity).unwrap_or_default(),
+                            ) {
+                                Ok(unescaped) => text_buffer.extend(unescaped.as_bytes()),
+                                Err(_) => text_buffer.extend(&entity),
+                            }
+                        }
+                    }
                 }
-                Event::Decl(bd) => {
-                    let mut xml_decl = WString::from_buf(b"<?".to_vec());
-                    xml_decl.push_str(WStr::from_units(&*bd));
-                    xml_decl.push_str(WStr::from_units(b"?>"));
-                    let xml_decl = Some(AvmString::new(activation.gc(), xml_decl));
-                    unlock!(Gc::write(activation.gc(), self.0), XmlData, xml_decl).set(xml_decl);
+
+                // All other events: flush text buffer first, then handle
+                _ => {
+                    if !text_buffer.is_empty() {
+                        Self::handle_text_cdata(&text_buffer, ignore_white, &open_tags, activation);
+                        text_buffer.clear();
+                    }
+
+                    match event {
+                        Event::Start(bs) => {
+                            let child = XmlNode::from_start_event(
+                                activation,
+                                bs,
+                                self.id_map(),
+                                parser.decoder(),
+                            )?;
+                            open_tags
+                                .last()
+                                .unwrap()
+                                .append_child(activation.gc(), child);
+                            open_tags.push(child);
+                        }
+                        Event::Empty(bs) => {
+                            let child = XmlNode::from_start_event(
+                                activation,
+                                bs,
+                                self.id_map(),
+                                parser.decoder(),
+                            )?;
+                            open_tags
+                                .last()
+                                .unwrap()
+                                .append_child(activation.gc(), child);
+                        }
+                        Event::End(_) => {
+                            open_tags.pop();
+                        }
+                        Event::CData(bt) => {
+                            // CDATA is kept as a separate text node (not joined with Text)
+                            Self::handle_text_cdata(
+                                &bt.into_inner(),
+                                ignore_white,
+                                &open_tags,
+                                activation,
+                            );
+                        }
+                        Event::Decl(bd) => {
+                            let xml_decl: WString = b"<?"
+                                .iter()
+                                .chain(bd.iter())
+                                .chain(b"?>")
+                                .map(|&b| b as u16)
+                                .collect();
+                            unlock!(Gc::write(activation.gc(), self.0), XmlData, xml_decl)
+                                .set(Some(AvmString::new(activation.gc(), xml_decl)));
+                        }
+                        Event::PI(bp) => {
+                            // Per XML spec (https://www.w3.org/TR/xml11/#sec-pi), PITarget names
+                            // matching [Xx][Mm][Ll] are reserved and not valid PI targets.
+                            // quick-xml only recognizes lowercase `<?xml` as an XML declaration,
+                            // treating `<?XML` or `<?XmL` as processing instructions.
+                            // Flash is lenient and treats any case variant as an XML declaration,
+                            // so we check for reserved targets and handle them like declarations.
+                            if matches!(bp.target(), [b'X' | b'x', b'M' | b'm', b'L' | b'l']) {
+                                let xml_decl: WString = b"<?"
+                                    .iter()
+                                    .chain(bp.iter())
+                                    .chain(b"?>")
+                                    .map(|&b| b as u16)
+                                    .collect();
+                                unlock!(Gc::write(activation.gc(), self.0), XmlData, xml_decl)
+                                    .set(Some(AvmString::new(activation.gc(), xml_decl)));
+                            }
+                            // Other PIs are ignored by Flash in avm1
+                        }
+                        Event::DocType(bt) => {
+                            // TODO: `quick-xml` is case-insensitive for DOCTYPE declarations,
+                            // but it doesn't expose the whole tag, only the inner portion of it.
+                            // Flash is also case-insensitive for DOCTYPE declarations. However,
+                            // the `.docTypeDecl` property preserves the original case.
+                            let mut doctype = WString::from_buf(b"<!DOCTYPE ".to_vec());
+                            doctype.push_str(WStr::from_units(
+                                &*bt.escape_ascii().collect::<Vec<_>>(),
+                            ));
+                            doctype.push_byte(b'>');
+                            let doctype = Some(AvmString::new(activation.gc(), doctype));
+                            unlock!(Gc::write(activation.gc(), self.0), XmlData, doctype)
+                                .set(doctype);
+                        }
+                        Event::Eof => break,
+                        // Flash ignores XML comments in avm1
+                        Event::Comment(_) => {}
+                        // Text and GeneralRef are handled in the outer match
+                        Event::Text(_) | Event::GeneralRef(_) => unreachable!(),
+                    }
                 }
-                Event::DocType(bt) => {
-                    // TODO: `quick-xml` is case-insensitive for DOCTYPE declarations,
-                    // but it doesn't expose the whole tag, only the inner portion of it.
-                    // Flash is also case-insensitive for DOCTYPE declarations. However,
-                    // the `.docTypeDecl` property preserves the original case.
-                    let mut doctype = WString::from_buf(b"<!DOCTYPE ".to_vec());
-                    doctype.push_str(WStr::from_units(&*bt.escape_ascii().collect::<Vec<_>>()));
-                    doctype.push_byte(b'>');
-                    let doctype = Some(AvmString::new(activation.gc(), doctype));
-                    unlock!(Gc::write(activation.gc(), self.0), XmlData, doctype).set(doctype);
-                }
-                Event::Eof => break,
-                _ => {}
             }
         }
 
