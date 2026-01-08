@@ -1,0 +1,24 @@
+false = (x=2, y=2, w=8, h=10),(x=10, y=2, w=8, h=10)
+false = width=16
+false = 16
+false = (x=2, y=2, w=8, h=10),(x=10, y=2, w=8, h=10)
+false = width=16
+false = 16
+false = (x=2, y=2, w=8, h=10),(x=10, y=2, w=8, h=10)
+false = width=16
+false = 16
+false = (x=2, y=2, w=8, h=10),(x=10, y=2, w=8, h=10)
+false = width=16
+false = 16
+true = (x=2, y=2, w=8, h=10),(x=10, y=2, w=8, h=10)
+true = width=16
+true = 16
+true = (x=2, y=2, w=4, h=10),(x=6, y=2, w=4, h=10)
+true = width=8
+true = 8
+true = (x=2, y=2, w=16, h=10),(x=18, y=2, w=16, h=10)
+true = width=32
+true = 32
+true = (x=2, y=2, w=8, h=10),(x=10, y=2, w=8, h=10)
+true = width=16
+true = 16
