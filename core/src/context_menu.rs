@@ -4,10 +4,6 @@
 //! are stored aside when the menu is open. This way the context menu
 //! items work even if the movie changed `object.menu` in the meantime.
 
-// Temporarily allow this to ease migration to Rust 2024 edition.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::collapsible_if)]
-
 use crate::avm1;
 use crate::avm2;
 use crate::context::UpdateContext;
@@ -63,11 +59,11 @@ impl<'gc> ContextMenuState<'gc> {
 
         // When a text field is focused and the mouse is hovering it,
         // show the copy/paste menu.
-        if let Some(text) = context.focus_tracker.get_as_edit_text() {
-            if InteractiveObject::option_ptr_eq(context.mouse_data.hovered, Some(text.into())) {
-                self.build_text_items(text, context);
-                return;
-            }
+        if let Some(text) = context.focus_tracker.get_as_edit_text()
+            && InteractiveObject::option_ptr_eq(context.mouse_data.hovered, Some(text.into()))
+        {
+            self.build_text_items(text, context);
+            return;
         }
 
         let Some(root_mc) = stage.root_clip().and_then(|c| c.as_movie_clip()) else {

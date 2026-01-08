@@ -1,9 +1,5 @@
 //! Contexts and helper types passed between functions.
 
-// Temporarily allow this to ease migration to Rust 2024 edition.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::collapsible_if)]
-
 use crate::PlayerMode;
 use crate::avm_rng::AvmRng;
 use crate::avm1::Attribute;
@@ -443,10 +439,10 @@ impl<'gc> UpdateContext<'gc> {
     }
 
     pub fn send_notification(&self, notification: PlayerNotification) {
-        if let Some(notification_sender) = self.notification_sender {
-            if let Err(e) = notification_sender.try_send(notification) {
-                tracing::error!("Failed to send player notification: {e}");
-            }
+        if let Some(notification_sender) = self.notification_sender
+            && let Err(e) = notification_sender.try_send(notification)
+        {
+            tracing::error!("Failed to send player notification: {e}");
         }
     }
 }
