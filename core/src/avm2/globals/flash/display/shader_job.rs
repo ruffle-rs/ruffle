@@ -15,12 +15,44 @@ use crate::avm2_stub_method;
 use ruffle_render::backend::{PixelBenderOutput, PixelBenderTarget};
 use ruffle_render::bitmap::PixelRegion;
 use ruffle_render::pixel_bender::{
-    OUT_COORD_NAME, PixelBenderParam, PixelBenderParamQualifier, PixelBenderShaderHandle,
-    PixelBenderType,
+    OUT_COORD_NAME, PixelBenderMetadata, PixelBenderParam, PixelBenderParamQualifier,
+    PixelBenderShaderHandle, PixelBenderType, PixelBenderTypeOpcode,
 };
 use ruffle_render::pixel_bender_support::{
     FloatPixelData, ImageInputTexture, PixelBenderShaderArgument,
 };
+
+/// Get the default value for a shader parameter from its metadata.
+/// If no default is found, returns a empty value of the appropriate type.
+fn get_default_shader_param_value(
+    metadata: &[PixelBenderMetadata],
+    param_type: PixelBenderTypeOpcode,
+) -> PixelBenderType {
+    for meta in metadata {
+        if meta.key == "defaultValue" {
+            return meta.value.clone();
+        }
+    }
+
+    match param_type {
+        PixelBenderTypeOpcode::TFloat => PixelBenderType::TFloat(0.0),
+        PixelBenderTypeOpcode::TFloat2 => PixelBenderType::TFloat2(0.0, 0.0),
+        PixelBenderTypeOpcode::TFloat3 => PixelBenderType::TFloat3(0.0, 0.0, 0.0),
+        PixelBenderTypeOpcode::TFloat4 => PixelBenderType::TFloat4(0.0, 0.0, 0.0, 0.0),
+        PixelBenderTypeOpcode::TFloat2x2 => PixelBenderType::TFloat2x2([0.0; 4]),
+        PixelBenderTypeOpcode::TFloat3x3 => PixelBenderType::TFloat3x3([0.0; 9]),
+        PixelBenderTypeOpcode::TFloat4x4 => PixelBenderType::TFloat4x4([0.0; 16]),
+        PixelBenderTypeOpcode::TInt => PixelBenderType::TInt(0),
+        PixelBenderTypeOpcode::TInt2 => PixelBenderType::TInt2(0, 0),
+        PixelBenderTypeOpcode::TInt3 => PixelBenderType::TInt3(0, 0, 0),
+        PixelBenderTypeOpcode::TInt4 => PixelBenderType::TInt4(0, 0, 0, 0),
+        PixelBenderTypeOpcode::TString => PixelBenderType::TString(String::new()),
+        PixelBenderTypeOpcode::TBool => PixelBenderType::TBool(0),
+        PixelBenderTypeOpcode::TBool2 => PixelBenderType::TBool2(0, 0),
+        PixelBenderTypeOpcode::TBool3 => PixelBenderType::TBool3(0, 0, 0),
+        PixelBenderTypeOpcode::TBool4 => PixelBenderType::TBool4(0, 0, 0, 0),
+    }
+}
 
 pub fn get_shader_args<'gc>(
     shader_obj: Object<'gc>,
@@ -63,7 +95,10 @@ pub fn get_shader_args<'gc>(
         .map(|(index, param)| {
             match param {
                 PixelBenderParam::Normal {
-                    param_type, name, ..
+                    param_type,
+                    name,
+                    metadata,
+                    ..
                 } => {
                     if name == OUT_COORD_NAME {
                         // Pass in a dummy value - this will be ignored in favor of the actual pixel coordinate
@@ -76,22 +111,21 @@ pub fn get_shader_args<'gc>(
                         .get_dynamic_property(AvmString::new_utf8(activation.gc(), name))
                         .expect("Missing normal property");
 
-                    let shader_param = shader_param
-                        .as_object()
-                        .expect("Shader property is not an object");
-
-                    if !shader_param.is_of_type(
-                        activation
-                            .avm2()
-                            .classes()
-                            .shaderparameter
-                            .inner_class_definition(),
-                    ) {
-                        panic!("Expected shader parameter to be of class ShaderParameter");
-                    }
-
-                    let value = shader_param.get_slot(shader_parameter_slots::_VALUE);
-                    let pb_val = PixelBenderType::from_avm2_value(activation, value, param_type)?;
+                    let pb_val = if let Some(shader_param) = shader_param.as_object()
+                        && shader_param.is_of_type(
+                            activation
+                                .avm2()
+                                .classes()
+                                .shaderparameter
+                                .inner_class_definition(),
+                        ) {
+                        let value = shader_param.get_slot(shader_parameter_slots::_VALUE);
+                        PixelBenderType::from_avm2_value(activation, value, param_type)?
+                    } else {
+                        // The ShaderParameter was replaced with a primitive or non-ShaderParameter object.
+                        // Flash ignores this and uses the default value from shader metadata.
+                        get_default_shader_param_value(metadata, *param_type)
+                    };
 
                     Ok(PixelBenderShaderArgument::ValueInput {
                         index: index as u8,
