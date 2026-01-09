@@ -19,42 +19,42 @@ use ruffle_macros::istr;
 use ruffle_render::transform::Transform;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "height" => property(height);
     "width" => property(width);
-    "transparent" => property(get_transparent);
+    "height" => property(height);
     "rectangle" => property(get_rectangle);
+    "transparent" => property(get_transparent);
     "getPixel" => method(get_pixel);
-    "getPixel32" => method(get_pixel32);
     "setPixel" => method(set_pixel);
-    "setPixel32" => method(set_pixel32);
-    "copyChannel" => method(copy_channel);
     "fillRect" => method(fill_rect);
-    "clone" => method(clone);
-    "dispose" => method(dispose);
-    "floodFill" => method(flood_fill);
-    "noise" => method(noise);
-    "colorTransform" => method(color_transform);
-    "getColorBoundsRect" => method(get_color_bounds_rect);
-    "perlinNoise" => method(perlin_noise);
-    "applyFilter" => method(apply_filter);
-    "draw" => method(draw);
-    "hitTest" => method(hit_test);
-    "generateFilterRect" => method(generate_filter_rect);
     "copyPixels" => method(copy_pixels);
-    "merge" => method(merge);
-    "paletteMap" => method(palette_map);
-    "pixelDissolve" => method(pixel_dissolve);
+    "applyFilter" => method(apply_filter);
     "scroll" => method(scroll);
     "threshold" => method(threshold);
+    "draw" => method(draw);
+    "pixelDissolve" => method(pixel_dissolve);
+    "getPixel32" => method(get_pixel32);
+    "setPixel32" => method(set_pixel32);
+    "floodFill" => method(flood_fill);
+    "getColorBoundsRect" => method(get_color_bounds_rect);
+    "perlinNoise" => method(perlin_noise);
+    "colorTransform" => method(color_transform);
+    "hitTest" => method(hit_test);
+    "paletteMap" => method(palette_map);
+    "merge" => method(merge);
+    "noise" => method(noise);
+    "copyChannel" => method(copy_channel);
+    "clone" => method(clone);
+    "dispose" => method(dispose);
+    "generateFilterRect" => method(generate_filter_rect);
     "compare" => method(compare);
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    "loadBitmap" => method(load_bitmap);
     "RED_CHANNEL" => int(1);
     "GREEN_CHANNEL" => int(2);
     "BLUE_CHANNEL" => int(4);
     "ALPHA_CHANNEL" => int(8);
+    "loadBitmap" => method(load_bitmap);
 };
 
 pub fn create_class<'gc>(
