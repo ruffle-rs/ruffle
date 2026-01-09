@@ -8,12 +8,13 @@ use ruffle_core::Player;
 use ruffle_core::PlayerBuilder;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::movie_from_path;
-use ruffle_render_wgpu::backend::WgpuRenderBackend;
+use ruffle_render_wgpu::backend::{
+    WgpuRenderBackend, create_wgpu_instance, request_adapter_and_device,
+};
 use ruffle_render_wgpu::descriptors::Descriptors;
 
 use anyhow::Result;
 use anyhow::anyhow;
-use ruffle_render_wgpu::backend::request_adapter_and_device;
 use ruffle_render_wgpu::target::TextureTarget;
 use ruffle_render_wgpu::wgpu;
 
@@ -32,10 +33,7 @@ pub struct Exporter {
 
 impl Exporter {
     pub fn new(opt: &Opt) -> Result<Self> {
-        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-            backends: opt.graphics.into(),
-            ..Default::default()
-        });
+        let instance = create_wgpu_instance(opt.graphics.into(), wgpu::BackendOptions::default());
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             opt.graphics.into(),
             &instance,

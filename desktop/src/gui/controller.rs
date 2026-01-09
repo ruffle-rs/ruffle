@@ -11,7 +11,9 @@ use fontdb::{Database, Family, Query, Source};
 use ruffle_core::events::{ImeCursorArea, ImePurpose};
 use ruffle_core::{Player, PlayerEvent};
 use ruffle_frontend_utils::content::ContentDescriptor;
-use ruffle_render_wgpu::backend::{WgpuRenderBackend, request_adapter_and_device};
+use ruffle_render_wgpu::backend::{
+    WgpuRenderBackend, create_wgpu_instance, request_adapter_and_device,
+};
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::utils::{format_list, get_backend_names};
 use std::any::Any;
@@ -59,7 +61,7 @@ impl GuiController {
         initial_movie_url: Option<Url>,
         no_gui: bool,
     ) -> anyhow::Result<Self> {
-        let (instance, backend) = create_wgpu_instance(preferences.graphics_backends().into())?;
+        let (instance, backend) = select_wgpu_backend(preferences.graphics_backends().into())?;
         let surface = unsafe {
             instance.create_surface_unsafe(wgpu::SurfaceTargetUnsafe::from_window(window.as_ref())?)
         }?;
@@ -503,7 +505,7 @@ impl GuiController {
     }
 }
 
-fn create_wgpu_instance(
+fn select_wgpu_backend(
     preferred_backends: wgpu::Backends,
 ) -> anyhow::Result<(wgpu::Instance, wgpu::Backends)> {
     for backend in preferred_backends.iter() {
@@ -537,11 +539,7 @@ fn create_wgpu_instance(
 }
 
 fn try_wgpu_backend(backend: wgpu::Backends) -> Option<wgpu::Instance> {
-    let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
-        backends: backend,
-        flags: wgpu::InstanceFlags::default().with_env(),
-        ..Default::default()
-    });
+    let instance = create_wgpu_instance(backend, wgpu::BackendOptions::default());
     if instance.enumerate_adapters(backend).is_empty() {
         None
     } else {
