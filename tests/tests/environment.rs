@@ -27,7 +27,9 @@ impl Environment for NativeEnvironment {
 #[cfg(feature = "imgtests")]
 mod renderer {
     use image::RgbaImage;
-    use ruffle_render_wgpu::backend::{WgpuRenderBackend, request_adapter_and_device};
+    use ruffle_render_wgpu::backend::{
+        WgpuRenderBackend, create_wgpu_instance, request_adapter_and_device,
+    };
     use ruffle_render_wgpu::descriptors::Descriptors;
     use ruffle_render_wgpu::target::TextureTarget;
     use ruffle_render_wgpu::wgpu;
@@ -95,7 +97,7 @@ mod renderer {
     */
 
     fn create_wgpu_device() -> Option<(wgpu::Instance, wgpu::Adapter, wgpu::Device, wgpu::Queue)> {
-        let instance = wgpu::Instance::new(&Default::default());
+        let instance = create_wgpu_instance(wgpu::Backends::all(), wgpu::BackendOptions::default());
         futures::executor::block_on(request_adapter_and_device(
             wgpu::Backends::all(),
             &instance,
