@@ -1457,26 +1457,25 @@ impl<'gc> EditText<'gc> {
     pub fn propagate_text_binding(self, activation: &mut Avm1Activation<'_, 'gc>) {
         if !self.contains_flag(EditTextFlag::FIRING_VARIABLE_BINDING) {
             self.set_flag(EditTextFlag::FIRING_VARIABLE_BINDING, true);
-            if let Some(variable_path) = self.variable() {
-                if let Ok(Some((object, property))) =
+            if let Some(variable_path) = self.variable()
+                && let Ok(Some((object, property))) =
                     activation.resolve_variable_path(self.avm1_parent().unwrap(), &variable_path)
-                {
-                    // Note that this can call virtual setters, even though the opposite direction won't work
-                    // (virtual property changes do not affect the text field)
-                    activation.run_with_child_frame_for_display_object(
-                        "[Propagate Text Binding]",
-                        self.avm1_parent().unwrap(),
-                        self.movie().version(),
-                        |activation| {
-                            let property = AvmString::new(activation.gc(), property);
-                            let _ = object.set(
-                                property,
-                                AvmString::new(activation.gc(), self.html_text()).into(),
-                                activation,
-                            );
-                        },
-                    );
-                }
+            {
+                // Note that this can call virtual setters, even though the opposite direction won't work
+                // (virtual property changes do not affect the text field)
+                activation.run_with_child_frame_for_display_object(
+                    "[Propagate Text Binding]",
+                    self.avm1_parent().unwrap(),
+                    self.movie().version(),
+                    |activation| {
+                        let property = AvmString::new(activation.gc(), property);
+                        let _ = object.set(
+                            property,
+                            AvmString::new(activation.gc(), self.html_text()).into(),
+                            activation,
+                        );
+                    },
+                );
             }
             self.set_flag(EditTextFlag::FIRING_VARIABLE_BINDING, false);
         }
@@ -3020,15 +3019,15 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
                 self.set_selection(Some(TextSelection::for_position(self.text_length())));
             }
 
-            if let Some((url, target)) = link_to_open {
-                if !url.is_empty() {
-                    // TODO: This fires on mouse DOWN but it should be mouse UP...
-                    // but only if it went down in the same span.
-                    // Needs more advanced focus handling than we have at time of writing this comment.
-                    // TODO This also needs to fire only if the user clicked on the link,
-                    //   currently it fires when the cursor position resolves to one in the link.
-                    self.open_url(context, &url, &target);
-                }
+            if let Some((url, target)) = link_to_open
+                && !url.is_empty()
+            {
+                // TODO: This fires on mouse DOWN but it should be mouse UP...
+                // but only if it went down in the same span.
+                // Needs more advanced focus handling than we have at time of writing this comment.
+                // TODO This also needs to fire only if the user clicked on the link,
+                //   currently it fires when the cursor position resolves to one in the link.
+                self.open_url(context, &url, &target);
             }
 
             return ClipEventResult::Handled;
@@ -3036,10 +3035,10 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
 
         if let ClipEvent::MouseMove = event {
             // If a mouse has moved and this EditTest is pressed, we need to update the selection.
-            if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, Some(self.into())) {
-                if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
-                    self.handle_drag(position);
-                }
+            if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, Some(self.into()))
+                && let Some(position) = self.screen_position_to_index(*context.mouse_position)
+            {
+                self.handle_drag(position);
             }
         }
 

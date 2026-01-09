@@ -626,10 +626,10 @@ impl<'gc> Stage<'gc> {
         // `render_viewport` is called).
         for stage3d in self.stage3ds().iter() {
             let stage3d = stage3d.as_stage_3d().unwrap();
-            if stage3d.visible() {
-                if let Some(context3d) = stage3d.context3d() {
-                    context3d.as_context_3d().unwrap().render(context);
-                }
+            if stage3d.visible()
+                && let Some(context3d) = stage3d.context3d()
+            {
+                context3d.as_context_3d().unwrap().render(context);
             }
         }
 
@@ -875,12 +875,11 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         if self
             .base()
             .set_perspective_projection(perspective_projection)
+            && let Some(parent) = self.parent()
         {
-            if let Some(parent) = self.parent() {
-                // Self-transform changes are automatically handled,
-                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                parent.invalidate_cached_bitmap();
-            }
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
         }
     }
 
