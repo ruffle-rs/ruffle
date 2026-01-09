@@ -868,10 +868,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn set_perspective_projection(self, mut perspective_projection: Option<PerspectiveProjection>) {
-        if perspective_projection.is_none() {
-            // `stage` doesn't allow null PerspectiveProjection.
-            perspective_projection = Some(Default::default());
-        }
+        // `stage` doesn't allow null PerspectiveProjection.
+        perspective_projection.get_or_insert_default();
         if self
             .base()
             .set_perspective_projection(perspective_projection)

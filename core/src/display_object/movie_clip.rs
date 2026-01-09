@@ -4659,27 +4659,13 @@ impl<'a> GotoPlaceObject<'a> {
         version: u8,
     ) -> Self {
         if is_rewind && let swf::PlaceObjectAction::Place(_) = place_object.action {
-            if place_object.matrix.is_none() {
-                place_object.matrix = Some(Default::default());
-            }
-            if place_object.color_transform.is_none() {
-                place_object.color_transform = Some(Default::default());
-            }
-            if place_object.ratio.is_none() {
-                place_object.ratio = Some(Default::default());
-            }
-            if place_object.blend_mode.is_none() {
-                place_object.blend_mode = Some(Default::default());
-            }
-            if place_object.is_bitmap_cached.is_none() {
-                place_object.is_bitmap_cached = Some(Default::default());
-            }
-            if place_object.background_color.is_none() {
-                place_object.background_color = Some(Color::from_rgba(0));
-            }
-            if place_object.filters.is_none() {
-                place_object.filters = Some(Default::default());
-            }
+            place_object.matrix.get_or_insert_default();
+            place_object.color_transform.get_or_insert_default();
+            place_object.ratio.get_or_insert_default();
+            place_object.blend_mode.get_or_insert_default();
+            place_object.is_bitmap_cached.get_or_insert_default();
+            place_object.background_color.get_or_insert_default();
+            place_object.filters.get_or_insert_default();
             // Purposely omitted properties:
             // name, clip_depth, clip_actions, amf_data
             // These properties are only set on initial placement in `MovieClip::instantiate_child`
