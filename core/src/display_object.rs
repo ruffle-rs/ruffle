@@ -842,9 +842,9 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn recheck_cache_as_bitmap(&self) {
         let mut write = self.cell.borrow_mut();
         let should_cache = self.is_bitmap_cached_preference() || !write.filters.is_empty();
-        if should_cache && write.cache.is_none() {
-            write.cache = Some(Default::default());
-        } else if !should_cache && write.cache.is_some() {
+        if should_cache {
+            write.cache.get_or_insert_default();
+        } else {
             write.cache = None;
         }
     }
