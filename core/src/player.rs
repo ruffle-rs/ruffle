@@ -1,7 +1,3 @@
-// Temporarily allow this to ease migration to Rust 2024 edition.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::collapsible_if)]
-
 use crate::DEFAULT_PLAYER_VERSION;
 use crate::avm_rng::AvmRng;
 use crate::avm1::Attribute;
@@ -99,15 +95,15 @@ pub struct StaticCallstack {
 
 impl StaticCallstack {
     pub fn avm2(&self, f: impl for<'gc> FnOnce(&CallStack<'gc>)) {
-        if let Some(arena) = self.arena.upgrade() {
-            if let Ok(arena) = arena.try_borrow() {
-                arena.mutate(|_, root| {
-                    let callstack = root.avm2_callstack.borrow();
-                    if !callstack.is_empty() {
-                        f(&callstack);
-                    }
-                })
-            }
+        if let Some(arena) = self.arena.upgrade()
+            && let Ok(arena) = arena.try_borrow()
+        {
+            arena.mutate(|_, root| {
+                let callstack = root.avm2_callstack.borrow();
+                if !callstack.is_empty() {
+                    f(&callstack);
+                }
+            })
         }
     }
 }
@@ -780,23 +776,23 @@ impl Player {
         callback: Object<'gc>,
         context: &mut UpdateContext<'gc>,
     ) {
-        if let Some(menu_state) = context.current_context_menu {
-            if let Some(display_object) = menu_state.get_display_object() {
-                let mut activation = Activation::from_nothing(
-                    context,
-                    ActivationIdentifier::root("[Context Menu Callback]"),
-                    display_object,
-                );
+        if let Some(menu_state) = context.current_context_menu
+            && let Some(display_object) = menu_state.get_display_object()
+        {
+            let mut activation = Activation::from_nothing(
+                context,
+                ActivationIdentifier::root("[Context Menu Callback]"),
+                display_object,
+            );
 
-                let params = vec![display_object.object1_or_undef(), Value::Object(item)];
+            let params = vec![display_object.object1_or_undef(), Value::Object(item)];
 
-                let _ = callback.call(
-                    "[Context Menu Callback]",
-                    &mut activation,
-                    Value::Undefined,
-                    &params,
-                );
-            }
+            let _ = callback.call(
+                "[Context Menu Callback]",
+                &mut activation,
+                Value::Undefined,
+                &params,
+            );
         }
     }
 
@@ -1274,26 +1270,25 @@ impl Player {
             };
 
             // Fire clip event on all clips.
-            if let Some(clip_event) = clip_event {
-                if context.stage.handle_clip_event(context, clip_event) == ClipEventResult::Handled
-                {
-                    player_event_handled = true;
-                }
+            if let Some(clip_event) = clip_event
+                && context.stage.handle_clip_event(context, clip_event) == ClipEventResult::Handled
+            {
+                player_event_handled = true;
             }
 
             // Fire event listener on appropriate object
-            if let Some((listener_type, event_name, args)) = listener {
-                if let Some(root_clip) = context.stage.root_clip() {
-                    context.action_queue.queue_action(
-                        root_clip,
-                        ActionType::NotifyListeners {
-                            listener: listener_type,
-                            method: event_name,
-                            args,
-                        },
-                        false,
-                    );
-                }
+            if let Some((listener_type, event_name, args)) = listener
+                && let Some(root_clip) = context.stage.root_clip()
+            {
+                context.action_queue.queue_action(
+                    root_clip,
+                    ActionType::NotifyListeners {
+                        listener: listener_type,
+                        method: event_name,
+                        args,
+                    },
+                    false,
+                );
             }
 
             // Propagate button events.
@@ -1310,56 +1305,54 @@ impl Player {
             }
 
             // KeyPress events take precedence over text input.
-            if !key_press_handled {
-                if let Some(text) = context.focus_tracker.get_as_edit_text() {
-                    if let InputEvent::TextInput { codepoint } = &event {
-                        text.text_input((*codepoint).to_string(), context);
-                    }
-                    if let InputEvent::TextControl { code } = &event {
-                        text.text_control_input(*code, context);
-                    }
-                    if let InputEvent::Ime(ime) = &event {
-                        text.ime(ime.clone(), context);
-                    }
+            if !key_press_handled && let Some(text) = context.focus_tracker.get_as_edit_text() {
+                if let InputEvent::TextInput { codepoint } = &event {
+                    text.text_input((*codepoint).to_string(), context);
+                }
+                if let InputEvent::TextControl { code } = &event {
+                    text.text_control_input(*code, context);
+                }
+                if let InputEvent::Ime(ime) = &event {
+                    text.ime(ime.clone(), context);
                 }
             }
 
             // KeyPress events also take precedence over tabbing.
-            if !key_press_handled {
-                if let InputEvent::KeyDown {
+            if !key_press_handled
+                && let InputEvent::KeyDown {
                     key_code: KeyCode::TAB,
                     ..
                 } = &event
-                {
-                    let reversed = context.input.is_key_down(KeyCode::SHIFT);
-                    let tracker = context.focus_tracker;
-                    tracker.cycle(context, reversed);
-                }
+            {
+                let reversed = context.input.is_key_down(KeyCode::SHIFT);
+                let tracker = context.focus_tracker;
+                tracker.cycle(context, reversed);
             }
 
             // KeyPress events also take precedence over keyboard navigation.
             // Note that keyboard navigation works only when the highlight is visible.
-            if !key_press_handled && context.focus_tracker.highlight().is_visible() {
-                if let Some(focus) = context.focus_tracker.get() {
-                    if matches!(
-                        &event,
-                        InputEvent::KeyDown {
-                            key_code: KeyCode::ENTER,
-                            ..
-                        } | InputEvent::TextInput { codepoint: ' ' }
-                    ) {
-                        // The button/clip is pressed and then immediately released.
-                        // We do not have to wait for KeyUp.
-                        focus.handle_clip_event(context, ClipEvent::Press { index: 0 });
-                        focus.handle_clip_event(context, ClipEvent::Release { index: 0 });
-                    }
+            if !key_press_handled
+                && context.focus_tracker.highlight().is_visible()
+                && let Some(focus) = context.focus_tracker.get()
+            {
+                if matches!(
+                    &event,
+                    InputEvent::KeyDown {
+                        key_code: KeyCode::ENTER,
+                        ..
+                    } | InputEvent::TextInput { codepoint: ' ' }
+                ) {
+                    // The button/clip is pressed and then immediately released.
+                    // We do not have to wait for KeyUp.
+                    focus.handle_clip_event(context, ClipEvent::Press { index: 0 });
+                    focus.handle_clip_event(context, ClipEvent::Release { index: 0 });
+                }
 
-                    if let InputEvent::KeyDown { key_code, .. } = &event {
-                        if let Some(direction) = NavigationDirection::from_key_code(*key_code) {
-                            let tracker = context.focus_tracker;
-                            tracker.navigate(context, direction);
-                        }
-                    }
+                if let InputEvent::KeyDown { key_code, .. } = &event
+                    && let Some(direction) = NavigationDirection::from_key_code(*key_code)
+                {
+                    let tracker = context.focus_tracker;
+                    tracker.navigate(context, direction);
                 }
             }
 
@@ -1418,10 +1411,10 @@ impl Player {
             });
         }
 
-        if let InputEvent::MouseLeave = event {
-            if self.update_mouse_state(changed_mouse_buttons, true, &mut player_event_handled) {
-                self.needs_render = true;
-            }
+        if let InputEvent::MouseLeave = event
+            && self.update_mouse_state(changed_mouse_buttons, true, &mut player_event_handled)
+        {
+            self.needs_render = true;
         }
 
         if self.should_reset_highlight(event) {
@@ -1560,17 +1553,17 @@ impl Player {
                     && hovered.as_displayobject().avm1_removed()
                 {
                     context.mouse_data.hovered = None;
-                    if let Some(new_object) = new_over_object {
-                        if Self::check_display_object_equality(
+                    if let Some(new_object) = new_over_object
+                        && Self::check_display_object_equality(
                             new_object.as_displayobject(),
                             hovered.as_displayobject(),
-                        ) {
-                            if let Some(state) = hovered.as_displayobject().state() {
-                                new_object.as_displayobject().set_state(context, state);
-                            }
-                            context.mouse_data.hovered = Some(new_object);
-                            new_over_object_updated = true;
+                        )
+                    {
+                        if let Some(state) = hovered.as_displayobject().state() {
+                            new_object.as_displayobject().set_state(context, state);
                         }
+                        context.mouse_data.hovered = Some(new_object);
+                        new_over_object_updated = true;
                     }
                 }
 
@@ -1581,26 +1574,23 @@ impl Player {
                 }
             }
 
-            if let Some(pressed) = context.mouse_data.pressed {
-                if !pressed.as_displayobject().movie().is_action_script_3()
-                    && pressed.as_displayobject().avm1_removed()
-                {
-                    context.mouse_data.pressed = None;
-                    let mut display_object = None;
-                    if let Some(root_clip) = context.stage.root_clip() {
-                        display_object = Self::find_first_character_instance(
-                            root_clip,
-                            pressed.as_displayobject(),
-                        );
+            if let Some(pressed) = context.mouse_data.pressed
+                && !pressed.as_displayobject().movie().is_action_script_3()
+                && pressed.as_displayobject().avm1_removed()
+            {
+                context.mouse_data.pressed = None;
+                let mut display_object = None;
+                if let Some(root_clip) = context.stage.root_clip() {
+                    display_object =
+                        Self::find_first_character_instance(root_clip, pressed.as_displayobject());
+                }
+
+                if let Some(new_down_object) = display_object {
+                    if let Some(state) = pressed.as_displayobject().state() {
+                        new_down_object.set_state(context, state);
                     }
 
-                    if let Some(new_down_object) = display_object {
-                        if let Some(state) = pressed.as_displayobject().state() {
-                            new_down_object.set_state(context, state);
-                        }
-
-                        context.mouse_data.pressed = new_down_object.as_interactive();
-                    }
+                    context.mouse_data.pressed = new_down_object.as_interactive();
                 }
             }
 
@@ -1792,15 +1782,14 @@ impl Player {
                         context.mouse_data.pressed(button),
                         context.mouse_data.hovered,
                     );
-                    if let Some(down) = context.mouse_data.pressed(button) {
-                        if let Some(over) = context.mouse_data.hovered {
-                            if !released_inside {
-                                released_inside = Self::check_display_object_equality(
-                                    down.as_displayobject(),
-                                    over.as_displayobject(),
-                                );
-                            }
-                        }
+                    if let Some(down) = context.mouse_data.pressed(button)
+                        && let Some(over) = context.mouse_data.hovered
+                        && !released_inside
+                    {
+                        released_inside = Self::check_display_object_equality(
+                            down.as_displayobject(),
+                            over.as_displayobject(),
+                        );
                     }
                     if released_inside {
                         let event = match button {
@@ -2179,24 +2168,24 @@ impl Player {
                         action.clip,
                     );
                     // TODO(moulins): should this use `Object::prototype`?
-                    if let Ok(prototype) = constructor.get(istr!("prototype"), &mut activation) {
-                        if let Some(object) = action.clip.object1() {
-                            object.define_value(
-                                activation.gc(),
-                                istr!("__proto__"),
-                                prototype,
-                                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+                    if let Ok(prototype) = constructor.get(istr!("prototype"), &mut activation)
+                        && let Some(object) = action.clip.object1()
+                    {
+                        object.define_value(
+                            activation.gc(),
+                            istr!("__proto__"),
+                            prototype,
+                            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+                        );
+                        for event in events {
+                            let _ = activation.run_child_frame_for_action(
+                                "[Actions]",
+                                action.clip,
+                                event,
                             );
-                            for event in events {
-                                let _ = activation.run_child_frame_for_action(
-                                    "[Actions]",
-                                    action.clip,
-                                    event,
-                                );
-                            }
-
-                            let _ = constructor.construct_on_existing(&mut activation, object, &[]);
                         }
+
+                        let _ = constructor.construct_on_existing(&mut activation, object, &[]);
                     }
                 }
                 // Run constructor events without changing the prototype.
