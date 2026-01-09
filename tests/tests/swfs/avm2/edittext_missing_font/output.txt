@@ -1,0 +1,56 @@
+device=true, type=input
+  getTextFormat(0, 1).font=Unknown Font 6ad5511bcd8b089c25e2212243c819d1
+  length=3
+  text=xyz
+  numLines=1
+  textWidth is zero?=false
+  getCharBoundaries(0) is null?=false
+  getCharBoundaries(1) is null?=false
+  getCharBoundaries(3) is null?=true
+  getLineMetrics(0).ascent is zero?=false
+  getLineMetrics(0).descent is zero?=false
+  getLineMetrics(0).height is 5?=false
+  getLineMetrics(0).leading=5
+  getLineMetrics(0).width is zero?=false
+device=true, type=dynamic
+  getTextFormat(0, 1).font=Unknown Font 6ad5511bcd8b089c25e2212243c819d1
+  length=3
+  text=xyz
+  numLines=1
+  textWidth is zero?=false
+  getCharBoundaries(0) is null?=false
+  getCharBoundaries(1) is null?=false
+  getCharBoundaries(3) is null?=true
+  getLineMetrics(0).ascent is zero?=false
+  getLineMetrics(0).descent is zero?=false
+  getLineMetrics(0).height is 5?=false
+  getLineMetrics(0).leading=5
+  getLineMetrics(0).width is zero?=false
+device=false, type=input
+  getTextFormat(0, 1).font=Unknown Font 6ad5511bcd8b089c25e2212243c819d1
+  length=3
+  text=xyz
+  numLines=1
+  textWidth is zero?=true
+  getCharBoundaries(0) is null?=true
+  getCharBoundaries(1) is null?=true
+  getCharBoundaries(3) is null?=true
+  getLineMetrics(0).ascent is zero?=true
+  getLineMetrics(0).descent is zero?=true
+  getLineMetrics(0).height is 5?=true
+  getLineMetrics(0).leading=5
+  getLineMetrics(0).width is zero?=true
+device=false, type=dynamic
+  getTextFormat(0, 1).font=Unknown Font 6ad5511bcd8b089c25e2212243c819d1
+  length=3
+  text=xyz
+  numLines=1
+  textWidth is zero?=true
+  getCharBoundaries(0) is null?=true
+  getCharBoundaries(1) is null?=true
+  getCharBoundaries(3) is null?=true
+  getLineMetrics(0).ascent is zero?=true
+  getLineMetrics(0).descent is zero?=true
+  getLineMetrics(0).height is 5?=true
+  getLineMetrics(0).leading=5
+  getLineMetrics(0).width is zero?=true

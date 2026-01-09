@@ -550,10 +550,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             {
                 return FontSet::from_one_font(context.gc(), font);
             }
-            // TODO: If set to use embedded fonts and we couldn't find any matching font, show nothing
-            // However - at time of writing, we don't support DefineFont4. If we matched this behaviour,
-            // then a bunch of SWFs would just show no text suddenly.
-            // return new_empty_font(context, span, self.font_type);
+
+            // If set to use embedded fonts and we couldn't find any matching font, show nothing.
+            tracing::warn!("Embedded font not found: {font_name}, using an empty font");
+            return new_empty_font(context, span, self.font_type);
         }
 
         // Specifying multiple font names is supported only for device fonts.
