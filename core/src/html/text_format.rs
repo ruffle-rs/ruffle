@@ -7,6 +7,7 @@ use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use quick_xml::{Reader, escape::escape, events::Event};
 use ruffle_wstr::utils::swf_is_newline;
+use ruffle_wstr::FromWStr;
 use std::borrow::Cow;
 use std::cmp::{Ordering, min};
 use std::collections::VecDeque;
@@ -108,6 +109,22 @@ pub enum TextDisplay {
     Block,
     Inline,
     None,
+}
+
+impl FromWStr for TextDisplay {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"block" {
+            Ok(TextDisplay::Block)
+        } else if s == b"inline" {
+            Ok(TextDisplay::Inline)
+        } else if s == b"none" {
+            Ok(TextDisplay::None)
+        } else {
+            Err(())
+        }
+    }
 }
 
 /// A set of text formatting options to be applied to some part, or the whole
