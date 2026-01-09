@@ -243,6 +243,9 @@ pub struct Opt {
     /// (like inlining constant pool entries) can't be disabled.
     #[clap(long)]
     pub no_avm2_optimizer: bool,
+
+    #[clap(long, action)]
+    pub avm_output_json: bool,
 }
 
 fn parse_movie_file_or_url(path: &str) -> Result<Url, Error> {
