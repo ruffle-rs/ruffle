@@ -371,12 +371,10 @@ impl<'gc> Avm2Button<'gc> {
             }
         }
 
-        if is_cur_state {
-            if let Some(child) = child {
-                child.run_frame_scripts(context);
-                // FIXME is this correct?
-                broadcast_frame_exited(context);
-            }
+        if is_cur_state && let Some(child) = child {
+            child.run_frame_scripts(context);
+            // FIXME is this correct?
+            broadcast_frame_exited(context);
         }
     }
 
@@ -636,23 +634,23 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
-        if !options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible() {
-            if let Some(child) = self.get_state_child(self.0.state.get().into()) {
-                //TODO: the if below should probably always be taken, why does the hit area
-                // sometimes have a parent?
-                let mut point = point;
-                if child.parent().is_none() {
-                    // hit_area is not actually a child, so transform point into local space before passing it down.
-                    point = if let Some(point) = self.global_to_local(point) {
-                        point
-                    } else {
-                        return false;
-                    }
+        if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
+            && let Some(child) = self.get_state_child(self.0.state.get().into())
+        {
+            //TODO: the if below should probably always be taken, why does the hit area
+            // sometimes have a parent?
+            let mut point = point;
+            if child.parent().is_none() {
+                // hit_area is not actually a child, so transform point into local space before passing it down.
+                point = if let Some(point) = self.global_to_local(point) {
+                    point
+                } else {
+                    return false;
                 }
+            }
 
-                if child.hit_test_shape(context, point, options) {
-                    return true;
-                }
+            if child.hit_test_shape(context, point, options) {
+                return true;
             }
         }
 
@@ -716,10 +714,10 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         if event.propagates() {
             let current_state = self.get_state_child(self.0.state.get().into());
 
-            if let Some(current_state) = current_state.and_then(|s| s.as_interactive()) {
-                if current_state.handle_clip_event(context, event) == ClipEventResult::Handled {
-                    return ClipEventResult::Handled;
-                }
+            if let Some(current_state) = current_state.and_then(|s| s.as_interactive())
+                && current_state.handle_clip_event(context, event) == ClipEventResult::Handled
+            {
+                return ClipEventResult::Handled;
             }
         }
 

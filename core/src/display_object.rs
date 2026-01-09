@@ -1,7 +1,3 @@
-// Temporarily allow this to ease migration to Rust 2024 edition.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::collapsible_if)]
-
 use crate::avm1::{
     ActivationIdentifier as Avm1ActivationIdentifier, Object as Avm1Object, Value as Avm1Value,
 };
@@ -156,10 +152,11 @@ impl BitmapCache {
         self.source_width = source_width;
         self.source_height = source_height;
         self.draw_offset = draw_offset;
-        if let Some(current) = &mut self.bitmap {
-            if current.width == actual_width && current.height == actual_height {
-                return; // No need to resize it
-            }
+        if let Some(current) = &mut self.bitmap
+            && current.width == actual_width
+            && current.height == actual_height
+        {
+            return; // No need to resize it
         }
         let acceptable_size = if swf_version > 9 {
             let total = actual_width * actual_height;
@@ -1429,12 +1426,11 @@ pub trait TDisplayObject<'gc>:
         if self
             .base()
             .set_perspective_projection(perspective_projection)
+            && let Some(parent) = self.parent()
         {
-            if let Some(parent) = self.parent() {
-                // Self-transform changes are automatically handled,
-                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                parent.invalidate_cached_bitmap();
-            }
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
         }
     }
 
@@ -1524,12 +1520,12 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_x`/`x` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_x(self, x: Twips) {
-        if self.base().set_x(x) {
-            if let Some(parent) = self.parent() {
-                // Self-transform changes are automatically handled,
-                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                parent.invalidate_cached_bitmap();
-            }
+        if self.base().set_x(x)
+            && let Some(parent) = self.parent()
+        {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
         }
     }
 
@@ -1543,12 +1539,12 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_y`/`y` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_y(self, y: Twips) {
-        if self.base().set_y(y) {
-            if let Some(parent) = self.parent() {
-                // Self-transform changes are automatically handled,
-                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                parent.invalidate_cached_bitmap();
-            }
+        if self.base().set_y(y)
+            && let Some(parent) = self.parent()
+        {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
         }
     }
 
@@ -1747,11 +1743,11 @@ pub trait TDisplayObject<'gc>:
     /// This invalidates any cacheAsBitmap automatically.
     #[no_dynamic]
     fn set_alpha(self, value: f64) {
-        if self.base().set_alpha(value) {
-            if let Some(parent) = self.parent() {
-                // Self-transform changes are automatically handled
-                parent.invalidate_cached_bitmap();
-            }
+        if self.base().set_alpha(value)
+            && let Some(parent) = self.parent()
+        {
+            // Self-transform changes are automatically handled
+            parent.invalidate_cached_bitmap();
         }
     }
 
@@ -2021,18 +2017,16 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the `_visible`/`visible` ActionScript properties.
     #[no_dynamic]
     fn set_visible(self, context: &mut UpdateContext<'gc>, value: bool) {
-        if self.base().set_visible(value) {
-            if let Some(parent) = self.parent() {
-                // We don't need to invalidate ourselves, we're just toggling if the bitmap is rendered.
-                parent.invalidate_cached_bitmap();
-            }
+        if self.base().set_visible(value)
+            && let Some(parent) = self.parent()
+        {
+            // We don't need to invalidate ourselves, we're just toggling if the bitmap is rendered.
+            parent.invalidate_cached_bitmap();
         }
 
-        if !value {
-            if let Some(int) = self.as_interactive() {
-                // The focus is dropped when it's made invisible.
-                int.drop_focus(context);
-            }
+        if !value && let Some(int) = self.as_interactive() {
+            // The focus is dropped when it's made invisible.
+            int.drop_focus(context);
         }
     }
 
@@ -2057,14 +2051,14 @@ pub trait TDisplayObject<'gc>:
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     #[no_dynamic]
     fn set_blend_mode(self, value: ExtendedBlendMode) {
-        if self.base().set_blend_mode(value) {
-            if let Some(parent) = self.parent() {
-                // We don't need to invalidate ourselves, we're just toggling how the bitmap is rendered.
+        if self.base().set_blend_mode(value)
+            && let Some(parent) = self.parent()
+        {
+            // We don't need to invalidate ourselves, we're just toggling how the bitmap is rendered.
 
-                // Note that Flash does not always invalidate on changing the blend mode;
-                // but that's a bug we don't need to copy :)
-                parent.invalidate_cached_bitmap();
-            }
+            // Note that Flash does not always invalidate on changing the blend mode;
+            // but that's a bug we don't need to copy :)
+            parent.invalidate_cached_bitmap();
         }
     }
 
@@ -2338,33 +2332,31 @@ pub trait TDisplayObject<'gc>:
 
     #[no_dynamic]
     fn set_on_parent_field(self, context: &mut UpdateContext<'gc>) {
-        if self.has_explicit_name() {
-            if let Some(parent) = self.parent().and_then(|p| p.object2()) {
-                let parent = Avm2Value::from(parent);
+        if self.has_explicit_name()
+            && let Some(parent) = self.parent().and_then(|p| p.object2())
+        {
+            let parent = Avm2Value::from(parent);
 
-                if let Some(child) = self.object2() {
-                    if let Some(name) = self.name() {
-                        let domain = context
-                            .library
-                            .library_for_movie(self.movie())
-                            .unwrap()
-                            .avm2_domain();
+            if let Some(child) = self.object2()
+                && let Some(name) = self.name()
+            {
+                let domain = context
+                    .library
+                    .library_for_movie(self.movie())
+                    .unwrap()
+                    .avm2_domain();
 
-                        let mut activation = Avm2Activation::from_domain(context, domain);
-                        let multiname =
-                            Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
-                        let set_result =
-                            parent.init_property(&multiname, child.into(), &mut activation);
+                let mut activation = Avm2Activation::from_domain(context, domain);
+                let multiname = Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
+                let set_result = parent.init_property(&multiname, child.into(), &mut activation);
 
-                        if let Err(err) = set_result {
-                            Avm2::uncaught_error(
-                                &mut activation,
-                                Some(self),
-                                err,
-                                &format!("Error setting AVM2 child named \"{}\"", name),
-                            );
-                        }
-                    }
+                if let Err(err) = set_result {
+                    Avm2::uncaught_error(
+                        &mut activation,
+                        Some(self),
+                        err,
+                        &format!("Error setting AVM2 child named \"{}\"", name),
+                    );
                 }
             }
         }
@@ -2683,11 +2675,11 @@ pub trait TDisplayObject<'gc>:
             if p.is_root() {
                 return parent;
             }
-            if let Some(p_parent) = p.parent() {
-                if !p_parent.movie().is_action_script_3() {
-                    // We've traversed upwards into a loader AVM1 movie, so return the current parent.
-                    return parent;
-                }
+            if let Some(p_parent) = p.parent()
+                && !p_parent.movie().is_action_script_3()
+            {
+                // We've traversed upwards into a loader AVM1 movie, so return the current parent.
+                return parent;
             }
             parent = p.parent();
         }
