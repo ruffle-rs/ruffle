@@ -3,3 +3,4 @@ file-picker-filter-supported = Sve podržane datoteke
 file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Paket s Ruffleima (*.ruf)
+file-picker-filter-all = Sve datoteke

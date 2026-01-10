@@ -12,5 +12,11 @@ openh264-license = OpenH264 licenca
 storage-backend-disk = Disk
 storage-backend-memory = Memorija
 recent-clear = Očisti
+theme = Tema
+theme-system = Zadano sustav
+theme-light = Svijetla
+theme-dark = Tamna
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
 ime-enabled = Način unosa
 ime-enabled-default = Zadano
