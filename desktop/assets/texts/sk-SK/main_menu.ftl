@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Súbor
-file-menu-open-quick = Otvoriť...
 file-menu-open-advanced = Otvoriť pokročilé...
 file-menu-close = Zavrieť
 file-menu-reload = Obnoviť

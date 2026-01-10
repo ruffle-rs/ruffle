@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = ファイル
-file-menu-open-quick = 開く
 file-menu-open-advanced = ファイルと設定
 file-menu-close = 閉じる
 file-menu-reload = 再読み込み

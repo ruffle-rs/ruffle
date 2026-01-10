@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Tiedosto
-file-menu-open-quick = Avaa...
 file-menu-open-advanced = Avaa edistynyt...
 file-menu-close = Sulje
 file-menu-reload = Lataa uudelleen

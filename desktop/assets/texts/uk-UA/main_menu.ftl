@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Файл
-file-menu-open-quick = Відкрити...
 file-menu-open-advanced = Відкрити додаткові...
 file-menu-close = Закрити
 file-menu-reload = Перезавантажити
