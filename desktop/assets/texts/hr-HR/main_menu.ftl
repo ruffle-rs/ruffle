@@ -35,4 +35,5 @@ debug-menu-open-root-movie-clip = Prikaži korijenski filmski isječak
 debug-menu-open-movie = Pogledajte film
 debug-menu-open-movie-list = Prikaži poznate filmove
 debug-menu-open-domain-list = Prikaži domene
+view-menu = Prikaz
 view-menu-fullscreen = Cijeli zaslon

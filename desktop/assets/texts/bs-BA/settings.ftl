@@ -2,6 +2,7 @@ network-settings = Postavke mreže
 player-settings = Postavke plejera
 movie-parameters = Parametri filma
 custom-base-url = Prilagođeni osnovni URL
+spoof-swf-url = Lažni SWF URL
 referer-url = URL reference
 cookie = Kolačić
 proxy = Proksi
@@ -38,10 +39,11 @@ scale-mode = Metoda skaliranja
 scale-mode-noscale = Neskalirano (100%)
 scale-mode-noscale-tooltip =
     Prikazuje film u originalnoj veličini, bez ikakvog zumiranja.
-    
+
     Odgovara StageScaleMode.NO_SCALE
 scale-mode-showall = Zumiraj da stane
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
+custom-framerate = Prilagođena brzina kadrova u sekundi
 custom-framerate-suffix = { " " } sličica u sekundi
 dummy-external-interface = Lažno vanjsko sučelje
