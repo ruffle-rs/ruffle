@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Файл
-file-menu-open-quick = Ачу...
 file-menu-open-advanced = Киңәйтелгәнне ачу...
 file-menu-close = Ябу
 file-menu-reload = Яңарту
@@ -23,10 +22,10 @@ controls-menu-suspend = Туктату
 controls-menu-resume = Дәвам итү
 controls-menu-step-once = Бер адым
 controls-menu-volume = Тавыш көйләүләре
-help-menu = Белешмə
+help-menu = Белешмә
 help-menu-join-discord = Discord’ка кушыл
 help-menu-report-a-bug = Хата турында хәбәр итү...
-help-menu-sponsor-development = Эшлəнмə спонсорлау...
+help-menu-sponsor-development = Эшкәртүне спонсорла...
 help-menu-translate-ruffle = Ruffle тәрҗемә итәргә...
 help-menu-about = Программа турында
 bookmarks-menu = Сайланмалар

@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Dosya
-file-menu-open-quick = Aç...
 file-menu-open-advanced = Gelişmiş aç...
 file-menu-close = Kapat
 file-menu-reload = Yeniden yükle

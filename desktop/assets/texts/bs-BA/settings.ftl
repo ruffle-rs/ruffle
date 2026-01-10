@@ -2,6 +2,7 @@ network-settings = Postavke mreže
 player-settings = Postavke plejera
 movie-parameters = Parametri filma
 custom-base-url = Prilagođeni osnovni URL
+spoof-swf-url = Lažni SWF URL
 referer-url = URL reference
 cookie = Kolačić
 proxy = Proksi
@@ -14,12 +15,20 @@ open-url-mode = Otvori linkove
 open-url-mode-allow = Dozvoli
 open-url-mode-confirm = Pitajte
 open-url-mode-deny = Odbaci
+load-behavior = Ponašanje opterećenja
+load-behavior-streaming = Teče
+load-behavior-delayed = Odloženo
+load-behavior-blocking = Blok
 max-execution-duration = Maksimalno trajanje izvršenja
 max-execution-duration-suffix = { " " } sekundi
 quality = Kvalitet
+quality-low = Niska
+quality-medium = Srednja
+quality-high = Visoka
 quality-high8x8 = Visoka (8x8)
 quality-high8x8linear = Visoka (8x8) linearna
 quality-high16x16 = Visoka (16x16)
+quality-high16x16linear = Visoka (16x16) linearna
 letterbox = Poštanski sandučić
 letterbox-on = Uključeno
 letterbox-fullscreen = Samo cijeli ekran
@@ -41,7 +50,25 @@ scale-mode-noscale-tooltip =
     
     Odgovara StageScaleMode.NO_SCALE
 scale-mode-showall = Zumiraj da stane
+scale-mode-showall-tooltip =
+    Zumira film kako bi što više ispunio prozor bez izrezivanja, održavajući omjer širine i visine.
+    
+    Odgovara StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Rastegnite da odgovara
+scale-mode-exactfit-tooltip =
+    Osigurava da film ispuni cijeli prozor, zanemarujući omjer širine i visine.
+    
+    Odgovara StageScaleMode.EXACT_FIT
+scale-mode-noborder = Skrati da odgovara
+scale-mode-noborder-tooltip =
+    Ispunjava cijeli prozor uz zadržavanje omjera širine i visine, po potrebi izrezujući film.
+    
+    Odgovara StageScaleMode.NO_BORDER
+scale-mode-force-tooltip = Sprečava promjenu metode skaliranja filma, zaključavajući je na odabranu postavku.
+player-version = Verzija igrača
+player-runtime = Vrijeme igranja igrača
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
+custom-framerate = Prilagođena brzina kadrova u sekundi
 custom-framerate-suffix = { " " } sličica u sekundi
 dummy-external-interface = Lažno vanjsko sučelje

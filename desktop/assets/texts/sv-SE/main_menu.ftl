@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Fil
-file-menu-open-quick = Öppna...
 file-menu-open-advanced = Öppna avancerat...
 file-menu-close = Stäng
 file-menu-reload = Ladda Om

@@ -1,0 +1,12 @@
+export-bundle-dialog-title = Izvoz paketa za Ruffle
+export-bundle-dialog-bundle-name = Naziv paketa:
+export-bundle-dialog-files-description = Izaberite datoteke za grupisanje:
+export-bundle-dialog-files-select-all = Izaberi sve
+export-bundle-dialog-export = Izvoz
+export-bundle-dialog-exporting = Izvoz...
+export-bundle-dialog-exporting-failed = Izvoz nije uspeo.
+export-bundle-dialog-error-user-canceled = Otkazao korisnik.
+export-bundle-dialog-error-failed-to-show-picker = Prikaz birača datoteka nije uspeo.
+export-bundle-dialog-error-io-error = Greška pri pisanju paketa.
+export-bundle-dialog-info-title = Šta je Ruffle paket?
+export-bundle-dialog-info-description = Paket Ruffle je univerzalni paket koji uključuje sve što vam je potrebno za pokretanje SWF datoteke - sve potrebne resurse i konfiguraciju. Sa ovim paketom, vaš SWF radi odmah po raspakivanju - nema nedostajućih datoteka, nema ručnog podešavanja, samo uključite i koristite.

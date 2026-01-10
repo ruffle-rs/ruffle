@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Bestand
-file-menu-open-quick = Openen...
 file-menu-open-advanced = Geavanceerd openen...
 file-menu-close = Sluiten
 file-menu-reload = Herladen
