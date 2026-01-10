@@ -1,7 +1,8 @@
 use crate::gui::{LocalizableText, text};
 use egui::{Align2, Ui, Window};
+use std::cmp::Ordering;
 use std::ffi::OsStr;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio::sync::oneshot::Sender;
 use unic_langid::LanguageIdentifier;
 use walkdir::WalkDir;
@@ -56,18 +57,18 @@ impl Drop for SelectPathDialog {
 
 impl SelectPathDialog {
     pub fn new(config: SelectPathDialogConfiguration) -> Self {
-        let mut files: Vec<(PathBuf, String)> = WalkDir::new(&config.directory)
+        let files: Vec<(PathBuf, String)> = WalkDir::new(&config.directory)
+            .sort_by(|a, b| compare_paths(a.path(), b.path()))
             .into_iter()
             .filter_map(Result::ok)
+            .filter(|e| e.path().is_file())
             .map(|e| e.path().to_path_buf())
-            .filter(|e| e.is_file())
             .filter_map(|path| {
                 let relative_path = path.strip_prefix(&config.directory).ok()?;
                 let label = relative_path.to_string_lossy().to_string();
                 Some((path, label))
             })
             .collect();
-        files.sort_unstable();
         Self {
             config,
             files,
@@ -157,5 +158,28 @@ impl SelectPathDialog {
         });
 
         should_close
+    }
+}
+
+/// Compare paths for display.
+///
+/// Files are returned first, directories later.  Entries are otherwise ordered
+/// lexicographically.  This ordering makes it easier to pick files close to
+/// the root directory.
+///
+/// Note that we are not comparing the final list of paths, we're comparing
+/// files within one directory only.
+fn compare_paths(a: &Path, b: &Path) -> Ordering {
+    match (a.is_dir(), b.is_dir()) {
+        // Either both are directories, or both are files.
+        (true, true) | (false, false) => a
+            .to_string_lossy()
+            .to_lowercase()
+            .cmp(&b.to_string_lossy().to_lowercase()),
+
+        // A directory is always after a file.
+        (true, false) => Ordering::Greater,
+        // A file is always before a directory.
+        (false, true) => Ordering::Less,
     }
 }
