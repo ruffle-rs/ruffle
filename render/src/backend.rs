@@ -496,6 +496,9 @@ pub enum Context3DCommand<'a> {
         source_height: u32,
         dest: Rc<dyn Texture>,
         layer: u32,
+        /// If true, source is raw RGBA8 data that may need format conversion.
+        /// If false, source is already in the destination format (e.g., pre-compressed).
+        needs_conversion: bool,
     },
     SetTextureAt {
         sampler: u32,
