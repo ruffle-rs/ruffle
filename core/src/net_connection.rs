@@ -238,11 +238,9 @@ impl<'gc> NetConnections<'gc> {
                 }
                 if is_explicit
                     && matches!(connection.protocol, NetConnectionProtocol::FlashRemoting(_))
+                    && let Err(e) = Avm1NetConnectionObject::on_empty_status_event(context, object)
                 {
-                    if let Err(e) = Avm1NetConnectionObject::on_empty_status_event(context, object)
-                    {
-                        tracing::error!("Unhandled error sending connection callback: {e}");
-                    }
+                    tracing::error!("Unhandled error sending connection callback: {e}");
                 }
             }
         }

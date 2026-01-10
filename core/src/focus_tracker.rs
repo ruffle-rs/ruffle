@@ -227,11 +227,11 @@ impl<'gc> FocusTracker<'gc> {
         // Note that this may suggest we should reorder operations on the text field:
         // first run this logic (and not care whether it's a mouse focus),
         // and then handle placing the caret.
-        if let Some(text_field) = self.get_as_edit_text() {
-            if !text_field.movie().is_action_script_3() {
-                let length = text_field.text_length();
-                text_field.set_selection(Some(TextSelection::for_range(0, length)));
-            }
+        if let Some(text_field) = self.get_as_edit_text()
+            && !text_field.movie().is_action_script_3()
+        {
+            let length = text_field.text_length();
+            text_field.set_selection(Some(TextSelection::for_range(0, length)));
         }
     }
 

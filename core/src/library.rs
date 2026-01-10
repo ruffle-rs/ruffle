@@ -195,10 +195,10 @@ impl<'gc> MovieLibrary<'gc> {
         &self,
         name: AvmString<'gc>,
     ) -> Option<(CharacterId, Character<'gc>)> {
-        if let Some(id) = self.export_characters.get(name, false) {
-            if let Some(character) = self.characters.get(id) {
-                return Some((*id, *character));
-            }
+        if let Some(id) = self.export_characters.get(name, false)
+            && let Some(character) = self.characters.get(id)
+        {
+            return Some((*id, *character));
         }
         None
     }
@@ -715,12 +715,11 @@ impl<'gc> Library<'gc> {
         if let Some(font) = self.global_fonts.find(&query) {
             return Some(font);
         }
-        if let Some(movie) = movie {
-            if let Some(library) = self.library_for_movie(movie) {
-                if let Some(font) = library.fonts.find(&query) {
-                    return Some(font);
-                }
-            }
+        if let Some(movie) = movie
+            && let Some(library) = self.library_for_movie(movie)
+            && let Some(font) = library.fonts.find(&query)
+        {
+            return Some(font);
         }
         None
     }

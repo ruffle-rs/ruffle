@@ -840,10 +840,10 @@ impl dasp::signal::Signal for EventSoundStream {
         if !self.is_exhausted {
             if let Some(frame) = self.decoder.next() {
                 self.cur_sample_frame += 1;
-                if let Some(end) = self.end_sample_frame {
-                    if self.cur_sample_frame > end {
-                        self.next_loop();
-                    }
+                if let Some(end) = self.end_sample_frame
+                    && self.cur_sample_frame > end
+                {
+                    self.next_loop();
                 }
                 frame
             } else {

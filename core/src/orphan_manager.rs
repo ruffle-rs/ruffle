@@ -108,10 +108,5 @@ fn valid_orphan<'gc>(
     dobj: DisplayObjectWeak<'gc>,
     mc: &Mutation<'gc>,
 ) -> Option<DisplayObject<'gc>> {
-    if let Some(dobj) = dobj.upgrade(mc) {
-        if dobj.parent().is_none() {
-            return Some(dobj);
-        }
-    }
-    None
+    dobj.upgrade(mc).filter(|dobj| dobj.parent().is_none())
 }

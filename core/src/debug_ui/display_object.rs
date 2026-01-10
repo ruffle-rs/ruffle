@@ -167,14 +167,14 @@ impl DisplayObjectWindow {
                             display_object_type(object),
                         );
                     }
-                    if let Some(ctr) = object.as_container() {
-                        if !ctr.is_empty() {
-                            ui.selectable_value(
-                                &mut self.open_panel,
-                                Panel::Children,
-                                format!("Children ({})", ctr.num_children()),
-                            );
-                        }
+                    if let Some(ctr) = object.as_container()
+                        && !ctr.is_empty()
+                    {
+                        ui.selectable_value(
+                            &mut self.open_panel,
+                            Panel::Children,
+                            format!("Children ({})", ctr.num_children()),
+                        );
                     }
                 });
                 ui.separator();

@@ -102,10 +102,10 @@ impl Avm1ObjectWindow {
                     let value = object.get(key, activation);
 
                     ui.label(key.to_string());
-                    if let Some(new) = self.show_avm1_value(ui, activation, key, value, messages) {
-                        if let Err(e) = object.set(key, new, activation) {
-                            tracing::error!("Failed to set key {key}: {e}");
-                        }
+                    if let Some(new) = self.show_avm1_value(ui, activation, key, value, messages)
+                        && let Err(e) = object.set(key, new, activation)
+                    {
+                        tracing::error!("Failed to set key {key}: {e}");
                     }
                     ui.end_row();
                 }
