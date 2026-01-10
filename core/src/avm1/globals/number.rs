@@ -85,7 +85,11 @@ fn to_string<'gc>(
         [] => 10,
         [radix, ..] => {
             let radix = radix.coerce_to_f64(activation)? as i32;
-            if (2..=36).contains(&radix) { radix } else { 10 }
+            if (2..=36).contains(&radix) {
+                radix
+            } else {
+                10
+            }
         }
     };
 
