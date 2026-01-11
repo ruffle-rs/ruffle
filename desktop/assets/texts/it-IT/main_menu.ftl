@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = File
-file-menu-open-quick = Apri...
 file-menu-open-advanced = Apri avanzate...
 file-menu-close = Chiudi
 file-menu-reload = Ricarica

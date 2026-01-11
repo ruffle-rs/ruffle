@@ -1,6 +1,10 @@
 file-picker-title-open-file = 打开一个文件
+file-picker-title-open-directory = 打开文件夹
 file-picker-filter-supported = 所有支持的文件
 file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Ruffle 包 (*.ruf)
 file-picker-filter-all = 所有文件
+file-picker-select-root-movie-title = 选择根影片
+file-picker-select-root-movie-message = 从打开的目录中选择根影片。
+file-picker-select-root-movie-select = 选择

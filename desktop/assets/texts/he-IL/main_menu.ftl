@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = קובץ
-file-menu-open-quick = פתח...
 file-menu-open-advanced = פתיחה מתקדמת...
 file-menu-close = סגירה
 file-menu-reload = רענון

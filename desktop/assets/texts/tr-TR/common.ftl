@@ -1,6 +1,5 @@
 language-name = Türkçe
 start = Başlat
-browse = Göz at
 save = Kaydet
 cancel = İptal
 remove = Kaldır

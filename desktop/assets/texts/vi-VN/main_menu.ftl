@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Tệp
-file-menu-open-quick = Mở...
 file-menu-open-advanced = Mở với tuỳ chọn...
 file-menu-close = Đóng
 file-menu-reload = Tải lại

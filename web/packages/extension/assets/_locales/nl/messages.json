@@ -47,6 +47,9 @@
     "settings_device_font_renderer": {
         "message": "Toestel lettertyperenderer"
     },
+    "device_font_renderer_embedded": {
+        "message": "Ingebed"
+    },
     "settings_advanced_options": {
         "message": "Geavanceerde opties"
     },

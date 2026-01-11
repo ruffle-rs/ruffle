@@ -3,6 +3,7 @@ export-bundle-dialog-bundle-name = Naziv paketa:
 export-bundle-dialog-files-description = Odaberite datoteke za grupiranje:
 export-bundle-dialog-files-select-all = Odaberi sve
 export-bundle-dialog-export = Izvoz
+export-bundle-dialog-exporting = Izvoženje...
 export-bundle-dialog-exporting-failed = Izvoz nije uspio.
 export-bundle-dialog-error-user-canceled = Otkazao korisnik.
 export-bundle-dialog-error-failed-to-show-picker = Prikaz birača datoteka nije uspio.

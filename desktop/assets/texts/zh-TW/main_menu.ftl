@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = 檔案
-file-menu-open-quick = 開啟...
 file-menu-open-advanced = 進階開啟...
 file-menu-close = 關閉
 file-menu-reload = 重新載入
