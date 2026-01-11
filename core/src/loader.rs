@@ -29,7 +29,6 @@ use crate::display_object::{
     TInteractiveObject,
 };
 use crate::events::ClipEvent;
-use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::limits::ExecutionLimit;
 use crate::player::{Player, PostFrameCallback};
 use crate::streams::{NetStream, NetStreamHandle};
@@ -1896,7 +1895,12 @@ impl<'gc> MovieLoader<'gc> {
                 // we add the loaded clip as a child. The frame constructor should see
                 // 'this.parent == null' and 'this.stage == null'
                 dobj.post_instantiation(uc, None, Instantiator::Movie, false);
-                catchup_display_object_to_frame(uc, dobj);
+
+                if dobj.movie().is_action_script_3() {
+                    dobj.enter_frame(uc);
+                    dobj.construct_frame(uc);
+                }
+
                 // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
                 // and consequently are observed to have their currentFrame lag one
                 // frame behind objects placed by the timeline (even if they were
@@ -1918,6 +1922,8 @@ impl<'gc> MovieLoader<'gc> {
         }
 
         if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+            let dobj = dobj.unwrap();
+
             let mut loader = loader_info
                 .loader()
                 .expect("Loader should be Some")
@@ -1926,29 +1932,39 @@ impl<'gc> MovieLoader<'gc> {
                 .as_container()
                 .unwrap();
 
-            // This isn't completely correct - the 'large_preload' test observes the child
-            // being set after an 'enterFrame' call. However, our current logic should
-            // hopefully be good enough.
-            avm2_stub_method_context!(
-                uc,
-                "flash.display.Loader",
-                "load",
-                "addChild at the correct time"
-            );
+            // If the AS3 constructor for the movie clip threw an error, Flash
+            // doesn't add the movie clip to the loader, and doesn't expose
+            // properties of the loaded child (doesn't call its equivalent of
+            // `set_expose_content`).
+            let constructor_errored = dobj
+                .as_movie_clip()
+                .is_some_and(|m| m.error_in_constructor());
 
-            loader_info.set_expose_content();
+            if !constructor_errored {
+                // This isn't completely correct - the 'large_preload' test observes
+                // the child being set after an 'enterFrame' call. However, our
+                // current logic should hopefully be good enough.
+                avm2_stub_method_context!(
+                    uc,
+                    "flash.display.Loader",
+                    "load",
+                    "addChild at the correct time"
+                );
 
-            // Note that we do *not* use the 'addChild' method here:
-            // Per the flash docs, our implementation always throws
-            // an 'unsupported' error. Also, the AVM2 side of our movie
-            // clip does not yet exist. Any children added inside the movie
-            // frame constructor will see an 'added' event immediately, and
-            // an 'addedToStage' event *after* the constructor finishes
-            // when we add the movie as a child of the loader.
-            loader.insert_at_index(uc, dobj.unwrap(), 0);
+                loader_info.set_expose_content();
 
-            if !movie.unwrap().is_action_script_3() {
-                loader.insert_child_into_depth_list(uc, LOADER_INSERTED_AVM1_DEPTH, dobj.unwrap());
+                // Note that we do *not* use the 'addChild' method here:
+                // Per the flash docs, our implementation always throws
+                // an 'unsupported' error. Also, the AVM2 side of our movie
+                // clip does not yet exist. Any children added inside the movie
+                // frame constructor will see an 'added' event immediately, and
+                // an 'addedToStage' event *after* the constructor finishes
+                // when we add the movie as a child of the loader.
+                loader.insert_at_index(uc, dobj, 0);
+
+                if !movie.unwrap().is_action_script_3() {
+                    loader.insert_child_into_depth_list(uc, LOADER_INSERTED_AVM1_DEPTH, dobj);
+                }
             }
         } else if let Some(dobj) = dobj {
             // This is a load of an image into AVM1 - add it as a child of the target clip.
