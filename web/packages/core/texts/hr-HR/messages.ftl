@@ -24,5 +24,7 @@ clipboard-message-description =
        *[unsupported] Vaš preglednik ne podržava puni pristup međuspremniku,
         [access-denied] Pristup međuspremniku je uskraćen,
     } ali uvijek možete umjesto toga koristiti ove prečace:
+clipboard-message-copy = { " " } za kopiranje
+clipboard-message-cut = { " " } za izrezivanje
 clipboard-message-paste = { " " } za lijepljenje
 error-canvas-reload = Nije moguće ponovno učitavanje s rendererom platna kada je renderer platna već u upotrebi.

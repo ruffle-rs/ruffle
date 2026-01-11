@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Fișier
-file-menu-open-quick = Deschide...
 file-menu-open-advanced = Deschidere avansată...
 file-menu-close = Închide
 file-menu-reload = Reîncărcare

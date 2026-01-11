@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Файл
-file-menu-open-quick = Ачу...
 file-menu-open-advanced = Киңәйтелгәнне ачу...
 file-menu-close = Ябу
 file-menu-reload = Яңарту

@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Fitxer
-file-menu-open-quick = Obre...
 file-menu-open-advanced = Obre amb opcions...
 file-menu-close = Tanca
 file-menu-reload = Recarrega
