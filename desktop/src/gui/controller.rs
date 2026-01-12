@@ -488,11 +488,16 @@ impl GuiController {
             return;
         };
 
-        let player_options = self.gui.dialogs.saved_launch_options().player.clone();
+        let launch_options = self.gui.dialogs.saved_launch_options();
+        let player_options = launch_options.player.clone();
         self.gui
             .dialogs
             .open_dialog(DialogDescriptor::ExportBundle(Box::new(
-                ExportBundleDialogConfiguration::new(movie_url, player_options),
+                ExportBundleDialogConfiguration::new(
+                    movie_url,
+                    player_options,
+                    launch_options.root_content_path.clone(),
+                ),
             )));
         self.gui.on_player_destroyed();
     }
