@@ -11,7 +11,7 @@ pub fn gc<'gc>(
     _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    activation.context.needs_gc = true;
+    *activation.context.needs_gc = true;
     Ok(Value::Undefined)
 }
 
