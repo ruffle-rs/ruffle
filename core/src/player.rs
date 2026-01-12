@@ -2383,9 +2383,10 @@ impl Player {
         self.update_mouse_state(EnumSet::empty(), false, &mut false);
 
         // GC
-        self.gc_arena.borrow_mut().collect_debt();
         if self.needs_gc {
             self.gc_arena.borrow_mut().finish_cycle();
+        } else {
+            self.gc_arena.borrow_mut().collect_debt();
         }
         self.needs_gc = false;
 

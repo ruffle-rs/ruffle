@@ -5,7 +5,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 
-/// Implements `flash.system.System.setClipboard` method
+/// Implements the `flash.system.System.gc` method
 pub fn gc<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
