@@ -307,6 +307,7 @@ pub struct Player {
 
     run_state: RunState,
     needs_render: bool,
+    needs_gc: bool,
 
     renderer: Box<dyn RenderBackend>,
     audio: Box<dyn AudioBackend>,
@@ -2290,6 +2291,7 @@ impl Player {
                 timers,
                 current_context_menu,
                 needs_render: &mut this.needs_render,
+                needs_gc: &mut this.needs_gc,
                 avm1,
                 avm2,
                 external_interface,
@@ -2382,6 +2384,10 @@ impl Player {
 
         // GC
         self.gc_arena.borrow_mut().collect_debt();
+        if self.needs_gc {
+            self.gc_arena.borrow_mut().finish_cycle();
+        }
+        self.needs_gc = false;
 
         rval
     }

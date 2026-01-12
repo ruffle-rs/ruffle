@@ -6,6 +6,16 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 
 /// Implements `flash.system.System.setClipboard` method
+pub fn gc<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    activation.context.needs_gc = true;
+    Ok(Value::Undefined)
+}
+
+/// Implements `flash.system.System.setClipboard` method
 pub fn set_clipboard<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
