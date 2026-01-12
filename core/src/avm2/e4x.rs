@@ -704,6 +704,7 @@ impl<'gc> E4XNode<'gc> {
 
         let data_utf8 = string.to_utf8_lossy();
         let mut parser = NsReader::from_str(&data_utf8);
+        parser.config_mut().allow_dangling_amp = true;
         let mut open_tags: Vec<E4XNode<'gc>> = vec![];
 
         let mut top_level = vec![];
@@ -762,6 +763,10 @@ impl<'gc> E4XNode<'gc> {
             }
         }
 
+        // Buffer for accumulating text content across Text and GeneralRef events.
+        // quick-xml emits these as separate events, but Flash joins them into a single text node.
+        let mut text_buffer: Vec<u8> = Vec::new();
+
         loop {
             let event = match parser.read_event() {
                 Ok(event) => event,
@@ -788,107 +793,163 @@ impl<'gc> E4XNode<'gc> {
             };
 
             match &event {
-                Event::Start(bs) => {
-                    let child =
-                        E4XNode::from_start_event(activation, &parser, bs, parser.decoder())?;
-
-                    if let Some(current_tag) = open_tags.last_mut() {
-                        current_tag.append_child(activation.gc(), child);
-                    }
-                    open_tags.push(child);
-                }
-                Event::Empty(bs) => {
-                    let node =
-                        E4XNode::from_start_event(activation, &parser, bs, parser.decoder())?;
-                    push_childless_node(node, &mut open_tags, &mut top_level, activation);
-                }
-                Event::End(_) => {
-                    let node = open_tags.pop().unwrap();
-                    if open_tags.is_empty() {
-                        top_level.push(node);
-                    }
-                }
+                // Text and GeneralRef events are accumulated into text_buffer
                 Event::Text(bt) => {
-                    handle_text_cdata(
+                    text_buffer.extend(
                         custom_unescape(bt, parser.decoder())
                             .map_err(|e| make_xml_error(activation, e))?
                             .as_bytes(),
-                        ignore_white,
-                        &mut open_tags,
-                        &mut top_level,
-                        true,
-                        activation,
                     );
                 }
-                Event::CData(bt) => {
-                    // This is already unescaped
-                    handle_text_cdata(
-                        bt,
-                        ignore_white,
-                        &mut open_tags,
-                        &mut top_level,
-                        false,
-                        activation,
-                    );
-                }
-
-                Event::Comment(bt) => {
-                    if ignore_comments {
-                        continue;
+                Event::GeneralRef(br) => {
+                    match br.resolve_char_ref() {
+                        Ok(Some(ch)) => {
+                            // Numeric ref resolved to a character
+                            let mut buf = [0u8; 4];
+                            text_buffer.extend(ch.encode_utf8(&mut buf).as_bytes());
+                        }
+                        Ok(None) | Err(_) => {
+                            // Named entity ref - try to unescape standard entities like &amp; &lt; &gt;
+                            let inner = br.clone().into_inner();
+                            let mut entity = Vec::with_capacity(inner.len() + 2);
+                            entity.push(b'&');
+                            entity.extend_from_slice(&inner);
+                            entity.push(b';');
+                            match quick_xml::escape::unescape(
+                                std::str::from_utf8(&entity).unwrap_or_default(),
+                            ) {
+                                Ok(unescaped) => text_buffer.extend(unescaped.as_bytes()),
+                                Err(_) => text_buffer.extend(&entity),
+                            }
+                        }
                     }
-                    let text = custom_unescape(bt, parser.decoder())
-                        .map_err(|e| make_xml_error(activation, e))?;
-                    let text = AvmString::new_utf8_bytes(activation.gc(), text.as_bytes());
-                    let node = E4XNode(Gc::new(
-                        activation.gc(),
-                        E4XNodeData {
-                            parent: Lock::new(None),
-                            namespace: Lock::new(None),
-                            local_name: Lock::new(None),
-                            kind: RefLock::new(E4XNodeKind::Comment(text)),
-                            notification: Lock::new(None),
-                        },
-                    ));
-
-                    push_childless_node(node, &mut open_tags, &mut top_level, activation);
                 }
-                Event::PI(bt) => {
-                    if ignore_processing_instructions {
-                        continue;
+                // All other events: flush text buffer first, then handle
+                _ => {
+                    if !text_buffer.is_empty() {
+                        handle_text_cdata(
+                            &text_buffer,
+                            ignore_white,
+                            &mut open_tags,
+                            &mut top_level,
+                            true,
+                            activation,
+                        );
+                        text_buffer.clear();
                     }
-                    let text = custom_unescape(bt, parser.decoder())
-                        .map_err(|e| make_xml_error(activation, e))?;
-                    let (name, value) = if let Some((name, value)) = text.split_once(' ') {
-                        (
-                            AvmString::new_utf8_bytes(activation.gc(), name.as_bytes()),
-                            AvmString::new_utf8_bytes(
+                    match &event {
+                        Event::Start(bs) => {
+                            let child = E4XNode::from_start_event(
+                                activation,
+                                &parser,
+                                bs,
+                                parser.decoder(),
+                            )?;
+
+                            if let Some(current_tag) = open_tags.last_mut() {
+                                current_tag.append_child(activation.gc(), child);
+                            }
+                            open_tags.push(child);
+                        }
+                        Event::Empty(bs) => {
+                            let node = E4XNode::from_start_event(
+                                activation,
+                                &parser,
+                                bs,
+                                parser.decoder(),
+                            )?;
+                            push_childless_node(node, &mut open_tags, &mut top_level, activation);
+                        }
+                        Event::End(_) => {
+                            let node = open_tags.pop().unwrap();
+                            if open_tags.is_empty() {
+                                top_level.push(node);
+                            }
+                        }
+                        Event::CData(bt) => {
+                            // CData is kept as a separate node (not joined with Text)
+                            handle_text_cdata(
+                                bt,
+                                ignore_white,
+                                &mut open_tags,
+                                &mut top_level,
+                                false,
+                                activation,
+                            );
+                        }
+                        Event::Comment(bt) => {
+                            if ignore_comments {
+                                continue;
+                            }
+                            let text = custom_unescape(bt, parser.decoder())
+                                .map_err(|e| make_xml_error(activation, e))?;
+                            let text = AvmString::new_utf8_bytes(activation.gc(), text.as_bytes());
+                            let node = E4XNode(Gc::new(
                                 activation.gc(),
-                                value.trim_start().as_bytes(),
-                            ),
-                        )
-                    } else {
-                        (
-                            AvmString::new_utf8_bytes(activation.gc(), text.as_bytes()),
-                            istr!(""),
-                        )
-                    };
-                    let node = E4XNode(Gc::new(
-                        activation.gc(),
-                        E4XNodeData {
-                            parent: Lock::new(None),
-                            namespace: Lock::new(None),
-                            local_name: Lock::new(Some(name)),
-                            kind: RefLock::new(E4XNodeKind::ProcessingInstruction(value)),
-                            notification: Lock::new(None),
-                        },
-                    ));
+                                E4XNodeData {
+                                    parent: Lock::new(None),
+                                    namespace: Lock::new(None),
+                                    local_name: Lock::new(None),
+                                    kind: RefLock::new(E4XNodeKind::Comment(text)),
+                                    notification: Lock::new(None),
+                                },
+                            ));
 
-                    push_childless_node(node, &mut open_tags, &mut top_level, activation);
+                            push_childless_node(node, &mut open_tags, &mut top_level, activation);
+                        }
+                        Event::PI(bt) => {
+                            if ignore_processing_instructions {
+                                continue;
+                            }
+                            let text = custom_unescape(bt, parser.decoder())
+                                .map_err(|e| make_xml_error(activation, e))?;
+                            let (name, value) = if let Some((name, value)) = text.split_once(' ') {
+                                (
+                                    AvmString::new_utf8_bytes(activation.gc(), name.as_bytes()),
+                                    AvmString::new_utf8_bytes(
+                                        activation.gc(),
+                                        value.trim_start().as_bytes(),
+                                    ),
+                                )
+                            } else {
+                                (
+                                    AvmString::new_utf8_bytes(activation.gc(), text.as_bytes()),
+                                    istr!(""),
+                                )
+                            };
+                            let node = E4XNode(Gc::new(
+                                activation.gc(),
+                                E4XNodeData {
+                                    parent: Lock::new(None),
+                                    namespace: Lock::new(None),
+                                    local_name: Lock::new(Some(name)),
+                                    kind: RefLock::new(E4XNodeKind::ProcessingInstruction(value)),
+                                    notification: Lock::new(None),
+                                },
+                            ));
+
+                            push_childless_node(node, &mut open_tags, &mut top_level, activation);
+                        }
+                        // These are completely ignored by AVM2
+                        Event::Decl(_) | Event::DocType(_) => {}
+                        Event::Eof => break,
+                        // Text and GeneralRef are handled in the outer match
+                        Event::Text(_) | Event::GeneralRef(_) => unreachable!(),
+                    }
                 }
-                // These are completely ignored by AVM2
-                Event::Decl(_) | Event::DocType(_) => {}
-                Event::Eof => break,
             }
+        }
+
+        // Flush any remaining text buffer
+        if !text_buffer.is_empty() {
+            handle_text_cdata(
+                &text_buffer,
+                ignore_white,
+                &mut open_tags,
+                &mut top_level,
+                true,
+                activation,
+            );
         }
 
         // Throw an error for unclosed tags.
@@ -923,7 +984,7 @@ impl<'gc> E4XNode<'gc> {
                 .map_err(|e| make_xml_error(activation, e))?;
             let value = AvmString::new_utf8_bytes(activation.gc(), value_str.as_bytes());
 
-            let (ns, local_name) = parser.resolve_attribute(attribute.key);
+            let (ns, local_name) = parser.resolver().resolve_attribute(attribute.key);
 
             let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
             let name = activation.strings().intern_wstr(local_name).into();
@@ -972,7 +1033,7 @@ impl<'gc> E4XNode<'gc> {
             attribute_nodes.push(attribute);
         }
 
-        let (ns, local_name) = parser.resolve_element(bs.name());
+        let (ns, local_name) = parser.resolver().resolve_element(bs.name());
 
         let local_name = ruffle_wstr::from_utf8_bytes(local_name.into_inner());
         let name = activation.strings().intern_wstr(local_name).into();

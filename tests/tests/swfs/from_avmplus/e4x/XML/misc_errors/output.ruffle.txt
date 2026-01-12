@@ -25,7 +25,7 @@ wrong case end tag PASSED!
 Asserting for TypeError PASSED!
 missing attribute value PASSED!
 Asserting for TypeError PASSED!
-unterminated XML decl FAILED! expected: Error #1092 got: Error #1097
+unterminated XML decl PASSED!
 Asserting for TypeError PASSED!
 XML must start and end with same entity PASSED!
 Asserting for TypeError PASSED!

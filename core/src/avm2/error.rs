@@ -205,10 +205,12 @@ pub fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, err: XmlError) 
                 "Error #1094: XML parser failure: Unterminated comment.",
                 1094,
             ),
+            // TODO: Split into separate UnclosedXmlDecl (1092) and UnclosedPI (1097) cases
+            // when a quick-xml version with https://github.com/tafia/quick-xml/pull/924 is released.
             XmlSyntaxError::UnclosedPIOrXmlDecl => type_error(
                 activation,
-                "Error #1097: XML parser failure: Unterminated processing instruction.",
-                1097,
+                "Error #1092: XML parser failure: Unterminated XML declaration.",
+                1092,
             ),
             _ => type_error(
                 activation,
