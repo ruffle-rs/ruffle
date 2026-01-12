@@ -559,7 +559,7 @@ impl ApplicationHandler<RuffleEvent> for App {
                 }
             }
 
-            (Some(main_window), RuffleEvent::BrowseAndOpen(options, open_type)) => {
+            (Some(main_window), RuffleEvent::BrowseAndOpen(mut options, open_type)) => {
                 let event_loop = main_window.event_loop_proxy.clone();
                 let picker = main_window.gui.file_picker();
                 tokio::spawn(async move {
@@ -568,7 +568,10 @@ impl ApplicationHandler<RuffleEvent> for App {
                         OpenType::Directory => picker
                             .pick_ruffle_directory_and_content(None)
                             .await
-                            .map(|(_, content)| content),
+                            .map(|(dir, content)| {
+                                options.root_content_path = Some(dir);
+                                content
+                            }),
                     };
 
                     if let Some(url) = picked.and_then(|p| Url::from_file_path(p).ok()) {

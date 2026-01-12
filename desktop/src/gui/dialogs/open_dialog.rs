@@ -77,6 +77,7 @@ impl OpenDialog {
         );
         let path = PathOrUrlField::new(
             default_url,
+            defaults.root_content_path.clone(),
             LocalizableText::LocalizedText("open-dialog-path"),
             picker,
         );
@@ -291,7 +292,7 @@ impl OpenDialog {
     }
 
     pub fn url(&self) -> Option<Url> {
-        self.path.result()
+        self.path.result().map(|r| r.url)
     }
 
     pub fn options(&self) -> &LaunchOptions {
@@ -304,13 +305,19 @@ impl OpenDialog {
         } else {
             self.options.player.frame_rate = None;
         }
-        if let Some(url) = self.path.result()
-            && self
+
+        if let Some(result) = self.path.result() {
+            let mut launch_options = self.options.clone();
+            if let Some(root_content_path) = result.root_content_path {
+                launch_options.root_content_path = Some(root_content_path);
+            }
+            if self
                 .event_loop
-                .send_event(RuffleEvent::Open(url, Box::new(self.options.clone())))
+                .send_event(RuffleEvent::Open(result.url, Box::new(launch_options)))
                 .is_ok()
-        {
-            return true;
+            {
+                return true;
+            }
         }
 
         false

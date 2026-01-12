@@ -1,6 +1,6 @@
 use crate::backends::{
     DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopNavigatorInterface,
-    DesktopUiBackend,
+    DesktopUiBackend, PathAllowList,
 };
 use crate::cli::FilesystemAccessMode;
 use crate::cli::GameModePreference;
@@ -51,6 +51,11 @@ pub struct LaunchOptions {
     pub filesystem_access_mode: FilesystemAccessMode,
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub avm2_optimizer_enabled: bool,
+
+    /// Path representing the root of the content. If present, it will allow
+    /// Ruffle to allow access to files residing in this directory
+    /// automatically.
+    pub root_content_path: Option<PathBuf>,
 }
 
 impl From<&GlobalPreferences> for LaunchOptions {
@@ -101,6 +106,7 @@ impl From<&GlobalPreferences> for LaunchOptions {
             tcp_connections: value.cli.tcp_connections,
             gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
             avm2_optimizer_enabled: !value.cli.no_avm2_optimizer,
+            root_content_path: None,
         }
     }
 }
@@ -183,7 +189,7 @@ impl ActivePlayer {
 
         let opt = match &content {
             PlayingContent::DirectFile(_) => Cow::Borrowed(opt),
-            PlayingContent::Bundle(_, bundle) => {
+            PlayingContent::Bundle(url, bundle) => {
                 let player = opt.player.or(&bundle.information().player);
 
                 Cow::Owned(LaunchOptions {
@@ -197,6 +203,7 @@ impl ActivePlayer {
                     filesystem_access_mode: opt.filesystem_access_mode,
                     gamepad_button_mapping: opt.gamepad_button_mapping.clone(),
                     avm2_optimizer_enabled: opt.avm2_optimizer_enabled,
+                    root_content_path: url.to_file_path().ok(),
                 })
             }
         };
@@ -207,6 +214,7 @@ impl ActivePlayer {
         };
         let movie_url = content.initial_swf_url().clone();
         let readable_name = content.name();
+        let initial_allow_list = PathAllowList::new(&movie_url, opt.root_content_path.clone());
         let navigator = ExternalNavigatorBackend::new(
             opt.player
                 .base
@@ -223,7 +231,7 @@ impl ActivePlayer {
             DesktopNavigatorInterface::new(
                 preferences.clone(),
                 event_loop.clone(),
-                movie_url.to_file_path().ok(),
+                initial_allow_list,
                 opt.filesystem_access_mode,
             ),
         );

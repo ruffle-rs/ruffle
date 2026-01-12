@@ -28,17 +28,22 @@ pub struct PathAllowList {
 }
 
 impl PathAllowList {
-    fn new(movie_path: Option<PathBuf>) -> Self {
+    pub fn new(movie_url: &Url, root_content_path: Option<PathBuf>) -> Self {
         let mut allowed_path_prefixes = Vec::new();
-        if let Some(movie_path) = movie_path {
+
+        if let Ok(movie_path) = movie_url.to_file_path() {
             if let Some(parent) = movie_path.parent() {
-                // TODO Be smarter here, we do not necessarily want to allow
-                //   access to the SWF's dir, but we also do not want to present
-                //   the dialog to the user too often.
+                // TODO Remove it after integrating recents & bookmarks with
+                //   opening a directory.
                 allowed_path_prefixes.push(parent.to_path_buf());
             }
             allowed_path_prefixes.push(movie_path);
         }
+
+        if let Some(root_content_path) = root_content_path {
+            allowed_path_prefixes.push(root_content_path);
+        }
+
         Self {
             allowed_path_prefixes: Arc::new(Mutex::new(allowed_path_prefixes)),
         }
@@ -89,13 +94,13 @@ impl DesktopNavigatorInterface {
     pub fn new(
         preferences: GlobalPreferences,
         event_loop: EventLoopProxy<RuffleEvent>,
-        movie_path: Option<PathBuf>,
+        initial_allow_list: PathAllowList,
         filesystem_access_mode: FilesystemAccessMode,
     ) -> Self {
         Self {
             preferences,
             event_loop: Arc::new(Mutex::new(event_loop)),
-            allow_list: PathAllowList::new(movie_path),
+            allow_list: initial_allow_list,
             filesystem_access_mode,
         }
     }
