@@ -27,9 +27,10 @@ impl BookmarkAddDialog {
                 .as_ref()
                 .map(|x| ruffle_frontend_utils::url_to_readable_name(x).into_owned())
                 .unwrap_or_default(),
-            // TODO: hint.
+            // TODO: Hint and root content path.
             url: PathOrUrlField::new(
                 initial_url,
+                None,
                 LocalizableText::NonLocalizedText("".into()),
                 picker,
             ),
@@ -77,7 +78,8 @@ impl BookmarkAddDialog {
                                     url: self
                                         .url
                                         .result()
-                                        .expect("is_valid() ensured value exists"),
+                                        .expect("is_valid() ensured value exists")
+                                        .url,
                                 })
                             }) {
                                 tracing::warn!("Couldn't update bookmarks: {e}");
@@ -221,10 +223,11 @@ impl BookmarksDialog {
                             if response.clicked() {
                                 self.selected_bookmark = Some(SelectedBookmark {
                                     index,
-                                    // TODO: set hint
+                                    // TODO: Hint and root content path.
                                     name: bookmark.name.clone(),
                                     url: PathOrUrlField::new(
                                         Some(bookmark.url.clone()),
+                                        None,
                                         LocalizableText::NonLocalizedText("".into()),
                                         self.picker.clone(),
                                     ),
@@ -275,10 +278,11 @@ impl BookmarksDialog {
                     }
                     ui.end_row();
 
-                    let previous_url = bookmark.url.result();
+                    // TODO Do not ignore root content directory.
+                    let previous_url = bookmark.url.result().map(|r| r.url);
 
                     ui.label(text(locale, "bookmarks-dialog-location"));
-                    let current_url = bookmark.url.ui(locale, ui).result();
+                    let current_url = bookmark.url.ui(locale, ui).result().map(|r| r.url);
 
                     // TODO: Change the UrlOrPathField widget to return a response instead, so we can update when we lose the focus, removes the need to clone every redraw.
                     if previous_url != current_url

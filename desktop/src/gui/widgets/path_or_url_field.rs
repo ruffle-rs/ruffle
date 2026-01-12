@@ -5,14 +5,21 @@ use std::sync::{Arc, Mutex, MutexGuard};
 use unic_langid::LanguageIdentifier;
 use url::Url;
 
+#[derive(Debug)]
+pub struct PathOrUrlFieldResult {
+    pub url: Url,
+    pub root_content_path: Option<PathBuf>,
+}
+
 #[derive(Default)]
 struct PathOrUrlFieldValue {
     url: Option<Url>,
     representation: String,
+    root_content_path: Option<PathBuf>,
 }
 
 impl PathOrUrlFieldValue {
-    fn from_url(url: Url) -> Self {
+    fn new(url: Url, root_content_path: Option<PathBuf>) -> Self {
         Self {
             representation: if url.scheme() == "file"
                 && let Ok(path) = url.to_file_path()
@@ -22,13 +29,15 @@ impl PathOrUrlFieldValue {
                 url.to_string()
             },
             url: Some(url),
+            root_content_path,
         }
     }
 
     fn from_path(path: PathBuf) -> Self {
         Self {
             representation: Self::path_to_representation(&path),
-            url: Url::from_file_path(path).ok(),
+            url: Url::from_file_path(&path).ok(),
+            root_content_path: Some(path),
         }
     }
 
@@ -40,6 +49,7 @@ impl PathOrUrlFieldValue {
             Self {
                 url: Url::parse(&string).ok(),
                 representation: string,
+                root_content_path: None,
             }
         }
     }
@@ -50,6 +60,7 @@ impl PathOrUrlFieldValue {
         Self {
             url: Url::from_file_path(content).ok(),
             representation: Self::path_to_representation(&directory),
+            root_content_path: Some(directory),
         }
     }
 
@@ -69,12 +80,17 @@ pub struct PathOrUrlField {
 }
 
 impl PathOrUrlField {
-    pub fn new(default: Option<Url>, hint: LocalizableText, picker: FilePicker) -> Self {
+    pub fn new(
+        default: Option<Url>,
+        root_content_path: Option<PathBuf>,
+        hint: LocalizableText,
+        picker: FilePicker,
+    ) -> Self {
         Self {
             picker,
             value: Arc::new(Mutex::new(
                 default
-                    .map(PathOrUrlFieldValue::from_url)
+                    .map(|url| PathOrUrlFieldValue::new(url, root_content_path))
                     .unwrap_or_default(),
             )),
             hint,
@@ -148,7 +164,15 @@ impl PathOrUrlField {
         self
     }
 
-    pub fn result(&self) -> Option<Url> {
-        Self::lock_value(&self.value).url.clone()
+    pub fn result(&self) -> Option<PathOrUrlFieldResult> {
+        let value = Self::lock_value(&self.value);
+        if let Some(ref url) = value.url {
+            Some(PathOrUrlFieldResult {
+                url: url.clone(),
+                root_content_path: value.root_content_path.clone(),
+            })
+        } else {
+            None
+        }
     }
 }
