@@ -14,13 +14,19 @@ use url::Url;
 pub struct ExportBundleDialogConfiguration {
     movie_url: Url,
     player_options: PlayerOptions,
+    root_content_path: Option<PathBuf>,
 }
 
 impl ExportBundleDialogConfiguration {
-    pub fn new(movie_url: Url, player_options: PlayerOptions) -> Self {
+    pub fn new(
+        movie_url: Url,
+        player_options: PlayerOptions,
+        root_content_path: Option<PathBuf>,
+    ) -> Self {
         Self {
             movie_url,
             player_options,
+            root_content_path,
         }
     }
 }
@@ -98,8 +104,8 @@ impl ExportBundleDialog {
         let mut local_files = Vec::new();
         if let Ok(root_movie) = config.movie_url.to_file_path() {
             bundle_local_files = true;
-            if let Some(movie_parent_dir) = root_movie.parent() {
-                for entry in walkdir::WalkDir::new(movie_parent_dir)
+            if let Some(root_content_path) = &config.root_content_path {
+                for entry in walkdir::WalkDir::new(root_content_path)
                     .follow_links(false)
                     .into_iter()
                     .filter_map(|e| e.ok())
