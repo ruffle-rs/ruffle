@@ -2992,7 +2992,7 @@ bitflags! {
 bitflags! {
     /// Defines how hit testing should be performed.
     /// Used for mouse picking and ActionScript's hitTestClip functions.
-    #[derive(Clone, Copy, Debug)]
+    #[derive(Clone, Copy)]
     pub struct HitTestOptions: u8 {
         /// Ignore objects used as masks (setMask / clipDepth).
         const SKIP_MASK = 1 << 0;
@@ -3004,9 +3004,7 @@ bitflags! {
         const SKIP_CHILDREN = 1 << 2;
 
         /// The options used for `hitTest` calls in ActionScript.
-        /// Needs to have it's own bitflag to identify if it's coming from AVM or Ruffle
-        /// Specifically in Morph Shapes.
-        const AVM_HIT_TEST = Self::SKIP_MASK.bits() | 1 << 3;
+        const AVM_HIT_TEST = Self::SKIP_MASK.bits();
 
         /// The options used for mouse picking, such as clicking on buttons.
         const MOUSE_PICK = Self::SKIP_MASK.bits() | Self::SKIP_INVISIBLE.bits();
