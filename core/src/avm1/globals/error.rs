@@ -7,8 +7,8 @@ use crate::avm1::{Object, Value};
 use ruffle_macros::istr;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "message" => string("Error");
-    "name" => string("Error");
+    "message" => value("Error");
+    "name" => value("Error");
     "toString" => method(to_string);
 };
 

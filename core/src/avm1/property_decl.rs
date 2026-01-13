@@ -123,16 +123,8 @@ pub enum DeclKind<'gc> {
     Function(NativeFunction),
     /// Declares a static string value.
     String(&'static [u8]),
-    /// Declares a static bool value.
-    Bool(bool),
-    /// Declares a static int value.
-    Int(i32),
-    /// Declares a static float value.
-    Float(f64),
-    /// Declares an object value (can't be used in static contexts).
-    Object(Object<'gc>),
-    /// Declares a static null value.
-    Null,
+    /// Declares a static value.
+    Value(Value<'gc>),
 }
 
 impl<'gc> Declaration<'gc> {
@@ -183,11 +175,7 @@ impl<'gc> Declaration<'gc> {
                     .into()
             }
             DeclKind::String(s) => context.intern_static(WStr::from_units(s)).into(),
-            DeclKind::Bool(b) => b.into(),
-            DeclKind::Int(i) => i.into(),
-            DeclKind::Float(f) => f.into(),
-            DeclKind::Object(o) => o.into(),
-            DeclKind::Null => Value::Null,
+            DeclKind::Value(value) => value,
         };
 
         this.define_value(mc, name, value, self.attributes);
@@ -212,12 +200,12 @@ impl<'gc> Declaration<'gc> {
 ///     "callme" => function(CALLME);
 ///     // you can go back to the 'default' mode
 ///     use default;
-///     "locale" => string("en-US");
-///     "enabled" => bool(true);
-///     "size" => int(123);
-///     "scale" => float(0.85);
+///     "locale" => value("en-US");
+///     "enabled" => value(true);
+///     "size" => value(123);
+///     "scale" => value(0.85);
 ///     // all declarations can also specify attributes
-///     "hidden" => string("shh!"; DONT_ENUM | DONT_DELETE | READ_ONLY);
+///     "hidden" => value("shh!"; DONT_ENUM | DONT_DELETE | READ_ONLY);
 /// };
 ///
 /// mod method {
@@ -350,23 +338,11 @@ macro_rules! __declare_properties {
     (@kind [fn $($path:ident)::+] function($function:ident)) => {
         $crate::avm1::property_decl::DeclKind::TableFunction($($path)::+, $($path::)+$function)
     };
-    (@kind $_mode:tt string($string:expr)) => {
-        $crate::avm1::property_decl::DeclKind::String(const { __assert_ascii($string) })
+    (@kind $_mode:tt value(null)) => {
+        $crate::avm1::property_decl::DeclKind::Value(Value::Null)
     };
-    (@kind $_mode:tt bool($boolean:expr)) => {
-        $crate::avm1::property_decl::DeclKind::Bool($boolean)
-    };
-    (@kind $_mode:tt int($int:expr)) => {
-        $crate::avm1::property_decl::DeclKind::Int($int)
-    };
-    (@kind $_mode:tt float($float:expr)) => {
-        $crate::avm1::property_decl::DeclKind::Float($float)
-    };
-    (@kind $_mode:tt object($obj:expr)) => {
-        $crate::avm1::property_decl::DeclKind::Object($obj)
-    };
-    (@kind $_mode:tt null()) => {
-        $crate::avm1::property_decl::DeclKind::Null
+    (@kind $_mode:tt value($obj:expr)) => {
+        $crate::avm1::property_decl::DeclValueConvertible($obj).convert()
     };
 }
 
@@ -378,4 +354,37 @@ macro_rules! table_constructor {
         // TODO: add support to ASnative-style table constructors to FunctionObject.
         |activation, this, args| $($method)::+(activation, this, args, ($($method::)+$index))
     };
+}
+
+pub struct DeclValueConvertible<T>(pub T);
+
+impl<'gc> DeclValueConvertible<i32> {
+    pub const fn convert(self) -> DeclKind<'gc> {
+        DeclKind::Value(Value::Number(self.0 as f64))
+    }
+}
+
+impl<'gc> DeclValueConvertible<f64> {
+    pub const fn convert(self) -> DeclKind<'gc> {
+        DeclKind::Value(Value::Number(self.0))
+    }
+}
+
+impl<'gc> DeclValueConvertible<bool> {
+    pub const fn convert(self) -> DeclKind<'gc> {
+        DeclKind::Value(Value::Bool(self.0))
+    }
+}
+
+impl<'gc> DeclValueConvertible<Object<'gc>> {
+    pub const fn convert(self) -> DeclKind<'gc> {
+        DeclKind::Value(Value::Object(self.0))
+    }
+}
+
+impl<'gc> DeclValueConvertible<&'static str> {
+    pub const fn convert(self) -> DeclKind<'gc> {
+        assert!(self.0.is_ascii());
+        DeclKind::String(self.0.as_bytes())
+    }
 }

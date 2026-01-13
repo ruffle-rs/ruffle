@@ -18,14 +18,14 @@ macro_rules! wrap_std {
 }
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    "SQRT2" => float(consts::SQRT_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "SQRT1_2" => float(consts::FRAC_1_SQRT_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "PI" => float(consts::PI; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "LOG2E" => float(consts::LOG2_E; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "LOG10E" => float(consts::LOG10_E; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "LN2" => float(consts::LN_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "LN10" => float(consts::LN_10; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "E" => float(consts::E; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "SQRT2" => value(consts::SQRT_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "SQRT1_2" => value(consts::FRAC_1_SQRT_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "PI" => value(consts::PI; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "LOG2E" => value(consts::LOG2_E; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "LOG10E" => value(consts::LOG10_E; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "LN2" => value(consts::LN_2; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "LN10" => value(consts::LN_10; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "E" => value(consts::E; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "abs" => method(wrap_std!(f64::abs); DONT_ENUM | DONT_DELETE | READ_ONLY);
     "min" => method(min; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "max" => method(max; DONT_ENUM | DONT_DELETE | READ_ONLY);

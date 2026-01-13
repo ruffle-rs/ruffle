@@ -55,11 +55,11 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    "CASEINSENSITIVE" => int(SortOptions::CASE_INSENSITIVE.bits());
-    "DESCENDING" => int(SortOptions::DESCENDING.bits());
-    "UNIQUESORT" => int(SortOptions::UNIQUE_SORT.bits());
-    "RETURNINDEXEDARRAY" => int(SortOptions::RETURN_INDEXED_ARRAY.bits());
-    "NUMERIC" => int(SortOptions::NUMERIC.bits());
+    "CASEINSENSITIVE" => value(SortOptions::CASE_INSENSITIVE.bits());
+    "DESCENDING" => value(SortOptions::DESCENDING.bits());
+    "UNIQUESORT" => value(SortOptions::UNIQUE_SORT.bits());
+    "RETURNINDEXEDARRAY" => value(SortOptions::RETURN_INDEXED_ARRAY.bits());
+    "NUMERIC" => value(SortOptions::NUMERIC.bits());
 };
 
 pub fn create_class<'gc>(

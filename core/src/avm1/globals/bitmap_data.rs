@@ -50,10 +50,10 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    "RED_CHANNEL" => int(1);
-    "GREEN_CHANNEL" => int(2);
-    "BLUE_CHANNEL" => int(4);
-    "ALPHA_CHANNEL" => int(8);
+    "RED_CHANNEL" => value(1);
+    "GREEN_CHANNEL" => value(2);
+    "BLUE_CHANNEL" => value(4);
+    "ALPHA_CHANNEL" => value(8);
     "loadBitmap" => method(load_bitmap);
 };
 

@@ -63,8 +63,8 @@ macro_rules! mc_setter {
 }
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "useHandCursor" => bool(true; DONT_ENUM);
-    "enabled" => bool(true; DONT_ENUM);
+    "useHandCursor" => value(true; DONT_ENUM);
+    "enabled" => value(true; DONT_ENUM);
     // NOTE: `tabIndex` is not enumerable in MovieClip, contrary to Button and TextField
     "tabIndex" => property(mc_getter!(tab_index), mc_setter!(set_tab_index); DONT_ENUM | VERSION_6);
     "_lockroot" => property(mc_getter!(lock_root), mc_setter!(set_lock_root); DONT_DELETE | DONT_ENUM);
