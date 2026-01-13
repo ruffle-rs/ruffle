@@ -993,6 +993,54 @@ impl FormatSpans {
                     text.push_str(&e);
                     spans.push(TextSpan::with_length_and_format(e.len(), &format));
                 }
+                Ok(Event::GeneralRef(br)) => 'entity: {
+                    let format = format_stack.last().unwrap().clone();
+                    if let Some(TextDisplay::None) = format.display {
+                        break 'entity;
+                    }
+
+                    // Resolve entity reference
+                    let resolved: String = match br.resolve_char_ref() {
+                        Ok(Some(ch)) => {
+                            // Numeric character reference (&#229; or &#xE5;)
+                            let mut buf = [0u8; 4];
+                            ch.encode_utf8(&mut buf).to_owned()
+                        }
+                        Ok(None) | Err(_) => {
+                            // Named entity reference - handle HTML entities
+                            let inner = br.into_inner();
+                            let inner_lower = inner.to_ascii_lowercase();
+                            match inner_lower.as_slice() {
+                                b"amp" => "&".to_owned(),
+                                b"lt" => "<".to_owned(),
+                                b"gt" => ">".to_owned(),
+                                b"quot" => "\"".to_owned(),
+                                b"apos" => "'".to_owned(),
+                                b"nbsp" => "\u{00A0}".to_owned(), // Non-breaking space
+                                _ => {
+                                    // Unknown entity - output as-is
+                                    let mut entity = String::with_capacity(inner.len() + 2);
+                                    entity.push('&');
+                                    entity.push_str(&String::from_utf8_lossy(&inner));
+                                    entity.push(';');
+                                    entity
+                                }
+                            }
+                        }
+                    };
+
+                    let e = WString::from_utf8(&resolved);
+                    if swf_version <= 7 && e.trim().is_empty() {
+                        break 'entity;
+                    }
+                    let e = if condense_white {
+                        Self::condense_white_in_text(e)
+                    } else {
+                        e.replace(swf_is_newline, WStr::from_units(&[HTML_NEWLINE]))
+                    };
+                    text.push_str(&e);
+                    spans.push(TextSpan::with_length_and_format(e.len(), &format));
+                }
                 Ok(Event::End(e)) => {
                     let tag_name = &e.name().into_inner().to_ascii_lowercase()[..];
                     // Check for a mismatch.
@@ -1067,7 +1115,16 @@ impl FormatSpans {
                     tracing::warn!("Error while parsing HTML: {}", e);
                     break;
                 }
-                _ => {}
+                // Empty text events are ignored
+                Ok(Event::Text(_)) => {}
+                // These are ignored for HTML text formatting
+                Ok(Event::CData(_))
+                | Ok(Event::Comment(_))
+                | Ok(Event::Decl(_))
+                | Ok(Event::PI(_))
+                | Ok(Event::DocType(_)) => {}
+                // Empty elements are expanded to Start+End (expand_empty_elements = true)
+                Ok(Event::Empty(_)) => unreachable!(),
             }
         }
 
