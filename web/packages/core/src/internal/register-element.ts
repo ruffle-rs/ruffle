@@ -62,16 +62,56 @@ function polyfillDocumentEmbeds(tries: number) {
                     return existing;
                 }
 
-                const nodes = (): NodeListOf<Element> => {
-                    const selectors: string[] = ["embed"];
-
-                    for (let i = 0; i <= tries; i++) {
-                        selectors.push(
-                            i === 0 ? "ruffle-embed" : `ruffle-embed-${i}`,
-                        );
+                const nodes = (): Element[] => {
+                    // Fallback to existing document.embeds for non ruffle-embed elements
+                    const baseEmbeds = orig.get!.call(this) as HTMLCollection;
+                    const selectors: string[] = ["ruffle-embed"];
+                    for (let i = 1; i <= tries; i++) {
+                        selectors.push(`ruffle-embed-${i}`);
                     }
 
-                    return this.querySelectorAll(selectors.join(", "));
+                    const ruffleEmbeds = Array.from(
+                        this.querySelectorAll(selectors.join(", ")),
+                    );
+
+                    const result: Element[] = [];
+
+                    let i = 0;
+                    let j = 0;
+
+                    // Per https://dom.spec.whatwg.org/#interface-htmlcollection, sorted in tree order
+                    while (i < baseEmbeds.length || j < ruffleEmbeds.length) {
+                        const a =
+                            i < baseEmbeds.length ? baseEmbeds.item(i) : null;
+                        const b =
+                            j < ruffleEmbeds.length ? ruffleEmbeds[j] : null;
+
+                        if (!a) {
+                            result.push(b!);
+                            j++;
+                            continue;
+                        }
+
+                        if (!b) {
+                            result.push(a);
+                            i++;
+                            continue;
+                        }
+
+                        // a comes before b in DOM order
+                        if (
+                            a.compareDocumentPosition(b) &
+                            Node.DOCUMENT_POSITION_FOLLOWING
+                        ) {
+                            result.push(a);
+                            i++;
+                        } else {
+                            result.push(b);
+                            j++;
+                        }
+                    }
+
+                    return result;
                 };
 
                 const base = Object.create(
