@@ -148,14 +148,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
             && self.world_bounds(BoundsMode::Engine).contains(point)
         {
-            if let Some(frame) = self
-                .0
-                .shared
-                .get()
-                .frames
-                .borrow()
-                .get(&self.ratio())
-            {
+            if let Some(frame) = self.0.shared.get().frames.borrow().get(&self.ratio()) {
                 let Some(local_matrix) = self.global_to_local_matrix() else {
                     return false;
                 };
