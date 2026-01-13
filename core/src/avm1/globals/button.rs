@@ -39,8 +39,8 @@ macro_rules! button_setter {
 }
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "useHandCursor" => bool(true);
-    "enabled" => bool(true);
+    "useHandCursor" => value(true);
+    "enabled" => value(true);
     "getDepth" => method(globals::get_depth; VERSION_6);
     "scale9Grid" => property(button_getter!(scale_9_grid), button_setter!(set_scale_9_grid); READ_ONLY | VERSION_8);
     "filters" => property(button_getter!(filters), button_setter!(set_filters); READ_ONLY | VERSION_8);

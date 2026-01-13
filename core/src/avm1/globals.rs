@@ -599,25 +599,25 @@ pub fn create_globals<'gc>(
         // ASnative doesn't seem to have an ASnative index (searched in `ASnative(0..10000, 0..10000)`).
         "ASnative" => method(asnative::asnative; DONT_ENUM);
         // TODO: ASconstructor
-        "Object" => object(object.constr; DONT_ENUM);
-        "Function" => object(function.constr; DONT_ENUM | VERSION_6);
+        "Object" => value(object.constr; DONT_ENUM);
+        "Function" => value(function.constr; DONT_ENUM | VERSION_6);
         // TODO: enableDebugConsole - is this only present in the debugger version of FP?
         "NaN" => property(get_nan; DONT_ENUM);
         "Infinity" => property(get_infinity; DONT_ENUM);
 
         // Starting from here, FP defines these through its embedded `playerglobals.swf`
-        "MovieClip" => object(movie_clip.constr; DONT_ENUM);
-        "XMLSocket" => object(xml_socket.constr; DONT_ENUM);
-        "AsBroadcaster" => object(as_broadcaster.constr; DONT_ENUM);
-        "Color" => object(color.constr; DONT_ENUM);
-        "NetConnection" => object(netconnection.constr; DONT_ENUM);
-        "NetStream" => object(netstream.constr; DONT_ENUM);
-        "Camera" => object(camera.constr; DONT_ENUM);
-        "Microphone" => object(microphone.constr; DONT_ENUM);
-        "SharedObject" => object(shared_object.constr; DONT_ENUM);
-        "ContextMenuItem" => object(context_menu_item.constr; DONT_ENUM);
-        "ContextMenu" => object(context_menu.constr; DONT_ENUM);
-        "Error" => object(error.constr; DONT_ENUM);
+        "MovieClip" => value(movie_clip.constr; DONT_ENUM);
+        "XMLSocket" => value(xml_socket.constr; DONT_ENUM);
+        "AsBroadcaster" => value(as_broadcaster.constr; DONT_ENUM);
+        "Color" => value(color.constr; DONT_ENUM);
+        "NetConnection" => value(netconnection.constr; DONT_ENUM);
+        "NetStream" => value(netstream.constr; DONT_ENUM);
+        "Camera" => value(camera.constr; DONT_ENUM);
+        "Microphone" => value(microphone.constr; DONT_ENUM);
+        "SharedObject" => value(shared_object.constr; DONT_ENUM);
+        "ContextMenuItem" => value(context_menu_item.constr; DONT_ENUM);
+        "ContextMenu" => value(context_menu.constr; DONT_ENUM);
+        "Error" => value(error.constr; DONT_ENUM);
         // TODO: AsSetupError
         // TODO: AssetCache
         // TODO: RemoteLSOUsage
@@ -650,110 +650,110 @@ pub fn create_globals<'gc>(
         // to symbols more concise.  However, it's not being deleted at the very
         // end, but instead set to `null`, which means that in every SWF, the
         // variable "o" is `null` and not `undefined`.
-        "o" => null();
+        "o" => value(null);
 
-        "Number" => object(number.constr; DONT_ENUM);
-        "Boolean" => object(boolean.constr; DONT_ENUM);
-        "Date" => object(date.constr; DONT_ENUM);
-        "String" => object(string.constr; DONT_ENUM);
-        "Array" => object(array.constr; DONT_ENUM);
-        "Math" => object(math; DONT_ENUM);
-        "Sound" => object(sound.constr; DONT_ENUM);
-        "XMLNode" => object(xmlnode.constr; DONT_ENUM);
-        "XML" => object(xml.constr; DONT_ENUM);
-        "LoadVars" => object(load_vars.constr; DONT_ENUM);
-        "Selection" => object(selection; DONT_ENUM);
-        "Mouse" => object(mouse; DONT_ENUM);
-        "Key" => object(key; DONT_ENUM);
-        "Button" => object(button.constr; DONT_ENUM);
-        "TextField" => object(text_field.constr; DONT_ENUM);
-        "TextFormat" => object(text_format.constr; DONT_ENUM);
-        "Stage" => object(stage; DONT_ENUM);
-        "Video" => object(video.constr; DONT_ENUM);
-        "Accessibility" => object(accessibility; DONT_ENUM);
-        "System" => object(system; DONT_ENUM);
-        "flash" => object(flash; DONT_ENUM | VERSION_8);
-        "textRenderer" => object(text_renderer.constr);
-        "LocalConnection" => object(local_connection.constr; DONT_ENUM);
-        "MovieClipLoader" => object(movie_clip_loader.constr; DONT_ENUM);
-        "PrintJob" => object(print_job.constr; DONT_ENUM);
-        "TextSnapshot" => object(text_snapshot.constr; DONT_ENUM);
+        "Number" => value(number.constr; DONT_ENUM);
+        "Boolean" => value(boolean.constr; DONT_ENUM);
+        "Date" => value(date.constr; DONT_ENUM);
+        "String" => value(string.constr; DONT_ENUM);
+        "Array" => value(array.constr; DONT_ENUM);
+        "Math" => value(math; DONT_ENUM);
+        "Sound" => value(sound.constr; DONT_ENUM);
+        "XMLNode" => value(xmlnode.constr; DONT_ENUM);
+        "XML" => value(xml.constr; DONT_ENUM);
+        "LoadVars" => value(load_vars.constr; DONT_ENUM);
+        "Selection" => value(selection; DONT_ENUM);
+        "Mouse" => value(mouse; DONT_ENUM);
+        "Key" => value(key; DONT_ENUM);
+        "Button" => value(button.constr; DONT_ENUM);
+        "TextField" => value(text_field.constr; DONT_ENUM);
+        "TextFormat" => value(text_format.constr; DONT_ENUM);
+        "Stage" => value(stage; DONT_ENUM);
+        "Video" => value(video.constr; DONT_ENUM);
+        "Accessibility" => value(accessibility; DONT_ENUM);
+        "System" => value(system; DONT_ENUM);
+        "flash" => value(flash; DONT_ENUM | VERSION_8);
+        "textRenderer" => value(text_renderer.constr);
+        "LocalConnection" => value(local_connection.constr; DONT_ENUM);
+        "MovieClipLoader" => value(movie_clip_loader.constr; DONT_ENUM);
+        "PrintJob" => value(print_job.constr; DONT_ENUM);
+        "TextSnapshot" => value(text_snapshot.constr; DONT_ENUM);
     };
     context.define_properties_on(globals, decls);
 
     // flash
     let decls = declare_properties! {
-        "text" => object(text);
-        "display" => object(display);
-        "filters" => object(filters);
-        "geom" => object(geom);
-        "net" => object(net);
-        "external" => object(external);
+        "text" => value(text);
+        "display" => value(display);
+        "filters" => value(filters);
+        "geom" => value(geom);
+        "net" => value(net);
+        "external" => value(external);
     };
     context.define_properties_on(flash, decls);
 
     // flash.display
     let decls = declare_properties! {
-        "BitmapData" => object(bitmap_data.constr);
+        "BitmapData" => value(bitmap_data.constr);
     };
     context.define_properties_on(display, decls);
 
     // flash.external
     let decls = declare_properties! {
-        "ExternalInterface" => object(external_interface.constr);
+        "ExternalInterface" => value(external_interface.constr);
     };
     context.define_properties_on(external, decls);
 
     // flash.filters
     let decls = declare_properties! {
-        "BitmapFilter" => object(bitmap_filter.constr);
-        "DropShadowFilter" => object(drop_shadow_filter.constr);
-        "BlurFilter" => object(blur_filter.constr);
-        "GlowFilter" => object(glow_filter.constr);
-        "BevelFilter" => object(bevel_filter.constr);
-        "GradientGlowFilter" => object(gradient_glow_filter.constr);
-        "GradientBevelFilter" => object(gradient_bevel_filter.constr);
-        "ConvolutionFilter" => object(convolution_filter.constr);
-        "ColorMatrixFilter" => object(color_matrix_filter.constr);
-        "DisplacementMapFilter" => object(displacement_map_filter.constr);
+        "BitmapFilter" => value(bitmap_filter.constr);
+        "DropShadowFilter" => value(drop_shadow_filter.constr);
+        "BlurFilter" => value(blur_filter.constr);
+        "GlowFilter" => value(glow_filter.constr);
+        "BevelFilter" => value(bevel_filter.constr);
+        "GradientGlowFilter" => value(gradient_glow_filter.constr);
+        "GradientBevelFilter" => value(gradient_bevel_filter.constr);
+        "ConvolutionFilter" => value(convolution_filter.constr);
+        "ColorMatrixFilter" => value(color_matrix_filter.constr);
+        "DisplacementMapFilter" => value(displacement_map_filter.constr);
     };
     context.define_properties_on(filters, decls);
 
     // flash.geom
     let decls = declare_properties! {
-        "Rectangle" => object(rectangle.constr);
-        "Point" => object(point.constr);
-        "Matrix" => object(matrix.constr);
-        "ColorTransform" => object(color_transform.constr);
-        "Transform" => object(transform.constr);
+        "Rectangle" => value(rectangle.constr);
+        "Point" => value(point.constr);
+        "Matrix" => value(matrix.constr);
+        "ColorTransform" => value(color_transform.constr);
+        "Transform" => value(transform.constr);
     };
     context.define_properties_on(geom, decls);
 
     // flash.net
     let decls = declare_properties! {
-        "FileReference" => object(file_reference.constr);
-        "FileReferenceList" => object(file_reference_list.constr);
+        "FileReference" => value(file_reference.constr);
+        "FileReferenceList" => value(file_reference_list.constr);
     };
     context.define_properties_on(net, decls);
 
     // flash.text
     let decls = declare_properties! {
-        "TextRenderer" => object(text_renderer.constr);
+        "TextRenderer" => value(text_renderer.constr);
     };
     context.define_properties_on(text, decls);
 
     // System
     let decls = declare_properties! {
-        "capabilities" => object(system_capabilities);
-        "Product" => object(system_product.constr);
-        "security" => object(system_security);
-        "IME" => object(system_ime);
+        "capabilities" => value(system_capabilities);
+        "Product" => value(system_product.constr);
+        "security" => value(system_security);
+        "IME" => value(system_ime);
     };
     context.define_properties_on(system, decls);
 
     // TextField
     let decls = declare_properties! {
-        "StyleSheet" => object(style_sheet.constr; DONT_ENUM | VERSION_7);
+        "StyleSheet" => value(style_sheet.constr; DONT_ENUM | VERSION_7);
     };
     context.define_properties_on(text_field.constr, decls);
 

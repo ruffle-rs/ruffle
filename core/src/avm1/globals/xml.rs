@@ -261,9 +261,9 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "onData" => method(on_data);
     "getBytesLoaded" => method(get_bytes_loaded);
     "getBytesTotal" => method(get_bytes_total);
-    "contentType" => string("application/x-www-form-urlencoded"; READ_ONLY);
+    "contentType" => value("application/x-www-form-urlencoded"; READ_ONLY);
     "docTypeDecl" => property(doc_type_decl; READ_ONLY);
-    "ignoreWhite" => bool(false);
+    "ignoreWhite" => value(false);
     "status" => property(status);
     "xmlDecl" => property(xml_decl);
     // TODO Looks like idMap is not a built-in property.
