@@ -300,7 +300,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         self.0.id
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         Rectangle {
             x_min: Twips::ZERO,
             y_min: Twips::ZERO,
@@ -389,7 +389,11 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     }
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
-        if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
+        if !context.is_offscreen
+            && !self
+                .world_bounds(BoundsMode::Engine)
+                .intersects(&context.stage.view_bounds())
+        {
             // Off-screen; culled
             return;
         }

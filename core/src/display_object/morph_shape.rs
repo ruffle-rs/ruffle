@@ -55,6 +55,17 @@ impl<'gc> MorphShape<'gc> {
             },
         ))
     }
+
+    pub fn ratio_with_mode(self, mode: BoundsMode) -> u16 {
+        if mode == BoundsMode::Script {
+            if self.ratio() == 65535 {
+                return 65535;
+            }
+            return 0;
+        }
+
+        self.ratio()
+    }
 }
 
 impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
@@ -120,8 +131,9 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .render_shape(shape_handle, context.transform_stack.transform());
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
-        let ratio = self.ratio();
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        let ratio = self.ratio_with_mode(mode);
+
         let shared = self.0.shared.get();
         let frame = shared.get_frame(ratio);
         frame.bounds
@@ -134,9 +146,16 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         options: HitTestOptions,
     ) -> bool {
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
-            && self.world_bounds().contains(point)
+            && self.world_bounds(BoundsMode::Engine).contains(point)
         {
-            if let Some(frame) = self.0.shared.get().frames.borrow().get(&self.ratio()) {
+            if let Some(frame) = self
+                .0
+                .shared
+                .get()
+                .frames
+                .borrow()
+                .get(&self.ratio())
+            {
                 let Some(local_matrix) = self.global_to_local_matrix() else {
                     return false;
                 };

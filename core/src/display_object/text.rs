@@ -179,7 +179,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         context.transform_stack.pop();
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         self.0.shared.get().bounds
     }
 
@@ -190,7 +190,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         options: HitTestOptions,
     ) -> bool {
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
-            && self.world_bounds().contains(point)
+            && self.world_bounds(BoundsMode::Engine).contains(point)
         {
             // Texts using the "Advanced text rendering" always hit test using their bounding box.
             if self.0.render_settings.borrow().is_advanced() {

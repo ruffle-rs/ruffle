@@ -84,7 +84,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         self.render_children(context);
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         Default::default()
     }
 

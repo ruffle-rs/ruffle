@@ -906,6 +906,20 @@ impl<'gc> DisplayObjectBase<'gc> {
     }
 }
 
+/// Indicates which kind of bounds should be returned by `self_bounds`.
+/// In most cases `BoundsMode::Engine` should be used.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum BoundsMode {
+    /// The bounds visible on the stage (e.g. takes MorphShape ratio into
+    /// account). Used for hit testing and rendering.
+    #[default]
+    Engine,
+
+    /// The bounds returned by ActionScript (e.g. doesn't take MorphShape
+    /// ratio into account - always uses ratio 0/start shape).
+    Script,
+}
+
 struct DrawCacheInfo {
     handle: BitmapHandle,
     dirty: bool,
@@ -1296,32 +1310,38 @@ pub trait TDisplayObject<'gc>:
     /// These bounds do **not** include child DisplayObjects.
     /// To get the bounds including children, use `bounds`, `local_bounds`, or `world_bounds`.
     ///
+    /// The `mode` parameter indicates which kind of bounds to return:
+    /// - `BoundsMode::Engine`: Actual visual bounds (for hit testing, rendering)
+    /// - `BoundsMode::Script`: Bounds as reported by ActionScript (some objects like MorphShape
+    ///   always return the start shape's bounds)
+    ///
     /// Implementors must override this method.
     /// Leaf DisplayObjects should return their bounds.
-    /// Composite DisplayObjects that only contain children should return `&Default::default()`
-    fn self_bounds(self) -> Rectangle<Twips>;
+    /// Composite DisplayObjects that only contain children should return `Default::default()`
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips>;
 
     /// The untransformed bounding box of this object including children.
     #[no_dynamic]
-    fn bounds(self) -> Rectangle<Twips> {
-        self.bounds_with_transform(&Matrix::default())
+    fn bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        self.bounds_with_transform(&Matrix::default(), mode)
     }
 
     /// The local bounding box of this object including children, in its parent's coordinate system.
     #[no_dynamic]
     fn local_bounds(self) -> Rectangle<Twips> {
-        self.bounds_with_transform(&self.base().matrix())
+        self.bounds_with_transform(&self.base().matrix(), BoundsMode::Engine)
     }
 
     /// The world bounding box of this object including children, relative to the stage.
     #[no_dynamic]
-    fn world_bounds(self) -> Rectangle<Twips> {
-        self.bounds_with_transform(&self.local_to_global_matrix())
+    fn world_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        self.bounds_with_transform(&self.local_to_global_matrix(), mode)
     }
 
     /// The world bounding box of this object, as reported by `Transform.pixelBounds`.
     fn pixel_bounds(self) -> Rectangle<Twips> {
-        self.world_bounds()
+        // Uses BoundsMode::Script as it's only used in ActionScript.
+        self.world_bounds(BoundsMode::Script)
     }
 
     /// Bounds used for drawing debug rects and picking objects.
@@ -1333,14 +1353,17 @@ pub trait TDisplayObject<'gc>:
             .as_interactive()
             .map(|int| int.highlight_bounds())
             .unwrap_or_default();
-        self.world_bounds().union(&highlight_bounds)
+        self.world_bounds(BoundsMode::Engine)
+            .union(&highlight_bounds)
     }
 
     /// Gets the bounds of this object and all children, transformed by a given matrix.
     /// This function recurses down and transforms the AABB each child before adding
     /// it to the bounding box. This gives a tighter AABB then if we simply transformed
     /// the overall AABB.
-    fn bounds_with_transform(self, matrix: &Matrix) -> Rectangle<Twips> {
+    ///
+    /// The `mode` parameter indicates which kind of bounds to return.
+    fn bounds_with_transform(self, matrix: &Matrix, mode: BoundsMode) -> Rectangle<Twips> {
         // A scroll rect completely overrides an object's bounds,
         // and can even grow the bounding box to be larger than the actual content
         if let Some(scroll_rect) = self.scroll_rect() {
@@ -1353,12 +1376,12 @@ pub trait TDisplayObject<'gc>:
                 };
         }
 
-        let mut bounds = *matrix * self.self_bounds();
+        let mut bounds = *matrix * self.self_bounds(mode);
 
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
                 let matrix = *matrix * child.base().matrix();
-                bounds = bounds.union(&child.bounds_with_transform(&matrix));
+                bounds = bounds.union(&child.bounds_with_transform(&matrix, mode));
             }
         }
 
@@ -1369,13 +1392,15 @@ pub trait TDisplayObject<'gc>:
     /// This differs from the bounds that are exposed to Flash, in two main ways:
     /// - It may be larger if filters are applied which will increase the size of what's shown
     /// - It does not respect scroll rects
+    ///
+    /// Uses `BoundsMode::Engine` as this is for rendering purposes.
     fn render_bounds_with_transform(
         self,
         matrix: &Matrix,
         include_own_filters: bool,
         view_matrix: &Matrix,
     ) -> Rectangle<Twips> {
-        let mut bounds = *matrix * self.self_bounds();
+        let mut bounds = *matrix * self.self_bounds(BoundsMode::Engine);
 
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
@@ -1631,7 +1656,7 @@ pub trait TDisplayObject<'gc>:
     /// Set by the ActionScript `_width`/`width` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_width(self, _context: &mut UpdateContext<'gc>, value: f64) {
-        let object_bounds = self.bounds();
+        let object_bounds = self.bounds(BoundsMode::Script);
         let object_width = object_bounds.width().to_pixels();
         let object_height = object_bounds.height().to_pixels();
         let aspect_ratio = object_height / object_width;
@@ -1678,7 +1703,7 @@ pub trait TDisplayObject<'gc>:
     /// Set by the ActionScript `_height`/`height` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_height(self, _context: &mut UpdateContext<'gc>, value: f64) {
-        let object_bounds = self.bounds();
+        let object_bounds = self.bounds(BoundsMode::Script);
         let object_width = object_bounds.width().to_pixels();
         let object_height = object_bounds.height().to_pixels();
         let aspect_ratio = object_width / object_height;
@@ -2405,7 +2430,7 @@ pub trait TDisplayObject<'gc>:
             self_str = &self_str[..end_char];
         }
 
-        let bounds = self.world_bounds();
+        let bounds = self.world_bounds(BoundsMode::Engine);
 
         let mut classname = "".to_string();
         if let Some(o) = self.object2() {
@@ -2551,14 +2576,16 @@ pub trait TDisplayObject<'gc>:
     /// Tests if a given stage position point intersects with the world bounds of this object.
     #[no_dynamic]
     fn hit_test_bounds(self, point: Point<Twips>) -> bool {
-        self.world_bounds().contains(point)
+        self.world_bounds(BoundsMode::Engine).contains(point)
     }
 
     /// Tests if a given object's world bounds intersects with the world bounds
     /// of this object.
     #[no_dynamic]
     fn hit_test_object(self, other: DisplayObject<'gc>) -> bool {
-        self.world_bounds().intersects(&other.world_bounds())
+        // This is only used in ActionScript so it gets a BoundsMode::Script.
+        self.world_bounds(BoundsMode::Script)
+            .intersects(&other.world_bounds(BoundsMode::Script))
     }
 
     /// Tests if a given stage position point intersects within this object, considering the art.
@@ -2965,7 +2992,7 @@ bitflags! {
 bitflags! {
     /// Defines how hit testing should be performed.
     /// Used for mouse picking and ActionScript's hitTestClip functions.
-    #[derive(Clone, Copy)]
+    #[derive(Clone, Copy, Debug)]
     pub struct HitTestOptions: u8 {
         /// Ignore objects used as masks (setMask / clipDepth).
         const SKIP_MASK = 1 << 0;
@@ -2977,7 +3004,9 @@ bitflags! {
         const SKIP_CHILDREN = 1 << 2;
 
         /// The options used for `hitTest` calls in ActionScript.
-        const AVM_HIT_TEST = Self::SKIP_MASK.bits();
+        /// Needs to have it's own bitflag to identify if it's coming from AVM or Ruffle
+        /// Specifically in Morph Shapes.
+        const AVM_HIT_TEST = Self::SKIP_MASK.bits() | 1 << 3;
 
         /// The options used for mouse picking, such as clicking on buttons.
         const MOUSE_PICK = Self::SKIP_MASK.bits() | Self::SKIP_INVISIBLE.bits();

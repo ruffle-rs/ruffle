@@ -467,7 +467,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         let (size_x, size_y) = self.0.size.get();
         Rectangle {
             x_min: Twips::ZERO,
@@ -478,7 +478,11 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn render_with_options(self, context: &mut RenderContext<'_, 'gc>, options: RenderOptions) {
-        if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
+        if !context.is_offscreen
+            && !self
+                .world_bounds(BoundsMode::Engine)
+                .intersects(&context.stage.view_bounds())
+        {
             // Off-screen; culled
             return;
         }
@@ -489,7 +493,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
 
         let mut transform = context.transform_stack.transform();
-        let bounds = self.self_bounds();
+        let bounds = self.self_bounds(BoundsMode::Engine);
 
         // TODO: smoothing flag should be a video property
         let (smoothed_flag, num_frames, version, decoded_frame, codec) = match self.0.source.get() {
