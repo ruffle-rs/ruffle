@@ -493,6 +493,8 @@ mod tests {
     use tokio::net::TcpListener;
     use tokio::task;
 
+    use crate::content::ContentDescriptor;
+
     use super::*;
 
     impl NavigatorInterface for () {
@@ -571,7 +573,10 @@ mod tests {
             } else {
                 SocketMode::Deny
             },
-            Rc::new(PlayingContent::DirectFile(url)),
+            Rc::new(PlayingContent::DirectFile(ContentDescriptor {
+                url,
+                root_content_path: None,
+            })),
             (),
         )
     }

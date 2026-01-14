@@ -17,6 +17,7 @@ pub use locale::text;
 pub use locale::text_with_args;
 pub use movie::MovieView;
 pub use picker::FilePicker;
+use ruffle_frontend_utils::content::ContentDescriptor;
 pub use theme::ThemePreference;
 
 use crate::custom_event::RuffleEvent;
@@ -31,7 +32,6 @@ use ruffle_core::debug_ui::Message as DebugMessage;
 use ruffle_core::{Player, PlayerEvent};
 use std::sync::{MutexGuard, Weak};
 use std::{fs, mem};
-use url::Url;
 use winit::event_loop::EventLoopProxy;
 
 /// Size of the top menu bar in pixels.
@@ -54,7 +54,7 @@ impl RuffleGui {
     fn new(
         window: Weak<winit::window::Window>,
         event_loop: EventLoopProxy<RuffleEvent>,
-        default_path: Option<Url>,
+        default_content: Option<ContentDescriptor>,
         default_launch_options: LaunchOptions,
         preferences: GlobalPreferences,
     ) -> Self {
@@ -65,7 +65,7 @@ impl RuffleGui {
             dialogs: Dialogs::new(
                 preferences.clone(),
                 default_launch_options.clone(),
-                default_path,
+                default_content,
                 window,
                 event_loop.clone(),
             ),
@@ -167,14 +167,14 @@ impl RuffleGui {
     fn on_player_created(
         &mut self,
         opt: LaunchOptions,
-        movie_url: Url,
+        content_descriptor: ContentDescriptor,
         mut player: MutexGuard<Player>,
     ) {
-        self.menu_bar.currently_opened = Some((movie_url.clone(), opt.clone()));
+        self.menu_bar.currently_opened = Some((content_descriptor.clone(), opt.clone()));
 
         // Update dialog state to reflect the newly-opened movie's options.
         self.dialogs
-            .recreate_open_dialog(opt, Some(movie_url), self.event_loop.clone());
+            .recreate_open_dialog(opt, Some(content_descriptor), self.event_loop.clone());
 
         player.set_volume(self.dialogs.volume_controls.get_volume());
     }

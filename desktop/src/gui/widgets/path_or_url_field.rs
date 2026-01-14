@@ -1,25 +1,20 @@
 use crate::gui::{FilePicker, LocalizableText, text};
 use egui::{TextEdit, Ui};
+use ruffle_frontend_utils::content::ContentDescriptor;
 use std::path::{Path, PathBuf};
 use std::sync::{Arc, Mutex, MutexGuard};
 use unic_langid::LanguageIdentifier;
 use url::Url;
 
-#[derive(Debug)]
-pub struct PathOrUrlFieldResult {
-    pub url: Url,
-    pub root_content_path: Option<PathBuf>,
-}
-
 #[derive(Default)]
 struct PathOrUrlFieldValue {
-    url: Option<Url>,
+    content_descriptor: Option<ContentDescriptor>,
     representation: String,
-    root_content_path: Option<PathBuf>,
 }
 
 impl PathOrUrlFieldValue {
-    fn new(url: Url, root_content_path: Option<PathBuf>) -> Self {
+    fn new(value: ContentDescriptor) -> Self {
+        let url = &value.url;
         Self {
             representation: if url.scheme() == "file"
                 && let Ok(path) = url.to_file_path()
@@ -28,16 +23,14 @@ impl PathOrUrlFieldValue {
             } else {
                 url.to_string()
             },
-            url: Some(url),
-            root_content_path,
+            content_descriptor: Some(value),
         }
     }
 
     fn from_path(path: PathBuf) -> Self {
         Self {
             representation: Self::path_to_representation(&path),
-            url: Url::from_file_path(&path).ok(),
-            root_content_path: Some(path),
+            content_descriptor: ContentDescriptor::new_local(&path, None),
         }
     }
 
@@ -47,9 +40,8 @@ impl PathOrUrlFieldValue {
             Self::from_path(path.to_path_buf())
         } else {
             Self {
-                url: Url::parse(&string).ok(),
+                content_descriptor: Url::parse(&string).map(ContentDescriptor::new_remote).ok(),
                 representation: string,
-                root_content_path: None,
             }
         }
     }
@@ -58,9 +50,8 @@ impl PathOrUrlFieldValue {
     /// encode the real path we want to play.
     fn from_picked_directory(directory: PathBuf, content: PathBuf) -> Self {
         Self {
-            url: Url::from_file_path(content).ok(),
             representation: Self::path_to_representation(&directory),
-            root_content_path: Some(directory),
+            content_descriptor: ContentDescriptor::new_local(&content, Some(directory)),
         }
     }
 
@@ -81,16 +72,15 @@ pub struct PathOrUrlField {
 
 impl PathOrUrlField {
     pub fn new(
-        default: Option<Url>,
-        root_content_path: Option<PathBuf>,
+        default_content: Option<ContentDescriptor>,
         hint: LocalizableText,
         picker: FilePicker,
     ) -> Self {
         Self {
             picker,
             value: Arc::new(Mutex::new(
-                default
-                    .map(|url| PathOrUrlFieldValue::new(url, root_content_path))
+                default_content
+                    .map(PathOrUrlFieldValue::new)
                     .unwrap_or_default(),
             )),
             hint,
@@ -104,8 +94,9 @@ impl PathOrUrlField {
     pub fn ui(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> &mut Self {
         ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
             let dir = Self::lock_value(&self.value)
-                .url
+                .content_descriptor
                 .as_ref()
+                .map(|desc| &desc.url)
                 .filter(|url| url.scheme() == "file")
                 .and_then(|url| url.to_file_path().ok())
                 .map(|mut path| {
@@ -150,7 +141,7 @@ impl PathOrUrlField {
                 ui.available_size(),
                 TextEdit::singleline(&mut new_representation)
                     .hint_text(self.hint.localize(locale))
-                    .text_color_opt(if value.url.is_none() {
+                    .text_color_opt(if value.content_descriptor.is_none() {
                         Some(ui.style().visuals.error_fg_color)
                     } else {
                         None
@@ -164,15 +155,7 @@ impl PathOrUrlField {
         self
     }
 
-    pub fn result(&self) -> Option<PathOrUrlFieldResult> {
-        let value = Self::lock_value(&self.value);
-        if let Some(ref url) = value.url {
-            Some(PathOrUrlFieldResult {
-                url: url.clone(),
-                root_content_path: value.root_content_path.clone(),
-            })
-        } else {
-            None
-        }
+    pub fn result(&self) -> Option<ContentDescriptor> {
+        Self::lock_value(&self.value).content_descriptor.clone()
     }
 }
