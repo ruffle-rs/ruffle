@@ -34,13 +34,13 @@ describe("Document embeds", () => {
 
         expect(
             await browser.execute(() => document.embeds?.length ?? 0),
-        ).to.equal(3);
+        ).to.equal(5);
 
         await removeEl("#emb1");
 
         expect(
             await browser.execute(() => document.embeds?.length ?? 0),
-        ).to.equal(2);
+        ).to.equal(4);
 
         await browser.execute(() => {
             const embed = document.createElement("embed");
@@ -51,17 +51,25 @@ describe("Document embeds", () => {
 
         expect(
             await browser.execute(() => document.embeds?.length ?? 0),
-        ).to.equal(3);
+        ).to.equal(5);
     });
 
     it("supports index-based access", async () => {
         const ids = await browser.execute(() => [
             document.embeds.item(0)?.id,
             document.embeds[1]?.id,
-            document.embeds.item(2)?.id,
+            document.embeds[2]?.id,
+            document.embeds.item(3)?.id,
+            document.embeds[4]?.id,
         ]);
 
-        expect(ids).to.deep.equal(["emb1", "emb2", "emb3"]);
+        expect(ids).to.deep.equal([
+            "emb1",
+            "emb2",
+            "basic_emb1",
+            "emb3",
+            "basic_emb2",
+        ]);
     });
 
     it("supports namedItem(name)", async () => {
@@ -69,6 +77,7 @@ describe("Document embeds", () => {
             return {
                 alpha: document.embeds.namedItem("alpha")?.id,
                 beta: document.embeds.namedItem("beta")?.id,
+                delta: document.embeds.namedItem("delta")?.id,
                 missing: document.embeds.namedItem("nope"),
             };
         });
@@ -76,6 +85,7 @@ describe("Document embeds", () => {
         expect(result).to.deep.equal({
             alpha: "emb1",
             beta: "emb2", // first match
+            delta: "basic_emb2",
             missing: null,
         });
     });
@@ -86,6 +96,11 @@ describe("Document embeds", () => {
         );
 
         expect(idMatch).to.equal("emb3");
+        const idMatch2 = await browser.execute(() =>
+            document.embeds.namedItem("basic_emb2")?.getAttribute("name"),
+        );
+
+        expect(idMatch2).to.equal("delta");
     });
 
     it("is iterable", async () => {
@@ -97,7 +112,13 @@ describe("Document embeds", () => {
             return result;
         });
 
-        expect(ids).to.deep.equal(["emb1", "emb2", "emb3"]);
+        expect(ids).to.deep.equal([
+            "emb1",
+            "emb2",
+            "basic_emb1",
+            "emb3",
+            "basic_emb2",
+        ]);
     });
 
     it("updates index order after removal", async () => {
@@ -109,7 +130,7 @@ describe("Document embeds", () => {
             Array.from(document.embeds).map((e) => e.id),
         );
 
-        expect(ids).to.deep.equal(["emb1", "emb3"]);
+        expect(ids).to.deep.equal(["emb1", "basic_emb1", "emb3", "basic_emb2"]);
     });
 
     it("includes newly added embeds in order", async () => {
@@ -123,12 +144,12 @@ describe("Document embeds", () => {
 
         const data = await browser.execute(() => ({
             length: document.embeds.length,
-            lastId: document.embeds.item(3)?.id,
+            lastId: document.embeds.item(5)?.id,
             gamma: document.embeds.namedItem("gamma")?.id,
         }));
 
         expect(data).to.deep.equal({
-            length: 4,
+            length: 6,
             lastId: "emb4",
             gamma: "emb4",
         });
