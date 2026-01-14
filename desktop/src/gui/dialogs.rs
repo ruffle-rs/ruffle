@@ -22,10 +22,10 @@ use open_dialog::OpenDialog;
 use open_url_dialog::OpenUrlDialog;
 use preferences_dialog::PreferencesDialog;
 use ruffle_core::Player;
+use ruffle_frontend_utils::content::ContentDescriptor;
 use select_path_dialog::{SelectPathDialog, SelectPathDialogConfiguration};
 use std::{collections::VecDeque, sync::Weak};
 use unic_langid::LanguageIdentifier;
-use url::Url;
 use volume_controls::VolumeControls;
 use winit::event_loop::EventLoopProxy;
 
@@ -75,7 +75,7 @@ impl Dialogs {
     pub fn new(
         preferences: GlobalPreferences,
         player_options: LaunchOptions,
-        default_path: Option<Url>,
+        default_content: Option<ContentDescriptor>,
         window: Weak<winit::window::Window>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
@@ -95,7 +95,7 @@ impl Dialogs {
 
             open_dialog: OpenDialog::new(
                 player_options,
-                default_path,
+                default_content,
                 picker.clone(),
                 event_loop.clone(),
             ),
@@ -129,11 +129,12 @@ impl Dialogs {
     pub fn recreate_open_dialog(
         &mut self,
         opt: LaunchOptions,
-        url: Option<Url>,
+        content_descriptor: Option<ContentDescriptor>,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) {
         self.is_open_dialog_visible = false;
-        self.open_dialog = OpenDialog::new(opt, url, self.picker.clone(), event_loop);
+        self.open_dialog =
+            OpenDialog::new(opt, content_descriptor, self.picker.clone(), event_loop);
     }
 
     pub fn open_file_advanced(&mut self) {
@@ -168,8 +169,8 @@ impl Dialogs {
         self.is_about_visible = true;
     }
 
-    pub fn saved_movie_url(&self) -> Option<Url> {
-        self.open_dialog.url()
+    pub fn saved_content_descriptor(&self) -> Option<ContentDescriptor> {
+        self.open_dialog.content_descriptor()
     }
 
     pub fn saved_launch_options(&self) -> &LaunchOptions {

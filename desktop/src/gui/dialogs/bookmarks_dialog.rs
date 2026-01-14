@@ -5,6 +5,7 @@ use crate::{custom_event::RuffleEvent, player::LaunchOptions};
 use egui::{Align2, Button, Grid, Label, Layout, Sense, Ui, Widget, Window};
 use egui_extras::{Column, TableBuilder};
 use ruffle_frontend_utils::bookmarks::Bookmark;
+use ruffle_frontend_utils::content::ContentDescriptor;
 use unic_langid::LanguageIdentifier;
 use url::Url;
 use winit::event_loop::EventLoopProxy;
@@ -29,8 +30,10 @@ impl BookmarkAddDialog {
                 .unwrap_or_default(),
             // TODO: Hint and root content path.
             url: PathOrUrlField::new(
-                initial_url,
-                None,
+                initial_url.map(|url| ContentDescriptor {
+                    url,
+                    root_content_path: None,
+                }),
                 LocalizableText::NonLocalizedText("".into()),
                 picker,
             ),
@@ -226,8 +229,10 @@ impl BookmarksDialog {
                                     // TODO: Hint and root content path.
                                     name: bookmark.name.clone(),
                                     url: PathOrUrlField::new(
-                                        Some(bookmark.url.clone()),
-                                        None,
+                                        Some(ContentDescriptor {
+                                            url: bookmark.url.clone(),
+                                            root_content_path: None,
+                                        }),
                                         LocalizableText::NonLocalizedText("".into()),
                                         self.picker.clone(),
                                     ),
@@ -254,7 +259,10 @@ impl BookmarksDialog {
             }
             Some(BookmarkAction::Start(url)) => {
                 let _ = self.event_loop.send_event(RuffleEvent::Open(
-                    url,
+                    ContentDescriptor {
+                        url,
+                        root_content_path: None,
+                    },
                     Box::new(LaunchOptions::from(&self.preferences)),
                 ));
                 true

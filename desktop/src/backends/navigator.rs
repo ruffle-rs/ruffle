@@ -1,5 +1,6 @@
 use rfd::{MessageButtons, MessageDialog, MessageDialogResult, MessageLevel};
 use ruffle_frontend_utils::backends::navigator::NavigatorInterface;
+use ruffle_frontend_utils::content::ContentDescriptor;
 use std::fs::File;
 use std::io;
 use std::io::ErrorKind;
@@ -28,10 +29,10 @@ pub struct PathAllowList {
 }
 
 impl PathAllowList {
-    pub fn new(movie_url: &Url, root_content_path: Option<PathBuf>) -> Self {
+    pub fn new(content_descriptor: &ContentDescriptor) -> Self {
         let mut allowed_path_prefixes = Vec::new();
 
-        if let Ok(movie_path) = movie_url.to_file_path() {
+        if let Ok(movie_path) = content_descriptor.url.to_file_path() {
             if let Some(parent) = movie_path.parent() {
                 // TODO Remove it after integrating recents & bookmarks with
                 //   opening a directory.
@@ -40,8 +41,8 @@ impl PathAllowList {
             allowed_path_prefixes.push(movie_path);
         }
 
-        if let Some(root_content_path) = root_content_path {
-            allowed_path_prefixes.push(root_content_path);
+        if let Some(root_content_path) = &content_descriptor.root_content_path {
+            allowed_path_prefixes.push(root_content_path.clone());
         }
 
         Self {

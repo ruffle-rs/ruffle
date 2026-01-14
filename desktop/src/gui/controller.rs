@@ -10,6 +10,7 @@ use egui::{Context, FontData, FontDefinitions, ViewportId};
 use fontdb::{Database, Family, Query, Source};
 use ruffle_core::events::{ImeCursorArea, ImePurpose};
 use ruffle_core::{Player, PlayerEvent};
+use ruffle_frontend_utils::content::ContentDescriptor;
 use ruffle_render_wgpu::backend::{WgpuRenderBackend, request_adapter_and_device};
 use ruffle_render_wgpu::descriptors::Descriptors;
 use ruffle_render_wgpu::utils::{format_list, get_backend_names};
@@ -146,7 +147,10 @@ impl GuiController {
         let gui = RuffleGui::new(
             Arc::downgrade(&window),
             event_loop,
-            initial_movie_url,
+            initial_movie_url.map(|url| ContentDescriptor {
+                url,
+                root_content_path: None,
+            }),
             LaunchOptions::from(&preferences),
             preferences.clone(),
         );
@@ -257,7 +261,7 @@ impl GuiController {
         &mut self,
         player: &mut PlayerController,
         opt: LaunchOptions,
-        movie_url: Url,
+        content_descriptor: ContentDescriptor,
     ) {
         self.close_movie(player);
         let movie_view = MovieView::new(
@@ -266,10 +270,10 @@ impl GuiController {
             self.size.width,
             self.size.height,
         );
-        player.create(&opt, &movie_url, movie_view);
+        player.create(&opt, &content_descriptor, movie_view);
         self.gui.on_player_created(
             opt,
-            movie_url,
+            content_descriptor,
             player
                 .get()
                 .expect("Player must exist after being created."),
@@ -484,7 +488,7 @@ impl GuiController {
     }
 
     pub fn export_bundle(&mut self) {
-        let Some(movie_url) = self.gui.dialogs.saved_movie_url() else {
+        let Some(content_descriptor) = self.gui.dialogs.saved_content_descriptor() else {
             return;
         };
 
@@ -493,11 +497,7 @@ impl GuiController {
         self.gui
             .dialogs
             .open_dialog(DialogDescriptor::ExportBundle(Box::new(
-                ExportBundleDialogConfiguration::new(
-                    movie_url,
-                    player_options,
-                    launch_options.root_content_path.clone(),
-                ),
+                ExportBundleDialogConfiguration::new(content_descriptor, player_options),
             )));
         self.gui.on_player_destroyed();
     }

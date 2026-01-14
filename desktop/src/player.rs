@@ -18,7 +18,7 @@ use ruffle_frontend_utils::backends::audio::CpalAudioBackend;
 use ruffle_frontend_utils::backends::navigator::{ExternalNavigatorBackend, FutureSpawner};
 use ruffle_frontend_utils::bundle::source::BundleSourceError;
 use ruffle_frontend_utils::bundle::{Bundle, BundleError};
-use ruffle_frontend_utils::content::PlayingContent;
+use ruffle_frontend_utils::content::{ContentDescriptor, PlayingContent};
 use ruffle_frontend_utils::player_options::PlayerOptions;
 use ruffle_frontend_utils::recents::Recent;
 use ruffle_render::backend::RenderBackend;
@@ -51,11 +51,6 @@ pub struct LaunchOptions {
     pub filesystem_access_mode: FilesystemAccessMode,
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub avm2_optimizer_enabled: bool,
-
-    /// Path representing the root of the content. If present, it will allow
-    /// Ruffle to allow access to files residing in this directory
-    /// automatically.
-    pub root_content_path: Option<PathBuf>,
 }
 
 impl From<&GlobalPreferences> for LaunchOptions {
@@ -106,7 +101,6 @@ impl From<&GlobalPreferences> for LaunchOptions {
             tcp_connections: value.cli.tcp_connections,
             gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
             avm2_optimizer_enabled: !value.cli.no_avm2_optimizer,
-            root_content_path: None,
         }
     }
 }
@@ -126,7 +120,7 @@ impl ActivePlayer {
     pub fn new(
         opt: &LaunchOptions,
         event_loop: EventLoopProxy<RuffleEvent>,
-        movie_url: &Url,
+        content_descriptor: &ContentDescriptor,
         window: Arc<Window>,
         descriptors: Arc<Descriptors>,
         movie_view: MovieView,
@@ -146,9 +140,9 @@ impl ActivePlayer {
             }
         };
 
-        let mut content = PlayingContent::DirectFile(movie_url.clone());
-        if movie_url.scheme() == "file"
-            && let Ok(path) = movie_url.to_file_path()
+        let mut content = PlayingContent::DirectFile(content_descriptor.clone());
+        if content_descriptor.url.scheme() == "file"
+            && let Ok(path) = content_descriptor.url.to_file_path()
         {
             match Bundle::from_path(&path) {
                 Ok(bundle) => {
@@ -161,7 +155,7 @@ impl ActivePlayer {
                             tracing::warn!("{warning}");
                         }
                     }
-                    content = PlayingContent::Bundle(movie_url.clone(), Box::new(bundle));
+                    content = PlayingContent::Bundle(content_descriptor.clone(), Box::new(bundle));
                 }
                 Err(BundleError::BundleDoesntExist)
                 | Err(BundleError::InvalidSource(BundleSourceError::UnknownSource)) => {
@@ -178,7 +172,7 @@ impl ActivePlayer {
         if let Err(e) = preferences.write_recents(|writer| {
             writer.push(
                 Recent {
-                    url: movie_url.clone(),
+                    url: content_descriptor.url.clone(),
                     name: content.name(),
                 },
                 recent_limit,
@@ -189,7 +183,7 @@ impl ActivePlayer {
 
         let opt = match &content {
             PlayingContent::DirectFile(_) => Cow::Borrowed(opt),
-            PlayingContent::Bundle(url, bundle) => {
+            PlayingContent::Bundle(_, bundle) => {
                 let player = opt.player.or(&bundle.information().player);
 
                 Cow::Owned(LaunchOptions {
@@ -203,7 +197,6 @@ impl ActivePlayer {
                     filesystem_access_mode: opt.filesystem_access_mode,
                     gamepad_button_mapping: opt.gamepad_button_mapping.clone(),
                     avm2_optimizer_enabled: opt.avm2_optimizer_enabled,
-                    root_content_path: url.to_file_path().ok(),
                 })
             }
         };
@@ -214,7 +207,7 @@ impl ActivePlayer {
         };
         let movie_url = content.initial_swf_url().clone();
         let readable_name = content.name();
-        let initial_allow_list = PathAllowList::new(&movie_url, opt.root_content_path.clone());
+        let initial_allow_list = PathAllowList::new(content_descriptor);
         let navigator = ExternalNavigatorBackend::new(
             opt.player
                 .base
@@ -460,11 +453,16 @@ impl PlayerController {
         }
     }
 
-    pub fn create(&mut self, opt: &LaunchOptions, movie_url: &Url, movie_view: MovieView) {
+    pub fn create(
+        &mut self,
+        opt: &LaunchOptions,
+        content_descriptor: &ContentDescriptor,
+        movie_view: MovieView,
+    ) {
         self.player = Some(ActivePlayer::new(
             opt,
             self.event_loop.clone(),
-            movie_url,
+            content_descriptor,
             self.window.clone(),
             self.descriptors.clone(),
             movie_view,

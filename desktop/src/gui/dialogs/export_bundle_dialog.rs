@@ -4,6 +4,7 @@ use rfd::FileHandle;
 use ruffle_frontend_utils::bundle::exporter::helpers::FilesystemHelper;
 use ruffle_frontend_utils::bundle::exporter::helpers::FilesystemHelperError;
 use ruffle_frontend_utils::bundle::info::BundleInformation;
+use ruffle_frontend_utils::content::ContentDescriptor;
 use ruffle_frontend_utils::player_options::PlayerOptions;
 use std::path::Path;
 use std::path::PathBuf;
@@ -13,21 +14,15 @@ use unic_langid::LanguageIdentifier;
 use url::Url;
 
 pub struct ExportBundleDialogConfiguration {
-    movie_url: Url,
+    content_descriptor: ContentDescriptor,
     player_options: PlayerOptions,
-    root_content_path: Option<PathBuf>,
 }
 
 impl ExportBundleDialogConfiguration {
-    pub fn new(
-        movie_url: Url,
-        player_options: PlayerOptions,
-        root_content_path: Option<PathBuf>,
-    ) -> Self {
+    pub fn new(content_descriptor: ContentDescriptor, player_options: PlayerOptions) -> Self {
         Self {
-            movie_url,
+            content_descriptor,
             player_options,
-            root_content_path,
         }
     }
 }
@@ -112,9 +107,9 @@ impl ExportBundleDialog {
     pub fn new(config: ExportBundleDialogConfiguration, picker: FilePicker) -> Self {
         let mut bundle_local_files = false;
         let mut local_files = Vec::new();
-        if let Ok(root_movie) = config.movie_url.to_file_path() {
+        if let Ok(root_movie) = config.content_descriptor.url.to_file_path() {
             bundle_local_files = true;
-            if let Some(root_content_path) = &config.root_content_path {
+            if let Some(root_content_path) = &config.content_descriptor.root_content_path {
                 for entry in walkdir::WalkDir::new(root_content_path)
                     .follow_links(false)
                     .into_iter()
@@ -132,7 +127,7 @@ impl ExportBundleDialog {
             }
         }
 
-        let suggested_name = Self::suggested_name(&config.movie_url);
+        let suggested_name = Self::suggested_name(&config.content_descriptor.url);
 
         Self {
             config,
@@ -302,7 +297,7 @@ impl ExportBundleDialog {
 
         let bundle_name = self.bundle_name.clone();
         let player_options = self.config.player_options.clone();
-        let movie_url = self.config.movie_url.clone();
+        let movie_url = self.config.content_descriptor.url.clone();
         let local_files: Vec<PathBuf> = self
             .local_files
             .iter()

@@ -11,6 +11,7 @@ use ruffle_core::{
     DEFAULT_PLAYER_VERSION, LoadBehavior, NEWEST_PLAYER_VERSION, PlayerRuntime, StageAlign,
     StageScaleMode,
 };
+use ruffle_frontend_utils::content::ContentDescriptor;
 use ruffle_render::quality::StageQuality;
 use std::borrow::Cow;
 use std::ops::RangeInclusive;
@@ -51,7 +52,7 @@ pub struct OpenDialog {
 impl OpenDialog {
     pub fn new(
         defaults: LaunchOptions,
-        default_url: Option<Url>,
+        default_content: Option<ContentDescriptor>,
         picker: FilePicker,
         event_loop: EventLoopProxy<RuffleEvent>,
     ) -> Self {
@@ -76,8 +77,7 @@ impl OpenDialog {
             UrlField::new("socks5://localhost:8080"),
         );
         let path = PathOrUrlField::new(
-            default_url,
-            defaults.root_content_path.clone(),
+            default_content,
             LocalizableText::LocalizedText("open-dialog-path"),
             picker,
         );
@@ -291,8 +291,8 @@ impl OpenDialog {
         }
     }
 
-    pub fn url(&self) -> Option<Url> {
-        self.path.result().map(|r| r.url)
+    pub fn content_descriptor(&self) -> Option<ContentDescriptor> {
+        self.path.result()
     }
 
     pub fn options(&self) -> &LaunchOptions {
@@ -307,13 +307,10 @@ impl OpenDialog {
         }
 
         if let Some(result) = self.path.result() {
-            let mut launch_options = self.options.clone();
-            if let Some(root_content_path) = result.root_content_path {
-                launch_options.root_content_path = Some(root_content_path);
-            }
+            let launch_options = self.options.clone();
             if self
                 .event_loop
-                .send_event(RuffleEvent::Open(result.url, Box::new(launch_options)))
+                .send_event(RuffleEvent::Open(result, Box::new(launch_options)))
                 .is_ok()
             {
                 return true;

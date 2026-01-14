@@ -3,7 +3,7 @@ use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
 use crate::util::{
-    get_screen_size, gilrs_button_to_gamepad_button, parse_url, plot_stats_in_tracy,
+    get_screen_size, gilrs_button_to_gamepad_button, plot_stats_in_tracy,
     winit_input_to_ruffle_key_descriptor, winit_to_ruffle_text_control,
 };
 use anyhow::Error;
@@ -11,10 +11,10 @@ use gilrs::{Event, EventType, Gilrs};
 use ruffle_core::PlayerEvent;
 use ruffle_core::events::{ImeEvent, ImeNotification, PlayerNotification};
 use ruffle_core::swf::HeaderExt;
+use ruffle_frontend_utils::content::ContentDescriptor;
 use ruffle_render::backend::ViewportDimensions;
 use std::sync::Arc;
 use std::time::Instant;
-use url::Url;
 use winit::application::ApplicationHandler;
 use winit::dpi::{LogicalSize, PhysicalPosition, PhysicalSize, Size};
 use winit::event::{ElementState, Ime, KeyEvent, Modifiers, StartCause, WindowEvent};
@@ -98,11 +98,11 @@ impl MainWindow {
                 self.check_redraw();
             }
             WindowEvent::DroppedFile(file) => {
-                if let Ok(url) = parse_url(&file) {
+                if let Some(content_descriptor) = ContentDescriptor::new_local(&file, None) {
                     self.gui.create_movie(
                         &mut self.player,
                         LaunchOptions::from(&self.preferences),
-                        url,
+                        content_descriptor,
                     );
                 }
             }
@@ -506,7 +506,10 @@ impl ApplicationHandler<RuffleEvent> for App {
                 gui.create_movie(
                     &mut player,
                     LaunchOptions::from(&preferences),
-                    movie_url.clone(),
+                    ContentDescriptor {
+                        url: movie_url.clone(),
+                        root_content_path: None,
+                    },
                 );
             } else {
                 gui.show_open_dialog();
@@ -559,31 +562,32 @@ impl ApplicationHandler<RuffleEvent> for App {
                 }
             }
 
-            (Some(main_window), RuffleEvent::BrowseAndOpen(mut options, open_type)) => {
+            (Some(main_window), RuffleEvent::BrowseAndOpen(options, open_type)) => {
                 let event_loop = main_window.event_loop_proxy.clone();
                 let picker = main_window.gui.file_picker();
                 tokio::spawn(async move {
                     let picked = match open_type {
-                        OpenType::File => picker.pick_ruffle_file(None).await,
+                        OpenType::File => {
+                            picker.pick_ruffle_file(None).await.map(|file| (file, None))
+                        }
                         OpenType::Directory => picker
                             .pick_ruffle_directory_and_content(None)
                             .await
-                            .map(|(dir, content)| {
-                                options.root_content_path = Some(dir);
-                                content
-                            }),
+                            .map(|(dir, file)| (file, Some(dir))),
                     };
 
-                    if let Some(url) = picked.and_then(|p| Url::from_file_path(p).ok()) {
-                        let _ = event_loop.send_event(RuffleEvent::Open(url, options));
+                    if let Some(desc) =
+                        picked.and_then(|(file, dir)| ContentDescriptor::new_local(&file, dir))
+                    {
+                        let _ = event_loop.send_event(RuffleEvent::Open(desc, options));
                     }
                 });
             }
 
-            (Some(main_window), RuffleEvent::Open(url, options)) => {
+            (Some(main_window), RuffleEvent::Open(desc, options)) => {
                 main_window
                     .gui
-                    .create_movie(&mut main_window.player, *options, url);
+                    .create_movie(&mut main_window.player, *options, desc);
             }
 
             (Some(main_window), RuffleEvent::OpenDialog(descriptor)) => {
