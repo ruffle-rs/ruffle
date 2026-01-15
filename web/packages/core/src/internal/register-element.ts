@@ -40,46 +40,44 @@ export function lookupElement(elementName: string): Registration | null {
 }
 
 /**
- * Use a merge sort to merge two arrays based on a comparison function.
+ * Merge two sorted arrays into another sorted array based on a comparison function.
  *
- * @param a The first array by which to use for the merge.
- * @param b The second array by which to use for the merge.
- * @param comesBefore A function that checks if one element comes before another.
- * @returns The merged array, sorted using comesBefore.
+ * @param a The first sorted array.
+ * @param b The second sorted array.
+ * @param comparator A function returning:
+ *        < 0 if x comes before y,
+ *        > 0 if x comes after y,
+ *        0 if equal.
+ * @returns The merged, sorted array.
  */
 function mergeSorted<T>(
     a: readonly T[],
     b: readonly T[],
-    comesBefore: (x: T, y: T) => boolean,
+    comparator: (x: T, y: T) => number,
 ): T[] {
     const result: T[] = [];
 
     let i = 0;
     let j = 0;
 
-    while (i < a.length || j < b.length) {
-        const x = i < a.length ? a[i] : undefined;
-        const y = j < b.length ? b[j] : undefined;
-
-        if (!x) {
-            result.push(y!);
-            j++;
-            continue;
-        }
-
-        if (!y) {
-            result.push(x);
-            i++;
-            continue;
-        }
-
-        if (comesBefore(x, y)) {
+    // Merge while both arrays still have elements
+    while (i < a.length && j < b.length) {
+        const x = a[i]!;
+        const y = b[j]!;
+        if (comparator(x, y) <= 0) {
             result.push(x);
             i++;
         } else {
             result.push(y);
             j++;
         }
+    }
+    // Append leftovers
+    while (i < a.length) {
+        result.push(a[i++]!);
+    }
+    while (j < b.length) {
+        result.push(b[j++]!);
     }
 
     return result;
@@ -90,10 +88,25 @@ function mergeSorted<T>(
  *
  * @param a The first element to compare.
  * @param b The second element to compare.
- * @returns Whether a comes before b in DOM order.
+ * @returns A negative number if `a` comes before `b` in DOM order,
+ *          A positive number if `a` comes after `b` in DOM order,
+ *          0 if they are the same node.
  */
-function domComesBefore(a: Element, b: Element): boolean {
-    return !!(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+function domComesBefore(a: Element, b: Element): number {
+    if (a === b) {
+        return 0;
+    }
+
+    const pos = a.compareDocumentPosition(b);
+
+    if (pos & Node.DOCUMENT_POSITION_FOLLOWING) {
+        return -1;
+    }
+    if (pos & Node.DOCUMENT_POSITION_PRECEDING) {
+        return 1;
+    }
+
+    return 0;
 }
 
 /**
