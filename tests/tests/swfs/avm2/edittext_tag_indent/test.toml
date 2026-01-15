@@ -1,8 +1,6 @@
 num_ticks = 1
 
 [image_comparisons."output"]
-# Different text culling/masking rules between device/embedded
-known_failure = true
 tolerance = 128
 
 [player_options]

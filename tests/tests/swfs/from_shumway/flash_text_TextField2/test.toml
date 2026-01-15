@@ -1,9 +1,13 @@
 num_frames = 1
 known_failure = true
 
-[image_comparisons.output]
-known_failure = true
-tolerance = 3
+[[image_comparisons.output.checks]]
+tolerance = 200
+max_outliers = 10
+
+[[image_comparisons.output.checks]]
+tolerance = 128
+max_outliers = 250
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, sample_count = 4 }
