@@ -33,7 +33,9 @@ impl<'a> RecentsWriter<'a> {
 
         self.with_underlying_table(|values, array| {
             // First, lets check if we already have existing entry with the same URL and move it to the top.
-            let existing = values.iter().position(|x| x.url == recent.url);
+            let existing = values
+                .iter()
+                .position(|x| x.content_descriptor == recent.content_descriptor);
 
             if let Some(index) = existing {
                 // Existing entry, just move it to the top.
@@ -67,7 +69,11 @@ impl<'a> RecentsWriter<'a> {
 
     fn create_recent_table(recent: &Recent) -> Table {
         let mut table = Table::new();
-        table["url"] = value(recent.url.as_str());
+        table["url"] = value(recent.content_descriptor.url.as_str());
+        #[cfg(feature = "fs")]
+        if let Some(dir) = &recent.content_descriptor.root_content_path {
+            table["dir"] = value(&*dir.to_string_lossy());
+        }
         table["name"] = value(&recent.name);
         table
     }
@@ -76,7 +82,7 @@ impl<'a> RecentsWriter<'a> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::recents::read_recents;
+    use crate::{content::ContentDescriptor, recents::read_recents};
     use url::Url;
 
     crate::define_serialization_test_helpers!(read_recents, Recents, RecentsWriter);
@@ -88,7 +94,9 @@ mod tests {
             |writer| {
                 writer.push(
                     Recent {
-                        url: Url::parse("file:///1.swf").unwrap(),
+                        content_descriptor: ContentDescriptor::new_remote(
+                            Url::parse("file:///1.swf").unwrap(),
+                        ),
                         name: "Test 1".to_string(),
                     },
                     10,
@@ -105,7 +113,9 @@ mod tests {
             |writer| {
                 writer.push(
                     Recent {
-                        url: Url::parse("file:///very_important_file.swf").unwrap(),
+                        content_descriptor: ContentDescriptor::new_remote(
+                            Url::parse("file:///very_important_file.swf").unwrap(),
+                        ),
                         name: "Important File".to_string(),
                     },
                     2,
@@ -122,7 +132,9 @@ mod tests {
             |writer| {
                 writer.push(
                     Recent {
-                        url: Url::parse("file:///very_important_file.swf").unwrap(),
+                        content_descriptor: ContentDescriptor::new_remote(
+                            Url::parse("file:///very_important_file.swf").unwrap(),
+                        ),
                         name: "Important File".to_string(),
                     },
                     3,
@@ -148,7 +160,9 @@ mod tests {
             |writer| {
                 writer.push(
                     Recent {
-                        url: Url::parse("file:///no_crash.swf").unwrap(),
+                        content_descriptor: ContentDescriptor::new_remote(
+                            Url::parse("file:///no_crash.swf").unwrap(),
+                        ),
                         name: "".to_string(),
                     },
                     0,
@@ -165,13 +179,36 @@ mod tests {
             |writer| {
                 writer.push(
                     Recent {
-                        url: Url::parse("file:///cake.swf").unwrap(),
+                        content_descriptor: ContentDescriptor::new_remote(
+                            Url::parse("file:///cake.swf").unwrap(),
+                        ),
                         name: "The cake is a lie!".to_string(),
                     },
                     10,
                 )
             },
             "[[recent]]\nurl = \"file:///cake.swf\"\nname = \"The cake is a lie!\"\n",
+        );
+    }
+
+    #[cfg(feature = "fs")]
+    #[test]
+    fn dir() {
+        test(
+            "",
+            |writer| {
+                writer.push(
+                    Recent {
+                        content_descriptor: ContentDescriptor {
+                            url: Url::parse("file:///home/dir/game.swf").unwrap(),
+                            root_content_path: Some(std::path::PathBuf::from("/home/dir")),
+                        },
+                        name: "game".to_string(),
+                    },
+                    10,
+                )
+            },
+            "[[recent]]\nurl = \"file:///home/dir/game.swf\"\ndir = \"/home/dir\"\nname = \"game\"\n",
         );
     }
 }

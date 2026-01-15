@@ -265,10 +265,7 @@ impl MenuBar {
                             if ui.button(&recent.name).clicked() {
                                 ui.close();
                                 let _ = self.event_loop.send_event(RuffleEvent::Open(
-                                    ContentDescriptor {
-                                        url: recent.url.clone(),
-                                        root_content_path: None,
-                                    },
+                                    recent.content_descriptor.clone(),
                                     Box::new(self.default_launch_options.clone()),
                                 ));
                             }

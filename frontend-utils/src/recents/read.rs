@@ -1,3 +1,4 @@
+use crate::content::ContentDescriptor;
 use crate::parse::{DocumentHolder, ParseContext, ParseDetails, ParseWarning, ReadExt};
 use crate::recents::{Recent, Recents};
 use toml_edit::DocumentMut;
@@ -24,11 +25,24 @@ pub fn read_recents(input: &str) -> ParseDetails<Recents> {
                 None => Url::parse(crate::INVALID_URL).expect("Url is constant and valid"),
             };
 
+            #[cfg(feature = "fs")]
+            let root_content_path = recent
+                .parse_from_str::<String>(cx, "dir")
+                .map(std::path::PathBuf::from);
+
             let name = recent
                 .parse_from_str(cx, "name")
                 .unwrap_or_else(|| crate::url_to_readable_name(&url).into_owned());
 
-            result.push(Recent { url, name });
+            let content_descriptor = ContentDescriptor {
+                url,
+                #[cfg(feature = "fs")]
+                root_content_path,
+            };
+            result.push(Recent {
+                content_descriptor,
+                name,
+            });
         }
     });
 
@@ -68,7 +82,9 @@ mod tests {
         let result = read_recents("[[recent]]");
         assert_eq!(
             &vec![Recent {
-                url: Url::parse(crate::INVALID_URL).unwrap(),
+                content_descriptor: ContentDescriptor::new_remote(
+                    Url::parse(crate::INVALID_URL).unwrap(),
+                ),
                 name: "".to_string(),
             }],
             result.values()
@@ -81,7 +97,9 @@ mod tests {
         let result = read_recents("[[recent]]\nurl = \"invalid\"");
         assert_eq!(
             &vec![Recent {
-                url: Url::parse(crate::INVALID_URL).unwrap(),
+                content_descriptor: ContentDescriptor::new_remote(
+                    Url::parse(crate::INVALID_URL).unwrap(),
+                ),
                 name: "".to_string()
             }],
             result.values()
@@ -100,7 +118,9 @@ mod tests {
         let result = read_recents("[[recent]]\nurl = \"https://ruffle.rs/logo-anim.swf\"\n");
         assert_eq!(
             &vec![Recent {
-                url: Url::parse("https://ruffle.rs/logo-anim.swf").unwrap(),
+                content_descriptor: ContentDescriptor::new_remote(
+                    Url::parse("https://ruffle.rs/logo-anim.swf").unwrap(),
+                ),
                 name: "logo-anim.swf".to_string()
             }],
             result.values()
@@ -116,7 +136,9 @@ mod tests {
 
         assert_eq!(
             &vec![Recent {
-                url: Url::parse("file:///name_test.swf").unwrap(),
+                content_descriptor: ContentDescriptor::new_remote(
+                    Url::parse("file:///name_test.swf").unwrap(),
+                ),
                 name: "This is not a test!".to_string(),
             }],
             result.values()
@@ -138,11 +160,15 @@ mod tests {
         assert_eq!(
             &vec![
                 Recent {
-                    url: Url::parse("file:///first.swf").unwrap(),
+                    content_descriptor: ContentDescriptor::new_remote(
+                        Url::parse("file:///first.swf").unwrap(),
+                    ),
                     name: "first.swf".to_string()
                 },
                 Recent {
-                    url: Url::parse("file:///second.swf").unwrap(),
+                    content_descriptor: ContentDescriptor::new_remote(
+                        Url::parse("file:///second.swf").unwrap(),
+                    ),
                     name: "second.swf".to_string(),
                 }
             ],
@@ -173,23 +199,33 @@ mod tests {
         assert_eq!(
             &vec![
                 Recent {
-                    url: Url::parse("file:///first.swf").unwrap(),
+                    content_descriptor: ContentDescriptor::new_remote(
+                        Url::parse("file:///first.swf").unwrap(),
+                    ),
                     name: "first.swf".to_string()
                 },
                 Recent {
-                    url: Url::parse(crate::INVALID_URL).unwrap(),
+                    content_descriptor: ContentDescriptor::new_remote(
+                        Url::parse(crate::INVALID_URL).unwrap(),
+                    ),
                     name: "".to_string()
                 },
                 Recent {
-                    url: Url::parse(crate::INVALID_URL).unwrap(),
+                    content_descriptor: ContentDescriptor::new_remote(
+                        Url::parse(crate::INVALID_URL).unwrap(),
+                    ),
                     name: "".to_string()
                 },
                 Recent {
-                    url: Url::parse(crate::INVALID_URL).unwrap(),
+                    content_descriptor: ContentDescriptor::new_remote(
+                        Url::parse(crate::INVALID_URL).unwrap(),
+                    ),
                     name: "".to_string()
                 },
                 Recent {
-                    url: Url::parse("file:///second.swf").unwrap(),
+                    content_descriptor: ContentDescriptor::new_remote(
+                        Url::parse("file:///second.swf").unwrap(),
+                    ),
                     name: "second.swf".to_string(),
                 },
             ],
@@ -209,5 +245,24 @@ mod tests {
             ],
             result.warnings
         );
+    }
+
+    #[cfg(feature = "fs")]
+    #[test]
+    fn dir() {
+        let result = read_recents(
+            "[[recent]]\nurl = \"file:///home/user/file.swf\"\ndir = \"/home/user\"\n",
+        );
+        assert_eq!(
+            &vec![Recent {
+                content_descriptor: ContentDescriptor {
+                    url: Url::parse("file:///home/user/file.swf").unwrap(),
+                    root_content_path: Some(std::path::PathBuf::from("/home/user")),
+                },
+                name: "file.swf".to_string()
+            }],
+            result.values()
+        );
+        assert_eq!(Vec::<ParseWarning>::new(), result.warnings);
     }
 }

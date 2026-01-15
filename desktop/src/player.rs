@@ -172,7 +172,7 @@ impl ActivePlayer {
         if let Err(e) = preferences.write_recents(|writer| {
             writer.push(
                 Recent {
-                    url: content_descriptor.url.clone(),
+                    content_descriptor: content_descriptor.clone(),
                     name: content.name(),
                 },
                 recent_limit,
