@@ -6,7 +6,7 @@ use url::Url;
 ///
 /// In case of local content, it contains not only the URL, but also the
 /// root content path.
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct ContentDescriptor {
     pub url: Url,
 

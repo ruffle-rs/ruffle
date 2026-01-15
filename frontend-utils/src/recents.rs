@@ -4,17 +4,17 @@ mod write;
 pub use read::read_recents;
 pub use write::RecentsWriter;
 
-use url::Url;
+use crate::content::ContentDescriptor;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Recent {
-    pub url: Url,
+    pub content_descriptor: ContentDescriptor,
     pub name: String,
 }
 
 impl Recent {
     pub fn is_invalid(&self) -> bool {
-        self.url.as_str() == crate::INVALID_URL
+        self.content_descriptor.url.as_str() == crate::INVALID_URL
     }
 
     /// Checks if a recent entry is available.
@@ -22,8 +22,8 @@ impl Recent {
     /// If the URL is local file, it will be checked if it exists, otherwise returns `true`.
     #[cfg(feature = "fs")]
     pub fn is_available(&self) -> bool {
-        if self.url.scheme() == "file" {
-            return match self.url.to_file_path() {
+        if self.content_descriptor.url.scheme() == "file" {
+            return match self.content_descriptor.url.to_file_path() {
                 Ok(path) => path.exists(),
                 Err(()) => false,
             };
