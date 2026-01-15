@@ -18,9 +18,18 @@ storage-backend = Lokacija za spremanje datoteke
 storage-backend-disk = Disk
 storage-backend-memory = Pamćenje
 recent-limit = Nedavna ograničenja
+recent-clear = Očisti
 theme = Tema
 theme-system = Zadano sistemsko
+theme-light = Svjetla
+theme-dark = Mračna
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
+gamemode-tooltip =
+    GameMode privremeno primjenjuje skup optimizacija na vaš računar i/ili Ruffle.
+    Ruffle zahtijeva GameMode samo prilikom reprodukcije filma.
 gamemode-default = Zadano
+gamemode-default-tooltip = GameMode će biti omogućen samo kada je postavka napajanja postavljena na visoku.
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Način unosa
 ime-enabled-experimental = (eksperimentalno)

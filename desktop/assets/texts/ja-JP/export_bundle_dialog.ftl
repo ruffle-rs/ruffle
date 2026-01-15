@@ -1,0 +1,12 @@
+export-bundle-dialog-title = Ruffleバンドルのエクスポート
+export-bundle-dialog-bundle-name = バンドル名：
+export-bundle-dialog-files-description = バンドルするファイルを選択：
+export-bundle-dialog-files-select-all = すべて選択
+export-bundle-dialog-export = エクスポート
+export-bundle-dialog-exporting = エクスポート中…
+export-bundle-dialog-exporting-failed = エクスポートに失敗しました。
+export-bundle-dialog-error-user-canceled = ユーザーによってキャンセルされました。
+export-bundle-dialog-error-failed-to-show-picker = ファイル選択画面の表示に失敗しました。
+export-bundle-dialog-error-io-error = バンドルの書き込み中にエラーが発生しました。
+export-bundle-dialog-info-title = Ruffleバンドルとは？
+export-bundle-dialog-info-description = Ruffleバンドルは、1つのSWFファイルを実行するために必要なすべてをひとまとめにしたパッケージです。すべての必要なアセットや設定を含められます。バンドルによって、SWFファイルを、依存ファイルの配置といった手作業なしに、すぐそのまま実行できるようにします。

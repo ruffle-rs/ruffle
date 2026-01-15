@@ -4,6 +4,7 @@ save-reload-prompt =
         [delete] izbrišete
        *[replace] zamenjate
     } to shranjeno datoteko brez morebitnega konflikta, je, da ponovno naložite to vsebino. Želite vseeno nadaljevati?
+save-download = Prenesi
 save-replace = Zamenjaj
 save-delete = Izbriši
 save-backup-all = Prenesi vse shranjene datoteke

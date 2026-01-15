@@ -15,6 +15,9 @@ open-url-mode = Otvori linkove
 open-url-mode-allow = Dozvoli
 open-url-mode-confirm = Pitajte
 open-url-mode-deny = Odbaci
+load-behavior = Ponašanje učitavanja
+load-behavior-delayed = Odloženo
+load-behavior-blocking = Blokiranje
 max-execution-duration = Maksimalno trajanje izvršenja
 max-execution-duration-suffix = { " " } sekundi
 quality = Kvalitet
@@ -40,13 +43,31 @@ align-top-left = Gore lijevo
 align-bottom-left = Dolje lijevo
 align-top-right = Gore desno
 align-bottom-right = Dolje desno
+align-force = Forsiraj
 scale-mode = Metoda skaliranja
 scale-mode-noscale = Neskalirano (100%)
 scale-mode-noscale-tooltip =
     Prikazuje film u originalnoj veličini, bez ikakvog zumiranja.
-
+    
     Odgovara StageScaleMode.NO_SCALE
 scale-mode-showall = Zumiraj da stane
+scale-mode-showall-tooltip =
+    Zumira film kako bi što više ispunio prozor bez izrezivanja, održavajući omjer širine i visine.
+    
+    Odgovara StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Rastegnite da odgovara
+scale-mode-exactfit-tooltip =
+    Osigurava da film ispuni cijeli prozor, zanemarujući omjer širine i visine.
+    
+    Odgovara StageScaleMode.EXACT_FIT
+scale-mode-noborder = Skrati da odgovara
+scale-mode-noborder-tooltip =
+    Ispunjava cijeli prozor uz zadržavanje omjera širine i visine, po potrebi izrezujući film.
+    
+    Odgovara StageScaleMode.NO_BORDER
+scale-mode-force = Forsiraj
+scale-mode-force-tooltip = Sprečava promjenu metode skaliranja filma, zaključavajući je na odabranu postavku.
+player-version = Verzija igrača
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = Prilagođena brzina kadrova u sekundi

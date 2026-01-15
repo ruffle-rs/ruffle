@@ -1,6 +1,10 @@
 file-picker-title-open-file = 単一ファイルを開く
+file-picker-title-open-directory = フォルダを開く
 file-picker-filter-supported = すべてのサポートされているファイル
 file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Ruffle Bundle (*.ruf)
 file-picker-filter-all = すべてのファイル
+file-picker-select-root-movie-title = ルートムービーの選択
+file-picker-select-root-movie-message = 開いたディレクトリの中からルートムービーを選択してください。
+file-picker-select-root-movie-select = 選択
