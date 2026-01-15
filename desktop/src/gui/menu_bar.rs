@@ -106,9 +106,8 @@ impl MenuBar {
                     if Button::new(text(locale, "bookmarks-menu-add")).ui(ui).clicked() {
                         ui.close();
 
-                        let initial_url = self.currently_opened.as_ref().map(|(desc, _)| desc.url.clone());
-
-                        dialogs.open_add_bookmark(initial_url);
+                        let content_descriptor = self.currently_opened.as_ref().map(|(desc, _)| desc.clone());
+                        dialogs.open_add_bookmark(content_descriptor);
                     }
 
                     if Button::new(text(locale, "bookmarks-menu-manage")).ui(ui).clicked() {
@@ -122,8 +121,10 @@ impl MenuBar {
                             for bookmark in bookmarks.iter().filter(|x| !x.is_invalid()) {
                                 if Button::new(&bookmark.name).ui(ui).clicked() {
                                     ui.close();
-                                    let content_descriptor = ContentDescriptor { url: bookmark.url.clone(), root_content_path: None };
-                                    let _ = self.event_loop.send_event(RuffleEvent::Open(content_descriptor, Box::new(self.default_launch_options.clone())));
+                                    let _ = self.event_loop.send_event(RuffleEvent::Open(
+                                        bookmark.content_descriptor.clone(),
+                                        Box::new(self.default_launch_options.clone()),
+                                    ));
                                 }
                             }
                         });

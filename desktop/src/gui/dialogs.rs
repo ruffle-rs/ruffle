@@ -153,10 +153,10 @@ impl Dialogs {
         ));
     }
 
-    pub fn open_add_bookmark(&mut self, initial_url: Option<url::Url>) {
+    pub fn open_add_bookmark(&mut self, content_descriptor: Option<ContentDescriptor>) {
         self.bookmark_add_dialog = Some(BookmarkAddDialog::new(
             self.preferences.clone(),
-            initial_url,
+            content_descriptor,
             self.picker.clone(),
         ))
     }

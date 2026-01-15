@@ -1,4 +1,5 @@
 use crate::bookmarks::{Bookmark, Bookmarks};
+use crate::content::ContentDescriptor;
 use crate::parse::DocumentHolder;
 use crate::write::TableExt;
 use toml_edit::{ArrayOfTables, Table, value};
@@ -29,17 +30,25 @@ impl<'a> BookmarksWriter<'a> {
     pub fn add(&mut self, bookmark: Bookmark) {
         self.with_underlying_table(|values, table| {
             let mut bookmark_table = Table::new();
-            bookmark_table["url"] = value(bookmark.url.to_string());
+            bookmark_table["url"] = value(bookmark.content_descriptor.url.to_string());
+            #[cfg(feature = "fs")]
+            if let Some(dir) = &bookmark.content_descriptor.root_content_path {
+                bookmark_table["dir"] = value(&*dir.to_string_lossy());
+            }
             bookmark_table["name"] = value(&bookmark.name);
             table.push(bookmark_table);
             values.push(bookmark);
         })
     }
 
-    pub fn set_url(&mut self, index: usize, url: url::Url) {
+    pub fn set_content_descriptor(&mut self, index: usize, content_descriptor: ContentDescriptor) {
         self.with_bookmark_table(index, |values, table| {
-            table["url"] = value(url.as_str());
-            values[index].url = url;
+            table["url"] = value(content_descriptor.url.as_str());
+            #[cfg(feature = "fs")]
+            if let Some(dir) = &content_descriptor.root_content_path {
+                table["dir"] = value(&*dir.to_string_lossy());
+            }
+            values[index].content_descriptor = content_descriptor;
         })
     }
 
@@ -72,7 +81,9 @@ mod tests {
             "",
             |writer| {
                 writer.add(Bookmark {
-                    url: Url::parse("file:///home/user/example.swf").unwrap(),
+                    content_descriptor: ContentDescriptor::new_remote(
+                        Url::parse("file:///home/user/example.swf").unwrap(),
+                    ),
                     name: "example.swf".to_string(),
                 })
             },
@@ -82,7 +93,9 @@ mod tests {
             "[[bookmark]]\nurl = \"file:///home/user/example.swf\"\n",
             |writer| {
                 writer.add(Bookmark {
-                    url: Url::parse("file:///home/user/another_file.swf").unwrap(),
+                    content_descriptor: ContentDescriptor::new_remote(
+                        Url::parse("file:///home/user/another_file.swf").unwrap(),
+                    ),
                     name: "another_file.swf".to_string(),
                 })
             },
@@ -99,7 +112,14 @@ mod tests {
         );
         test(
             "[[bookmark]]\nurl = \"file:///example.swf\"\nname = \"example.swf\"",
-            |writer| writer.set_url(0, Url::parse("https://ruffle.rs/logo-anim.swf").unwrap()),
+            |writer| {
+                writer.set_content_descriptor(
+                    0,
+                    ContentDescriptor::new_remote(
+                        Url::parse("https://ruffle.rs/logo-anim.swf").unwrap(),
+                    ),
+                )
+            },
             "[[bookmark]]\nurl = \"https://ruffle.rs/logo-anim.swf\"\nname = \"example.swf\"\n",
         );
     }
@@ -131,7 +151,9 @@ mod tests {
             "[bookmark]",
             |writer| {
                 writer.add(Bookmark {
-                    url: Url::parse("file:///test.swf").unwrap(),
+                    content_descriptor: ContentDescriptor::new_remote(
+                        Url::parse("file:///test.swf").unwrap(),
+                    ),
                     name: "test.swf".to_string(),
                 })
             },
@@ -142,11 +164,44 @@ mod tests {
             "bookmark = 1010",
             |writer| {
                 writer.add(Bookmark {
-                    url: Url::parse("file:///test.swf").unwrap(),
+                    content_descriptor: ContentDescriptor::new_remote(
+                        Url::parse("file:///test.swf").unwrap(),
+                    ),
                     name: "test.swf".to_string(),
                 })
             },
             "[[bookmark]]\nurl = \"file:///test.swf\"\nname = \"test.swf\"\n",
+        );
+    }
+
+    #[cfg(feature = "fs")]
+    #[test]
+    fn dir() {
+        test(
+            "",
+            |writer| {
+                writer.add(Bookmark {
+                    content_descriptor: ContentDescriptor {
+                        url: Url::parse("file:///home/user/example.swf").unwrap(),
+                        root_content_path: Some(std::path::PathBuf::from("/home/user")),
+                    },
+                    name: "example.swf".to_string(),
+                })
+            },
+            "[[bookmark]]\nurl = \"file:///home/user/example.swf\"\ndir = \"/home/user\"\nname = \"example.swf\"\n",
+        );
+        test(
+            "[[bookmark]]\nurl = \"file:///home/user/example.swf\"\ndir = \"/home/user\"\n",
+            |writer| {
+                writer.add(Bookmark {
+                    content_descriptor: ContentDescriptor {
+                        url: Url::parse("file:///home/user/another_file.swf").unwrap(),
+                        root_content_path: Some(std::path::PathBuf::from("/home/user")),
+                    },
+                    name: "another_file.swf".to_string(),
+                })
+            },
+            "[[bookmark]]\nurl = \"file:///home/user/example.swf\"\ndir = \"/home/user\"\n\n[[bookmark]]\nurl = \"file:///home/user/another_file.swf\"\ndir = \"/home/user\"\nname = \"another_file.swf\"\n",
         );
     }
 }
