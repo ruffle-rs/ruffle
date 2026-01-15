@@ -44,6 +44,12 @@
     "settings_preferred_renderer_auto": {
         "message": "自動"
     },
+    "settings_device_font_renderer": {
+        "message": "デバイスフォントのレンダラ"
+    },
+    "device_font_renderer_embedded": {
+        "message": "埋め込み"
+    },
     "settings_advanced_options": {
         "message": "詳細設定"
     },

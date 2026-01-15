@@ -1,6 +1,8 @@
 file-picker-title-open-file = Открыть файл
+file-picker-title-open-directory = Открыть папку
 file-picker-filter-supported = Все поддерживаемые файлы
 file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Ruffle-пакет (*.ruf)
 file-picker-filter-all = Все файлы
+file-picker-select-root-movie-select = Выбрать

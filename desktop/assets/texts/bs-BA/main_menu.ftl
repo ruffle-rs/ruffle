@@ -8,7 +8,7 @@
 # Some items may be also be duplicated here, like "About Ruffle" in the menu and "About Ruffle" elsewhere as the header of the about menu.
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
-file-menu = Datoteka
+file-menu = Datoteke
 file-menu-open-advanced = Otvori napredno...
 file-menu-close = Zatvori
 file-menu-reload = Ponovo učitaj

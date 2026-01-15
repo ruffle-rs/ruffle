@@ -36,6 +36,14 @@ error-javascript-config =
     Ruffle je naletel na večjo težavo zaradi nepravilne konfiguracije JavaScript.
     Če ste skrbnik strežnika, vas prosimo, da preverite podrobnosti napake in ugotovite, kateri parameter je kriv.
     Za pomoč lahko poiščete tudi wiki Ruffle.
+error-wasm-not-found =
+    Ruffle ni uspel naložiti potrebne datoteke ".wasm".
+    Če ste skrbnik strežnika, preverite, ali je datoteka pravilno naložena.
+    Če težava še vedno obstaja, boste morda morali uporabiti nastavitev "publicPath": za pomoč si oglejte wiki Ruffle.
+error-wasm-mime-type =
+    Ruffle je med poskusom inicializacije naletel na večjo težavo.
+    Ta spletni strežnik ne servira datotek ".wasm" s pravilnim tipom MIME.
+    Če ste skrbnik strežnika, poiščite pomoč v Ruffle wiki.
 error-invalid-swf =
     Ruffle ne more razčleniti zahtevane datoteke.
     Najverjetnejši razlog je, da zahtevana datoteka ni veljavna datoteka SWF.
@@ -47,6 +55,10 @@ error-swf-cors =
     Ruffle ni uspel naložiti datoteke Flash SWF.
     Dostop do prenosa je verjetno blokiran s politiko CORS.
     Če ste skrbnik strežnika, poiščite pomoč v Ruffle wiki.
+error-wasm-cors =
+    Ruffle ni uspel naložiti potrebne datotečne komponente datoteke ".wasm“.
+    Dostop do prenosa je verjetno blokiran s politiko CORS.
+    Če ste skrbnik strežnika, poiščite pomoč v Ruffle wiki.
 error-wasm-invalid =
     Ruffle je med poskusom inicializacije naletel na večjo težavo.
     Zdi se, da na tej strani manjkajo datoteke ali so datoteke za zagon Ruffle neveljavne.
@@ -55,6 +67,11 @@ error-wasm-download =
     Ruffle je med poskusom inicializacije naletel na večjo težavo.
     Ta se pogosto reši sama, zato lahko poskusite ponovno naložiti stran.
     V nasprotnem primeru se obrnite na skrbnika spletnega mesta.
+error-wasm-disabled-on-edge =
+    Ruffle ni uspel naložiti potrebne datotečne komponente ".wasm".
+    Da bi to popravili, odprite nastavitve brskalnika, kliknite "Zasebnost, iskanje in storitve", pomaknite se navzdol in izklopite "Izboljšajte svojo varnost na spletu".
+    Tako bo brskalnik lahko naložil potrebne datoteke ".wasm".
+    Če težava še vedno obstaja, boste morda morali uporabiti drug brskalnik.
 error-wasm-unsupported-browser =
     Brskalnik, ki ga uporabljate, ne podpira razširitev WebAssembly, ki jih Ruffle potrebuje za delovanje.
     Preklopite na podprt brskalnik.
@@ -64,6 +81,10 @@ error-javascript-conflict =
     Zdi se, da ta stran uporablja JavaScript kodo, ki je v nasprotju z Ruffle.
     Če ste skrbnik strežnika, vas prosimo, da poskusite naložiti datoteko na prazno stran.
 error-javascript-conflict-outdated = Lahko poskusite naložiti novejšo različico Ruffle, ki bo morda odpravila težavo (trenutna različica je zastarela: { $buildDate }).
+error-csp-conflict =
+    Ruffle je med poskusom inicializacije naletel na večjo težavo.
+    Varnostna politika vsebine tega spletnega strežnika ne dovoljuje izvajanja potrebne komponente ".wasm".
+    Če ste skrbnik strežnika, poiščite pomoč v Ruffle wiki.
 error-unknown =
     Ruffle je naletel na večjo težavo pri prikazovanju te vsebine Flash.
     { $outdated ->

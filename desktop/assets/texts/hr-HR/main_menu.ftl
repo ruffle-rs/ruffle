@@ -9,7 +9,7 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Datoteka
-file-menu-open-quick = Otvori...
+file-menu-open-advanced = Otvori napredno...
 file-menu-close = Zatvori
 file-menu-reload = Ponovno učitaj
 file-menu-recents = Nedavno

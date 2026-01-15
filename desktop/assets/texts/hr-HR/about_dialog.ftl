@@ -1,8 +1,8 @@
 about-ruffle = O Ruffleu
 about-ruffle-version = Verzija
 about-ruffle-channel = Kanal
-about-ruffle-build-time = Vrijeme sagrađivanja
-about-ruffle-build-features = Značajke sagrađivanja
+about-ruffle-build-time = Vrijeme izgradnje
+about-ruffle-build-features = Značajke izgradnje
 about-ruffle-visit-website = Web stranica
 about-ruffle-visit-github = GitHub
 about-ruffle-visit-discord = Discord
