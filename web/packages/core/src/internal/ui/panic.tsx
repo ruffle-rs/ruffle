@@ -280,7 +280,12 @@ function createPanicError(error: Error | null): {
             };
         }
 
-        if (error.cause.name === "CompileError") {
+        // When the WASM file is a 404 on Chromium there is this TypeError:
+        // Failed to execute 'compile' on 'WebAssembly': HTTP status code is not ok
+        if (
+            error.cause.name === "CompileError" ||
+            message.includes("failed to execute 'compile' on 'webassembly'")
+        ) {
             // Self hosted: Cannot load `.wasm` file - incorrect configuration or missing files
             return {
                 body: textAsParagraphs("error-wasm-invalid"),
