@@ -1,16 +1,17 @@
 //! Object representation for `Proxy`.
 
+use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::methods::flash_utils_proxy as proxy_methods;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, QNameObject, TObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 
 /// A class instance allocator that allocates Proxy objects.
@@ -84,7 +85,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
     fn call_property_local(
         self,
         multiname: &Multiname<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let self_val = Value::from(self);
@@ -92,7 +93,7 @@ impl<'gc> TObject<'gc> for ProxyObject<'gc> {
         let qname = QNameObject::from_name(activation, multiname.clone());
 
         let mut args = vec![qname.into()];
-        args.extend_from_slice(arguments);
+        args.extend_from_slice(&arguments.to_slice());
         self_val.call_method(proxy_methods::CALL_PROPERTY, &args, activation)
     }
 

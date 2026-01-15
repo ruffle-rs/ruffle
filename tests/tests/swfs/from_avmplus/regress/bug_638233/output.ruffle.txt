@@ -1,0 +1,19 @@
+Asserting for TypeError PASSED!
+1 PASSED!
+Asserting for TypeError PASSED!
+2 PASSED!
+Asserting for TypeError PASSED!
+3 PASSED!
+Asserting for TypeError PASSED!
+4 PASSED!
+Asserting for TypeError FAILED! expected: true got: false
+5 FAILED! expected: TypeError: Error #1007 got: ReferenceError: Error 
+Asserting for TypeError PASSED!
+6 PASSED!
+Asserting for TypeError PASSED!
+7 PASSED!
+8 PASSED!
+9 PASSED!
+10 PASSED!
+11 PASSED!
+12 PASSED!

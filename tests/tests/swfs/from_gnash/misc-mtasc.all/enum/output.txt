@@ -1,0 +1,19 @@
+Test constructor called [enum.as:11]
+DUMP: obj[m1] = 20 [enum.as:27]
+PASSED: 1 == 1  [enum.as:42]
+PASSED: 20 == 20  [enum.as:43]
+PASSED: 0 == 0  [enum.as:47]
+PASSED: 0 == 0  [enum.as:48]
+PASSED: 0 == 0  [enum.as:52]
+PASSED: 0 == 0  [enum.as:53]
+PASSED: 0 == 0  [enum.as:58]
+PASSED: 0 == 0  [enum.as:59]
+PASSED: 1 == 1  [enum.as:65]
+PASSED: 0 == 0  [enum.as:66]
+PASSED: 0 == 0  [enum.as:71]
+PASSED: 0 == 0  [enum.as:72]
+PASSED: Test run 12 [ [enum.as:80]]
+#passed: 13
+#failed: 0
+#total tests run: 13
+__END_OF_TEST__

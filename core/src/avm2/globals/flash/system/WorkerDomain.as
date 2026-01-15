@@ -1,8 +1,8 @@
 package flash.system {
+    import __ruffle__.stub_getter;
 
     import flash.utils.ByteArray;
     import flash.system.Worker;
-    import __ruffle__.stub_getter;
 
     [API("680")] // the docs say 682, that's wrong
     [Ruffle(Abstract)]

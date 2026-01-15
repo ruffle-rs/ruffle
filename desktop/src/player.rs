@@ -1,6 +1,6 @@
 use crate::backends::{
     DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopNavigatorInterface,
-    DesktopUiBackend,
+    DesktopUiBackend, PathAllowList,
 };
 use crate::cli::FilesystemAccessMode;
 use crate::cli::GameModePreference;
@@ -9,13 +9,13 @@ use crate::gui::{FilePicker, MovieView};
 use crate::preferences::GlobalPreferences;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
-use ruffle_core::backend::navigator::SocketMode;
+use ruffle_core::backend::navigator::{OwnedFuture, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::events::{GamepadButton, KeyCode};
-use ruffle_core::{DefaultFont, LoadBehavior, Player, PlayerBuilder, PlayerEvent};
+use ruffle_core::font::DefaultFont;
+use ruffle_core::{LoadBehavior, Player, PlayerBuilder, PlayerEvent};
 use ruffle_frontend_utils::backends::audio::CpalAudioBackend;
-use ruffle_frontend_utils::backends::executor::{AsyncExecutor, PollRequester};
-use ruffle_frontend_utils::backends::navigator::ExternalNavigatorBackend;
+use ruffle_frontend_utils::backends::navigator::{ExternalNavigatorBackend, FutureSpawner};
 use ruffle_frontend_utils::bundle::source::BundleSourceError;
 use ruffle_frontend_utils::bundle::{Bundle, BundleError};
 use ruffle_frontend_utils::content::PlayingContent;
@@ -51,6 +51,11 @@ pub struct LaunchOptions {
     pub filesystem_access_mode: FilesystemAccessMode,
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub avm2_optimizer_enabled: bool,
+
+    /// Path representing the root of the content. If present, it will allow
+    /// Ruffle to allow access to files residing in this directory
+    /// automatically.
+    pub root_content_path: Option<PathBuf>,
 }
 
 impl From<&GlobalPreferences> for LaunchOptions {
@@ -101,17 +106,7 @@ impl From<&GlobalPreferences> for LaunchOptions {
             tcp_connections: value.cli.tcp_connections,
             gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
             avm2_optimizer_enabled: !value.cli.no_avm2_optimizer,
-        }
-    }
-}
-
-#[derive(Clone)]
-struct WinitWaker(EventLoopProxy<RuffleEvent>);
-
-impl PollRequester for WinitWaker {
-    fn request_poll(&self) {
-        if self.0.send_event(RuffleEvent::TaskPoll).is_err() {
-            tracing::error!("Couldn't request poll - event loop is closed");
+            root_content_path: None,
         }
     }
 }
@@ -119,8 +114,8 @@ impl PollRequester for WinitWaker {
 /// Represents a current Player and any associated state with that player,
 /// which may be lost when this Player is closed (dropped)
 struct ActivePlayer {
+    id: PlayerId,
     player: Arc<Mutex<Player>>,
-    executor: Arc<AsyncExecutor<WinitWaker>>,
 
     #[cfg(target_os = "linux")]
     _gamemode_session: crate::dbus::GameModeSession,
@@ -139,6 +134,7 @@ impl ActivePlayer {
         preferences: GlobalPreferences,
         file_picker: FilePicker,
     ) -> Self {
+        let player_id = PlayerId::new();
         let mut builder = PlayerBuilder::new();
 
         match CpalAudioBackend::new(preferences.output_device_name().as_deref()) {
@@ -151,29 +147,29 @@ impl ActivePlayer {
         };
 
         let mut content = PlayingContent::DirectFile(movie_url.clone());
-        if movie_url.scheme() == "file" {
-            if let Ok(path) = movie_url.to_file_path() {
-                match Bundle::from_path(&path) {
-                    Ok(bundle) => {
-                        if bundle.warnings().is_empty() {
-                            tracing::info!("Opening bundle at {path:?}");
-                        } else {
-                            // TODO: Show warnings to user (toast?)
-                            tracing::warn!("Opening bundle at {path:?} with warnings");
-                            for warning in bundle.warnings() {
-                                tracing::warn!("{warning}");
-                            }
+        if movie_url.scheme() == "file"
+            && let Ok(path) = movie_url.to_file_path()
+        {
+            match Bundle::from_path(&path) {
+                Ok(bundle) => {
+                    if bundle.warnings().is_empty() {
+                        tracing::info!("Opening bundle at {path:?}");
+                    } else {
+                        // TODO: Show warnings to user (toast?)
+                        tracing::warn!("Opening bundle at {path:?} with warnings");
+                        for warning in bundle.warnings() {
+                            tracing::warn!("{warning}");
                         }
-                        content = PlayingContent::Bundle(movie_url.clone(), Box::new(bundle));
                     }
-                    Err(BundleError::BundleDoesntExist)
-                    | Err(BundleError::InvalidSource(BundleSourceError::UnknownSource)) => {
-                        // Do nothing and carry on opening it as a swf - this likely isn't a bundle at all
-                    }
-                    Err(e) => {
-                        // TODO: Visible popup when a bundle (or regular file) fails to open
-                        tracing::error!("Couldn't open bundle at {path:?}: {e}");
-                    }
+                    content = PlayingContent::Bundle(movie_url.clone(), Box::new(bundle));
+                }
+                Err(BundleError::BundleDoesntExist)
+                | Err(BundleError::InvalidSource(BundleSourceError::UnknownSource)) => {
+                    // Do nothing and carry on opening it as a swf - this likely isn't a bundle at all
+                }
+                Err(e) => {
+                    // TODO: Visible popup when a bundle (or regular file) fails to open
+                    tracing::error!("Couldn't open bundle at {path:?}: {e}");
                 }
             }
         }
@@ -193,7 +189,7 @@ impl ActivePlayer {
 
         let opt = match &content {
             PlayingContent::DirectFile(_) => Cow::Borrowed(opt),
-            PlayingContent::Bundle(_, bundle) => {
+            PlayingContent::Bundle(url, bundle) => {
                 let player = opt.player.or(&bundle.information().player);
 
                 Cow::Owned(LaunchOptions {
@@ -207,13 +203,18 @@ impl ActivePlayer {
                     filesystem_access_mode: opt.filesystem_access_mode,
                     gamepad_button_mapping: opt.gamepad_button_mapping.clone(),
                     avm2_optimizer_enabled: opt.avm2_optimizer_enabled,
+                    root_content_path: url.to_file_path().ok(),
                 })
             }
         };
 
-        let (executor, future_spawner) = AsyncExecutor::new(WinitWaker(event_loop.clone()));
+        let future_spawner = WinitExecutor {
+            event_loop: event_loop.clone(),
+            player_id,
+        };
         let movie_url = content.initial_swf_url().clone();
         let readable_name = content.name();
+        let initial_allow_list = PathAllowList::new(&movie_url, opt.root_content_path.clone());
         let navigator = ExternalNavigatorBackend::new(
             opt.player
                 .base
@@ -230,7 +231,7 @@ impl ActivePlayer {
             DesktopNavigatorInterface::new(
                 preferences.clone(),
                 event_loop.clone(),
-                movie_url.to_file_path().ok(),
+                initial_allow_list,
                 opt.filesystem_access_mode,
             ),
         );
@@ -419,8 +420,8 @@ impl ActivePlayer {
         }
 
         Self {
+            id: player_id,
             player,
-            executor,
             #[cfg(target_os = "linux")]
             _gamemode_session: crate::dbus::GameModeSession::new(gamemode_enable),
         }
@@ -491,18 +492,76 @@ impl PlayerController {
     }
 
     pub fn handle_event(&self, event: PlayerEvent) -> bool {
-        if let Some(mut player) = self.get() {
-            if player.is_playing() {
-                return player.handle_event(event);
-            }
+        if let Some(mut player) = self.get()
+            && player.is_playing()
+        {
+            return player.handle_event(event);
         }
 
         false
     }
 
-    pub fn poll(&self) {
-        if let Some(player) = &self.player {
-            player.executor.poll_all()
+    pub fn poll(&self, task: PlayerRunnable) {
+        // Only run the task if it matches our current player;
+        // otherwise it is stale, and should be cancelled (which
+        // happens implicitly on drop).
+        if let Some(player) = &self.player
+            && *task.0.metadata() == player.id
+        {
+            task.0.run();
         }
+    }
+}
+
+/// A unique identifier for a given `Player` instance.
+/// Used to track which player any currently executing future is bound to.
+#[derive(Copy, Clone, Eq, PartialEq)]
+struct PlayerId(i64);
+
+impl PlayerId {
+    fn new() -> Self {
+        use std::sync::atomic::{AtomicI64, Ordering};
+
+        static NEXT: AtomicI64 = AtomicI64::new(0);
+        let id = NEXT.fetch_add(1, Ordering::Relaxed);
+        assert!(id >= 0, "PlayerId overflowed!");
+        Self(id)
+    }
+}
+
+/// A `Player`-bound future that is currently running.
+pub struct PlayerRunnable(async_task::Runnable<PlayerId>);
+
+/// A bare-bones executor that schedules tasks on the winit event loop.
+struct WinitExecutor {
+    event_loop: EventLoopProxy<RuffleEvent>,
+    player_id: PlayerId,
+}
+
+impl<E: std::error::Error + 'static> FutureSpawner<E> for WinitExecutor {
+    fn spawn(&self, future: OwnedFuture<(), E>) {
+        // Discard any errors.
+        let future = async {
+            if let Err(e) = future.await {
+                tracing::error!("Async error: {}", e);
+            }
+        };
+
+        let event_loop = self.event_loop.clone();
+        let scheduler = move |task| {
+            let event = RuffleEvent::TaskPoll(PlayerRunnable(task));
+            if event_loop.send_event(event).is_err() {
+                tracing::error!("Couldn't schedule task - event loop is closed");
+            }
+        };
+
+        let (runnable, task) = async_task::Builder::new()
+            .metadata(self.player_id)
+            .spawn_local(|_| future, scheduler);
+
+        // The future should run in the background.
+        task.detach();
+        // Immediately schedule the future to be polled for the first time.
+        runnable.schedule();
     }
 }

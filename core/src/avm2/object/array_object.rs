@@ -1,17 +1,18 @@
 //! Array-structured objects
 
+use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
+use crate::context::UpdateContext;
 use crate::string::{AvmString, WStr};
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
+use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates array objects.
@@ -61,27 +62,48 @@ pub struct ArrayObjectData<'gc> {
 
 impl<'gc> ArrayObject<'gc> {
     /// Construct an empty array.
-    pub fn empty(activation: &mut Activation<'_, 'gc>) -> ArrayObject<'gc> {
-        Self::from_storage(activation, ArrayStorage::new(0))
+    pub fn empty(context: &mut UpdateContext<'gc>) -> ArrayObject<'gc> {
+        Self::from_storage(context, ArrayStorage::new(0))
     }
 
     /// Build an array object from storage.
     ///
     /// This will produce an instance of the system `Array` class.
     pub fn from_storage(
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         array: ArrayStorage<'gc>,
     ) -> ArrayObject<'gc> {
-        let class = activation.avm2().classes().array;
+        let class = context.avm2.classes().array;
         let base = ScriptObjectData::new(class);
 
         ArrayObject(Gc::new(
-            activation.gc(),
+            context.gc(),
             ArrayObjectData {
                 base,
                 array: RefLock::new(array),
             },
         ))
+    }
+
+    pub fn for_prototype(
+        context: &mut UpdateContext<'gc>,
+        array_class: ClassObject<'gc>,
+    ) -> Object<'gc> {
+        let object_class = context.avm2.classes().object;
+        let base = ScriptObjectData::custom_new(
+            array_class.inner_class_definition(),
+            Some(object_class.prototype()),
+            array_class.instance_vtable(),
+        );
+
+        ArrayObject(Gc::new(
+            context.gc(),
+            ArrayObjectData {
+                base,
+                array: RefLock::new(ArrayStorage::new(0)),
+            },
+        ))
+        .into()
     }
 
     pub fn as_array_index(local_name: &WStr) -> Option<usize> {

@@ -1,4 +1,3 @@
-pub use crate::avm2::Value as Avm2Value;
 pub use crate::display_object::{
     DisplayObject, HitTestOptions, TDisplayObject, TDisplayObjectContainer,
 };

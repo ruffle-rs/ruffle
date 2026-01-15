@@ -1,4 +1,4 @@
-use crate::avm2::error::{make_error_2004, Error2004Type};
+use crate::avm2::error::{Error2004Type, make_error_2004};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 

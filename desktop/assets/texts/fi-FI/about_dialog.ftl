@@ -1,0 +1,11 @@
+about-ruffle = Tietoja – Ruffle
+about-ruffle-version = Versio
+about-ruffle-channel = Kanava
+about-ruffle-build-time = Koontiaika
+about-ruffle-build-features = Koonnin ominaisuudet
+about-ruffle-commit-ref = Kommitin nimi
+about-ruffle-commit-time = Kommitin aika
+about-ruffle-visit-website = Verkkosivusto
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Sponsoroi

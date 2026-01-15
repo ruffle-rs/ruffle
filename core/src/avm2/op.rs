@@ -252,6 +252,9 @@ pub enum Op<'gc> {
     Nop,
     Not,
     Pop,
+    PopJump {
+        offset: usize,
+    },
     PopScope,
     PushDouble {
         value: f64,
@@ -319,6 +322,9 @@ pub enum Op<'gc> {
     Si32,
     Si8,
     StrictEquals,
+    StoreLocal {
+        index: u32,
+    },
     Subtract,
     SubtractI,
     Swap,
@@ -352,6 +358,7 @@ impl Op<'_> {
                 | Op::Nop
                 | Op::Not
                 | Op::Pop
+                | Op::PopJump { .. }
                 | Op::PopScope
                 | Op::PushDouble { .. }
                 | Op::PushFalse
@@ -365,6 +372,7 @@ impl Op<'_> {
                 | Op::PushUndefined
                 | Op::SetLocal { .. }
                 | Op::StrictEquals
+                | Op::StoreLocal { .. }
                 | Op::Swap
                 | Op::Timestamp
                 | Op::TypeOf
@@ -381,6 +389,25 @@ impl Op<'_> {
                 Op::Nop | Op::Debug { .. } | Op::DebugFile { .. } | Op::DebugLine { .. }
             )
         }
+    }
+
+    /// Whether all this op does is push a single value to the stack, possibly
+    /// reading from stack or locals, but never, e.g., throwing an error or
+    /// calling a method.
+    pub fn is_pure_push(&self) -> bool {
+        matches!(
+            self,
+            Op::PushTrue
+                | Op::PushFalse
+                | Op::PushUndefined
+                | Op::PushNull
+                | Op::PushDouble { .. }
+                | Op::PushInt { .. }
+                | Op::PushShort { .. }
+                | Op::PushUint { .. }
+                | Op::GetLocal { .. }
+                | Op::Dup
+        )
     }
 }
 

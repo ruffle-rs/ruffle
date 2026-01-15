@@ -93,15 +93,7 @@ impl<'gc> ArrayStorage<'gc> {
 
     /// Convert a set of arguments into array storage.
     pub fn from_args(values: &[Value<'gc>]) -> Self {
-        let storage = values
-            .iter()
-            .map(|v| Some(*v))
-            .collect::<Vec<Option<Value<'gc>>>>();
-
-        ArrayStorage::Dense {
-            storage,
-            occupied_count: values.len(),
-        }
+        Self::from_iter(values.iter().copied())
     }
 
     /// Wrap an existing storage Vec in an `ArrayStorage`.
@@ -212,8 +204,8 @@ impl<'gc> ArrayStorage<'gc> {
                 occupied_count,
             } => {
                 if let Some(i) = storage.get_mut(item) {
-                    *i = None;
-                    if *occupied_count > 0 {
+                    if i.is_some() {
+                        *i = None;
                         *occupied_count -= 1;
                         self.maybe_convert_to_sparse();
                     }
@@ -241,6 +233,23 @@ impl<'gc> ArrayStorage<'gc> {
                 storage,
                 occupied_count,
             } => {
+                // Update occupied_count
+                if let Some(slice) = storage.get(size..) {
+                    // We need to update occupied_count only when shrinking the array.
+                    //
+                    // Now we need to choose between iterating over the deleted elements,
+                    // or the rest.  It's doesn't matter for correctness, so let's pick
+                    // the smaller set for performance.
+                    if slice.len() <= storage.len() / 2 {
+                        let occupied_to_delete = slice.iter().filter(|v| v.is_some()).count();
+                        *occupied_count = occupied_count.saturating_sub(occupied_to_delete);
+                    } else {
+                        let occupied_to_set =
+                            storage[0..size].iter().filter(|v| v.is_some()).count();
+                        *occupied_count = occupied_to_set;
+                    }
+                }
+
                 if Self::should_convert_to_sparse(size, *occupied_count) {
                     self.convert_to_sparse();
                     if let ArrayStorage::Sparse { .. } = self {
@@ -358,7 +367,7 @@ impl<'gc> ArrayStorage<'gc> {
 
     /// Pop a value from the back of the array.
     ///
-    /// This method preferrentially pops non-holes from the array first. If a
+    /// This method preferentially pops non-holes from the array first. If a
     /// hole is popped, it will become `undefined`.
     pub fn pop(&mut self) -> Value<'gc> {
         match self {
@@ -397,9 +406,6 @@ impl<'gc> ArrayStorage<'gc> {
     }
 
     /// Shift a value from the front of the array.
-    ///
-    /// This method preferrentially pops non-holes from the array first. If a
-    /// hole is popped, it will become `undefined`.
     pub fn shift(&mut self) -> Value<'gc> {
         match self {
             ArrayStorage::Dense {
@@ -464,8 +470,8 @@ impl<'gc> ArrayStorage<'gc> {
     pub fn iter<'a>(
         &'a self,
     ) -> impl DoubleEndedIterator<Item = Option<Value<'gc>>>
-           + ExactSizeIterator<Item = Option<Value<'gc>>>
-           + 'a {
+    + ExactSizeIterator<Item = Option<Value<'gc>>>
+    + 'a {
         let index_back = self.length();
         ArrayStorageIterator {
             storage: self,
@@ -527,6 +533,79 @@ impl<'gc> ArrayStorage<'gc> {
             }
         }
     }
+
+    pub fn splice(
+        &mut self,
+        start: usize,
+        delete_count: usize,
+        items: &[Value<'gc>],
+    ) -> ArrayStorage<'gc> {
+        let delete_count = delete_count.min(self.length() - start);
+        let end = start + delete_count;
+        match self {
+            ArrayStorage::Dense {
+                storage,
+                occupied_count,
+            } => {
+                let occupied_added = items.len();
+                let mut occupied_removed = 0;
+                let splice = storage
+                    .splice(start..end, items.iter().map(|i| Some(*i)))
+                    .inspect(|v| {
+                        if v.is_some() {
+                            occupied_removed += 1;
+                        }
+                    })
+                    .collect::<Vec<_>>();
+                *occupied_count += occupied_added;
+                *occupied_count -= occupied_removed;
+                ArrayStorage::from_storage(splice)
+            }
+            ArrayStorage::Sparse { storage, length } => {
+                // 1. Split the map into 3 ranges:
+                //      storage, splice, remaining
+                let remaining = storage.split_off(&end);
+                let splice = storage.split_off(&start);
+
+                // 2. Remap indices in remaining elements
+                let rshift = items.len() as isize - delete_count as isize;
+                let mut remaining = if rshift == 0 {
+                    remaining
+                } else {
+                    remaining
+                        .into_iter()
+                        .map(|(i, v)| (i.saturating_add_signed(rshift), v))
+                        .collect::<BTreeMap<_, _>>()
+                };
+
+                // 3. Put remaining elements back in original array
+                storage.append(&mut remaining);
+
+                // 4. Put new items to the original array
+                for (i, item) in items.iter().enumerate() {
+                    storage.insert(start + i, *item);
+                }
+
+                // 5. Remap indices in splice
+                let splice = if start == 0 {
+                    splice
+                } else {
+                    splice
+                        .into_iter()
+                        .map(|(i, v)| (i.saturating_sub(start), v))
+                        .collect::<BTreeMap<_, _>>()
+                };
+
+                // 6. Update length
+                *length = length.saturating_add_signed(rshift);
+
+                ArrayStorage::Sparse {
+                    storage: splice,
+                    length: delete_count,
+                }
+            }
+        }
+    }
 }
 
 impl<'gc, V> FromIterator<V> for ArrayStorage<'gc>
@@ -538,12 +617,436 @@ where
         I: IntoIterator<Item = V>,
     {
         let storage: Vec<_> = values.into_iter().map(|v| Some(v.into())).collect();
-
-        let occupied_count = storage.iter().filter(|v| v.is_some()).count();
-
         ArrayStorage::Dense {
+            occupied_count: storage.len(),
             storage,
-            occupied_count,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    macro_rules! assert_occupied_count {
+        ($storage:expr, $count:literal) => {{
+            if let ArrayStorage::Dense {
+                ref storage,
+                occupied_count,
+            } = $storage
+            {
+                assert_eq!(occupied_count, $count);
+                let real_occupied = storage.iter().filter(|v| v.is_some()).count();
+                assert_eq!(real_occupied, $count);
+            } else {
+                panic!("Expected ArrayStorage to be dense");
+            }
+        }};
+    }
+
+    #[test]
+    fn test_occupied_count_from_iter() {
+        let storage = ArrayStorage::from_iter([1, 2, 3, 4, 5]);
+        assert_occupied_count!(storage, 5);
+
+        let storage = ArrayStorage::from_iter::<[i32; 0]>([]);
+        assert_occupied_count!(storage, 0);
+
+        let storage = ArrayStorage::from_iter([Value::Null, Value::Undefined]);
+        assert_occupied_count!(storage, 2);
+    }
+
+    #[test]
+    fn test_occupied_count_new() {
+        let storage = ArrayStorage::new(0);
+        assert_occupied_count!(storage, 0);
+
+        let storage = ArrayStorage::new(42);
+        assert_occupied_count!(storage, 0);
+    }
+
+    #[test]
+    fn test_occupied_count_from_storage() {
+        let storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Undefined),
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+        ]);
+        assert_occupied_count!(storage, 3);
+    }
+
+    #[test]
+    fn test_occupied_count_set_no_extend() {
+        let mut storage = ArrayStorage::new(3);
+        assert_occupied_count!(storage, 0);
+
+        storage.set(0, Value::Null);
+        assert_occupied_count!(storage, 1);
+
+        storage.set(0, Value::Undefined);
+        assert_occupied_count!(storage, 1);
+
+        storage.set(2, Value::Integer(5));
+        assert_occupied_count!(storage, 2);
+    }
+
+    #[test]
+    fn test_occupied_count_set_extend() {
+        let mut storage = ArrayStorage::new(3);
+        assert_occupied_count!(storage, 0);
+
+        storage.set(17, Value::Null);
+        assert_occupied_count!(storage, 1);
+
+        storage.set(25, Value::Undefined);
+        assert_occupied_count!(storage, 2);
+
+        storage.set(25, Value::Null);
+        assert_occupied_count!(storage, 2);
+    }
+
+    #[test]
+    fn test_occupied_count_delete() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Undefined),
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+        ]);
+        assert_occupied_count!(storage, 3);
+
+        storage.delete(2);
+        assert_occupied_count!(storage, 3);
+
+        storage.delete(0);
+        assert_occupied_count!(storage, 2);
+
+        storage.delete(15);
+        assert_occupied_count!(storage, 2);
+    }
+
+    #[test]
+    fn test_occupied_count_set_length_extend() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Undefined),
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+        ]);
+        assert_occupied_count!(storage, 3);
+
+        storage.set_length(10);
+        assert_occupied_count!(storage, 3);
+    }
+
+    #[test]
+    fn test_occupied_count_set_length_shrink_holes() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Undefined),
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+        ]);
+        assert_occupied_count!(storage, 3);
+
+        storage.set_length(5);
+        assert_occupied_count!(storage, 3);
+
+        storage.set_length(4);
+        assert_occupied_count!(storage, 3);
+    }
+
+    #[test]
+    fn test_occupied_count_set_length_shrink_occupied() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Undefined),
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+        ]);
+        assert_occupied_count!(storage, 3);
+
+        storage.set_length(3);
+        assert_occupied_count!(storage, 2);
+
+        storage.set_length(2);
+        assert_occupied_count!(storage, 2);
+
+        storage.set_length(1);
+        assert_occupied_count!(storage, 1);
+
+        storage.set_length(0);
+        assert_occupied_count!(storage, 0);
+    }
+
+    #[test]
+    fn test_occupied_count_set_length_shrink_faster_to_count_deleted() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Undefined),
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+            Some(Value::Integer(5)),
+            None,
+        ]);
+        assert_occupied_count!(storage, 7);
+
+        storage.set_length(12);
+        assert_occupied_count!(storage, 5);
+    }
+
+    #[test]
+    fn test_occupied_count_set_length_shrink_faster_to_count_remaining() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Undefined),
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+            Some(Value::Integer(5)),
+            None,
+        ]);
+        assert_occupied_count!(storage, 7);
+
+        storage.set_length(5);
+        assert_occupied_count!(storage, 3);
+    }
+
+    #[test]
+    fn test_occupied_count_push() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Undefined),
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+        ]);
+        assert_occupied_count!(storage, 3);
+
+        storage.push(Value::Null);
+        assert_occupied_count!(storage, 4);
+    }
+
+    #[test]
+    fn test_occupied_count_push_hole() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Undefined),
+            None,
+            Some(Value::Integer(5)),
+            None,
+            None,
+        ]);
+        assert_occupied_count!(storage, 3);
+
+        storage.push_hole();
+        assert_occupied_count!(storage, 3);
+    }
+
+    #[test]
+    fn test_occupied_count_pop_hole() {
+        let mut storage =
+            ArrayStorage::from_storage(vec![Some(Value::Null), Some(Value::Undefined), None]);
+        assert_occupied_count!(storage, 2);
+
+        storage.pop();
+        assert_occupied_count!(storage, 1);
+
+        storage.pop();
+        assert_occupied_count!(storage, 0);
+    }
+
+    #[test]
+    fn test_occupied_count_pop_non_hole() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Undefined),
+            None,
+            Some(Value::Undefined),
+        ]);
+        assert_occupied_count!(storage, 3);
+
+        storage.pop();
+        assert_occupied_count!(storage, 2);
+    }
+
+    #[test]
+    fn test_occupied_count_pop_all_holes() {
+        let mut storage = ArrayStorage::new(10);
+        assert_occupied_count!(storage, 0);
+
+        storage.pop();
+        assert_occupied_count!(storage, 0);
+    }
+
+    #[test]
+    fn test_occupied_count_shift_hole() {
+        let mut storage =
+            ArrayStorage::from_storage(vec![None, Some(Value::Null), Some(Value::Undefined)]);
+        assert_occupied_count!(storage, 2);
+
+        storage.shift();
+        assert_occupied_count!(storage, 2);
+
+        storage.shift();
+        assert_occupied_count!(storage, 1);
+    }
+
+    #[test]
+    fn test_occupied_count_shift_non_hole() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Undefined),
+            None,
+            Some(Value::Undefined),
+        ]);
+        assert_occupied_count!(storage, 3);
+
+        storage.shift();
+        assert_occupied_count!(storage, 2);
+    }
+
+    #[test]
+    fn test_occupied_count_shift_all_holes() {
+        let mut storage = ArrayStorage::new(10);
+        assert_occupied_count!(storage, 0);
+
+        storage.shift();
+        assert_occupied_count!(storage, 0);
+    }
+
+    #[test]
+    fn test_occupied_count_unshift_empty() {
+        let mut storage = ArrayStorage::new(0);
+        assert_occupied_count!(storage, 0);
+
+        storage.unshift(Value::Null);
+        assert_occupied_count!(storage, 1);
+    }
+
+    #[test]
+    fn test_occupied_count_unshift_holes() {
+        let mut storage = ArrayStorage::new(5);
+        assert_occupied_count!(storage, 0);
+
+        storage.unshift(Value::Null);
+        assert_occupied_count!(storage, 1);
+    }
+
+    #[test]
+    fn test_occupied_count_unshift_non_holes() {
+        let mut storage =
+            ArrayStorage::from_storage(vec![Some(Value::Null), None, Some(Value::Undefined)]);
+        assert_occupied_count!(storage, 2);
+
+        storage.unshift(Value::Null);
+        assert_occupied_count!(storage, 3);
+    }
+
+    #[test]
+    fn test_occupied_count_remove_hole() {
+        let mut storage =
+            ArrayStorage::from_storage(vec![Some(Value::Null), None, Some(Value::Undefined)]);
+        assert_occupied_count!(storage, 2);
+
+        storage.remove(1);
+        assert_occupied_count!(storage, 2);
+    }
+
+    #[test]
+    fn test_occupied_count_remove_non_hole() {
+        let mut storage =
+            ArrayStorage::from_storage(vec![Some(Value::Null), None, Some(Value::Undefined)]);
+        assert_occupied_count!(storage, 2);
+
+        storage.remove(2);
+        assert_occupied_count!(storage, 1);
+    }
+
+    #[test]
+    fn test_occupied_count_remove_oob() {
+        let mut storage =
+            ArrayStorage::from_storage(vec![Some(Value::Null), None, Some(Value::Undefined)]);
+        assert_occupied_count!(storage, 2);
+
+        storage.remove(5);
+        assert_occupied_count!(storage, 2);
+    }
+
+    #[test]
+    fn test_occupied_count_splice_delete() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Integer(5)),
+            None,
+            Some(Value::Undefined),
+        ]);
+        assert_occupied_count!(storage, 3);
+
+        storage.splice(1, 2, &[]);
+        assert_occupied_count!(storage, 2);
+    }
+
+    #[test]
+    fn test_occupied_count_splice_insert() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Integer(5)),
+            None,
+            Some(Value::Undefined),
+        ]);
+        assert_occupied_count!(storage, 3);
+
+        storage.splice(1, 0, &[Value::Null, Value::Integer(0)]);
+        assert_occupied_count!(storage, 5);
+    }
+
+    #[test]
+    fn test_occupied_count_splice_insert_and_delete() {
+        let mut storage = ArrayStorage::from_storage(vec![
+            Some(Value::Null),
+            Some(Value::Integer(5)),
+            None,
+            Some(Value::Undefined),
+        ]);
+        assert_occupied_count!(storage, 3);
+
+        storage.splice(1, 2, &[Value::Null, Value::Integer(0)]);
+        assert_occupied_count!(storage, 4);
     }
 }

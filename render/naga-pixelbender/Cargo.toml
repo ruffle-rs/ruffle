@@ -12,5 +12,5 @@ workspace = true
 
 [dependencies]
 ruffle_render = { path = "../" }
-naga = { workspace = true }
+naga = { workspace = true, features = ["wgsl-in"] }
 anyhow = { workspace = true }

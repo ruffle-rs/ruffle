@@ -1,0 +1,10 @@
+num_ticks = 1
+
+[image_comparisons.output]
+# FIXME Ruffle does not use CAB in BitmapData.draw
+known_failure = true
+
+tolerance = 0
+
+[player_options]
+with_renderer = { optional = false, sample_count = 4 }

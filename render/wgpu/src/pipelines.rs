@@ -2,8 +2,8 @@ use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
 use crate::{MaskState, PosColorVertex, PosVertex};
-use enum_map::{enum_map, Enum, EnumMap};
-use wgpu::{vertex_attr_array, BlendState, PrimitiveTopology};
+use enum_map::{Enum, EnumMap, enum_map};
+use wgpu::{BlendState, PrimitiveTopology, vertex_attr_array};
 
 pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
     [wgpu::VertexBufferLayout {
@@ -46,6 +46,7 @@ pub struct Pipelines {
     pub bitmap: EnumMap<TrivialBlend, ShapePipeline>,
     pub gradients: ShapePipeline,
     pub complex_blends: EnumMap<ComplexBlend, ShapePipeline>,
+    pub alpha_mask: ShapePipeline,
 }
 
 impl ShapePipeline {
@@ -230,6 +231,25 @@ impl Pipelines {
             PrimitiveTopology::TriangleList,
         ));
 
+        let alpha_mask_bindings = vec![
+            &bind_layouts.globals,
+            &bind_layouts.transforms,
+            &bind_layouts.alpha_mask,
+        ];
+
+        let alpha_mask_pipeline = create_shape_pipeline(
+            "Alpha Mask",
+            device,
+            format,
+            &shaders.alpha_mask_shader,
+            msaa_sample_count,
+            &VERTEX_BUFFERS_DESCRIPTION_POS,
+            &alpha_mask_bindings,
+            BlendState::PREMULTIPLIED_ALPHA_BLENDING,
+            &[],
+            PrimitiveTopology::TriangleList,
+        );
+
         Self {
             color: color_pipelines,
             lines: lines_pipelines,
@@ -238,6 +258,7 @@ impl Pipelines {
             bitmap_opaque_dummy_stencil: bitmap_opaque_dummy_depth,
             gradients: gradient_pipeline,
             complex_blends: complex_blend_pipelines,
+            alpha_mask: alpha_mask_pipeline,
         }
     }
 }

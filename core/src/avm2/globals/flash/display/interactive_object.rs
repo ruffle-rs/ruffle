@@ -1,10 +1,10 @@
 //! `flash.display.InteractiveObject` builtin/prototype
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2027;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::display_object::TInteractiveObject;
 
 /// Implements `InteractiveObject.mouseEnabled`'s getter.
@@ -179,7 +179,7 @@ pub fn set_tab_index<'gc>(
         // Despite throwing an error that tabIndex cannot be negative,
         // the value of -1 is allowed, and it means that tabIndex is unset.
         if value < -1 {
-            return Err(make_error_2027(activation, value));
+            return Err(make_error_2027(activation, "tabIndex", value));
         }
         obj.set_tab_index(Some(value));
     }

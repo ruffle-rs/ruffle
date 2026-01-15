@@ -3,8 +3,8 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
-use crate::avm1::function::FunctionObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::parameters::{ParametersExt, UndefinedAs};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Attribute, NativeObject, Object, Value};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
@@ -39,28 +39,44 @@ type CompareFn<'a, 'gc> = Box<
         ) -> Result<Ordering, Error<'gc>>,
 >;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "push" => method(push; DONT_ENUM | DONT_DELETE);
-    "unshift" => method(unshift; DONT_ENUM | DONT_DELETE);
-    "shift" => method(shift; DONT_ENUM | DONT_DELETE);
     "pop" => method(pop; DONT_ENUM | DONT_DELETE);
-    "reverse" => method(reverse; DONT_ENUM | DONT_DELETE);
-    "join" => method(join; DONT_ENUM | DONT_DELETE);
-    "slice" => method(slice; DONT_ENUM | DONT_DELETE);
-    "splice" => method(splice; DONT_ENUM | DONT_DELETE);
     "concat" => method(concat; DONT_ENUM | DONT_DELETE);
+    "shift" => method(shift; DONT_ENUM | DONT_DELETE);
+    "unshift" => method(unshift; DONT_ENUM | DONT_DELETE);
+    "slice" => method(slice; DONT_ENUM | DONT_DELETE);
+    "join" => method(join; DONT_ENUM | DONT_DELETE);
+    "splice" => method(splice; DONT_ENUM | DONT_DELETE);
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
     "sort" => method(sort; DONT_ENUM | DONT_DELETE);
+    "reverse" => method(reverse; DONT_ENUM | DONT_DELETE);
     "sortOn" => method(sort_on; DONT_ENUM | DONT_DELETE);
 };
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "CASEINSENSITIVE" => int(SortOptions::CASE_INSENSITIVE.bits());
-    "DESCENDING" => int(SortOptions::DESCENDING.bits());
-    "UNIQUESORT" => int(SortOptions::UNIQUE_SORT.bits());
-    "RETURNINDEXEDARRAY" => int(SortOptions::RETURN_INDEXED_ARRAY.bits());
-    "NUMERIC" => int(SortOptions::NUMERIC.bits());
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
+    "CASEINSENSITIVE" => value(SortOptions::CASE_INSENSITIVE.bits());
+    "DESCENDING" => value(SortOptions::DESCENDING.bits());
+    "UNIQUESORT" => value(SortOptions::UNIQUE_SORT.bits());
+    "RETURNINDEXEDARRAY" => value(SortOptions::RETURN_INDEXED_ARRAY.bits());
+    "NUMERIC" => value(SortOptions::NUMERIC.bits());
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let proto = ArrayBuilder::new_with_proto(context.strings, super_proto).with([]);
+    let class = context.native_class_with_proto(constructor, Some(array), proto);
+    context.define_properties_on(proto, PROTO_DECLS(context));
+
+    // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
+    // when run in Flash Player 7. Make these conditional if we add a parameter to control
+    // target Flash Player version.
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
+
+    class
+}
 
 /// Intermediate builder for constructing `ArrayObject`,
 /// used to work around borrow-checker issues.
@@ -77,7 +93,7 @@ impl<'gc> ArrayBuilder<'gc> {
     }
 
     pub fn new(activation: &Activation<'_, 'gc>) -> Self {
-        let proto = activation.context.avm1.prototypes().array;
+        let proto = activation.prototypes().array;
         Self::new_with_proto(&activation.context.strings, proto)
     }
 
@@ -121,23 +137,8 @@ impl<'gc> ArrayBuilder<'gc> {
     }
 }
 
-pub fn create_array_object<'gc>(
-    context: &mut StringContext<'gc>,
-    array_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let array =
-        FunctionObject::constructor(context, constructor, Some(array), fn_proto, array_proto);
-
-    // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
-    // when run in Flash Player 7. Make these conditional if we add a parameter to control
-    // target Flash Player version.
-    define_properties_on(OBJECT_DECLS, context, array, fn_proto);
-    array
-}
-
 /// Implements `Array` constructor
-pub fn constructor<'gc>(
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -318,11 +319,9 @@ pub fn join<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length(activation)?;
 
-    let separator = if let Some(v) = args.get(0) {
-        v.coerce_to_string(activation)?
-    } else {
-        istr!(",")
-    };
+    let separator = args
+        .try_get_string(activation, 0, UndefinedAs::Some)?
+        .unwrap_or(istr!(","));
 
     if length <= 0 {
         return Ok(istr!("").into());
@@ -356,18 +355,13 @@ pub fn slice<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length(activation)?;
 
-    let start = make_index_absolute(
-        args.get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_i32(activation)?,
-        length,
-    );
+    let start = make_index_absolute(args.get_i32(activation, 0)?, length);
 
-    let end = args.get(1).unwrap_or(&Value::Undefined);
-    let end = if end == &Value::Undefined {
-        length
+    let index = args.try_get_i32(activation, 1, UndefinedAs::None)?;
+    let end = if let Some(index) = index {
+        make_index_absolute(index, length)
     } else {
-        make_index_absolute(end.coerce_to_i32(activation)?, length)
+        length
     };
 
     Ok(ArrayBuilder::new(activation)
@@ -380,21 +374,25 @@ pub fn splice<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let Some(start) = args.get(0) else {
+    let Some(start) = args.try_get_i32(activation, 0, UndefinedAs::None)? else {
         return Ok(Value::Undefined);
     };
 
     let length = this.length(activation)?;
-    let start = make_index_absolute(start.coerce_to_i32(activation)?, length);
-    let delete_count = if let Some(arg) = args.get(1) {
-        let delete_count = arg.coerce_to_i32(activation)?;
-        if delete_count < 0 {
+    let start = make_index_absolute(start, length);
+
+    let delete_count = if args.len() > 1 {
+        if let Some(delete_count) = args.try_get_i32(activation, 1, UndefinedAs::None)? {
+            delete_count.min(length - start)
+        } else {
             return Ok(Value::Undefined);
         }
-        delete_count.min(length - start)
     } else {
         length - start
     };
+    if delete_count < 0 {
+        return Ok(Value::Undefined);
+    }
 
     let result = ArrayBuilder::new(activation)
         .with((0..delete_count).map(|i| this.get_element(activation, start + i)));
@@ -645,10 +643,10 @@ fn sort_on_compare<'a, 'gc>(fields: &'a [(AvmString<'gc>, SortOptions)]) -> Comp
         if let [Value::Object(a), Value::Object(b)] = [a, b] {
             for (field_name, options) in fields {
                 let a_prop = a
-                    .get_local_stored(*field_name, activation, false)
+                    .get_local_stored(*field_name, activation)
                     .unwrap_or(Value::Undefined);
                 let b_prop = b
-                    .get_local_stored(*field_name, activation, false)
+                    .get_local_stored(*field_name, activation)
                     .unwrap_or(Value::Undefined);
 
                 let result = sort_compare(activation, &a_prop, &b_prop, *options)?;
@@ -791,14 +789,4 @@ fn qsort<'gc>(
     }
 
     Ok(())
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let array = ArrayBuilder::new_with_proto(context, proto).with([]);
-    define_properties_on(PROTO_DECLS, context, array, fn_proto);
-    array
 }

@@ -10,11 +10,11 @@ mod widgets;
 
 pub use controller::GuiController;
 pub use dialogs::DialogDescriptor;
+pub use locale::LocalizableText;
 pub use locale::available_languages;
 pub use locale::optional_text;
 pub use locale::text;
 pub use locale::text_with_args;
-pub use locale::LocalizableText;
 pub use movie::MovieView;
 pub use picker::FilePicker;
 pub use theme::ThemePreference;
@@ -66,7 +66,7 @@ impl RuffleGui {
                 preferences.clone(),
                 default_launch_options.clone(),
                 default_path,
-                window.clone(),
+                window,
                 event_loop.clone(),
             ),
             menu_bar: MenuBar::new(
@@ -130,10 +130,10 @@ impl RuffleGui {
                 }
             }
 
-            if let Some(context_menu) = &mut self.context_menu {
-                if !context_menu.show(&locale, egui_ctx, &self.event_loop, player.is_fullscreen()) {
-                    self.close_context_menu(player);
-                }
+            if let Some(context_menu) = &mut self.context_menu
+                && !context_menu.show(&locale, egui_ctx, &self.event_loop, player.is_fullscreen())
+            {
+                self.close_context_menu(player);
             }
         };
     }

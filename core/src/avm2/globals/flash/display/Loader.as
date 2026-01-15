@@ -1,4 +1,6 @@
 package flash.display {
+    import __ruffle__.stub_method;
+
     import flash.display.LoaderInfo;
     import flash.display.DisplayObject;
     import flash.errors.IllegalOperationError;
@@ -6,13 +8,12 @@ package flash.display {
     import flash.utils.ByteArray;
     import flash.net.URLRequest;
     import flash.events.UncaughtErrorEvents;
-    import __ruffle__.stub_method;
 
     [Ruffle(InstanceAllocator)]
     public class Loader extends DisplayObjectContainer {
 
         [Ruffle(NativeAccessible)]
-        private var _contentLoaderInfo: LoaderInfo;
+        private var _contentLoaderInfo:LoaderInfo;
 
         public function get contentLoaderInfo():LoaderInfo {
             return this._contentLoaderInfo;
@@ -22,12 +23,13 @@ package flash.display {
             return this._contentLoaderInfo.content;
         }
 
-        public native function load(request: URLRequest, context: LoaderContext = null):void;
+        public native function load(request:URLRequest, context:LoaderContext = null):void;
 
-        public native function loadBytes(data: ByteArray, context: LoaderContext = null):void;
+        public native function loadBytes(data:ByteArray, context:LoaderContext = null):void;
 
         public native function unload():void;
 
+        [API("662")]
         public function unloadAndStop(gc:Boolean = true):void {
             stub_method("flash.display.Loader", "unloadAndStop");
             this.unload();
@@ -57,6 +59,7 @@ package flash.display {
             throw new IllegalOperationError("Error #2069: The Loader class does not implement this method.", 2069);
         }
 
+        [API("667")]
         public function get uncaughtErrorEvents():UncaughtErrorEvents {
             return this.contentLoaderInfo.uncaughtErrorEvents;
         }

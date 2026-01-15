@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Súbor
-file-menu-open-quick = Otvoriť...
 file-menu-open-advanced = Otvoriť pokročilé...
 file-menu-close = Zavrieť
 file-menu-reload = Obnoviť
@@ -17,6 +16,7 @@ file-menu-recents = Nedávne
 file-menu-recents-empty = Žiadne nedávne položky
 file-menu-preferences = Nastavenia...
 file-menu-exit = Ukončiť
+file-menu-export = Exportovať...
 controls-menu = Ovládanie
 controls-menu-suspend = Pozastaviť
 controls-menu-resume = Pokračovať

@@ -1,0 +1,35 @@
+0
+  1e-15
+  0.0e-16
+  0.00e-16
+  0.0000e-16
+  0.0000000000e-16
+  0.00000000000000000000e-16
+0
+  1e-15
+  0.0e-16
+  0.00e-16
+  0.0000e-16
+  0.0000000000e-16
+  0.00000000000000000000e-16
+Infinity
+  Infinity
+  Infinity
+  Infinity
+  Infinity
+  Infinity
+  Infinity
+-Infinity
+  -Infinity
+  -Infinity
+  -Infinity
+  -Infinity
+  -Infinity
+  -Infinity
+NaN
+  NaN
+  NaN
+  NaN
+  NaN
+  NaN
+  NaN

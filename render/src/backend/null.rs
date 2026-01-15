@@ -1,4 +1,5 @@
 use std::borrow::Cow;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 
 use crate::backend::{
@@ -95,12 +96,8 @@ impl RenderBackend for NullRenderer {
     fn create_context3d(
         &mut self,
         _profile: Context3DProfile,
-    ) -> Result<Box<dyn super::Context3D>, Error> {
+    ) -> Result<Box<dyn Context3D>, Error> {
         Err(Error::Unimplemented("createContext3D".into()))
-    }
-
-    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), Error> {
-        Err(Error::Unimplemented("Context3D.present".into()))
     }
 
     fn debug_info(&self) -> Cow<'static, str> {
@@ -139,7 +136,11 @@ impl RenderBackend for NullRenderer {
         ))
     }
 
-    fn create_empty_texture(&mut self, _width: u32, _height: u32) -> Result<BitmapHandle, Error> {
+    fn create_empty_texture(
+        &mut self,
+        _width: NonZeroU32,
+        _height: NonZeroU32,
+    ) -> Result<BitmapHandle, Error> {
         Ok(BitmapHandle(Arc::new(NullBitmapHandle)))
     }
 }

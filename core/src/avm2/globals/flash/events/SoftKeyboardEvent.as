@@ -8,18 +8,38 @@ package flash.events {
 
         private var _relatedObject:InteractiveObject;
 
-        public function SoftKeyboardEvent(type:String, bubbles:Boolean, cancelable:Boolean, relatedObjectVal:InteractiveObject, triggerTypeVal:String) {
+        public function SoftKeyboardEvent(
+            type:String,
+            bubbles:Boolean,
+            cancelable:Boolean,
+            relatedObjectVal:InteractiveObject,
+            triggerTypeVal:String
+        ) {
             super(type, bubbles, cancelable);
             this.relatedObject = relatedObjectVal;
             this._triggerType = triggerTypeVal;
         }
 
         override public function clone():Event {
-            return new SoftKeyboardEvent(this.type, this.bubbles, this.cancelable, this.relatedObject, this.triggerType);
+            return new SoftKeyboardEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.relatedObject,
+                this.triggerType
+            );
         }
 
         override public function toString():String {
-            return this.formatToString("SoftKeyboardEvent", "type", "bubbles", "cancelable", "eventPhase", "relatedObject", "triggerType");
+            return this.formatToString(
+                "SoftKeyboardEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "relatedObject",
+                "triggerType"
+            );
         }
 
         public function get relatedObject():InteractiveObject {

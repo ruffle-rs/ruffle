@@ -1,4 +1,4 @@
-use crate::custom_event::RuffleEvent;
+use crate::custom_event::{OpenType, RuffleEvent};
 use crate::gui::{GuiController, MENU_HEIGHT};
 use crate::player::{LaunchOptions, PlayerController};
 use crate::preferences::GlobalPreferences;
@@ -8,9 +8,9 @@ use crate::util::{
 };
 use anyhow::Error;
 use gilrs::{Event, EventType, Gilrs};
+use ruffle_core::PlayerEvent;
 use ruffle_core::events::{ImeEvent, ImeNotification, PlayerNotification};
 use ruffle_core::swf::HeaderExt;
-use ruffle_core::PlayerEvent;
 use ruffle_render::backend::ViewportDimensions;
 use std::sync::Arc;
 use std::time::Instant;
@@ -46,13 +46,13 @@ impl MainWindow {
         if matches!(event, WindowEvent::RedrawRequested) {
             // Don't render when minimized to avoid potential swap chain errors in `wgpu`.
             if !self.minimized {
-                if let Some(mut player) = self.player.get() {
+                let mut player = self.player.get();
+                if let Some(ref mut player) = player {
                     // Even if the movie is paused, user interaction with debug tools can change the render output
                     player.render();
-                    self.gui.render(Some(player));
-                } else {
-                    self.gui.render(None);
                 }
+
+                self.gui.render(player);
                 plot_stats_in_tracy(&self.gui.descriptors().wgpu_instance);
             }
 
@@ -211,7 +211,7 @@ impl MainWindow {
                     ElementState::Pressed => {
                         self.player.handle_event(PlayerEvent::KeyDown { key });
                         if let Some(control_code) =
-                            winit_to_ruffle_text_control(&event, &self.modifiers)
+                            winit_to_ruffle_text_control(&event, self.modifiers)
                         {
                             self.player
                                 .handle_event(PlayerEvent::TextControl { code: control_code });
@@ -369,12 +369,10 @@ impl MainWindow {
             let dt = new_time.duration_since(self.time).as_nanos();
             if dt > 0 {
                 self.time = new_time;
-                if let Some(mut player) = self.player.get() {
+                self.next_frame_time = self.player.get().map(|mut player| {
                     player.tick(dt as f64 / 1_000_000.0);
-                    self.next_frame_time = Some(new_time + player.time_til_next_frame());
-                } else {
-                    self.next_frame_time = None;
-                }
+                    new_time + player.time_til_next_frame()
+                });
                 self.check_redraw();
             }
         }
@@ -390,16 +388,23 @@ impl MainWindow {
 
 pub struct App {
     main_window: Option<MainWindow>,
+    runtime: Option<tokio::runtime::Runtime>,
     gilrs: Option<Gilrs>,
     event_loop_proxy: EventLoopProxy<RuffleEvent>,
     preferences: GlobalPreferences,
     font_database: fontdb::Database,
 }
 
+/// Enters the tokio runtime context.
+/// This cannot be a method, as the borrow-checker would complain.
+macro_rules! enter_runtime {
+    ($this:expr) => {
+        let _guard = $this.runtime.as_ref().map(|runtime| runtime.enter());
+    };
+}
+
 impl App {
-    pub async fn new(
-        preferences: GlobalPreferences,
-    ) -> Result<(Self, EventLoop<RuffleEvent>), Error> {
+    pub fn new(preferences: GlobalPreferences) -> Result<(Self, EventLoop<RuffleEvent>), Error> {
         let event_loop = EventLoop::with_user_event().build()?;
 
         let mut font_database = fontdb::Database::default();
@@ -411,10 +416,12 @@ impl App {
             })
             .ok();
         let event_loop_proxy = event_loop.create_proxy();
+        let runtime = tokio::runtime::Runtime::new()?;
 
         Ok((
             Self {
                 main_window: None,
+                runtime: Some(runtime),
                 gilrs,
                 event_loop_proxy,
                 font_database,
@@ -427,6 +434,8 @@ impl App {
 
 impl ApplicationHandler<RuffleEvent> for App {
     fn new_events(&mut self, event_loop: &ActiveEventLoop, cause: StartCause) {
+        enter_runtime!(self);
+
         if cause == StartCause::Init {
             let movie_url = self.preferences.cli.movie_url.clone();
             let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
@@ -535,8 +544,10 @@ impl ApplicationHandler<RuffleEvent> for App {
     fn resumed(&mut self, _event_loop: &ActiveEventLoop) {}
 
     fn user_event(&mut self, event_loop: &ActiveEventLoop, event: RuffleEvent) {
+        enter_runtime!(self);
+
         match (&mut self.main_window, event) {
-            (Some(main_window), RuffleEvent::TaskPoll) => main_window.player.poll(),
+            (Some(main_window), RuffleEvent::TaskPoll(task)) => main_window.player.poll(task),
 
             (Some(main_window), RuffleEvent::OnMetadata(swf_header)) => {
                 main_window.on_metadata(swf_header)
@@ -548,15 +559,22 @@ impl ApplicationHandler<RuffleEvent> for App {
                 }
             }
 
-            (Some(main_window), RuffleEvent::BrowseAndOpen(options)) => {
+            (Some(main_window), RuffleEvent::BrowseAndOpen(mut options, open_type)) => {
                 let event_loop = main_window.event_loop_proxy.clone();
                 let picker = main_window.gui.file_picker();
                 tokio::spawn(async move {
-                    if let Some(url) = picker
-                        .pick_ruffle_file(None)
-                        .await
-                        .and_then(|p| Url::from_file_path(p).ok())
-                    {
+                    let picked = match open_type {
+                        OpenType::File => picker.pick_ruffle_file(None).await,
+                        OpenType::Directory => picker
+                            .pick_ruffle_directory_and_content(None)
+                            .await
+                            .map(|(dir, content)| {
+                                options.root_content_path = Some(dir);
+                                content
+                            }),
+                    };
+
+                    if let Some(url) = picked.and_then(|p| Url::from_file_path(p).ok()) {
                         let _ = event_loop.send_event(RuffleEvent::Open(url, options));
                     }
                 });
@@ -577,19 +595,23 @@ impl ApplicationHandler<RuffleEvent> for App {
                 main_window.gui.close_movie(&mut main_window.player);
             }
 
+            (Some(main_window), RuffleEvent::ExportBundle) => {
+                main_window.gui.export_bundle();
+            }
+
             (Some(main_window), RuffleEvent::EnterFullScreen) => {
-                if let Some(mut player) = main_window.player.get() {
-                    if player.is_playing() {
-                        player.set_fullscreen(true);
-                    }
+                if let Some(mut player) = main_window.player.get()
+                    && player.is_playing()
+                {
+                    player.set_fullscreen(true);
                 }
             }
 
             (Some(main_window), RuffleEvent::ExitFullScreen) => {
-                if let Some(mut player) = main_window.player.get() {
-                    if player.is_playing() {
-                        player.set_fullscreen(false);
-                    }
+                if let Some(mut player) = main_window.player.get()
+                    && player.is_playing()
+                {
+                    player.set_fullscreen(false);
                 }
             }
 
@@ -634,12 +656,16 @@ impl ApplicationHandler<RuffleEvent> for App {
         _window_id: WindowId,
         event: WindowEvent,
     ) {
+        enter_runtime!(self);
+
         if let Some(main_window) = &mut self.main_window {
             main_window.window_event(event_loop, event);
         }
     }
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
+        enter_runtime!(self);
+
         if let Some(main_window) = &mut self.main_window {
             main_window.about_to_wait(self.gilrs.as_mut());
 
@@ -651,6 +677,21 @@ impl ApplicationHandler<RuffleEvent> for App {
             if let Some(next_frame_time) = main_window.next_frame_time {
                 event_loop.set_control_flow(ControlFlow::WaitUntil(next_frame_time));
             }
+        }
+    }
+
+    fn exiting(&mut self, _event_loop: &ActiveEventLoop) {
+        // `MainWindow` needs a tokio context to properly drop.
+        {
+            enter_runtime!(self);
+            let _ = self.main_window.take();
+        }
+
+        // Manually stop the tokio runtime: this makes sure that any pending Player-bound futures
+        // are properly cancelled and put back on the winit event loop before it closes, preventing
+        // them from being dropped on the wrong thread and causing a panic.
+        if let Some(runtime) = self.runtime.take() {
+            runtime.shutdown_timeout(std::time::Duration::from_secs(1));
         }
     }
 }

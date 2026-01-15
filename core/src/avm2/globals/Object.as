@@ -1,8 +1,7 @@
 package {
-    [Ruffle(CallHandler)]
+    [Ruffle(ConstructOnCall)]
     [Ruffle(CustomConstructor)]
     public dynamic class Object {
-
         public function Object() {
             // Unreachable due to custom constructor
         }
@@ -62,4 +61,3 @@ package {
         public static const length:int = 1;
     }
 }
-

@@ -3,7 +3,7 @@ package __AS3__.vec {
     [Ruffle(InstanceAllocator)]
     internal final dynamic class Vector$object {
         {
-            prototype.concat = function(... rest):* {
+            prototype.concat = function(...rest):* {
                 var v:Vector$object = this;
                 return v.AS3::concat.apply(v, rest);
             };
@@ -56,7 +56,7 @@ package __AS3__.vec {
                 return v.AS3::pop();
             };
 
-            prototype.push = function(... rest):* {
+            prototype.push = function(...rest):* {
                 var v:Vector$object = this;
                 return v.AS3::push.apply(v, rest);
             };
@@ -93,7 +93,7 @@ package __AS3__.vec {
                 return v.AS3::sort(func);
             };
 
-            prototype.splice = function(start:*, deleteCount:*, ... items):* {
+            prototype.splice = function(start:*, deleteCount:*, ...items):* {
                 var argsList:Array = [start, deleteCount];
                 argsList = argsList.AS3::concat(items);
 
@@ -111,7 +111,7 @@ package __AS3__.vec {
                 return v.AS3::join(",");
             };
 
-            prototype.unshift = function(... rest):* {
+            prototype.unshift = function(...rest):* {
                 var v:Vector$object = this;
                 return v.AS3::unshift.apply(v, rest);
             };
@@ -150,7 +150,7 @@ package __AS3__.vec {
 
         public native function set length(length:uint):*;
 
-        AS3 native function concat(... rest):Vector$object;
+        AS3 native function concat(...rest):Vector$object;
 
         AS3 native function every(callback:Function, receiver:Object = null):Boolean;
 
@@ -171,7 +171,7 @@ package __AS3__.vec {
 
         AS3 native function pop():*;
 
-        AS3 native function push(... rest):uint;
+        AS3 native function push(...rest):uint;
 
         [API("708")]
         AS3 native function removeAt(index:int):Object;
@@ -190,13 +190,13 @@ package __AS3__.vec {
 
         AS3 native function sort(func:*):Vector$object;
 
-        AS3 native function splice(start:Number, deleteLen:Number, ... rest):Vector$object;
+        AS3 native function splice(start:Number, deleteLen:Number, ...rest):Vector$object;
 
         AS3 function toLocaleString():String {
             var result:String = "";
             var vectorLength:uint = this.length;
 
-            for(var i:uint = 0; i < vectorLength; i ++) {
+            for (var i:uint = 0; i < vectorLength; i ++) {
                 var element = this[i];
 
                 if (element === undefined || element === null) {
@@ -217,6 +217,6 @@ package __AS3__.vec {
             return this.AS3::join(",");
         }
 
-        AS3 native function unshift(... rest):uint;
+        AS3 native function unshift(...rest):uint;
     }
 }

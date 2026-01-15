@@ -1,7 +1,9 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions */
 
 import {
-    getTraceOutput,
+    assertNoMoreTraceOutput,
+    clearTraceOutput,
+    expectTraceOutput,
     injectRuffleAndWait,
     openTest,
     playAndMonitor,
@@ -23,9 +25,7 @@ async function supportsClipboardReadText(): Promise<boolean> {
 
 async function focusFlashInput(player: ChainablePromiseElement) {
     await player.click({ x: 10 - 200, y: 110 - 200 });
-    expect(await getTraceOutput(browser, player)).to.equal(
-        "onMouseDown()\nonMouseUp()\n",
-    );
+    await expectTraceOutput(browser, player, ["onMouseDown()", "onMouseUp()"]);
 }
 
 async function focusHtmlInput() {
@@ -58,12 +58,12 @@ describe("Context Menu", () => {
         await openTest(browser, "integration_tests/context_menu");
         await injectRuffleAndWait(browser);
         const player = await browser.$("<ruffle-object>");
-        await playAndMonitor(browser, player, "Loaded!\n");
+        await playAndMonitor(browser, player, ["Loaded!"]);
 
         // Dismiss hardware acceleration modal in Chrome
         await player.click();
         await player.click();
-        await getTraceOutput(browser, player);
+        await clearTraceOutput(browser, player);
 
         // Chrome requires this
         browser.setPermissions({ name: "clipboard-read" }, "granted");
@@ -74,18 +74,20 @@ describe("Context Menu", () => {
 
         await player.click({ x: 10 - 200, y: 10 - 200 });
 
-        expect(await getTraceOutput(browser, player)).to.equal(
-            "onMouseDown()\nonMouseUp()\n",
-        );
+        await expectTraceOutput(browser, player, [
+            "onMouseDown()",
+            "onMouseUp()",
+        ]);
 
         await player.click({ x: 20 - 200, y: 20 - 200, button: "right" });
         await player.click({ x: 10 - 200, y: 10 - 200 });
         await player.click({ x: 10 - 200, y: 10 - 200 });
 
         // Only one click should be logged.
-        expect(await getTraceOutput(browser, player)).to.equal(
-            "onMouseDown()\nonMouseUp()\n",
-        );
+        await expectTraceOutput(browser, player, [
+            "onMouseDown()",
+            "onMouseUp()",
+        ]);
     });
 
     it("left clicking a context menu entry works", async () => {
@@ -93,18 +95,14 @@ describe("Context Menu", () => {
 
         await browser.keys("q");
 
-        expect(await getTraceOutput(browser, player)).to.equal(
-            "quality: HIGH\n",
-        );
+        await expectTraceOutput(browser, player, ["quality: HIGH"]);
 
         await openContextMenu(player);
         await clickContextMenuEntry(player, "Quality: Low", "left");
 
         await browser.keys("q");
 
-        expect(await getTraceOutput(browser, player)).to.equal(
-            "quality: LOW\n",
-        );
+        await expectTraceOutput(browser, player, ["quality: LOW"]);
     });
 
     it("right clicking a context menu entry works", async () => {
@@ -112,18 +110,14 @@ describe("Context Menu", () => {
 
         await browser.keys("q");
 
-        expect(await getTraceOutput(browser, player)).to.equal(
-            "quality: HIGH\n",
-        );
+        await expectTraceOutput(browser, player, ["quality: HIGH"]);
 
         await openContextMenu(player);
         await clickContextMenuEntry(player, "Quality: Low", "right");
 
         await browser.keys("q");
 
-        expect(await getTraceOutput(browser, player)).to.equal(
-            "quality: LOW\n",
-        );
+        await expectTraceOutput(browser, player, ["quality: LOW"]);
     });
 
     it("copying text works", async () => {
@@ -131,9 +125,10 @@ describe("Context Menu", () => {
 
         // Populate text input in Flash
         await browser.keys("t");
-        expect(await getTraceOutput(browser, player)).to.equal(
-            "populating text\ntext changed: texample\n",
-        );
+        await expectTraceOutput(browser, player, [
+            "populating text",
+            "text changed: texample",
+        ]);
 
         await focusFlashInput(player);
 
@@ -175,9 +170,7 @@ describe("Context Menu", () => {
         await openContextMenuOnInput(player);
         await clickContextMenuEntry(player, "Cut");
 
-        expect(await getTraceOutput(browser, player)).to.equal(
-            "text changed: \n",
-        );
+        await expectTraceOutput(browser, player, ["text changed: "]);
 
         // Paste
         await focusHtmlInput();
@@ -219,9 +212,9 @@ describe("Context Menu", () => {
         await openContextMenuOnInput(player);
         await clickContextMenuEntry(player, "Paste");
 
-        expect(await getTraceOutput(browser, player)).to.equal(
-            "text changed: text to be pasted\n",
-        );
+        await expectTraceOutput(browser, player, [
+            "text changed: text to be pasted",
+        ]);
     });
 
     it("a modal is shown that pasting is not supported", async function () {
@@ -248,5 +241,10 @@ describe("Context Menu", () => {
         const clipboardModal2 = await player.shadow$("#clipboard-modal");
         const clipboardModal2Visible = await clipboardModal2.isDisplayed();
         expect(clipboardModal2Visible).to.be.false;
+    });
+
+    it("no more traces", async function () {
+        const player = await browser.$("#objectElement");
+        assertNoMoreTraceOutput(browser, player);
     });
 });

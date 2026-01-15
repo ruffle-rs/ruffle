@@ -1,13 +1,13 @@
 //! Object representation for Stage3D objects
 
-use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
-use crate::utils::HasPrefixField;
+use crate::context::UpdateContext;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
 
 #[derive(Clone, Collect, Copy)]
@@ -27,10 +27,10 @@ impl fmt::Debug for Stage3DObject<'_> {
 }
 
 impl<'gc> Stage3DObject<'gc> {
-    pub fn new(activation: &mut Activation<'_, 'gc>) -> Self {
-        let class = activation.avm2().classes().stage3d;
+    pub fn new(context: &mut UpdateContext<'gc>) -> Self {
+        let class = context.avm2.classes().stage3d;
         Stage3DObject(Gc::new(
-            activation.gc(),
+            context.gc(),
             Stage3DObjectData {
                 base: ScriptObjectData::new(class),
                 context3d: Lock::new(None),

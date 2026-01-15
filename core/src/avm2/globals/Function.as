@@ -1,6 +1,6 @@
 package {
+    [Ruffle(ConstructOnCall)]
     [Ruffle(CustomConstructor)]
-    [Ruffle(CallHandler)]
     public final dynamic class Function {
         private static native function _initFunctionClass():void;
 
@@ -39,7 +39,7 @@ package {
             // this AS-defined method does nothing
         }
 
-        public native function get length() : int;
+        public native function get length():int;
 
         [Ruffle(FastCall)]
         public native function get prototype():*;
@@ -51,7 +51,7 @@ package {
 
         [Ruffle(NativeCallable)]
         private static function createDummyFunction():Function {
-            return function() { };
+            return function() {};
         }
 
         public static const length:int = 1;

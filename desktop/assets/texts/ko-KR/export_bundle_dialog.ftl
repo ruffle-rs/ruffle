@@ -1,0 +1,12 @@
+export-bundle-dialog-title = Ruffle 번들 내보내기
+export-bundle-dialog-bundle-name = 번들 이름:
+export-bundle-dialog-files-description = 번들로 묶을 파일 선택:
+export-bundle-dialog-files-select-all = 모두 선택
+export-bundle-dialog-export = 내보내기
+export-bundle-dialog-exporting = 내보내는 중...
+export-bundle-dialog-exporting-failed = 내보내기에 실패했습니다.
+export-bundle-dialog-error-user-canceled = 사용자에 의해 취소됨.
+export-bundle-dialog-error-failed-to-show-picker = 파일 선택 창을 여는데 실패했습니다.
+export-bundle-dialog-error-io-error = 번들 쓰기 오류.
+export-bundle-dialog-info-title = Ruffle 번들이 무엇인가요?
+export-bundle-dialog-info-description = Ruffle 번들은 SWF 파일을 실행하는 데 필요한 애셋 및 구성에 대한 모든 요소를 포함하는 유니버셜 패키지입니다. 번들을 사용하면 누락된 파일이나 별도의 설정 필요 없이 플러그-앤-플레이 방식으로 SWF 파일을 바로 실행할 수 있습니다.

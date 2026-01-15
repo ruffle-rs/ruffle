@@ -1,17 +1,17 @@
 //! Vector storage object
 
+use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_1125, make_reference_error, Error, ReferenceErrorCode};
+use crate::avm2::error::{Error, ReferenceErrorCode, make_error_1125, make_reference_error};
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
-use crate::avm2::Multiname;
 use crate::string::WStr;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
+use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefMut};
 
 /// A class instance allocator that allocates Vector objects.
@@ -69,22 +69,19 @@ impl<'gc> VectorObject<'gc> {
     pub fn from_vector(
         vector: VectorStorage<'gc>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> VectorObject<'gc> {
         let value_type = vector.value_type();
         let vector_class = activation.avm2().classes().generic_vector;
 
-        let applied_class = vector_class.parametrize(activation, value_type)?;
+        let applied_class = vector_class.parametrize(activation, value_type);
 
-        let object: Object<'gc> = VectorObject(Gc::new(
+        VectorObject(Gc::new(
             activation.gc(),
             VectorObjectData {
                 base: ScriptObjectData::new(applied_class),
                 vector: RefLock::new(vector),
             },
         ))
-        .into();
-
-        Ok(object)
     }
 
     fn as_vector_index(local_name: &WStr) -> Option<f64> {

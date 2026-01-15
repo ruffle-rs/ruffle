@@ -3,6 +3,7 @@ use crate::events::{
     MouseWheelDelta, NamedKey, PhysicalKey, PlayerEvent, TextControlCode,
 };
 use chrono::{DateTime, TimeDelta, Utc};
+use enumset::EnumSet;
 use std::collections::{HashMap, HashSet};
 
 pub enum KeyCodeMappingType {
@@ -72,7 +73,14 @@ impl ClickEventData {
 }
 
 pub struct InputManager {
-    key_descriptors_down: HashSet<KeyDescriptor>,
+    /// Tracks which physical keys are currently pressed, identified by (physical key, location).
+    ///
+    /// We use physical keys rather than logical keys because the logical key can change
+    /// between key-down and key-up events. For example, if you press 'w', then press Shift,
+    /// then release 'w', the key-up event will report 'W' (uppercase) even though 'w'
+    /// (lowercase) was pressed. By tracking physical keys, we correctly match key-up
+    /// events to their corresponding key-down events regardless of modifier state changes.
+    keys_down_phys_loc: HashSet<(PhysicalKey, KeyLocation)>,
 
     keys_down: HashSet<KeyCode>,
     keys_toggled: HashSet<KeyCode>,
@@ -89,7 +97,7 @@ pub struct InputManager {
 impl InputManager {
     pub fn new(gamepad_button_mapping: HashMap<GamepadButton, KeyCode>) -> Self {
         Self {
-            key_descriptors_down: HashSet::new(),
+            keys_down_phys_loc: HashSet::new(),
             keys_down: HashSet::new(),
             keys_toggled: HashSet::new(),
             last_key: KeyCode::UNKNOWN,
@@ -156,11 +164,13 @@ impl InputManager {
             }
 
             PlayerEvent::KeyDown { key } => {
-                self.key_descriptors_down.insert(key);
+                self.keys_down_phys_loc
+                    .insert((key.physical_key, key.key_location));
 
                 let key_code = self.map_to_key_code(key)?;
                 let key_char = self.map_to_key_char(key);
                 let key_location = self.map_to_key_location(key);
+
                 InputEvent::KeyDown {
                     key_code,
                     key_char,
@@ -168,10 +178,13 @@ impl InputManager {
                 }
             }
             PlayerEvent::KeyUp { key } => {
-                if !self.key_descriptors_down.remove(&key) {
+                if !self
+                    .keys_down_phys_loc
+                    .remove(&(key.physical_key, key.key_location))
+                {
                     // Ignore spurious KeyUp events that may happen e.g. during IME.
                     // We assume that in order for a key to generate KeyUp, it had to
-                    // generate KeyDown for the same exact KeyDescriptor.
+                    // generate KeyDown for the same physical key and location.
 
                     // TODO Apparently this behavior is platform-dependent and
                     //   doesn't happen on Windows. We cannot remove it fully
@@ -183,6 +196,7 @@ impl InputManager {
                 let key_code = self.map_to_key_code(key)?;
                 let key_char = self.map_to_key_char(key);
                 let key_location = self.map_to_key_location(key);
+
                 InputEvent::KeyUp {
                     key_code,
                     key_char,
@@ -311,8 +325,8 @@ impl InputManager {
         self.is_key_down(button.into())
     }
 
-    pub fn get_mouse_down_buttons(&self) -> HashSet<MouseButton> {
-        let mut buttons = HashSet::new();
+    pub fn get_mouse_down_buttons(&self) -> EnumSet<MouseButton> {
+        let mut buttons = EnumSet::new();
         if self.is_mouse_down(MouseButton::Left) {
             buttons.insert(MouseButton::Left);
         }
@@ -559,4 +573,67 @@ fn map_character_to_key_code(char: char) -> Option<KeyCode> {
     }
 
     None
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn key(char: char, physical: PhysicalKey) -> KeyDescriptor {
+        KeyDescriptor {
+            logical_key: LogicalKey::Character(char),
+            physical_key: physical,
+            key_location: KeyLocation::Standard,
+        }
+    }
+
+    #[test]
+    fn spurious_key_up_ignored() {
+        let mut input = InputManager::new(HashMap::new());
+
+        // Spurious KeyUp for 'a' - no preceding KeyDown
+        assert!(
+            input
+                .process_event(PlayerEvent::KeyUp {
+                    key: key('a', PhysicalKey::KeyA)
+                })
+                .is_none()
+        );
+
+        // Normal KeyDown 'w'
+        assert!(
+            input
+                .process_event(PlayerEvent::KeyDown {
+                    key: key('w', PhysicalKey::KeyW)
+                })
+                .is_some()
+        );
+
+        // Spurious KeyUp for 'b' - different key, never pressed
+        assert!(
+            input
+                .process_event(PlayerEvent::KeyUp {
+                    key: key('b', PhysicalKey::KeyB)
+                })
+                .is_none()
+        );
+
+        // Valid KeyUp for 'w'
+        assert!(
+            input
+                .process_event(PlayerEvent::KeyUp {
+                    key: key('w', PhysicalKey::KeyW)
+                })
+                .is_some()
+        );
+
+        // Duplicate KeyUp for 'w' - already released
+        assert!(
+            input
+                .process_event(PlayerEvent::KeyUp {
+                    key: key('w', PhysicalKey::KeyW)
+                })
+                .is_none()
+        );
+    }
 }

@@ -1,18 +1,18 @@
 //! Boxed QNames
 
-use crate::avm2::activation::Activation;
-use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::TObject;
-use crate::avm2::value::Value;
 use crate::avm2::AvmString;
 use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::Namespace;
+use crate::avm2::activation::Activation;
+use crate::avm2::object::TObject;
+use crate::avm2::object::script_object::ScriptObjectData;
+use crate::avm2::value::Value;
 use crate::string::StringContext;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::Ref;
 
@@ -87,7 +87,7 @@ impl<'gc> QNameObject<'gc> {
         write_name.set_local_name(local);
     }
 
-    pub fn local_name(&self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
+    pub fn local_name(self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
         let name = self.name();
 
         name.local_name().unwrap_or_else(|| istr!(context, "*"))
@@ -99,7 +99,7 @@ impl<'gc> QNameObject<'gc> {
         write_name.set_is_qname(is_qname);
     }
 
-    pub fn uri(&self, context: &mut StringContext<'gc>) -> Option<AvmString<'gc>> {
+    pub fn uri(self, context: &mut StringContext<'gc>) -> Option<AvmString<'gc>> {
         let name = self.0.name.borrow();
 
         if name.is_any_namespace() {
@@ -114,7 +114,7 @@ impl<'gc> QNameObject<'gc> {
         }
     }
 
-    pub fn is_any_namespace(&self) -> bool {
+    pub fn is_any_namespace(self) -> bool {
         self.0.name.borrow().is_any_namespace()
     }
 

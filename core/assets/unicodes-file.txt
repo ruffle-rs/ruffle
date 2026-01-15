@@ -1,5 +1,5 @@
-# Download Noto Sans from https://fonts.google.com/noto/specimen/Noto+Sans
-# Run `pyftsubset --unicodes-file=unicodes-file.txt NotoSans-Regular.ttf`
+# Used by update-font.sh
+
 0000-007F, # Basic Latin
 0080-00FF, # Latin-1 Supplement
 0100-017F, # Latin Extended-A
@@ -13,4 +13,3 @@
 2100-214F, # Letterlike Symbols
 2150-218F, # Number Forms
 2200-22FF, # Mathematical Operators
-# Compress with `cat NotoSans-Regular.subset.ttf | gzip --best --no-name | tail --bytes=+11 | head --bytes=-8 > notosans-regular.subset.ttf.gz`

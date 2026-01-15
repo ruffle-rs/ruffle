@@ -1,4 +1,4 @@
-use crate::{types::point::Coordinate as PointCoordinate, Point, Twips};
+use crate::{Point, Twips, types::point::Coordinate as PointCoordinate};
 use std::fmt::{Debug, Display, Formatter};
 
 pub trait Coordinate: PointCoordinate + Ord {

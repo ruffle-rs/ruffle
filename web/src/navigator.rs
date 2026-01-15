@@ -2,34 +2,34 @@
 use crate::SocketProxy;
 use async_channel::{Receiver, Sender};
 use futures_util::future::Either;
-use futures_util::{future, SinkExt, StreamExt};
-use gloo_net::websocket::{futures::WebSocket, Message};
+use futures_util::{SinkExt, StreamExt, future};
+use gloo_net::websocket::{Message, futures::WebSocket};
 use js_sys::{Array, Promise, RegExp, Uint8Array};
+use ruffle_core::Player;
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, create_specific_fetch_error, get_encoding, ErrorResponse,
-    NavigationMethod, NavigatorBackend, OwnedFuture, Request, SuccessResponse,
+    ErrorResponse, NavigationMethod, NavigatorBackend, OwnedFuture, Request, SuccessResponse,
+    async_return, create_fetch_error, create_specific_fetch_error, get_encoding,
 };
 use ruffle_core::config::NetworkingAccessMode;
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use ruffle_core::swf::Encoding;
-use ruffle_core::Player;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::rc::Rc;
 use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
-use tracing_subscriber::layer::Layered;
 use tracing_subscriber::Registry;
+use tracing_subscriber::layer::Layered;
 use tracing_wasm::WASMLayer;
 use url::{ParseError, Url};
 use wasm_bindgen::{JsCast, JsValue};
-use wasm_bindgen_futures::{spawn_local, JsFuture};
+use wasm_bindgen_futures::{JsFuture, spawn_local};
 use wasm_streams::readable::ReadableStream;
 use web_sys::{
-    window, Blob, BlobPropertyBag, HtmlFormElement, HtmlInputElement, Request as WebRequest,
-    RequestCredentials, RequestInit, Response as WebResponse,
+    Blob, BlobPropertyBag, HtmlFormElement, HtmlInputElement, Request as WebRequest,
+    RequestCredentials, RequestInit, Response as WebResponse, window,
 };
 
 /// The handling mode of links opening a new website.
@@ -190,17 +190,7 @@ impl NavigatorBackend for WebNavigatorBackend {
         }
 
         let url = match self.resolve_url(url) {
-            Ok(url) => {
-                if url.scheme() == "file" {
-                    tracing::error!(
-                        "Can't open the local URL {} on WASM target",
-                        url.to_string()
-                    );
-                    return;
-                } else {
-                    url
-                }
-            }
+            Ok(url) => url,
             Err(e) => {
                 tracing::error!(
                     "Could not parse URL because of {}, the corrupt URL was: {}",
@@ -226,7 +216,9 @@ impl NavigatorBackend for WebNavigatorBackend {
             } else {
                 match target.to_lowercase().as_str() {
                     "_parent" | "_self" | "_top" | "" => {
-                        tracing::warn!("SWF tried to open a URL, but opening URLs in the current tab is prevented by script access");
+                        tracing::warn!(
+                            "SWF tried to open a URL, but opening URLs in the current tab is prevented by script access"
+                        );
                         return;
                     }
                     _ => (),
@@ -278,6 +270,23 @@ impl NavigatorBackend for WebNavigatorBackend {
                     form.set_target(target);
                 }
 
+                if navmethod == NavigationMethod::Get {
+                    // Browsers will clobber any query string with "the whole form input", so we need to re-add them here
+                    for (key, value) in url.query_pairs() {
+                        let hidden: HtmlInputElement = document
+                            .create_element("input")
+                            .expect("create_element() must succeed")
+                            .dyn_into()
+                            .expect("create_element(\"input\") didn't give us an input");
+
+                        hidden.set_type("hidden");
+                        hidden.set_name(&key);
+                        hidden.set_value(&value);
+
+                        let _ = form.append_child(&hidden);
+                    }
+                }
+
                 for (key, value) in formvars {
                     let hidden: HtmlInputElement = document
                         .create_element("input")
@@ -307,19 +316,9 @@ impl NavigatorBackend for WebNavigatorBackend {
 
     fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
         let url = match self.resolve_url(request.url()) {
-            Ok(url) => {
-                if url.scheme() == "file" {
-                    return async_return(create_specific_fetch_error(
-                        "WASM target can't fetch local URL",
-                        url.as_str(),
-                        "",
-                    ));
-                } else {
-                    url
-                }
-            }
+            Ok(url) => url,
             Err(e) => {
-                return async_return(create_fetch_error(request.url(), e));
+                return async_return(Err(create_fetch_error(request.url(), e)));
             }
         };
 
@@ -366,11 +365,11 @@ impl NavigatorBackend for WebNavigatorBackend {
             let web_request = match WebRequest::new_with_str_and_init(url.as_str(), &init) {
                 Ok(web_request) => web_request,
                 Err(_) => {
-                    return create_specific_fetch_error(
+                    return Err(create_specific_fetch_error(
                         "Unable to create request for",
                         url.as_str(),
                         "",
-                    );
+                    ));
                 }
             };
 
@@ -388,9 +387,19 @@ impl NavigatorBackend for WebNavigatorBackend {
             let window = web_sys::window().expect("window()");
             let fetchval = JsFuture::from(window.fetch_with_request(&web_request))
                 .await
-                .map_err(|_| ErrorResponse {
-                    url: url.to_string(),
-                    error: Error::FetchError("Got JS error".to_string()),
+                .map_err(|_| {
+                    if url.scheme() == "file" {
+                        create_specific_fetch_error(
+                            "WASM target can't fetch local URL",
+                            url.as_str(),
+                            "",
+                        )
+                    } else {
+                        ErrorResponse {
+                            url: url.to_string(),
+                            error: Error::FetchError("Got JS error".to_string()),
+                        }
+                    }
                 })?;
 
             let response: WebResponse = fetchval.dyn_into().map_err(|_| ErrorResponse {
@@ -411,6 +420,7 @@ impl NavigatorBackend for WebNavigatorBackend {
             }
 
             let wrapper: Box<dyn SuccessResponse> = Box::new(WebResponseWrapper {
+                rewritten_url: None,
                 response,
                 body_stream: None,
             });
@@ -562,13 +572,21 @@ impl NavigatorBackend for WebNavigatorBackend {
 }
 
 struct WebResponseWrapper {
+    rewritten_url: Option<String>,
     response: WebResponse,
     body_stream: Option<Rc<RefCell<ReadableStream>>>,
 }
 
 impl SuccessResponse for WebResponseWrapper {
     fn url(&self) -> Cow<'_, str> {
-        Cow::Owned(self.response.url())
+        self.rewritten_url
+            .as_ref()
+            .map(|url| Cow::<'_, str>::Borrowed(url))
+            .unwrap_or_else(|| Cow::Owned(self.response.url()))
+    }
+
+    fn set_url(&mut self, url: String) {
+        self.rewritten_url = Some(url);
     }
 
     fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {

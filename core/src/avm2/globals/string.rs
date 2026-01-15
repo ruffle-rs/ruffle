@@ -5,6 +5,7 @@ use std::num::NonZero;
 use ruffle_macros::istr;
 
 use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::regexp::{RegExp, RegExpFlags};
 use crate::avm2::value::Value;
@@ -252,7 +253,7 @@ pub fn match_internal<'gc>(
                 regexp.set_last_index(1);
             }
 
-            return Ok(ArrayObject::from_storage(activation, storage).into());
+            return Ok(ArrayObject::from_storage(activation.context, storage).into());
         } else {
             let old = regexp.last_index();
             regexp.set_last_index(0);
@@ -269,7 +270,7 @@ pub fn match_internal<'gc>(
 
                 regexp.set_last_index(old);
 
-                let array = ArrayObject::from_storage(activation, storage);
+                let array = ArrayObject::from_storage(activation.context, storage);
 
                 array.set_dynamic_property(istr!("index"), result.start().into(), activation.gc());
                 array.set_dynamic_property(istr!("input"), this.into(), activation.gc());
@@ -304,7 +305,7 @@ pub fn replace<'gc>(
     {
         // Replacement is either a function or treatable as string.
         if let Some(f) = replacement.as_object().and_then(|o| o.as_function_object()) {
-            return Ok(RegExp::replace_fn(regexp, activation, this, &f)?.into());
+            return Ok(RegExp::replace_fn(regexp, activation, this, f)?.into());
         } else {
             let replacement = replacement.coerce_to_string(activation)?;
             return Ok(RegExp::replace_string(regexp, activation, this, replacement)?.into());
@@ -317,8 +318,8 @@ pub fn replace<'gc>(
         let mut ret = WString::from(&this[..position]);
         // Replacement is either a function or treatable as string.
         if let Some(f) = replacement.as_object().and_then(|o| o.as_function_object()) {
-            let args = [pattern.into(), position.into(), this.into()];
-            let v = f.call(activation, Value::Null, &args)?;
+            let args = &[pattern.into(), position.into(), this.into()];
+            let v = f.call(activation, Value::Null, FunctionArgs::from_slice(args))?;
             ret.push_str(v.coerce_to_string(activation)?.as_wstr());
         } else {
             let replacement = replacement.coerce_to_string(activation)?;
@@ -410,7 +411,7 @@ pub fn split<'gc>(
     };
 
     let Some(limit) = NonZero::new(limit) else {
-        return Ok(ArrayObject::empty(activation).into());
+        return Ok(ArrayObject::empty(activation.context).into());
     };
 
     if let Some(mut regexp) = delimiter
@@ -418,7 +419,7 @@ pub fn split<'gc>(
         .as_ref()
         .and_then(|o| o.as_regexp_mut(activation.gc()))
     {
-        return Ok(regexp.split(activation, this, limit).into());
+        return Ok(regexp.split(activation.context, this, limit).into());
     }
 
     let delimiter = delimiter.coerce_to_string(activation)?;
@@ -443,7 +444,7 @@ pub fn split<'gc>(
             .collect()
     };
 
-    Ok(ArrayObject::from_storage(activation, storage).into())
+    Ok(ArrayObject::from_storage(activation.context, storage).into())
 }
 
 /// Implements `String.substr`

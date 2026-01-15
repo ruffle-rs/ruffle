@@ -1,19 +1,21 @@
 //! Function object impl
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
+use crate::avm2::error::make_error_1064;
 use crate::avm2::function::{BoundMethod, FunctionArgs};
 use crate::avm2::method::Method;
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
+use crate::context::UpdateContext;
 use crate::string::AvmString;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
+use ruffle_common::utils::HasPrefixField;
+use ruffle_macros::istr;
 
 /// An Object which can be called to execute its function code.
 #[derive(Collect, Clone, Copy)]
@@ -57,48 +59,44 @@ impl<'gc> FunctionObject<'gc> {
     /// It is the caller's responsibility to ensure that the `receiver` passed
     /// to this method is not Value::Null or Value::Undefined.
     pub fn from_method(
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         method: Method<'gc>,
         scope: ScopeChain<'gc>,
         receiver: Option<Value<'gc>>,
         bound_superclass_object: Option<ClassObject<'gc>>,
-        bound_class: Option<Class<'gc>>,
     ) -> FunctionObject<'gc> {
-        let fn_class = activation.avm2().classes().function;
-        let exec = BoundMethod::from_method(
-            method,
-            scope,
-            receiver,
-            bound_superclass_object,
-            bound_class,
-        );
+        let fn_class = context.avm2.classes().function;
+        let exec = BoundMethod::from_method(method, scope, receiver, bound_superclass_object);
 
-        let es3_proto = ScriptObject::new_object(activation);
+        let es3_proto = ScriptObject::new_object(context);
 
-        FunctionObject(Gc::new(
-            activation.gc(),
+        let function_object = FunctionObject(Gc::new(
+            context.gc(),
             FunctionObjectData {
                 base: ScriptObjectData::new(fn_class),
                 exec,
                 prototype: Lock::new(Some(es3_proto)),
             },
-        ))
+        ));
+
+        let constructor_prop = istr!(context, "constructor");
+
+        // Set the constructor property on the prototype to point back to this function
+        es3_proto.set_dynamic_property(constructor_prop, function_object.into(), context.gc());
+        es3_proto.set_local_property_is_enumerable(context.gc(), constructor_prop, false);
+
+        function_object
     }
 
     pub fn call(
         self,
         activation: &mut Activation<'_, 'gc>,
         receiver: Value<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let exec = &self.0.exec;
 
-        exec.exec(
-            receiver,
-            FunctionArgs::AsArgSlice { arguments },
-            activation,
-            Some(self),
-        )
+        exec.exec(receiver, arguments, activation, Some(self))
     }
 
     pub fn construct(
@@ -106,7 +104,12 @@ impl<'gc> FunctionObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Object<'gc>, Error<'gc>> {
-        let arguments = &arguments.to_slice();
+        let method = self.0.exec.as_method();
+        if method.bound_class().is_some() {
+            // If the Method is class-bound, attempting to construct it throws
+            // an error
+            return Err(make_error_1064(activation, method));
+        }
 
         let object_class = activation.avm2().classes().object;
 
@@ -125,12 +128,18 @@ impl<'gc> FunctionObject<'gc> {
             object_class.instance_vtable(),
         );
 
-        self.call(activation, instance.into(), arguments)?;
+        let result = self.call(activation, instance.into(), arguments)?;
 
-        Ok(instance)
+        // If the constructor returns an object, use that instead of the created instance
+        // TODO: avmplus returns null here if the constructor returns null
+        if let Value::Object(obj) = result {
+            Ok(obj)
+        } else {
+            Ok(instance)
+        }
     }
 
-    pub fn prototype(&self) -> Option<Object<'gc>> {
+    pub fn prototype(self) -> Option<Object<'gc>> {
         self.0.prototype.get()
     }
 

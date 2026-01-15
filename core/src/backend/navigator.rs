@@ -5,6 +5,7 @@ use crate::socket::{ConnectionState, SocketAction, SocketHandle};
 use crate::string::WStr;
 use async_channel::{Receiver, Sender};
 use encoding_rs::Encoding;
+use enumset::EnumSetType;
 use indexmap::IndexMap;
 use std::any::Any;
 use std::borrow::Cow;
@@ -54,6 +55,13 @@ pub enum SocketMode {
 
     /// Ask the user every time a socket connection is requested
     Ask,
+}
+
+#[derive(EnumSetType, Debug)]
+pub enum FetchReason {
+    LoadSwf,
+    UrlLoader,
+    Other,
 }
 
 impl NavigationMethod {
@@ -148,6 +156,10 @@ impl Request {
         &self.url
     }
 
+    pub fn set_url(&mut self, url: String) {
+        self.url = url;
+    }
+
     /// Retrieve the navigation method for this request.
     pub fn method(&self) -> NavigationMethod {
         self.method
@@ -175,6 +187,9 @@ impl Request {
 pub trait SuccessResponse {
     /// The final URL obtained after any redirects.
     fn url(&self) -> Cow<'_, str>;
+
+    /// Rewrite the URL to a different one.
+    fn set_url(&mut self, url: String);
 
     /// Retrieve the contents of the response body.
     ///
@@ -459,10 +474,7 @@ pub fn async_return<SuccessType: 'static, ErrorType: 'static>(
 
 /// This creates and returns the generic ErrorResponse for an invalid URL
 /// used in the NavigatorBackend fetch methods.
-pub fn create_fetch_error<ErrorType: Display>(
-    url: &str,
-    error: ErrorType,
-) -> Result<Box<dyn SuccessResponse>, ErrorResponse> {
+pub fn create_fetch_error<ErrorType: Display>(url: &str, error: ErrorType) -> ErrorResponse {
     create_specific_fetch_error("Invalid URL", url, error)
 }
 
@@ -472,17 +484,17 @@ pub fn create_specific_fetch_error<ErrorType: Display>(
     reason: &str,
     url: &str,
     error: ErrorType,
-) -> Result<Box<dyn SuccessResponse>, ErrorResponse> {
+) -> ErrorResponse {
     let message = if error.to_string() == "" {
         format!("{reason} {url}")
     } else {
         format!("{reason} {url}: {error}")
     };
     let error = Error::FetchError(message);
-    Err(ErrorResponse {
+    ErrorResponse {
         url: url.to_string(),
         error,
-    })
+    }
 }
 
 // Url doesn't implement from_file_path and to_file_path for WASM targets.
@@ -570,6 +582,10 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
             Cow::Borrowed(&self.url)
         }
 
+        fn set_url(&mut self, url: String) {
+            self.url = url;
+        }
+
         fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
             Box::pin(async move {
                 std::fs::read(self.path).map_err(|e| Error::FetchError(e.to_string()))
@@ -624,7 +640,7 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
 
     let url = match navigator.resolve_url(url) {
         Ok(url) => url,
-        Err(e) => return async_return(create_fetch_error(url, e)),
+        Err(e) => return async_return(Err(create_fetch_error(url, e))),
     };
     let path = if url.scheme() == "file" {
         // Flash supports query parameters with local urls.
@@ -636,11 +652,11 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
         match url_to_file_path(&filesystem_url) {
             Ok(path) => path,
             Err(_) => {
-                return async_return(create_specific_fetch_error(
+                return async_return(Err(create_specific_fetch_error(
                     "Unable to create path out of URL",
                     url.as_str(),
                     "",
-                ))
+                )));
             }
         }
     } else if let Some(base_path) = base_path {
@@ -654,11 +670,11 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
         }
         path
     } else {
-        return async_return(create_specific_fetch_error(
+        return async_return(Err(create_specific_fetch_error(
             &format!("{navigator_name} can't fetch non-local URL"),
             url.as_str(),
             "",
-        ));
+        )));
     };
 
     Box::pin(async move {

@@ -134,7 +134,7 @@ impl<W: Write> Writer<W> {
         self.write_u32(n as u32)
     }
 
-    fn write_index<T>(&mut self, i: &Index<T>) -> Result<()> {
+    fn write_index<T>(&mut self, i: Index<T>) -> Result<()> {
         self.write_u30(i.0)
     }
 
@@ -184,7 +184,7 @@ impl<W: Write> Writer<W> {
         if !constant_pool.namespaces.is_empty() {
             self.write_u30(constant_pool.namespaces.len() as u32 + 1)?;
             for namespace in &constant_pool.namespaces {
-                self.write_namespace(namespace)?;
+                self.write_namespace(*namespace)?;
             }
         } else {
             self.write_u32(0)?;
@@ -211,33 +211,33 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_namespace(&mut self, namespace: &Namespace) -> Result<()> {
-        match *namespace {
-            Namespace::Namespace(ref name) => {
+    fn write_namespace(&mut self, namespace: Namespace) -> Result<()> {
+        match namespace {
+            Namespace::Namespace(name) => {
                 self.write_u8(0x08)?;
                 self.write_index(name)?;
             }
-            Namespace::Package(ref name) => {
+            Namespace::Package(name) => {
                 self.write_u8(0x16)?;
                 self.write_index(name)?;
             }
-            Namespace::PackageInternal(ref name) => {
+            Namespace::PackageInternal(name) => {
                 self.write_u8(0x17)?;
                 self.write_index(name)?;
             }
-            Namespace::Protected(ref name) => {
+            Namespace::Protected(name) => {
                 self.write_u8(0x18)?;
                 self.write_index(name)?;
             }
-            Namespace::Explicit(ref name) => {
+            Namespace::Explicit(name) => {
                 self.write_u8(0x19)?;
                 self.write_index(name)?;
             }
-            Namespace::StaticProtected(ref name) => {
+            Namespace::StaticProtected(name) => {
                 self.write_u8(0x1a)?;
                 self.write_index(name)?;
             }
-            Namespace::Private(ref name) => {
+            Namespace::Private(name) => {
                 self.write_u8(0x05)?;
                 self.write_index(name)?;
             }
@@ -248,34 +248,28 @@ impl<W: Write> Writer<W> {
     fn write_namespace_set(&mut self, namespace_set: &[Index<Namespace>]) -> Result<()> {
         self.write_u30(namespace_set.len() as u32)?;
         for i in namespace_set {
-            self.write_index(i)?;
+            self.write_index(*i)?;
         }
         Ok(())
     }
 
     fn write_multiname(&mut self, multiname: &Multiname) -> Result<()> {
         match *multiname {
-            Multiname::QName {
-                ref namespace,
-                ref name,
-            } => {
+            Multiname::QName { namespace, name } => {
                 self.write_u8(0x07)?;
                 self.write_index(namespace)?;
                 self.write_index(name)?;
             }
-            Multiname::QNameA {
-                ref namespace,
-                ref name,
-            } => {
+            Multiname::QNameA { namespace, name } => {
                 self.write_u8(0x0d)?;
                 self.write_index(namespace)?;
                 self.write_index(name)?;
             }
-            Multiname::RTQName { ref name } => {
+            Multiname::RTQName { name } => {
                 self.write_u8(0x0f)?;
                 self.write_index(name)?;
             }
-            Multiname::RTQNameA { ref name } => {
+            Multiname::RTQNameA { name } => {
                 self.write_u8(0x10)?;
                 self.write_index(name)?;
             }
@@ -286,31 +280,31 @@ impl<W: Write> Writer<W> {
                 self.write_u8(0x12)?;
             }
             Multiname::Multiname {
-                ref namespace_set,
-                ref name,
+                namespace_set,
+                name,
             } => {
                 self.write_u8(0x09)?;
                 self.write_index(name)?;
                 self.write_index(namespace_set)?;
             }
             Multiname::MultinameA {
-                ref namespace_set,
-                ref name,
+                namespace_set,
+                name,
             } => {
                 self.write_u8(0x0e)?;
                 self.write_index(name)?;
                 self.write_index(namespace_set)?;
             }
-            Multiname::MultinameL { ref namespace_set } => {
+            Multiname::MultinameL { namespace_set } => {
                 self.write_u8(0x1b)?;
                 self.write_index(namespace_set)?;
             }
-            Multiname::MultinameLA { ref namespace_set } => {
+            Multiname::MultinameLA { namespace_set } => {
                 self.write_u8(0x1c)?;
                 self.write_index(namespace_set)?;
             }
             Multiname::TypeName {
-                ref base_type,
+                base_type,
                 ref parameters,
             } => {
                 self.write_u8(0x1d)?;
@@ -318,7 +312,7 @@ impl<W: Write> Writer<W> {
                 self.write_u30(parameters.len() as u32)?;
 
                 for param in parameters {
-                    self.write_index(param)?;
+                    self.write_index(*param)?;
                 }
             }
         }
@@ -327,11 +321,11 @@ impl<W: Write> Writer<W> {
 
     fn write_method(&mut self, method: &Method) -> Result<()> {
         self.write_u8(method.params.len() as u8)?;
-        self.write_index(&method.return_type)?;
+        self.write_index(method.return_type)?;
         let mut num_optional_params = 0;
         let mut has_param_names = false;
         for param in &method.params {
-            self.write_index(&param.kind)?;
+            self.write_index(param.kind)?;
             if param.default_value.is_some() {
                 num_optional_params += 1;
             }
@@ -339,14 +333,14 @@ impl<W: Write> Writer<W> {
                 has_param_names = true;
             }
         }
-        self.write_index(&method.name)?;
+        self.write_index(method.name)?;
         self.write_u8(method.flags.bits())?;
 
         if num_optional_params > 0 {
             self.write_u30(num_optional_params)?;
             let num_required = method.params.len() - num_optional_params as usize;
             for param in method.params.iter().skip(num_required) {
-                if let Some(ref value) = param.default_value {
+                if let Some(value) = param.default_value {
                     self.write_constant_value(value)?;
                 }
             }
@@ -354,7 +348,7 @@ impl<W: Write> Writer<W> {
 
         if has_param_names {
             for param in &method.params {
-                if let Some(ref name) = param.name {
+                if let Some(name) = param.name {
                     self.write_index(name)?;
                 }
             }
@@ -363,51 +357,51 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_constant_value(&mut self, value: &DefaultValue) -> Result<()> {
-        let (index, kind) = match *value {
+    fn write_constant_value(&mut self, value: DefaultValue) -> Result<()> {
+        let (index, kind) = match value {
             DefaultValue::Undefined => (0, 0x00),
-            DefaultValue::String(ref i) => (i.as_u30(), 0x01),
-            DefaultValue::Int(ref i) => (i.as_u30(), 0x03),
-            DefaultValue::Uint(ref i) => (i.as_u30(), 0x04),
-            DefaultValue::Private(ref i) => (i.as_u30(), 0x05),
-            DefaultValue::Double(ref i) => (i.as_u30(), 0x06),
-            DefaultValue::Namespace(ref i) => (i.as_u30(), 0x08),
+            DefaultValue::String(i) => (i.as_u30(), 0x01),
+            DefaultValue::Int(i) => (i.as_u30(), 0x03),
+            DefaultValue::Uint(i) => (i.as_u30(), 0x04),
+            DefaultValue::Private(i) => (i.as_u30(), 0x05),
+            DefaultValue::Double(i) => (i.as_u30(), 0x06),
+            DefaultValue::Namespace(i) => (i.as_u30(), 0x08),
             DefaultValue::False => (0x0a, 0x0a),
             DefaultValue::True => (0x0b, 0x0b),
             DefaultValue::Null => (0x0c, 0x0c),
-            DefaultValue::Package(ref i) => (i.as_u30(), 0x16),
-            DefaultValue::PackageInternal(ref i) => (i.as_u30(), 0x17),
-            DefaultValue::Protected(ref i) => (i.as_u30(), 0x18),
-            DefaultValue::Explicit(ref i) => (i.as_u30(), 0x19),
-            DefaultValue::StaticProtected(ref i) => (i.as_u30(), 0x1a),
+            DefaultValue::Package(i) => (i.as_u30(), 0x16),
+            DefaultValue::PackageInternal(i) => (i.as_u30(), 0x17),
+            DefaultValue::Protected(i) => (i.as_u30(), 0x18),
+            DefaultValue::Explicit(i) => (i.as_u30(), 0x19),
+            DefaultValue::StaticProtected(i) => (i.as_u30(), 0x1a),
         };
         self.write_u30(index)?;
         self.write_u8(kind)?;
         Ok(())
     }
 
-    fn write_optional_value(&mut self, value: &Option<DefaultValue>) -> Result<()> {
-        match *value {
+    fn write_optional_value(&mut self, value: Option<DefaultValue>) -> Result<()> {
+        match value {
             None => self.write_u30(0)?,
             Some(ref value) => {
                 let (index, kind) = match *value {
                     // Just write out a non-zero 'index' field - it's unused,
                     // so it doesn't matter what it is.
                     DefaultValue::Undefined => (0x01, 0x00),
-                    DefaultValue::String(ref i) => (i.as_u30(), 0x01),
-                    DefaultValue::Int(ref i) => (i.as_u30(), 0x03),
-                    DefaultValue::Uint(ref i) => (i.as_u30(), 0x04),
-                    DefaultValue::Private(ref i) => (i.as_u30(), 0x05),
-                    DefaultValue::Double(ref i) => (i.as_u30(), 0x06),
-                    DefaultValue::Namespace(ref i) => (i.as_u30(), 0x08),
+                    DefaultValue::String(i) => (i.as_u30(), 0x01),
+                    DefaultValue::Int(i) => (i.as_u30(), 0x03),
+                    DefaultValue::Uint(i) => (i.as_u30(), 0x04),
+                    DefaultValue::Private(i) => (i.as_u30(), 0x05),
+                    DefaultValue::Double(i) => (i.as_u30(), 0x06),
+                    DefaultValue::Namespace(i) => (i.as_u30(), 0x08),
                     DefaultValue::False => (0x0a, 0x0a),
                     DefaultValue::True => (0x0b, 0x0b),
                     DefaultValue::Null => (0x0c, 0x0c),
-                    DefaultValue::Package(ref i) => (i.as_u30(), 0x16),
-                    DefaultValue::PackageInternal(ref i) => (i.as_u30(), 0x17),
-                    DefaultValue::Protected(ref i) => (i.as_u30(), 0x18),
-                    DefaultValue::Explicit(ref i) => (i.as_u30(), 0x19),
-                    DefaultValue::StaticProtected(ref i) => (i.as_u30(), 0x1a),
+                    DefaultValue::Package(i) => (i.as_u30(), 0x16),
+                    DefaultValue::PackageInternal(i) => (i.as_u30(), 0x17),
+                    DefaultValue::Protected(i) => (i.as_u30(), 0x18),
+                    DefaultValue::Explicit(i) => (i.as_u30(), 0x19),
+                    DefaultValue::StaticProtected(i) => (i.as_u30(), 0x1a),
                 };
                 self.write_u30(index)?;
                 self.write_u8(kind)?;
@@ -417,18 +411,18 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_metadata(&mut self, metadata: &Metadata) -> Result<()> {
-        self.write_index(&metadata.name)?;
+        self.write_index(metadata.name)?;
         self.write_u30(metadata.items.len() as u32)?;
         for item in &metadata.items {
-            self.write_index(&item.key)?;
-            self.write_index(&item.value)?;
+            self.write_index(item.key)?;
+            self.write_index(item.value)?;
         }
         Ok(())
     }
 
     fn write_instance(&mut self, instance: &Instance) -> Result<()> {
-        self.write_index(&instance.name)?;
-        self.write_index(&instance.super_name)?;
+        self.write_index(instance.name)?;
+        self.write_index(instance.super_name)?;
         self.write_u8(
             if instance.protected_namespace.is_some() {
                 0x08
@@ -439,16 +433,16 @@ impl<W: Write> Writer<W> {
                 | if instance.is_sealed { 0x01 } else { 0 },
         )?;
 
-        if let Some(ref namespace) = instance.protected_namespace {
+        if let Some(namespace) = instance.protected_namespace {
             self.write_index(namespace)?;
         }
 
         self.write_u30(instance.interfaces.len() as u32)?;
         for interface in &instance.interfaces {
-            self.write_index(interface)?;
+            self.write_index(*interface)?;
         }
 
-        self.write_index(&instance.init_method)?;
+        self.write_index(instance.init_method)?;
 
         self.write_u30(instance.traits.len() as u32)?;
         for t in &instance.traits {
@@ -459,7 +453,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_class(&mut self, class: &Class) -> Result<()> {
-        self.write_index(&class.init_method)?;
+        self.write_index(class.init_method)?;
         self.write_u30(class.traits.len() as u32)?;
         for t in &class.traits {
             self.write_trait(t)?;
@@ -468,7 +462,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_script(&mut self, script: &Script) -> Result<()> {
-        self.write_index(&script.init_method)?;
+        self.write_index(script.init_method)?;
         self.write_u30(script.traits.len() as u32)?;
         for t in &script.traits {
             self.write_trait(t)?;
@@ -477,7 +471,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_trait(&mut self, t: &Trait) -> Result<()> {
-        self.write_index(&t.name)?;
+        self.write_index(t.name)?;
         let flags = if !t.metadata.is_empty() {
             0b0100_0000
         } else {
@@ -488,55 +482,43 @@ impl<W: Write> Writer<W> {
         match t.kind {
             TraitKind::Slot {
                 slot_id,
-                ref type_name,
-                ref value,
+                type_name,
+                value,
             } => {
                 self.write_u8(flags)?;
                 self.write_u30(slot_id)?;
                 self.write_index(type_name)?;
                 self.write_optional_value(value)?;
             }
-            TraitKind::Method {
-                disp_id,
-                ref method,
-            } => {
+            TraitKind::Method { disp_id, method } => {
                 self.write_u8(flags | 1)?;
                 self.write_u30(disp_id)?;
                 self.write_index(method)?;
             }
-            TraitKind::Getter {
-                disp_id,
-                ref method,
-            } => {
+            TraitKind::Getter { disp_id, method } => {
                 self.write_u8(flags | 2)?;
                 self.write_u30(disp_id)?;
                 self.write_index(method)?;
             }
-            TraitKind::Setter {
-                disp_id,
-                ref method,
-            } => {
+            TraitKind::Setter { disp_id, method } => {
                 self.write_u8(flags | 3)?;
                 self.write_u30(disp_id)?;
                 self.write_index(method)?;
             }
-            TraitKind::Class { slot_id, ref class } => {
+            TraitKind::Class { slot_id, class } => {
                 self.write_u8(flags | 4)?;
                 self.write_u30(slot_id)?;
                 self.write_index(class)?;
             }
-            TraitKind::Function {
-                slot_id,
-                ref function,
-            } => {
+            TraitKind::Function { slot_id, function } => {
                 self.write_u8(flags | 5)?;
                 self.write_u30(slot_id)?;
                 self.write_index(function)?;
             }
             TraitKind::Const {
                 slot_id,
-                ref type_name,
-                ref value,
+                type_name,
+                value,
             } => {
                 self.write_u8(flags | 6)?;
                 self.write_u30(slot_id)?;
@@ -548,7 +530,7 @@ impl<W: Write> Writer<W> {
         if !t.metadata.is_empty() {
             self.write_u30(t.metadata.len() as u32)?;
             for metadata in &t.metadata {
-                self.write_index(metadata)?;
+                self.write_index(*metadata)?;
             }
         }
 
@@ -556,7 +538,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_method_body(&mut self, method_body: &MethodBody) -> Result<()> {
-        self.write_index(&method_body.method)?;
+        self.write_index(method_body.method)?;
         self.write_u30(method_body.max_stack)?;
         self.write_u30(method_body.num_locals)?;
         self.write_u30(method_body.init_scope_depth)?;
@@ -582,8 +564,8 @@ impl<W: Write> Writer<W> {
         self.write_u30(exception.from_offset)?;
         self.write_u30(exception.to_offset)?;
         self.write_u30(exception.target_offset)?;
-        self.write_index(&exception.type_name)?;
-        self.write_index(&exception.variable_name)?;
+        self.write_index(exception.type_name)?;
+        self.write_index(exception.variable_name)?;
         Ok(())
     }
 
@@ -595,7 +577,7 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::ApplyType)?;
                 self.write_u30(num_types)?;
             }
-            Op::AsType { ref type_name } => {
+            Op::AsType { type_name } => {
                 self.write_opcode(OpCode::AsType)?;
                 self.write_index(type_name)?;
             }
@@ -618,56 +600,38 @@ impl<W: Write> Writer<W> {
                 self.write_u30(index)?;
                 self.write_u30(num_args)?;
             }
-            Op::CallProperty {
-                ref index,
-                num_args,
-            } => {
+            Op::CallProperty { index, num_args } => {
                 self.write_opcode(OpCode::CallProperty)?;
                 self.write_index(index)?;
                 self.write_u30(num_args)?;
             }
-            Op::CallPropLex {
-                ref index,
-                num_args,
-            } => {
+            Op::CallPropLex { index, num_args } => {
                 self.write_opcode(OpCode::CallPropLex)?;
                 self.write_index(index)?;
                 self.write_u30(num_args)?;
             }
-            Op::CallPropVoid {
-                ref index,
-                num_args,
-            } => {
+            Op::CallPropVoid { index, num_args } => {
                 self.write_opcode(OpCode::CallPropVoid)?;
                 self.write_index(index)?;
                 self.write_u30(num_args)?;
             }
-            Op::CallStatic {
-                ref index,
-                num_args,
-            } => {
+            Op::CallStatic { index, num_args } => {
                 self.write_opcode(OpCode::CallStatic)?;
                 self.write_index(index)?;
                 self.write_u30(num_args)?;
             }
-            Op::CallSuper {
-                ref index,
-                num_args,
-            } => {
+            Op::CallSuper { index, num_args } => {
                 self.write_opcode(OpCode::CallSuper)?;
                 self.write_index(index)?;
                 self.write_u30(num_args)?;
             }
-            Op::CallSuperVoid {
-                ref index,
-                num_args,
-            } => {
+            Op::CallSuperVoid { index, num_args } => {
                 self.write_opcode(OpCode::CallSuperVoid)?;
                 self.write_index(index)?;
                 self.write_u30(num_args)?;
             }
             Op::CheckFilter => self.write_opcode(OpCode::CheckFilter)?,
-            Op::Coerce { ref index } => {
+            Op::Coerce { index } => {
                 self.write_opcode(OpCode::Coerce)?;
                 self.write_index(index)?;
             }
@@ -682,10 +646,7 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::Construct)?;
                 self.write_u30(num_args)?;
             }
-            Op::ConstructProp {
-                ref index,
-                num_args,
-            } => {
+            Op::ConstructProp { index, num_args } => {
                 self.write_opcode(OpCode::ConstructProp)?;
                 self.write_index(index)?;
                 self.write_u30(num_args)?;
@@ -702,7 +663,7 @@ impl<W: Write> Writer<W> {
             Op::ConvertU => self.write_opcode(OpCode::ConvertU)?,
             Op::Debug {
                 is_local_register,
-                ref register_name,
+                register_name,
                 register,
             } => {
                 self.write_opcode(OpCode::Debug)?;
@@ -711,7 +672,7 @@ impl<W: Write> Writer<W> {
                 self.write_u8(register)?;
                 self.write_u30(0)?; // Unused
             }
-            Op::DebugFile { ref file_name } => {
+            Op::DebugFile { file_name } => {
                 self.write_opcode(OpCode::DebugFile)?;
                 self.write_index(file_name)?;
             }
@@ -729,13 +690,13 @@ impl<W: Write> Writer<W> {
             }
             Op::Decrement => self.write_opcode(OpCode::Decrement)?,
             Op::DecrementI => self.write_opcode(OpCode::DecrementI)?,
-            Op::DeleteProperty { ref index } => {
+            Op::DeleteProperty { index } => {
                 self.write_opcode(OpCode::DeleteProperty)?;
                 self.write_index(index)?;
             }
             Op::Divide => self.write_opcode(OpCode::Divide)?,
             Op::Dup => self.write_opcode(OpCode::Dup)?,
-            Op::Dxns { ref index } => {
+            Op::Dxns { index } => {
                 self.write_opcode(OpCode::Dxns)?;
                 self.write_index(index)?;
             }
@@ -743,19 +704,19 @@ impl<W: Write> Writer<W> {
             Op::Equals => self.write_opcode(OpCode::Equals)?,
             Op::EscXAttr => self.write_opcode(OpCode::EscXAttr)?,
             Op::EscXElem => self.write_opcode(OpCode::EscXElem)?,
-            Op::FindDef { ref index } => {
+            Op::FindDef { index } => {
                 self.write_opcode(OpCode::FindDef)?;
                 self.write_index(index)?;
             }
-            Op::FindProperty { ref index } => {
+            Op::FindProperty { index } => {
                 self.write_opcode(OpCode::FindProperty)?;
                 self.write_index(index)?;
             }
-            Op::FindPropStrict { ref index } => {
+            Op::FindPropStrict { index } => {
                 self.write_opcode(OpCode::FindPropStrict)?;
                 self.write_index(index)?;
             }
-            Op::GetDescendants { ref index } => {
+            Op::GetDescendants { index } => {
                 self.write_opcode(OpCode::GetDescendants)?;
                 self.write_index(index)?;
             }
@@ -764,7 +725,7 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::GetGlobalSlot)?;
                 self.write_u30(index)?;
             }
-            Op::GetLex { ref index } => {
+            Op::GetLex { index } => {
                 self.write_opcode(OpCode::GetLex)?;
                 self.write_index(index)?;
             }
@@ -782,7 +743,7 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::GetOuterScope)?;
                 self.write_u30(index)?;
             }
-            Op::GetProperty { ref index } => {
+            Op::GetProperty { index } => {
                 self.write_opcode(OpCode::GetProperty)?;
                 self.write_index(index)?;
             }
@@ -794,7 +755,7 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::GetSlot)?;
                 self.write_u30(index)?;
             }
-            Op::GetSuper { ref index } => {
+            Op::GetSuper { index } => {
                 self.write_opcode(OpCode::GetSuper)?;
                 self.write_index(index)?;
             }
@@ -876,12 +837,12 @@ impl<W: Write> Writer<W> {
             }
             Op::Increment => self.write_opcode(OpCode::Increment)?,
             Op::IncrementI => self.write_opcode(OpCode::IncrementI)?,
-            Op::InitProperty { ref index } => {
+            Op::InitProperty { index } => {
                 self.write_opcode(OpCode::InitProperty)?;
                 self.write_index(index)?;
             }
             Op::InstanceOf => self.write_opcode(OpCode::InstanceOf)?,
-            Op::IsType { ref index } => {
+            Op::IsType { index } => {
                 self.write_opcode(OpCode::IsType)?;
                 self.write_index(index)?;
             }
@@ -921,15 +882,15 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::NewArray)?;
                 self.write_u30(num_args)?;
             }
-            Op::NewCatch { ref index } => {
+            Op::NewCatch { index } => {
                 self.write_opcode(OpCode::NewCatch)?;
                 self.write_index(index)?;
             }
-            Op::NewClass { ref index } => {
+            Op::NewClass { index } => {
                 self.write_opcode(OpCode::NewClass)?;
                 self.write_index(index)?;
             }
-            Op::NewFunction { ref index } => {
+            Op::NewFunction { index } => {
                 self.write_opcode(OpCode::NewFunction)?;
                 self.write_index(index)?;
             }
@@ -947,16 +908,16 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::PushByte)?;
                 self.write_u8(value)?;
             }
-            Op::PushDouble { ref value } => {
+            Op::PushDouble { value } => {
                 self.write_opcode(OpCode::PushDouble)?;
                 self.write_index(value)?;
             }
             Op::PushFalse => self.write_opcode(OpCode::PushFalse)?,
-            Op::PushInt { ref value } => {
+            Op::PushInt { value } => {
                 self.write_opcode(OpCode::PushInt)?;
                 self.write_index(value)?;
             }
-            Op::PushNamespace { ref value } => {
+            Op::PushNamespace { value } => {
                 self.write_opcode(OpCode::PushNamespace)?;
                 self.write_index(value)?;
             }
@@ -967,12 +928,12 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::PushShort)?;
                 self.write_u30(value as u32)?;
             }
-            Op::PushString { ref value } => {
+            Op::PushString { value } => {
                 self.write_opcode(OpCode::PushString)?;
                 self.write_index(value)?;
             }
             Op::PushTrue => self.write_opcode(OpCode::PushTrue)?,
-            Op::PushUint { ref value } => {
+            Op::PushUint { value } => {
                 self.write_opcode(OpCode::PushUint)?;
                 self.write_index(value)?;
             }
@@ -995,7 +956,7 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::SetGlobalSlot)?;
                 self.write_u30(index)?;
             }
-            Op::SetProperty { ref index } => {
+            Op::SetProperty { index } => {
                 self.write_opcode(OpCode::SetProperty)?;
                 self.write_index(index)?;
             }
@@ -1003,7 +964,7 @@ impl<W: Write> Writer<W> {
                 self.write_opcode(OpCode::SetSlot)?;
                 self.write_u30(index)?;
             }
-            Op::SetSuper { ref index } => {
+            Op::SetSuper { index } => {
                 self.write_opcode(OpCode::SetSuper)?;
                 self.write_index(index)?;
             }

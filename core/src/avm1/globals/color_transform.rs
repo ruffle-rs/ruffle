@@ -1,9 +1,9 @@
 //! flash.geom.ColorTransform object
 
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use std::cell::Cell;
@@ -50,11 +50,7 @@ impl<'gc> ColorTransformObject {
             color_transform.b_add.into(),
             color_transform.a_add.into(),
         ];
-        let constructor = activation
-            .context
-            .avm1
-            .prototypes()
-            .color_transform_constructor;
+        let constructor = activation.prototypes().color_transform_constructor;
         constructor.construct(activation, &args)
     }
 
@@ -83,7 +79,7 @@ impl From<ColorTransformObject> for ColorTransform {
     }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "alphaMultiplier" => property(get_alpha_multiplier, set_alpha_multiplier);
     "redMultiplier" => property(get_red_multiplier, set_red_multiplier);
     "greenMultiplier" => property(get_green_multiplier, set_green_multiplier);
@@ -97,7 +93,16 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "toString" => method(to_string);
 };
 
-pub fn constructor<'gc>(
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -108,8 +113,16 @@ pub fn constructor<'gc>(
             for (arg, value) in args.iter().zip(&mut values) {
                 *value = arg.coerce_to_f64(activation)?;
             }
-            let [red_multiplier, green_multiplier, blue_multiplier, alpha_multiplier, red_offset, green_offset, blue_offset, alpha_offset] =
-                values;
+            let [
+                red_multiplier,
+                green_multiplier,
+                blue_multiplier,
+                alpha_multiplier,
+                red_offset,
+                green_offset,
+                blue_offset,
+                alpha_offset,
+            ] = values;
             ColorTransformObject {
                 red_multiplier: Cell::new(red_multiplier),
                 green_multiplier: Cell::new(green_multiplier),
@@ -221,15 +234,24 @@ fn to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let formatted = format!("(redMultiplier={}, greenMultiplier={}, blueMultiplier={}, alphaMultiplier={}, redOffset={}, greenOffset={}, blueOffset={}, alphaOffset={})",
-            this.get(istr!("redMultiplier"), activation)?.coerce_to_string(activation)?,
-            this.get(istr!("greenMultiplier"), activation)?.coerce_to_string(activation)?,
-            this.get(istr!("blueMultiplier"), activation)?.coerce_to_string(activation)?,
-            this.get(istr!("alphaMultiplier"), activation)?.coerce_to_string(activation)?,
-            this.get(istr!("redOffset"), activation)?.coerce_to_string(activation)?,
-            this.get(istr!("greenOffset"), activation)?.coerce_to_string(activation)?,
-            this.get(istr!("blueOffset"), activation)?.coerce_to_string(activation)?,
-            this.get(istr!("alphaOffset"), activation)?.coerce_to_string(activation)?
+    let formatted = format!(
+        "(redMultiplier={}, greenMultiplier={}, blueMultiplier={}, alphaMultiplier={}, redOffset={}, greenOffset={}, blueOffset={}, alphaOffset={})",
+        this.get(istr!("redMultiplier"), activation)?
+            .coerce_to_string(activation)?,
+        this.get(istr!("greenMultiplier"), activation)?
+            .coerce_to_string(activation)?,
+        this.get(istr!("blueMultiplier"), activation)?
+            .coerce_to_string(activation)?,
+        this.get(istr!("alphaMultiplier"), activation)?
+            .coerce_to_string(activation)?,
+        this.get(istr!("redOffset"), activation)?
+            .coerce_to_string(activation)?,
+        this.get(istr!("greenOffset"), activation)?
+            .coerce_to_string(activation)?,
+        this.get(istr!("blueOffset"), activation)?
+            .coerce_to_string(activation)?,
+        this.get(istr!("alphaOffset"), activation)?
+            .coerce_to_string(activation)?
     );
 
     Ok(AvmString::new_utf8(activation.gc(), formatted).into())
@@ -274,14 +296,4 @@ fn concat<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
 }

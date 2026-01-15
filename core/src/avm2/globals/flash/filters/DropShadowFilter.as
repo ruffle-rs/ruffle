@@ -33,17 +33,19 @@ package flash.filters {
         [Ruffle(NativeAccessible)]
         public var strength:Number;
 
-        public function DropShadowFilter(distance:Number = 4.0,
-                                        angle:Number = 45,
-                                        color:uint = 0,
-                                        alpha:Number = 1.0,
-                                        blurX:Number = 4.0,
-                                        blurY:Number = 4.0,
-                                        strength:Number = 1.0,
-                                        quality:int = 1,
-                                        inner:Boolean = false,
-                                        knockout:Boolean = false,
-                                        hideObject:Boolean = false) {
+        public function DropShadowFilter(
+            distance:Number = 4.0,
+            angle:Number = 45,
+            color:uint = 0,
+            alpha:Number = 1.0,
+            blurX:Number = 4.0,
+            blurY:Number = 4.0,
+            strength:Number = 1.0,
+            quality:int = 1,
+            inner:Boolean = false,
+            knockout:Boolean = false,
+            hideObject:Boolean = false
+        ) {
             this.alpha = alpha;
             this.angle = angle;
             this.blurX = blurX;
@@ -58,17 +60,19 @@ package flash.filters {
         }
 
         override public function clone():BitmapFilter {
-            return new DropShadowFilter(this.distance,
-                                        this.angle,
-                                        this.color,
-                                        this.alpha,
-                                        this.blurX,
-                                        this.blurY,
-                                        this.strength,
-                                        this.quality,
-                                        this.inner,
-                                        this.knockout,
-                                        this.hideObject);
+            return new DropShadowFilter(
+                this.distance,
+                this.angle,
+                this.color,
+                this.alpha,
+                this.blurX,
+                this.blurY,
+                this.strength,
+                this.quality,
+                this.inner,
+                this.knockout,
+                this.hideObject
+            );
         }
     }
 }

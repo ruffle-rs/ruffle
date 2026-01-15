@@ -26,6 +26,9 @@
     "settings_log_level_info": {
         "message": "Information"
     },
+    "settings_log_level_debug": {
+        "message": "Debug"
+    },
     "settings_max_execution_duration": {
         "message": "Maximal zulässige ActionScript Ausführungsdauer (in Sekunden)"
     },
@@ -37,6 +40,12 @@
     },
     "settings_preferred_renderer_auto": {
         "message": "Automatisch"
+    },
+    "settings_device_font_renderer": {
+        "message": "Geräte-Schriftart-Renderer"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Eingebettet"
     },
     "settings_advanced_options": {
         "message": "Erweiterte Einstellungen"

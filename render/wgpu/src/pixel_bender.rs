@@ -8,11 +8,11 @@ use indexmap::IndexMap;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::pixel_bender::{
-    PixelBenderParam, PixelBenderShader, PixelBenderShaderHandle, PixelBenderShaderImpl,
-    PixelBenderType, OUT_COORD_NAME,
+    OUT_COORD_NAME, PixelBenderParam, PixelBenderShader, PixelBenderShaderHandle,
+    PixelBenderShaderImpl, PixelBenderType,
 };
 use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
-use smallvec::{smallvec_inline, SmallVec};
+use smallvec::{SmallVec, smallvec_inline};
 use wgpu::util::{DeviceExt, StagingBelt};
 use wgpu::{
     BindGroupEntry, BindingResource, BlendComponent, BufferDescriptor, BufferUsages,
@@ -24,7 +24,7 @@ use wgpu::{
 use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::raw_texture_as_texture;
 use crate::{
-    as_texture, backend::WgpuRenderBackend, descriptors::Descriptors, target::RenderTarget, Texture,
+    Texture, as_texture, backend::WgpuRenderBackend, descriptors::Descriptors, target::RenderTarget,
 };
 
 #[derive(Debug)]
@@ -261,22 +261,6 @@ impl PixelBenderWgpuShader {
     }
 }
 
-enum BorrowedOrOwnedTexture<'a> {
-    Borrowed(&'a wgpu::Texture),
-    Owned(wgpu::Texture),
-}
-
-impl std::ops::Deref for BorrowedOrOwnedTexture<'_> {
-    type Target = wgpu::Texture;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            BorrowedOrOwnedTexture::Borrowed(t) => t,
-            BorrowedOrOwnedTexture::Owned(t) => t,
-        }
-    }
-}
-
 /// The texture format to use for the temporary texture we create when reading/writing
 /// from raw bytes (ByteArray to Vector.<Number>). We use a Float texture to be able to
 /// pass in floating-point values directly, without converting on the host side.
@@ -297,40 +281,28 @@ pub(super) fn temporary_texture_format_for_channels(channels: u32) -> wgpu::Text
 fn image_input_as_texture<'a>(
     descriptors: &Descriptors,
     input: &'a ImageInputTexture<'a>,
-) -> BorrowedOrOwnedTexture<'a> {
+) -> Cow<'a, wgpu::Texture> {
     match input {
-        ImageInputTexture::Bitmap(handle) => {
-            BorrowedOrOwnedTexture::Borrowed(&as_texture(handle).texture)
-        }
+        ImageInputTexture::Bitmap(handle) => Cow::Borrowed(&as_texture(handle).texture),
         ImageInputTexture::TextureRef(raw_texture) => {
-            BorrowedOrOwnedTexture::Borrowed(raw_texture_as_texture(*raw_texture))
+            Cow::Borrowed(raw_texture_as_texture(*raw_texture))
         }
-        ImageInputTexture::Bytes {
+        ImageInputTexture::Floats {
             width,
             height,
-            channels,
-            bytes,
+            data,
         } => {
             let extent = wgpu::Extent3d {
                 width: *width,
                 height: *height,
                 depth_or_array_layers: 1,
             };
-            let texture_format = temporary_texture_format_for_channels(*channels);
-            // We're going to be using an Rgba32Float texture, so we need to pad the bytes
-            // with zeros for the alpha channel. The PixelBender code will only ever try to
-            // use the first 3 channels (since it was compiled with a 3-channel input),
-            // so it doesn't matter what value we choose here.
-            let padded_bytes = if *channels == 3 {
-                let mut padded_bytes = Vec::with_capacity(bytes.len() * 4 / 3);
-                for chunk in bytes.chunks_exact(12) {
-                    padded_bytes.extend_from_slice(chunk);
-                    padded_bytes.extend_from_slice(&[0, 0, 0, 0]);
-                }
-                Cow::Owned(padded_bytes)
-            } else {
-                Cow::Borrowed(bytes)
-            };
+
+            let texture_format =
+                crate::pixel_bender::temporary_texture_format_for_channels(data.channel_count());
+            let padded_data = data.padded_data();
+
+            let padded_bytes = bytemuck::cast_slice::<f32, u8>(padded_data.as_ref());
 
             let fresh_texture = descriptors.device.create_texture(&TextureDescriptor {
                 label: Some("Temporary PixelBender output texture"),
@@ -349,7 +321,7 @@ fn image_input_as_texture<'a>(
                     origin: wgpu::Origin3d::ZERO,
                     aspect: wgpu::TextureAspect::All,
                 },
-                &padded_bytes,
+                padded_bytes,
                 wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(padded_bytes.len() as u32 / height),
@@ -357,7 +329,7 @@ fn image_input_as_texture<'a>(
                 },
                 extent,
             );
-            BorrowedOrOwnedTexture::Owned(fresh_texture)
+            Cow::Owned(fresh_texture)
         }
     }
 }
@@ -468,13 +440,12 @@ pub(super) fn run_pixelbender_shader_impl(
         match input {
             PixelBenderShaderArgument::ImageInput { index, texture, .. } => {
                 let input_texture = &image_input_as_texture(descriptors, texture.as_ref().unwrap());
-                let same_source_dest =
-                    if let BorrowedOrOwnedTexture::Borrowed(input_texture) = input_texture {
-                        std::ptr::eq(*input_texture, target)
-                    } else {
-                        // When we create a fresh texture, it can never be equal to the pre-existing target
-                        false
-                    };
+                let same_source_dest = if let Cow::Borrowed(input_texture) = input_texture {
+                    std::ptr::eq(*input_texture, target)
+                } else {
+                    // When we create a fresh texture, it can never be equal to the pre-existing target
+                    false
+                };
                 if same_source_dest {
                     // The input is the same as the output - we need to clone the input.
                     // We will write to the original output, and use a clone of the input as a texture input binding

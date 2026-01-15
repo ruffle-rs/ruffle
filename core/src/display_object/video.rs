@@ -1,27 +1,24 @@
 //! Video player display object
 
-use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value};
-use crate::avm2::{
-    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
-    Value as Avm2Value,
-};
+use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
+use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase};
+use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase, RenderOptions};
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::tag_utils::{SwfMovie, SwfSlice};
-use crate::utils::HasPrefixField;
 use crate::vminterface::{AvmObject, Instantiator};
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_render::bitmap::{BitmapInfo, PixelSnapping};
 use ruffle_render::commands::CommandHandler;
 use ruffle_render::quality::StageQuality;
+use ruffle_video::VideoStreamHandle;
 use ruffle_video::error::Error;
 use ruffle_video::frame::EncodedFrame;
-use ruffle_video::VideoStreamHandle;
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::{BTreeMap, BTreeSet};
 use std::sync::Arc;
@@ -209,7 +206,7 @@ impl<'gc> Video<'gc> {
     ///
     /// This function yields an error if this video player is not playing an
     /// embedded SWF video.
-    pub fn preload_swf_frame(&self, tag: VideoFrame) {
+    pub fn preload_swf_frame(self, tag: VideoFrame) {
         let movie = self.0.movie.clone();
 
         match self.0.source.get() {
@@ -363,6 +360,10 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         _instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
+        if self.movie().is_action_script_3() {
+            self.set_default_instance_name(context);
+        }
+
         let movie = self.0.movie.clone();
 
         let (stream, keyframes) = match self.0.source.get() {
@@ -378,11 +379,8 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
                         streamdef.codec,
                         streamdef.deblocking,
                     );
-                    if stream.is_err() {
-                        tracing::error!(
-                            "Got error when post-instantiating video: {}",
-                            stream.unwrap_err()
-                        );
+                    if let Err(err) = stream {
+                        tracing::error!("Got error when post-instantiating video: {err}",);
                         return;
                     }
 
@@ -432,7 +430,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         if self.0.object.get().is_none() && !movie.is_action_script_3() {
             let object = Avm1Object::new_with_native(
                 &context.strings,
-                Some(context.avm1.prototypes().video),
+                Some(context.avm1.prototypes(self.swf_version()).video),
                 Avm1NativeObject::Video(self),
             );
             self.set_object(context, object.into());
@@ -442,24 +440,23 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn construct_frame(self, context: &mut UpdateContext<'gc>) {
-        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+        if self.movie().is_action_script_3() && self.object2().is_none() {
             let video_constr = context.avm2.classes().video;
-            let mut activation = Avm2Activation::from_nothing(context);
-            let size = self.0.size.get();
-            match Avm2StageObject::for_display_object_childless_with_args(
-                &mut activation,
-                self.into(),
-                video_constr,
-                &[size.0.into(), size.1.into()],
-            ) {
-                Ok(object) => {
-                    self.set_object2(context, object.into());
-                }
-                Err(e) => tracing::error!("Got {} when constructing AVM2 side of video player", e),
-            }
+            let object =
+                Avm2StageObject::for_display_object(context.gc(), self.into(), video_constr);
+            // We don't need to call the initializer method, as AVM2 can't link
+            // a custom class to a Video, and the initializer method for Video
+            // itself only sets the size of the Video- the Video already has the
+            // correct size at this point.
+
+            self.set_object2(context, object);
 
             self.on_construction_complete(context);
         }
+    }
+
+    fn on_ratio_changed(self, context: &mut UpdateContext<'gc>, new_ratio: u16) {
+        self.seek(context, new_ratio.into());
     }
 
     fn id(self) -> CharacterId {
@@ -480,13 +477,16 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
-    fn render(self, context: &mut RenderContext) {
+    fn render_with_options(self, context: &mut RenderContext<'_, 'gc>, options: RenderOptions) {
         if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
             // Off-screen; culled
             return;
         }
 
-        context.transform_stack.push(&self.base().transform());
+        if options.apply_transform {
+            let transform = self.base().transform(options.apply_matrix);
+            context.transform_stack.push(&transform);
+        }
 
         let mut transform = context.transform_stack.transform();
         let bounds = self.self_bounds();
@@ -536,33 +536,25 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             tracing::warn!("Video has no decoded frame to render.");
         }
 
-        context.transform_stack.pop();
-    }
-
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
-        self.set_object(context, to.into());
+        if options.apply_transform {
+            context.transform_stack.pop();
+        }
     }
 
     fn movie(self) -> Arc<SwfMovie> {
         self.0.movie.clone()
     }
 
-    fn object(self) -> Avm1Value<'gc> {
-        self.0
-            .object
-            .get()
-            .and_then(|o| o.as_avm1_object())
-            .map(Avm1Value::from)
-            .unwrap_or(Avm1Value::Undefined)
+    fn object1(self) -> Option<Avm1Object<'gc>> {
+        self.0.object.get().and_then(|o| o.as_avm1_object())
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .object
-            .get()
-            .and_then(|o| o.as_avm2_object())
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.object.get().and_then(|o| o.as_avm2_object())
+    }
+
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
+        self.set_object(context, to.into());
     }
 
     fn avm1_text_field_bindings(&self) -> Option<Ref<'_, [Avm1TextFieldBinding<'gc>]>> {

@@ -1,12 +1,15 @@
 //! Activation frames
 
+use crate::avm2::Multiname;
+use crate::avm2::Namespace;
 use crate::avm2::array::ArrayStorage;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::e4x::{escape_attribute_value, escape_element_value};
 use crate::avm2::error::{
-    make_error_1065, make_error_1127, make_error_1506, make_null_or_undefined_error, type_error,
-    verify_error,
+    make_error_1016, make_error_1040, make_error_1041, make_error_1063, make_error_1065,
+    make_error_1108, make_error_1119, make_error_1123, make_error_1127, make_error_1506,
+    make_null_or_undefined_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
@@ -16,23 +19,19 @@ use crate::avm2::object::{
 };
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::op::{LookupSwitch, Op};
-use crate::avm2::scope::{search_scope_stack, Scope, ScopeChain};
+use crate::avm2::scope::{Scope, ScopeChain, search_scope_stack};
 use crate::avm2::script::Script;
 use crate::avm2::stack::StackFrame;
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
-use crate::avm2::Namespace;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString, HasStringContext, StringContext};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Gc;
 use ruffle_macros::istr;
-use std::cmp::{min, Ordering};
+use std::cmp::{Ordering, min};
 use std::sync::Arc;
 use swf::avm2::types::MethodFlags as AbcMethodFlags;
-
-use super::error::make_mismatch_error;
 
 /// Represents a single activation of a given AVM2 function or keyframe.
 pub struct Activation<'a, 'gc: 'a> {
@@ -70,8 +69,6 @@ pub struct Activation<'a, 'gc: 'a> {
     ///
     /// This will not be available outside of method, setter, or getter calls.
     bound_superclass_object: Option<ClassObject<'gc>>,
-
-    bound_class: Option<Class<'gc>>,
 
     /// The stack frame.
     stack: StackFrame<'a, 'gc>,
@@ -125,7 +122,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_domain: None,
             caller_movie: None,
             bound_superclass_object: None,
-            bound_class: None,
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
@@ -149,7 +145,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_domain: Some(domain),
             caller_movie: None,
             bound_superclass_object: None,
-            bound_class: None,
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
@@ -171,14 +166,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             let global = self.global_scope();
 
-            if global
-                .as_object()
-                .is_some_and(|o| o.base().has_own_dynamic_property(name))
-            {
-                Ok(Some(global))
-            } else {
-                Ok(None)
+            // Check global scope and its prototypes recursively
+            // NOTE: We still have to check prototypes if the global scope is
+            // a primitive
+
+            let mut proto = Some(global);
+            while let Some(current_proto) = proto {
+                if let Some(current_proto) = current_proto.as_object() {
+                    if current_proto.base().has_own_dynamic_property(name) {
+                        return Ok(Some(global));
+                    }
+                }
+
+                proto = current_proto.proto(self).map(|o| o.into());
             }
+
+            Ok(None)
         }
     }
 
@@ -192,16 +195,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn resolve_parameters(
         &mut self,
         method: Method<'gc>,
-        user_arguments: &[Value<'gc>],
+        user_arguments: FunctionArgs<'_, 'gc>,
         signature: &[ResolvedParamConfig<'gc>],
-        bound_class: Option<Class<'gc>>,
     ) -> Result<Vec<Value<'gc>>, Error<'gc>> {
         let mut arguments_list = Vec::new();
         for (arg, param_config) in user_arguments.iter().zip(signature.iter()) {
             let coerced_arg = if let Some(param_class) = param_config.param_type {
                 arg.coerce_to_type(self, param_class)?
             } else {
-                *arg
+                arg
             };
 
             arguments_list.push(coerced_arg);
@@ -209,6 +211,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         match user_arguments.len().cmp(&signature.len()) {
             Ordering::Greater => {
+                let user_arguments = &user_arguments.to_slice();
                 // Variadic parameters exist, just push them into the list
                 arguments_list.extend_from_slice(&user_arguments[signature.len()..])
             }
@@ -218,12 +221,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     let arg = if let Some(default_value) = &param_config.default_value {
                         *default_value
                     } else {
-                        return Err(Error::avm_error(make_mismatch_error(
-                            self,
-                            method,
-                            user_arguments.len(),
-                            bound_class,
-                        )?));
+                        return Err(make_error_1063(self, method, user_arguments.len()));
                     };
 
                     let coerced_arg = if let Some(param_class) = param_config.param_type {
@@ -286,7 +284,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             unreachable!();
         };
 
-        let args_object = ArrayObject::from_storage(self, args_array);
+        let args_object = ArrayObject::from_storage(self.context, args_array);
 
         if method
             .method()
@@ -318,7 +316,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         user_arguments: FunctionArgs<'_, 'gc>,
         stack_frame: StackFrame<'a, 'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
-        bound_class: Option<Class<'gc>>,
         callee: Option<FunctionObject<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let body = method
@@ -328,7 +325,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let num_locals = body.num_locals as usize;
         let has_rest_or_args = method.is_variadic();
 
-        if let Some(bound_class) = bound_class {
+        if let Some(bound_class) = method.bound_class() {
             assert!(this.is_of_type(bound_class));
         }
 
@@ -337,7 +334,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.caller_domain = Some(outer.domain());
         self.caller_movie = Some(method.owner_movie());
         self.bound_superclass_object = bound_superclass_object;
-        self.bound_class = bound_class;
         self.stack = stack_frame;
         self.scope_depth = self.context.avm2.scope_stack.len();
         self.is_interpreter = method.is_interpreted();
@@ -351,12 +347,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let signature = method.resolved_param_config();
 
         if user_arguments.len() > signature.len() && !has_rest_or_args && !method.is_unchecked() {
-            return Err(Error::avm_error(make_mismatch_error(
-                self,
-                method,
-                user_arguments.len(),
-                bound_class,
-            )?));
+            return Err(make_error_1063(self, method, user_arguments.len()));
         }
 
         // Create locals
@@ -385,12 +376,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 } else if method.is_unchecked() {
                     Value::Undefined
                 } else {
-                    return Err(Error::avm_error(make_mismatch_error(
-                        self,
-                        method,
-                        user_arguments.len(),
-                        bound_class,
-                    )?));
+                    return Err(make_error_1063(self, method, user_arguments.len()));
                 };
 
                 let coerced_arg = if let Some(param_class) = param_config.param_type {
@@ -426,7 +412,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     pub fn from_builtin(
         context: &'a mut UpdateContext<'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
-        bound_class: Option<Class<'gc>>,
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
         caller_movie: Option<Arc<SwfMovie>>,
@@ -437,7 +422,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             caller_domain,
             caller_movie,
             bound_superclass_object,
-            bound_class,
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
@@ -448,7 +432,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Call the superclass's instance initializer.
     ///
     /// This method may panic if called with a Null or Undefined receiver.
-    pub fn super_init(
+    fn super_init(
         &mut self,
         receiver: Value<'gc>,
         args: FunctionArgs<'_, 'gc>,
@@ -457,7 +441,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .bound_superclass_object
             .expect("Superclass object is required to run super_init");
 
-        bound_superclass_object.call_init_with_args(receiver, args, self)
+        bound_superclass_object.call_init(receiver, args, self)
     }
 
     /// Retrieve a local register.
@@ -607,13 +591,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ///
     /// If the currently-executing method is not part of a class, then this
     /// returns `None`.
-    fn bound_superclass_object(&self) -> Option<ClassObject<'gc>> {
+    pub fn bound_superclass_object(&self) -> Option<ClassObject<'gc>> {
         self.bound_superclass_object
-    }
-
-    /// Get the class that defined the currently-executing method, if it exists.
-    pub fn bound_class(&self) -> Option<Class<'gc>> {
-        self.bound_class
     }
 
     pub fn run_actions(&mut self, method: Method<'gc>) -> Result<Value<'gc>, Error<'gc>> {
@@ -646,6 +625,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Dup => self.op_dup(),
                 Op::GetLocal { index } => self.op_get_local(*index),
                 Op::SetLocal { index } => self.op_set_local(*index),
+                Op::StoreLocal { index } => self.op_store_local(*index),
                 Op::Kill { index } => self.op_kill(*index),
                 Op::Call { num_args } => self.op_call(*num_args),
                 Op::CallMethod {
@@ -831,6 +811,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                     continue;
                 }
+                Op::PopJump { offset } => {
+                    self.timeout_check()?;
+
+                    let _ = self.pop_stack();
+                    ip = *offset;
+
+                    continue;
+                }
                 Op::LookupSwitch(lookup_switch) => {
                     self.timeout_check()?;
 
@@ -864,12 +852,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         method: Method<'gc>,
         ip: usize,
-        error: Error<'gc>,
+        original_error: Error<'gc>,
     ) -> Result<usize, Error<'gc>> {
-        let error = if let Some(error) = error.as_avm_error() {
+        let error = if let Some(error) = original_error.as_avm_error() {
             error
         } else {
-            return Err(error);
+            return Err(original_error);
         };
 
         let verified_info = method.get_verified_info();
@@ -889,7 +877,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 if matches {
                     #[cfg(feature = "avm_debug")]
-                    tracing::info!(target: "avm_caught", "Caught exception: {:?}", Error::avm_error(error));
+                    tracing::info!(target: "avm_caught", "Caught exception: {:?}", original_error);
 
                     self.reset_stack();
                     self.push_stack(error);
@@ -900,7 +888,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         }
 
-        Err(Error::avm_error(error))
+        Err(original_error)
     }
 
     #[inline(always)]
@@ -998,6 +986,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
+    fn op_store_local(&mut self, register_index: u32) -> Result<(), Error<'gc>> {
+        let value = self.stack.peek(0);
+
+        self.set_local_register(register_index, value);
+
+        Ok(())
+    }
+
     fn op_kill(&mut self, register_index: u32) -> Result<(), Error<'gc>> {
         self.set_local_register(register_index, Value::Undefined);
 
@@ -1005,11 +1001,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_call(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let receiver = self.pop_stack();
         let function = self.pop_stack();
 
-        let value = function.call(self, receiver, &args)?;
+        let value = function.call(self, receiver, args)?;
 
         self.push_stack(value);
 
@@ -1085,11 +1081,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
         let function = receiver.get_property(&multiname, self)?;
-        let value = function.call(self, Value::Null, &args)?;
+        let value = function.call(self, Value::Null, args)?;
 
         self.push_stack(value);
 
@@ -1111,12 +1107,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_call_static(&mut self, method: Method<'gc>, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(arg_count);
+        let args = self.stack.get_args(arg_count as usize);
         let receiver = self.pop_stack();
+
+        // Ensure receiver is of the correct type
+        let bound_class = method
+            .bound_class()
+            .expect("Verifier ensures callstatic methods are classbound");
+        let receiver = receiver.coerce_to_type(self, bound_class)?;
+
         // TODO: What scope should the function be executed with?
         let scope = self.create_scopechain();
-        let function = FunctionObject::from_method(self, method, scope, None, None, None);
-        let value = function.call(self, receiver, &args)?;
+
+        let function = FunctionObject::from_method(self.context, method, scope, None, None);
+        let value = function.call(self, receiver, args)?;
 
         self.push_stack(value);
 
@@ -1130,15 +1134,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<(), Error<'gc>> {
         let args = self.stack.get_args(arg_count as usize);
         let multiname = multiname.fill_with_runtime_params(self)?;
-        let receiver = self
-            .pop_stack()
-            .null_check(self, Some(&multiname))?
-            .as_object()
-            .expect("Super ops should not appear in primitive functions");
 
         let bound_superclass_object = self
             .bound_superclass_object()
             .expect("Expected a superclass when running callsuper");
+
+        // Ensure the receiver is of the correct type
+        let receiver = self
+            .pop_stack()
+            .coerce_to_type(self, bound_superclass_object.inner_class_definition())?;
+
+        let receiver = receiver
+            .null_check(self, Some(&multiname))?
+            .as_object()
+            .expect("Super ops should not appear in primitive functions");
 
         let value = bound_superclass_object.call_super(&multiname, receiver, args, self)?;
 
@@ -1203,13 +1212,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         if let Value::Object(object) = object_value {
             match name_value {
-                Value::Integer(name_int) if name_int >= 0 => {
-                    if let Some(value) = object.get_index_property(name_int as usize) {
-                        let _ = self.pop_stack();
-                        let _ = self.pop_stack();
-                        self.push_stack(value);
+                Value::Integer(_) | Value::Number(_) => {
+                    if let Some(index) = name_value.try_as_index() {
+                        if let Some(value) = object.get_index_property(index) {
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
+                            self.push_stack(value);
 
-                        return Ok(());
+                            return Ok(());
+                        }
                     }
                 }
                 Value::Object(name_object) => {
@@ -1276,14 +1287,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         if let Value::Object(object) = object_value {
             match name_value {
-                Value::Integer(name_int) if name_int >= 0 => {
-                    if let Some(result) = object.set_index_property(self, name_int as usize, value)
-                    {
-                        let _ = self.pop_stack();
-                        let _ = self.pop_stack();
-                        let _ = self.pop_stack();
+                Value::Integer(_) | Value::Number(_) => {
+                    if let Some(index) = name_value.try_as_index() {
+                        if let Some(result) = object.set_index_property(self, index, value) {
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
+                            let _ = self.pop_stack();
 
-                        return result;
+                            return result;
+                        }
                     }
                 }
                 Value::Object(name_object) => {
@@ -1370,11 +1382,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             if matches!(name_value, Value::Object(Object::XmlListObject(_))) {
                 // ECMA-357 11.3.1 The delete Operator
                 // If the type of the operand is XMLList, then a TypeError exception is thrown.
-                return Err(Error::avm_error(type_error(
-                    self,
-                    "Error #1119: Delete operator is not supported with operand of type XMLList.",
-                    1119,
-                )?));
+                return Err(make_error_1119(self));
             }
         }
         let multiname = multiname.fill_with_runtime_params(self)?;
@@ -1389,17 +1397,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_get_super(&mut self, multiname: Gc<'gc, Multiname<'gc>>) -> Result<(), Error<'gc>> {
         let multiname = multiname.fill_with_runtime_params(self)?;
-        let object = self
+
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running callsuper");
+
+        // Ensure the receiver is of the correct type
+        let receiver = self
             .pop_stack()
+            .coerce_to_type(self, bound_superclass_object.inner_class_definition())?;
+
+        let receiver = receiver
             .null_check(self, Some(&multiname))?
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self
-            .bound_superclass_object()
-            .expect("Expected a superclass when running getsuper");
-
-        let value = bound_superclass_object.get_super(&multiname, object, self)?;
+        let value = bound_superclass_object.get_super(&multiname, receiver, self)?;
 
         self.push_stack(value);
 
@@ -1409,17 +1422,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_set_super(&mut self, multiname: Gc<'gc, Multiname<'gc>>) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
         let multiname = multiname.fill_with_runtime_params(self)?;
-        let object = self
+
+        let bound_superclass_object = self
+            .bound_superclass_object()
+            .expect("Expected a superclass when running callsuper");
+
+        // Ensure the receiver is of the correct type
+        let receiver = self
             .pop_stack()
+            .coerce_to_type(self, bound_superclass_object.inner_class_definition())?;
+
+        let receiver = receiver
             .null_check(self, Some(&multiname))?
             .as_object()
             .expect("Super ops should not appear in primitive functions");
 
-        let bound_superclass_object = self
-            .bound_superclass_object()
-            .expect("Expected a superclass when running setsuper");
-
-        bound_superclass_object.set_super(&multiname, value, object, self)?;
+        bound_superclass_object.set_super(&multiname, value, receiver, self)?;
 
         Ok(())
     }
@@ -1478,7 +1496,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             ScriptObject::custom_object(self.gc(), *catch_class, None, catch_class.vtable())
         } else {
             // for `finally` scopes, FP just creates a normal object.
-            ScriptObject::new_object(self)
+            ScriptObject::new_object(self.context)
         };
 
         self.push_stack(so);
@@ -1584,18 +1602,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.push_stack(descendants);
         } else {
             // Even if it's an object with the "descendants" property, we won't support it.
-            let class_name = object
-                .instance_class(self)
-                .name()
-                .to_qualified_name_err_message(self.gc());
+            let class = object.instance_class(self);
 
-            return Err(Error::avm_error(type_error(
-                self,
-                &format!(
-                    "Error #1016: Descendants operator (..) not supported on type {class_name}",
-                ),
-                1016,
-            )?));
+            return Err(make_error_1016(self, class));
         }
 
         Ok(())
@@ -1677,8 +1686,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let multiname = multiname.fill_with_runtime_params(self)?;
         let source = self.pop_stack().null_check(self, Some(&multiname))?;
 
-        let ctor = source.get_property(&multiname, self)?;
-        let constructed_object = ctor.construct(self, args)?;
+        let constructed_object = source.construct_prop(self, &multiname, args)?;
 
         self.push_stack(constructed_object);
 
@@ -1727,7 +1735,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_object(&mut self, num_args: u32) -> Result<(), Error<'gc>> {
-        let object = ScriptObject::new_object(self);
+        let object = ScriptObject::new_object(self.context);
 
         for _ in 0..num_args {
             let value = self.pop_stack();
@@ -1744,7 +1752,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_new_function(&mut self, method: Method<'gc>) -> Result<(), Error<'gc>> {
         let scope = self.create_scopechain();
 
-        let new_fn = FunctionObject::from_method(self, method, scope, None, None, None);
+        let new_fn = FunctionObject::from_method(self.context, method, scope, None, None);
 
         self.push_stack(new_fn);
 
@@ -1787,11 +1795,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if base_class.is_none() && class.super_class().is_some() {
             return Err(make_null_or_undefined_error(self, Value::Null, None));
         } else if base_class.map(|c| c.inner_class_definition()) != class.super_class() {
-            return Err(Error::avm_error(verify_error(
-                self,
-                "Error #1108: The OP_newclass opcode was used with the incorrect base class.",
-                1108,
-            )?));
+            return Err(make_error_1108(self));
         }
 
         // Finally, actually construct the ClassObject
@@ -1819,7 +1823,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_new_array(&mut self, num_args: u32) -> Result<(), Error<'gc>> {
         let args = self.pop_stack_args(num_args);
         let array = ArrayStorage::from_args(&args[..]);
-        let array_obj = ArrayObject::from_storage(self, array);
+        let array_obj = ArrayObject::from_storage(self.context, array);
 
         self.push_stack(array_obj);
 
@@ -1936,13 +1940,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if value.is_of_type(xml) || value.is_of_type(xml_list) {
             self.push_stack(value);
         } else {
-            let class_name = value.instance_of_class_name(self);
+            let class = value.instance_class(self);
 
-            return Err(Error::avm_error(type_error(
-                self,
-                &format!("Error #1123: Filter operator not supported on type {class_name}."),
-                1123,
-            )?));
+            return Err(make_error_1123(self, class));
         }
         Ok(())
     }
@@ -2139,9 +2139,21 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_multiply(&mut self) -> Result<(), Error<'gc>> {
-        let value2 = self.pop_stack().coerce_to_number(self)?;
-        let value1 = self.pop_stack().coerce_to_number(self)?;
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
 
+        // note: this exists only to preserve int*int -> int behavior
+        // to help int-indexing.
+        // Once we get a generic implicit double->int conversion,
+        // we can reevaluate whether this path is needed.
+        if let (Value::Integer(n1), Value::Integer(n2)) = (value1, value2) {
+            if let Some(result) = n1.checked_mul(n2) {
+                self.push_stack(result);
+                return Ok(());
+            }
+        }
+        let value2 = value2.coerce_to_number(self)?;
+        let value1 = value1.coerce_to_number(self)?;
         self.push_stack(value1 * value2);
 
         Ok(())
@@ -2447,11 +2459,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .as_object()
             .and_then(|o| o.as_class_object())
         else {
-            return Err(Error::avm_error(type_error(
-                self,
-                "Error #1041: The right-hand side of operator must be a class.",
-                1041,
-            )?));
+            return Err(make_error_1041(self));
         };
         let value = self.pop_stack();
 
@@ -2482,12 +2490,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         if let Some(class) = class.as_object() {
             let Some(class) = class.as_class_object() else {
-                return Err(Error::avm_error(type_error(
-                    self,
-                    "Error #1041: The right-hand side of operator must be a class.",
-                    1041,
-                )?));
+                return Err(make_error_1041(self));
             };
+
             let value = self.pop_stack();
 
             if value.is_of_type(class.inner_class_definition()) {
@@ -2505,19 +2510,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_instance_of(&mut self) -> Result<(), Error<'gc>> {
         let Some(type_object) = self.pop_stack().as_object() else {
-            return Err(Error::avm_error(type_error(
-                self,
-                "Error #1040: The right-hand side of instanceof must be a class or function.",
-                1040,
-            )?));
+            return Err(make_error_1040(self));
         };
 
         if type_object.as_class_object().is_none() && type_object.as_function_object().is_none() {
-            return Err(Error::avm_error(type_error(
-                self,
-                "Error #1040: The right-hand side of instanceof must be a class or function.",
-                1040,
-            )?));
+            return Err(make_error_1040(self));
         };
 
         let value = self.pop_stack();
@@ -2922,6 +2919,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_throw(&mut self) -> Result<(), Error<'gc>> {
         let error_val = self.pop_stack();
-        Err(Error::avm_error(error_val))
+        Err(Error::from_value(self, error_val))
     }
 }

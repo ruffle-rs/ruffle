@@ -7,6 +7,6 @@ context-menu-quality-medium = الجودة: متوسطة
 context-menu-quality-high = الجودة: عالية
 context-menu-cut = قص
 context-menu-copy = انسخ
-context-menu-paste = الصق
+context-menu-paste = ألصق
 context-menu-delete = احذف
 context-menu-select-all = حدِّد الكل

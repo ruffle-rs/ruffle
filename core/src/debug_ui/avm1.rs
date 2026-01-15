@@ -1,9 +1,9 @@
 use crate::avm1::globals::style_sheet::StyleSheetObject;
 use crate::avm1::{Activation, ActivationIdentifier, Error, NativeObject, Object, Value};
 use crate::context::UpdateContext;
+use crate::debug_ui::Message;
 use crate::debug_ui::display_object::open_display_object_button;
 use crate::debug_ui::handle::{AVM1ObjectHandle, DisplayObjectHandle};
-use crate::debug_ui::Message;
 use crate::string::AvmString;
 use egui::{Grid, Id, TextBuffer, TextEdit, Ui, Window};
 use gc_arena::Mutation;
@@ -102,10 +102,10 @@ impl Avm1ObjectWindow {
                     let value = object.get(key, activation);
 
                     ui.label(key.to_string());
-                    if let Some(new) = self.show_avm1_value(ui, activation, &key, value, messages) {
-                        if let Err(e) = object.set(key, new, activation) {
-                            tracing::error!("Failed to set key {key}: {e}");
-                        }
+                    if let Some(new) = self.show_avm1_value(ui, activation, key, value, messages)
+                        && let Err(e) = object.set(key, new, activation)
+                    {
+                        tracing::error!("Failed to set key {key}: {e}");
                     }
                     ui.end_row();
                 }
@@ -119,7 +119,7 @@ impl Avm1ObjectWindow {
         &mut self,
         ui: &mut Ui,
         activation: &mut Activation<'_, 'gc>,
-        key: &AvmString,
+        key: AvmString,
         value: Result<Value<'gc>, Error<'gc>>,
         messages: &mut Vec<Message>,
     ) -> Option<Value<'gc>> {
@@ -145,7 +145,7 @@ impl Avm1ObjectWindow {
                         };
                     }
                     Value::Object(value) => {
-                        if value.as_executable().is_some() {
+                        if value.as_function().is_some() {
                             ui.label("Function");
                         } else if ui.button(object_name(value)).clicked() {
                             messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
@@ -180,7 +180,7 @@ impl Avm1ObjectWindow {
         None
     }
 
-    fn num_edit_ui(&mut self, ui: &mut Ui, key: &AvmString, num: f64) -> Option<f64> {
+    fn num_edit_ui(&mut self, ui: &mut Ui, key: AvmString, num: f64) -> Option<f64> {
         let mut new_val = None;
         if self
             .edited_key
@@ -226,12 +226,7 @@ impl Avm1ObjectWindow {
         new_val
     }
 
-    fn string_edit_ui(
-        &mut self,
-        ui: &mut Ui,
-        key: &AvmString,
-        string: AvmString,
-    ) -> Option<String> {
+    fn string_edit_ui(&mut self, ui: &mut Ui, key: AvmString, string: AvmString) -> Option<String> {
         let mut new_val = None;
         ui.horizontal(|ui| {
             if self
@@ -315,11 +310,11 @@ fn show_value_type_combo_box<'gc>(
             // so just disable the selectable labels to prevent setting to these types.
             ui.add_enabled(
                 false,
-                egui::SelectableLabel::new(matches!(value, Value::Object(_)), "Object"),
+                egui::Button::selectable(matches!(value, Value::Object(_)), "Object"),
             );
             ui.add_enabled(
                 false,
-                egui::SelectableLabel::new(matches!(value, Value::MovieClip(_)), "MovieClip"),
+                egui::Button::selectable(matches!(value, Value::MovieClip(_)), "MovieClip"),
             );
         });
     new
@@ -362,7 +357,7 @@ impl UiExt for egui::Ui {
 fn object_name(object: Object) -> String {
     // TODO: Find a way to give more meaningful names here.
     // Matching __proto__ to a constant and taking the constants name works, but is super expensive
-    if object.as_executable().is_some() {
+    if object.as_function().is_some() {
         format!("Function {:p}", object.as_ptr())
     } else if let NativeObject::Array(_) = object.native() {
         format!("Array {:p}", object.as_ptr())

@@ -1,20 +1,21 @@
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 pub use crate::avm2::object::error_allocator;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::PlayerMode;
+use crate::{PlayerMode, avm2_stub_method};
 
-pub fn call_handler<'gc>(
+pub fn get_error_message<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    activation
-        .avm2()
-        .classes()
-        .error
-        .construct(activation, args)
+    avm2_stub_method!(activation, "Error", "getErrorMessage");
+
+    let id = args.get_i32(0);
+    let message = format!("Error #{id}");
+    Ok(AvmString::new_utf8(activation.gc(), message).into())
 }
 
 pub fn get_stack_trace<'gc>(

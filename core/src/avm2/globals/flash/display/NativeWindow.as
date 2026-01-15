@@ -1,14 +1,15 @@
 package flash.display {
+    import __ruffle__.stub_method;
+    import __ruffle__.stub_getter;
+    import __ruffle__.stub_setter;
+    import __ruffle__.stub_constructor;
+
     import flash.geom.Point;
     import flash.geom.Rectangle;
     import flash.events.NativeWindowBoundsEvent;
     import flash.events.Event;
     import flash.events.EventDispatcher;
     import flash.desktop.NativeApplication;
-    import __ruffle__.stub_method;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-    import __ruffle__.stub_constructor;
 
     [API("661")]
     public class NativeWindow extends EventDispatcher {
@@ -30,6 +31,8 @@ package flash.display {
         private var _closed:Boolean = false;
         private var _stage:Stage;
 
+        // TODO: FP does not have the `_stage` parameter, we should be constructing
+        // the NativeWindow as a native object
         public function NativeWindow(initOptions:NativeWindowInitOptions, _stage:Stage = null) {
             stub_constructor("flash.display.NativeWindow");
             NativeApplication.nativeApplication.openedWindows.push(this);

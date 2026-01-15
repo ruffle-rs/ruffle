@@ -2,14 +2,14 @@
 
 use ruffle_macros::istr;
 
+use crate::avm2::Error;
+use crate::avm2::Namespace;
 use crate::avm2::activation::Activation;
 use crate::avm2::e4x::is_xml_name;
 use crate::avm2::error::make_error_1098;
 use crate::avm2::object::{NamespaceObject, Object};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::Namespace;
 
 /// Implements a custom constructor for `Namespace`.
 pub fn namespace_constructor<'gc>(
@@ -64,7 +64,7 @@ pub fn namespace_constructor<'gc>(
             };
             // The only allowed prefix if the uri is empty is the literal empty string
             if namespace_uri.is_empty() && !resulting_prefix.is_some_and(|s| s.is_empty()) {
-                return Err(make_error_1098(activation, &prefix_str));
+                return Err(make_error_1098(activation, prefix_str));
             }
             if !prefix_str.is_empty() && !is_xml_name(prefix_str) {
                 resulting_prefix = None;
@@ -74,18 +74,6 @@ pub fn namespace_constructor<'gc>(
     };
 
     Ok(NamespaceObject::from_ns_and_prefix(activation, namespace, prefix).into())
-}
-
-pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation
-        .avm2()
-        .classes()
-        .namespace
-        .construct(activation, args)
 }
 
 /// Implements `Namespace.prefix`'s getter

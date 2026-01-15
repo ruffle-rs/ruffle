@@ -1,0 +1,32 @@
+1. Click the mouse anywhere!
+_level0.clip2.onMouseDown
+PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
+_level0.clip1.onMouseDown
+PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
+_global.onMouseDown
+PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
+_level0.Dejagnu.instance1.onMouseDown
+PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
+_level0.Dejagnu.onMouseDown
+PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
+FAILED: expected: 4 obtained: 5 [./PrototypeEventListeners.as:66]
+2. Click the mouse anywhere!
+_level0.clip2.onMouseDown
+PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
+_global.onMouseDown
+PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
+_level0.Dejagnu.instance1.onMouseDown
+PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
+_level0.Dejagnu.onMouseDown
+PASSED: typeof(this) == "movieclip" [./PrototypeEventListeners.as:24]
+FAILED: expected: 3 obtained: 4 [./PrototypeEventListeners.as:80]
+3. Press a key!
+PASSED: countMC == 0 [./PrototypeEventListeners.as:111]
+PASSED: countOtherFunctions == 0 [./PrototypeEventListeners.as:112]
+FAILED: Tests run 13 (expected 11) [ [./PrototypeEventListeners.as:120]]
+#passed: 11
+#failed: 3
+#total tests run: 14
+END OF TEST
+_global.onKeyDown
+movieclip

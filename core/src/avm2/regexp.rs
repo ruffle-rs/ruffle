@@ -3,10 +3,12 @@
 use std::borrow::Cow;
 use std::num::NonZero;
 
-use crate::avm2::activation::Activation;
-use crate::avm2::object::FunctionObject;
 use crate::avm2::Error;
+use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
+use crate::avm2::object::FunctionObject;
 use crate::avm2::{ArrayObject, ArrayStorage, Value};
+use crate::context::UpdateContext;
 use crate::string::WString;
 use crate::string::{AvmString, Units, WStrToUtf8};
 use bitflags::bitflags;
@@ -155,7 +157,7 @@ impl<'gc> RegExp<'gc> {
     /// in `replacement`.
     fn effective_replacement<'a>(
         replacement: &'a AvmString<'gc>,
-        text: &AvmString<'gc>,
+        text: AvmString<'gc>,
         m: &regress::Match,
     ) -> Cow<'a, WStr> {
         if !replacement.contains(b'$') {
@@ -227,19 +229,21 @@ impl<'gc> RegExp<'gc> {
         regexp: RegExpObject<'gc>,
         activation: &mut Activation<'_, 'gc>,
         text: AvmString<'gc>,
-        f: &FunctionObject<'gc>,
+        f: FunctionObject<'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        Self::replace_with_fn(regexp, activation, &text, |activation, txt, m| {
+        Self::replace_with_fn(regexp, activation, text, |activation, txt, m| {
             let args = std::iter::once(Some(&m.range))
                 .chain((m.captures.iter()).map(|x| x.as_ref()))
                 .map(|o| match o {
-                    Some(r) => activation.strings().substring(*txt, r.clone()).into(),
+                    Some(r) => activation.strings().substring(txt, r.clone()).into(),
                     None => istr!("").into(),
                 })
                 .chain(std::iter::once(m.range.start.into()))
-                .chain(std::iter::once((*txt).into()))
+                .chain(std::iter::once(txt.into()))
                 .collect::<Vec<_>>();
-            let r = f.call(activation, Value::Null, &args)?;
+
+            let args = FunctionArgs::from_slice(&args);
+            let r = f.call(activation, Value::Null, args)?;
             return Ok(Cow::Owned(WString::from(
                 r.coerce_to_string(activation)?.as_wstr(),
             )));
@@ -254,7 +258,7 @@ impl<'gc> RegExp<'gc> {
         text: AvmString<'gc>,
         replacement: AvmString<'gc>,
     ) -> Result<AvmString<'gc>, Error<'gc>> {
-        RegExp::replace_with_fn(regexp, activation, &text, |_activation, txt, m| {
+        RegExp::replace_with_fn(regexp, activation, text, |_activation, txt, m| {
             Ok(Self::effective_replacement(&replacement, txt, m))
         })
     }
@@ -266,13 +270,13 @@ impl<'gc> RegExp<'gc> {
     fn replace_with_fn<'a, F>(
         regexp: RegExpObject<'gc>,
         activation: &mut Activation<'_, 'gc>,
-        text: &AvmString<'gc>,
+        text: AvmString<'gc>,
         mut f: F,
     ) -> Result<AvmString<'gc>, Error<'gc>>
     where
         F: FnMut(
             &mut Activation<'_, 'gc>,
-            &AvmString<'gc>,
+            AvmString<'gc>,
             &regress::Match,
         ) -> Result<Cow<'a, WStr>, Error<'gc>>,
     {
@@ -285,11 +289,11 @@ impl<'gc> RegExp<'gc> {
             let mut re = regexp.regexp_mut(activation.gc());
             let global_flag = re.flags().contains(RegExpFlags::GLOBAL);
 
-            (global_flag, re.find_utf16_match(*text, start))
+            (global_flag, re.find_utf16_match(text, start))
         };
         if m.is_none() {
             // Nothing to do; short circuit and just return the original string, to avoid any allocs or functions
-            return Ok(*text);
+            return Ok(text);
         }
 
         let mut ret = WString::new();
@@ -315,7 +319,7 @@ impl<'gc> RegExp<'gc> {
             // when we call f we don't have a lock
             m = regexp
                 .regexp_mut(activation.gc())
-                .find_utf16_match(*text, start);
+                .find_utf16_match(text, start);
         }
 
         ret.push_str(&text[start..]);
@@ -324,7 +328,7 @@ impl<'gc> RegExp<'gc> {
 
     pub fn split(
         &mut self,
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         text: AvmString<'gc>,
         limit: NonZero<usize>,
     ) -> ArrayObject<'gc> {
@@ -336,10 +340,10 @@ impl<'gc> RegExp<'gc> {
                 .chars()
                 .take(limit)
                 .map_while(|c| c.ok())
-                .map(|c| AvmString::new(activation.gc(), WString::from_char(c)))
+                .map(|c| AvmString::new(context.gc(), WString::from_char(c)))
                 .collect();
 
-            return ArrayObject::from_storage(activation, storage);
+            return ArrayObject::from_storage(context, storage);
         }
 
         let mut storage = ArrayStorage::new(0);
@@ -349,20 +353,16 @@ impl<'gc> RegExp<'gc> {
             if m.range.end == start {
                 break;
             }
-            storage.push(
-                activation
-                    .strings()
-                    .substring(text, start..m.range.start)
-                    .into(),
-            );
+            storage.push(context.strings.substring(text, start..m.range.start).into());
             if storage.length() >= limit {
                 break;
             }
             for c in m.captures.iter().filter_map(Option::as_ref) {
-                storage.push(activation.strings().substring(text, c.clone()).into());
+                storage.push(context.strings.substring(text, c.clone()).into());
                 if storage.length() >= limit {
-                    break; // Intentional bug to match Flash.
-                           // Causes adding parts past limit.
+                    // Intentional bug to match Flash.
+                    // Causes adding parts past limit.
+                    break;
                 }
             }
 
@@ -370,10 +370,10 @@ impl<'gc> RegExp<'gc> {
         }
 
         if storage.length() < limit {
-            storage.push(AvmString::new(activation.gc(), &text[start..]).into());
+            storage.push(AvmString::new(context.gc(), &text[start..]).into());
         }
 
-        ArrayObject::from_storage(activation, storage)
+        ArrayObject::from_storage(context, storage)
     }
 
     pub fn find_utf16_match(

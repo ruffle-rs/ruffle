@@ -1,5 +1,4 @@
 package flash.display {
-
     import __ruffle__.stub_method;
 
     import flash.accessibility.AccessibilityProperties;
@@ -16,8 +15,6 @@ package flash.display {
     [Ruffle(Abstract)]
     public class DisplayObject extends EventDispatcher implements IBitmapDrawable {
         private var _accessibilityProperties:AccessibilityProperties;
-
-        public native function DisplayObject();
 
         public function get accessibilityProperties():AccessibilityProperties {
             return this._accessibilityProperties;
@@ -149,5 +146,4 @@ package flash.display {
         [API("662")]
         public native function set blendShader(value:Shader):void;
     }
-
 }

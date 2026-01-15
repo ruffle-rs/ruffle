@@ -1,0 +1,9 @@
+num_frames = 30
+known_failure = true
+
+[image_comparisons.output]
+known_failure = true
+tolerance = 50
+
+[player_options]
+with_renderer = { optional = true, sample_count = 1 }

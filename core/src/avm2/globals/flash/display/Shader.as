@@ -3,6 +3,7 @@ package flash.display {
     import __ruffle__.stub_setter;
     import flash.utils.ByteArray;
 
+    [API("662")]
     public class Shader {
         [Ruffle(NativeAccessible)]
         private var _data:ShaderData;
@@ -38,4 +39,3 @@ package flash.display {
         }
     }
 }
-

@@ -12,6 +12,7 @@ describe("Object tag", () => {
 
     it("polyfills with ruffle", async () => {
         await injectRuffleAndWait(browser);
+        await browser.$("<ruffle-embed />").waitForExist();
         const actual = await browser
             .$("#test-container")
             .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
@@ -26,31 +27,32 @@ describe("Object tag", () => {
         await playAndMonitor(
             browser,
             await browser.$("#test-container").$("<ruffle-embed />"),
-            `// _level0.a
-1
-
-// typeof(a)
-string
-
-// _level0.b
-3 %3
-
-// typeof(b)
-string
-
-// _level0.c
-
-
-// typeof(c)
-string
-
-// _level0.d
-undefined
-
-// typeof(d)
-undefined
-
-`,
+            [
+                "// _level0.a",
+                "1",
+                "",
+                "// typeof(a)",
+                "string",
+                "",
+                "// _level0.b",
+                "3 %3",
+                "",
+                "// typeof(b)",
+                "string",
+                "",
+                "// _level0.c",
+                "",
+                "",
+                "// typeof(c)",
+                "string",
+                "",
+                "// _level0.d",
+                "undefined",
+                "",
+                "// typeof(d)",
+                "undefined",
+                "",
+            ],
         );
     });
 });

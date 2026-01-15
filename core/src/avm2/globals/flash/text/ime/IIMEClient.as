@@ -10,7 +10,12 @@ package flash.text.ime {
 
         function selectRange(anchorIndex:int, activeIndex:int):void;
 
-        function updateComposition(text:String, attributes:Vector.<CompositionAttributeRange>, compositionStartIndex:int, compositionEndIndex:int):void;
+        function updateComposition(
+            text:String,
+            attributes:Vector.<CompositionAttributeRange>,
+            compositionStartIndex:int,
+            compositionEndIndex:int
+        ):void;
 
         function get compositionStartIndex():int;
         function get compositionEndIndex():int;

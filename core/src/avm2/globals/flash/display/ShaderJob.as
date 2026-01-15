@@ -2,8 +2,10 @@ package flash.display {
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_constructor;
+
     import flash.events.EventDispatcher;
 
+    [API("662")]
     public class ShaderJob extends EventDispatcher {
         [Ruffle(NativeAccessible)]
         private var _shader:Shader;

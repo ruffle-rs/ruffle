@@ -191,7 +191,7 @@ impl Turbulence {
         octave_offsets: &[(f64, f64)],
     ) -> f64 {
         let mut stitch_info: Option<StitchInfo> = None; // Not stitching when None.
-                                                        // Adjust the base frequencies if necessary for stitching.
+        // Adjust the base frequencies if necessary for stitching.
         if do_stitching {
             // When stitching tiled turbulence, the frequencies must be adjusted
             // so that the tile borders will be continuous.

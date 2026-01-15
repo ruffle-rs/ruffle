@@ -1,0 +1,34 @@
+[
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "p"
+    }
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "p"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": "Space"
+  },
+  {
+    "type": "KeyUp",
+    "key": "Space"
+  }
+]

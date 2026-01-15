@@ -1,13 +1,14 @@
 //! `JSON` impl
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::array::ArrayStorage;
-use crate::avm2::error::{make_error_1132, type_error};
+use crate::avm2::error::{make_error_1129, make_error_1131, make_error_1132};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::ArrayIter;
 use crate::avm2::object::{ArrayObject, FunctionObject, Object, ScriptObject, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, Units};
 use ruffle_macros::istr;
@@ -34,14 +35,19 @@ fn deserialize_json_inner<'gc>(
             }
         }
         JsonValue::Object(js_obj) => {
-            let obj = ScriptObject::new_object(activation);
+            let obj = ScriptObject::new_object(activation.context);
             for entry in js_obj.iter() {
                 let key = AvmString::new_utf8(activation.gc(), entry.0);
                 let val = deserialize_json_inner(activation, entry.1.clone(), reviver)?;
+                let args = &[key.into(), val];
+
                 let mapped_val = match reviver {
                     None => val,
-                    Some(reviver) => reviver.call(activation, Value::Null, &[key.into(), val])?,
+                    Some(reviver) => {
+                        reviver.call(activation, Value::Null, FunctionArgs::from_slice(args))?
+                    }
                 };
+
                 if matches!(mapped_val, Value::Undefined) {
                     obj.delete_dynamic_property(key, activation.gc());
                 } else {
@@ -51,17 +57,23 @@ fn deserialize_json_inner<'gc>(
             obj.into()
         }
         JsonValue::Array(js_arr) => {
-            let mut arr: Vec<Option<Value<'gc>>> = Vec::with_capacity(js_arr.len());
-            for (key, val) in js_arr.iter().enumerate() {
-                let val = deserialize_json_inner(activation, val.clone(), reviver)?;
-                let mapped_val = match reviver {
-                    None => val,
-                    Some(reviver) => reviver.call(activation, Value::Null, &[key.into(), val])?,
-                };
-                arr.push(Some(mapped_val));
-            }
-            let storage = ArrayStorage::from_storage(arr);
-            let array = ArrayObject::from_storage(activation, storage);
+            let storage = js_arr
+                .iter()
+                .enumerate()
+                .map(|(key, val)| {
+                    let val = deserialize_json_inner(activation, val.clone(), reviver)?;
+                    let args = &[key.into(), val];
+
+                    match reviver {
+                        None => Ok(val),
+                        Some(reviver) => {
+                            reviver.call(activation, Value::Null, FunctionArgs::from_slice(args))
+                        }
+                    }
+                })
+                .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
+
+            let array = ArrayObject::from_storage(activation.context, storage);
             array.into()
         }
     })
@@ -76,8 +88,8 @@ fn deserialize_json<'gc>(
     match reviver {
         None => Ok(val),
         Some(reviver) => {
-            let args = [istr!("").into(), val];
-            reviver.call(activation, Value::Null, &args)
+            let args = &[istr!("").into(), val];
+            reviver.call(activation, Value::Null, FunctionArgs::from_slice(args))
         }
     }
 }
@@ -121,9 +133,14 @@ impl<'gc> AvmSerializer<'gc> {
         let (eval_key, value) = if value.as_object().is_some() {
             if value.has_public_property(istr!("toJSON"), activation) {
                 let key = key();
+                let args = &[key.into()];
                 (
                     Some(key),
-                    value.call_public_property(istr!("toJSON"), &[key.into()], activation)?,
+                    value.call_public_property(
+                        istr!("toJSON"),
+                        FunctionArgs::from_slice(args),
+                        activation,
+                    )?,
                 )
             } else {
                 (None, value)
@@ -133,11 +150,8 @@ impl<'gc> AvmSerializer<'gc> {
         };
 
         if let Some(Replacer::Function(replacer)) = self.replacer {
-            replacer.call(
-                activation,
-                Value::Null,
-                &[eval_key.unwrap_or_else(key).into(), value],
-            )
+            let args = &[eval_key.unwrap_or_else(key).into(), value];
+            replacer.call(activation, Value::Null, FunctionArgs::from_slice(args))
         } else {
             Ok(value)
         }
@@ -216,7 +230,7 @@ impl<'gc> AvmSerializer<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Value<'gc>,
     ) -> Result<JsonValue, Error<'gc>> {
-        Ok(match value {
+        Ok(match value.normalize() {
             Value::Null => JsonValue::Null,
             Value::Undefined => JsonValue::Null,
             Value::Integer(i) => JsonValue::from(i),
@@ -225,15 +239,10 @@ impl<'gc> AvmSerializer<'gc> {
             Value::String(s) => JsonValue::from(s.to_utf8_lossy().deref()),
             Value::Object(obj) => {
                 if self.obj_stack.contains(&obj) {
-                    return Err(Error::avm_error(type_error(
-                        activation,
-                        "Error #1129: Cyclic structure cannot be converted to JSON string.",
-                        1129,
-                    )?));
+                    return Err(make_error_1129(activation));
                 }
                 self.obj_stack.push(obj);
-                let value = if obj.is_of_type(activation.avm2().class_defs().array) {
-                    // TODO: Vectors
+                let value = if obj.as_array_object().is_some() || obj.as_vector_object().is_some() {
                     self.serialize_iterable(activation, obj)?
                 } else {
                     self.serialize_object(activation, obj)?
@@ -268,10 +277,7 @@ pub fn parse<'gc>(
         return Err(make_error_1132(activation));
     };
 
-    let reviver = args
-        .get_value(1)
-        .as_object()
-        .map(|o| o.as_function_object().unwrap());
+    let reviver = args.try_get_function(1);
 
     let parsed = if let Ok(parsed) = serde_json::from_str(&input.to_utf8_lossy()) {
         parsed
@@ -294,26 +300,20 @@ pub fn stringify<'gc>(
 
     // If the replacer is None, that means it was either undefined or null.
     if replacer.is_none() && !matches!(args.get_value(1), Value::Null) {
-        return Err(Error::avm_error(type_error(
-            activation,
-            "Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.",
-            1131,
-        )?));
+        return Err(make_error_1131(activation));
     }
 
-    let replacer = replacer.map(|replacer| {
-        if let Some(func) = replacer.as_function_object() {
-            Ok(Replacer::Function(func))
-        } else if let Some(arr) = replacer.as_array_object() {
-            Ok(Replacer::PropList(arr))
-        } else {
-            Err(Error::avm_error(type_error(
-                activation,
-                "Error #1131: Replacer argument to JSON stringifier must be an array or a two parameter function.",
-                1131,
-            )?))
-        }
-    }).transpose()?;
+    let replacer = replacer
+        .map(|replacer| {
+            if let Some(func) = replacer.as_function_object() {
+                Ok(Replacer::Function(func))
+            } else if let Some(arr) = replacer.as_array_object() {
+                Ok(Replacer::PropList(arr))
+            } else {
+                Err(make_error_1131(activation))
+            }
+        })
+        .transpose()?;
 
     // NOTE: We do not coerce to a string or to a number, the value must already be a string or number.
     let indent = if let Value::String(s) = &spaces {

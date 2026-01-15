@@ -6,7 +6,11 @@ package flash.text.engine {
         private var _optimumSpacing:Number = 1.0;
         private var _maximumSpacing:Number = 1.5;
 
-        public function SpaceJustifier(locale:String = "en", lineJustification:String = "unjustified", letterSpacing:Boolean = false) {
+        public function SpaceJustifier(
+            locale:String = "en",
+            lineJustification:String = "unjustified",
+            letterSpacing:Boolean = false
+        ) {
             super(locale, lineJustification);
             this._letterSpacing = letterSpacing;
         }
@@ -41,6 +45,14 @@ package flash.text.engine {
 
         public function set optimumSpacing(value:Number):void {
             this._optimumSpacing = value;
+        }
+
+        override public function clone():TextJustifier {
+            var copy = new SpaceJustifier(this.locale, this.lineJustification, this.letterSpacing);
+            copy.minimumSpacing = this.minimumSpacing;
+            copy.maximumSpacing = this.maximumSpacing;
+            copy.optimumSpacing = this.optimumSpacing;
+            return copy;
         }
     }
 }

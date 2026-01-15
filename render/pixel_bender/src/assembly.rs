@@ -3,8 +3,8 @@ use std::{collections::HashMap, fmt::Display, io::Write, sync::LazyLock};
 use byteorder::{BigEndian, LittleEndian, WriteBytesExt};
 use num_traits::Num;
 use pest::{
-    iterators::{Pair, Pairs},
     Parser,
+    iterators::{Pair, Pairs},
 };
 use pest_derive::Parser;
 use thiserror::Error;
@@ -619,12 +619,13 @@ impl<'a> PixelBenderShaderAssembly<'a> {
             ));
         }
 
-        if let RegisterType::Destination { extra_size } = reg_type {
-            if size.is_matrix() && size != extra_size {
-                return Err(PbasmError::BadMatrixDstRegister(PbasmErrorLocation::from(
-                    line_col,
-                )));
-            }
+        if let RegisterType::Destination { extra_size } = reg_type
+            && size.is_matrix()
+            && size != extra_size
+        {
+            return Err(PbasmError::BadMatrixDstRegister(PbasmErrorLocation::from(
+                line_col,
+            )));
         }
 
         let mut channels_sorted = channels.clone();
@@ -738,14 +739,14 @@ impl<'a> PixelBenderShaderAssembly<'a> {
         assert!(pairs.next().is_none(), "Expected only one inner rule");
         let inner = inner.expect("Expected some inner rule");
 
-        if let Some(expected_inner) = expected_inner {
-            if inner.as_rule() != expected_inner {
-                return Err(PbasmError::WrongArgument(
-                    PbasmErrorLocation::from(inner.line_col()),
-                    inner.as_rule(),
-                    expected_inner,
-                ));
-            }
+        if let Some(expected_inner) = expected_inner
+            && inner.as_rule() != expected_inner
+        {
+            return Err(PbasmError::WrongArgument(
+                PbasmErrorLocation::from(inner.line_col()),
+                inner.as_rule(),
+                expected_inner,
+            ));
         }
 
         Ok(inner)

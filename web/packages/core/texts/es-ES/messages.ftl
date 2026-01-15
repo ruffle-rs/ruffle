@@ -1,14 +1,17 @@
 message-cant-embed =
     Ruffle no pudo ejecutar el Flash incrustado en esta página.
     Puedes intentar abrir el archivo en una pestaña aparte, para evitar este problema.
+message-restored-from-bfcache =
+    Su navegador ha recuperado este contenido Flash de una sesión anterior.
+    Para empezar de cero, refresque la página.
 panic-title = Algo salió mal :(
 more-info = Más info
 run-anyway = Ejecutar de todos modos
 continue = Continuar
-report-bug = Reportar un Error
+report-bug = Reportar un error
 update-ruffle = Actualizar Ruffle
 ruffle-demo = Demostración de web
-ruffle-desktop = Aplicación de Desktop
+ruffle-desktop = Aplicación de desktop
 ruffle-wiki = Ver la página wiki
 enable-hardware-acceleration = Al parecer, la aceleración de hardware está deshabilitada. Puede que Ruffle funcione, pero este podría funcionar muy lentamente. Puedes averiguar como habilitar aceleración de hardware presionando el enlace:
 enable-hardware-acceleration-link = Preguntas frecuentes sobre la aceleración de hardware en Chrome

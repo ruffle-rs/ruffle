@@ -5,8 +5,7 @@ package flash.net {
 
     [Ruffle(InstanceAllocator)]
     public class FileReference extends EventDispatcher {
-        public function FileReference() {
-        }
+        public function FileReference() {}
 
         public native function get creationDate():Date;
 
@@ -50,9 +49,37 @@ package flash.net {
             stub_method("flash.net.FileReference", "requestPermission");
         }
 
-        public native function save(data:*, defaultFileName:String = null):void;
+        public function save(data:*, defaultFileName:String = null):void {
+            if (data == null) {
+                // Yes, this is the error that Flash throws
+                throw new ArgumentError("data");
+            }
 
-        public function upload(request:URLRequest, uploadDataFieldName:String = "Filedata", testUpload:Boolean = false):void {
+            // Convert the data to a ByteArray
+            var byteArray:ByteArray = new ByteArray();
+            if (data is ByteArray) {
+                byteArray.writeBytes(data);
+            } else if (data is XML) {
+                byteArray.writeUTFBytes(data.toXMLString());
+            } else {
+                byteArray.writeUTFBytes(data);
+            }
+
+            if (defaultFileName == null) {
+                defaultFileName = "";
+            }
+
+            this.saveInternal(byteArray, defaultFileName);
+        }
+
+        // NOTE: The bytearray passed to this function will be cleared
+        private native function saveInternal(data:ByteArray, defaultFileName:String):void;
+
+        public function upload(
+            request:URLRequest,
+            uploadDataFieldName:String = "Filedata",
+            testUpload:Boolean = false
+        ):void {
             stub_method("flash.net.FileReference", "upload");
         }
 

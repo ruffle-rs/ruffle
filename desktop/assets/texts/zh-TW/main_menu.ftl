@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = 檔案
-file-menu-open-quick = 開啟...
 file-menu-open-advanced = 進階開啟...
 file-menu-close = 關閉
 file-menu-reload = 重新載入
@@ -17,6 +16,7 @@ file-menu-recents = 最近
 file-menu-recents-empty = 沒有最近條目
 file-menu-preferences = 偏好設定...
 file-menu-exit = 結束
+file-menu-export = 匯出...
 controls-menu = 控制
 controls-menu-suspend = 暫停
 controls-menu-resume = 繼續

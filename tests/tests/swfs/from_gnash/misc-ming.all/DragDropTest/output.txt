@@ -1,0 +1,44 @@
+[ debug-22403-05c7ba106]
+- This test is for drag&drop operations. Follow the instructions - 
+1. Click OUTSIDE of any drawing.
+PASSED: _root.draggable50._droptarget == "" [./DragDropTest.as:203]
+PASSED: eval(_root.draggable50._droptarget) == undefined [./DragDropTest.as:204]
+2. Click on the FIRST RED circle.
+PASSED: _root.draggable50._droptarget == "/target10" [./DragDropTest.as:214]
+PASSED: eval(_root.draggable50._droptarget) == _level0.target10 [./DragDropTest.as:215]
+3. Click on the FIRST GREEN circle.
+PASSED: _root.draggable50._droptarget == "/target20" [./DragDropTest.as:225]
+PASSED: eval(_root.draggable50._droptarget) == _level0.target20 [./DragDropTest.as:226]
+4. Click on the FIRST BLUE circle.
+PASSED: _root.draggable50._droptarget == "/target100" [./DragDropTest.as:236]
+PASSED: eval(_root.draggable50._droptarget) == _level0.target100 [./DragDropTest.as:237]
+5. Click on the SECOND RED circle.
+PASSED: _root.draggable50._droptarget == "_level50/target10" [./DragDropTest.as:247]
+PASSED: eval(_root.draggable50._droptarget) == _level50.target10 [./DragDropTest.as:248]
+6. Click on the SECOND GREEN circle.
+PASSED: _root.draggable50._droptarget == "_level50/target20" [./DragDropTest.as:258]
+PASSED: eval(_root.draggable50._droptarget) == _level50.target20 [./DragDropTest.as:259]
+7. Click on the SECOND BLUE circle.
+PASSED: _root.draggable50._droptarget == "_level50/target100" [./DragDropTest.as:269]
+PASSED: eval(_root.draggable50._droptarget) == _level50.target100 [./DragDropTest.as:270]
+8. Click on the THIRD RED circle.
+PASSED: _root.draggable50._droptarget == "/loadedTarget/target10" [./DragDropTest.as:280]
+PASSED: eval(_root.draggable50._droptarget) == _level0.loadedTarget.target10 [./DragDropTest.as:281]
+9. Click on the THIRD GREEN circle.
+PASSED: _root.draggable50._droptarget == "/loadedTarget/target20" [./DragDropTest.as:291]
+PASSED: eval(_root.draggable50._droptarget) == _level0.loadedTarget.target20 [./DragDropTest.as:292]
+10. Click on the THIRD BLUE circle.
+PASSED: _root.draggable50._droptarget == "/loadedTarget/target100" [./DragDropTest.as:302]
+PASSED: eval(_root.draggable50._droptarget) == _level0.loadedTarget.target100 [./DragDropTest.as:303]
+11. Click on the SECOND GREEN circle.
+PASSED: _root.tf._x == 0 [./DragDropTest.as:323]
+PASSED: _root.tf._y == 100 [./DragDropTest.as:324]
+PASSED: _root.draggable50._droptarget == "/loadedTarget/target100" [./DragDropTest.as:330]
+PASSED: _root.tf._x != 0 [./DragDropTest.as:331]
+PASSED: _root.tf._y != 100 [./DragDropTest.as:332]
+12. Click ANYWHERE OUT of the THIRD BLUE circle (on another circle makes a better test)
+PASSED: _root.draggable50._droptarget == "/loadedTarget/target100" [./DragDropTest.as:342]
+END OF TEST
+#passed: 26
+#failed: 0
+#total tests run: 26

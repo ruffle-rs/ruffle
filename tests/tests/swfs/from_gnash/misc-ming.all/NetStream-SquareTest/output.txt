@@ -1,0 +1,216 @@
+SWF version 7
+PASSED: newly created NetConnection is not connected
+PASSED: NetConnection is connected after .connect(null)
+PASSED: true
+PASSED: true
+PASSED: undefined == undefined
+PASSED: number == number
+PASSED: number == number
+PASSED: NetStream.prototype.hasOwnProperty('currentFps') [NetStream-SquareTest.c:223]
+PASSED: NetStream.prototype.hasOwnProperty('bufferLength') [NetStream-SquareTest.c:224]
+PASSED: NetStream.prototype.hasOwnProperty('bufferTime') [NetStream-SquareTest.c:225]
+PASSED: NetStream.prototype.hasOwnProperty('liveDelay') [NetStream-SquareTest.c:226]
+PASSED: NetStream.prototype.hasOwnProperty('time') [NetStream-SquareTest.c:227]
+PASSED: NetStream.prototype.hasOwnProperty('bytesLoaded') [NetStream-SquareTest.c:228]
+PASSED: NetStream.prototype.hasOwnProperty('bytesTotal') [NetStream-SquareTest.c:229]
+PASSED: s1.getVolume()  ==  100 [NetStream-SquareTest.c:241]
+PASSED: s1.getVolume()  ==  1000 [NetStream-SquareTest.c:245]
+PASSED: s2.getVolume()  ==  1000 [NetStream-SquareTest.c:250]
+PASSED: s2.getVolume()  ==  5 [NetStream-SquareTest.c:256]
+PASSED: s1.getVolume()  ==  5 [NetStream-SquareTest.c:257]
+PASSED: s2.getVolume()  ==  80 [NetStream-SquareTest.c:259]
+PASSED: s1.getVolume()  ==  80 [NetStream-SquareTest.c:260]
+PASSED: s2.getVolume()  ==  -20 [NetStream-SquareTest.c:263]
+PASSED: s1.getVolume()  ==  -20 [NetStream-SquareTest.c:264]
+PASSED: typeof(s2.getVolume())  ==  'undefined' [NetStream-SquareTest.c:269]
+PASSED: typeof(s1.getVolume())  ==  'undefined' [NetStream-SquareTest.c:270]
+PASSED: typeof(s2.getVolume())  ==  'undefined' [NetStream-SquareTest.c:273]
+PASSED: typeof(s1.getVolume())  ==  'undefined' [NetStream-SquareTest.c:274]
+PASSED: s2.getVolume()  ==  100 [NetStream-SquareTest.c:277]
+PASSED: s1.getVolume()  ==  100 [NetStream-SquareTest.c:278]
+PASSED: s2.getVolume()  ==  80 [NetStream-SquareTest.c:280]
+PASSED: s1.getVolume()  ==  80 [NetStream-SquareTest.c:281]
+PASSED: s2.getVolume()  ==  100 [NetStream-SquareTest.c:287]
+PASSED: s1.getVolume()  ==  100 [NetStream-SquareTest.c:288]
+PASSED: s2.getVolume()  ==  80 [NetStream-SquareTest.c:290]
+PASSED: s1.getVolume()  ==  80 [NetStream-SquareTest.c:291]
+PASSED: Video.prototype.hasOwnProperty('attachVideo') [NetStream-SquareTest.c:312]
+PASSED: Video.prototype.hasOwnProperty('smoothing') [NetStream-SquareTest.c:313]
+PASSED: Video.prototype.hasOwnProperty('deblocking') [NetStream-SquareTest.c:314]
+PASSED: Video.prototype.hasOwnProperty('clear') [NetStream-SquareTest.c:315]
+PASSED: Video.prototype.hasOwnProperty('height') [NetStream-SquareTest.c:316]
+PASSED: Video.prototype.hasOwnProperty('width') [NetStream-SquareTest.c:317]
+PASSED: video.height  ==  0 [NetStream-SquareTest.c:318]
+PASSED: video.width  ==  0 [NetStream-SquareTest.c:319]
+PASSED: video2.height  ==  0 [NetStream-SquareTest.c:320]
+PASSED: video2.width  ==  0 [NetStream-SquareTest.c:321]
+PASSED: video.height  ==  0 [NetStream-SquareTest.c:327]
+PASSED: video.width  ==  0 [NetStream-SquareTest.c:328]
+PASSED: video2.height  ==  0 [NetStream-SquareTest.c:329]
+PASSED: video2.width  ==  0 [NetStream-SquareTest.c:330]
+PASSED: typeof(stream.currentFps)  ==  'number' [NetStream-SquareTest.c:333]
+PASSED: typeof(stream.currentFps)  ==  'number' [NetStream-SquareTest.c:335]
+PASSED: typeof(stream.currentFps)  ==  'number' [NetStream-SquareTest.c:337]
+PASSED: typeof(stream.bufferLength)  ==  'number' [NetStream-SquareTest.c:340]
+PASSED: typeof(stream.bufferLength)  ==  'number' [NetStream-SquareTest.c:342]
+PASSED: typeof(stream.bufferLength)  ==  'number' [NetStream-SquareTest.c:344]
+PASSED: typeof(stream.bufferTime)  ==  'number' [NetStream-SquareTest.c:347]
+PASSED: stream.bufferTime  ==  2 [NetStream-SquareTest.c:349]
+PASSED: stream.bufferTime  ==  2 [NetStream-SquareTest.c:351]
+PASSED: stream.bufferTime  ==  2 [NetStream-SquareTest.c:353]
+PASSED: stream.bufferTime  ==  2 [NetStream-SquareTest.c:355]
+PASSED: stream.bufferTime  ==  2 [NetStream-SquareTest.c:357]
+PASSED: stream.bufferTime  ==  2 [NetStream-SquareTest.c:359]
+PASSED: stream.bufferTime  ==  2 [NetStream-SquareTest.c:361]
+PASSED: typeof(stream.liveDelay)  ==  'number' [NetStream-SquareTest.c:364]
+PASSED: typeof(stream.liveDelay)  ==  'number' [NetStream-SquareTest.c:366]
+PASSED: typeof(stream.time)  ==  'number' [NetStream-SquareTest.c:369]
+PASSED: typeof(stream.time)  ==  'number' [NetStream-SquareTest.c:371]
+PASSED: typeof(stream.bytesLoaded)  ==  'number' [NetStream-SquareTest.c:374]
+PASSED: typeof(stream.bytesLoaded)  ==  'number' [NetStream-SquareTest.c:376]
+PASSED: stream.currentFps  ==  0 [NetStream-SquareTest.c:378]
+PASSED: stream.currentFps  ==  0 [NetStream-SquareTest.c:388]
+PASSED: typeof(stream.attachAudio())  ==  'undefined' [NetStream-SquareTest.c:398]
+PASSED: typeof(stream.attachVideo())  ==  'undefined' [NetStream-SquareTest.c:399]
+PASSED: typeof(stream.publish())  ==  'undefined' [NetStream-SquareTest.c:400]
+PASSED: typeof(stream.send())  ==  'undefined' [NetStream-SquareTest.c:401]
+PASSED: typeof(stream.receiveAudio())  ==  'undefined' [NetStream-SquareTest.c:402]
+PASSED: typeof(stream.receiveVideo())  ==  'undefined' [NetStream-SquareTest.c:403]
+PASSED: video._xscale  ==  100 [NetStream-SquareTest.c:407]
+PASSED: video._yscale  ==  100 [NetStream-SquareTest.c:408]
+PASSED: video._rotation  ==  0 [NetStream-SquareTest.c:409]
+PASSED: video._target  ==  '/video' [NetStream-SquareTest.c:410]
+PASSED: video.height  ==  0 [NetStream-SquareTest.c:411]
+PASSED: video.width  ==  0 [NetStream-SquareTest.c:412]
+PASSED: video2.height  ==  0 [NetStream-SquareTest.c:413]
+PASSED: video2.width  ==  0 [NetStream-SquareTest.c:414]
+PASSED: Video.prototype.hasOwnProperty('attachVideo') [NetStream-SquareTest.c:416]
+PASSED: Video.prototype.hasOwnProperty('smoothing') [NetStream-SquareTest.c:417]
+PASSED: Video.prototype.hasOwnProperty('deblocking') [NetStream-SquareTest.c:418]
+PASSED: Video.prototype.hasOwnProperty('clear') [NetStream-SquareTest.c:419]
+PASSED: Video.prototype.hasOwnProperty('height') [NetStream-SquareTest.c:420]
+PASSED: Video.prototype.hasOwnProperty('width') [NetStream-SquareTest.c:421]
+PASSED: !Video.prototype.hasOwnProperty('_alpha') [NetStream-SquareTest.c:423]
+PASSED: !Video.prototype.hasOwnProperty('_height') [NetStream-SquareTest.c:424]
+PASSED: !Video.prototype.hasOwnProperty('_name') [NetStream-SquareTest.c:425]
+PASSED: !Video.prototype.hasOwnProperty('_parent') [NetStream-SquareTest.c:426]
+PASSED: !Video.prototype.hasOwnProperty('_rotation') [NetStream-SquareTest.c:427]
+PASSED: !Video.prototype.hasOwnProperty('_visible') [NetStream-SquareTest.c:428]
+PASSED: !Video.prototype.hasOwnProperty('_width') [NetStream-SquareTest.c:429]
+PASSED: !Video.prototype.hasOwnProperty('_x') [NetStream-SquareTest.c:430]
+PASSED: !Video.prototype.hasOwnProperty('_xmouse') [NetStream-SquareTest.c:431]
+PASSED: !Video.prototype.hasOwnProperty('_xscale') [NetStream-SquareTest.c:432]
+PASSED: !Video.prototype.hasOwnProperty('_y') [NetStream-SquareTest.c:433]
+PASSED: !Video.prototype.hasOwnProperty('_ymouse') [NetStream-SquareTest.c:434]
+PASSED: !Video.prototype.hasOwnProperty('_yscale') [NetStream-SquareTest.c:435]
+PASSED: !Video.prototype.hasOwnProperty('_xmouse') [NetStream-SquareTest.c:436]
+PASSED: !video.hasOwnProperty('_alpha') [NetStream-SquareTest.c:438]
+PASSED: !video.hasOwnProperty('_height') [NetStream-SquareTest.c:439]
+PASSED: !video.hasOwnProperty('_name') [NetStream-SquareTest.c:440]
+PASSED: !video.hasOwnProperty('_parent') [NetStream-SquareTest.c:441]
+PASSED: !video.hasOwnProperty('_rotation') [NetStream-SquareTest.c:442]
+PASSED: !video.hasOwnProperty('_visible') [NetStream-SquareTest.c:443]
+PASSED: !video.hasOwnProperty('_width') [NetStream-SquareTest.c:444]
+PASSED: !video.hasOwnProperty('_x') [NetStream-SquareTest.c:445]
+PASSED: !video.hasOwnProperty('_xmouse') [NetStream-SquareTest.c:446]
+PASSED: !video.hasOwnProperty('_xscale') [NetStream-SquareTest.c:447]
+PASSED: !video.hasOwnProperty('_y') [NetStream-SquareTest.c:448]
+PASSED: !video.hasOwnProperty('_ymouse') [NetStream-SquareTest.c:449]
+PASSED: !video.hasOwnProperty('_yscale') [NetStream-SquareTest.c:450]
+PASSED: !video.hasOwnProperty('_xmouse') [NetStream-SquareTest.c:451]
+PASSED: video._x  ==  100 [NetStream-SquareTest.c:464]
+PASSED: Math.round(video._xscale*100)/100  ==  120 [NetStream-SquareTest.c:465]
+PASSED: Math.round(video._yscale*100)/100  ==  120 [NetStream-SquareTest.c:466]
+PASSED: Math.round(video._rotation*100)/100  ==  45 [NetStream-SquareTest.c:467]
+PASSED: typeof(video.hitTest)  ==  'undefined' [NetStream-SquareTest.c:471]
+PASSED: typeof(video.getBounds)  ==  'undefined' [NetStream-SquareTest.c:472]
+The video on the right is an OGG theora stream. It will appear in Gnash, but not the Adobe player
+PASSED: true
+PASSED: true
+PASSED: 2 == 2
+PASSED: code == code
+PASSED: level == level
+PASSED: 65 == 65
+PASSED: true
+PASSED: undefined == undefined
+PASSED: 66 == 66
+PASSED: true
+PASSED: undefined == undefined
+onStatus(NetStream.Play.Start) called
+PASSED: No duplicated Play.Start notification
+onMetaData: filesize:21482 audiocodecid:2 stereo:false audiosamplesize:16 audiosamplerate:44100 videocodecid:2 framerate:5 videodatarate:0 height:96 width:128 duration:2.299
+PASSED: onMetaData should be notified after Play.Start
+PASSED: 1 == 1 (single argument)
+PASSED: onMetaData argument sent from square.flv should be instanceof Array
+PASSED: 11 == 11
+PASSED: 11 == 11
+PASSED: metadata has length
+PASSED: metadata has filesize
+PASSED: number == number (filesize is a number)
+PASSED: 21482 == 21482 (actual filesize)
+PASSED: changed == changed
+PASSED: metadata filesize can be deleted
+PASSED: metadata has audiocodecid
+PASSED: number == number (audiocodecid is a number)
+PASSED: 2 == 2 (actual audiocodecid)
+PASSED: changed == changed
+PASSED: metadata audiocodecid can be deleted
+PASSED: metadata has stereo
+PASSED: boolean == boolean (stereo is boolean)
+PASSED: false == false (actual stereo)
+PASSED: changed == changed
+PASSED: metadata stereo can be deleted
+PASSED: metadata has audiosamplesize
+PASSED: number == number (audiosamplesize is a number)
+PASSED: 16 == 16 (actual audiosamplesize)
+PASSED: changed == changed
+PASSED: metadata audiosamplesize can be deleted
+PASSED: metadata has audiosamplerate
+PASSED: number == number (audiosamplerate is a number)
+PASSED: 44100 == 44100 (actual audiosamplerate)
+PASSED: changed == changed
+PASSED: metadata audiosamplerate can be deleted
+PASSED: metadata has videocodecid
+PASSED: number == number (videocodecid is a number)
+PASSED: 2 == 2 (actual videocodecid)
+PASSED: changed == changed
+PASSED: metadata videocodecid can be deleted
+PASSED: metadata has height
+PASSED: number == number (height is a number)
+PASSED: 96 == 96 (actual height)
+PASSED: changed == changed
+PASSED: metadata height can be deleted
+PASSED: metadata has width
+PASSED: number == number (width is a number)
+PASSED: 128 == 128 (actual width)
+PASSED: changed == changed
+PASSED: metadata width can be deleted
+PASSED: metadata has duration
+PASSED: number == number (duration is a number)
+PASSED: 2.299 == 2.299 (actual duration)
+PASSED: changed == changed
+PASSED: metadata duration can be deleted
+1. Press "p" key
+ bufferLength:2.273 bytesLoaded:21482 currentFps:0 time:0
+Key down: 112
+2. Verify video hasn't started, then press space to continue.
+ bufferLength:2.273 bytesLoaded:21482 currentFps:0 time:0
+Key down: 32
+onStatus(NetStream.Buffer.Full) called
+onStatus(NetStream.Play.Stop) called
+onStatus(NetStream.Buffer.Full) called
+onStatus(NetStream.Seek.Complete) called
+onStatus(NetStream.Play.Stop) called
+PASSED: true
+PASSED: 2 == 2
+PASSED: 21482 == 21482
+PASSED: video.height  ==  96 [NetStream-SquareTest.c:693]
+PASSED: video.width  ==  128 [NetStream-SquareTest.c:694]
+PASSED: stream3.time 4151.263 > 4150
+PASSED: metadataNotified  ==  1 [NetStream-SquareTest.c:710]
+PASSED: stopNotified  ==  2 [NetStream-SquareTest.c:711]
+PASSED: startNotified  ==  1 [NetStream-SquareTest.c:712]
+#passed: 197
+#failed: 0
+#total tests run: 197
+onStatus(NetStream.Buffer.Empty) called

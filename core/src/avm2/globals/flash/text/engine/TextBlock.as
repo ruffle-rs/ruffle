@@ -138,9 +138,20 @@ package flash.text.engine {
             this._content = value;
         }
 
-        public native function createTextLine(previousLine:TextLine = null, width:Number = 1000000, lineOffset:Number = 0, fitSomething:Boolean = false):TextLine;
+        public native function createTextLine(
+            previousLine:TextLine = null,
+            width:Number = 1000000,
+            lineOffset:Number = 0,
+            fitSomething:Boolean = false
+        ):TextLine;
 
-        public function recreateTextLine(textLine:TextLine, previousLine:TextLine = null, width:Number = 1000000, lineOffset:Number = 0, fitSomething:Boolean = false):TextLine {
+        public function recreateTextLine(
+            textLine:TextLine,
+            previousLine:TextLine = null,
+            width:Number = 1000000,
+            lineOffset:Number = 0,
+            fitSomething:Boolean = false
+        ):TextLine {
             if (textLine == null) {
                 throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
             }

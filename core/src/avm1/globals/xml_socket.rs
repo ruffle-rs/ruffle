@@ -1,15 +1,13 @@
-use crate::avm1::function::FunctionObject;
-use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::define_properties_on;
-use crate::avm1::{property_decl::Declaration, Object};
-use crate::avm1::{Activation, Error, ExecutionReason, Value};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{Activation, Error, ExecutionReason, NativeObject, Object, Value};
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::socket::SocketHandle;
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use std::cell::{Cell, RefCell, RefMut};
+use std::collections::VecDeque;
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -17,7 +15,7 @@ struct XmlSocketData {
     handle: Cell<Option<SocketHandle>>,
     /// Connection timeout in milliseconds.
     timeout: Cell<u32>,
-    read_buffer: RefCell<Vec<u8>>,
+    read_buffer: RefCell<VecDeque<u8>>,
 }
 
 #[derive(Copy, Clone, Debug, Collect)]
@@ -25,24 +23,24 @@ struct XmlSocketData {
 pub struct XmlSocket<'gc>(Gc<'gc, XmlSocketData>);
 
 impl<'gc> XmlSocket<'gc> {
-    pub fn handle(&self) -> Option<SocketHandle> {
+    pub fn handle(self) -> Option<SocketHandle> {
         self.0.handle.get()
     }
 
-    pub fn set_handle(&self, handle: SocketHandle) -> Option<SocketHandle> {
+    pub fn set_handle(self, handle: SocketHandle) -> Option<SocketHandle> {
         self.0.handle.replace(Some(handle))
     }
 
-    pub fn timeout(&self) -> u32 {
+    pub fn timeout(self) -> u32 {
         self.0.timeout.get()
     }
 
-    pub fn set_timeout(&self, new_timeout: u32) {
+    pub fn set_timeout(self, new_timeout: u32) {
         // FIXME: Check if flash player clamps this to 250 milliseconds like AS3 sockets.
         self.0.timeout.set(new_timeout);
     }
 
-    pub fn read_buffer(&self) -> RefMut<'_, Vec<u8>> {
+    pub fn read_buffer(&self) -> RefMut<'_, VecDeque<u8>> {
         self.0.read_buffer.borrow_mut()
     }
 
@@ -56,7 +54,7 @@ impl<'gc> XmlSocket<'gc> {
     }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "timeout" => property(get_timeout, set_timeout);
     "close" => method(close);
     "connect" => method(connect);
@@ -66,6 +64,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "onData" => method(on_data; DONT_ENUM | DONT_DELETE);
     "onXML" => method(on_xml; DONT_ENUM | DONT_DELETE);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
 
 fn get_timeout<'gc>(
     _activation: &mut Activation<'_, 'gc>,
@@ -202,7 +209,7 @@ fn on_data<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml_constructor = activation.context.avm1.prototypes().xml_constructor;
+    let xml_constructor = activation.prototypes().xml_constructor;
 
     if let Ok(xml) = xml_constructor.construct(activation, args) {
         let _ = this.call_method(istr!("onXML"), &[xml], activation, ExecutionReason::Special)?;
@@ -222,7 +229,7 @@ fn on_xml<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn constructor<'gc>(
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -233,29 +240,11 @@ pub fn constructor<'gc>(
             handle: Cell::new(None),
             // Default timeout is 20_000 milliseconds (20 seconds)
             timeout: Cell::new(20000),
-            read_buffer: RefCell::new(Vec::new()),
+            read_buffer: RefCell::new(VecDeque::new()),
         },
     ));
 
     this.set_native(activation.gc(), NativeObject::XmlSocket(xml_socket));
 
     Ok(Value::Undefined)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let xml_socket_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, xml_socket_proto, fn_proto);
-    xml_socket_proto
-}
-
-pub fn create_class<'gc>(
-    context: &mut StringContext<'gc>,
-    xml_socket_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::native(context, constructor, fn_proto, xml_socket_proto)
 }

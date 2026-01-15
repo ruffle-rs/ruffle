@@ -23,6 +23,7 @@ use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::any::Any;
 use std::borrow::Cow;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use swf::{BlendMode, Color, Twips};
 use thiserror::Error;
@@ -816,7 +817,7 @@ impl WebGlRenderBackend {
 
     fn end_frame(&mut self) {
         // Resolve MSAA, if we're using it (WebGL2).
-        if let (Some(ref gl), Some(ref msaa_buffers)) = (&self.gl2, &self.msaa_buffers) {
+        if let (Some(gl), Some(msaa_buffers)) = (&self.gl2, &self.msaa_buffers) {
             // Disable any remaining masking state.
             self.gl.disable(Gl::STENCIL_TEST);
             self.gl.color_mask(true, true, true, true);
@@ -1154,9 +1155,6 @@ impl RenderBackend for WebGlRenderBackend {
     ) -> Result<Box<dyn Context3D>, BitmapError> {
         Err(BitmapError::Unimplemented("createContext3D".into()))
     }
-    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), BitmapError> {
-        Err(BitmapError::Unimplemented("Context3D.present".into()))
-    }
 
     fn debug_info(&self) -> Cow<'static, str> {
         let mut result = vec![];
@@ -1225,8 +1223,8 @@ impl RenderBackend for WebGlRenderBackend {
 
     fn create_empty_texture(
         &mut self,
-        width: u32,
-        height: u32,
+        width: NonZeroU32,
+        height: NonZeroU32,
     ) -> Result<BitmapHandle, BitmapError> {
         let texture = self
             .gl
@@ -1246,8 +1244,8 @@ impl RenderBackend for WebGlRenderBackend {
 
         Ok(BitmapHandle(Arc::new(RegistryData {
             gl: self.gl.clone(),
-            width,
-            height,
+            width: width.get(),
+            height: height.get(),
             texture,
         })))
     }
@@ -1552,6 +1550,11 @@ impl CommandHandler for WebGlRenderBackend {
         self.push_blend_mode(blend);
         commands.execute(self);
         self.pop_blend_mode();
+    }
+
+    fn render_alpha_mask(&mut self, maskee_commands: CommandList, _mask_commands: CommandList) {
+        // TODO Add support for alpha masks
+        maskee_commands.execute(self);
     }
 }
 

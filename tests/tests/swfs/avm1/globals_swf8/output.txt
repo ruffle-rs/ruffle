@@ -1,0 +1,304 @@
+// Accessibility
+[object Object]
+object
+undefined
+// arguments
+undefined
+undefined
+undefined
+// Array
+[type Function]
+function
+object
+// AsBroadcaster
+[type Function]
+function
+object
+// Boolean
+[type Function]
+function
+object
+// Button
+[type Function]
+function
+object
+// Camera
+[type Function]
+function
+object
+// Color
+[type Function]
+function
+object
+// ContextMenu
+[type Function]
+function
+object
+// ContextMenuItem
+[type Function]
+function
+object
+// CustomActions
+undefined
+undefined
+undefined
+// Date
+[type Function]
+function
+object
+// Error
+[type Function]
+function
+object
+// Function
+[type Function]
+function
+object
+// Key
+[object Object]
+object
+undefined
+// LoadVars
+[type Function]
+function
+object
+// LocalConnection
+[type Function]
+function
+object
+// Math
+[object Object]
+object
+undefined
+// Microphone
+[type Function]
+function
+object
+// Mouse
+[object Object]
+object
+undefined
+// MovieClip
+[type Function]
+function
+object
+// MovieClipLoader
+[type Function]
+function
+object
+// NetConnection
+[type Function]
+function
+object
+// NetStream
+[type Function]
+function
+object
+// Number
+[type Function]
+function
+object
+// Object
+[type Function]
+function
+object
+// PrintJob
+[type Function]
+function
+object
+// Selection
+[object Object]
+object
+undefined
+// SharedObject
+[type Function]
+function
+object
+// Sound
+[type Function]
+function
+object
+// Stage
+[object Object]
+object
+undefined
+// String
+[type Function]
+function
+object
+// System
+[object Object]
+object
+undefined
+// TextField
+[type Function]
+function
+object
+// TextFormat
+[type Function]
+function
+object
+// TextSnapshot
+[type Function]
+function
+object
+// Video
+[type Function]
+function
+object
+// XML
+[type Function]
+function
+object
+// XMLNode
+[type Function]
+function
+object
+// XMLSocket
+[type Function]
+function
+object
+// XMLUI
+undefined
+undefined
+undefined
+// flash
+[object Object]
+object
+undefined
+// flash.display
+[object Object]
+object
+undefined
+// flash.display.BitmapData
+[type Function]
+function
+object
+// flash.external
+[object Object]
+object
+undefined
+// flash.external.ExternalInterface
+[type Function]
+function
+object
+// flash.filters
+[object Object]
+object
+undefined
+// flash.filters.BevelFilter
+[type Function]
+function
+object
+// flash.filters.BitmapFilter
+[type Function]
+function
+object
+// flash.filters.BlurFilter
+[type Function]
+function
+object
+// flash.filters.ColorMatrixFilter
+[type Function]
+function
+object
+// flash.filters.ConvolutionFilter
+[type Function]
+function
+object
+// flash.filters.DisplacementMapFilter
+[type Function]
+function
+object
+// flash.filters.DropShadowFilter
+[type Function]
+function
+object
+// flash.filters.GlowFilter
+[type Function]
+function
+object
+// flash.filters.GradientBevelFilter
+[type Function]
+function
+object
+// flash.filters.GradientGlowFilter
+[type Function]
+function
+object
+// flash.geom
+[object Object]
+object
+undefined
+// flash.geom.ColorTransform
+[type Function]
+function
+object
+// flash.geom.Matrix
+[type Function]
+function
+object
+// flash.geom.Point
+[type Function]
+function
+object
+// flash.geom.Rectangle
+[type Function]
+function
+object
+// flash.geom.Transform
+[type Function]
+function
+object
+// flash.net
+[object Object]
+object
+undefined
+// flash.net.FileReference
+[type Function]
+function
+object
+// flash.net.FileReferenceList
+[type Function]
+function
+object
+// flash.text
+[object Object]
+object
+undefined
+// flash.text.TextRenderer
+[type Function]
+function
+object
+// mx
+undefined
+undefined
+undefined
+// mx.lang
+undefined
+undefined
+undefined
+// mx.lang.Locale
+undefined
+undefined
+undefined
+// System
+[object Object]
+object
+undefined
+// System.capabilities
+[object Object]
+object
+undefined
+// System.IME
+[object Object]
+object
+undefined
+// System.security
+[object Object]
+object
+undefined
+// TextField.StyleSheet
+[type Function]
+function
+object

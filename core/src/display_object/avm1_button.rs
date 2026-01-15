@@ -1,9 +1,10 @@
 use crate::avm1::{Activation, ActivationIdentifier, NativeObject, Object, Value};
+use crate::avm2::StageObject as Avm2StageObject;
 use crate::backend::audio::AudioManager;
 use crate::backend::ui::MouseCursor;
 use crate::context::{ActionType, RenderContext, UpdateContext};
 use crate::display_object::container::{
-    dispatch_added_event, dispatch_removed_event, ChildContainer,
+    ChildContainer, dispatch_added_event, dispatch_removed_event,
 };
 use crate::display_object::interactive::{
     Avm2MousePick, InteractiveObject, InteractiveObjectBase, TInteractiveObject,
@@ -13,12 +14,12 @@ use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::{SwfMovie, SwfSlice};
-use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, Ref, RefCell, RefMut};
@@ -215,7 +216,7 @@ impl<'gc> Avm1Button<'gc> {
         default: bool,
         context: &mut UpdateContext<'gc>,
     ) -> bool {
-        if let Value::Object(object) = self.object() {
+        if let Some(object) = self.object1() {
             let mut activation = Activation::from_nothing(
                 context,
                 ActivationIdentifier::root("[AVM1 Boolean Property]"),
@@ -273,7 +274,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         if self.0.object.get().is_none() {
             let object = Object::new_with_native(
                 &context.strings,
-                Some(context.avm1.prototypes().button),
+                Some(context.avm1.prototypes(self.swf_version()).button),
                 NativeObject::Button(self),
             );
             let obj = unlock!(Gc::write(context.gc(), self.0), Avm1ButtonData, object);
@@ -345,12 +346,13 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         false
     }
 
-    fn object(self) -> Value<'gc> {
-        self.0
-            .object
-            .get()
-            .map(Value::from)
-            .unwrap_or(Value::Undefined)
+    fn object1(self) -> Option<Object<'gc>> {
+        self.0.object.get()
+    }
+
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        // AVM1 buttons don't have an associated AVM2 object
+        None
     }
 
     fn allow_as_mask(self) -> bool {
@@ -496,18 +498,18 @@ impl<'gc> TInteractiveObject<'gc> for Avm1Button<'gc> {
 
             // Queue ActionScript-defined event handlers after the SWF defined ones.
             // (e.g., clip.onRelease = foo).
-            if self.should_fire_event_handlers(context, event) {
-                if let Some(name) = event.method_name(&context.strings) {
-                    context.action_queue.queue_action(
-                        self_display_object,
-                        ActionType::Method {
-                            object: self.0.object.get().unwrap(),
-                            name,
-                            args: vec![],
-                        },
-                        false,
-                    );
-                }
+            if self.should_fire_event_handlers(context, event)
+                && let Some(name) = event.method_name(&context.strings)
+            {
+                context.action_queue.queue_action(
+                    self_display_object,
+                    ActionType::Method {
+                        object: self.0.object.get().unwrap(),
+                        name,
+                        args: vec![],
+                    },
+                    false,
+                );
             }
 
             (self.0.state.get() != new_state, new_state)

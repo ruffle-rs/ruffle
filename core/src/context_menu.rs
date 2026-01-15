@@ -59,11 +59,11 @@ impl<'gc> ContextMenuState<'gc> {
 
         // When a text field is focused and the mouse is hovering it,
         // show the copy/paste menu.
-        if let Some(text) = context.focus_tracker.get_as_edit_text() {
-            if InteractiveObject::option_ptr_eq(context.mouse_data.hovered, Some(text.into())) {
-                self.build_text_items(text, context);
-                return;
-            }
+        if let Some(text) = context.focus_tracker.get_as_edit_text()
+            && InteractiveObject::option_ptr_eq(context.mouse_data.hovered, Some(text.into()))
+        {
+            self.build_text_items(text, context);
+            return;
         }
 
         let Some(root_mc) = stage.root_clip().and_then(|c| c.as_movie_clip()) else {
@@ -262,7 +262,7 @@ pub struct BuiltInItemFlags {
 impl BuiltInItemFlags {
     pub fn for_stage(stage: Stage<'_>) -> Self {
         let root_mc = stage.root_clip().and_then(|c| c.as_movie_clip());
-        let is_multiframe_movie = root_mc.map(|mc| mc.total_frames() > 1).unwrap_or(false);
+        let is_multiframe_movie = root_mc.map(|mc| mc.header_frames() > 1).unwrap_or(false);
         if is_multiframe_movie {
             Self {
                 forward_and_back: true,

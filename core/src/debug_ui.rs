@@ -82,22 +82,22 @@ impl DebugUi {
         self.movies
             .retain(|movie, window| window.show(egui_ctx, context, movie, &mut messages));
 
-        if let Some(mut movie_list) = self.movie_list.take() {
-            if movie_list.show(egui_ctx, context, &mut messages) {
-                self.movie_list = Some(movie_list);
-            }
+        if let Some(mut movie_list) = self.movie_list.take()
+            && movie_list.show(egui_ctx, context, &mut messages)
+        {
+            self.movie_list = Some(movie_list);
         }
 
-        if let Some(mut domain_list) = self.domain_list.take() {
-            if domain_list.show(egui_ctx, context, &mut messages) {
-                self.domain_list = Some(domain_list);
-            }
+        if let Some(mut domain_list) = self.domain_list.take()
+            && domain_list.show(egui_ctx, context, &mut messages)
+        {
+            self.domain_list = Some(domain_list);
         }
 
-        if let Some(mut search) = self.display_object_search.take() {
-            if search.show(egui_ctx, context, &mut messages, movie_offset) {
-                self.display_object_search = Some(search);
-            }
+        if let Some(mut search) = self.display_object_search.take()
+            && search.show(egui_ctx, context, &mut messages, movie_offset)
+        {
+            self.display_object_search = Some(search);
         }
 
         for message in messages {

@@ -26,17 +26,29 @@
     "settings_log_level_info": {
         "message": "Informação"
     },
+    "settings_log_level_debug": {
+        "message": "Depuração"
+    },
+    "settings_log_level_trace": {
+        "message": "Rastreamento"
+    },
     "settings_max_execution_duration": {
         "message": "Duração máxima permitida da execução do ActionScript (em segundos)"
     },
     "settings_player_version": {
-        "message": "Número da versão do reprodutor Flash para emular (entre 1-32)"
+        "message": "Número da versão do reprodutor Flash para emular (entre 1–32)"
     },
     "settings_preferred_renderer": {
         "message": "Renderizador preferido"
     },
     "settings_preferred_renderer_auto": {
         "message": "Automático"
+    },
+    "settings_device_font_renderer": {
+        "message": "Renderizador de fontes do dispositivo"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Embutido"
     },
     "settings_advanced_options": {
         "message": "Opções avançadas"
@@ -81,10 +93,10 @@
         "message": "Recarregar guia para aplicar as alterações"
     },
     "open_player_page": {
-        "message": "Abrir Reprodutor SWF"
+        "message": "Abrir reprodutor SWF"
     },
     "open_settings_page": {
-        "message": "Abrir Página de Configurações"
+        "message": "Abrir página de configurações"
     },
     "settings_page": {
         "message": "Página de configurações"
@@ -93,7 +105,7 @@
         "message": "Coloca o Flash de volta na web onde ele pertence."
     },
     "save_settings": {
-        "message": "Salvar Configurações"
+        "message": "Salvar configurações"
     },
     "settings_saved": {
         "message": "Configurações salvas"

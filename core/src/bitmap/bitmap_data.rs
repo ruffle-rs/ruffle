@@ -1,4 +1,4 @@
-use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
+use crate::avm2::object::BitmapDataObject;
 use crate::context::RenderContext;
 use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
 use bitflags::bitflags;
@@ -300,7 +300,7 @@ impl<'gc> BitmapData<'gc> {
         self.0.width()
     }
 
-    pub fn object2(&self) -> Avm2Value<'gc> {
+    pub fn object2(&self) -> Option<BitmapDataObject<'gc>> {
         self.0.object2()
     }
 
@@ -323,7 +323,7 @@ impl<'gc> BitmapData<'gc> {
         self.0.dispose(mc);
     }
 
-    pub fn init_object2(&self, mc: &Mutation<'gc>, object: Avm2Object<'gc>) {
+    pub fn init_object2(&self, mc: &Mutation<'gc>, object: BitmapDataObject<'gc>) {
         self.0.init_object2(mc, object);
     }
 
@@ -389,7 +389,7 @@ pub struct BitmapRawData<'gc> {
     ///
     /// AVM1 cannot retrieve `BitmapData` back from the display object tree, so
     /// this does not need to hold an AVM1 object.
-    avm2_object: Option<Avm2Object<'gc>>,
+    avm2_object: Option<BitmapDataObject<'gc>>,
 
     /// A list of display objects that are backed by this BitmapData
     display_objects: Vec<DisplayObjectWeak<'gc>>,
@@ -417,7 +417,7 @@ pub enum DirtyState {
 }
 
 mod wrapper {
-    use crate::avm2::{Object as Avm2Object, Value as Avm2Value};
+    use crate::avm2::object::BitmapDataObject;
     use crate::context::RenderContext;
     use crate::display_object::DisplayObjectWeak;
     use gc_arena::barrier::Write;
@@ -428,7 +428,7 @@ mod wrapper {
     use ruffle_render::commands::CommandHandler;
     use std::cell::Ref;
 
-    use super::{copy_pixels_to_bitmapdata, BitmapRawData, DirtyState};
+    use super::{BitmapRawData, DirtyState, copy_pixels_to_bitmapdata};
 
     /// A wrapper type that ensures that we always wait for a pending
     /// GPU -> CPU sync to complete (using `sync_handle`) before accessing
@@ -555,7 +555,7 @@ mod wrapper {
         ) -> BitmapHandle {
             let mut bitmap_data = self.0.borrow_mut(gc_context);
             bitmap_data.update_dirty_texture(renderer);
-            bitmap_data.bitmap_handle(renderer).unwrap()
+            bitmap_data.bitmap_handle(renderer)
         }
 
         /// Provides access to the underlying `BitmapData`.
@@ -611,7 +611,7 @@ mod wrapper {
             self.0.borrow().width
         }
 
-        pub fn object2(&self) -> Avm2Value<'gc> {
+        pub fn object2(&self) -> Option<BitmapDataObject<'gc>> {
             self.0.borrow().object2()
         }
 
@@ -628,23 +628,18 @@ mod wrapper {
             activation: &mut crate::avm2::Activation<'_, 'gc>,
         ) -> Result<(), crate::avm2::Error<'gc>> {
             if self.disposed() {
-                return Err(crate::avm2::Error::avm_error(
-                    crate::avm2::error::argument_error(
-                        activation,
-                        "Error #2015: Invalid BitmapData.",
-                        2015,
-                    )?,
-                ));
+                Err(crate::avm2::error::make_error_2015(activation))
+            } else {
+                Ok(())
             }
-            Ok(())
         }
 
         pub fn dispose(&self, mc: &Mutation<'gc>) {
             self.0.borrow_mut(mc).dispose();
         }
 
-        pub fn init_object2(&self, mc: &Mutation<'gc>, object: Avm2Object<'gc>) {
-            self.0.borrow_mut(mc).avm2_object = Some(object)
+        pub fn init_object2(&self, mc: &Mutation<'gc>, object: BitmapDataObject<'gc>) {
+            self.0.borrow_mut(mc).avm2_object = Some(object);
         }
 
         pub fn remove_display_object(&self, mc: &Mutation<'gc>, callback: DisplayObjectWeak<'gc>) {
@@ -674,9 +669,7 @@ mod wrapper {
             // Note - we do a CPU -> GPU sync, but we do *not* do a GPU -> CPU sync
             // (rendering is done on the GPU, so the CPU pixels don't need to be up-to-date).
             inner_bitmap_data.update_dirty_texture(context.renderer);
-            let handle = inner_bitmap_data
-                .bitmap_handle(context.renderer)
-                .expect("Missing bitmap handle");
+            let handle = inner_bitmap_data.bitmap_handle(context.renderer);
 
             context.commands.render_bitmap(
                 handle,
@@ -789,24 +782,31 @@ impl<'gc> BitmapRawData<'gc> {
         self.disposed = true;
     }
 
-    pub fn bitmap_handle(&mut self, renderer: &mut dyn RenderBackend) -> Option<BitmapHandle> {
-        if self.bitmap_handle.is_none() {
-            let bitmap = Bitmap::new(
-                self.width(),
-                self.height(),
-                BitmapFormat::Rgba,
-                self.pixels_rgba(),
-            );
-            let bitmap_handle = renderer.register_bitmap(bitmap);
-            if let Err(e) = &bitmap_handle {
-                tracing::warn!("Failed to register raw bitmap for BitmapRawData: {:?}", e);
-            } else {
-                self.dirty_state = DirtyState::Clean;
-            }
-            self.bitmap_handle = bitmap_handle.ok();
+    pub fn try_bitmap_handle(
+        &mut self,
+        renderer: &mut dyn RenderBackend,
+    ) -> Result<BitmapHandle, ruffle_render::error::Error> {
+        if let Some(ref handle) = self.bitmap_handle {
+            return Ok(handle.clone());
         }
 
-        self.bitmap_handle.clone()
+        let bitmap = Bitmap::new(
+            self.width(),
+            self.height(),
+            BitmapFormat::Rgba,
+            self.pixels_rgba(),
+        );
+        let bitmap_handle = renderer.register_bitmap(bitmap);
+        if let Ok(ref handle) = bitmap_handle {
+            self.dirty_state = DirtyState::Clean;
+            self.bitmap_handle = Some(handle.clone());
+        }
+        bitmap_handle
+    }
+
+    pub fn bitmap_handle(&mut self, renderer: &mut dyn RenderBackend) -> BitmapHandle {
+        self.try_bitmap_handle(renderer)
+            .expect("Failed to register bitmap")
     }
 
     pub fn transparency(&self) -> bool {
@@ -905,7 +905,7 @@ impl<'gc> BitmapRawData<'gc> {
     // Updates the data stored with our `BitmapHandle` if this `BitmapRawData`
     // is dirty
     pub fn update_dirty_texture(&mut self, renderer: &mut dyn RenderBackend) {
-        let handle = self.bitmap_handle(renderer).unwrap();
+        let handle = self.bitmap_handle(renderer);
         match &self.dirty_state {
             DirtyState::CpuModified(region) => {
                 if let Err(e) = renderer.update_texture(
@@ -934,14 +934,12 @@ impl<'gc> BitmapRawData<'gc> {
         }
     }
 
-    pub fn object2(&self) -> Avm2Value<'gc> {
+    pub fn object2(&self) -> Option<BitmapDataObject<'gc>> {
         self.avm2_object
-            .map(|o| o.into())
-            .unwrap_or(Avm2Value::Null)
     }
 
-    pub fn init_object2(&mut self, object: Avm2Object<'gc>) {
-        self.avm2_object = Some(object)
+    pub fn init_object2(&mut self, object: BitmapDataObject<'gc>) {
+        self.avm2_object = Some(object);
     }
 }
 

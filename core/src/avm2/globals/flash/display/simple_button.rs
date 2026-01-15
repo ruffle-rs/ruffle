@@ -1,7 +1,7 @@
 //! `flash.display.SimpleButton` builtin/prototype
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_2136, Error};
+use crate::avm2::error::{Error, make_error_2136};
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::object::{ClassObject, Object, StageObject};
 use crate::avm2::value::Value;
@@ -33,8 +33,8 @@ pub fn simple_button_allocator<'gc>(
             // [NA] Buttons specifically need to PO'd
             button.post_instantiation(activation.context, None, Instantiator::Avm2, false);
             let display_object = button.into();
-            let obj = StageObject::for_display_object(activation, display_object, orig_class)?;
-            display_object.set_object2(activation.context, obj.into());
+            let obj = StageObject::for_display_object(activation.gc(), display_object, orig_class);
+            display_object.set_object2(activation.context, obj);
             return Ok(obj.into());
         }
 
@@ -51,7 +51,11 @@ pub fn simple_button_allocator<'gc>(
                 .instantiate_by_id(symbol, activation.context.gc_context);
 
             if let Some(child) = child {
-                return initialize_for_allocator(activation, child, orig_class);
+                return Ok(initialize_for_allocator(
+                    activation.context,
+                    child,
+                    orig_class,
+                ));
             } else {
                 return Err(make_error_2136(activation));
             }
@@ -116,7 +120,7 @@ pub fn get_down_state<'gc>(
     {
         return Ok(btn
             .get_state_child(ButtonState::DOWN)
-            .map(|state| state.object2())
+            .map(|state| state.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -159,7 +163,7 @@ pub fn get_over_state<'gc>(
     {
         return Ok(btn
             .get_state_child(ButtonState::OVER)
-            .map(|state| state.object2())
+            .map(|state| state.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -202,7 +206,7 @@ pub fn get_hit_test_state<'gc>(
     {
         return Ok(btn
             .get_state_child(ButtonState::HIT_TEST)
-            .map(|state| state.object2())
+            .map(|state| state.object2_or_null())
             .unwrap_or(Value::Null));
     }
 
@@ -245,7 +249,7 @@ pub fn get_up_state<'gc>(
     {
         return Ok(btn
             .get_state_child(ButtonState::UP)
-            .map(|state| state.object2())
+            .map(|state| state.object2_or_null())
             .unwrap_or(Value::Null));
     }
 

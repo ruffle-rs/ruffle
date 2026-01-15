@@ -1,12 +1,11 @@
 use std::fmt;
 
-use crate::avm1::object::Object;
-use crate::avm1::property_decl::define_properties_on;
-use crate::avm1::{property_decl::Declaration, ArrayBuilder, ExecutionReason, NativeObject};
-use crate::avm1::{Activation, Error, Value};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{Activation, Error, Object, Value};
+use crate::avm1::{ArrayBuilder, ExecutionReason, NativeObject};
 use crate::backend::navigator::Request;
-use crate::html::{transform_dashes_to_camel_case, CssStream, StyleSheet, TextFormat};
-use crate::string::{AvmString, StringContext};
+use crate::html::{CssStream, StyleSheet, TextFormat, transform_dashes_to_camel_case};
+use crate::string::AvmString;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use ruffle_wstr::{WStr, WString};
@@ -38,7 +37,7 @@ impl<'gc> StyleSheetObject<'gc> {
     }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "setStyle" => method(set_style; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_7);
     "clear" => method(clear; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_7);
     "getStyleNames" => method(get_style_names; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_7);
@@ -49,12 +48,32 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "parse" => method(parse_css; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_7);
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+fn constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let style_sheet = StyleSheetObject::new(activation.gc());
+    this.set_native(activation.gc(), NativeObject::StyleSheet(style_sheet));
+
+    Ok(this.into())
+}
+
 fn shallow_copy<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::Object(object) = value {
-        let object_proto = activation.context.avm1.prototypes().object;
+        let object_proto = activation.prototypes().object;
         let result = Object::new(activation.strings(), Some(object_proto));
 
         for key in object.get_keys(activation, false) {
@@ -88,10 +107,10 @@ fn set_style<'gc>(
     }
     let css = this
         .get_stored(istr!("_css"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let styles = this
         .get_stored(istr!("_styles"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let name = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -128,7 +147,7 @@ fn get_style<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let css = this
         .get_stored(istr!("_css"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let name = args
         .get(0)
         .unwrap_or(&Value::Undefined)
@@ -144,7 +163,7 @@ fn get_style_names<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let css = this
         .get_stored(istr!("_css"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     Ok(ArrayBuilder::new(activation)
         .with(
             css.get_keys(activation, false)
@@ -166,11 +185,7 @@ fn load<'gc>(
 
     let request = Request::get(url.to_utf8_lossy().into_owned());
 
-    let future = activation.context.load_manager.load_stylesheet(
-        activation.context.player.clone(),
-        this,
-        request,
-    );
+    let future = crate::loader::load_stylesheet(activation.context, this, request);
     activation.context.navigator.spawn_future(future);
 
     Ok(true.into())
@@ -191,7 +206,7 @@ fn transform<'gc>(
         return Ok(Value::Null);
     };
 
-    let style_object = match style_object {
+    let style_object = match *style_object {
         Value::Undefined | Value::Null => {
             return Ok(Value::Null);
         }
@@ -201,7 +216,7 @@ fn transform<'gc>(
 
     if let Some(style_object) = style_object {
         fn get_style<'gc>(
-            style_object: &Object<'gc>,
+            style_object: Object<'gc>,
             name: &'static str,
             activation: &mut Activation<'_, 'gc>,
         ) -> Option<Value<'gc>> {
@@ -358,7 +373,7 @@ fn transform<'gc>(
         }
     }
 
-    let proto = activation.context.avm1.prototypes().text_format;
+    let proto = activation.prototypes().text_format;
     let object = Object::new(activation.strings(), Some(proto));
     object.set_native(
         activation.gc(),
@@ -380,7 +395,7 @@ fn parse_css<'gc>(
     if let Ok(css) = CssStream::new(&source).parse() {
         for (selector, properties) in css.into_iter() {
             if !selector.is_empty() {
-                let proto = activation.context.avm1.prototypes().object;
+                let proto = activation.prototypes().object;
                 let object = Object::new(activation.strings(), Some(proto));
 
                 for (key, value) in properties.into_iter() {
@@ -423,25 +438,4 @@ fn clear<'gc>(
         activation,
     )?;
     Ok(Value::Undefined)
-}
-
-pub fn constructor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    let style_sheet = StyleSheetObject::new(activation.gc());
-    this.set_native(activation.gc(), NativeObject::StyleSheet(style_sheet));
-
-    Ok(this.into())
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let style_sheet_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, style_sheet_proto, fn_proto);
-    style_sheet_proto
 }

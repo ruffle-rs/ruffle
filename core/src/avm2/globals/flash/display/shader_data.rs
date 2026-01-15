@@ -1,16 +1,16 @@
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_2004, make_error_2030, Error2004Type};
+use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2030};
 use crate::avm2::object::TObject as _;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::pixel_bender::PixelBenderTypeExt;
 use crate::string::AvmString;
 
 use ruffle_macros::istr;
 use ruffle_render::pixel_bender::{
-    parse_shader, PixelBenderParam, PixelBenderParamQualifier, PixelBenderParsingError,
-    OUT_COORD_NAME,
+    OUT_COORD_NAME, PixelBenderParam, PixelBenderParamQualifier, PixelBenderParsingError,
+    parse_shader,
 };
 
 use super::shader_parameter::make_shader_parameter;
@@ -39,7 +39,7 @@ pub fn _set_byte_code<'gc>(
         let name = AvmString::new_utf8(activation.gc(), &meta.key);
         // Top-level metadata appears to turn `TInt` into a plain integer value,
         // rather than a single-element array.
-        let value = meta.value.as_avm2_value(activation, true)?;
+        let value = meta.value.as_avm2_value(activation.context, true)?;
         this.set_dynamic_property(name, value, activation.gc());
     }
     this.set_dynamic_property(

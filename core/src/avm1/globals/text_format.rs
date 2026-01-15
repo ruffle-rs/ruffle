@@ -1,12 +1,12 @@
 //! `TextFormat` impl
 
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
 use crate::ecma_conversions::round_to_even;
 use crate::html::TextFormat;
-use crate::string::{AvmString, StringContext, WStr};
+use crate::string::{AvmString, WStr};
 use gc_arena::Gc;
 use ruffle_macros::istr;
 
@@ -44,7 +44,8 @@ macro_rules! method {
     };
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    "getTextExtent" => method(method!(get_text_extent); DONT_ENUM | DONT_DELETE);
     "font" => property(getter!(font), setter!(set_font));
     "size" => property(getter!(size), setter!(set_size));
     "color" => property(getter!(color), setter!(set_color));
@@ -64,8 +65,16 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "display" => property(getter!(display), setter!(set_display));
     "kerning" => property(getter!(kerning), setter!(set_kerning));
     "letterSpacing" => property(getter!(letter_spacing), setter!(set_letter_spacing));
-    "getTextExtent" => method(method!(get_text_extent); DONT_ENUM | DONT_DELETE);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
 
 fn font<'gc>(activation: &mut Activation<'_, 'gc>, text_format: &TextFormat) -> Value<'gc> {
     text_format.font.as_ref().map_or(Value::Null, |font| {
@@ -529,7 +538,7 @@ fn get_text_extent<'gc>(
     temp_edittext.set_new_text_format(text_format.clone());
     temp_edittext.set_text(&text, activation.context);
 
-    let result = Object::new(&activation.context.strings, None);
+    let result = Object::new_without_proto(activation.gc());
     let metrics = temp_edittext
         .layout_metrics()
         .expect("All text boxes should have at least one line at all times");
@@ -565,7 +574,7 @@ fn get_text_extent<'gc>(
 }
 
 /// `TextFormat` constructor
-pub fn constructor<'gc>(
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -632,15 +641,4 @@ pub fn constructor<'gc>(
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),
     );
     Ok(this.into())
-}
-
-/// `TextFormat.prototype` constructor
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
 }

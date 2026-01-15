@@ -1,6 +1,6 @@
 package {
+    [Ruffle(ConstructOnCall)]
     [Ruffle(CustomConstructor)]
-    [Ruffle(CallHandler)]
     public final class Namespace {
         prototype.toString = function():String {
             var n:Namespace = this;

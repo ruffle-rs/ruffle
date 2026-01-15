@@ -23,4 +23,5 @@ workspace = true
 features = [
     "CanvasGradient", "CanvasPattern", "CanvasRenderingContext2d", "CanvasWindingRule", "CssStyleDeclaration",
     "Document", "DomMatrix", "Element", "HtmlCanvasElement", "ImageData", "Navigator", "Path2d", "SvgMatrix",
+    "Window",
 ]

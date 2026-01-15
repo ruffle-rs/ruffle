@@ -3,12 +3,20 @@ package flash.events {
     public class DRMAuthenticationErrorEvent extends ErrorEvent {
         public static const AUTHENTICATION_ERROR:String = "authenticationError";
 
-        private var _subErrorID: int;
-        private var _serverURL: String;
-        private var _domain: String;
+        private var _subErrorID:int;
+        private var _serverURL:String;
+        private var _domain:String;
 
-        public function DRMAuthenticationErrorEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, inDetail:String = "",
-            inErrorID:int = 0, inSubErrorID:int = 0, inServerURL:String = null, inDomain:String = null) {
+        public function DRMAuthenticationErrorEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            inDetail:String = "",
+            inErrorID:int = 0,
+            inSubErrorID:int = 0,
+            inServerURL:String = null,
+            inDomain:String = null
+        ) {
             super(type, bubbles, cancelable, inDetail, inErrorID);
             this.subErrorID = inSubErrorID;
             this.serverURL = inServerURL;
@@ -37,7 +45,16 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new DRMAuthenticationErrorEvent(this.type, this.bubbles, this.cancelable, this.text, this.errorID, this.subErrorID, this.serverURL, this.domain);
+            return new DRMAuthenticationErrorEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.text,
+                this.errorID,
+                this.subErrorID,
+                this.serverURL,
+                this.domain
+            );
         }
     }
 }

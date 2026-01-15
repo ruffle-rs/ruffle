@@ -24,14 +24,14 @@ pub trait BitmapHandleImpl: Any + Debug {}
 #[derive(Clone, Debug)]
 pub struct BitmapInfo {
     pub handle: BitmapHandle,
-    pub width: u16,
-    pub height: u16,
+    pub width: u32,
+    pub height: u32,
 }
 
 #[derive(Copy, Clone, Debug)]
 pub struct BitmapSize {
-    pub width: u16,
-    pub height: u16,
+    pub width: u32,
+    pub height: u32,
 }
 
 /// An object that returns a bitmap given an ID.
@@ -371,15 +371,11 @@ impl PixelRegion {
     }
 
     pub fn for_region(x: u32, y: u32, width: u32, height: u32) -> Self {
-        let a = (x, y);
-        let b = (x.saturating_add(width), y.saturating_add(height));
-        let (min, max) = ((a.0.min(b.0), a.1.min(b.1)), (a.0.max(b.0), a.1.max(b.1)));
-
         Self {
-            x_min: min.0,
-            y_min: min.1,
-            x_max: max.0,
-            y_max: max.1,
+            x_min: x,
+            y_min: y,
+            x_max: x.saturating_add(width),
+            y_max: y.saturating_add(height),
         }
     }
 

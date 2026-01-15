@@ -25,6 +25,7 @@
                 "https://www.chewy.com/*", // See https://github.com/ruffle-rs/ruffle/issues/18265
                 "https://*.duosecurity.com/*", // See https://github.com/ruffle-rs/ruffle/pull/18299
                 "https://*.tiktok.com/*", // See https://github.com/ruffle-rs/ruffle/pull/20250
+                "https://kick.com/*", // See https://github.com/ruffle-rs/ruffle/issues/21708
             ],
             "js": ["dist/content.js"],
             "all_frames": true,

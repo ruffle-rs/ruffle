@@ -1,4 +1,4 @@
-use crate::gui::{text, LocalizableText};
+use crate::gui::{LocalizableText, text};
 use egui::{Align2, Ui, Window};
 use unic_langid::LanguageIdentifier;
 

@@ -3,7 +3,12 @@ package flash.text.engine {
 
     [API("662")]
     public final class TextElement extends ContentElement {
-        public function TextElement(text:String = null, elementFormat:ElementFormat = null, eventMirror:EventDispatcher = null, textRotation:String = "rotate0") {
+        public function TextElement(
+            text:String = null,
+            elementFormat:ElementFormat = null,
+            eventMirror:EventDispatcher = null,
+            textRotation:String = "rotate0"
+        ) {
             super(elementFormat, eventMirror, textRotation);
             this.text = text;
         }

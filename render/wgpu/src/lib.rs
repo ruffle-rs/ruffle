@@ -12,7 +12,7 @@ use crate::mesh::BitmapBinds;
 use crate::pipelines::Pipelines;
 use crate::target::{RenderTarget, SwapChainTarget};
 use crate::utils::{
-    capture_image, create_buffer_with_data, format_list, get_backend_names, BufferDimensions,
+    BufferDimensions, capture_image, create_buffer_with_data, format_list, get_backend_names,
 };
 use bytemuck::{Pod, Zeroable};
 use descriptors::Descriptors;

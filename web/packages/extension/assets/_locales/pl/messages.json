@@ -3,7 +3,7 @@
         "message": "Odtwarzaj zawartość Flash w Ruffle"
     },
     "settings_ignore_optout": {
-        "message": "Odtwarzaj zawartość Flash nawet na stronach uniemożliwiających Ruffle"
+        "message": "Odtwarzaj zawartość Flash nawet na stronach blokujących Ruffle"
     },
     "settings_show_swf_download": {
         "message": "Pokaż pobieranie SWF w menu kontekstowym"
@@ -44,11 +44,17 @@
     "settings_preferred_renderer_auto": {
         "message": "Automatyczny"
     },
+    "settings_device_font_renderer": {
+        "message": "Renderer czcionek urządzenia"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Wbudowany"
+    },
     "settings_advanced_options": {
         "message": "Opcje zaawansowane"
     },
     "settings_reset": {
-        "message": "Resetuj ustawienia"
+        "message": "Zresetuj ustawienia"
     },
     "settings_reset_confirm": {
         "message": "Czy na pewno chcesz przywrócić ustawienia Ruffle do wartości domyślnych?"

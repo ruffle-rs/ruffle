@@ -1,4 +1,4 @@
 package flash.display {
-    public final class GraphicsEndFill implements IGraphicsFill, IGraphicsData {
-    }
+    [API("662")]
+    public final class GraphicsEndFill implements IGraphicsFill, IGraphicsData {}
 }

@@ -1,0 +1,113 @@
+{
+    "settings_show_swf_download": {
+        "message": "Prikaži SWF preuzimanje u kontekstnom meniju"
+    },
+    "settings_autostart": {
+        "message": "Automatska reprodukcija Flash sadržaja (kliknite za uključivanje zvuka)"
+    },
+    "settings_log_level": {
+        "message": "Nivo zapisnika"
+    },
+    "settings_log_level_error": {
+        "message": "Greške"
+    },
+    "settings_log_level_warn": {
+        "message": "Upozorenja"
+    },
+    "settings_log_level_info": {
+        "message": "Informacije"
+    },
+    "settings_log_level_trace": {
+        "message": "Trag"
+    },
+    "settings_max_execution_duration": {
+        "message": "Maksimalno dozvoljeno vrijeme izvršavanja ActionScripta (u sekundama)"
+    },
+    "settings_player_version": {
+        "message": "Broj verzije Flash playera za emulaciju (raspon 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Preferirani renderer"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automatski"
+    },
+    "settings_device_font_renderer": {
+        "message": "Renderer fontova uređaja"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Ugrađeno"
+    },
+    "settings_advanced_options": {
+        "message": "Napredne funkcije"
+    },
+    "settings_reset": {
+        "message": "Resetiraj postavke"
+    },
+    "settings_reset_confirm": {
+        "message": "Jeste li sigurni da želite resetirati postavke za Ruffle na njihove originalne zadane vrijednosti?"
+    },
+    "status_init": {
+        "message": "Čitanje trenutne kartice…"
+    },
+    "status_no_tabs": {
+        "message": "Nema aktivne kartice."
+    },
+    "status_tabs_error": {
+        "message": "Došlo je do greške prilikom pretraživanja trenutne kartice."
+    },
+    "status_message_init": {
+        "message": "Provjeravam status Ruffle na vašoj trenutnoj kartici…"
+    },
+    "status_result_running": {
+        "message": "Ruffle je spreman za pokretanje Flash sadržaja u trenutnoj kartici."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle je spreman za pokretanje Flash sadržaja koji tražite."
+    },
+    "status_result_optout": {
+        "message": "Ruffle se ne može učitati jer je trenutna web stranica označena kao nekompatibilna."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle je onemogućen."
+    },
+    "status_result_error": {
+        "message": "Došlo je do greške prilikom ispitivanja instance Ruffle na trenutnoj stranici."
+    },
+    "status_result_protected": {
+        "message": "Ruffle se ne može učitati na zaštićenim stranicama preglednika."
+    },
+    "action_reload": {
+        "message": "Ponovo učitajte karticu da biste primijenili promjene"
+    },
+    "open_player_page": {
+        "message": "Otvori SWF plejer"
+    },
+    "open_settings_page": {
+        "message": "Otvori stranicu s postavkama"
+    },
+    "settings_page": {
+        "message": "Stranica postavki"
+    },
+    "description": {
+        "message": "Vraća Flash na web gdje mu je i mjesto."
+    },
+    "save_settings": {
+        "message": "Sačuvaj postavke"
+    },
+    "permissions_grant": {
+        "message": "Dozvoli Ruffleu pristup mojim podacima na svim web stranicama"
+    },
+    "permissions_not_granted": {
+        "message": "Morat ćete kliknuti na ikonu Ruffle na svakoj web stranici na kojoj želite koristiti Ruffle"
+    },
+    "grant_single_site_permission": {
+        "message": "Trajno omogući za ovu stranicu"
+    },
+    "permissions_explanation": {
+        "message": "Ekstenzija Ruffle najbolje funkcionira s dozvolama za pristup podacima na svim web stranicama. To joj omogućava pokretanje kada se bilo koja web stranica prvi put učita, što joj omogućava da odmah uvjeri web stranice koje detektuju Flash Player da dozvole pokretanje Flash sadržaja. Također joj daje mogućnost učitavanja SWF datoteka na svoju internu stranicu playera s drugih lokacija na webu i omogućava automatsko učitavanje direktnih SWF linkova do te stranice. Ako ne date ovu dozvolu, morat ćete ručno omogućiti Ruffle na svakoj web stranici na kojoj ga želite koristiti klikom na ikonu ekstenzije i omogućavanjem iste za tu web stranicu."
+    },
+    "swf_player_permissions": {
+        "message": "Morate dati dozvolu ovom URL izvoru za učitavanje SWF-ova s njega."
+    }
+}

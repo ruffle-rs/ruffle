@@ -50,11 +50,7 @@ impl<R: Read> Iterator for PcmDecoder<R> {
 impl<R: Read + Send + Sync> Decoder for PcmDecoder<R> {
     #[inline]
     fn num_channels(&self) -> u8 {
-        if self.is_stereo {
-            2
-        } else {
-            1
-        }
+        if self.is_stereo { 2 } else { 1 }
     }
 
     #[inline]

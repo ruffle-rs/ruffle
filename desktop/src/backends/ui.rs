@@ -3,7 +3,7 @@ use crate::custom_event::RuffleEvent;
 use crate::gui::dialogs::message_dialog::MessageDialogConfiguration;
 use crate::gui::{DialogDescriptor, FilePicker, LocalizableText};
 use crate::preferences::GlobalPreferences;
-use anyhow::{anyhow, Error, Result};
+use anyhow::{Error, Result, anyhow};
 use chrono::{DateTime, Utc};
 use egui_winit::clipboard::Clipboard;
 use fontdb::{FaceInfo, Family};
@@ -14,7 +14,7 @@ use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
     FullscreenError, LanguageIdentifier, MouseCursor, UiBackend,
 };
-use ruffle_core::{FontFileData, FontQuery};
+use ruffle_core::font::{FontFileData, FontQuery};
 use std::fs::File;
 use std::path::Path;
 use std::rc::Rc;
@@ -145,10 +145,16 @@ impl FileDialogResult for DesktopFileDialogResult {
 }
 
 pub struct DesktopUiBackend {
+    // It's important that `clipboard`` gets dropped before `window`, dropping
+    // them the other way around causes a segfault inside `smithay_clipboard`.
+    // See:
+    // - https://github.com/emilk/egui/issues/7660
+    // - https://github.com/emilk/egui/issues/7743
+    clipboard: Clipboard,
     window: Arc<Window>,
+
     event_loop: EventLoopProxy<RuffleEvent>,
     cursor_visible: bool,
-    clipboard: Clipboard,
     preferences: GlobalPreferences,
     preferred_cursor: MouseCursor,
     font_database: Rc<fontdb::Database>,
@@ -165,13 +171,7 @@ impl DesktopUiBackend {
     ) -> Result<Self, Error> {
         // The window handle is only relevant to linux/wayland
         // If it fails it'll fallback to x11 or wlr-data-control
-        let clipboard = Clipboard::new(
-            window
-                .clone()
-                .display_handle()
-                .ok()
-                .map(|handle| handle.as_raw()),
-        );
+        let clipboard = Clipboard::new(window.display_handle().ok().map(|handle| handle.as_raw()));
         Ok(Self {
             window,
             event_loop,
@@ -314,14 +314,17 @@ impl UiBackend for DesktopUiBackend {
         };
 
         // It'd be nice if we can get the full list of candidates... Feature request?
-        if let Some(id) = self.font_database.query(&query) {
-            if let Some(face) = self.font_database.face(id) {
-                tracing::info!("Loading device font \"{}\" for \"{name}\" (italic: {is_italic}, bold: {is_bold})", face.post_script_name);
+        if let Some(id) = self.font_database.query(&query)
+            && let Some(face) = self.font_database.face(id)
+        {
+            tracing::info!(
+                "Loading device font \"{}\" for \"{name}\" (italic: {is_italic}, bold: {is_bold})",
+                face.post_script_name
+            );
 
-                match load_fontdb_font(name.to_string(), face) {
-                    Ok(font_definition) => register(font_definition),
-                    Err(error) => tracing::error!("Error loading font from fontdb: {error}"),
-                }
+            match load_fontdb_font(name.to_string(), face) {
+                Ok(font_definition) => register(font_definition),
+                Err(error) => tracing::error!("Error loading font from fontdb: {error}"),
             }
         }
     }
@@ -345,15 +348,16 @@ impl UiBackend for DesktopUiBackend {
     fn close_virtual_keyboard(&self) {}
 
     fn language(&self) -> LanguageIdentifier {
-        self.preferences.language().clone()
+        self.preferences.language()
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
         let mut dialog = AsyncFileDialog::new();
 
         for filter in filters {
-            if cfg!(target_os = "macos") && filter.mac_type.is_some() {
-                let mac_type = filter.mac_type.expect("Checked above");
+            if cfg!(target_os = "macos")
+                && let Some(mac_type) = filter.mac_type
+            {
                 let extensions: Vec<&str> = mac_type.split(';').collect();
                 dialog = dialog.add_filter(&filter.description, &extensions);
             } else {

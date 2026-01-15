@@ -7,7 +7,7 @@ use crate::{
     backend::RenderTargetMode,
     buffer_pool::TexturePool,
     descriptors::Descriptors,
-    pixel_bender::{run_pixelbender_shader_impl, ShaderMode},
+    pixel_bender::{ShaderMode, run_pixelbender_shader_impl},
     surface::target::CommandTarget,
 };
 

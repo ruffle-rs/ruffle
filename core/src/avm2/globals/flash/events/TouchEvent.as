@@ -1,7 +1,8 @@
 package flash.events {
+    import __ruffle__.stub_method;
+
     import flash.utils.ByteArray;
     import flash.display.InteractiveObject;
-    import __ruffle__.stub_method;
 
     [API("667")]
     public class TouchEvent extends Event {
@@ -37,11 +38,20 @@ package flash.events {
         private var _stageY:Number;
 
         public function TouchEvent(
-            type:String, bubbles:Boolean = true, cancelable:Boolean = false, touchPointID:int = 0,
-            isPrimaryTouchPoint:Boolean = false, localX:Number = NaN, localY:Number = NaN,
-            sizeX:Number = NaN, sizeY:Number = NaN, pressure:Number = NaN,
-            relatedObject: InteractiveObject = null, ctrlKey:Boolean = false,
-            altKey:Boolean = false, shiftKey:Boolean = false
+            type:String,
+            bubbles:Boolean = true,
+            cancelable:Boolean = false,
+            touchPointID:int = 0,
+            isPrimaryTouchPoint:Boolean = false,
+            localX:Number = NaN,
+            localY:Number = NaN,
+            sizeX:Number = NaN,
+            sizeY:Number = NaN,
+            pressure:Number = NaN,
+            relatedObject:InteractiveObject = null,
+            ctrlKey:Boolean = false,
+            altKey:Boolean = false,
+            shiftKey:Boolean = false
         ) {
             super(type, bubbles, cancelable);
             this.touchPointID = touchPointID;
@@ -58,27 +68,57 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new TouchEvent(this.type, this.bubbles, this.cancelable, this.touchPointID, this.isPrimaryTouchPoint,
-                this.localX, this.localY, this.sizeX, this.sizeY, this.pressure, this.relatedObject, this.ctrlKey,
-                this.altKey, this.shiftKey);
+            return new TouchEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.touchPointID,
+                this.isPrimaryTouchPoint,
+                this.localX,
+                this.localY,
+                this.sizeX,
+                this.sizeY,
+                this.pressure,
+                this.relatedObject,
+                this.ctrlKey,
+                this.altKey,
+                this.shiftKey
+            );
         }
 
         [API("675")]
-        public function getSamples(buffer: ByteArray, append: Boolean = false):uint {
+        public function getSamples(buffer:ByteArray, append:Boolean = false):uint {
             stub_method("flash.events.TouchEvent", "getSamples");
             return 0;
         }
 
         [API("675")]
-        public function isToolButtonDown(index: int):Boolean {
+        public function isToolButtonDown(index:int):Boolean {
             stub_method("flash.events.TouchEvent", "isToolButtonDown");
             return false;
         }
 
         override public function toString():String {
-            return this.formatToString("TouchEvent", "type", "bubbles", "cancelable", "eventPhase", "touchPointID",
-                "isPrimaryTouchPoint", "localX", "localY", "stageX", "stageY", "sizeX", "sizeY", "pressure", "relatedObject",
-                "ctrlKey", "altKey", "shiftKey");
+            return this.formatToString(
+                "TouchEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "touchPointID",
+                "isPrimaryTouchPoint",
+                "localX",
+                "localY",
+                "stageX",
+                "stageY",
+                "sizeX",
+                "sizeY",
+                "pressure",
+                "relatedObject",
+                "ctrlKey",
+                "altKey",
+                "shiftKey"
+            );
         }
 
         public native function updateAfterEvent():void;

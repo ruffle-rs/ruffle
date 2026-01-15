@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "Informatie"
     },
+    "settings_log_level_debug": {
+        "message": "Foutopsporing"
+    },
+    "settings_log_level_trace": {
+        "message": "Traceer"
+    },
     "settings_max_execution_duration": {
         "message": "Maximum toegestane ActionScript uitvoeringsduur (in seconden)"
     },
@@ -37,6 +43,12 @@
     },
     "settings_preferred_renderer_auto": {
         "message": "Automatisch"
+    },
+    "settings_device_font_renderer": {
+        "message": "Toestel lettertyperenderer"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Ingebed"
     },
     "settings_advanced_options": {
         "message": "Geavanceerde opties"
@@ -99,7 +111,7 @@
         "message": "Instellingen opgeslagen"
     },
     "onboarding_page": {
-        "message": "Eerste-gebruik pagina"
+        "message": "Introductiepagina"
     },
     "permissions_grant": {
         "message": "Geef Ruffle toegang tot mijn gegevens op alle websites"

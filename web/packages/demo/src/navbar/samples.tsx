@@ -46,6 +46,11 @@ export function SampleSelection({
         const index = parseInt(eventTarget.value, 10);
         if (availableSamples[index]) {
             loadSample(availableSamples[index]);
+            window.history.replaceState(
+                null,
+                "",
+                `${window.location.pathname}?file=${availableSamples[index].location}`,
+            );
         }
     };
 
@@ -63,15 +68,35 @@ export function SampleSelection({
             const response = await fetch("swfs.json");
 
             if (response.ok) {
-                const data: { swfs: [DemoSwf] } = await response.json();
+                const data: { swfs: DemoSwf[] } = await response.json();
                 setAvailableSamples(data.swfs);
 
                 if (data.swfs.length > 0) {
-                    loadSample(data.swfs[0]);
+                    const params = new URLSearchParams(window.location.search);
+                    const fileParam = params.get("file");
+
+                    let sampleIndex = 0;
+
+                    if (fileParam) {
+                        sampleIndex = data.swfs.findIndex(
+                            (swf) => swf.location === fileParam,
+                        );
+                        if (sampleIndex === -1) {
+                            sampleIndex = 0;
+                        }
+                    }
+
+                    loadSample(data.swfs[sampleIndex]);
+                    requestAnimationFrame(() => {
+                        if (sampleSelectionInput.current) {
+                            sampleSelectionInput.current.selectedIndex =
+                                sampleIndex;
+                        }
+                    });
                 }
             }
         })();
-    }, [loadSample]);
+    }, [loadSample, sampleSelectionInput]);
 
     return (
         <div

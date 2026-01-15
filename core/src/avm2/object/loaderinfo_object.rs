@@ -2,19 +2,19 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{EventObject, Object, StageObject, TObject};
+use crate::avm2::object::{EventObject, Object, TObject};
 use crate::avm2::{Avm2, Error, Value};
 use crate::context::UpdateContext;
 use crate::display_object::DisplayObject;
 use crate::loader::ContentType;
 use crate::tag_utils::SwfMovie;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
+    lock::{Lock, RefLock},
 };
+use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, Ref};
 use std::sync::Arc;
 
@@ -106,54 +106,6 @@ pub struct LoaderInfoObjectData<'gc> {
 }
 
 impl<'gc> LoaderInfoObject<'gc> {
-    /// Box a movie into a loader info object.
-    pub fn from_movie(
-        activation: &mut Activation<'_, 'gc>,
-        movie: Arc<SwfMovie>,
-        root: DisplayObject<'gc>,
-        loader: Option<Object<'gc>>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let class = activation.avm2().classes().loaderinfo;
-        let base = ScriptObjectData::new(class);
-        let loaded_stream = LoaderStream::Swf(movie, root);
-
-        let this: Object<'gc> = LoaderInfoObject(Gc::new(
-            activation.gc(),
-            LoaderInfoObjectData {
-                base,
-                loaded_stream: RefLock::new(loaded_stream),
-                loader,
-                init_event_fired: Cell::new(false),
-                complete_event_fired: Cell::new(false),
-                shared_events: activation
-                    .context
-                    .avm2
-                    .classes()
-                    .eventdispatcher
-                    .construct(activation, &[])?
-                    .as_object()
-                    .unwrap(),
-                uncaught_error_events: activation
-                    .context
-                    .avm2
-                    .classes()
-                    .uncaughterrorevents
-                    .construct(activation, &[])?
-                    .as_object()
-                    .unwrap(),
-                cached_avm1movie: Lock::new(None),
-                content_type: Cell::new(ContentType::Swf),
-                expose_content: Cell::new(false),
-                errored: Cell::new(false),
-            },
-        ))
-        .into();
-
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
-    }
-
     /// Create a loader info object that has not yet been loaded.
     ///
     /// Use `None` as the root clip to indicate that this is the stage's loader
@@ -164,11 +116,11 @@ impl<'gc> LoaderInfoObject<'gc> {
         loader: Option<Object<'gc>>,
         root_clip: Option<DisplayObject<'gc>>,
         is_stage: bool,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Result<Self, Error<'gc>> {
         let class = activation.avm2().classes().loaderinfo;
         let base = ScriptObjectData::new(class);
 
-        let this: Object<'gc> = LoaderInfoObject(Gc::new(
+        let object = LoaderInfoObject(Gc::new(
             activation.gc(),
             LoaderInfoObjectData {
                 base,
@@ -197,30 +149,27 @@ impl<'gc> LoaderInfoObject<'gc> {
                 expose_content: Cell::new(false),
                 errored: Cell::new(false),
             },
-        ))
-        .into();
+        ));
 
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
+        Ok(object)
     }
 
-    pub fn loader(&self) -> Option<Object<'gc>> {
+    pub fn loader(self) -> Option<Object<'gc>> {
         self.0.loader
     }
 
-    pub fn shared_events(&self) -> Object<'gc> {
+    pub fn shared_events(self) -> Object<'gc> {
         self.0.shared_events
     }
 
-    pub fn uncaught_error_events(&self) -> Object<'gc> {
+    pub fn uncaught_error_events(self) -> Object<'gc> {
         self.0.uncaught_error_events
     }
 
     /// Gets the `ContentType`, 'hiding' it by returning `ContentType::Unknown`
     /// if we haven't yet fired the 'init' event. The real ContentType first becomes
     /// visible to ActionScript in the 'init' event.
-    pub fn content_type_hide_before_init(&self) -> ContentType {
+    pub fn content_type_hide_before_init(self) -> ContentType {
         if self.0.init_event_fired.get() {
             self.0.content_type.get()
         } else {
@@ -228,19 +177,19 @@ impl<'gc> LoaderInfoObject<'gc> {
         }
     }
 
-    pub fn set_errored(&self, val: bool) {
+    pub fn set_errored(self, val: bool) {
         self.0.errored.set(val);
     }
 
-    pub fn errored(&self) -> bool {
+    pub fn errored(self) -> bool {
         self.0.errored.get()
     }
 
-    pub fn init_event_fired(&self) -> bool {
+    pub fn init_event_fired(self) -> bool {
         self.0.init_event_fired.get()
     }
 
-    pub fn reset_init_and_complete_events(&self) {
+    pub fn reset_init_and_complete_events(self) {
         self.0.init_event_fired.set(false);
         self.0.complete_event_fired.set(false);
     }
@@ -249,7 +198,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     /// Returns `true` if both events have been fired (either as a result of
     /// this call, or due to a previous call).
     pub fn fire_init_and_complete_events(
-        &self,
+        self,
         context: &mut UpdateContext<'gc>,
         status: u16,
         redirected: bool,
@@ -261,14 +210,14 @@ impl<'gc> LoaderInfoObject<'gc> {
             // TODO - 'init' should be fired earlier during the download.
             // Right now, we fire it when downloading is fully completed.
             let init_evt = EventObject::bare_default_event(context, "init");
-            Avm2::dispatch_event(context, init_evt, (*self).into());
+            Avm2::dispatch_event(context, init_evt, self.into());
         }
 
         if !self.0.complete_event_fired.get() {
             // NOTE: We have to check load progress here because this function
             // is called unconditionally at the end of every frame.
             let (should_complete, from_url) = match &*self.0.loaded_stream.borrow() {
-                LoaderStream::Swf(ref movie, root) => (
+                LoaderStream::Swf(movie, root) => (
                     root.as_movie_clip()
                         .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
                         .unwrap_or(true),
@@ -283,12 +232,12 @@ impl<'gc> LoaderInfoObject<'gc> {
                     let http_status_evt =
                         EventObject::http_status_event(&mut activation, status, redirected);
 
-                    Avm2::dispatch_event(context, http_status_evt, (*self).into());
+                    Avm2::dispatch_event(context, http_status_evt, self.into());
                 }
 
                 self.0.complete_event_fired.set(true);
                 let complete_evt = EventObject::bare_default_event(context, "complete");
-                Avm2::dispatch_event(context, complete_evt, (*self).into());
+                Avm2::dispatch_event(context, complete_evt, self.into());
                 return true;
             }
             return false;
@@ -297,18 +246,18 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     /// Unwrap this object's loader stream
-    pub fn loader_stream(&self) -> Ref<'gc, LoaderStream<'gc>> {
+    pub fn loader_stream(self) -> Ref<'gc, LoaderStream<'gc>> {
         Gc::as_ref(self.0).loaded_stream.borrow()
     }
 
-    pub fn expose_content(&self) -> bool {
+    pub fn expose_content(self) -> bool {
         self.0.expose_content.get()
     }
 
     /// Makes the 'content' visible to ActionScript.
     /// This is used by certain special loaders (the stage and root movie),
     /// which expose the loaded content before the 'init' event is fired.
-    pub fn set_expose_content(&self) {
+    pub fn set_expose_content(self) {
         self.0.expose_content.set(true);
     }
 
@@ -316,39 +265,11 @@ impl<'gc> LoaderInfoObject<'gc> {
         *unlock!(Gc::write(mc, self.0), LoaderInfoObjectData, loaded_stream).borrow_mut() = stream;
     }
 
-    pub fn set_content_type(&self, content_type: ContentType) {
+    pub fn set_content_type(self, content_type: ContentType) {
         self.0.content_type.set(content_type);
     }
 
-    /// Returns the AVM1Movie corresponding to the loaded movie- if
-    /// it doesn't exist yet, creates it.
-    pub fn get_or_init_avm1movie(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-        obj: DisplayObject<'gc>,
-    ) -> Object<'gc> {
-        let cached_avm1movie = self.0.cached_avm1movie.get();
-        if cached_avm1movie.is_none() {
-            let class_object = activation.avm2().classes().avm1movie;
-            let object = StageObject::for_display_object(activation, obj, class_object)
-                .expect("for_display_object cannot return Err");
-
-            class_object
-                .call_init(object.into(), &[], activation)
-                .expect("Native init should succeed");
-
-            unlock!(
-                Gc::write(activation.gc(), self.0),
-                LoaderInfoObjectData,
-                cached_avm1movie
-            )
-            .set(Some(object.into()));
-        }
-
-        self.0.cached_avm1movie.get().unwrap()
-    }
-
-    pub fn unload(&self, activation: &mut Activation<'_, 'gc>) {
+    pub fn unload(self, activation: &mut Activation<'_, 'gc>) {
         // Reset properties
         let movie = &activation.context.root_swf;
         let empty_swf = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));

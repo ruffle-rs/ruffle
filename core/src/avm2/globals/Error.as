@@ -1,6 +1,6 @@
 package {
+    [Ruffle(ConstructOnCall)]
     [Ruffle(InstanceAllocator)]
-    [Ruffle(CallHandler)]
     public dynamic class Error {
         {
             prototype.name = "Error";
@@ -10,6 +10,8 @@ package {
                 return self.message !== "" ? self.name + ": " + self.message : self.name;
             };
         }
+
+        public static native function getErrorMessage(id:int):String;
 
         [Ruffle(NativeAccessible)]
         public var name:String = "Error";

@@ -7,14 +7,15 @@
 use crate::avm1::ExecutionReason;
 use crate::avm1::{Activation, ActivationIdentifier, Object as Avm1Object, Value as Avm1Value};
 use crate::avm2::error::make_null_or_undefined_error;
+use crate::avm2::object::FunctionObject as Avm2FunctionObject;
 use crate::avm2::{
-    Activation as Avm2Activation, Error as Avm2Error, Object as Avm2Object, Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, Error as Avm2Error, FunctionArgs, Value as Avm2Value,
 };
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
 use gc_arena::Collect;
-use std::collections::{binary_heap::PeekMut, BinaryHeap};
+use std::collections::{BinaryHeap, binary_heap::PeekMut};
 
 /// Manages the collection of timers.
 #[derive(Collect)]
@@ -152,17 +153,19 @@ impl<'gc> Timers<'gc> {
                             ));
                         };
 
-                        Avm2Value::from(closure).call(
-                            &mut avm2_activation,
-                            Avm2Value::Null,
-                            &params,
-                        )
+                        let params = FunctionArgs::from_slice(&params);
+                        closure.call(&mut avm2_activation, Avm2Value::Null, params)
                     };
 
                     match run_closure() {
                         Ok(v) => v.coerce_to_boolean(),
-                        Err(e) => {
-                            tracing::error!("Unhandled AVM2 error in timer callback: {e:?}",);
+                        Err(err) => {
+                            Avm2::uncaught_error(
+                                &mut avm2_activation,
+                                None, // TODO do we need to set this?
+                                err,
+                                "Error in AVM2 timer callback",
+                            );
                             false
                         }
                     }
@@ -381,7 +384,7 @@ pub enum TimerCallback<'gc> {
     },
 
     Avm2Callback {
-        closure: Option<Avm2Object<'gc>>,
+        closure: Option<Avm2FunctionObject<'gc>>,
         params: Vec<Avm2Value<'gc>>,
     },
 }

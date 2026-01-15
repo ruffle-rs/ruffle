@@ -1,3 +1,7 @@
+// Temporarily allow this to ease migration to Rust 2024 edition.
+// TODO: Remove this once all instances are fixed.
+#![allow(clippy::collapsible_if)]
+
 #[cfg(test)]
 #[macro_use]
 mod test_utils;
@@ -17,6 +21,7 @@ mod fscommand;
 pub(crate) mod globals;
 mod object;
 mod object_reference;
+mod parameters;
 mod property;
 mod property_map;
 mod runtime;
@@ -32,7 +37,7 @@ pub use function::ExecutionReason;
 pub use globals::array::ArrayBuilder;
 pub use globals::context_menu::make_context_menu_state;
 pub use globals::sound::start as start_sound;
-pub use object::{NativeObject, Object, ObjectPtr};
+pub use object::{NativeObject, Object, ObjectHandle, ObjectPtr};
 pub use property::Attribute;
 pub use property_map::PropertyMap;
 pub use runtime::Avm1;

@@ -5,7 +5,7 @@ use std::cell::{Ref, RefMut};
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::class::Class;
-use crate::avm2::error::{error, reference_error, Error};
+use crate::avm2::error::{Error, make_error_1065, make_error_1504};
 use crate::avm2::object::{ByteArrayObject, TObject};
 use crate::avm2::property_map::PropertyMap;
 use crate::avm2::script::Script;
@@ -16,7 +16,6 @@ use crate::string::AvmString;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, OnceLock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
-use ruffle_macros::istr;
 use ruffle_wstr::WStr;
 
 /// Represents a set of scripts and movies that share traits across different
@@ -121,7 +120,7 @@ impl<'gc> Domain<'gc> {
     }
 
     #[cfg(feature = "egui")]
-    pub fn children(&self, mc: &Mutation<'gc>) -> Vec<Domain<'gc>> {
+    pub fn children(self, mc: &Mutation<'gc>) -> Vec<Domain<'gc>> {
         // Take this opportunity to clean up dead children.
         let mut output = Vec::new();
         self.cell_mut(mc).children.retain(|child| {
@@ -139,10 +138,10 @@ impl<'gc> Domain<'gc> {
     ///
     /// This function must not be called before the player globals have been
     /// fully allocated.
-    pub fn movie_domain(activation: &mut Activation<'_, 'gc>, parent: Domain<'gc>) -> Domain<'gc> {
-        let domain_memory = Self::create_default_domain_memory(activation).unwrap();
+    pub fn movie_domain(context: &mut UpdateContext<'gc>, parent: Domain<'gc>) -> Domain<'gc> {
+        let domain_memory = Self::create_default_domain_memory(context);
         let this = Self(Gc::new(
-            activation.gc(),
+            context.gc(),
             DomainData {
                 cell: RefLock::new(DomainDataMut {
                     defs: PropertyMap::new(),
@@ -159,7 +158,7 @@ impl<'gc> Domain<'gc> {
         #[cfg(feature = "egui")]
         {
             parent
-                .cell_mut(activation.gc())
+                .cell_mut(context.gc())
                 .children
                 .push(DomainWeak(Gc::downgrade(this.0)));
         }
@@ -264,14 +263,7 @@ impl<'gc> Domain<'gc> {
     ) -> Result<(QName<'gc>, Script<'gc>), Error<'gc>> {
         match self.get_defining_script(multiname) {
             Some(val) => Ok(val),
-            None => Err(Error::avm_error(reference_error(
-                activation,
-                &format!(
-                    "Error #1065: Variable {} is not defined.",
-                    multiname.local_name().unwrap_or(istr!("*"))
-                ),
-                1065,
-            )?)),
+            None => Err(make_error_1065(activation, multiname)),
         }
     }
 
@@ -292,42 +284,41 @@ impl<'gc> Domain<'gc> {
     pub fn get_defined_value_handling_vector(
         self,
         activation: &mut Activation<'_, 'gc>,
-        mut name: AvmString<'gc>,
+        name: AvmString<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Special-case lookups of `Vector.<SomeType>` - these get internally converted
         // to a lookup of `Vector,` a lookup of `SomeType`, and `vector_class.apply(some_type_class)`
-        let mut type_name = None;
-        if (name.starts_with(WStr::from_units(b"__AS3__.vec::Vector.<"))
-            || name.starts_with(WStr::from_units(b"Vector.<")))
-            && name.ends_with(WStr::from_units(b">"))
-        {
-            let start = name.find(WStr::from_units(b".<")).unwrap();
+        if let Some(type_name) = vector_parameter_from_name(activation.gc(), name) {
+            let vector_class = activation.avm2().classes().generic_vector;
+            let parameter_value = self.get_defined_value_handling_vector(activation, type_name)?;
 
-            type_name = Some(AvmString::new(
-                activation.gc(),
-                &name[(start + 2)..(name.len() - 1)],
-            ));
-            name = AvmString::new_ascii_static(activation.gc(), b"__AS3__.vec::Vector");
+            return vector_class
+                .apply(activation, &[parameter_value])
+                .map(|obj| obj.into());
         }
-        // FIXME - is this the correct api version?
-        let api_version = activation.avm2().root_api_version;
-        let name = QName::from_qualified_name(name, api_version, activation.context);
 
-        let res = self.get_defined_value(activation, name);
+        // If we're not hitting the special-case, just call `get_defined_value`
 
-        if let Some(type_name) = type_name {
-            let type_class = self.get_defined_value_handling_vector(activation, type_name)?;
-            if let Ok(res) = res {
-                let class = res.as_object().ok_or_else(|| {
-                    Error::rust_error(format!("Vector type {res:?} was not an object").into())
-                })?;
-                return class.apply(activation, &[type_class]).map(|obj| obj.into());
-            }
-        }
-        res
+        let name = QName::from_qualified_name(name, activation.context);
+        self.get_defined_value(activation, name)
     }
 
-    pub fn get_defined_names(&self) -> Vec<QName<'gc>> {
+    pub fn has_defined_value_handling_vector(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        name: AvmString<'gc>,
+    ) -> bool {
+        if let Some(type_name) = vector_parameter_from_name(activation.gc(), name) {
+            // avmplus just checks if the type parameter exists, so we do the same
+            self.has_defined_value_handling_vector(activation, type_name)
+        } else {
+            let name = QName::from_qualified_name(name, activation.context);
+
+            self.get_defining_script(&name.into()).is_some()
+        }
+    }
+
+    pub fn get_defined_names(self) -> Vec<QName<'gc>> {
         self.cell()
             .defs
             .iter()
@@ -349,7 +340,7 @@ impl<'gc> Domain<'gc> {
     /// Export a class into the current application domain.
     ///
     /// This does nothing if the definition already exists in this domain or a parent.
-    pub fn export_class(&self, export_name: QName<'gc>, class: Class<'gc>, mc: &Mutation<'gc>) {
+    pub fn export_class(self, export_name: QName<'gc>, class: Class<'gc>, mc: &Mutation<'gc>) {
         if self.has_class(export_name) {
             return;
         }
@@ -371,7 +362,7 @@ impl<'gc> Domain<'gc> {
         std::ptr::eq(domain_memory_ptr, default_domain_memory_ptr)
     }
 
-    pub fn domain_memory(&self) -> ByteArrayObject<'gc> {
+    pub fn domain_memory(self) -> ByteArrayObject<'gc> {
         self.0
             .domain_memory
             .get()
@@ -385,11 +376,7 @@ impl<'gc> Domain<'gc> {
     ) -> Result<(), Error<'gc>> {
         let memory = if let Some(domain_memory) = domain_memory {
             if domain_memory.storage().len() < MIN_DOMAIN_MEMORY_LENGTH {
-                return Err(Error::avm_error(error(
-                    activation,
-                    "Error #1504: End of file.",
-                    1504,
-                )?));
+                return Err(make_error_1504(activation));
             }
             domain_memory
         } else {
@@ -401,12 +388,10 @@ impl<'gc> Domain<'gc> {
         Ok(())
     }
 
-    fn create_default_domain_memory(
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<ByteArrayObject<'gc>, Error<'gc>> {
+    fn create_default_domain_memory(context: &mut UpdateContext<'gc>) -> ByteArrayObject<'gc> {
         let initial_data = vec![0; MIN_DOMAIN_MEMORY_LENGTH];
-        let storage = ByteArrayStorage::from_vec(initial_data);
-        ByteArrayObject::from_storage(activation, storage)
+        let storage = ByteArrayStorage::from_vec(context, initial_data);
+        ByteArrayObject::from_storage(context, storage)
     }
 
     /// Allocate the default domain memory for this domain, if it does not
@@ -414,23 +399,37 @@ impl<'gc> Domain<'gc> {
     ///
     /// This function is only necessary to be called for domains created via
     /// `global_domain`. It will panic on already fully-initialized domains.
-    pub fn init_default_domain_memory(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let memory = Self::create_default_domain_memory(activation)?;
+    pub fn init_default_domain_memory(self, context: &mut UpdateContext<'gc>) {
+        let memory = Self::create_default_domain_memory(context);
 
-        let write = Gc::write(activation.gc(), self.0);
+        let write = Gc::write(context.gc(), self.0);
         match unlock!(write, DomainData, default_domain_memory).set(memory) {
             Ok(_) => unlock!(write, DomainData, domain_memory).set(Some(memory)),
             Err(_) => panic!("Already initialized domain memory!"),
         };
-
-        Ok(())
     }
 
     pub fn as_ptr(self) -> *const DomainPtr {
         Gc::as_ptr(self.0) as _
+    }
+}
+
+/// Given a class name such as `Vector.<int>`, returns the Vector type
+/// parameter (`int`), or `None` if the class name does not represent a
+/// parametrized Vector class (e.g. `flash.display::MovieClip`).
+fn vector_parameter_from_name<'gc>(
+    mc: &Mutation<'gc>,
+    name: AvmString<'gc>,
+) -> Option<AvmString<'gc>> {
+    if (name.starts_with(WStr::from_units(b"__AS3__.vec::Vector.<"))
+        || name.starts_with(WStr::from_units(b"Vector.<")))
+        && name.ends_with(WStr::from_units(b">"))
+    {
+        let start = name.find(WStr::from_units(b".<")).unwrap();
+
+        Some(AvmString::new(mc, &name[(start + 2)..(name.len() - 1)]))
+    } else {
+        None
     }
 }
 

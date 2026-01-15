@@ -1,11 +1,9 @@
 //! flash.filters.ConvolutionFilter object
 
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
-use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::{Cell, RefCell};
 use swf::{Color, ConvolutionFilterFlags};
@@ -183,7 +181,7 @@ impl<'gc> ConvolutionFilter<'gc> {
         // FP 11 and FP 32 behave differently here: in FP 11, only "true" objects resize
         // the matrix, but in FP 32 strings will too (and so fill the matrix with `NaN`
         // values, as they have a `length` but no actual elements).
-        let object = value.coerce_to_object(activation);
+        let object = value.coerce_to_object_or_bare(activation)?;
         let length = usize::try_from(object.length(activation)?).unwrap_or_default();
 
         *self.0.matrix.borrow_mut() = vec![0.0; length];
@@ -297,49 +295,56 @@ impl<'gc> ConvolutionFilter<'gc> {
     }
 }
 
-macro_rules! convolution_filter_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "matrixX" => property(convolution_filter_method!(1), convolution_filter_method!(2); VERSION_8);
-    "matrixY" => property(convolution_filter_method!(3), convolution_filter_method!(4); VERSION_8);
-    "matrix" => property(convolution_filter_method!(5), convolution_filter_method!(6); VERSION_8);
-    "divisor" => property(convolution_filter_method!(7), convolution_filter_method!(8); VERSION_8);
-    "bias" => property(convolution_filter_method!(9), convolution_filter_method!(10); VERSION_8);
-    "preserveAlpha" => property(convolution_filter_method!(11), convolution_filter_method!(12); VERSION_8);
-    "clamp" => property(convolution_filter_method!(13), convolution_filter_method!(14); VERSION_8);
-    "color" => property(convolution_filter_method!(15), convolution_filter_method!(16); VERSION_8);
-    "alpha" => property(convolution_filter_method!(17), convolution_filter_method!(18); VERSION_8);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    use fn method;
+    "matrixX" => property(GET_MATRIX_X, SET_MATRIX_X; VERSION_8);
+    "matrixY" => property(GET_MATRIX_Y, SET_MATRIX_Y; VERSION_8);
+    "matrix" => property(GET_MATRIX, SET_MATRIX; VERSION_8);
+    "divisor" => property(GET_DIVISOR, SET_DIVISOR; VERSION_8);
+    "bias" => property(GET_BIAS, SET_BIAS; VERSION_8);
+    "preserveAlpha" => property(GET_PRESERVE_ALPHA, SET_PRESERVE_ALPHA; VERSION_8);
+    "clamp" => property(GET_CLAMP, SET_CLAMP; VERSION_8);
+    "color" => property(GET_COLOR, SET_COLOR; VERSION_8);
+    "alpha" => property(GET_ALPHA, SET_ALPHA; VERSION_8);
 };
 
-fn method<'gc>(
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(table_constructor!(method), None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+pub mod method {
+    pub const CONSTRUCTOR: u16 = 0;
+    pub const GET_MATRIX_X: u16 = 1;
+    pub const SET_MATRIX_X: u16 = 2;
+    pub const GET_MATRIX_Y: u16 = 3;
+    pub const SET_MATRIX_Y: u16 = 4;
+    pub const GET_MATRIX: u16 = 5;
+    pub const SET_MATRIX: u16 = 6;
+    pub const GET_DIVISOR: u16 = 7;
+    pub const SET_DIVISOR: u16 = 8;
+    pub const GET_BIAS: u16 = 9;
+    pub const SET_BIAS: u16 = 10;
+    pub const GET_PRESERVE_ALPHA: u16 = 11;
+    pub const SET_PRESERVE_ALPHA: u16 = 12;
+    pub const GET_CLAMP: u16 = 13;
+    pub const SET_CLAMP: u16 = 14;
+    pub const GET_COLOR: u16 = 15;
+    pub const SET_COLOR: u16 = 16;
+    pub const GET_ALPHA: u16 = 17;
+    pub const SET_ALPHA: u16 = 18;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-    index: u8,
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const CONSTRUCTOR: u8 = 0;
-    const GET_MATRIX_X: u8 = 1;
-    const SET_MATRIX_X: u8 = 2;
-    const GET_MATRIX_Y: u8 = 3;
-    const SET_MATRIX_Y: u8 = 4;
-    const GET_MATRIX: u8 = 5;
-    const SET_MATRIX: u8 = 6;
-    const GET_DIVISOR: u8 = 7;
-    const SET_DIVISOR: u8 = 8;
-    const GET_BIAS: u8 = 9;
-    const SET_BIAS: u8 = 10;
-    const GET_PRESERVE_ALPHA: u8 = 11;
-    const SET_PRESERVE_ALPHA: u8 = 12;
-    const GET_CLAMP: u8 = 13;
-    const SET_CLAMP: u8 = 14;
-    const GET_COLOR: u8 = 15;
-    const SET_COLOR: u8 = 16;
-    const GET_ALPHA: u8 = 17;
-    const SET_ALPHA: u8 = 18;
+    use method::*;
 
     if index == CONSTRUCTOR {
         let convolution_filter = ConvolutionFilter::new(activation, args)?;
@@ -350,9 +355,8 @@ fn method<'gc>(
         return Ok(this.into());
     }
 
-    let this = match this.native() {
-        NativeObject::ConvolutionFilter(convolution_filter) => convolution_filter,
-        _ => return Ok(Value::Undefined),
+    let NativeObject::ConvolutionFilter(this) = this.native() else {
+        return Ok(Value::Undefined);
     };
 
     Ok(match index {
@@ -403,28 +407,4 @@ fn method<'gc>(
         }
         _ => Value::Undefined,
     })
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let convolution_filter_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, convolution_filter_proto, fn_proto);
-    convolution_filter_proto
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        convolution_filter_method!(0),
-        None,
-        fn_proto,
-        proto,
-    )
 }

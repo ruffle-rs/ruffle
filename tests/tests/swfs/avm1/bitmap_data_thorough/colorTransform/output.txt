@@ -1,0 +1,282 @@
+-- Transparent --
+// colorTransform()
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// colorTransform(rect)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// colorTransform(rect, colorTransform)
+-1
+--
+0xaa0000ff 0xaa0000ff 0xaabbccdc
+0xaa0000ff 0xaa0000ff 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// colorTransform(null, colorTransform)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// colorTransform(undefined, colorTransform)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// colorTransform({}, colorTransform)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// colorTransform(zeroSizedRect, colorTransform)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// colorTransform(rectAsObj, colorTransform)
+-1
+--
+0xaa0000ff 0xaa0000ff 0xaabbccdc
+0xaa0000ff 0xaa0000ff 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// colorTransform(rectWithoutWidth, colorTransform)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// colorTransform(rect, null)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// colorTransform(rect, undefined)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// colorTransform(rect, {})
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// colorTransform(rect, colorTransformAsObj)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+
+
+-- Opaque --
+// colorTransform()
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// colorTransform(rect)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// colorTransform(rect, colorTransform)
+-1
+--
+0xff0000ff 0xff0000ff 0xffbbccdd
+0xff0000ff 0xff0000ff 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// colorTransform(null, colorTransform)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// colorTransform(undefined, colorTransform)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// colorTransform({}, colorTransform)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// colorTransform(zeroSizedRect, colorTransform)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// colorTransform(rectAsObj, colorTransform)
+-1
+--
+0xff0000ff 0xff0000ff 0xffbbccdd
+0xff0000ff 0xff0000ff 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// colorTransform(rectWithoutWidth, colorTransform)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// colorTransform(rect, null)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// colorTransform(rect, undefined)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// colorTransform(rect, {})
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// colorTransform(rect, colorTransformAsObj)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+
+
+-- Disposed --
+// colorTransform()
+-1
+--
+--
+
+// colorTransform(rect)
+-1
+--
+--
+
+// colorTransform(rect, colorTransform)
+-1
+--
+--
+
+// colorTransform(null, colorTransform)
+-1
+--
+--
+
+// colorTransform(undefined, colorTransform)
+-1
+--
+--
+
+// colorTransform({}, colorTransform)
+-1
+--
+--
+
+// colorTransform(zeroSizedRect, colorTransform)
+-1
+--
+--
+
+// colorTransform(rectAsObj, colorTransform)
+-1
+--
+--
+
+// colorTransform(rectWithoutWidth, colorTransform)
+-1
+--
+--
+
+// colorTransform(rect, null)
+-1
+--
+--
+
+// colorTransform(rect, undefined)
+-1
+--
+--
+
+// colorTransform(rect, {})
+-1
+--
+--
+
+// colorTransform(rect, colorTransformAsObj)
+-1
+--
+--
+
+
+

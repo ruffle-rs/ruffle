@@ -1,9 +1,9 @@
 //! `flash.media.SoundChannel` builtin/prototype
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::display_object::SoundTransform;
 
 pub use crate::avm2::object::sound_channel_allocator;

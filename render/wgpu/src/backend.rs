@@ -4,14 +4,14 @@ use crate::context3d::WgpuContext3D;
 use crate::dynamic_transforms::DynamicTransforms;
 use crate::filters::FilterSource;
 use crate::mesh::{CommonGradient, Mesh, PendingDraw};
-use crate::pixel_bender::{run_pixelbender_shader_impl, ShaderMode};
+use crate::pixel_bender::{ShaderMode, run_pixelbender_shader_impl};
 use crate::surface::{LayerRef, Surface};
 use crate::target::{MaybeOwnedBuffer, TextureTarget};
 use crate::target::{RenderTargetFrame, TextureBufferInfo};
-use crate::utils::{run_copy_pipeline, BufferDimensions};
+use crate::utils::{BufferDimensions, run_copy_pipeline};
 use crate::{
-    as_texture, format_list, get_backend_names, Descriptors, Error, QueueSyncHandle, RenderTarget,
-    SwapChainTarget, Texture,
+    Descriptors, Error, QueueSyncHandle, RenderTarget, SwapChainTarget, Texture, as_texture,
+    format_list, get_backend_names,
 };
 use image::imageops::FilterType;
 use ruffle_render::backend::{
@@ -32,10 +32,24 @@ use ruffle_render::tessellator::ShapeTessellator;
 use std::any::Any;
 use std::borrow::Cow;
 use std::cell::Cell;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use swf::Color;
 use tracing::instrument;
 use wgpu::SubmissionIndex;
+
+/// Returns wgpu instance flags with indirect call validation disabled.
+///
+/// wgpu's indirect call validation runs a compute shader that uses `array<u32>`,
+/// which requires the `DYNAMIC_ARRAY_SIZE` feature. However, wgpu runs this shader
+/// without first checking if the device supports that feature, causing device
+/// creation to fail on GPUs that lack it. Since Ruffle doesn't use indirect draws,
+/// disabling this validation has no functional impact.
+///
+/// See <https://github.com/gfx-rs/wgpu/issues/8799>
+pub fn get_wgpu_instance_flags() -> wgpu::InstanceFlags {
+    wgpu::InstanceFlags::default().difference(wgpu::InstanceFlags::VALIDATION_INDIRECT_CALL)
+}
 
 pub struct WgpuRenderBackend<T: RenderTarget> {
     pub(crate) descriptors: Arc<Descriptors>,
@@ -66,6 +80,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         };
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends,
+            flags: get_wgpu_instance_flags(),
             backend_options: wgpu::BackendOptions {
                 gl: wgpu::GlBackendOptions {
                     // See <https://github.com/gfx-rs/wgpu/releases/tag/v25.0.0>
@@ -107,9 +122,10 @@ impl WgpuRenderBackend<SwapChainTarget> {
         }
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: backend,
+            flags: get_wgpu_instance_flags(),
             ..Default::default()
         });
-        let surface = instance.create_surface_unsafe(window)?;
+        let surface = unsafe { instance.create_surface_unsafe(window)? };
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
             backend,
             &instance,
@@ -130,7 +146,7 @@ impl WgpuRenderBackend<SwapChainTarget> {
         size: (u32, u32),
     ) -> Result<(), Error> {
         let descriptors = &self.descriptors;
-        let surface = descriptors.wgpu_instance.create_surface_unsafe(window)?;
+        let surface = unsafe { descriptors.wgpu_instance.create_surface_unsafe(window)? };
         self.target =
             SwapChainTarget::new(surface, &descriptors.adapter, size, &descriptors.device);
         Ok(())
@@ -152,6 +168,7 @@ impl WgpuRenderBackend<crate::target::TextureTarget> {
         }
         let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: backend,
+            flags: get_wgpu_instance_flags(),
             ..Default::default()
         });
         let (adapter, device, queue) = futures::executor::block_on(request_adapter_and_device(
@@ -405,18 +422,11 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
     fn create_context3d(
         &mut self,
         profile: Context3DProfile,
-    ) -> Result<Box<dyn ruffle_render::backend::Context3D>, BitmapError> {
+    ) -> Result<Box<dyn Context3D>, BitmapError> {
         Ok(Box::new(WgpuContext3D::new(
             self.descriptors.clone(),
             profile,
         )))
-    }
-
-    #[instrument(level = "debug", skip_all)]
-    fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), BitmapError> {
-        let context = <dyn Any>::downcast_mut::<WgpuContext3D>(context).unwrap();
-        context.present();
-        Ok(())
     }
 
     fn debug_info(&self) -> Cow<'static, str> {
@@ -955,6 +965,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     load: wgpu::LoadOp::Clear(wgpu::Color::TRANSPARENT),
                     store: wgpu::StoreOp::Store,
                 },
+                depth_slice: None,
             }),
             1,
             // When running a standalone shader, we always process the entire image
@@ -981,22 +992,18 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 self.resolve_sync_handle(
                     sync_handle,
                     Box::new(|raw_pixels, buffer_width| {
-                        if buffer_width as usize
-                            != *width as usize * output_channels * std::mem::size_of::<f32>()
-                        {
-                            let channels_in_raw_pixels = if has_padding { 4usize } else { 3usize };
+                        let width = *width as usize;
 
+                        if buffer_width as usize
+                            != width * output_channels * std::mem::size_of::<f32>()
+                        {
                             let mut new_pixels = Vec::new();
                             for row in raw_pixels.chunks(buffer_width as usize) {
-                                // Ignore any wgpu-added padding (this is distinct from the alpha-channel padding
-                                // that we add for pixelbender)
-                                let actual_row = &row[0..(*width as usize
-                                    * channels_in_raw_pixels
-                                    * std::mem::size_of::<f32>())];
+                                let actual_row = &row[0..(width * std::mem::size_of::<[f32; 4]>())];
 
-                                for pixel in actual_row.chunks_exact(
-                                    channels_in_raw_pixels * std::mem::size_of::<f32>(),
-                                ) {
+                                for pixel in
+                                    actual_row.chunks_exact(std::mem::size_of::<[f32; 4]>())
+                                {
                                     if has_padding {
                                         // Take the first three channels
                                         new_pixels.extend_from_slice(
@@ -1021,12 +1028,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
     fn create_empty_texture(
         &mut self,
-        width: u32,
-        height: u32,
+        width: NonZeroU32,
+        height: NonZeroU32,
     ) -> Result<BitmapHandle, BitmapError> {
-        if width == 0 || height == 0 {
-            return Err(BitmapError::InvalidSize);
-        }
+        let width = width.get();
+        let height = height.get();
+
         if width > self.descriptors.limits.max_texture_dimension_2d
             || height > self.descriptors.limits.max_texture_dimension_2d
         {
@@ -1138,6 +1145,7 @@ async fn request_device(
             required_limits: limits,
             memory_hints: Default::default(),
             trace: wgpu::Trace::Off,
+            experimental_features: wgpu::ExperimentalFeatures::disabled(),
         })
         .await
 }

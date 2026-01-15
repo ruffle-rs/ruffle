@@ -198,7 +198,7 @@ package flash.geom {
         public function transformVectors(vin:Vector.<Number>, vout:Vector.<Number>):void {
             if (vin == null) {
                 throw new TypeError("Error #2007: Parameter vin must be non-null.", 2007);
-}
+            }
             if (vout == null) {
                 throw new TypeError("Error #2007: Parameter vout must be non-null.", 2007);
             }
@@ -297,8 +297,8 @@ package flash.geom {
         // Based on https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Matrix3D.hx#L307
         public function appendScale(xScale:Number, yScale:Number, zScale:Number):void {
             this.append(new Matrix3D(Vector.<Number>([
-                    xScale, 0.0, 0.0, 0.0, 0.0, yScale, 0.0, 0.0, 0.0, 0.0, zScale, 0.0, 0.0, 0.0, 0.0, 1.0
-                ])));
+                xScale, 0.0, 0.0, 0.0, 0.0, yScale, 0.0, 0.0, 0.0, 0.0, zScale, 0.0, 0.0, 0.0, 0.0, 1.0
+            ])));
         }
 
         public function prependTranslation(x:Number, y:Number, z:Number):void {
@@ -628,8 +628,7 @@ package flash.geom {
                         rot.x = (mr[6] - mr[9]) / len;
                         rot.y = (mr[8] - mr[2]) / len;
                         rot.z = (mr[1] - mr[4]) / len;
-                    }
-                    else {
+                    } else {
                         rot.x = rot.y = rot.z = 0;
                     }
                     break;
@@ -643,22 +642,19 @@ package flash.geom {
                         rot.x = (mr[6] - mr[9]) / (4 * rot.w);
                         rot.y = (mr[8] - mr[2]) / (4 * rot.w);
                         rot.z = (mr[1] - mr[4]) / (4 * rot.w);
-                    }
-                    else if ((mr[0] > mr[5]) && (mr[0] > mr[10])) {
+                    } else if ((mr[0] > mr[5]) && (mr[0] > mr[10])) {
                         rot.x = Math.sqrt(1 + mr[0] - mr[5] - mr[10]) / 2;
 
                         rot.w = (mr[6] - mr[9]) / (4 * rot.x);
                         rot.y = (mr[1] + mr[4]) / (4 * rot.x);
                         rot.z = (mr[8] + mr[2]) / (4 * rot.x);
-                    }
-                    else if (mr[5] > mr[10]) {
+                    } else if (mr[5] > mr[10]) {
                         rot.y = Math.sqrt(1 + mr[5] - mr[0] - mr[10]) / 2;
 
                         rot.x = (mr[1] + mr[4]) / (4 * rot.y);
                         rot.w = (mr[8] - mr[2]) / (4 * rot.y);
                         rot.z = (mr[6] + mr[9]) / (4 * rot.y);
-                    }
-                    else {
+                    } else {
                         rot.z = Math.sqrt(1 + mr[10] - mr[0] - mr[5]) / 2;
 
                         rot.x = (mr[8] + mr[2]) / (4 * rot.z);
@@ -673,8 +669,7 @@ package flash.geom {
                     if (mr[2] != 1 && mr[2] != -1) {
                         rot.x = Math.atan2(mr[6], mr[10]);
                         rot.z = Math.atan2(mr[1], mr[0]);
-                    }
-                    else {
+                    } else {
                         rot.z = 0;
                         rot.x = Math.atan2(mr[4], mr[5]);
                     }

@@ -45,7 +45,16 @@ package flash.filters {
         }
 
         override public function clone():BitmapFilter {
-            return new GlowFilter(this.color, this.alpha, this.blurX, this.blurY, this.strength, this.quality, this.inner, this.knockout);
+            return new GlowFilter(
+                this.color,
+                this.alpha,
+                this.blurX,
+                this.blurY,
+                this.strength,
+                this.quality,
+                this.inner,
+                this.knockout
+            );
         }
     }
 }

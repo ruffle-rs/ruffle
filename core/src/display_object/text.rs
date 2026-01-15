@@ -1,18 +1,16 @@
-use crate::avm2::{
-    Activation as Avm2Activation, Object as Avm2Object, StageObject as Avm2StageObject,
-};
+use crate::avm1::Object as Avm1Object;
+use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::DisplayObjectBase;
 use crate::font::{FontLike, TextRenderSettings};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
-use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
-use gc_arena::barrier::unlock;
 use gc_arena::Lock;
+use gc_arena::barrier::unlock;
 use gc_arena::{Collect, Gc, Mutation};
-use ruffle_render::commands::CommandHandler;
+use ruffle_common::utils::HasPrefixField;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::WString;
 use std::cell::RefCell;
@@ -37,7 +35,7 @@ pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
     shared: Lock<Gc<'gc, TextShared>>,
     render_settings: RefCell<TextRenderSettings>,
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+    avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
 }
 
 impl<'gc> Text<'gc> {
@@ -76,7 +74,7 @@ impl<'gc> Text<'gc> {
         self.invalidate_cached_bitmap();
     }
 
-    pub fn text(&self, context: &mut UpdateContext<'gc>) -> WString {
+    pub fn text(self, context: &mut UpdateContext<'gc>) -> WString {
         let mut ret = WString::new();
 
         for block in &self.0.shared.get().text_blocks {
@@ -164,15 +162,12 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 let scale = (height.get() as f32) / font.scale();
                 transform.matrix.a = scale;
                 transform.matrix.d = scale;
-                transform.color_transform.set_mult_color(&color);
+                transform.color_transform.set_mult_color(color);
                 for c in &block.glyphs {
                     if let Some(glyph) = font.get_glyph(c.index as usize) {
-                        if let Some(glyph_shape_handle) = glyph.shape_handle(context.renderer) {
+                        if glyph.renderable(context) {
                             context.transform_stack.push(&transform);
-                            context.commands.render_shape(
-                                glyph_shape_handle,
-                                context.transform_stack.transform(),
-                            );
+                            glyph.render(context);
                             context.transform_stack.pop();
                         }
 
@@ -256,43 +251,41 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         false
     }
 
-    fn post_instantiation(
-        self,
-        context: &mut UpdateContext<'gc>,
-        _init_object: Option<crate::avm1::Object<'gc>>,
-        _instantiated_by: Instantiator,
-        _run_frame: bool,
-    ) {
-        if self.movie().is_action_script_3() {
-            let domain = context
-                .library
-                .library_for_movie(self.movie())
-                .unwrap()
-                .avm2_domain();
-            let mut activation = Avm2Activation::from_domain(context, domain);
-            let statictext = activation.avm2().classes().statictext;
-            match Avm2StageObject::for_display_object_childless(
-                &mut activation,
-                self.into(),
-                statictext,
-            ) {
-                Ok(object) => self.set_object2(context, object.into()),
-                Err(e) => tracing::error!("Got error when creating AVM2 side of Text: {}", e),
-            }
+    fn construct_frame(self, context: &mut UpdateContext<'gc>) {
+        if self.movie().is_action_script_3() && self.object2().is_none() {
+            let statictext = context.avm2.classes().statictext;
+
+            let object = Avm2StageObject::for_display_object(context.gc(), self.into(), statictext);
+            // We don't need to call the initializer method, as AVM2 can't link
+            // a custom class to a StaticText, and the initializer method for
+            // StaticText itself is a no-op
+            self.set_object2(context, object);
 
             self.on_construction_complete(context);
         }
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .avm2_object
-            .get()
-            .map(|o| o.into())
-            .unwrap_or(Avm2Value::Null)
+    fn post_instantiation(
+        self,
+        context: &mut UpdateContext<'gc>,
+        _init_object: Option<Avm1Object<'gc>>,
+        _instantiated_by: Instantiator,
+        _run_frame: bool,
+    ) {
+        if self.movie().is_action_script_3() {
+            self.set_default_instance_name(context);
+        }
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn object1(self) -> Option<crate::avm1::Object<'gc>> {
+        None
+    }
+
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.avm2_object.get()
+    }
+
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), TextData, avm2_object).set(Some(to));
     }

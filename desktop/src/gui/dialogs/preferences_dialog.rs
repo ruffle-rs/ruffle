@@ -1,7 +1,7 @@
 use crate::cli::{GameModePreference, OpenUrlMode};
-use crate::gui::{available_languages, optional_text, text, ThemePreference};
+use crate::gui::{ThemePreference, available_languages, optional_text, text};
 use crate::log::FilenamePattern;
-use crate::preferences::{storage::StorageBackend, GlobalPreferences};
+use crate::preferences::{GlobalPreferences, storage::StorageBackend};
 use cpal::traits::{DeviceTrait, HostTrait};
 use egui::{Align2, Button, Checkbox, ComboBox, DragValue, Grid, Ui, Widget, Window};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
@@ -552,12 +552,12 @@ impl PreferencesDialog {
                 self.recent_limit_changed = true;
             }
 
-            if ui.button(text(locale, "recent-clear")).clicked() {
-                if let Err(e) = self.preferences.write_recents(|writer| {
+            if ui.button(text(locale, "recent-clear")).clicked()
+                && let Err(e) = self.preferences.write_recents(|writer| {
                     writer.clear();
-                }) {
-                    tracing::warn!("Couldn't update recents: {e}");
-                }
+                })
+            {
+                tracing::warn!("Couldn't update recents: {e}");
             }
         });
 
@@ -631,9 +631,7 @@ fn graphics_power_name(
 }
 
 fn language_name(language: &LanguageIdentifier) -> String {
-    optional_text(language, "language-name")
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| language.to_string())
+    optional_text(language, "language-name").unwrap_or_else(|| language.to_string())
 }
 
 fn theme_preference_name(

@@ -1,6 +1,7 @@
 use crate::display_object::InteractiveObject;
 use crate::input::InputEvent;
 use crate::string::{AvmString, StringContext};
+use enumset::EnumSetType;
 use ruffle_macros::istr;
 use std::str::FromStr;
 use swf::ClipEventFlag;
@@ -390,6 +391,40 @@ impl ClipEvent<'_> {
         matches!(self, Self::KeyDown | Self::KeyUp | Self::KeyPress { .. })
     }
 
+    /// Indicates whether this is a mouse event type.
+    ///
+    /// This includes all events triggered by mouse input: movement, buttons, wheel, etc.
+    pub const fn is_mouse_event(self) -> bool {
+        matches!(
+            self,
+            Self::MouseUp
+                | Self::MouseDown
+                | Self::MouseMove
+                | Self::RightMouseUp
+                | Self::RightMouseDown
+                | Self::MiddleMouseUp
+                | Self::MiddleMouseDown
+                | Self::MouseUpInside
+                | Self::RightMouseUpInside
+                | Self::MiddleMouseUpInside
+                | Self::MouseMoveInside
+                | Self::MouseWheel { .. }
+                | Self::DragOut { .. }
+                | Self::DragOver { .. }
+                | Self::RollOut { .. }
+                | Self::RollOver { .. }
+                | Self::Press { .. }
+                | Self::RightPress
+                | Self::MiddlePress
+                | Self::Release { .. }
+                | Self::RightRelease
+                | Self::MiddleRelease
+                | Self::ReleaseOutside
+                | Self::RightReleaseOutside
+                | Self::MiddleReleaseOutside
+        )
+    }
+
     /// Returns the method name of the event handler for this event.
     ///
     /// `ClipEvent::Data` returns `None` rather than `onData` because its behavior
@@ -622,7 +657,7 @@ impl KeyCode {
 }
 
 /// Subset of `KeyCode` that contains only mouse buttons.
-#[derive(Debug, Copy, Clone, PartialEq, Eq, Hash)]
+#[derive(Debug, EnumSetType)]
 pub enum MouseButton {
     Unknown,
     Left,

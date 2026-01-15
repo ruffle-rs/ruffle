@@ -1,0 +1,21 @@
+SWF5
+
+[Selection.as debug-22403-05c7ba106]
+If you click on the window or change focus before or during this test, some checks may fail.
+PASSED: typeof(Selection) == 'object' [./Selection.as:34]
+PASSED: typeof(selectionObj) == 'undefined' [./Selection.as:38]
+PASSED: typeof(Selection.getBeginIndex) == 'function' [./Selection.as:41]
+PASSED: typeof(Selection.getCaretIndex) == 'function' [./Selection.as:44]
+PASSED: typeof(Selection.getEndIndex) == 'function' [./Selection.as:47]
+PASSED: typeof(Selection.getFocus) == 'function' [./Selection.as:50]
+PASSED: typeof(Selection.setFocus) == 'function' [./Selection.as:53]
+PASSED: typeof(Selection.setSelection) == 'function' [./Selection.as:56]
+PASSED: typeof(Selection.getFocus()) == "null" [./Selection.as:58]
+PASSED: ret == false [./Selection.as:61]
+PASSED: ret == false [./Selection.as:64]
+PASSED: ret == false [./Selection.as:67]
+PASSED: ret == false [./Selection.as:70]
+PASSED: ret == false [./Selection.as:74]
+#passed: 14
+#failed: 0
+#total tests run: 14

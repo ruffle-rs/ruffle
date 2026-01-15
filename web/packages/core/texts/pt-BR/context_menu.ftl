@@ -1,6 +1,6 @@
 context-menu-download-swf = Baixar .swf
 context-menu-copy-debug-info = Copiar informação de depuração
-context-menu-open-save-manager = Abrir o Gerenciador de Salvamento
+context-menu-open-save-manager = Abrir o gerenciador de salvamento
 context-menu-about-ruffle =
     { $flavor ->
         [extension] Sobre a extensão do Ruffle ({ $version })

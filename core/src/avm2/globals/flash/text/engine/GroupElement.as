@@ -5,7 +5,12 @@ package flash.text.engine {
     public final class GroupElement extends ContentElement {
         internal var _elements = null;
 
-        public function GroupElement(elements:Vector.<ContentElement> = null, elementFormat:ElementFormat = null, eventMirror:EventDispatcher = null, textRotation:String = "rotate0") {
+        public function GroupElement(
+            elements:Vector.<ContentElement> = null,
+            elementFormat:ElementFormat = null,
+            eventMirror:EventDispatcher = null,
+            textRotation:String = "rotate0"
+        ) {
             super(elementFormat, eventMirror, textRotation);
             this.setElements(elements);
         }
@@ -33,11 +38,16 @@ package flash.text.engine {
             }
         }
 
-        public function replaceElements(beginIndex:int, endIndex:int, newElements:Vector.<ContentElement>):Vector.<ContentElement> {
+        public function replaceElements(
+            beginIndex:int,
+            endIndex:int,
+            newElements:Vector.<ContentElement>
+        ):Vector.<ContentElement> {
             // This some sort of special case that doesn't throw.
             if (beginIndex == endIndex && newElements == null) {
                 return null;
             }
+
             if (beginIndex < 0 || beginIndex > this._elements.length ||
                 endIndex < 0 || endIndex > this._elements.length) {
                 throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);

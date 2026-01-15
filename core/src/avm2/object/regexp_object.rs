@@ -1,14 +1,14 @@
 //! Object representation for regexp
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::regexp::RegExp;
-use crate::avm2::Error;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::{Ref, RefMut};
 
@@ -56,27 +56,6 @@ pub struct RegExpObjectData<'gc> {
 }
 
 impl<'gc> RegExpObject<'gc> {
-    pub fn from_regexp(
-        activation: &mut Activation<'_, 'gc>,
-        regexp: RegExp<'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let class = activation.avm2().classes().regexp;
-        let base = ScriptObjectData::new(class);
-
-        let this: Object<'gc> = RegExpObject(Gc::new(
-            activation.gc(),
-            RegExpObjectData {
-                base,
-                regexp: RefLock::new(regexp),
-            },
-        ))
-        .into();
-
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
-    }
-
     pub fn regexp(self) -> Ref<'gc, RegExp<'gc>> {
         Gc::as_ref(self.0).regexp.borrow()
     }

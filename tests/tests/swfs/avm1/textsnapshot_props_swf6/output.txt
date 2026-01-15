@@ -1,0 +1,56 @@
+[type Function]
+function
+[object Object]
+object
+[object Object]
+object
+Enumerated
+getTextRunInfo
+setSelectColor
+findText
+hitTestTextNearPos
+getSelectedText
+getText
+getSelected
+setSelected
+getCount
+Enumerated prototype
+getTextRunInfo
+setSelectColor
+findText
+hitTestTextNearPos
+getSelectedText
+getText
+getSelected
+setSelected
+getCount
+Props
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+After set
+test
+test
+test
+test
+test
+test
+test
+test
+test
+After delete
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]

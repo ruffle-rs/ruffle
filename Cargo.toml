@@ -42,65 +42,68 @@ resolver = "2"
 
 [workspace.package]
 authors = ["Ruffle LLC <ruffle@ruffle.rs>"]
-edition = "2021"
+edition = "2024"
 homepage = "https://ruffle.rs"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ruffle-rs/ruffle"
 version = "0.1.0"
 
 [workspace.dependencies]
-tracing = "0.1.41"
-tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-naga = { version = "25.0.1", features = ["wgsl-out"] }
-wgpu = "25.0.2"
-egui = { git = "https://github.com/emilk/egui.git", branch = "main" }
-clap = { version = "4.5.44", features = ["derive"] }
-cpal = "0.15.3"
+tracing = "0.1.43"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+naga = { version = "27.0.3", features = ["wgsl-out"] }
+wgpu = "27.0.1"
+egui = "0.33.3"
+clap = { version = "4.5.54", features = ["derive"] }
+cpal = "0.16.0"
 anyhow = "1.0"
 gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "08e08414249d5914dfc3b402d7eadc133e00ce56" }
-slotmap = "1.0.7"
+slotmap = "1.1.1"
 async-channel = "2.5.0"
-bitflags = "2.9.1"
-bytemuck = "1.23.2"
-chrono = { version = "0.4.41", default-features = false }
+bitflags = "2.10.0"
+bytemuck = "1.24.0"
+chrono = { version = "0.4.42", default-features = false }
 enum-map = "2.7.3"
-flate2 = "1.1.2"
+flate2 = "1.1.8"
 futures = "0.3.31"
-image = { version = "0.25.6", default-features = false }
-js-sys = "0.3.77"
-web-sys = "0.3.77"
+image = { version = "0.25.9", default-features = false }
+js-sys = "0.3.78"
+web-sys = "0.3.78"
 log = "0.4"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
-serde = "1.0.219"
-thiserror = "2.0.12"
-url = "2.5.2"
+serde = "1.0.228"
+thiserror = "2.0.17"
+url = "2.5.8"
+quick-xml = "0.37.5"
+regress = { git = "https://github.com/ruffle-rs/regras3", rev = "5fcb02513c5ab4e00df4346459f5a8d0521d8fed" }
 # Make sure to match wasm-bindgen-cli version to this everywhere.
-wasm-bindgen = "=0.2.100"
+wasm-bindgen = "=0.2.101"
 walkdir = "2.5.0"
-tokio = "1.47.1"
+tokio = "1.49.0"
 # Switching from the `async-std` to the `tokio` runtime, which we depend on anyway.
-rfd = { version = "0.15.4", default-features = false, features = ["tokio", "xdg-portal"] }
-memmap2 = "0.9.7"
+rfd = { version = "0.16.0", default-features = false, features = ["tokio", "wayland", "xdg-portal"] }
+memmap2 = "0.9.9"
 libtest-mimic = "0.8.1"
-regex = "1.11.1"
-toml = "0.8.23"
+regex = "1.12.2"
+toml = "0.9.7"
 vfs = "0.12.2"
 smallvec = { version = "1.15.1", features = ["const_new", "union"] }
-serde_json = "1.0.142"
-percent-encoding = "2.3.1"
+serde_json = "1.0.149"
+percent-encoding = "2.3.2"
 approx = "0.5.1"
 encoding_rs = "0.8.35"
 byteorder = "1.5"
-bitstream-io = "4.5.0"
-indicatif = "0.17"
-rayon = "1.10.0"
+bitstream-io = "4.9.0"
+indicatif = "0.18"
+rayon = "1.11.0"
 sha2 = "0.10.9"
-indexmap = "2.10.0"
+indexmap = "2.12.0"
 fnv = "1.0.7"
-fluent-templates = "0.13.0"
+hashbrown = { version = "0.14.5", features = ["raw"] }
+fluent-templates = "0.13.2"
 lzma-rs = "0.3.0"
-tempfile = "3.19.1"
+tempfile = "3.24.0"
 tracing-wasm = "0.2.1"
 
 [workspace.lints.rust]
@@ -110,6 +113,14 @@ renamed_and_removed_lints = "allow"
 unknown_lints = "allow"
 
 [workspace.lints.clippy]
+# Notice: this is an important lint in Ruffle as we have a lot of trivially
+# copyable objects (e.g. Gc pointers). It may produce false positives depending
+# on platform.
+# In case it happens, add `#[allow(clippy::trivially_copy_pass_by_ref)]` and
+# add a comment explaining why.
+trivially_copy_pass_by_ref = "deny"
+redundant_clone = "deny"
+
 # LONG-TERM: These lints are unhelpful.
 manual_map = "allow"             # Less readable: Suggests `opt.map(..)` instead of `if let Some(opt) { .. }`
 manual_range_contains = "allow"  # Less readable: Suggests `(a..b).contains(n)` instead of `n >= a && n < b`

@@ -1,5 +1,7 @@
 package flash.text.engine {
     import __ruffle__.stub_method;
+    import __ruffle__.stub_getter;
+    import __ruffle__.stub_setter;
 
     [API("662")]
     public final class FontDescription {
@@ -19,8 +21,16 @@ package flash.text.engine {
 
         private var _cffHinting:String;
 
-        public function FontDescription(fontName:String = "_serif", fontWeight:String = "normal", fontPosture:String = "normal",
-                                        fontLookup:String = "device", renderingMode:String = "cff", cffHinting:String = "horizontalStem") {
+        private var _locked:Boolean;
+
+        public function FontDescription(
+            fontName:String = "_serif",
+            fontWeight:String = "normal",
+            fontPosture:String = "normal",
+            fontLookup:String = "device",
+            renderingMode:String = "cff",
+            cffHinting:String = "horizontalStem"
+        ) {
             this.fontName = fontName;
             this.fontWeight = fontWeight;
             this.fontPosture = fontPosture;
@@ -34,7 +44,9 @@ package flash.text.engine {
         }
 
         public function set fontName(value:String):void {
-            if (value == null) throwNonNull("fontName");
+            if (value == null) {
+                throwNonNull("fontName");
+            }
 
             this._fontName = value;
         }
@@ -44,7 +56,10 @@ package flash.text.engine {
         }
 
         public function set fontWeight(value:String):void {
-            if (value == null) throwNonNull("fontWeight");
+            if (value == null) {
+                throwNonNull("fontWeight");
+            }
+
             if (value != FontWeight.NORMAL && value != FontWeight.BOLD) {
                 throwNotAccepted("fontWeight");
             }
@@ -57,7 +72,10 @@ package flash.text.engine {
         }
 
         public function set fontPosture(value:String):void {
-            if (value == null) throwNonNull("fontPosture");
+            if (value == null) {
+                throwNonNull("fontPosture");
+            }
+
             if (value != FontPosture.NORMAL && value != FontPosture.ITALIC) {
                 throwNotAccepted("fontPosture");
             }
@@ -70,7 +88,10 @@ package flash.text.engine {
         }
 
         public function set fontLookup(value:String):void {
-            if (value == null) throwNonNull("fontLookup");
+            if (value == null) {
+                throwNonNull("fontLookup");
+            }
+
             if (value != FontLookup.DEVICE && value != FontLookup.EMBEDDED_CFF) {
                 throwNotAccepted("fontLookup");
             }
@@ -83,7 +104,10 @@ package flash.text.engine {
         }
 
         public function set renderingMode(value:String):void {
-            if (value == null) throwNonNull("renderingMode");
+            if (value == null) {
+                throwNonNull("renderingMode");
+            }
+
             if (value != RenderingMode.NORMAL && value != RenderingMode.CFF) {
                 throwNotAccepted("renderingMode");
             }
@@ -96,7 +120,10 @@ package flash.text.engine {
         }
 
         public function set cffHinting(value:String):void {
-            if (value == null) throwNonNull("cffHinting");
+            if (value == null) {
+                throwNonNull("cffHinting");
+            }
+
             if (value != CFFHinting.NONE && value != CFFHinting.HORIZONTAL_STEM) {
                 throwNotAccepted("cffHinting");
             }
@@ -104,16 +131,37 @@ package flash.text.engine {
             this._cffHinting = value;
         }
 
-        public static function isFontCompatible(fontName: String, fontWeight: String, fontPosture: String): Boolean {
+        public function get locked():Boolean {
+            stub_getter("flash.text.engine.FontDescription", "locked");
+            return this._locked;
+        }
+
+        public function set locked(locked:Boolean):void {
+            stub_setter("flash.text.engine.FontDescription", "locked");
+            this._locked = locked;
+        }
+
+        public function clone():FontDescription {
+            return new FontDescription(
+                this.fontName,
+                this.fontWeight,
+                this.fontPosture,
+                this.fontLookup,
+                this.renderingMode,
+                this.cffHinting
+            );
+        }
+
+        public static function isFontCompatible(fontName:String, fontWeight:String, fontPosture:String):Boolean {
             stub_method("flash.text.engine.FontDescription", "isFontCompatible");
             return false;
         }
 
-        private static function throwNonNull(name: String) {
+        private static function throwNonNull(name:String) {
             throw new TypeError("Error #2007: Parameter " + name + " must be non-null.", 2007);
         }
 
-        private static function throwNotAccepted(name: String) {
+        private static function throwNotAccepted(name:String) {
             throw new ArgumentError("Error #2008: Parameter " + name + " must be one of the accepted values.", 2008);
         }
     }

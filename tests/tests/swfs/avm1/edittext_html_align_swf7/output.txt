@@ -1,0 +1,52 @@
+Default text formats:
+  Align:
+    center
+    left
+    left
+    left
+  Indent:
+    10
+    10
+    10
+    10
+  Left margin:
+    10
+    10
+    10
+    10
+  Right margin:
+    10
+    10
+    10
+    10
+  Leading:
+    5
+    5
+    5
+    5
+Actual text formats:
+  Align:
+    center
+    left
+    left
+    left
+  Indent:
+    10
+    10
+    10
+    10
+  Left margin:
+    10
+    10
+    10
+    10
+  Right margin:
+    10
+    10
+    10
+    10
+  Leading:
+    5
+    5
+    5
+    5

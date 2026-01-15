@@ -1,0 +1,479 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<swf version="25" compressed="1">
+  <Header framerate="24" frames="3">
+    <size>
+      <Rectangle left="0" right="11000" top="0" bottom="8000"/>
+    </size>
+    <tags>
+      <FileAttributes hasMetaData="0" allowABC="1" suppressCrossDomainCaching="0" swfRelativeURLs="0" useNetwork="0"/>
+      <SetBackgroundColor>
+        <color>
+          <Color red="255" green="255" blue="255"/>
+        </color>
+      </SetBackgroundColor>
+      <DefineSceneAndFrameLabelData>
+        <scenes>
+          <Scene offset="0" name="Scene 1"/>
+        </scenes>
+        <frames/>
+      </DefineSceneAndFrameLabelData>
+      <DefineShape objectID="1">
+        <bounds>
+          <Rectangle left="0" right="2000" top="0" bottom="2000"/>
+        </bounds>
+        <styles>
+          <StyleList>
+            <fillStyles>
+              <Solid>
+                <color>
+                  <Color red="255" green="0" blue="0"/>
+                </color>
+              </Solid>
+            </fillStyles>
+            <lineStyles/>
+          </StyleList>
+        </styles>
+        <shapes>
+          <Shape>
+            <edges>
+              <ShapeSetup fillStyle1="1"/>
+              <LineTo x="2000" y="0"/>
+              <LineTo x="0" y="2000"/>
+              <LineTo x="-2000" y="0"/>
+              <LineTo x="0" y="-2000"/>
+              <ShapeSetup/>
+            </edges>
+          </Shape>
+        </shapes>
+      </DefineShape>
+      <DefineSprite objectID="2" frames="1">
+        <tags>
+          <PlaceObject2 replace="0" depth="1" objectID="1">
+            <transform>
+              <Transform transX="0" transY="0"/>
+            </transform>
+          </PlaceObject2>
+          <ShowFrame/>
+          <End/>
+        </tags>
+      </DefineSprite>
+      <PlaceObject2 replace="0" depth="1" objectID="2">
+        <transform>
+          <Transform transX="4500" transY="3000"/>
+        </transform>
+      </PlaceObject2>
+      <DoABCDefine flags="1" name="">
+        <actions>
+          <Action3 minorVersion="16" majorVersion="46">
+            <constants>
+              <Constants>
+                <ints/>
+                <uints/>
+                <doubles/>
+                <strings>
+                  <String2 value="cacheAsBitmap_fla"/>
+                  <String2 value="MainTimeline"/>
+                  <String2 value="flash.display"/>
+                  <String2 value="MovieClip"/>
+                  <String2 value="cacheAsBitmap_fla:MainTimeline"/>
+                  <String2 value=""/>
+                  <String2 value="el"/>
+                  <String2 value="frame1"/>
+                  <String2 value="frame2"/>
+                  <String2 value="frame3"/>
+                  <String2 value="trace"/>
+                  <String2 value="New object placed on frame 1: "/>
+                  <String2 value="getChildAt"/>
+                  <String2 value="Element placed on frame 1"/>
+                  <String2 value="Cache as bitmap: "/>
+                  <String2 value="cacheAsBitmap"/>
+                  <String2 value="http://adobe.com/AS3/2006/builtin"/>
+                  <String2 value="adobe.utils"/>
+                  <String2 value="flash.accessibility"/>
+                  <String2 value="flash.desktop"/>
+                  <String2 value="flash.errors"/>
+                  <String2 value="flash.events"/>
+                  <String2 value="flash.external"/>
+                  <String2 value="flash.filters"/>
+                  <String2 value="flash.geom"/>
+                  <String2 value="flash.globalization"/>
+                  <String2 value="flash.media"/>
+                  <String2 value="flash.net"/>
+                  <String2 value="flash.net.drm"/>
+                  <String2 value="flash.printing"/>
+                  <String2 value="flash.profiler"/>
+                  <String2 value="flash.sampler"/>
+                  <String2 value="flash.sensors"/>
+                  <String2 value="flash.system"/>
+                  <String2 value="flash.text"/>
+                  <String2 value="flash.text.ime"/>
+                  <String2 value="flash.text.engine"/>
+                  <String2 value="flash.ui"/>
+                  <String2 value="flash.utils"/>
+                  <String2 value="flash.xml"/>
+                  <String2 value="flash.display:MovieClip"/>
+                  <String2 value="flash.display:Sprite"/>
+                  <String2 value="flash.display:DisplayObjectContainer"/>
+                  <String2 value="flash.display:InteractiveObject"/>
+                  <String2 value="flash.display:DisplayObject"/>
+                  <String2 value="flash.events:EventDispatcher"/>
+                  <String2 value="New object placed on frame 2: "/>
+                  <String2 value="New object placed on frame 3: "/>
+                  <String2 value="gotoAndStop"/>
+                  <String2 value="addFrameScript"/>
+                  <String2 value="Object"/>
+                  <String2 value="EventDispatcher"/>
+                  <String2 value="DisplayObject"/>
+                  <String2 value="InteractiveObject"/>
+                  <String2 value="DisplayObjectContainer"/>
+                  <String2 value="Sprite"/>
+                </strings>
+                <namespaces>
+                  <PackageNamespace index="1"/>
+                  <PackageNamespace index="3"/>
+                  <ProtectedNamespace index="5"/>
+                  <PackageNamespace index="6"/>
+                  <PackageInternalNamespace index="1"/>
+                  <PrivateNamespace index="0"/>
+                  <PrivateNamespace index="0"/>
+                  <Namespace index="17"/>
+                  <PackageNamespace index="18"/>
+                  <PackageNamespace index="19"/>
+                  <PackageNamespace index="20"/>
+                  <PackageNamespace index="21"/>
+                  <PackageNamespace index="22"/>
+                  <PackageNamespace index="23"/>
+                  <PackageNamespace index="24"/>
+                  <PackageNamespace index="25"/>
+                  <PackageNamespace index="26"/>
+                  <PackageNamespace index="27"/>
+                  <PackageNamespace index="28"/>
+                  <PackageNamespace index="29"/>
+                  <PackageNamespace index="30"/>
+                  <PackageNamespace index="31"/>
+                  <PackageNamespace index="32"/>
+                  <PackageNamespace index="33"/>
+                  <PackageNamespace index="34"/>
+                  <PackageNamespace index="35"/>
+                  <PackageNamespace index="36"/>
+                  <PackageNamespace index="37"/>
+                  <PackageNamespace index="38"/>
+                  <PackageNamespace index="39"/>
+                  <PackageNamespace index="40"/>
+                  <MultinameLNamespace index="5"/>
+                  <MultinameLNamespace index="41"/>
+                  <MultinameLNamespace index="42"/>
+                  <MultinameLNamespace index="43"/>
+                  <MultinameLNamespace index="44"/>
+                  <MultinameLNamespace index="45"/>
+                  <MultinameLNamespace index="46"/>
+                </namespaces>
+                <namespaceSets>
+                  <NamespaceSet>
+                    <namespaces>
+                      <U30 value="6"/>
+                      <U30 value="4"/>
+                      <U30 value="7"/>
+                      <U30 value="1"/>
+                      <U30 value="5"/>
+                      <U30 value="8"/>
+                      <U30 value="9"/>
+                      <U30 value="10"/>
+                      <U30 value="11"/>
+                      <U30 value="2"/>
+                      <U30 value="12"/>
+                      <U30 value="13"/>
+                      <U30 value="14"/>
+                      <U30 value="15"/>
+                      <U30 value="16"/>
+                      <U30 value="17"/>
+                      <U30 value="18"/>
+                      <U30 value="19"/>
+                      <U30 value="20"/>
+                      <U30 value="21"/>
+                      <U30 value="22"/>
+                      <U30 value="23"/>
+                      <U30 value="24"/>
+                      <U30 value="25"/>
+                      <U30 value="26"/>
+                      <U30 value="27"/>
+                      <U30 value="28"/>
+                      <U30 value="29"/>
+                      <U30 value="30"/>
+                      <U30 value="31"/>
+                      <U30 value="3"/>
+                      <U30 value="32"/>
+                      <U30 value="33"/>
+                      <U30 value="34"/>
+                      <U30 value="35"/>
+                      <U30 value="36"/>
+                      <U30 value="37"/>
+                      <U30 value="38"/>
+                    </namespaces>
+                  </NamespaceSet>
+                </namespaceSets>
+                <multinames>
+                  <QName namespaceIndex="1" nameIndex="2"/>
+                  <QName namespaceIndex="2" nameIndex="4"/>
+                  <QName namespaceIndex="4" nameIndex="7"/>
+                  <QName namespaceIndex="5" nameIndex="8"/>
+                  <QName namespaceIndex="5" nameIndex="9"/>
+                  <QName namespaceIndex="5" nameIndex="10"/>
+                  <QName namespaceIndex="4" nameIndex="11"/>
+                  <QName namespaceIndex="4" nameIndex="13"/>
+                  <Multiname nameIndex="16" namespaceSetIndex="1"/>
+                  <QName namespaceIndex="4" nameIndex="49"/>
+                  <QName namespaceIndex="4" nameIndex="50"/>
+                  <QName namespaceIndex="4" nameIndex="51"/>
+                  <QName namespaceIndex="13" nameIndex="52"/>
+                  <QName namespaceIndex="2" nameIndex="53"/>
+                  <QName namespaceIndex="2" nameIndex="54"/>
+                  <QName namespaceIndex="2" nameIndex="55"/>
+                  <QName namespaceIndex="2" nameIndex="56"/>
+                </multinames>
+              </Constants>
+            </constants>
+            <methods>
+              <MethodInfo retType="0" nameIndex="0" hasParamNames="0" setSDXNs="0" isExplicit="0" ignoreRest="0" hasOptional="0" needRest="0" needActivation="0" needArguments="0">
+                <paramTypes/>
+              </MethodInfo>
+              <MethodInfo retType="0" nameIndex="0" hasParamNames="0" setSDXNs="0" isExplicit="0" ignoreRest="0" hasOptional="0" needRest="0" needActivation="0" needArguments="0">
+                <paramTypes/>
+              </MethodInfo>
+              <MethodInfo retType="0" nameIndex="0" hasParamNames="0" setSDXNs="0" isExplicit="0" ignoreRest="0" hasOptional="0" needRest="0" needActivation="0" needArguments="0">
+                <paramTypes/>
+              </MethodInfo>
+              <MethodInfo retType="0" nameIndex="0" hasParamNames="0" setSDXNs="0" isExplicit="0" ignoreRest="0" hasOptional="0" needRest="0" needActivation="0" needArguments="0">
+                <paramTypes/>
+              </MethodInfo>
+              <MethodInfo retType="0" nameIndex="0" hasParamNames="0" setSDXNs="0" isExplicit="0" ignoreRest="0" hasOptional="0" needRest="0" needActivation="0" needArguments="0">
+                <paramTypes/>
+              </MethodInfo>
+              <MethodInfo retType="0" nameIndex="0" hasParamNames="0" setSDXNs="0" isExplicit="0" ignoreRest="0" hasOptional="0" needRest="0" needActivation="0" needArguments="0">
+                <paramTypes/>
+              </MethodInfo>
+            </methods>
+            <metadata/>
+            <instances>
+              <InstanceInfo nameIndex="1" superIndex="2" hasProtectedNS="1" interface="0" final="0" sealed="0" protectedNS="3" iInitIndex="4">
+                <interfaces/>
+                <traits>
+                  <TraitInfo nameIndex="3" override="0" final="0">
+                    <trait>
+                      <Slot slotID="0" typeIndex="0" valueIndex="0"/>
+                    </trait>
+                  </TraitInfo>
+                  <TraitInfo nameIndex="4" override="0" final="0">
+                    <trait>
+                      <Method dispID="0" methodInfo="1"/>
+                    </trait>
+                  </TraitInfo>
+                  <TraitInfo nameIndex="5" override="0" final="0">
+                    <trait>
+                      <Method dispID="0" methodInfo="2"/>
+                    </trait>
+                  </TraitInfo>
+                  <TraitInfo nameIndex="6" override="0" final="0">
+                    <trait>
+                      <Method dispID="0" methodInfo="3"/>
+                    </trait>
+                  </TraitInfo>
+                </traits>
+              </InstanceInfo>
+            </instances>
+            <classes>
+              <ClassInfo cInitIndex="0">
+                <traits/>
+              </ClassInfo>
+            </classes>
+            <scripts>
+              <ScriptInfo initIndex="5">
+                <traits>
+                  <TraitInfo nameIndex="1" override="0" final="0">
+                    <trait>
+                      <Class slotID="1" classInfo="0"/>
+                    </trait>
+                  </TraitInfo>
+                </traits>
+              </ScriptInfo>
+            </scripts>
+            <methodBodies>
+              <MethodBody methodInfo="0" maxStack="1" maxRegs="1" scopeDepth="9" maxScope="10" exceptionCount="0">
+                <code>
+                  <OpGetLocal0/>
+                  <OpPushScope/>
+                  <OpReturnVoid/>
+                </code>
+                <exceptions/>
+                <traits/>
+              </MethodBody>
+              <MethodBody methodInfo="1" maxStack="4" maxRegs="1" scopeDepth="10" maxScope="11" exceptionCount="0">
+                <code>
+                  <OpGetLocal0/>
+                  <OpPushScope/>
+                  <OpGetLocal0/>
+                  <OpGetProperty name="3"/>
+                  <OpIfFalse target="24"/>
+                  <OpFindPropStrict name="7"/>
+                  <OpPushString index="12"/>
+                  <OpFindPropStrict name="8"/>
+                  <OpPushByte value="0"/>
+                  <OpCallProperty name="8" argc="1"/>
+                  <OpGetLocal0/>
+                  <OpGetProperty name="3"/>
+                  <OpStrictEquals/>
+                  <OpNot/>
+                  <OpAdd/>
+                  <OpCallPropVoid name="7" argc="1"/>
+                  <OpJump target="17"/>
+                  <OpGetLocal0/>
+                  <OpFindPropStrict name="8"/>
+                  <OpPushByte value="0"/>
+                  <OpCallProperty name="8" argc="1"/>
+                  <OpInitProperty name="3"/>
+                  <OpFindPropStrict name="7"/>
+                  <OpPushString index="14"/>
+                  <OpCallPropVoid name="7" argc="1"/>
+                  <OpFindPropStrict name="7"/>
+                  <OpPushString index="15"/>
+                  <OpGetLocal0/>
+                  <OpGetProperty name="3"/>
+                  <OpGetProperty name="9"/>
+                  <OpAdd/>
+                  <OpCallPropVoid name="7" argc="1"/>
+                  <OpReturnVoid/>
+                </code>
+                <exceptions/>
+                <traits/>
+              </MethodBody>
+              <MethodBody methodInfo="2" maxStack="4" maxRegs="1" scopeDepth="10" maxScope="11" exceptionCount="0">
+                <code>
+                  <OpGetLocal0/>
+                  <OpPushScope/>
+                  <OpFindPropStrict name="7"/>
+                  <OpPushString index="47"/>
+                  <OpFindPropStrict name="8"/>
+                  <OpPushByte value="0"/>
+                  <OpCallProperty name="8" argc="1"/>
+                  <OpGetLocal0/>
+                  <OpGetProperty name="3"/>
+                  <OpStrictEquals/>
+                  <OpNot/>
+                  <OpAdd/>
+                  <OpCallPropVoid name="7" argc="1"/>
+                  <OpFindPropStrict name="7"/>
+                  <OpPushString index="15"/>
+                  <OpGetLocal0/>
+                  <OpGetProperty name="3"/>
+                  <OpGetProperty name="9"/>
+                  <OpAdd/>
+                  <OpCallPropVoid name="7" argc="1"/>
+                  <OpReturnVoid/>
+                </code>
+                <exceptions/>
+                <traits/>
+              </MethodBody>
+              <MethodBody methodInfo="3" maxStack="4" maxRegs="1" scopeDepth="10" maxScope="11" exceptionCount="0">
+                <code>
+                  <OpGetLocal0/>
+                  <OpPushScope/>
+                  <OpFindPropStrict name="7"/>
+                  <OpPushString index="48"/>
+                  <OpFindPropStrict name="8"/>
+                  <OpPushByte value="0"/>
+                  <OpCallProperty name="8" argc="1"/>
+                  <OpGetLocal0/>
+                  <OpGetProperty name="3"/>
+                  <OpStrictEquals/>
+                  <OpNot/>
+                  <OpAdd/>
+                  <OpCallPropVoid name="7" argc="1"/>
+                  <OpFindPropStrict name="7"/>
+                  <OpPushString index="15"/>
+                  <OpGetLocal0/>
+                  <OpGetProperty name="3"/>
+                  <OpGetProperty name="9"/>
+                  <OpAdd/>
+                  <OpCallPropVoid name="7" argc="1"/>
+                  <OpFindPropStrict name="10"/>
+                  <OpPushByte value="1"/>
+                  <OpCallPropVoid name="10" argc="1"/>
+                  <OpReturnVoid/>
+                </code>
+                <exceptions/>
+                <traits/>
+              </MethodBody>
+              <MethodBody methodInfo="4" maxStack="7" maxRegs="1" scopeDepth="10" maxScope="11" exceptionCount="0">
+                <code>
+                  <OpGetLocal0/>
+                  <OpPushScope/>
+                  <OpGetLocal0/>
+                  <OpConstructSuper argc="0"/>
+                  <OpFindPropStrict name="11"/>
+                  <OpPushByte value="0"/>
+                  <OpGetLocal0/>
+                  <OpGetProperty name="4"/>
+                  <OpPushByte value="1"/>
+                  <OpGetLocal0/>
+                  <OpGetProperty name="5"/>
+                  <OpPushByte value="2"/>
+                  <OpGetLocal0/>
+                  <OpGetProperty name="6"/>
+                  <OpCallPropVoid name="11" argc="6"/>
+                  <OpReturnVoid/>
+                </code>
+                <exceptions/>
+                <traits/>
+              </MethodBody>
+              <MethodBody methodInfo="5" maxStack="2" maxRegs="1" scopeDepth="1" maxScope="9" exceptionCount="0">
+                <code>
+                  <OpGetLocal0/>
+                  <OpPushScope/>
+                  <OpGetScopeObject scopeIndex="0"/>
+                  <OpGetLex name="12"/>
+                  <OpPushScope/>
+                  <OpGetLex name="13"/>
+                  <OpPushScope/>
+                  <OpGetLex name="14"/>
+                  <OpPushScope/>
+                  <OpGetLex name="15"/>
+                  <OpPushScope/>
+                  <OpGetLex name="16"/>
+                  <OpPushScope/>
+                  <OpGetLex name="17"/>
+                  <OpPushScope/>
+                  <OpGetLex name="2"/>
+                  <OpPushScope/>
+                  <OpGetLex name="2"/>
+                  <OpNewClass classIndex="0"/>
+                  <OpPopScope/>
+                  <OpPopScope/>
+                  <OpPopScope/>
+                  <OpPopScope/>
+                  <OpPopScope/>
+                  <OpPopScope/>
+                  <OpPopScope/>
+                  <OpInitProperty name="1"/>
+                  <OpReturnVoid/>
+                </code>
+                <exceptions/>
+                <traits/>
+              </MethodBody>
+            </methodBodies>
+          </Action3>
+        </actions>
+      </DoABCDefine>
+      <SymbolClass>
+        <symbols>
+          <Symbol objectID="0" name="cacheAsBitmap_fla.MainTimeline"/>
+        </symbols>
+      </SymbolClass>
+      <ShowFrame/>
+      <PlaceObject3 replace="1" depth="1" bitmapCaching="1"/>
+      <ShowFrame/>
+      <PlaceObject3 replace="1" depth="1"/>
+      <ShowFrame/>
+      <End/>
+    </tags>
+  </Header>
+</swf>

@@ -4,10 +4,10 @@ use crate::blend::{BlendType, ComplexBlend};
 use crate::buffer_builder::BufferBuilder;
 use crate::buffer_pool::TexturePool;
 use crate::dynamic_transforms::DynamicTransforms;
-use crate::mesh::{as_mesh, DrawType, Mesh};
-use crate::surface::target::CommandTarget;
+use crate::mesh::{DrawType, Mesh, as_mesh};
 use crate::surface::Surface;
-use crate::{as_texture, Descriptors, MaskState, Pipelines, Transforms};
+use crate::surface::target::CommandTarget;
+use crate::{Descriptors, MaskState, Pipelines, Transforms, as_texture};
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::bitmap::{BitmapHandle, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
@@ -104,6 +104,12 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
             DrawCommand::ActivateMask => self.activate_mask(),
             DrawCommand::DeactivateMask => self.deactivate_mask(),
             DrawCommand::PopMask => self.pop_mask(),
+            DrawCommand::RenderAlphaMask {
+                maskee,
+                mask,
+                binds,
+                transform_buffer,
+            } => self.render_alpha_mask(maskee, mask, binds, *transform_buffer),
         }
     }
 
@@ -161,6 +167,18 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
                 self.render_pass
                     .set_pipeline(self.pipelines.bitmap[blend_mode].stencilless_pipeline());
             }
+        }
+
+        self.render_pass.set_bind_group(2, bind_group, &[]);
+    }
+
+    pub fn prep_alpha_mask(&mut self, bind_group: &'pass wgpu::BindGroup) {
+        if self.needs_stencil {
+            self.render_pass
+                .set_pipeline(self.pipelines.alpha_mask.pipeline_for(self.mask_state));
+        } else {
+            self.render_pass
+                .set_pipeline(self.pipelines.alpha_mask.stencilless_pipeline());
         }
 
         self.render_pass.set_bind_group(2, bind_group, &[]);
@@ -297,6 +315,36 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
         }
     }
 
+    pub fn render_alpha_mask(
+        &mut self,
+        _maskee: &PoolOrArcTexture,
+        _mask: &PoolOrArcTexture,
+        bind_group: &'frame wgpu::BindGroup,
+        transform_buffer: wgpu::DynamicOffset,
+    ) {
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.push_debug_group("render_alpha_mask");
+        }
+
+        self.prep_alpha_mask(bind_group);
+
+        self.render_pass.set_bind_group(
+            1,
+            &self.dynamic_transforms.bind_group,
+            &[transform_buffer],
+        );
+
+        self.draw(
+            self.descriptors.quad.vertices_pos.slice(..),
+            self.descriptors.quad.indices.slice(..),
+            6,
+        );
+
+        if cfg!(feature = "render_debug_labels") {
+            self.render_pass.pop_debug_group();
+        }
+    }
+
     pub fn draw_rect(&mut self, transform_buffer: wgpu::DynamicOffset) {
         if cfg!(feature = "render_debug_labels") {
             self.render_pass.push_debug_group("draw_rect");
@@ -411,6 +459,12 @@ pub enum DrawCommand {
         binds: wgpu::BindGroup,
         transform_buffer: wgpu::DynamicOffset,
         blend_mode: TrivialBlend,
+    },
+    RenderAlphaMask {
+        maskee: PoolOrArcTexture,
+        mask: PoolOrArcTexture,
+        binds: wgpu::BindGroup,
+        transform_buffer: wgpu::DynamicOffset,
     },
     RenderShape {
         shape: ShapeHandle,
@@ -827,5 +881,77 @@ impl CommandHandler for WgpuCommandHandler<'_> {
         self.needs_stencil = true;
         self.num_masks -= 1;
         self.current.push(DrawCommand::PopMask);
+    }
+
+    fn render_alpha_mask(&mut self, maskee_commands: CommandList, mask_commands: CommandList) {
+        let mut surface = Surface::new(
+            self.descriptors,
+            self.quality,
+            self.width,
+            self.height,
+            wgpu::TextureFormat::Rgba8Unorm,
+        );
+
+        let maskee = surface.draw_commands(
+            RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
+            self.descriptors,
+            self.meshes,
+            maskee_commands,
+            self.staging_belt,
+            self.dynamic_transforms,
+            self.draw_encoder,
+            LayerRef::None,
+            self.texture_pool,
+        );
+        maskee.ensure_cleared(self.draw_encoder);
+        let matrix = Matrix::scale(maskee.width() as f32, maskee.height() as f32);
+        let maskee = maskee.take_color_texture();
+
+        let mask = surface.draw_commands(
+            RenderTargetMode::FreshWithColor(wgpu::Color::TRANSPARENT),
+            self.descriptors,
+            self.meshes,
+            mask_commands,
+            self.staging_belt,
+            self.dynamic_transforms,
+            self.draw_encoder,
+            LayerRef::None,
+            self.texture_pool,
+        );
+        mask.ensure_cleared(self.draw_encoder);
+        let mask = mask.take_color_texture();
+
+        let binds = self
+            .descriptors
+            .device
+            .create_bind_group(&wgpu::BindGroupDescriptor {
+                layout: &self.descriptors.bind_layouts.alpha_mask,
+                entries: &[
+                    wgpu::BindGroupEntry {
+                        binding: 0,
+                        resource: wgpu::BindingResource::TextureView(maskee.view()),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 1,
+                        resource: wgpu::BindingResource::TextureView(mask.view()),
+                    },
+                    wgpu::BindGroupEntry {
+                        binding: 2,
+                        resource: wgpu::BindingResource::Sampler(
+                            self.descriptors.bitmap_samplers.get_sampler(false, false),
+                        ),
+                    },
+                ],
+                label: None,
+            });
+
+        self.add_to_current(matrix, Default::default(), |transform_buffer| {
+            DrawCommand::RenderAlphaMask {
+                maskee,
+                mask,
+                binds,
+                transform_buffer,
+            }
+        });
     }
 }

@@ -5,29 +5,38 @@ use ruffle_macros::istr;
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::object::BoxedF64;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{NativeObject, Object, Value};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "valueOf" => method(value_of; DONT_ENUM | DONT_DELETE);
+    "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
 };
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "MAX_VALUE" => float(f64::MAX; DONT_ENUM | DONT_DELETE | READ_ONLY);
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
+    "MAX_VALUE" => value(f64::MAX; DONT_ENUM | DONT_DELETE | READ_ONLY);
     // Note this is actually the smallest positive denormalized f64.
     // Rust doesn't provide a constant for this (`MIN_POSITIVE` is a normal f64).
-    "MIN_VALUE" => float(5e-324; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "NaN" => float(f64::NAN; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "NEGATIVE_INFINITY" => float(f64::NEG_INFINITY; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "POSITIVE_INFINITY" => float(f64::INFINITY; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "MIN_VALUE" => value(5e-324; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "NaN" => value(f64::NAN; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "NEGATIVE_INFINITY" => value(f64::NEG_INFINITY; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "POSITIVE_INFINITY" => value(f64::INFINITY; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, Some(function), super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
+    class
+}
+
 /// `Number` constructor
-pub fn number<'gc>(
+pub fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -46,7 +55,7 @@ pub fn number<'gc>(
 }
 
 /// `Number` function
-pub fn number_function<'gc>(
+fn function<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
@@ -59,33 +68,6 @@ pub fn number_function<'gc>(
 
     // If Number is called as a function, return the value.
     Ok(value.into())
-}
-
-pub fn create_number_object<'gc>(
-    context: &mut StringContext<'gc>,
-    number_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let number = FunctionObject::constructor(
-        context,
-        number,
-        Some(number_function),
-        fn_proto,
-        number_proto,
-    );
-    define_properties_on(OBJECT_DECLS, context, number, fn_proto);
-    number
-}
-
-/// Creates `Number.prototype`.
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let number_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, number_proto, fn_proto);
-    number_proto
 }
 
 fn to_string<'gc>(
@@ -103,11 +85,7 @@ fn to_string<'gc>(
         [] => 10,
         [radix, ..] => {
             let radix = radix.coerce_to_f64(activation)? as i32;
-            if (2..=36).contains(&radix) {
-                radix
-            } else {
-                10
-            }
+            if (2..=36).contains(&radix) { radix } else { 10 }
         }
     };
 

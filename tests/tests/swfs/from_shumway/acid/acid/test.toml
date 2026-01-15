@@ -1,0 +1,169 @@
+# Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/acid
+
+num_frames = 18
+
+image_comparisons."output.01".trigger = 1
+image_comparisons."output.02".trigger = 2
+image_comparisons."output.03".trigger = 3
+image_comparisons."output.04".trigger = 4
+image_comparisons."output.05".trigger = 5
+image_comparisons."output.06".trigger = 6
+image_comparisons."output.07".trigger = 7
+image_comparisons."output.08".trigger = 8
+image_comparisons."output.09".trigger = 9
+image_comparisons."output.10".trigger = 10
+image_comparisons."output.11".trigger = 11
+image_comparisons."output.12".trigger = 12
+image_comparisons."output.13".trigger = 13
+image_comparisons."output.14".trigger = 14
+image_comparisons."output.15".trigger = 15
+image_comparisons."output.16".trigger = 16
+image_comparisons."output.17".trigger = 17
+image_comparisons."output.18".trigger = 18
+
+[[image_comparisons."output.01".checks]]
+tolerance = 0
+max_outliers = 9100
+
+[[image_comparisons."output.01".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.02".checks]]
+tolerance = 0
+max_outliers = 12500
+
+[[image_comparisons."output.02".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.03".checks]]
+tolerance = 0
+max_outliers = 11000
+
+[[image_comparisons."output.03".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.04".checks]]
+tolerance = 0
+max_outliers = 12100
+
+[[image_comparisons."output.04".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.05".checks]]
+tolerance = 0
+max_outliers = 11000
+
+[[image_comparisons."output.05".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.06".checks]]
+tolerance = 0
+max_outliers = 12500
+
+[[image_comparisons."output.06".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.07".checks]]
+tolerance = 0
+max_outliers = 11000
+
+[[image_comparisons."output.07".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.08".checks]]
+tolerance = 0
+max_outliers = 11000
+
+[[image_comparisons."output.08".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.09".checks]]
+tolerance = 0
+max_outliers = 12500
+
+[[image_comparisons."output.09".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.10".checks]]
+tolerance = 0
+max_outliers = 11000
+
+[[image_comparisons."output.10".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.11".checks]]
+tolerance = 0
+max_outliers = 13000
+
+[[image_comparisons."output.11".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.12".checks]]
+tolerance = 0
+max_outliers = 13000
+
+[[image_comparisons."output.12".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.13".checks]]
+tolerance = 0
+max_outliers = 13000
+
+[[image_comparisons."output.13".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.14".checks]]
+tolerance = 0
+max_outliers = 13000
+
+[[image_comparisons."output.14".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.15".checks]]
+tolerance = 0
+max_outliers = 13000
+
+[[image_comparisons."output.15".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.16".checks]]
+tolerance = 0
+max_outliers = 13000
+
+[[image_comparisons."output.16".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.17".checks]]
+tolerance = 0
+max_outliers = 13000
+
+[[image_comparisons."output.17".checks]]
+tolerance = 128
+max_outliers = 360
+
+[[image_comparisons."output.18".checks]]
+tolerance = 0
+max_outliers = 13000
+
+[[image_comparisons."output.18".checks]]
+tolerance = 128
+max_outliers = 360
+
+[player_options]
+with_renderer = { optional = false, sample_count = 4 }

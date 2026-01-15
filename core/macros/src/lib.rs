@@ -6,8 +6,8 @@ use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::{
-    parse_macro_input, parse_quote, DeriveInput, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait,
-    LitStr, Meta, Pat, TraitItem, Visibility,
+    DeriveInput, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, LitStr, Meta, Pat, TraitItem,
+    Visibility, parse_macro_input, parse_quote,
 };
 
 /// Define an enum whose variants each implement a trait.
@@ -122,7 +122,7 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
         .items
         .iter_mut()
         .map(|item| match item {
-            TraitItem::Fn(ref mut method) => {
+            TraitItem::Fn(method) => {
                 let mut is_no_dynamic = false;
 
                 method.attrs.retain(|attr| match &attr.meta {
@@ -145,10 +145,8 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                     .inputs
                     .iter()
                     .filter_map(|arg| {
-                        if let FnArg::Typed(arg) = arg {
-                            if let Pat::Ident(i) = &*arg.pat {
-                                return Some(i.ident.clone());
-                            }
+                        if let FnArg::Typed(arg) = arg && let Pat::Ident(i) = &*arg.pat {
+                            return Some(i.ident.clone());
                         }
                         None
                     })
@@ -280,7 +278,9 @@ pub fn derive_has_prefix_field(input: TokenStream) -> TokenStream {
             None
         }
     }) else {
-        panic!("`HasPrefixField` can only be derived for repr(C) structs with at least one named field");
+        panic!(
+            "`HasPrefixField` can only be derived for repr(C) structs with at least one named field"
+        );
     };
 
     let (impl_generics, ty_generics, where_clause) = input.generics.split_for_impl();
@@ -297,7 +297,7 @@ pub fn derive_has_prefix_field(input: TokenStream) -> TokenStream {
         // for a worked-out example), so we add post-mono checks as a latch-ditch guard.
         #[automatically_derived]
         unsafe impl #impl_generics
-                crate::utils::HasPrefixField<#field_ty>
+                ruffle_common::utils::HasPrefixField<#field_ty>
                 for #ty #ty_generics #where_clause {
             const ASSERT_PREFIX_FIELD: () = {
                 ::core::assert!(::core::mem::offset_of!(Self, #field_name) == 0);

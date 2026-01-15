@@ -11,14 +11,14 @@ mod pcm;
 
 pub use adpcm::AdpcmDecoder;
 #[cfg(feature = "mp3")]
-pub use mp3::{mp3_metadata, Mp3Decoder};
+pub use mp3::{Mp3Decoder, mp3_metadata};
 #[cfg(feature = "nellymoser")]
 pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
 
 use crate::backend::audio::{SoundStreamInfo, SoundStreamWrapping};
-use crate::buffer::{Slice, Substream, SubstreamChunksIter};
 use crate::tag_utils::{ControlFlow, SwfSlice};
+use ruffle_common::buffer::{Slice, Substream, SubstreamChunksIter};
 use std::io::{Cursor, Read};
 use swf::{AudioCompression, SoundFormat, TagCode};
 use thiserror::Error;

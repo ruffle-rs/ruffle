@@ -1,0 +1,15 @@
+PASSED: 1 == 1
+PASSED: 3 == 3
+PASSED: _root.asOrder  ==  '0+1+2+3+4+5+6+' [goto_frame_test.c:145]
+PASSED: _root.asOrder  ==  '0+1+2+3+4+5+6+7+' [goto_frame_test.c:148]
+PASSED: mc1._target  ==  '/mc1' [goto_frame_test.c:155]
+PASSED: mc2._target  ==  '/mc2' [goto_frame_test.c:156]
+_level0.mc1 unloaded
+_level0.mc2 unloaded
+PASSED: mc1.getDepth()  ==  -16485 [goto_frame_test.c:182]
+PASSED: mc1._name  ==  'mc1' [goto_frame_test.c:183]
+PASSED: mc2.getDepth()  ==  -16485 [goto_frame_test.c:184]
+PASSED: mc2._name  ==  'mc2' [goto_frame_test.c:185]
+#passed: 10
+#failed: 0
+#total tests run: 10

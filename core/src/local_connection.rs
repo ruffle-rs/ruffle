@@ -1,13 +1,13 @@
-use crate::avm1::globals::local_connection::LocalConnection as Avm1LocalConnectionObject;
 use crate::avm1::Object as Avm1Object;
-use crate::avm2::object::LocalConnectionObject;
+use crate::avm1::globals::local_connection::LocalConnection as Avm1LocalConnectionObject;
 use crate::avm2::Domain as Avm2Domain;
+use crate::avm2::object::LocalConnectionObject;
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use flash_lso::types::Value as AmfValue;
 use fnv::FnvHashMap;
-use gc_arena::collect::Trace;
 use gc_arena::Collect;
+use gc_arena::collect::Trace;
 use ruffle_macros::istr;
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
@@ -158,7 +158,7 @@ impl<'gc> LocalConnections<'gc> {
             None
         } else {
             self.connections.insert(key.to_owned(), connection.into());
-            Some(LocalConnectionHandle(key.to_owned()))
+            Some(LocalConnectionHandle(key))
         }
     }
 

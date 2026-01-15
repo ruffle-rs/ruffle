@@ -131,7 +131,8 @@ pub fn log_warn<'gc>(
         [] => tracing::warn!("(__ruffle__.log_warn called with no arg)"),
         [arg] => {
             let msg = arg.coerce_to_string(activation)?;
-            tracing::warn!("{}", &msg.to_utf8_lossy());
+            let msg = msg.to_utf8_lossy();
+            tracing::warn!("{}", &msg);
         }
         args => {
             let strings = args
@@ -139,7 +140,8 @@ pub fn log_warn<'gc>(
                 .map(|a| a.coerce_to_string(activation))
                 .collect::<Result<Vec<_>, _>>()?;
             let msg = crate::string::join(&strings, &WStr::from_units(b" "));
-            tracing::warn!("{}", &msg.to_utf8_lossy());
+            let msg = msg.to_utf8_lossy();
+            tracing::warn!("{}", &msg);
         }
     }
 

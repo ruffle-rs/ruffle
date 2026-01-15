@@ -90,8 +90,8 @@ pub enum CompressedBitmap {
     Jpeg {
         data: Vec<u8>,
         alpha: Option<Vec<u8>>,
-        width: u16,
-        height: u16,
+        width: u32,
+        height: u32,
     },
     Lossless(DefineBitsLossless<'static>),
 }
@@ -104,8 +104,8 @@ impl CompressedBitmap {
                 height: *height,
             },
             CompressedBitmap::Lossless(define_bits_lossless) => BitmapSize {
-                width: define_bits_lossless.width,
-                height: define_bits_lossless.height,
+                width: define_bits_lossless.width.into(),
+                height: define_bits_lossless.height.into(),
             },
         }
     }

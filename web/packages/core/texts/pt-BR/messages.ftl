@@ -1,17 +1,20 @@
 message-cant-embed =
     Ruffle não conseguiu executar o Flash incorporado nesta página.
     Você pode tentar abrir o arquivo em uma guia separada para evitar esse problema.
+message-restored-from-bfcache =
+    Seu navegador restaurou este conteúdo Flash de uma sessão anterior.
+    Para começar do zero, recarregue a página.
 panic-title = Algo deu errado :(
 more-info = Mais informação
 run-anyway = Executar mesmo assim
 continue = Continuar
-report-bug = Reportar Bug
+report-bug = Reportar bug
 update-ruffle = Atualizar Ruffle
 ruffle-demo = Demo Web
-ruffle-desktop = Aplicativo de Desktop
-ruffle-wiki = Ver Wiki do Ruffle
+ruffle-desktop = Aplicativo de desktop
+ruffle-wiki = Ver guia oficial do Ruffle
 enable-hardware-acceleration = Parece que a aceleração de hardware está desabilitada. Embora o Ruffle possa funcionar, ele pode ser muito lento. Você pode descobrir como habilitar a aceleração de hardware seguindo o link abaixo:
-enable-hardware-acceleration-link = FAQ - Aceleração de hardware do Chrome
+enable-hardware-acceleration-link = FAQ — Aceleração de hardware no Chrome
 view-error-details = Ver detalhes do erro
 open-in-new-tab = Abrir em uma nova guia
 click-to-unmute = Clique para ativar o som
@@ -24,6 +27,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } para copiar
 clipboard-message-cut = { " " } para recortar
 clipboard-message-paste = { " " } para colar
+error-canvas-reload = Não é possível recarregar com o renderizador canvas enquanto ele já está em uso.
 error-file-protocol =
     Parece que você está executando o Ruffle no protocolo "file:".
     Isto não funciona como navegadores bloqueiam muitos recursos de funcionar por razões de segurança.
@@ -31,7 +35,7 @@ error-file-protocol =
 error-javascript-config =
     O Ruffle encontrou um grande problema devido a uma configuração incorreta do JavaScript.
     Se você for o administrador do servidor, convidamos você a verificar os detalhes do erro para descobrir qual parâmetro está com falha.
-    Você também pode consultar o wiki do Ruffle para obter ajuda.
+    Você também pode consultar o guia oficial do Ruffle para obter ajuda.
 error-wasm-not-found =
     Ruffle falhou ao carregar o componente de arquivo ".wasm" necessário.
     Se você é o administrador do servidor, por favor, certifique-se de que o arquivo foi carregado corretamente.
@@ -39,7 +43,7 @@ error-wasm-not-found =
 error-wasm-mime-type =
     Ruffle encontrou um grande problema ao tentar inicializar.
     Este servidor de web não está servindo ".wasm" arquivos com o tipo MIME correto.
-    Se você é o administrador do servidor, por favor consulte o wiki do Ruffle para obter ajuda.
+    Se você é o administrador do servidor, por favor consulte o guia oficial do Ruffle para obter ajuda.
 error-invalid-swf =
     Ruffle não pode analisar o arquivo solicitado.
     O motivo provável é que o arquivo solicitado não seja um SWF válido.
@@ -69,8 +73,8 @@ error-wasm-disabled-on-edge =
     Isso permitirá que seu navegador carregue os arquivos ".wasm" necessários.
     Se o problema persistir, talvez seja necessário usar um navegador diferente.
 error-wasm-unsupported-browser =
-    O navegador que você está usando não suporta as extensões WebAssembly Ruffle exige que seja executado.
-    Por favor, mude para um navegador suportado.
+    O navegador que você está usando não suporta as extensões WebAssembly necessárias para o Ruffle.
+    Por favor, utilize um navegador compatível.
     Você pode encontrar uma lista de navegadores suportados no wiki.
 error-javascript-conflict =
     Ruffle encontrou um grande problema ao tentar inicializar.

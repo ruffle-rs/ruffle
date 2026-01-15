@@ -31,6 +31,9 @@ const METADATA_INSTANCE_ALLOCATOR: &str = "InstanceAllocator";
 /// Indicates that we should generate a reference to a class call handler
 /// method (used as a metadata key with `Ruffle` metadata)
 const METADATA_CALL_HANDLER: &str = "CallHandler";
+/// Indicates that we should generate a class call handler that constructs the
+/// class being called.
+const METADATA_CONSTRUCT_ON_CALL: &str = "ConstructOnCall";
 /// Indicates that we should generate a reference to a custom constructor
 /// method (used as a metadata key with `Ruffle` metadata)
 const METADATA_CUSTOM_CONSTRUCTOR: &str = "CustomConstructor";
@@ -142,11 +145,12 @@ fn strip_version_mark(val: Cow<'_, str>) -> Cow<'_, str> {
     const MIN_API_MARK: usize = 0xE000;
     const MAX_API_MARK: usize = 0xF8FF;
 
-    if let Some(chr) = val.chars().last() {
-        if chr as usize >= MIN_API_MARK && chr as usize <= MAX_API_MARK {
-            // The version mark is 3 bytes in utf-8
-            return val[..val.len() - 3].to_string().into();
-        }
+    if let Some(chr) = val.chars().last()
+        && chr as usize >= MIN_API_MARK
+        && chr as usize <= MAX_API_MARK
+    {
+        // The version mark is 3 bytes in utf-8
+        return val[..val.len() - 3].to_string().into();
     }
     val
 }
@@ -210,12 +214,12 @@ fn flash_to_rust_string(path: &str, uppercase: bool, separator: &str) -> String 
                 return component.to_string();
             }
 
-            let mut without_boundaries = vec![Boundary::DIGIT_UPPER];
-            // Special case for classes ending in '3D' - we want to ave something like
+            let mut remove_boundaries = vec![Boundary::DigitUpper];
+            // Special case for classes ending in '3D' - we want to have something like
             // 'vertex_buffer_3d' instead of 'vertex_buffer3d'
             if !component.ends_with("3D") {
                 // Do not split on a letter followed by a digit, so e.g. `atan2` won't become `atan_2`.
-                without_boundaries.extend([Boundary::UPPER_DIGIT, Boundary::LOWER_DIGIT]);
+                remove_boundaries.extend([Boundary::UpperDigit, Boundary::LowerDigit]);
             }
 
             // For cases like `Vector$int`, so we don't have to put the native
@@ -224,7 +228,7 @@ fn flash_to_rust_string(path: &str, uppercase: bool, separator: &str) -> String 
 
             component
                 .from_case(Case::Camel)
-                .without_boundaries(&without_boundaries)
+                .remove_boundaries(&remove_boundaries)
                 .to_case(new_case)
         })
         .collect::<Vec<_>>();
@@ -455,7 +459,9 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
             TraitKind::Slot { slot_id, .. } | TraitKind::Const { slot_id, .. } => {
                 if trait_has_metadata(&abc, trait_, METADATA_NATIVE_ACCESSIBLE) {
                     if slot_id == 0 {
-                        panic!("ASC should calculate slot ids for all slots; cannot apply NativeAccessible without a compiler-calculated slot id")
+                        panic!(
+                            "ASC should calculate slot ids for all slots; cannot apply NativeAccessible without a compiler-calculated slot id"
+                        )
                     } else {
                         // Slots are 1-indexed!
                         let slot_id = slot_id - 1;
@@ -479,7 +485,9 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
             | TraitKind::Setter { disp_id, method } => {
                 if trait_has_metadata(&abc, trait_, METADATA_NATIVE_CALLABLE) {
                     if disp_id == 0 {
-                        panic!("ASC should calculate disp ids for all methods; cannot apply NativeCallable without a compiler-calculated disp id")
+                        panic!(
+                            "ASC should calculate disp ids for all methods; cannot apply NativeCallable without a compiler-calculated disp id"
+                        )
                     } else {
                         // Disp-ids are 1-indexed, but ASC generates them two disp-ids
                         // too low for class methods and one disp-id too high for
@@ -652,6 +660,13 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                     (None, METADATA_ABSTRACT) if !is_versioning => {
                         rust_instance_allocators[class_id as usize] = {
                             let path = "crate::avm2::object::abstract_class_allocator";
+                            let path_tokens = TokenStream::from_str(path).unwrap();
+                            quote! { Some(#path_tokens) }
+                        };
+                    }
+                    (None, METADATA_CONSTRUCT_ON_CALL) if !is_versioning => {
+                        rust_call_handlers[class_id as usize] = {
+                            let path = "crate::avm2::object::construct_call_handler";
                             let path_tokens = TokenStream::from_str(path).unwrap();
                             quote! { Some(#path_tokens) }
                         };

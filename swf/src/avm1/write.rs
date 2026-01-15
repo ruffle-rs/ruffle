@@ -114,19 +114,19 @@ impl<W: Write> Writer<W> {
             Action::GetProperty => self.write_small_action(OpCode::GetProperty),
             Action::GetTime => self.write_small_action(OpCode::GetTime),
             Action::GetUrl(action) => self.write_get_url(action),
-            Action::GetUrl2(action) => self.write_get_url_2(action),
+            Action::GetUrl2(action) => self.write_get_url_2(*action),
             Action::GetVariable => self.write_small_action(OpCode::GetVariable),
-            Action::GotoFrame(action) => self.write_goto_frame(action),
-            Action::GotoFrame2(action) => self.write_goto_frame_2(action),
+            Action::GotoFrame(action) => self.write_goto_frame(*action),
+            Action::GotoFrame2(action) => self.write_goto_frame_2(*action),
             Action::GotoLabel(action) => self.write_goto_label(action),
             Action::Greater => self.write_small_action(OpCode::Greater),
-            Action::If(action) => self.write_if(action),
+            Action::If(action) => self.write_if(*action),
             Action::ImplementsOp => self.write_small_action(OpCode::ImplementsOp),
             Action::Increment => self.write_small_action(OpCode::Increment),
             Action::InitArray => self.write_small_action(OpCode::InitArray),
             Action::InitObject => self.write_small_action(OpCode::InitObject),
             Action::InstanceOf => self.write_small_action(OpCode::InstanceOf),
-            Action::Jump(action) => self.write_jump(action),
+            Action::Jump(action) => self.write_jump(*action),
             Action::Less => self.write_small_action(OpCode::Less),
             Action::Less2 => self.write_small_action(OpCode::Less2),
             Action::MBAsciiToChar => self.write_small_action(OpCode::MBAsciiToChar),
@@ -157,7 +157,7 @@ impl<W: Write> Writer<W> {
             Action::StartDrag => self.write_small_action(OpCode::StartDrag),
             Action::Stop => self.write_small_action(OpCode::Stop),
             Action::StopSounds => self.write_small_action(OpCode::StopSounds),
-            Action::StoreRegister(action) => self.write_store_register(action),
+            Action::StoreRegister(action) => self.write_store_register(*action),
             Action::StrictEquals => self.write_small_action(OpCode::StrictEquals),
             Action::StringAdd => self.write_small_action(OpCode::StringAdd),
             Action::StringEquals => self.write_small_action(OpCode::StringEquals),
@@ -175,8 +175,8 @@ impl<W: Write> Writer<W> {
             Action::Trace => self.write_small_action(OpCode::Trace),
             Action::Try(action) => self.write_try(action),
             Action::TypeOf => self.write_small_action(OpCode::TypeOf),
-            Action::WaitForFrame(action) => self.write_wait_for_frame(action),
-            Action::WaitForFrame2(action) => self.write_wait_for_frame_2(action),
+            Action::WaitForFrame(action) => self.write_wait_for_frame(*action),
+            Action::WaitForFrame2(action) => self.write_wait_for_frame_2(*action),
             Action::With(action) => self.write_with(action),
             Action::Unknown(action) => self.write_unknown(action),
         }
@@ -263,19 +263,19 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_get_url_2(&mut self, action: &GetUrl2) -> Result<()> {
+    fn write_get_url_2(&mut self, action: GetUrl2) -> Result<()> {
         self.write_action_header(OpCode::GetUrl2, 1)?;
         self.write_u8(action.0.bits())?;
         Ok(())
     }
 
-    fn write_goto_frame(&mut self, action: &GotoFrame) -> Result<()> {
+    fn write_goto_frame(&mut self, action: GotoFrame) -> Result<()> {
         self.write_action_header(OpCode::GotoFrame, 2)?;
         self.write_u16(action.frame)?;
         Ok(())
     }
 
-    fn write_goto_frame_2(&mut self, action: &GotoFrame2) -> Result<()> {
+    fn write_goto_frame_2(&mut self, action: GotoFrame2) -> Result<()> {
         if action.scene_offset != 0 {
             self.write_action_header(OpCode::GotoFrame2, 3)?;
             self.write_u8(if action.set_playing { 0b11 } else { 0b01 })?;
@@ -293,13 +293,13 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_if(&mut self, action: &If) -> Result<()> {
+    fn write_if(&mut self, action: If) -> Result<()> {
         self.write_action_header(OpCode::If, 2)?;
         self.write_i16(action.offset)?;
         Ok(())
     }
 
-    fn write_jump(&mut self, action: &Jump) -> Result<()> {
+    fn write_jump(&mut self, action: Jump) -> Result<()> {
         self.write_action_header(OpCode::Jump, 2)?;
         self.write_i16(action.offset)?;
         Ok(())
@@ -382,7 +382,7 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_store_register(&mut self, action: &StoreRegister) -> Result<()> {
+    fn write_store_register(&mut self, action: StoreRegister) -> Result<()> {
         self.write_action_header(OpCode::StoreRegister, 1)?;
         self.write_u8(action.register)?;
         Ok(())
@@ -437,14 +437,14 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_wait_for_frame(&mut self, action: &WaitForFrame) -> Result<()> {
+    fn write_wait_for_frame(&mut self, action: WaitForFrame) -> Result<()> {
         self.write_action_header(OpCode::WaitForFrame, 3)?;
         self.write_u16(action.frame)?;
         self.write_u8(action.num_actions_to_skip)?;
         Ok(())
     }
 
-    fn write_wait_for_frame_2(&mut self, action: &WaitForFrame2) -> Result<()> {
+    fn write_wait_for_frame_2(&mut self, action: WaitForFrame2) -> Result<()> {
         self.write_action_header(OpCode::WaitForFrame2, 1)?;
         self.write_u8(action.num_actions_to_skip)?;
         Ok(())

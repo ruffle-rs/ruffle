@@ -1,7 +1,7 @@
 use crate::avm1::{
+    Object,
     activation::{Activation, ActivationIdentifier},
     error::Error,
-    Object,
 };
 use crate::display_object::TDisplayObject;
 
@@ -21,7 +21,7 @@ where
             .expect("Root should exist for freshly made movie");
         let mut activation =
             Activation::from_nothing(context, ActivationIdentifier::root("[Test]"), root);
-        let this = root.object().coerce_to_object(&mut activation);
+        let this = root.object1().unwrap();
         let result = test(&mut activation, this);
         if let Err(e) = result {
             panic!("Encountered exception during test: {e}");
@@ -32,26 +32,18 @@ where
 macro_rules! test_method {
     ( $test: ident, $name: expr, $object: expr, $($versions: expr => { $( $(@epsilon($epsilon: expr))? [$($arg: expr),*] => $out: expr),* }),* ) => {
         #[test]
-        #[allow(unreachable_code)] // the `assert_eq!` at the end, in expansions without `@epsilon`
         fn $test() {
             use $crate::avm1::test_utils::*;
             $(
                 for version in &$versions {
                     with_avm(*version, |activation, _root| -> Result<(), Error> {
-                        let name = crate::string::AvmString::new_utf8(activation.gc(), $name);
+                        let name = $crate::string::AvmString::new_utf8(activation.gc(), $name);
                         let object = $object(activation);
 
                         $(
-                            let args: Vec<Value> = vec![$($arg.into()),*];
-                            let ret = crate::avm1::object::Object::call_method(object, name, &args, activation, crate::avm1::function::ExecutionReason::Special)?;
-
-                            // Do a numeric comparison with tolerance if `@epsilon` was given:
-                            $(
-                                assert!(f64::abs($out as f64 - ret.coerce_to_f64(activation)?) < $epsilon as f64, "@epsilon({:?}) {:?} => {:?} in swf {}", $epsilon, args, $out, version);
-                                return Ok(());
-                            )?
-                            // Else, do a generic equality comparison:
-                            assert_eq!(ret, $out.into(), "{:?} => {:?} in swf {}", args, $out, version);
+                            let args: &[Value<'_>] = &[$($arg.into()),*];
+                            let ret = $crate::avm1::object::Object::call_method(object, name, args, activation, $crate::avm1::function::ExecutionReason::Special)?;
+                            test_method!(@__cmp[ $($epsilon)? ] for version in activation, args => ret == $out );
                         )*
 
                         Ok(())
@@ -60,4 +52,16 @@ macro_rules! test_method {
             )*
         }
     };
+
+    // Do a numeric comparison with tolerance if `@epsilon` was given:
+    ( @__cmp[$epsilon: expr] for $version: ident in $activation: ident, $args: ident => $ret: ident == $out: expr ) => {{
+        let epsilon = $epsilon as f64;
+        assert!(f64::abs($out as f64 - $ret.coerce_to_f64($activation)?) < epsilon, "@epsilon({:?}) {:?} => {:?} in swf {}", epsilon, $args, $out, $version)
+    }};
+
+    // Else, do a generic equality comparison:
+    ( @__cmp[] for $version: ident in $activation: ident, $args: ident => $ret: ident == $out: expr ) => {{
+        let out = $crate::avm1::Value::from($out);
+        assert_eq!($ret, out, "{:?} => {:?} in swf {}", $args, out, $version)
+    }}
 }

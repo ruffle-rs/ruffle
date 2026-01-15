@@ -20,6 +20,7 @@ impl Recent {
     /// Checks if a recent entry is available.
     ///
     /// If the URL is local file, it will be checked if it exists, otherwise returns `true`.
+    #[cfg(feature = "fs")]
     pub fn is_available(&self) -> bool {
         if self.url.scheme() == "file" {
             return match self.url.to_file_path() {

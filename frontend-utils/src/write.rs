@@ -1,4 +1,4 @@
-use toml_edit::{array, ArrayOfTables, Table};
+use toml_edit::{ArrayOfTables, Table, array};
 
 pub trait TableExt {
     /// Gets an existing array of tables, or creates a new one if it does not exist or type is different.

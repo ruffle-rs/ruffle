@@ -11,10 +11,12 @@
 //! runs in one phase, with timeline operations executing with all phases
 //! inline in the order that clips were originally created.
 
-use crate::avm2::Avm2;
+use crate::avm2::{Avm2, EventObject};
 use crate::avm2_stub_method_context;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
+use crate::loader::LoadManager;
+use crate::orphan_manager::OrphanManager;
 use tracing::instrument;
 
 /// Which phase of the frame we're currently in.
@@ -77,34 +79,34 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
     }
 
     *context.frame_phase = FramePhase::Enter;
-    Avm2::each_orphan_obj(context, |orphan, context| {
+    OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.enter_frame(context);
     });
     stage.enter_frame(context);
 
     *context.frame_phase = FramePhase::Construct;
-    Avm2::each_orphan_obj(context, |orphan, context| {
+    OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.construct_frame(context);
     });
     stage.construct_frame(context);
-    stage.frame_constructed(context);
+    broadcast_frame_constructed(context);
 
     *context.frame_phase = FramePhase::FrameScripts;
-    Avm2::each_orphan_obj(context, |orphan, context| {
+    OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.run_frame_scripts(context);
     });
     stage.run_frame_scripts(context);
     MovieClip::run_frame_script_cleanup(context);
 
     *context.frame_phase = FramePhase::Exit;
-    stage.exit_frame(context);
+    broadcast_frame_exited(context);
 
     // We cannot easily remove dead `GcWeak` instances from the orphan list
     // inside `each_orphan_movie`, since the callback may modify the orphan list.
     // Instead, we do one cleanup at the end of the frame.
     // This performs special handling of clips which became orphaned as
     // a result of a RemoveObject tag - see `cleanup_dead_orphans` for details.
-    Avm2::cleanup_dead_orphans(context);
+    context.orphan_manager.cleanup_dead_orphans(context.gc());
 
     *context.frame_phase = FramePhase::Idle;
 }
@@ -129,12 +131,7 @@ pub fn run_inner_goto_frame<'gc>(
             "goto",
             "with SWF 9 movie"
         );
-        // Note - this runs `construct_frame` at the wrong time - testing shows that
-        // clips in the target frame get constructed at some point *after* the
-        // call to `gotoAndStop/gotoAndPlay` returns. However, I suspect that this is related
-        // to the very odd framescript behavior in SWF 9 gotos (the *same* framescript can run twice
-        // in a row). For now, this is enough to get several games working.
-        initial_clip.construct_frame(context);
+
         // We skip the next `enter_frame` call, so that we will still run the framescripts
         // queued for our target frame.
         initial_clip.base().set_skip_next_enter_frame(true);
@@ -145,18 +142,22 @@ pub fn run_inner_goto_frame<'gc>(
     let stage = context.stage;
     let old_phase = *context.frame_phase;
 
+    // When performing goto, frame scripts behave the same as when entering a new frame
+    // so no separate cleanup is performed on ones registered during frame script phase
+    context.frame_script_cleanup_queue.clear();
+
     // Note - we do *not* call `enter_frame` or dispatch an `enterFrame` event
 
     *context.frame_phase = FramePhase::Construct;
-    Avm2::each_orphan_obj(context, |orphan, context| {
+    OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.construct_frame(context);
     });
     stage.construct_frame(context);
-    stage.frame_constructed(context);
+    broadcast_frame_constructed(context);
 
     *context.frame_phase = FramePhase::FrameScripts;
     stage.run_frame_scripts(context);
-    Avm2::each_orphan_obj(context, |orphan, context| {
+    OrphanManager::each_orphan_obj(context, |orphan, context| {
         orphan.run_frame_scripts(context);
     });
 
@@ -165,16 +166,32 @@ pub fn run_inner_goto_frame<'gc>(
     }
 
     *context.frame_phase = FramePhase::Exit;
-    stage.exit_frame(context);
+    broadcast_frame_exited(context);
 
     // We cannot easily remove dead `GcWeak` instances from the orphan list
     // inside `each_orphan_movie`, since the callback may modify the orphan list.
     // Instead, we do one cleanup at the end of the frame.
     // This performs special handling of clips which became orphaned as
     // a result of a RemoveObject tag - see `cleanup_dead_orphans` for details.
-    Avm2::cleanup_dead_orphans(context);
+    context.orphan_manager.cleanup_dead_orphans(context.gc());
 
     *context.frame_phase = old_phase;
+}
+
+/// Broadcast a `frameConstructed` event to all `DisplayObject`s.
+pub fn broadcast_frame_constructed<'gc>(context: &mut UpdateContext<'gc>) {
+    let frame_constructed_evt = EventObject::bare_default_event(context, "frameConstructed");
+    let dobject_constr = context.avm2.classes().display_object;
+    Avm2::broadcast_event(context, frame_constructed_evt, dobject_constr);
+}
+
+/// Broadcast a `exitFrame` event to all `DisplayObject`s.
+pub fn broadcast_frame_exited<'gc>(context: &mut UpdateContext<'gc>) {
+    let exit_frame_evt = EventObject::bare_default_event(context, "exitFrame");
+    let dobject_constr = context.avm2.classes().display_object;
+    Avm2::broadcast_event(context, exit_frame_evt, dobject_constr);
+
+    LoadManager::run_exit_frame(context);
 }
 
 /// Run all previously-executed frame phases on a newly-constructed display

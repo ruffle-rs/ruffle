@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Archivo
-file-menu-open-quick = Abrir...
 file-menu-open-advanced = Abrir avanzado...
 file-menu-close = Cerrar
 file-menu-reload = Recargar
@@ -33,9 +32,10 @@ bookmarks-menu-add = Añadir...
 bookmarks-menu-manage = Gestionar favoritos...
 debug-menu = Herramientas de depuración
 debug-menu-open-stage = Ver información de la página
+debug-menu-open-root-movie-clip = Ver MovieClip principal
 debug-menu-open-movie = Ver película
 debug-menu-open-movie-list = Mostrar películas conocidas
 debug-menu-open-domain-list = Mostrar dominios
 debug-menu-search-display-objects = Buscar los objetos de rendimiento...
 view-menu = Ver
-view-menu-fullscreen = Pantalla Completa
+view-menu-fullscreen = Pantalla completa

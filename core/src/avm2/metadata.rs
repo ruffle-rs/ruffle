@@ -1,7 +1,7 @@
-use crate::avm2::array::ArrayStorage;
 use crate::avm2::object::{ArrayObject, Object, ScriptObject, TObject};
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::{Activation, Error, Value};
+use crate::avm2::{Activation, Error};
+use crate::context::UpdateContext;
 use crate::string::AvmString;
 
 use gc_arena::Collect;
@@ -74,28 +74,27 @@ impl<'gc> Metadata<'gc> {
     }
 
     // Converts the Metadata to an Object of the form used in avmplus:describeTypeJSON().
-    pub fn as_json_object(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        let object = ScriptObject::new_object(activation);
-        object.set_dynamic_property(istr!("name"), self.name.into(), activation.gc());
+    pub fn as_json_object(&self, context: &mut UpdateContext<'gc>) -> Object<'gc> {
+        let name_str = istr!(context, "name");
+        let key_str = istr!(context, "key");
+        let value_str = istr!(context, "value");
 
-        let values = self
+        let object = ScriptObject::new_object(context);
+        object.set_dynamic_property(name_str, self.name.into(), context.gc());
+
+        let storage = self
             .items
             .iter()
             .map(|item| {
-                let value_object = ScriptObject::new_object(activation);
-                value_object.set_dynamic_property(istr!("key"), item.key.into(), activation.gc());
-                value_object.set_dynamic_property(
-                    istr!("value"),
-                    item.value.into(),
-                    activation.gc(),
-                );
-                Some(value_object.into())
+                let value_object = ScriptObject::new_object(context);
+                value_object.set_dynamic_property(key_str, item.key.into(), context.gc());
+                value_object.set_dynamic_property(value_str, item.value.into(), context.gc());
+                value_object
             })
-            .collect::<Vec<Option<Value<'gc>>>>();
+            .collect();
 
-        let values_array =
-            ArrayObject::from_storage(activation, ArrayStorage::from_storage(values));
-        object.set_dynamic_property(istr!("value"), values_array.into(), activation.gc());
+        let values_array = ArrayObject::from_storage(context, storage);
+        object.set_dynamic_property(value_str, values_array.into(), context.gc());
         object
     }
 }

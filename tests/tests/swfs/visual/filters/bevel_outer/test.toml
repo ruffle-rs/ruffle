@@ -2,6 +2,9 @@ num_frames = 1
 
 [image_comparisons.output]
 tolerance = 3
+max_outliers = 18
 
 [player_options]
 with_renderer = { optional = false, sample_count = 1 }
+# TODO Fix this test. It shouldn't depend on the default font.
+with_default_font = true

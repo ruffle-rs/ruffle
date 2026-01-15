@@ -1,16 +1,14 @@
 //! flash.filters.GradientBevelFilter and flash.filters.GradientGlowFilter objects
 
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
-use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
 use std::cell::{Cell, RefCell};
-use swf::{Color, Fixed16, Fixed8, GradientFilterFlags, GradientRecord};
+use swf::{Color, Fixed8, Fixed16, GradientFilterFlags, GradientRecord};
 
 const MAX_COLORS: usize = 16;
 
@@ -189,7 +187,7 @@ impl<'gc> GradientFilter<'gc> {
         // FP 11 and FP 32 behave differently here: in FP 11, only "true" objects resize
         // the matrix, but in FP 32 strings will too (and so fill the matrix with `NaN`
         // values, as they have a `length` but no actual elements).
-        let object = value.coerce_to_object(activation);
+        let object = value.coerce_to_object_or_bare(activation)?;
         let length = usize::try_from(object.length(activation)?).unwrap_or_default();
         let num_colors = length.min(MAX_COLORS);
 
@@ -387,56 +385,81 @@ impl<'gc> GradientFilter<'gc> {
     }
 }
 
-macro_rules! gradient_filter_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "distance" => property(gradient_filter_method!(1), gradient_filter_method!(2); VERSION_8);
-    "angle" => property(gradient_filter_method!(3), gradient_filter_method!(4); VERSION_8);
-    "colors" => property(gradient_filter_method!(5), gradient_filter_method!(6); VERSION_8);
-    "alphas" => property(gradient_filter_method!(7), gradient_filter_method!(8); VERSION_8);
-    "ratios" => property(gradient_filter_method!(9), gradient_filter_method!(10); VERSION_8);
-    "blurX" => property(gradient_filter_method!(11), gradient_filter_method!(12); VERSION_8);
-    "blurY" => property(gradient_filter_method!(13), gradient_filter_method!(14); VERSION_8);
-    "quality" => property(gradient_filter_method!(15), gradient_filter_method!(16); VERSION_8);
-    "strength" => property(gradient_filter_method!(17), gradient_filter_method!(18); VERSION_8);
-    "knockout" => property(gradient_filter_method!(19), gradient_filter_method!(20); VERSION_8);
-    "type" => property(gradient_filter_method!(21), gradient_filter_method!(22); VERSION_8);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    use fn method;
+    "distance" => property(GET_DISTANCE, SET_DISTANCE; VERSION_8);
+    "angle" => property(GET_ANGLE, SET_ANGLE; VERSION_8);
+    "colors" => property(GET_COLORS, SET_COLORS; VERSION_8);
+    "alphas" => property(GET_ALPHAS, SET_ALPHAS; VERSION_8);
+    "ratios" => property(GET_RATIOS, SET_RATIOS; VERSION_8);
+    "blurX" => property(GET_BLUR_X, SET_BLUR_X; VERSION_8);
+    "blurY" => property(GET_BLUR_Y, SET_BLUR_Y; VERSION_8);
+    "quality" => property(GET_QUALITY, SET_QUALITY; VERSION_8);
+    "strength" => property(GET_STRENGTH, SET_STRENGTH; VERSION_8);
+    "knockout" => property(GET_KNOCKOUT, SET_KNOCKOUT; VERSION_8);
+    "type" => property(GET_TYPE, SET_TYPE; VERSION_8);
 };
 
-fn method<'gc>(
+pub fn create_bevel_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(
+        table_constructor!(method, BEVEL_CONSTRUCTOR),
+        None,
+        super_proto,
+    );
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+pub fn create_glow_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(
+        table_constructor!(method, GLOW_CONSTRUCTOR),
+        None,
+        super_proto,
+    );
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+pub mod method {
+    pub const GLOW_CONSTRUCTOR: u16 = 0;
+    pub const GET_DISTANCE: u16 = 1;
+    pub const SET_DISTANCE: u16 = 2;
+    pub const GET_ANGLE: u16 = 3;
+    pub const SET_ANGLE: u16 = 4;
+    pub const GET_COLORS: u16 = 5;
+    pub const SET_COLORS: u16 = 6;
+    pub const GET_ALPHAS: u16 = 7;
+    pub const SET_ALPHAS: u16 = 8;
+    pub const GET_RATIOS: u16 = 9;
+    pub const SET_RATIOS: u16 = 10;
+    pub const GET_BLUR_X: u16 = 11;
+    pub const SET_BLUR_X: u16 = 12;
+    pub const GET_BLUR_Y: u16 = 13;
+    pub const SET_BLUR_Y: u16 = 14;
+    pub const GET_QUALITY: u16 = 15;
+    pub const SET_QUALITY: u16 = 16;
+    pub const GET_STRENGTH: u16 = 17;
+    pub const SET_STRENGTH: u16 = 18;
+    pub const GET_KNOCKOUT: u16 = 19;
+    pub const SET_KNOCKOUT: u16 = 20;
+    pub const GET_TYPE: u16 = 21;
+    pub const SET_TYPE: u16 = 22;
+    pub const BEVEL_CONSTRUCTOR: u16 = 1000;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const GLOW_CONSTRUCTOR: u16 = 0;
-    const GET_DISTANCE: u16 = 1;
-    const SET_DISTANCE: u16 = 2;
-    const GET_ANGLE: u16 = 3;
-    const SET_ANGLE: u16 = 4;
-    const GET_COLORS: u16 = 5;
-    const SET_COLORS: u16 = 6;
-    const GET_ALPHAS: u16 = 7;
-    const SET_ALPHAS: u16 = 8;
-    const GET_RATIOS: u16 = 9;
-    const SET_RATIOS: u16 = 10;
-    const GET_BLUR_X: u16 = 11;
-    const SET_BLUR_X: u16 = 12;
-    const GET_BLUR_Y: u16 = 13;
-    const SET_BLUR_Y: u16 = 14;
-    const GET_QUALITY: u16 = 15;
-    const SET_QUALITY: u16 = 16;
-    const GET_STRENGTH: u16 = 17;
-    const SET_STRENGTH: u16 = 18;
-    const GET_KNOCKOUT: u16 = 19;
-    const SET_KNOCKOUT: u16 = 20;
-    const GET_TYPE: u16 = 21;
-    const SET_TYPE: u16 = 22;
-    const BEVEL_CONSTRUCTOR: u16 = 1000;
+    use method::*;
 
     if index == BEVEL_CONSTRUCTOR {
         let gradient_bevel_filter = GradientFilter::new(activation, args)?;
@@ -527,46 +550,4 @@ fn method<'gc>(
         }
         _ => Value::Undefined,
     })
-}
-
-pub fn create_bevel_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let gradient_bevel_filter_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
-    gradient_bevel_filter_proto
-}
-
-pub fn create_bevel_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        gradient_filter_method!(1000),
-        None,
-        fn_proto,
-        proto,
-    )
-}
-
-pub fn create_glow_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let gradient_bevel_filter_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
-    gradient_bevel_filter_proto
-}
-
-pub fn create_glow_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(context, gradient_filter_method!(0), None, fn_proto, proto)
 }

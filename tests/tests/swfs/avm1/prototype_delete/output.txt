@@ -1,0 +1,12 @@
+// Object.prototype
+[object Object]
+[object Object]
+// MovieClip.prototype
+[object Object]
+[object Object]
+// Base.prototype
+[object Object]
+[object Object]
+// Extended.prototype
+[object Object]
+[object Object]

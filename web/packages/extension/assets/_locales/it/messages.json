@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "Info"
     },
+    "settings_log_level_debug": {
+        "message": "Debug"
+    },
+    "settings_log_level_trace": {
+        "message": "Traccia"
+    },
     "settings_max_execution_duration": {
         "message": "Durata massima consentita di esecuzione ActionScript (in secondi)"
     },
@@ -33,10 +39,16 @@
         "message": "Numero di versione del Flash Player da emulare (intervallo 1-32)"
     },
     "settings_preferred_renderer": {
-        "message": "Renditore preferito"
+        "message": "Renderer preferito"
     },
     "settings_preferred_renderer_auto": {
         "message": "Automatico"
+    },
+    "settings_device_font_renderer": {
+        "message": "Dispositivo di renderizzazione della fonte"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Incorporato"
     },
     "settings_advanced_options": {
         "message": "Opzioni avanzate"
@@ -81,22 +93,22 @@
         "message": "Aggiorna la tab per applicare i cambiamenti"
     },
     "open_player_page": {
-        "message": "Apri Riproduttore SWF"
+        "message": "Apri riproduttore SWF"
     },
     "open_settings_page": {
-        "message": "Apri la Pagina Impostazioni"
+        "message": "Apri la pagina impostazioni"
     },
     "settings_page": {
-        "message": "Pagina Impostazioni"
+        "message": "Pagina impostazioni"
     },
     "description": {
         "message": "Rimettere Flash sul web dove appartiene."
     },
     "save_settings": {
-        "message": "Salva Impostazioni"
+        "message": "Salva impostazioni"
     },
     "settings_saved": {
-        "message": "Impostazioni Salvate"
+        "message": "Impostazioni salvate"
     },
     "onboarding_page": {
         "message": "Pagina di onboarding"
@@ -106,6 +118,9 @@
     },
     "permissions_not_granted": {
         "message": "Dovrai fare clic sull'icona Ruffle su ogni sito su cui desideri utilizzare Ruffle"
+    },
+    "grant_single_site_permission": {
+        "message": "Abilita in modo permanente per questo sito"
     },
     "permissions_explanation": {
         "message": "L'estensione Ruffle funziona meglio con la possibilità di accedere ai dati su tutti i siti web. Ciò gli consente di funzionare al primo caricamento di qualsiasi sito Web, consentendogli quindi di convincere immediatamente i siti Web che eseguono il rilevamento di Flash Player a consentire l'esecuzione del contenuto Flash. Gli dà inoltre la possibilità di caricare file SWF nella sua pagina del lettore interno da altre posizioni sul Web e gli consente di caricare automaticamente collegamenti SWF diretti in quella pagina. Se non concedi questa autorizzazione, dovrai abilitare Ruffle manualmente su ogni sito web su cui desideri utilizzarlo facendo clic sull'icona dell'estensione e abilitandola per quel sito web."

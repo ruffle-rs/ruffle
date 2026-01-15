@@ -1,5 +1,6 @@
 import {
-    getTraceOutput,
+    assertNoMoreTraceOutput,
+    expectTraceOutput,
     hideHardwareAccelerationModal,
     injectRuffleAndWait,
     openTest,
@@ -18,16 +19,15 @@ async function scroll(
     lines: number,
 ) {
     const canvas = await player.shadow$("canvas");
+    const canvasSize = await canvas.getSize();
+
+    const xOffset = x - canvasSize.width / 2;
+    const yOffset = y - canvasSize.height / 2;
+    await canvas.moveTo({ xOffset, yOffset });
 
     return await browser.execute(
-        (element, x, y, lines) => {
+        (element, lines) => {
             const el = element as unknown as HTMLElement;
-            el.dispatchEvent(
-                new PointerEvent("pointermove", {
-                    clientX: x as unknown as number,
-                    clientY: y as unknown as number,
-                }),
-            );
             return el.dispatchEvent(
                 new WheelEvent("wheel", {
                     deltaY: lines as unknown as number,
@@ -37,8 +37,6 @@ async function scroll(
             );
         },
         canvas,
-        x,
-        y,
         lines,
     );
 }
@@ -77,7 +75,7 @@ interface TestParams {
             );
             await injectRuffleAndWait(browser);
             const player = await browser.$("<ruffle-object>");
-            await playAndMonitor(browser, player, "Loaded!\n");
+            await playAndMonitor(browser, player, ["Loaded!"]);
             await hideHardwareAccelerationModal(browser, player);
             // await new Promise(f => setTimeout(f, 10000000));
         });
@@ -88,10 +86,9 @@ interface TestParams {
             expect(await scroll(browser, player, 100, 100, 1)).to.equal(
                 expectedScroll ?? false,
             );
-
-            expect(await getTraceOutput(browser, player)).to.equal(
-                "Wheel consumed 1, vscroll: 1\n",
-            );
+            await expectTraceOutput(browser, player, [
+                "Wheel consumed 1, vscroll: 1",
+            ]);
         });
 
         it("scroll the text field up", async () => {
@@ -124,10 +121,9 @@ interface TestParams {
             expect(await scroll(browser, player, 500, 100, 1)).to.equal(
                 expectedScroll ?? false,
             );
-
-            expect(await getTraceOutput(browser, player)).to.equal(
-                "Wheel consumed 2, vscroll: 2\n",
-            );
+            await expectTraceOutput(browser, player, [
+                "Wheel consumed 2, vscroll: 2",
+            ]);
         });
 
         it("scroll non-interactive content", async () => {
@@ -136,6 +132,11 @@ interface TestParams {
             expect(await scroll(browser, player, 700, 100, 1)).to.equal(
                 expectedScroll ?? true,
             );
+        });
+
+        it("no more traces", async function () {
+            const player = await browser.$("#objectElement");
+            assertNoMoreTraceOutput(browser, player);
         });
     });
 });

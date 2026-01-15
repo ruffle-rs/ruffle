@@ -1,2 +1,2 @@
 dialog-ok = Tamam
-dialog-cancel = Vazgeç
+dialog-cancel = İptal

@@ -18,6 +18,8 @@ mod preferences;
 #[cfg(feature = "tracy")]
 mod tracy;
 mod util;
+#[cfg(windows)]
+mod windows;
 
 use crate::preferences::GlobalPreferences;
 use anyhow::{Context, Error};
@@ -57,23 +59,6 @@ static RUFFLE_VERSION: &str = concat!(
     ")"
 );
 
-fn init() {
-    // When linked with the windows subsystem windows won't automatically attach
-    // to the console of the parent process, so we do it explicitly. This fails
-    // silently if the parent has no console.
-    #[cfg(windows)]
-    unsafe {
-        use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
-        AttachConsole(ATTACH_PARENT_PROCESS);
-    }
-
-    let prev_hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(move |info| {
-        prev_hook(info);
-        panic_hook(info);
-    }));
-}
-
 fn panic_hook(info: &PanicHookInfo) {
     CALLSTACK.with(|callstack| {
         if let Some(callstack) = &*callstack.borrow() {
@@ -81,18 +66,8 @@ fn panic_hook(info: &PanicHookInfo) {
         }
     });
 
-    // [NA] Let me just point out that PanicInfo::message() exists but isn't stable and that sucks.
-    let panic_text = info.to_string();
-    let message = if let Some(text) = panic_text.strip_prefix("panicked at '") {
-        let location = info.location().map(|l| l.to_string()).unwrap_or_default();
-        if let Some(text) = text.strip_suffix(&format!("', {location}")) {
-            text.trim()
-        } else {
-            text.trim()
-        }
-    } else {
-        panic_text.trim()
-    };
+    let message = info.payload_as_str().unwrap_or("panic occurred");
+
     if rfd::MessageDialog::new()
         .set_level(rfd::MessageLevel::Error)
         .set_title("Ruffle")
@@ -134,26 +109,27 @@ fn panic_hook(info: &PanicHookInfo) {
         if !extra_info.is_empty() {
             params.push(("extra_info", extra_info.join("\n")));
         }
-        if let Ok(url) = Url::parse_with_params("https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml", &params) {
+        if let Ok(url) = Url::parse_with_params(
+            "https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml",
+            &params,
+        ) {
             let _ = webbrowser::open(url.as_str());
         }
     }
 }
 
-fn shutdown() {
-    // Without explicitly detaching the console cmd won't redraw it's prompt.
-    #[cfg(windows)]
-    unsafe {
-        winapi::um::wincon::FreeConsole();
-    }
-}
+fn main() -> Result<(), Error> {
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        prev_hook(info);
+        panic_hook(info);
+    }));
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    init();
+    #[cfg(windows)]
+    let _console = windows::Console::attach();
 
     let opt = Opt::parse();
-    let preferences = GlobalPreferences::load(opt.clone())?;
+    let preferences = GlobalPreferences::load(opt)?;
 
     let logs_path = &preferences.cli.cache_directory.join("log");
     let log_path = preferences.log_filename_pattern().create_path(logs_path);
@@ -188,17 +164,15 @@ async fn main() -> Result<(), Error> {
 
     subscriber.init();
 
-    let result = App::new(preferences)
-        .await
-        .and_then(|(mut app, event_loop)| {
-            event_loop.run_app(&mut app).context("Event loop failure")
-        });
+    let result = App::new(preferences).and_then(|(mut app, event_loop)| {
+        event_loop.run_app(&mut app).context("Event loop failure")
+    });
 
     #[cfg(windows)]
     if let Err(error) = &result {
         eprintln!("{:?}", error)
     }
-    shutdown();
+
     result
 }
 

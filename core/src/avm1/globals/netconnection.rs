@@ -1,12 +1,12 @@
-use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::shared_object::{deserialize_value, serialize};
-use crate::avm1::object::Object;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, ActivationIdentifier, Error, ExecutionReason, NativeObject, Value};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{
+    Activation, ActivationIdentifier, Error, ExecutionReason, NativeObject, Object, Value,
+};
 use crate::avm1_stub;
 use crate::context::UpdateContext;
 use crate::net_connection::{NetConnectionHandle, NetConnections, ResponderCallback};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use flash_lso::packet::Header;
 use flash_lso::types::ObjectId;
 use flash_lso::types::Value as AMFValue;
@@ -28,11 +28,11 @@ struct NetConnectionData {
 pub struct NetConnection<'gc>(Gc<'gc, NetConnectionData>);
 
 impl<'gc> NetConnection<'gc> {
-    pub fn handle(&self) -> Option<NetConnectionHandle> {
+    pub fn handle(self) -> Option<NetConnectionHandle> {
         self.0.handle.get()
     }
 
-    pub fn set_handle(&self, handle: Option<NetConnectionHandle>) -> Option<NetConnectionHandle> {
+    pub fn set_handle(self, handle: Option<NetConnectionHandle>) -> Option<NetConnectionHandle> {
         self.0.handle.replace(handle)
     }
 
@@ -59,10 +59,10 @@ impl<'gc> NetConnection<'gc> {
             ActivationIdentifier::root("[NetConnection connect]"),
             root_clip,
         );
-        let constructor = activation.context.avm1.prototypes().object_constructor;
+        let constructor = activation.prototypes().object_constructor;
         let event = constructor
             .construct(&mut activation, &[])?
-            .coerce_to_object(&mut activation);
+            .coerce_to_object_or_bare(&mut activation)?;
         let code = AvmString::new_utf8(activation.gc(), code);
         event.set(istr!("code"), code.into(), &mut activation)?;
         event.set(istr!("level"), istr!("status").into(), &mut activation)?;
@@ -151,16 +151,26 @@ pub fn constructor<'gc>(
     Ok(Value::Undefined)
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "isConnected" => property(is_connected);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "protocol" => property(protocol);
-    "uri" => property(uri);
-
-    "addHeader" => method(add_header; DONT_ENUM | DONT_DELETE);
-    "call" => method(call; DONT_ENUM | DONT_DELETE);
-    "close" => method(close; DONT_ENUM | DONT_DELETE);
     "connect" => method(connect; DONT_ENUM | DONT_DELETE);
+    "close" => method(close; DONT_ENUM | DONT_DELETE);
+    "call" => method(call; DONT_ENUM | DONT_DELETE);
+    "addHeader" => method(add_header; DONT_ENUM | DONT_DELETE);
+
+        // TODO Looks like isConnected & uri are not built-in properties.
+    "isConnected" => property(is_connected);
+    "uri" => property(uri);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
 
 fn is_connected<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -262,13 +272,15 @@ fn call<'gc>(
         .coerce_to_string(activation)?;
     let mut arguments = Vec::new();
 
-    for arg in &args[2..] {
-        arguments.push(Rc::new(serialize(activation, *arg)));
+    if args.len() > 2 {
+        for arg in &args[2..] {
+            arguments.push(Rc::new(serialize(activation, *arg)));
+        }
     }
 
     if let Some(handle) = net_connection.handle() {
         if let Some(responder) = args.get(1) {
-            let responder = responder.coerce_to_object(activation);
+            let responder = responder.coerce_to_object_or_bare(activation)?;
             NetConnections::send_avm1(
                 activation.context,
                 handle,
@@ -331,22 +343,4 @@ fn connect<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
-}
-
-pub fn create_class<'gc>(
-    context: &mut StringContext<'gc>,
-    netconnection_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::native(context, constructor, fn_proto, netconnection_proto)
 }

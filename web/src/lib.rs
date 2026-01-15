@@ -22,7 +22,7 @@ use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{Player, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
 use serde::Serialize;
-use slotmap::{new_key_type, SlotMap};
+use slotmap::{SlotMap, new_key_type};
 use std::any::Any;
 use std::rc::Rc;
 use std::str::FromStr;
@@ -147,7 +147,7 @@ struct RuffleInstance {
 }
 
 #[wasm_bindgen(raw_module = "./internal/player/inner")]
-extern "C" {
+unsafe extern "C" {
     #[derive(Clone)]
     pub type JavascriptPlayer;
 
@@ -159,7 +159,7 @@ extern "C" {
 
     #[wasm_bindgen(method, catch, js_name = "callFSCommand")]
     fn call_fs_command(this: &JavascriptPlayer, command: &str, args: &str)
-        -> Result<bool, JsValue>;
+    -> Result<bool, JsValue>;
 
     #[wasm_bindgen(method)]
     fn panic(this: &JavascriptPlayer, error: &JsError);
@@ -236,6 +236,12 @@ pub enum ScrollingBehavior {
     Always,
     Never,
     Smart,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum DeviceFontRenderer {
+    Embedded,
+    Canvas,
 }
 
 #[wasm_bindgen]
@@ -543,7 +549,7 @@ impl RuffleHandle {
             .warn_on_error();
 
         // Register the instance and create the animation frame closure.
-        let mut ruffle = Self::add_instance(instance)?;
+        let ruffle = Self::add_instance(instance)?;
 
         // For backward compatibility.
         parent.set_tab_index(-1);
@@ -953,10 +959,10 @@ impl RuffleHandle {
     }
 
     /// Unregisters a Ruffle instance, and returns the removed instance.
-    fn remove_instance(&self) -> Result<RuffleInstance, RuffleInstanceError> {
+    fn remove_instance(self) -> Result<RuffleInstance, RuffleInstanceError> {
         INSTANCES.try_with(|instances| {
             let mut instances = instances.try_borrow_mut()?;
-            if let Some(instance) = instances.remove(*self) {
+            if let Some(instance) = instances.remove(self) {
                 Ok(instance.into_inner())
             } else {
                 Err(RuffleInstanceError::InstanceNotFound)
@@ -965,14 +971,14 @@ impl RuffleHandle {
     }
 
     /// Runs the given function on this Ruffle instance.
-    fn with_instance<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
+    fn with_instance<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&RuffleInstance) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(*self) {
+                if let Some(instance) = instances.get(self) {
                     let instance = instance.try_borrow()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -990,14 +996,14 @@ impl RuffleHandle {
     }
 
     /// Runs the given function on this Ruffle instance.
-    fn with_instance_mut<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
+    fn with_instance_mut<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&mut RuffleInstance) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(*self) {
+                if let Some(instance) = instances.get(self) {
                     let mut instance = instance.try_borrow_mut()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -1015,14 +1021,14 @@ impl RuffleHandle {
     }
 
     /// Runs the given function on this instance's `Player`.
-    fn with_core<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
+    fn with_core<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&ruffle_core::Player) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(*self) {
+                if let Some(instance) = instances.get(self) {
                     let instance = instance.try_borrow()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -1047,14 +1053,14 @@ impl RuffleHandle {
     }
 
     /// Runs the given function on this instance's `Player`.
-    fn with_core_mut<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
+    fn with_core_mut<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&mut ruffle_core::Player) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(*self) {
+                if let Some(instance) = instances.get(self) {
                     let instance = instance.try_borrow()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -1078,7 +1084,7 @@ impl RuffleHandle {
         ret
     }
 
-    fn tick(&mut self, timestamp: f64) {
+    fn tick(self, timestamp: f64) {
         let mut dt = 0.0;
         let mut new_dimensions = None;
         let mut gamepad_button_events = Vec::new();
@@ -1110,57 +1116,54 @@ impl RuffleHandle {
                 ));
             }
 
-            if let Ok(gamepads) = instance.window.navigator().get_gamepads() {
-                if let Some(gamepad) = gamepads
-                    .into_iter()
-                    .next()
-                    .and_then(|gamepad| gamepad.dyn_into::<WebGamepad>().ok())
-                {
-                    let mut pressed_buttons = Vec::new();
+            if let Ok(gamepads) = instance.window.navigator().get_gamepads()
+                && let Some(gamepad) = gamepads.into_iter().next()
+                && let Ok(gamepad) = gamepad.dyn_into::<WebGamepad>()
+            {
+                let mut pressed_buttons = Vec::new();
 
-                    let buttons = gamepad.buttons();
-                    for (index, button) in buttons.into_iter().enumerate() {
-                        let Ok(button) = button.dyn_into::<WebGamepadButton>() else {
-                            continue;
-                        };
+                let buttons = gamepad.buttons();
+                for (index, button) in buttons.into_iter().enumerate() {
+                    let Ok(button) = button.dyn_into::<WebGamepadButton>() else {
+                        continue;
+                    };
 
-                        if !button.pressed() {
-                            continue;
-                        }
-
-                        // See https://w3c.github.io/gamepad/#remapping
-                        let gamepad_button = match index {
-                            0 => GamepadButton::South,
-                            1 => GamepadButton::East,
-                            2 => GamepadButton::West,
-                            3 => GamepadButton::North,
-                            12 => GamepadButton::DPadUp,
-                            13 => GamepadButton::DPadDown,
-                            14 => GamepadButton::DPadLeft,
-                            15 => GamepadButton::DPadRight,
-                            _ => continue,
-                        };
-
-                        pressed_buttons.push(gamepad_button);
+                    if !button.pressed() {
+                        continue;
                     }
 
-                    if pressed_buttons != instance.pressed_buttons {
-                        for button in pressed_buttons.iter() {
-                            if !instance.pressed_buttons.contains(button) {
-                                gamepad_button_events
-                                    .push(PlayerEvent::GamepadButtonDown { button: *button });
-                            }
-                        }
+                    // See https://w3c.github.io/gamepad/#remapping
+                    let gamepad_button = match index {
+                        0 => GamepadButton::South,
+                        1 => GamepadButton::East,
+                        2 => GamepadButton::West,
+                        3 => GamepadButton::North,
+                        12 => GamepadButton::DPadUp,
+                        13 => GamepadButton::DPadDown,
+                        14 => GamepadButton::DPadLeft,
+                        15 => GamepadButton::DPadRight,
+                        _ => continue,
+                    };
 
-                        for button in instance.pressed_buttons.iter() {
-                            if !pressed_buttons.contains(button) {
-                                gamepad_button_events
-                                    .push(PlayerEvent::GamepadButtonUp { button: *button });
-                            }
-                        }
+                    pressed_buttons.push(gamepad_button);
+                }
 
-                        instance.pressed_buttons = pressed_buttons;
+                if pressed_buttons != instance.pressed_buttons {
+                    for button in pressed_buttons.iter() {
+                        if !instance.pressed_buttons.contains(button) {
+                            gamepad_button_events
+                                .push(PlayerEvent::GamepadButtonDown { button: *button });
+                        }
                     }
+
+                    for button in instance.pressed_buttons.iter() {
+                        if !pressed_buttons.contains(button) {
+                            gamepad_button_events
+                                .push(PlayerEvent::GamepadButtonUp { button: *button });
+                        }
+                    }
+
+                    instance.pressed_buttons = pressed_buttons;
                 }
             }
 
@@ -1212,7 +1215,7 @@ impl RuffleHandle {
         });
     }
 
-    fn on_metadata(&self, swf_header: &ruffle_core::swf::HeaderExt) {
+    fn on_metadata(self, swf_header: &ruffle_core::swf::HeaderExt) {
         let _ = self.with_instance(|instance| {
             // Convert the background color to an HTML hex color ("#FFFFFF").
             let background_color = swf_header
@@ -1306,10 +1309,10 @@ fn parse_movie_parameters(input: &JsValue) -> Vec<(String, String)> {
     let mut params = Vec::new();
     if let Ok(keys) = js_sys::Reflect::own_keys(input) {
         for key in keys.values().into_iter().flatten() {
-            if let Ok(value) = js_sys::Reflect::get(input, &key) {
-                if let (Some(key), Some(value)) = (key.as_string(), value.as_string()) {
-                    params.push((key, value))
-                }
+            if let Ok(value) = js_sys::Reflect::get(input, &key)
+                && let (Some(key), Some(value)) = (key.as_string(), value.as_string())
+            {
+                params.push((key, value))
             }
         }
     }

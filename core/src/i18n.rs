@@ -1,5 +1,5 @@
 use fluent_templates::fluent_bundle::FluentValue;
-use fluent_templates::{static_loader, LanguageIdentifier, Loader};
+use fluent_templates::{LanguageIdentifier, Loader, static_loader};
 use std::borrow::Cow;
 use std::collections::HashMap;
 

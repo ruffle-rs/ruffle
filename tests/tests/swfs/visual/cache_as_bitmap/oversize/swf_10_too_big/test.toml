@@ -1,8 +1,8 @@
 num_frames = 1
-ignore = true # needs cacheAsBitmap masking
 
 [image_comparisons.output]
-tolerance = 1
+known_failure = true
+tolerance = 1 # Should be set to 0 when removing known_failure
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, sample_count = 4 }

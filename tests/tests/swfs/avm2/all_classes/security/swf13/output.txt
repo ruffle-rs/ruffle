@@ -1,0 +1,53 @@
+<type name="flash.security::CertificateStatus" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="EXPIRED" type="String"/>
+  <constant name="INVALID" type="String"/>
+  <constant name="INVALID_CHAIN" type="String"/>
+  <constant name="NOT_YET_VALID" type="String"/>
+  <constant name="PRINCIPAL_MISMATCH" type="String"/>
+  <constant name="REVOKED" type="String"/>
+  <constant name="TRUSTED" type="String"/>
+  <constant name="UNKNOWN" type="String"/>
+  <constant name="UNTRUSTED_SIGNERS" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.security::CertificateStatus">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.security::X500DistinguishedName" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.security::X500DistinguishedName">
+      <accessor name="commonName" access="readonly" type="String" declaredBy="flash.security::X500DistinguishedName"/>
+      <accessor name="countryName" access="readonly" type="String" declaredBy="flash.security::X500DistinguishedName"/>
+      <accessor name="localityName" access="readonly" type="String" declaredBy="flash.security::X500DistinguishedName"/>
+      <accessor name="organizationName" access="readonly" type="String" declaredBy="flash.security::X500DistinguishedName"/>
+      <accessor name="organizationalUnitName" access="readonly" type="String" declaredBy="flash.security::X500DistinguishedName"/>
+      <accessor name="stateOrProvinceName" access="readonly" type="String" declaredBy="flash.security::X500DistinguishedName"/>
+      <extendsClass type="Object"/>
+      <method name="toString" declaredBy="flash.security::X500DistinguishedName" returnType="String"/>
+  </factory>
+</type>
+<type name="flash.security::X509Certificate" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.security::X509Certificate">
+      <accessor name="encoded" access="readonly" type="flash.utils::ByteArray" declaredBy="flash.security::X509Certificate"/>
+      <accessor name="issuer" access="readonly" type="flash.security::X500DistinguishedName" declaredBy="flash.security::X509Certificate"/>
+      <accessor name="issuerUniqueID" access="readonly" type="String" declaredBy="flash.security::X509Certificate"/>
+      <accessor name="serialNumber" access="readonly" type="String" declaredBy="flash.security::X509Certificate"/>
+      <accessor name="signatureAlgorithmOID" access="readonly" type="String" declaredBy="flash.security::X509Certificate"/>
+      <accessor name="signatureAlgorithmParams" access="readonly" type="flash.utils::ByteArray" declaredBy="flash.security::X509Certificate"/>
+      <accessor name="subject" access="readonly" type="flash.security::X500DistinguishedName" declaredBy="flash.security::X509Certificate"/>
+      <accessor name="subjectPublicKey" access="readonly" type="String" declaredBy="flash.security::X509Certificate"/>
+      <accessor name="subjectPublicKeyAlgorithmOID" access="readonly" type="String" declaredBy="flash.security::X509Certificate"/>
+      <accessor name="subjectUniqueID" access="readonly" type="String" declaredBy="flash.security::X509Certificate"/>
+      <accessor name="validNotAfter" access="readonly" type="Date" declaredBy="flash.security::X509Certificate"/>
+      <accessor name="validNotBefore" access="readonly" type="Date" declaredBy="flash.security::X509Certificate"/>
+      <accessor name="version" access="readonly" type="uint" declaredBy="flash.security::X509Certificate"/>
+      <extendsClass type="Object"/>
+  </factory>
+</type>

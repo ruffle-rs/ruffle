@@ -30,9 +30,9 @@ pub fn dispatch_removed_from_stage_event<'gc>(
     child: DisplayObject<'gc>,
     context: &mut UpdateContext<'gc>,
 ) {
-    if let Avm2Value::Object(object) = child.object2() {
+    if let Some(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_default_event(context, "removedFromStage");
-        Avm2::dispatch_event(context, removed_evt, object);
+        Avm2::dispatch_event(context, removed_evt, object.into());
     }
 
     if let Some(child_container) = child.as_container() {
@@ -45,9 +45,9 @@ pub fn dispatch_removed_from_stage_event<'gc>(
 /// Dispatch the `removed` event on a child and log any errors encountered
 /// whilst doing so.
 pub fn dispatch_removed_event<'gc>(child: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
-    if let Avm2Value::Object(object) = child.object2() {
+    if let Some(object) = child.object2() {
         let removed_evt = Avm2EventObject::bare_event(context, "removed", true, false);
-        Avm2::dispatch_event(context, removed_evt, object);
+        Avm2::dispatch_event(context, removed_evt, object.into());
 
         if child.is_on_stage(context) {
             dispatch_removed_from_stage_event(child, context)
@@ -60,9 +60,9 @@ pub fn dispatch_added_to_stage_event_only<'gc>(
     child: DisplayObject<'gc>,
     context: &mut UpdateContext<'gc>,
 ) {
-    if let Avm2Value::Object(object) = child.object2() {
+    if let Some(object) = child.object2() {
         let added_evt = Avm2EventObject::bare_default_event(context, "addedToStage");
-        Avm2::dispatch_event(context, added_evt, object);
+        Avm2::dispatch_event(context, added_evt, object.into());
     }
 }
 
@@ -79,19 +79,19 @@ pub fn dispatch_added_to_stage_event<'gc>(
             dispatch_added_to_stage_event(grandchild, context)
         }
     }
-    if let Some(button) = child.as_avm2_button() {
-        if let Some(child) = button.get_state_child(button.state().into()) {
-            dispatch_added_to_stage_event(child, context);
-        }
+    if let Some(button) = child.as_avm2_button()
+        && let Some(child) = button.get_state_child(button.state().into())
+    {
+        dispatch_added_to_stage_event(child, context);
     }
 }
 
 /// Dispatch an `added` event to one object, and log any errors encountered
 /// whilst doing so.
 pub fn dispatch_added_event_only<'gc>(child: DisplayObject<'gc>, context: &mut UpdateContext<'gc>) {
-    if let Avm2Value::Object(object) = child.object2() {
+    if let Some(object) = child.object2() {
         let added_evt = Avm2EventObject::bare_event(context, "added", true, false);
-        Avm2::dispatch_event(context, added_evt, object);
+        Avm2::dispatch_event(context, added_evt, object.into());
     }
 }
 
@@ -369,9 +369,8 @@ pub trait TDisplayObjectContainer<'gc>:
     fn remove_child_directly(&self, context: &mut UpdateContext<'gc>, child: DisplayObject<'gc>) {
         dispatch_removed_event(child, context);
         let this: DisplayObjectContainer<'gc> = *self;
-        let mut write = self.raw_container_mut(context.gc());
-        write.remove_child_from_depth_list(child);
-        drop(write);
+        self.raw_container_mut(context.gc())
+            .remove_child_from_depth_list(child);
 
         let removed_from_render_list =
             ChildContainer::remove_child_from_render_list(this, child, context);
@@ -379,7 +378,7 @@ pub trait TDisplayObjectContainer<'gc>:
         if removed_from_render_list {
             if !self.raw_container().is_action_script_3() {
                 child.avm1_unload(context);
-            } else if !matches!(child.object2(), Avm2Value::Null) {
+            } else if child.object2().is_some() {
                 //TODO: This is an awful, *awful* hack to deal with the fact
                 //that unloaded AVM1 clips see their parents, while AVM2 clips
                 //don't.
@@ -447,28 +446,23 @@ pub trait TDisplayObjectContainer<'gc>:
             dispatch_removed_event(*removed, context);
         }
 
-        let mut write = self.raw_container_mut(context.gc());
-
         for removed in removed_list {
             // The `remove_range` method is only ever called as a result of an ActionScript
             // call
-            removed.set_placed_by_script(true);
-            write.remove_child_from_depth_list(removed);
-            drop(write);
+            removed.set_placed_by_avm2_script(true);
+            self.raw_container_mut(context.gc())
+                .remove_child_from_depth_list(removed);
 
             let this: DisplayObjectContainer<'gc> = *self;
             ChildContainer::remove_child_from_render_list(this, removed, context);
 
             if !self.raw_container().is_action_script_3() {
                 removed.avm1_unload(context);
-            } else if !matches!(removed.object2(), Avm2Value::Null) {
+            } else if removed.object2().is_some() {
                 removed.set_parent(context, None);
             }
-
-            write = self.raw_container_mut(context.gc());
         }
 
-        drop(write);
         let this: DisplayObject<'_> = (*self).into();
         this.invalidate_cached_bitmap();
     }
@@ -539,10 +533,10 @@ pub trait TDisplayObjectContainer<'gc>:
                 // Non-visible objects and their children are excluded from tab ordering.
                 continue;
             }
-            if let Some(child) = child.as_interactive() {
-                if child.is_tabbable(context) {
-                    tab_order.add_object(child);
-                }
+            if let Some(child) = child.as_interactive()
+                && child.is_tabbable(context)
+            {
+                tab_order.add_object(child);
             }
             if let Some(container) = child.as_container() {
                 container.fill_tab_order(tab_order, context);
@@ -746,35 +740,48 @@ impl<'gc> ChildContainer<'gc> {
 
             // Only set the parent's field to 'null' if the child was not placed/modified
             // on the render list by AVM2 code.
-            if !child.placed_by_script() {
+            if !child.placed_by_avm2_script() {
                 let parent = child.parent().expect(
                     "Parent must be removed *after* calling `remove_child_from_render_list`",
                 );
-                if child.has_explicit_name() {
-                    if let Some(name) = child.name() {
-                        if let Avm2Value::Object(parent_obj) = parent.object2() {
-                            let parent_obj = Avm2Value::from(parent_obj);
+                if child.has_explicit_name()
+                    && let Some(name) = child.name()
+                    && let Some(parent_obj) = parent.object2()
+                    && child.movie().is_action_script_3()
+                {
+                    let parent_obj = Avm2Value::from(parent_obj);
 
-                            let mut activation = Avm2Activation::from_nothing(context);
-                            let multiname =
-                                Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
-                            let current_val = parent_obj.get_property(&multiname, &mut activation);
-                            match current_val {
-                                Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {}
-                                Ok(_other) => {
-                                    let res = parent_obj.set_property(
-                                        &multiname,
-                                        Avm2Value::Null,
-                                        &mut activation,
-                                    );
-                                    if let Err(e) = res {
-                                        tracing::error!("Failed to set child {} ({:?}) to null on parent obj {:?}: {:?}", name, child, parent_obj, e);
-                                    }
-                                }
-                                Err(e) => {
-                                    tracing::error!("Failed to get current value of child {} ({:?}) on parent obj {:?}: {:?}", name, child, parent_obj, e);
-                                }
+                    let mut activation = Avm2Activation::from_nothing(context);
+                    let multiname =
+                        Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
+                    let current_val = parent_obj.get_property(&multiname, &mut activation);
+                    match current_val {
+                        Ok(Avm2Value::Null) | Ok(Avm2Value::Undefined) => {
+                            // When the `get_property` returns null
+                            // or undefined, FP doesn't attempt to
+                            // set it to `null`. This is observable:
+                            // a setter method won't get called.
+                        }
+                        Ok(_other) => {
+                            let res = parent_obj.set_property(
+                                &multiname,
+                                Avm2Value::Null,
+                                &mut activation,
+                            );
+                            if let Err(err) = res {
+                                Avm2::uncaught_error(
+                                    &mut activation,
+                                    Some(child),
+                                    err,
+                                    &format!("Error setting AVM2 child named \"{}\" to null", name),
+                                );
                             }
+                        }
+                        Err(_) => {
+                            // In FP, errors when accessing the
+                            // original value are completely
+                            // swallowed. They don't make it to
+                            // flashlog or to uncaught error events.
                         }
                     }
                 }
@@ -809,7 +816,7 @@ impl<'gc> ChildContainer<'gc> {
                 .iter()
                 .position(|x| DisplayObject::ptr_eq(*x, prev_child))
             {
-                if !prev_child.placed_by_script() {
+                if !prev_child.placed_by_avm2_script() {
                     self.replace_id(position, child);
                     Some(prev_child)
                 } else {
@@ -1105,11 +1112,10 @@ impl<'gc> ChildContainer<'gc> {
             if mc.has_unload_handler() {
                 return true;
             // otherwise, check for a dynamic unload handler
-            } else {
-                let obj = child.object().coerce_to_object(activation);
-                if obj.has_property(activation, istr!("onUnload")) {
-                    return true;
-                }
+            } else if let Some(obj) = child.object1()
+                && obj.has_property(activation, istr!("onUnload"))
+            {
+                return true;
             }
         }
 

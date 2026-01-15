@@ -1,0 +1,63 @@
+SWF5
+
+[with.as debug-22403-05c7ba106]
+PASSED: a == undefined [./with.as:32]
+PASSED: b == undefined [./with.as:33]
+PASSED: a == 1 [./with.as:37]
+PASSED: b == 2 [./with.as:38]
+PASSED: l0 == 5 [./with.as:39]
+PASSED: obj.c == undefined [./with.as:43]
+PASSED: l0 == 5 [./with.as:50]
+PASSED: obj.a == 1 [./with.as:51]
+PASSED: a == 1 [./with.as:52]
+PASSED: b == 2 [./with.as:53]
+PASSED: obj.a == 1 [./with.as:55]
+PASSED: a == 1 [./with.as:58]
+PASSED: b == 2 [./with.as:59]
+PASSED: a == 1 [./with.as:64]
+PASSED: b == 2 [./with.as:65]
+PASSED: found7 == 1 [./with.as:81]
+PASSED: get_name() == "timeline" [./with.as:115]
+PASSED: get_name() == "obj1" [./with.as:118]
+Error: A 'with' action failed because the specified object did not exist.
+
+PASSED: checkpoint == 1 [./with.as:135]
+Error: A 'with' action failed because the specified object did not exist.
+
+PASSED: checkpoint == 1 [./with.as:138]
+PASSED: checkpoint == 3 [./with.as:141]
+PASSED: Number.prototype.checkpoint == 'three' [./with.as:142]
+PASSED: checkpoint == 4 [./with.as:145]
+PASSED: String.prototype.checkpoint == 'four' [./with.as:146]
+Error: A 'with' action failed because the specified object did not exist.
+
+Error: A 'with' action failed because the specified object did not exist.
+
+Error: A 'with' action failed because the specified object did not exist.
+
+Error: A 'with' action failed because the specified object did not exist.
+
+Error: A 'with' action failed because the specified object did not exist.
+
+PASSED: this == objA [./with.as:234]
+PASSED: this == objA [./with.as:237]
+PASSED: a == 4 [./with.as:424]
+PASSED: b == 6 [./with.as:428]
+PASSED: typeof(checkpoint) == "undefined" [./with.as:437]
+PASSED: checkpoint == "o.i.j" [./with.as:446]
+PASSED: c == "with o" [./with.as:458]
+PASSED: d == "with o" [./with.as:459]
+PASSED: typeof(e) == "undefined" [./with.as:460]
+PASSED: f == "empty" [./with.as:461]
+PASSED: typeof(o.c) == 'undefined' [./with.as:493]
+PASSED: typeof(o.d) == 'undefined' [./with.as:494]
+PASSED: o.e == 'with o' [./with.as:495]
+PASSED: o.f == 'with o' [./with.as:496]
+PASSED: typeof(checkpoint) == "undefined" [./with.as:504]
+PASSED: a == 120 [./with.as:474]
+PASSED: b == 7 [./with.as:478]
+PASSED: typeof(b) == "object" [./with.as:570]
+FAILED: expected: "abcdefghijklm" obtained: abcdefghijklmnopqr [./with.as:625]
+#passed: 42
+#failed: 1
+#total tests run: 43

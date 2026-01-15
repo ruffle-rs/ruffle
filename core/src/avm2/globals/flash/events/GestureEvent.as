@@ -17,8 +17,19 @@ package flash.events {
         private var _commandKey:Boolean;
         private var _controlKey:Boolean;
 
-        public function GestureEvent(type:String, bubbles:Boolean = true, cancelable:Boolean = false, phase:String = null, localX:Number = 0,
-            localY:Number = 0, ctrlKey:Boolean = false, altKey:Boolean = false, shiftKey:Boolean = false, commandKey:Boolean = false, controlKey:Boolean = false) {
+        public function GestureEvent(
+            type:String,
+            bubbles:Boolean = true,
+            cancelable:Boolean = false,
+            phase:String = null,
+            localX:Number = 0,
+            localY:Number = 0,
+            ctrlKey:Boolean = false,
+            altKey:Boolean = false,
+            shiftKey:Boolean = false,
+            commandKey:Boolean = false,
+            controlKey:Boolean = false
+        ) {
             super(type, bubbles, cancelable);
             this.phase = phase;
             this.localX = localX;
@@ -93,11 +104,36 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new GestureEvent(this.type, this.bubbles, this.cancelable, this.phase, this.localX, this.localY, this.ctrlKey, this.altKey, this.shiftKey, this.commandKey, this.controlKey);
+            return new GestureEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.phase,
+                this.localX,
+                this.localY,
+                this.ctrlKey,
+                this.altKey,
+                this.shiftKey,
+                this.commandKey,
+                this.controlKey
+            );
         }
 
         override public function toString():String {
-            return this.formatToString("GestureEvent", "type", "bubbles", "cancelable", "phase", "localX", "localY", "stageX", "stageY", "ctrlKey", "altKey", "shiftKey");
+            return this.formatToString(
+                "GestureEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "phase",
+                "localX",
+                "localY",
+                "stageX",
+                "stageY",
+                "ctrlKey",
+                "altKey",
+                "shiftKey"
+            );
         }
 
         public native function get stageX():Number;

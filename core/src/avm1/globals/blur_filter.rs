@@ -1,10 +1,7 @@
 //! flash.filters.BlurFilter object
-
-use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
-use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::Cell;
 use swf::{BlurFilterFlags, Fixed16};
@@ -122,31 +119,39 @@ impl<'gc> BlurFilter<'gc> {
     }
 }
 
-macro_rules! blur_filter_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "blurX" => property(blur_filter_method!(1), blur_filter_method!(2); VERSION_8);
-    "blurY" => property(blur_filter_method!(3), blur_filter_method!(4); VERSION_8);
-    "quality" => property(blur_filter_method!(5), blur_filter_method!(6); VERSION_8);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    use fn method;
+    "blurX" => property(GET_BLUR_X, SET_BLUR_X; VERSION_8);
+    "blurY" => property(GET_BLUR_Y, SET_BLUR_Y; VERSION_8);
+    "quality" => property(GET_QUALITY, SET_QUALITY; VERSION_8);
 };
 
-fn method<'gc>(
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(table_constructor!(method), None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+pub mod method {
+    pub const CONSTRUCTOR: u16 = 0;
+    pub const GET_BLUR_X: u16 = 1;
+    pub const SET_BLUR_X: u16 = 2;
+    pub const GET_BLUR_Y: u16 = 3;
+    pub const SET_BLUR_Y: u16 = 4;
+    pub const GET_QUALITY: u16 = 5;
+    pub const SET_QUALITY: u16 = 6;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-    index: u8,
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const CONSTRUCTOR: u8 = 0;
-    const GET_BLUR_X: u8 = 1;
-    const SET_BLUR_X: u8 = 2;
-    const GET_BLUR_Y: u8 = 3;
-    const SET_BLUR_Y: u8 = 4;
-    const GET_QUALITY: u8 = 5;
-    const SET_QUALITY: u8 = 6;
+    use method::*;
 
     if index == CONSTRUCTOR {
         let blur_filter = BlurFilter::new(activation, args)?;
@@ -154,9 +159,8 @@ fn method<'gc>(
         return Ok(this.into());
     }
 
-    let this = match this.native() {
-        NativeObject::BlurFilter(blur_filter) => blur_filter,
-        _ => return Ok(Value::Undefined),
+    let NativeObject::BlurFilter(this) = this.native() else {
+        return Ok(Value::Undefined);
     };
 
     Ok(match index {
@@ -177,22 +181,4 @@ fn method<'gc>(
         }
         _ => Value::Undefined,
     })
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let blur_filter_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, blur_filter_proto, fn_proto);
-    blur_filter_proto
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(context, blur_filter_method!(0), None, fn_proto, proto)
 }

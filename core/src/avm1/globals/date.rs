@@ -1,10 +1,8 @@
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::FunctionObject;
-use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Error, Object, Value};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{Activation, Error, NativeObject, Object, Value};
 use crate::locale::{get_current_date_time, get_timezone};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use gc_arena::Gc;
 use std::cell::Cell;
 use std::fmt;
@@ -12,11 +10,7 @@ use std::fmt;
 #[inline]
 fn rem_euclid_i32(lhs: f64, rhs: i32) -> i32 {
     let result = (lhs % f64::from(rhs)).clamp_to_i32();
-    if result < 0 {
-        result + rhs
-    } else {
-        result
-    }
+    if result < 0 { result + rhs } else { result }
 }
 
 /// Date and time, represented by milliseconds since epoch.
@@ -66,21 +60,21 @@ impl Date {
     }
 
     /// Get milliseconds since epoch.
-    pub const fn time(&self) -> f64 {
+    pub const fn time(self) -> f64 {
         self.0
     }
 
-    fn is_valid(&self) -> bool {
+    fn is_valid(self) -> bool {
         self.0.is_finite()
     }
 
     /// ECMA-262 Day - Get days since epoch.
-    fn day(&self) -> f64 {
+    fn day(self) -> f64 {
         (self.0 / f64::from(Self::MS_PER_DAY)).floor()
     }
 
     /// ECMA-262 TimeWithinDay - Get milliseconds within day.
-    fn time_within_day(&self, swf_version: u8) -> f64 {
+    fn time_within_day(self, swf_version: u8) -> f64 {
         if swf_version > 7 {
             self.0.rem_euclid(Self::MS_PER_DAY.into())
         } else {
@@ -101,22 +95,22 @@ impl Date {
     }
 
     /// ECMA-262 YearFromTime - Get year.
-    fn year(&self) -> i32 {
+    fn year(self) -> i32 {
         let day = self.day();
         // Perform binary search to find the largest `year: i32` such that `Self::from_year(year) <= *self`.
         let mut low =
-            ((day / if *self < Self::EPOCH { 365.0 } else { 366.0 }).floor()).clamp_to_i32() + 1970;
+            ((day / if self < Self::EPOCH { 365.0 } else { 366.0 }).floor()).clamp_to_i32() + 1970;
         let mut high =
-            ((day / if *self < Self::EPOCH { 366.0 } else { 365.0 }).ceil()).clamp_to_i32() + 1970;
+            ((day / if self < Self::EPOCH { 366.0 } else { 365.0 }).ceil()).clamp_to_i32() + 1970;
         while low < high {
             let pivot = ((f64::from(low) + f64::from(high)) / 2.0).clamp_to_i32();
-            if Self::from_year(pivot) <= *self {
-                if Self::from_year(pivot + 1) > *self {
+            if Self::from_year(pivot) <= self {
+                if Self::from_year(pivot + 1) > self {
                     return pivot;
                 }
                 low = pivot + 1;
             } else {
-                debug_assert!(Self::from_year(pivot) > *self);
+                debug_assert!(Self::from_year(pivot) > self);
                 high = pivot - 1;
             }
         }
@@ -129,12 +123,12 @@ impl Date {
     }
 
     /// ECMA-262 InLeapYear
-    fn in_leap_year(&self) -> bool {
+    fn in_leap_year(self) -> bool {
         Self::is_leap_year(self.year())
     }
 
     /// ECMA-262 MonthFromTime - Get month (0-11).
-    fn month(&self) -> i32 {
+    fn month(self) -> i32 {
         let day = self.day_within_year();
         let in_leap_year = self.in_leap_year();
         for i in 0..11 {
@@ -146,24 +140,24 @@ impl Date {
     }
 
     /// ECMA-262 DayWithinYear - Get days within year (0-365).
-    fn day_within_year(&self) -> i32 {
+    fn day_within_year(self) -> i32 {
         (self.day() - Self::day_from_year(self.year().into())).clamp_to_i32()
     }
 
     /// ECMA-262 DateFromTime - Get days within month (1-31).
-    fn date(&self) -> i32 {
+    fn date(self) -> i32 {
         let month = self.month();
         let month_offset = Self::MONTH_OFFSETS[usize::from(self.in_leap_year())][month as usize];
         self.day_within_year() - i32::from(month_offset) + 1
     }
 
     /// ECMA-262 WeekDay - Get days within week (0-6).
-    fn week_day(&self) -> i32 {
+    fn week_day(self) -> i32 {
         rem_euclid_i32(self.day() + 4.0, 7)
     }
 
     /// ECMA-262 LocalTZA - Get local timezone adjustment in milliseconds.
-    fn local_tza(&self, _is_utc: bool) -> i32 {
+    fn local_tza(self, _is_utc: bool) -> i32 {
         // TODO: Honor `is_utc` flag.
         get_timezone().local_minus_utc() * Self::MS_PER_SECOND
     }
@@ -179,12 +173,12 @@ impl Date {
     }
 
     /// Get timezone offset in minutes.
-    fn timezone_offset(&self) -> f64 {
+    fn timezone_offset(self) -> f64 {
         (self.0 - self.local().0) / f64::from(Self::MS_PER_MINUTE)
     }
 
     /// ECMA-262 HourFromTime - Get hours (0-23).
-    fn hours(&self) -> i32 {
+    fn hours(self) -> i32 {
         rem_euclid_i32(
             ((self.0 + 0.5) / f64::from(Self::MS_PER_HOUR)).floor(),
             Self::HOURS_PER_DAY,
@@ -192,7 +186,7 @@ impl Date {
     }
 
     /// ECMA-262 MinFromTime - Get minutes (0-59).
-    fn minutes(&self) -> i32 {
+    fn minutes(self) -> i32 {
         rem_euclid_i32(
             (self.0 / f64::from(Self::MS_PER_MINUTE)).floor(),
             Self::MINUTES_PER_HOUR,
@@ -200,7 +194,7 @@ impl Date {
     }
 
     /// ECMA-262 SecFromTime - Get seconds (0-59).
-    fn seconds(&self) -> i32 {
+    fn seconds(self) -> i32 {
         rem_euclid_i32(
             (self.0 / f64::from(Self::MS_PER_SECOND)).floor(),
             Self::SECONDS_PER_MINUTE,
@@ -208,7 +202,7 @@ impl Date {
     }
 
     /// ECMA-262 msFromTime - Get milliseconds (0-999).
-    fn milliseconds(&self) -> i32 {
+    fn milliseconds(self) -> i32 {
         rem_euclid_i32(self.0, Self::MS_PER_SECOND)
     }
 
@@ -293,56 +287,63 @@ impl fmt::Display for Date {
     }
 }
 
-macro_rules! date_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    use fn method;
+    "getFullYear" => method(GET_FULL_YEAR; DONT_ENUM | DONT_DELETE);
+    "getYear" => method(GET_YEAR; DONT_ENUM | DONT_DELETE);
+    "getMonth" => method(GET_MONTH; DONT_ENUM | DONT_DELETE);
+    "getDate" => method(GET_DATE; DONT_ENUM | DONT_DELETE);
+    "getDay" => method(GET_DAY; DONT_ENUM | DONT_DELETE);
+    "getHours" => method(GET_HOURS; DONT_ENUM | DONT_DELETE);
+    "getMinutes" => method(GET_MINUTES; DONT_ENUM | DONT_DELETE);
+    "getSeconds" => method(GET_SECONDS; DONT_ENUM | DONT_DELETE);
+    "getMilliseconds" => method(GET_MILLISECONDS; DONT_ENUM | DONT_DELETE);
+    "setFullYear" => method(SET_FULL_YEAR; DONT_ENUM | DONT_DELETE);
+    "setMonth" => method(SET_MONTH; DONT_ENUM | DONT_DELETE);
+    "setDate" => method(SET_DATE; DONT_ENUM | DONT_DELETE);
+    "setHours" => method(SET_HOURS; DONT_ENUM | DONT_DELETE);
+    "setMinutes" => method(SET_MINUTES; DONT_ENUM | DONT_DELETE);
+    "setSeconds" => method(SET_SECONDS; DONT_ENUM | DONT_DELETE);
+    "setMilliseconds" => method(SET_MILLISECONDS; DONT_ENUM | DONT_DELETE);
+    "getTime" => method(GET_TIME; DONT_ENUM | DONT_DELETE);
+    "setTime" => method(SET_TIME; DONT_ENUM | DONT_DELETE);
+    "getTimezoneOffset" => method(GET_TIMEZONE_OFFSET; DONT_ENUM | DONT_DELETE);
+    "toString" => method(TO_STRING; DONT_ENUM | DONT_DELETE);
+    "setYear" => method(SET_YEAR; DONT_ENUM | DONT_DELETE);
+    "getUTCFullYear" => method(GET_UTC_FULL_YEAR; DONT_ENUM | DONT_DELETE);
+    "getUTCYear" => method(GET_UTC_YEAR; DONT_ENUM | DONT_DELETE);
+    "getUTCMonth" => method(GET_UTC_MONTH; DONT_ENUM | DONT_DELETE);
+    "getUTCDate" => method(GET_UTC_DATE; DONT_ENUM | DONT_DELETE);
+    "getUTCDay" => method(GET_UTC_DAY; DONT_ENUM | DONT_DELETE);
+    "getUTCHours" => method(GET_UTC_HOURS; DONT_ENUM | DONT_DELETE);
+    "getUTCMinutes" => method(GET_UTC_MINUTES; DONT_ENUM | DONT_DELETE);
+    "getUTCSeconds" => method(GET_UTC_SECONDS; DONT_ENUM | DONT_DELETE);
+    "getUTCMilliseconds" => method(GET_UTC_MILLISECONDS; DONT_ENUM | DONT_DELETE);
+    "setUTCFullYear" => method(SET_UTC_FULL_YEAR; DONT_ENUM | DONT_DELETE);
+    "setUTCMonth" => method(SET_UTC_MONTH; DONT_ENUM | DONT_DELETE);
+    "setUTCDate" => method(SET_UTC_DATE; DONT_ENUM | DONT_DELETE);
+    "setUTCHours" => method(SET_UTC_HOURS; DONT_ENUM | DONT_DELETE);
+    "setUTCMinutes" => method(SET_UTC_MINUTES; DONT_ENUM | DONT_DELETE);
+    "setUTCSeconds" => method(SET_UTC_SECONDS; DONT_ENUM | DONT_DELETE);
+    "setUTCMilliseconds" => method(SET_UTC_MILLISECONDS; DONT_ENUM | DONT_DELETE);
+    // FIXME: this should the **same** function object as `getTime`, not a copy.
+    "valueOf" => method(GET_TIME; DONT_ENUM | DONT_DELETE);
+};
+
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
+    use fn method;
+    "UTC" => method(UTC; DONT_ENUM | DONT_DELETE | READ_ONLY);
+};
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(table_constructor!(method), Some(function), super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
+    class
 }
-
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "getFullYear" => method(date_method!(0); DONT_ENUM | DONT_DELETE);
-    "getYear" => method(date_method!(1); DONT_ENUM | DONT_DELETE);
-    "getMonth" => method(date_method!(2); DONT_ENUM | DONT_DELETE);
-    "getDate" => method(date_method!(3); DONT_ENUM | DONT_DELETE);
-    "getDay" => method(date_method!(4); DONT_ENUM | DONT_DELETE);
-    "getHours" => method(date_method!(5); DONT_ENUM | DONT_DELETE);
-    "getMinutes" => method(date_method!(6); DONT_ENUM | DONT_DELETE);
-    "getSeconds" => method(date_method!(7); DONT_ENUM | DONT_DELETE);
-    "getMilliseconds" => method(date_method!(8); DONT_ENUM | DONT_DELETE);
-    "setFullYear" => method(date_method!(9); DONT_ENUM | DONT_DELETE);
-    "setMonth" => method(date_method!(10); DONT_ENUM | DONT_DELETE);
-    "setDate" => method(date_method!(11); DONT_ENUM | DONT_DELETE);
-    "setHours" => method(date_method!(12); DONT_ENUM | DONT_DELETE);
-    "setMinutes" => method(date_method!(13); DONT_ENUM | DONT_DELETE);
-    "setSeconds" => method(date_method!(14); DONT_ENUM | DONT_DELETE);
-    "setMilliseconds" => method(date_method!(15); DONT_ENUM | DONT_DELETE);
-    "getTime" => method(date_method!(16); DONT_ENUM | DONT_DELETE);
-    "valueOf" => method(date_method!(16); DONT_ENUM | DONT_DELETE);
-    "setTime" => method(date_method!(17); DONT_ENUM | DONT_DELETE);
-    "getTimezoneOffset" => method(date_method!(18); DONT_ENUM | DONT_DELETE);
-    "toString" => method(date_method!(19); DONT_ENUM | DONT_DELETE);
-    "setYear" => method(date_method!(20); DONT_ENUM | DONT_DELETE);
-    "getUTCFullYear" => method(date_method!(128); DONT_ENUM | DONT_DELETE);
-    "getUTCYear" => method(date_method!(129); DONT_ENUM | DONT_DELETE);
-    "getUTCMonth" => method(date_method!(130); DONT_ENUM | DONT_DELETE);
-    "getUTCDate" => method(date_method!(131); DONT_ENUM | DONT_DELETE);
-    "getUTCDay" => method(date_method!(132); DONT_ENUM | DONT_DELETE);
-    "getUTCHours" => method(date_method!(133); DONT_ENUM | DONT_DELETE);
-    "getUTCMinutes" => method(date_method!(134); DONT_ENUM | DONT_DELETE);
-    "getUTCSeconds" => method(date_method!(135); DONT_ENUM | DONT_DELETE);
-    "getUTCMilliseconds" => method(date_method!(136); DONT_ENUM | DONT_DELETE);
-    "setUTCFullYear" => method(date_method!(137); DONT_ENUM | DONT_DELETE);
-    "setUTCMonth" => method(date_method!(138); DONT_ENUM | DONT_DELETE);
-    "setUTCDate" => method(date_method!(139); DONT_ENUM | DONT_DELETE);
-    "setUTCHours" => method(date_method!(140); DONT_ENUM | DONT_DELETE);
-    "setUTCMinutes" => method(date_method!(141); DONT_ENUM | DONT_DELETE);
-    "setUTCSeconds" => method(date_method!(142); DONT_ENUM | DONT_DELETE);
-    "setUTCMilliseconds" => method(date_method!(143); DONT_ENUM | DONT_DELETE);
-};
-
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "UTC" => method(date_method!(257); DONT_ENUM | DONT_DELETE | READ_ONLY);
-};
 
 /// ECMA-262 Date
 fn constructor<'gc>(
@@ -401,35 +402,56 @@ fn utc<'gc>(args: &[f64]) -> Result<Value<'gc>, Error<'gc>> {
     }
 }
 
-fn method<'gc>(
+pub mod method {
+    pub const GET_FULL_YEAR: u16 = 0;
+    pub const GET_YEAR: u16 = 1;
+    pub const GET_MONTH: u16 = 2;
+    pub const GET_DATE: u16 = 3;
+    pub const GET_DAY: u16 = 4;
+    pub const GET_HOURS: u16 = 5;
+    pub const GET_MINUTES: u16 = 6;
+    pub const GET_SECONDS: u16 = 7;
+    pub const GET_MILLISECONDS: u16 = 8;
+    pub const SET_FULL_YEAR: u16 = 9;
+    pub const SET_MONTH: u16 = 10;
+    pub const SET_DATE: u16 = 11;
+    pub const SET_HOURS: u16 = 12;
+    pub const SET_MINUTES: u16 = 13;
+    pub const SET_SECONDS: u16 = 14;
+    pub const SET_MILLISECONDS: u16 = 15;
+    pub const GET_TIME: u16 = 16;
+    pub const SET_TIME: u16 = 17;
+    pub const GET_TIMEZONE_OFFSET: u16 = 18;
+    pub const TO_STRING: u16 = 19;
+    pub const SET_YEAR: u16 = 20;
+    pub const CONSTRUCTOR: u16 = 256;
+
+    pub const UTC: u16 = 257;
+    pub const GET_UTC_FULL_YEAR: u16 = 128 + GET_FULL_YEAR;
+    pub const GET_UTC_YEAR: u16 = 128 + GET_YEAR;
+    pub const GET_UTC_MONTH: u16 = 128 + GET_MONTH;
+    pub const GET_UTC_DATE: u16 = 128 + GET_DATE;
+    pub const GET_UTC_DAY: u16 = 128 + GET_DAY;
+    pub const GET_UTC_HOURS: u16 = 128 + GET_HOURS;
+    pub const GET_UTC_MINUTES: u16 = 128 + GET_MINUTES;
+    pub const GET_UTC_SECONDS: u16 = 128 + GET_SECONDS;
+    pub const GET_UTC_MILLISECONDS: u16 = 128 + GET_MILLISECONDS;
+    pub const SET_UTC_FULL_YEAR: u16 = 128 + SET_FULL_YEAR;
+    pub const SET_UTC_MONTH: u16 = 128 + SET_MONTH;
+    pub const SET_UTC_DATE: u16 = 128 + SET_DATE;
+    pub const SET_UTC_HOURS: u16 = 128 + SET_HOURS;
+    pub const SET_UTC_MINUTES: u16 = 128 + SET_MINUTES;
+    pub const SET_UTC_SECONDS: u16 = 128 + SET_SECONDS;
+    pub const SET_UTC_MILLISECONDS: u16 = 128 + SET_MILLISECONDS;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     mut index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const GET_FULL_YEAR: u16 = 0;
-    const GET_YEAR: u16 = 1;
-    const GET_MONTH: u16 = 2;
-    const GET_DATE: u16 = 3;
-    const GET_DAY: u16 = 4;
-    const GET_HOURS: u16 = 5;
-    const GET_MINUTES: u16 = 6;
-    const GET_SECONDS: u16 = 7;
-    const GET_MILLISECONDS: u16 = 8;
-    const SET_FULL_YEAR: u16 = 9;
-    const SET_MONTH: u16 = 10;
-    const SET_DATE: u16 = 11;
-    const SET_HOURS: u16 = 12;
-    const SET_MINUTES: u16 = 13;
-    const SET_SECONDS: u16 = 14;
-    const SET_MILLISECONDS: u16 = 15;
-    const GET_TIME: u16 = 16;
-    const SET_TIME: u16 = 17;
-    const GET_TIMEZONE_OFFSET: u16 = 18;
-    const TO_STRING: u16 = 19;
-    const SET_YEAR: u16 = 20;
-    const CONSTRUCTOR: u16 = 256;
-    const UTC: u16 = 257;
+    use method::*;
 
     let mut values = Vec::with_capacity(7);
     for arg in args.iter().take(7) {
@@ -446,9 +468,8 @@ fn method<'gc>(
         _ => {}
     }
 
-    let date_ref = match this.native() {
-        NativeObject::Date(date) => date,
-        _ => return Ok(Value::Undefined),
+    let NativeObject::Date(date_ref) = this.native() else {
+        return Ok(Value::Undefined);
     };
     let date = date_ref.get();
 
@@ -563,24 +584,4 @@ fn method<'gc>(
         TO_STRING => AvmString::new_utf8(activation.gc(), date.to_string()).into(),
         GET_TIME..=GET_TIMEZONE_OFFSET | SET_YEAR.. => unreachable!(), // Handled above.
     })
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let date_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, date_proto, fn_proto);
-
-    let date_constructor = FunctionObject::constructor(
-        context,
-        date_method!(256),
-        Some(function),
-        fn_proto,
-        date_proto,
-    );
-    define_properties_on(OBJECT_DECLS, context, date_constructor, fn_proto);
-
-    date_constructor
 }

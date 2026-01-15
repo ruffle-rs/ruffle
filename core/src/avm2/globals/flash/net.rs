@@ -1,6 +1,6 @@
 //! `flash.net` namespace
 
-use crate::avm2::error::{make_error_1014, make_error_2007, Error1014Type};
+use crate::avm2::error::{Error1014Type, make_error_1014, make_error_2007};
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;

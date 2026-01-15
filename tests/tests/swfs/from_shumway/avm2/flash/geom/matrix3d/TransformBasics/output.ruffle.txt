@@ -1,0 +1,11 @@
+matrix is initially set: (a=1, b=0, c=0, d=1, tx=0, ty=0)
+matrix3D is initially null: null
+matrix3D is set: [object Matrix3D]
+Setting matrix3D nulls matrix: null
+Matrix3D#rawData returns clone: true
+Matrix3D#rawData has initial values: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+Assigning to rawData fields does nothing: 1,0,0,0,0,1,0,0,0,0,1,0,0,0,0,1
+Calling getRelativeMatrix3D with null target throws:
+TypeError: Error #2007: Parameter relativeTo must be non-null.
+Transform#getRelativeMatrix3D returns null if no Matrix3D is set: [object Matrix3D]
+Transform#getRelativeMatrix3D returns Matrix3D if Matrix3D is set: [object Matrix3D]

@@ -24,7 +24,7 @@ impl FreedesktopSettings {
         Ok(self.proxy.color_scheme().await?)
     }
 
-    pub async fn watch_color_scheme(&self) -> Result<impl Stream<Item = ColorScheme>> {
+    pub async fn watch_color_scheme(&self) -> Result<impl Stream<Item = ColorScheme> + use<>> {
         Ok(self.proxy.receive_color_scheme_changed().await?)
     }
 }
@@ -60,10 +60,10 @@ impl GameModeGuard {
             .inspect_err(|err| tracing::warn!("Failed to initialize gamemode controller: {}", err))
             .ok();
 
-        if let Some(gamemode) = &gamemode {
-            if let Err(err) = gamemode.register(std::process::id()).await {
-                tracing::warn!("Failed to register a game with gamemode: {}", err)
-            }
+        if let Some(gamemode) = &gamemode
+            && let Err(err) = gamemode.register(std::process::id()).await
+        {
+            tracing::warn!("Failed to register a game with gamemode: {}", err)
         }
 
         Self { gamemode }

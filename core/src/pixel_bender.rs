@@ -1,14 +1,11 @@
 use either::Either;
 use ruffle_render::pixel_bender::{PixelBenderType, PixelBenderTypeOpcode};
 
-use crate::{
-    avm2::{
-        error::{make_error_2004, Error2004Type},
-        Activation, ArrayObject, ArrayStorage, Error, Object, Value,
-    },
-    ecma_conversions::f64_to_wrapping_i32,
-    string::AvmString,
-};
+use crate::avm2::error::{Error2004Type, make_error_2004};
+use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Object, Value};
+use crate::context::UpdateContext;
+use crate::ecma_conversions::f64_to_wrapping_i32;
+use crate::string::AvmString;
 
 pub trait PixelBenderTypeExt {
     fn from_avm2_value<'gc>(
@@ -21,7 +18,7 @@ pub trait PixelBenderTypeExt {
 
     fn as_avm2_value<'gc>(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         tint_as_int: bool,
     ) -> Result<Value<'gc>, Error<'gc>>;
 }
@@ -151,47 +148,52 @@ impl PixelBenderTypeExt for PixelBenderType {
 
     fn as_avm2_value<'gc>(
         &self,
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         tint_as_int: bool,
     ) -> Result<Value<'gc>, Error<'gc>> {
         // Flash appears to use a uint/int if the float has no fractional part
-        let cv = |f: &f32| -> Value<'gc> {
+        let cv = |f: f32| -> Value<'gc> {
             if f.fract() == 0.0 {
-                f64_to_wrapping_i32(*f as f64).into()
+                f64_to_wrapping_i32(f as f64).into()
             } else {
-                (*f).into()
+                f.into()
             }
         };
-        let vals: Vec<Value<'gc>> = match self {
+
+        let storage = match self {
             PixelBenderType::TString(string) => {
-                return Ok(AvmString::new_utf8(activation.gc(), string).into());
+                return Ok(AvmString::new_utf8(context.gc(), string).into());
             }
-            PixelBenderType::TInt(i) => {
+            &PixelBenderType::TInt(i) => {
                 if tint_as_int {
-                    return Ok((*i).into());
+                    return Ok(i.into());
                 } else {
-                    vec![(*i).into()]
+                    ArrayStorage::from_iter([i])
                 }
             }
-            PixelBenderType::TFloat(f) => vec![cv(f)],
-            PixelBenderType::TFloat2(f1, f2) => vec![cv(f1), cv(f2)],
-            PixelBenderType::TFloat3(f1, f2, f3) => vec![cv(f1), cv(f2), cv(f3)],
-            PixelBenderType::TFloat4(f1, f2, f3, f4) => vec![cv(f1), cv(f2), cv(f3), cv(f4)],
-            PixelBenderType::TFloat2x2(floats) => floats.iter().map(cv).collect(),
-            PixelBenderType::TFloat3x3(floats) => floats.iter().map(cv).collect(),
-            PixelBenderType::TFloat4x4(floats) => floats.iter().map(cv).collect(),
-            PixelBenderType::TInt2(i1, i2) | PixelBenderType::TBool2(i1, i2) => {
-                vec![(*i1).into(), (*i2).into()]
+            &PixelBenderType::TFloat(f) => ArrayStorage::from_iter([cv(f)]),
+            &PixelBenderType::TFloat2(f1, f2) => ArrayStorage::from_iter([cv(f1), cv(f2)]),
+            &PixelBenderType::TFloat3(f1, f2, f3) => {
+                ArrayStorage::from_iter([cv(f1), cv(f2), cv(f3)])
             }
-            PixelBenderType::TInt3(i1, i2, i3) | PixelBenderType::TBool3(i1, i2, i3) => {
-                vec![(*i1).into(), (*i2).into(), (*i3).into()]
+            &PixelBenderType::TFloat4(f1, f2, f3, f4) => {
+                ArrayStorage::from_iter([cv(f1), cv(f2), cv(f3), cv(f4)])
             }
-            PixelBenderType::TInt4(i1, i2, i3, i4) | PixelBenderType::TBool4(i1, i2, i3, i4) => {
-                vec![(*i1).into(), (*i2).into(), (*i3).into(), (*i4).into()]
+            &PixelBenderType::TFloat2x2(floats) => ArrayStorage::from_iter(floats.map(cv)),
+            &PixelBenderType::TFloat3x3(floats) => ArrayStorage::from_iter(floats.map(cv)),
+            &PixelBenderType::TFloat4x4(floats) => ArrayStorage::from_iter(floats.map(cv)),
+            &PixelBenderType::TInt2(i1, i2) | &PixelBenderType::TBool2(i1, i2) => {
+                ArrayStorage::from_iter([i1, i2])
             }
-            PixelBenderType::TBool(b) => vec![(*b).into()],
+            &PixelBenderType::TInt3(i1, i2, i3) | &PixelBenderType::TBool3(i1, i2, i3) => {
+                ArrayStorage::from_iter([i1, i2, i3])
+            }
+            &PixelBenderType::TInt4(i1, i2, i3, i4) | &PixelBenderType::TBool4(i1, i2, i3, i4) => {
+                ArrayStorage::from_iter([i1, i2, i3, i4])
+            }
+            &PixelBenderType::TBool(b) => ArrayStorage::from_iter([b]),
         };
-        let storage = ArrayStorage::from_args(&vals);
-        Ok(ArrayObject::from_storage(activation, storage).into())
+
+        Ok(ArrayObject::from_storage(context, storage).into())
     }
 }

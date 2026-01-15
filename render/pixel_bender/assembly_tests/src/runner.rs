@@ -1,6 +1,6 @@
 //! Pixel Bender assembly tests runner.
 
-use anyhow::{anyhow, Context, Result};
+use anyhow::{Context, Result, anyhow};
 use libtest_mimic::Trial;
 use pixel_bender::assembly::PixelBenderShaderAssembly;
 use pixel_bender::disassembly::PixelBenderShaderDisassembly;
@@ -76,7 +76,9 @@ fn main() {
 
     runner
         .with_descriptor_name(Cow::Borrowed(TEST_TOML_NAME))
-        .with_test_loader(Box::new(|params| Some(load_test(params))));
+        .with_test_loader(Box::new(|params, register_trial| {
+            register_trial(load_test(params))
+        }));
 
     runner.run()
 }

@@ -1,9 +1,10 @@
 //! `flash.net.SharedObject` builtin/prototype
 
-use crate::avm2::error::error;
+use crate::avm2::error::make_error_2130;
 use crate::avm2::object::{ScriptObject, SharedObjectObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
+use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use flash_lso::types::{AMFVersion, Lso};
 use ruffle_macros::istr;
@@ -158,7 +159,7 @@ pub fn get_local<'gc>(
         data
     } else {
         // No data; create a fresh data object.
-        ScriptObject::new_object(activation)
+        ScriptObject::new_object(activation.context)
     };
 
     let created_shared_object =
@@ -167,7 +168,7 @@ pub fn get_local<'gc>(
     activation
         .context
         .avm2_shared_objects
-        .insert(full_name, created_shared_object.into());
+        .insert(full_name, created_shared_object);
 
     Ok(created_shared_object.into())
 }
@@ -187,29 +188,35 @@ pub fn get_data<'gc>(
 pub fn flush<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     let shared_object = this.as_shared_object().unwrap();
 
+    let min_disk_space = args.get_i32(0);
+
+    flush_impl(activation, shared_object, min_disk_space).map(Value::from)
+}
+
+pub fn flush_impl<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    shared_object: SharedObjectObject<'gc>,
+    _min_disk_space: i32,
+) -> Result<AvmString<'gc>, Error<'gc>> {
     let data = shared_object.data();
     let name = shared_object.name();
 
     let mut lso = new_lso(activation, name, data)?;
     // Flash does not write empty LSOs to disk
     if lso.body.is_empty() {
-        Ok(istr!("flushed").into())
+        Ok(istr!("flushed"))
     } else {
         let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
         if activation.context.storage.put(name, &bytes) {
-            Ok(istr!("flushed").into())
+            Ok(istr!("flushed"))
         } else {
-            Err(Error::avm_error(error(
-                activation,
-                "Error #2130: Unable to flush SharedObject.",
-                2130,
-            )?))
+            Err(make_error_2130(activation))
         }
     }
     // FIXME - We should dispatch a NetStatusEvent after this function returns
@@ -256,7 +263,7 @@ pub fn clear<'gc>(
     let shared_object = this.as_shared_object().unwrap();
 
     // Clear the local data object.
-    shared_object.reset_data(activation);
+    shared_object.reset_data(activation.context);
 
     // Delete data from storage backend.
     let name = shared_object.name();

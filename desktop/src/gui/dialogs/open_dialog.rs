@@ -1,13 +1,16 @@
 use crate::custom_event::RuffleEvent;
-use crate::gui::widgets::PathOrUrlField;
-use crate::gui::{text, FilePicker, LocalizableText};
+use crate::gui::widgets::path_or_url_field::PathOrUrlField;
+use crate::gui::{FilePicker, LocalizableText, text};
 use crate::player::LaunchOptions;
 use egui::{
-    emath, Align2, Button, Checkbox, ComboBox, Grid, Layout, Slider, TextEdit, Ui, Widget, Window,
+    Align2, Button, Checkbox, ComboBox, Grid, Layout, Slider, TextEdit, Ui, Widget, Window, emath,
 };
 use ruffle_core::backend::navigator::SocketMode;
 use ruffle_core::config::Letterbox;
-use ruffle_core::{LoadBehavior, PlayerRuntime, StageAlign, StageScaleMode};
+use ruffle_core::{
+    DEFAULT_PLAYER_VERSION, LoadBehavior, NEWEST_PLAYER_VERSION, PlayerRuntime, StageAlign,
+    StageScaleMode,
+};
 use ruffle_render::quality::StageQuality;
 use std::borrow::Cow;
 use std::ops::RangeInclusive;
@@ -72,7 +75,12 @@ impl OpenDialog {
             defaults.proxy.as_ref().map(Url::to_string),
             UrlField::new("socks5://localhost:8080"),
         );
-        let path = PathOrUrlField::new(default_url, "path/to/movie.swf", picker);
+        let path = PathOrUrlField::new(
+            default_url,
+            defaults.root_content_path.clone(),
+            LocalizableText::LocalizedText("open-dialog-path"),
+            picker,
+        );
         let script_timeout = OptionalField::new(
             defaults
                 .player
@@ -222,8 +230,10 @@ impl OpenDialog {
                 }),
             ),
         );
-        let player_version =
-            OptionalField::new(defaults.player.player_version, NumberField::new(1..=32, 32));
+        let player_version = OptionalField::new(
+            defaults.player.player_version,
+            NumberField::new(1..=NEWEST_PLAYER_VERSION, DEFAULT_PLAYER_VERSION),
+        );
         let player_runtime = OptionalField::new(
             defaults.player.player_runtime,
             EnumDropdownField::new(
@@ -281,19 +291,29 @@ impl OpenDialog {
         }
     }
 
+    pub fn url(&self) -> Option<Url> {
+        self.path.result().map(|r| r.url)
+    }
+
+    pub fn options(&self) -> &LaunchOptions {
+        &self.options
+    }
+
     fn start(&mut self) -> bool {
         if self.framerate_enabled {
             self.options.player.frame_rate = Some(self.framerate);
         } else {
             self.options.player.frame_rate = None;
         }
-        if let Some(url) = self.path.result() {
+
+        if let Some(result) = self.path.result() {
+            let mut launch_options = self.options.clone();
+            if let Some(root_content_path) = result.root_content_path {
+                launch_options.root_content_path = Some(root_content_path);
+            }
             if self
                 .event_loop
-                .send_event(RuffleEvent::Open(
-                    url.clone(),
-                    Box::new(self.options.clone()),
-                ))
+                .send_event(RuffleEvent::Open(result.url, Box::new(launch_options)))
                 .is_ok()
             {
                 return true;
@@ -312,14 +332,13 @@ impl OpenDialog {
             .open(&mut keep_open)
             .anchor(Align2::CENTER_CENTER, egui::Vec2::ZERO)
             .collapsible(false)
-            .resizable(false)
+            .default_width(200.0)
             .show(egui_ctx, |ui| {
                 ui.vertical_centered_justified(|ui| {
                     Grid::new("open-file-options")
-                        .num_columns(2)
+                        .num_columns(1)
                         .striped(true)
                         .show(ui, |ui| {
-                            ui.label(text(locale, "open-dialog-path"));
                             is_valid &= self.path.ui(locale, ui).result().is_some();
                             ui.end_row();
                         });

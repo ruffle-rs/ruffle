@@ -1,0 +1,35 @@
+// ASnative(100)
+undefined
+
+// ASnative(100, 0)
+[type Function]
+
+// ASnative(100, "string")
+[type Function]
+
+// ASnative(100, 0, 0)
+undefined
+
+// ASnative("100", "0")
+[type Function]
+
+// ASnative("onehundred", 0)
+undefined
+
+// ASnative(100, {valueOf: function() {return 4;}})("success")
+success
+
+// ASnative(100, 4.5)("success")
+success
+
+// ASnative(100, 0x10000 + 4)("success")
+
+// ASnative(100, 0x100000000 + 4)("success")
+success
+
+// ASnative(100, 0)("&")
+%26
+
+// ASnative(100, 1)("%26")
+&
+

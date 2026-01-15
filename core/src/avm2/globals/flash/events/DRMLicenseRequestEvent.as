@@ -2,10 +2,15 @@ package flash.events {
     public class DRMLicenseRequestEvent extends Event {
         public static const LICENSE_REQUEST:String = "licenseRequest";
 
-        private var _serverURL: String;
+        private var _serverURL:String;
 
-        public function DRMLicenseRequestEvent(type:String, bubbles:Boolean = false, cancelable:Boolean = false, inServerURL:String = null) {
-            super(type,bubbles,cancelable);
+        public function DRMLicenseRequestEvent(
+            type:String,
+            bubbles:Boolean = false,
+            cancelable:Boolean = false,
+            inServerURL:String = null
+        ) {
+            super(type, bubbles, cancelable);
             this.serverURL = inServerURL;
         }
 
@@ -17,7 +22,12 @@ package flash.events {
         }
 
         override public function clone():Event {
-            return new DRMLicenseRequestEvent(this.type, this.bubbles, this.cancelable, this.serverURL);
+            return new DRMLicenseRequestEvent(
+                this.type,
+                this.bubbles,
+                this.cancelable,
+                this.serverURL
+            );
         }
     }
 }

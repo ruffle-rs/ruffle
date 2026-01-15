@@ -36,16 +36,13 @@ pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
         simple_asn1::from_der(input).map_err(|_| Error::invalid_data("Invalid ASN1 blob"))?;
     if let Some(ASN1Block::Sequence(_, s)) = asn1_blocks.into_iter().next() {
         for t in s {
-            if let ASN1Block::Explicit(_, _, _, block) = t {
-                if let ASN1Block::Sequence(_, s) = *block {
-                    if let Some(ASN1Block::Sequence(_, s)) = s.into_iter().nth(2) {
-                        if let Some(ASN1Block::Explicit(_, _, _, octet)) = s.into_iter().nth(1) {
-                            if let ASN1Block::OctetString(_, bytes) = *octet {
-                                return Ok(bytes);
-                            }
-                        }
-                    }
-                }
+            if let ASN1Block::Explicit(_, _, _, block) = t
+                && let ASN1Block::Sequence(_, s) = *block
+                && let Some(ASN1Block::Sequence(_, s)) = s.into_iter().nth(2)
+                && let Some(ASN1Block::Explicit(_, _, _, octet)) = s.into_iter().nth(1)
+                && let ASN1Block::OctetString(_, bytes) = *octet
+            {
+                return Ok(bytes);
             }
         }
     }
@@ -434,7 +431,7 @@ impl<'a> Reader<'a> {
             TagCode::DefineEditText => {
                 Tag::DefineEditText(Box::new(tag_reader.read_define_edit_text()?))
             }
-            TagCode::DefineFont => Tag::DefineFont(Box::new(tag_reader.read_define_font_1()?)),
+            TagCode::DefineFont => Tag::DefineFont(tag_reader.read_define_font_1()?),
             TagCode::DefineFont2 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(2)?)),
             TagCode::DefineFont3 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(3)?)),
             TagCode::DefineFont4 => Tag::DefineFont4(tag_reader.read_define_font_4()?),
@@ -452,11 +449,11 @@ impl<'a> Reader<'a> {
             TagCode::DefineMorphShape2 => {
                 Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(2)?))
             }
-            TagCode::DefineShape => Tag::DefineShape(tag_reader.read_define_shape(1)?),
-            TagCode::DefineShape2 => Tag::DefineShape(tag_reader.read_define_shape(2)?),
-            TagCode::DefineShape3 => Tag::DefineShape(tag_reader.read_define_shape(3)?),
-            TagCode::DefineShape4 => Tag::DefineShape(tag_reader.read_define_shape(4)?),
-            TagCode::DefineSound => Tag::DefineSound(Box::new(tag_reader.read_define_sound()?)),
+            TagCode::DefineShape => Tag::DefineShape(Box::new(tag_reader.read_define_shape(1)?)),
+            TagCode::DefineShape2 => Tag::DefineShape(Box::new(tag_reader.read_define_shape(2)?)),
+            TagCode::DefineShape3 => Tag::DefineShape(Box::new(tag_reader.read_define_shape(3)?)),
+            TagCode::DefineShape4 => Tag::DefineShape(Box::new(tag_reader.read_define_shape(4)?)),
+            TagCode::DefineSound => Tag::DefineSound(tag_reader.read_define_sound()?),
             TagCode::DefineText => Tag::DefineText(Box::new(tag_reader.read_define_text(1)?)),
             TagCode::DefineText2 => Tag::DefineText2(Box::new(tag_reader.read_define_text(2)?)),
             TagCode::DefineVideoStream => {
@@ -502,11 +499,11 @@ impl<'a> Reader<'a> {
 
             TagCode::SoundStreamHead => Tag::SoundStreamHead(
                 // TODO: Disallow certain compressions.
-                Box::new(tag_reader.read_sound_stream_head()?),
+                tag_reader.read_sound_stream_head()?,
             ),
 
             TagCode::SoundStreamHead2 => {
-                Tag::SoundStreamHead2(Box::new(tag_reader.read_sound_stream_head()?))
+                Tag::SoundStreamHead2(tag_reader.read_sound_stream_head()?)
             }
 
             TagCode::StartSound => Tag::StartSound(tag_reader.read_start_sound_1()?),
@@ -721,6 +718,10 @@ impl<'a> Reader<'a> {
             tags.push(tag);
         }
         Ok(tags)
+    }
+
+    pub fn read_tag_code(&mut self) -> Result<u16> {
+        Ok(self.read_u16()? >> 6)
     }
 
     pub fn read_tag_code_and_length(&mut self) -> Result<(u16, usize)> {

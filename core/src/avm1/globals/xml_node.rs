@@ -4,37 +4,46 @@ use ruffle_macros::istr;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::xml::{XmlNode, TEXT_NODE};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::xml::{TEXT_NODE, XmlNode};
 use crate::avm1::{NativeObject, Object, Value};
-use crate::string::{AvmString, StringContext, WStr};
+use crate::string::{AvmString, WStr};
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "localName" => property(local_name);
-    "nodeName" => property(node_name, set_node_value);
-    "nodeType" => property(node_type);
-    "nodeValue" => property(node_value, set_node_value);
-    "prefix" => property(prefix);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    "cloneNode" => method(clone_node);
+    "removeNode" => method(remove_node);
+    "insertBefore" => method(insert_before);
+    "appendChild" => method(append_child);
+    "hasChildNodes" => method(has_child_nodes);
+    "toString" => method(to_string);
+    "getNamespaceForPrefix" => method(get_namespace_for_prefix);
+    "getPrefixForNamespace" => method(get_prefix_for_namespace);
+    "attributes" => property(attributes);
     "childNodes" => property(child_nodes);
     "firstChild" => property(first_child);
     "lastChild" => property(last_child);
+    "nextSibling" => property(next_sibling);
+    "nodeName" => property(node_name, set_node_value);
+    "nodeType" => property(node_type);
+    "nodeValue" => property(node_value, set_node_value);
     "parentNode" => property(parent_node);
     "previousSibling" => property(previous_sibling);
-    "nextSibling" => property(next_sibling);
-    "attributes" => property(attributes);
+    "prefix" => property(prefix);
+    "localName" => property(local_name);
     "namespaceURI" => property(namespace_uri);
-    "appendChild" => method(append_child);
-    "insertBefore" => method(insert_before);
-    "cloneNode" => method(clone_node);
-    "getNamespaceForPrefix" => method(get_namespace_for_prefix);
-    "getPrefixForNamespace" => method(get_prefix_for_namespace);
-    "hasChildNodes" => method(has_child_nodes);
-    "removeNode" => method(remove_node);
-    "toString" => method(to_string);
 };
 
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
 /// XMLNode constructor
-pub fn constructor<'gc>(
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -60,8 +69,7 @@ fn append_child<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let (Some(xmlnode), Some(child_xmlnode)) = (
         this.as_xml_node(),
-        args.get(0)
-            .and_then(|n| n.coerce_to_object(activation).as_xml_node()),
+        args.get(0).and_then(|n| n.as_xml_node()),
     ) {
         if !xmlnode.has_child(child_xmlnode) {
             let position = xmlnode.children_len();
@@ -80,10 +88,8 @@ fn insert_before<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let (Some(xmlnode), Some(child_xmlnode), Some(insertpoint_xmlnode)) = (
         this.as_xml_node(),
-        args.get(0)
-            .and_then(|n| n.coerce_to_object(activation).as_xml_node()),
-        args.get(1)
-            .and_then(|n| n.coerce_to_object(activation).as_xml_node()),
+        args.get(0).and_then(|n| n.as_xml_node()),
+        args.get(1).and_then(|n| n.as_xml_node()),
     ) {
         if !xmlnode.has_child(child_xmlnode) {
             if let Some(position) = xmlnode.child_position(insertpoint_xmlnode) {
@@ -391,15 +397,4 @@ fn namespace_uri<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-/// Construct the prototype for `XMLNode`.
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let xml_node_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, xml_node_proto, fn_proto);
-    xml_node_proto
 }

@@ -1,9 +1,9 @@
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::slots::flash_display_shader_input as input_slots;
 use crate::avm2::globals::slots::flash_display_shader_parameter as parameter_slots;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::pixel_bender::PixelBenderTypeExt;
 use crate::string::AvmString;
 
@@ -36,7 +36,10 @@ pub fn make_shader_parameter<'gc>(
             param_object.set_slot(parameter_slots::_TYPE, type_name.into(), activation)?;
             for meta in metadata {
                 let name = AvmString::new_utf8(activation.gc(), &meta.key);
-                let value = meta.value.clone().as_avm2_value(activation, false)?;
+                let value = meta
+                    .value
+                    .clone()
+                    .as_avm2_value(activation.context, false)?;
                 param_value.set_public_property(name, value, activation)?;
 
                 if &*name == b"defaultValue" {

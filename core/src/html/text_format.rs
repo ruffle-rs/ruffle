@@ -5,10 +5,10 @@ use crate::html::iterators::TextSpanIter;
 use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
-use quick_xml::{escape::escape, events::Event, Reader};
+use quick_xml::{Reader, escape::escape, events::Event};
 use ruffle_wstr::utils::swf_is_newline;
 use std::borrow::Cow;
-use std::cmp::{min, Ordering};
+use std::cmp::{Ordering, min};
 use std::collections::VecDeque;
 use std::fmt::Write;
 use std::sync::Arc;
@@ -154,6 +154,7 @@ impl TextFormat {
         context: &mut UpdateContext<'_>,
     ) -> Self {
         let encoding = swf_movie.encoding();
+        let swf_version = swf_movie.version();
         let movie_library = context.library.library_for_movie_mut(swf_movie);
         let font = et.font_id().and_then(|fid| movie_library.get_font(fid));
         let font_class = et
@@ -161,22 +162,43 @@ impl TextFormat {
             .map(|s| s.decode(encoding).into_owned())
             .or_else(|| font.map(|font| WString::from_utf8(font.descriptor().name())))
             .unwrap_or_else(|| WString::from_utf8("Times New Roman"));
-        let align = et.layout().map(|l| l.align);
-        let left_margin = et.layout().map(|l| l.left_margin.to_pixels());
-        let right_margin = et.layout().map(|l| l.right_margin.to_pixels());
-        let indent = et.layout().map(|l| l.indent.to_pixels().round_ties_even());
-        let leading = et.layout().map(|l| l.leading.to_pixels());
+        let align = if et.is_html() && (swf_version < 8 || et.initial_text().is_none()) {
+            // For some reason, when HTML is enabled in the SWF tag, align is
+            // always left, unless there's initial text and the SWF version is 8+.
+            // This does not apply to enabling HTML dynamically.
+            swf::TextAlign::Left
+        } else {
+            et.layout().map(|l| l.align).unwrap_or_default()
+        };
+        let left_margin = et
+            .layout()
+            .map(|l| l.left_margin.to_pixels())
+            .unwrap_or_default();
+        let right_margin = et
+            .layout()
+            .map(|l| l.right_margin.to_pixels())
+            .unwrap_or_default();
+        let indent = et
+            .layout()
+            .map(|l| l.indent.to_pixels().round_ties_even())
+            .unwrap_or_default();
+        let leading = et
+            .layout()
+            .map(|l| l.leading.to_pixels())
+            .unwrap_or_default();
 
         // TODO: Text fields that don't specify a font are assumed to be 12px
         // Times New Roman non-bold, non-italic. This will need to be revised
         // when we start supporting device fonts.
         Self {
             font: Some(font_class),
-            size: et.height().map(|h| h.to_pixels()),
-            color: et
-                .color()
-                .map(|color| swf::Color::from_rgb(color.to_rgb(), 0)),
-            align,
+            size: Some(et.height().map(|h| h.to_pixels()).unwrap_or(12.0)),
+            color: Some(
+                et.color()
+                    .map(|color| swf::Color::from_rgb(color.to_rgb(), 0))
+                    .unwrap_or_else(|| swf::Color::TRANSPARENT),
+            ),
+            align: Some(align),
             bold: if et.is_html() {
                 Some(false)
             } else {
@@ -189,12 +211,12 @@ impl TextFormat {
             },
             underline: Some(false),
             display: Some(TextDisplay::Block),
-            left_margin,
-            right_margin,
-            indent,
+            left_margin: Some(left_margin),
+            right_margin: Some(right_margin),
+            indent: Some(indent),
             block_indent: Some(0.0), // TODO: This isn't specified by the tag itself
             kerning: Some(false),
-            leading,
+            leading: Some(leading),
             letter_spacing: Some(0.0), // TODO: This isn't specified by the tag itself
             tab_stops: Some(vec![]),   // TODO: Are there default tab stops?
             bullet: Some(false),       // TODO: Default tab stops?
@@ -629,7 +651,7 @@ impl FormatSpans {
     /// presentational markup and CSS stylesheets.
     pub fn from_html(
         html: &WStr,
-        default_format: TextFormat,
+        mut default_format: TextFormat,
         style_sheet: Option<StyleSheet<'_>>,
         is_multiline: bool,
         condense_white: bool,
@@ -638,6 +660,12 @@ impl FormatSpans {
         // For SWF version 6, the multiline property exists and may be changed,
         // but its value is ignored and fields always behave as multiline.
         let is_multiline = is_multiline || swf_version <= 6;
+
+        if swf_version < 8 {
+            // For SWF<8, Flash Player always assumes left align for HTML, even
+            // if HTML is set dynamically.
+            default_format.align = Some(swf::TextAlign::Left);
+        }
 
         let mut format_stack = vec![default_format.clone()];
         let mut text = WString::new();
@@ -702,7 +730,7 @@ impl FormatSpans {
             };
 
             if let Some(style) = style_sheet.get_style(selector) {
-                style.clone().mix_with(format)
+                style.mix_with(format)
             } else {
                 format
             }
@@ -1485,8 +1513,8 @@ enum HtmlTag {
 }
 
 impl HtmlTag {
-    fn closeable(&self) -> bool {
-        self != &Self::Br && self != &Self::Sbr
+    fn closeable(self) -> bool {
+        self != Self::Br && self != Self::Sbr
     }
 }
 

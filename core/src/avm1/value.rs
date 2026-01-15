@@ -1,12 +1,12 @@
+use crate::avm1::Object;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::object::NativeObject;
-use crate::avm1::Object;
 use crate::display_object::TDisplayObject;
 use crate::ecma_conversions::{
-    f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u16, f64_to_wrapping_u32,
-    f64_to_wrapping_u8,
+    f64_to_wrapping_i16, f64_to_wrapping_i32, f64_to_wrapping_u8, f64_to_wrapping_u16,
+    f64_to_wrapping_u32,
 };
 use crate::string::{AvmAtom, AvmString, Integer, WStr};
 use gc_arena::Collect;
@@ -129,6 +129,7 @@ impl PartialEq for Value<'_> {
     }
 }
 
+/// Value coercions and conversions.
 impl<'gc> Value<'gc> {
     /// Yields `true` if the given value is a primitive value.
     ///
@@ -168,7 +169,7 @@ impl<'gc> Value<'gc> {
             Value::Object(_) => self
                 .to_primitive_num(activation)?
                 .primitive_as_number(activation),
-            Value::MovieClip(_) => Value::Object(self.coerce_to_object(activation))
+            Value::MovieClip(_) => Value::Object(self.coerce_to_object_or_bare(activation)?)
                 .to_primitive_num(activation)?
                 .primitive_as_number(activation),
             val => val.primitive_as_number(activation),
@@ -186,7 +187,7 @@ impl<'gc> Value<'gc> {
     ///   `undefined`. This is not a special-cased behavior: All values are
     ///   callable in `AVM1`. Values that are not callable objects instead
     ///   return `undefined` rather than yielding a runtime error.
-    pub fn to_primitive_num(
+    fn to_primitive_num(
         self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -242,7 +243,7 @@ impl<'gc> Value<'gc> {
                 }
             }
             Value::MovieClip(_) => {
-                let object = self.coerce_to_object(activation);
+                let object = self.coerce_to_object_or_bare(activation)?;
                 // Other objects call `valueOf`.
                 let res = object.call_method(
                     istr!("valueOf"),
@@ -259,6 +260,209 @@ impl<'gc> Value<'gc> {
             _ => self,
         };
         Ok(result)
+    }
+
+    pub fn coerce_to_u8(&self, activation: &mut Activation<'_, 'gc>) -> Result<u8, Error<'gc>> {
+        self.coerce_to_f64(activation).map(f64_to_wrapping_u8)
+    }
+
+    /// Coerce a number to an `u16` following the ECMAScript specifications for `ToUInt16`.
+    /// The value will be wrapped modulo 2^16.
+    /// This will call `valueOf` and do any conversions that are necessary.
+    pub fn coerce_to_u16(&self, activation: &mut Activation<'_, 'gc>) -> Result<u16, Error<'gc>> {
+        self.coerce_to_f64(activation).map(f64_to_wrapping_u16)
+    }
+
+    /// Coerce a number to an `i16` following the wrapping behavior ECMAScript specifications.
+    /// The value will be wrapped in the range [-2^15, 2^15).
+    /// This will call `valueOf` and do any conversions that are necessary.
+    pub fn coerce_to_i16(&self, activation: &mut Activation<'_, 'gc>) -> Result<i16, Error<'gc>> {
+        self.coerce_to_f64(activation).map(f64_to_wrapping_i16)
+    }
+
+    /// Coerce a number to an `i32` following the ECMAScript specifications for `ToInt32`.
+    /// The value will be wrapped modulo 2^32.
+    /// This will call `valueOf` and do any conversions that are necessary.
+    /// If you are writing AVM code that accepts an integer, you probably want to use this.
+    pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
+        self.coerce_to_f64(activation).map(f64_to_wrapping_i32)
+    }
+
+    /// Coerce a number to an `u32` following the ECMAScript specifications for `ToUInt32`.
+    /// The value will be wrapped in the range [-2^31, 2^31).
+    /// This will call `valueOf` and do any conversions that are necessary.
+    pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc>) -> Result<u32, Error<'gc>> {
+        self.coerce_to_f64(activation).map(f64_to_wrapping_u32)
+    }
+
+    /// Coerce a value to a string.
+    pub fn coerce_to_string(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<AvmString<'gc>, Error<'gc>> {
+        Ok(match self {
+            Value::Undefined if activation.swf_version() < 7 => istr!(""),
+            Value::Bool(true) if activation.swf_version() < 5 => {
+                istr!("1")
+            }
+            Value::Bool(false) if activation.swf_version() < 5 => {
+                istr!("0")
+            }
+            Value::Object(object) => {
+                if let NativeObject::String(string) = object.native() {
+                    // Strings do not have toString() called on them.
+                    string
+                } else if let Some(object) = object.as_display_object_no_super() {
+                    // StageObjects are special-cased to return their path.
+                    AvmString::new(activation.gc(), object.path())
+                } else {
+                    match object.call_method(
+                        istr!("toString"),
+                        &[],
+                        activation,
+                        ExecutionReason::Special,
+                    )? {
+                        Value::String(s) => s,
+                        _ => {
+                            if object.as_function().is_some() {
+                                AvmString::new_ascii_static(activation.gc(), b"[type Function]")
+                            } else {
+                                AvmString::new_ascii_static(activation.gc(), b"[type Object]")
+                            }
+                        }
+                    }
+                }
+            }
+            Value::MovieClip(mcr) => mcr.coerce_to_string(activation),
+            Value::Undefined => istr!("undefined"),
+            Value::Null => istr!("null"),
+            Value::Bool(true) => istr!("true"),
+            Value::Bool(false) => istr!("false"),
+            Value::Number(v) => f64_to_string(activation, *v),
+            Value::String(v) => v.to_owned(),
+        })
+    }
+
+    pub fn as_bool(&self, swf_version: u8) -> bool {
+        match self {
+            Value::Bool(v) => *v,
+            Value::Number(v) => !v.is_nan() && *v != 0.0,
+            Value::String(v) => {
+                if swf_version >= 7 {
+                    !v.is_empty()
+                } else {
+                    let num = string_to_f64(v, swf_version);
+                    !num.is_nan() && num != 0.0
+                }
+            }
+            Value::Object(_) | Value::MovieClip(_) => true,
+            _ => false,
+        }
+    }
+
+    /// Convert `self` to an script object, if possible. Unlike `coerce_to_object`, this
+    /// doesn't coerce primitives.
+    pub fn as_object(self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
+        match self {
+            Value::Object(obj) => Some(obj),
+            Value::MovieClip(mcr) => mcr.coerce_to_object(activation),
+            _ => None,
+        }
+    }
+
+    /// Coerce `self` to a script object, unconditionally.
+    ///
+    /// If `self` isn't coercible, returns a fresh bare object instead.
+    /// [MOULINS]: I suspect that most (if not all) usages of this method are incorrect,
+    /// but we have too much code already using it to remove it right now.
+    pub fn coerce_to_object_or_bare(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Object<'gc>, Error<'gc>> {
+        if let Some(obj) = self.coerce_to_object(activation)? {
+            Ok(obj)
+        } else {
+            Ok(Object::new_without_proto(activation.gc()))
+        }
+    }
+
+    /// Coerce `self` to a script object, boxing primitives if necessary.
+    ///
+    /// This can fail in two different ways:
+    /// - If the boxing constructor throws an error, `Err(_)` is returned;
+    /// - If `self` isn't coercible (e.g. because it is null or undefined),
+    ///   `Ok(None)` is returned instead.
+    pub fn coerce_to_object(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<Option<Object<'gc>>, Error<'gc>> {
+        let class_name = match self {
+            // Object coerce to themselves...
+            Value::Object(obj) => return Ok(Some(obj)),
+            // ...and MovieClips coerce to their underlying object.
+            Value::MovieClip(mcr) => return Ok(mcr.coerce_to_object(activation)),
+            // `null` and `undefined` cannot be coerced.
+            Value::Null | Value::Undefined => return Ok(None),
+            // Primitives need to be boxed, so select a suitable class.
+            Value::Bool(_) => istr!("Boolean"),
+            Value::Number(_) => istr!("Number"),
+            Value::String(_) => istr!("String"),
+        };
+
+        // Fetch the constructor from the global scope...
+        let Some(Value::Object(class)) = activation
+            .global_object()
+            .get_opt(class_name, activation, false)?
+        else {
+            // No valid constructor, give up.
+            return Ok(None);
+        };
+
+        // ...and use it to box the primitive.
+        if let Value::Object(obj) = class.construct(activation, &[self])? {
+            // TODO(moulins): do MovieClips count as objects here?
+            Ok(Some(obj))
+        } else {
+            // The constructor returned a non-object (this can happen
+            // with some native constructors), give up.
+            Ok(None)
+        }
+    }
+
+    pub fn as_blend_mode(&self) -> Option<swf::BlendMode> {
+        match *self {
+            Value::Undefined | Value::Null => Some(swf::BlendMode::Normal),
+            Value::Number(n) => swf::BlendMode::from_u8(f64_to_wrapping_u8(n)),
+            // Note that strings like `"5"` *are not* coerced.
+            Value::String(s) => s.to_string().parse().ok(),
+            // Anything else is not coerced either.
+            Value::Bool(_) | Value::Object(_) | Value::MovieClip(_) => None,
+        }
+    }
+
+    /// Get the underlying XML node for this value, if it exists.
+    pub fn as_xml_node(self) -> Option<crate::avm1::xml::XmlNode<'gc>> {
+        match self {
+            Value::Object(obj) => obj.as_xml_node(),
+            _ => None,
+        }
+    }
+}
+
+/// Value operators.
+impl<'gc> Value<'gc> {
+    /// ActionScript 2's `typeof self`.
+    pub fn type_of(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
+        match self {
+            Value::Undefined => istr!("undefined"),
+            Value::Null => istr!("null"),
+            Value::Number(_) => istr!("number"),
+            Value::Bool(_) => istr!("boolean"),
+            Value::String(_) => istr!("string"),
+            Value::Object(object) if object.as_function().is_some() => istr!("function"),
+            Value::MovieClip(_) => istr!("movieclip"),
+            Value::Object(_) => istr!("object"),
+        }
     }
 
     /// ECMA-262 2nd edition s. 11.8.5 Abstract relational comparison algorithm
@@ -352,155 +556,24 @@ impl<'gc> Value<'gc> {
         Ok(result)
     }
 
-    pub fn coerce_to_u8(&self, activation: &mut Activation<'_, 'gc>) -> Result<u8, Error<'gc>> {
-        self.coerce_to_f64(activation).map(f64_to_wrapping_u8)
-    }
-
-    /// Coerce a number to an `u16` following the ECMAScript specifications for `ToUInt16`.
-    /// The value will be wrapped modulo 2^16.
-    /// This will call `valueOf` and do any conversions that are necessary.
-    pub fn coerce_to_u16(&self, activation: &mut Activation<'_, 'gc>) -> Result<u16, Error<'gc>> {
-        self.coerce_to_f64(activation).map(f64_to_wrapping_u16)
-    }
-
-    /// Coerce a number to an `i16` following the wrapping behavior ECMAScript specifications.
-    /// The value will be wrapped in the range [-2^15, 2^15).
-    /// This will call `valueOf` and do any conversions that are necessary.
-    pub fn coerce_to_i16(&self, activation: &mut Activation<'_, 'gc>) -> Result<i16, Error<'gc>> {
-        self.coerce_to_f64(activation).map(f64_to_wrapping_i16)
-    }
-
-    /// Coerce a number to an `i32` following the ECMAScript specifications for `ToInt32`.
-    /// The value will be wrapped modulo 2^32.
-    /// This will call `valueOf` and do any conversions that are necessary.
-    /// If you are writing AVM code that accepts an integer, you probably want to use this.
-    pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
-        self.coerce_to_f64(activation).map(f64_to_wrapping_i32)
-    }
-
-    /// Coerce a number to an `u32` following the ECMAScript specifications for `ToUInt32`.
-    /// The value will be wrapped in the range [-2^31, 2^31).
-    /// This will call `valueOf` and do any conversions that are necessary.
-    pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc>) -> Result<u32, Error<'gc>> {
-        self.coerce_to_f64(activation).map(f64_to_wrapping_u32)
-    }
-
-    /// Coerce a value to a string.
-    pub fn coerce_to_string(
-        &self,
+    /// ActionScript 2's `self instanceof Class`.
+    pub fn instance_of(
+        self,
+        class: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
-    ) -> Result<AvmString<'gc>, Error<'gc>> {
-        Ok(match self {
-            Value::Undefined if activation.swf_version() < 7 => istr!(""),
-            Value::Bool(true) if activation.swf_version() < 5 => {
-                istr!("1")
-            }
-            Value::Bool(false) if activation.swf_version() < 5 => {
-                istr!("0")
-            }
-            Value::Object(object) => {
-                if let Some(object) = object.as_display_object_no_super() {
-                    // StageObjects are special-cased to return their path.
-                    AvmString::new(activation.gc(), object.path())
-                } else {
-                    match object.call_method(
-                        istr!("toString"),
-                        &[],
-                        activation,
-                        ExecutionReason::Special,
-                    )? {
-                        Value::String(s) => s,
-                        _ => {
-                            if object.as_executable().is_some() {
-                                AvmString::new_ascii_static(activation.gc(), b"[type Function]")
-                            } else {
-                                AvmString::new_ascii_static(activation.gc(), b"[type Object]")
-                            }
-                        }
+    ) -> Result<bool, Error<'gc>> {
+        if !self.is_primitive() {
+            // These coercions happen even if `obj` is a dead `MovieClipReference`.
+            if let Some(class) = class.coerce_to_object(activation)? {
+                if let Some(p) = class.prototype(activation).coerce_to_object(activation)? {
+                    if let Some(obj) = self.as_object(activation) {
+                        return obj.is_instance_of(activation, p);
                     }
                 }
             }
-            Value::MovieClip(mcr) => mcr.coerce_to_string(activation),
-            Value::Undefined => istr!("undefined"),
-            Value::Null => istr!("null"),
-            Value::Bool(true) => istr!("true"),
-            Value::Bool(false) => istr!("false"),
-            Value::Number(v) => f64_to_string(activation, *v),
-            Value::String(v) => v.to_owned(),
-        })
-    }
-
-    pub fn as_bool(&self, swf_version: u8) -> bool {
-        match self {
-            Value::Bool(v) => *v,
-            Value::Number(v) => !v.is_nan() && *v != 0.0,
-            Value::String(v) => {
-                if swf_version >= 7 {
-                    !v.is_empty()
-                } else {
-                    let num = string_to_f64(v, swf_version);
-                    !num.is_nan() && num != 0.0
-                }
-            }
-            Value::Object(_) | Value::MovieClip(_) => true,
-            _ => false,
-        }
-    }
-
-    pub fn type_of(&self, activation: &mut Activation<'_, 'gc>) -> AvmString<'gc> {
-        match self {
-            Value::Undefined => istr!("undefined"),
-            Value::Null => istr!("null"),
-            Value::Number(_) => istr!("number"),
-            Value::Bool(_) => istr!("boolean"),
-            Value::String(_) => istr!("string"),
-            Value::Object(object) if object.as_executable().is_some() => istr!("function"),
-            Value::MovieClip(_) => istr!("movieclip"),
-            Value::Object(_) => istr!("object"),
-        }
-    }
-
-    pub fn coerce_to_object(self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        let (value, proto) = match self {
-            // If we're given an object, we return it directly.
-            Value::Object(obj) => return obj,
-            Value::MovieClip(mcr) => {
-                if let Some(obj) = mcr.coerce_to_object(activation) {
-                    return obj;
-                } else {
-                    (Value::Undefined, None)
-                }
-            }
-            // Else, select the correct prototype for it from the system prototypes list.
-            Value::Null | Value::Undefined => (self, None),
-            Value::Bool(_) => (self, Some(activation.context.avm1.prototypes().boolean)),
-            Value::Number(_) => (self, Some(activation.context.avm1.prototypes().number)),
-            Value::String(_) => (self, Some(activation.context.avm1.prototypes().string)),
-        };
-
-        let obj = Object::new(&activation.context.strings, proto);
-
-        // Constructor populates the boxed object with the value.
-        use crate::avm1::globals;
-        match value {
-            Value::Bool(_) => drop(globals::boolean::constructor(activation, obj, &[value])),
-            Value::Number(_) => drop(globals::number::number(activation, obj, &[value])),
-            Value::String(_) => drop(globals::string::string(activation, obj, &[value])),
-            _ => (),
         }
 
-        obj
-    }
-
-    pub fn as_blend_mode(&self) -> Option<swf::BlendMode> {
-        match *self {
-            Value::Undefined | Value::Null => Some(swf::BlendMode::Normal),
-            Value::Number(n) => swf::BlendMode::from_u8(f64_to_wrapping_u8(n)),
-            // Note that strings like `"5"` *are not* coerced.
-            Value::String(s) => s.to_string().parse().ok(),
-            // Anything else is not coerced either.
-            Value::Bool(_) | Value::Object(_) | Value::MovieClip(_) => None,
-        }
+        Ok(false)
     }
 }
 
@@ -891,14 +964,13 @@ fn string_to_f64(mut s: &WStr, swf_version: u8) -> f64 {
 #[cfg(test)]
 #[expect(clippy::unreadable_literal)] // Large numeric literals in tests
 mod test {
-    use crate::avm1::activation::Activation;
+    use crate::avm1::Value;
     use crate::avm1::error::Error;
     use crate::avm1::function::FunctionObject;
     use crate::avm1::globals::create_globals;
     use crate::avm1::object::Object;
     use crate::avm1::property::Attribute;
     use crate::avm1::test_utils::with_avm;
-    use crate::avm1::Value;
     use crate::string::AvmString;
     use ruffle_macros::istr;
 
@@ -923,19 +995,10 @@ mod test {
 
             assert_eq!(vglobal.to_primitive_num(activation).unwrap(), undefined);
 
-            fn value_of_impl<'gc>(
-                _activation: &mut Activation<'_, 'gc>,
-                _: Object<'gc>,
-                _: &[Value<'gc>],
-            ) -> Result<Value<'gc>, Error<'gc>> {
-                Ok(5.into())
-            }
-
-            let valueof = FunctionObject::native(
+            let valueof = FunctionObject::native(|_, _, _| Ok(5.into())).build(
                 &activation.context.strings,
-                value_of_impl,
                 protos.function,
-                protos.function,
+                Some(protos.function),
             );
 
             let o = Object::new(&activation.context.strings, Some(protos.object));
@@ -969,7 +1032,7 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert!(n.coerce_to_f64(activation).unwrap().is_nan());
 
-            let o = Object::new(&activation.context.strings, None);
+            let o = Object::new_without_proto(activation.gc());
 
             assert!(Value::from(o).coerce_to_f64(activation).unwrap().is_nan());
 
@@ -991,7 +1054,7 @@ mod test {
             assert_eq!(f.coerce_to_f64(activation).unwrap(), 0.0);
             assert_eq!(n.coerce_to_f64(activation).unwrap(), 0.0);
 
-            let o = Object::new(&activation.context.strings, None);
+            let o = Object::new_without_proto(activation.gc());
 
             assert_eq!(Value::from(o).coerce_to_f64(activation).unwrap(), 0.0);
 

@@ -1,10 +1,9 @@
 package flash.geom {
     public class Vector3D {
-
         // `describeType` returns these in this weird order
-        public static const Z_AXIS : Vector3D = new Vector3D(0, 0, 1);
-        public static const X_AXIS : Vector3D = new Vector3D(1, 0, 0);
-        public static const Y_AXIS : Vector3D = new Vector3D(0, 1, 0);
+        public static const Z_AXIS:Vector3D = new Vector3D(0, 0, 1);
+        public static const X_AXIS:Vector3D = new Vector3D(1, 0, 0);
+        public static const Y_AXIS:Vector3D = new Vector3D(0, 1, 0);
 
         public static function angleBetween(a:Vector3D, b:Vector3D):Number {
             return Math.acos(a.dotProduct(b) / (a.length * b.length));
@@ -89,7 +88,7 @@ package flash.geom {
         }
 
         [API("674")]
-        public function setTo(xa:Number, ya:Number, za: Number):void {
+        public function setTo(xa:Number, ya:Number, za:Number):void {
             this.x = xa;
             this.y = ya;
             this.z = za;
@@ -118,19 +117,17 @@ package flash.geom {
         }
 
         public function normalize():Number {
-            var len : Number = this.length;
+            var len:Number = this.length;
 
             if (len == 0) {
                 this.x = 0;
                 this.y = 0;
                 this.z = 0;
-            }
-            else if (len > 0) {
+            } else if (len > 0) {
                 this.x /= len;
                 this.y /= len;
                 this.z /= len;
-            }
-            else { // if len (so any of the components) is NaN or undefined
+            } else { // if len (so any of the components) is NaN or undefined
                 this.x = NaN;
                 this.y = NaN;
                 this.z = NaN;
@@ -148,7 +145,9 @@ package flash.geom {
                 this.y * a.z - this.z * a.y,
                 this.z * a.x - this.x * a.z,
                 this.x * a.y - this.y * a.x,
-                1); // for whatever reason w is always set to 1
+                // for whatever reason w is always set to 1
+                1
+            );
         }
     }
 }

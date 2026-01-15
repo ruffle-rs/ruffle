@@ -9,6 +9,9 @@
     ],
     "homepage": "https://ruffle.rs",
     "bugs": "https://github.com/ruffle-rs/ruffle/issues",
-    "repository": "github:ruffle-rs/ruffle",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ruffle-rs/ruffle.git"
+    },
     "main": "ruffle.js",
 }

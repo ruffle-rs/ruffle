@@ -1,12 +1,12 @@
 //! `Date` class
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::DateObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::locale::{get_current_date_time, get_timezone};
-use crate::string::{utils as string_utils, AvmString, WStr};
+use crate::string::{AvmString, WStr, utils as string_utils};
 use chrono::{DateTime, Datelike, Duration, FixedOffset, LocalResult, TimeZone, Timelike, Utc};
 use num_traits::ToPrimitive;
 
@@ -198,9 +198,9 @@ pub fn init_custom_prototype<'gc>(
     let this = this.as_object().unwrap();
     let this = this.as_class_object().unwrap();
 
-    let prototype_date_object = DateObject::for_prototype(activation, this);
+    let prototype_date_object = DateObject::for_prototype(activation.context, this);
 
-    this.link_prototype(activation, prototype_date_object);
+    this.link_prototype(activation.context, prototype_date_object);
 
     Ok(Value::Undefined)
 }

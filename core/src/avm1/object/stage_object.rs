@@ -1,11 +1,11 @@
 //! DisplayObject-specific AVM1 operations.
 
+use crate::avm_warn;
+use crate::avm1::Value;
 use crate::avm1::activation::Activation;
 use crate::avm1::clamp::Clamp;
 use crate::avm1::error::Error;
 use crate::avm1::property_map::PropertyMap;
-use crate::avm1::Value;
-use crate::avm_warn;
 use crate::display_object::{
     DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };
@@ -20,7 +20,6 @@ pub fn get_property<'gc>(
     dobj: DisplayObject<'gc>,
     name: AvmString<'gc>,
     activation: &mut Activation<'_, 'gc>,
-    is_slash_path: bool,
 ) -> Option<Value<'gc>> {
     // Property search order for DisplayObjects:
 
@@ -37,15 +36,13 @@ pub fn get_property<'gc>(
         .as_container()
         .and_then(|o| o.child_by_name(&name, activation.is_case_sensitive()))
     {
-        return if is_slash_path {
-            Some(child.object())
-        // If an object doesn't have an object representation, e.g. Graphic, then trying to access it
-        // Returns the parent instead
-        } else if let crate::display_object::DisplayObject::Graphic(_) = child {
-            child.parent().map(|p| p.object())
-        } else {
-            Some(child.object())
-        };
+        let value = child
+            .object1()
+            // If an object doesn't have an object representation, e.g. Graphic,
+            // then trying to access it returns the parent instead
+            .or_else(|| child.parent().and_then(|p| p.object1()))
+            .map_or(Value::Undefined, Value::from);
+        return Some(value);
     }
 
     // 3) Display object properties such as `_x`, `_y` (never case sensitive)
@@ -136,8 +133,10 @@ pub fn enumerate_keys<'gc>(dobj: DisplayObject<'gc>, keys: &mut Vec<AvmString<'g
     if let Some(ctr) = dobj.as_container() {
         // Button/MovieClip children are included in key list.
         for child in ctr.iter_render_list().rev() {
-            if child.as_interactive().is_some() {
-                keys.push(child.name().expect("Interactive DisplayObjects have names"));
+            // All named DOs are included in the list, even if they're not
+            // accessible by AVM1 code (e.g. `MorphShape`)
+            if let Some(name) = child.name() {
+                keys.push(name);
             }
         }
     }
@@ -150,16 +149,17 @@ fn resolve_path_property<'gc>(
 ) -> Option<Value<'gc>> {
     let case_sensitive = activation.is_case_sensitive();
     if name.eq_with_case(b"_root", case_sensitive) {
-        return Some(activation.root_object());
+        return Some(dobj.avm1_root().object1_or_undef());
     } else if name.eq_with_case(b"_parent", case_sensitive) {
         return Some(
             dobj.avm1_parent()
-                .map(|dn| dn.object().coerce_to_object(activation))
+                .map(|dn| dn.object1_or_bare(activation.gc()))
                 .map(Value::Object)
                 .unwrap_or(Value::Undefined),
         );
-    } else if name.eq_with_case(b"_global", case_sensitive) {
-        return Some(activation.context.avm1.global_object().into());
+    } else if activation.swf_version() > 5 && name.eq_with_case(b"_global", case_sensitive) {
+        // _global is available only in SWF6+
+        return Some(activation.global_object().into());
     }
 
     // Resolve level names `_levelN`.
@@ -171,7 +171,7 @@ fn resolve_path_property<'gc>(
             let level_id = parse_level_id(&name[6..]);
             let level = activation
                 .get_level(level_id)
-                .map(|o| o.object())
+                .map(|o| o.object1_or_undef())
                 .unwrap_or(Value::Undefined);
             return Some(level);
         }
@@ -389,7 +389,7 @@ fn total_frames<'gc>(
     this: DisplayObject<'gc>,
 ) -> Value<'gc> {
     this.as_movie_clip()
-        .map(MovieClip::total_frames)
+        .map(MovieClip::header_frames)
         .map_or(Value::Undefined, Value::from)
 }
 
@@ -486,9 +486,10 @@ fn frames_loaded<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: DisplayObject<'gc>,
 ) -> Value<'gc> {
-    this.as_movie_clip()
-        .map(MovieClip::frames_loaded)
-        .map_or(Value::Undefined, Value::from)
+    if let Some(mc) = this.as_movie_clip() {
+        return mc.frames_loaded().min(mc.header_frames() as i32).into();
+    }
+    Value::Undefined
 }
 
 fn name<'gc>(activation: &mut Activation<'_, 'gc>, this: DisplayObject<'gc>) -> Value<'gc> {

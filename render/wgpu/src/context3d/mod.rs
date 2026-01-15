@@ -10,20 +10,21 @@ use swf::{Rectangle, Twips};
 
 use wgpu::util::StagingBelt;
 use wgpu::{
-    BindGroup, BufferDescriptor, BufferUsages, TextureDescriptor, TextureDimension, TextureFormat,
-    TextureUsages, TextureView, TextureViewDescriptor, COPY_BUFFER_ALIGNMENT,
-    COPY_BYTES_PER_ROW_ALIGNMENT,
+    BindGroup, BufferDescriptor, BufferUsages, COPY_BUFFER_ALIGNMENT, COPY_BYTES_PER_ROW_ALIGNMENT,
+    TextureDescriptor, TextureDimension, TextureFormat, TextureUsages, TextureView,
+    TextureViewDescriptor,
 };
 use wgpu::{CommandEncoder, Extent3d, RenderPass};
 
-use crate::context3d::current_pipeline::{BoundTextureData, AGAL_FLOATS_PER_REGISTER};
+use crate::Texture;
+use crate::context3d::current_pipeline::{AGAL_FLOATS_PER_REGISTER, BoundTextureData};
 use crate::descriptors::Descriptors;
 use crate::utils::supported_sample_count;
-use crate::Texture;
 
 use std::num::NonZeroU64;
 use std::rc::Rc;
 use std::sync::Arc;
+use tracing::instrument;
 
 mod current_pipeline;
 mod shader_pair;
@@ -199,29 +200,6 @@ impl WgpuContext3D {
             .update_target_format(TextureFormat::Rgba8Unorm);
     }
 
-    pub(crate) fn present(&mut self) {
-        std::mem::swap(
-            &mut self.back_buffer_raw_texture_handle,
-            &mut self.front_buffer_raw_texture_handle,
-        );
-        std::mem::swap(
-            &mut self.back_buffer_texture_view,
-            &mut self.front_buffer_texture_view,
-        );
-        std::mem::swap(
-            &mut self.back_buffer_resolve_texture_view,
-            &mut self.front_buffer_resolve_texture_view,
-        );
-        std::mem::swap(
-            &mut self.back_buffer_depth_texture_view,
-            &mut self.front_buffer_depth_texture_view,
-        );
-
-        self.set_render_to_back_buffer();
-        self.seen_clear_command = false;
-        self.clear_color = None;
-    }
-
     fn make_render_pass<'a>(
         &'a mut self,
         command_encoder: &'a mut CommandEncoder,
@@ -270,6 +248,7 @@ impl WgpuContext3D {
                     load: color_load,
                     store: wgpu::StoreOp::Store,
                 },
+                depth_slice: None,
             })],
             depth_stencil_attachment,
             ..Default::default()
@@ -765,7 +744,9 @@ impl Context3D for WgpuContext3D {
                             wgpu::Backend::Gl
                         )
                     {
-                        tracing::warn!("Context.setRenderToTexture with antiAlias > 1 is not yet supported on WebGL");
+                        tracing::warn!(
+                            "Context.setRenderToTexture with antiAlias > 1 is not yet supported on WebGL"
+                        );
                         sample_count = 1;
                     }
                 }
@@ -1195,6 +1176,30 @@ impl Context3D for WgpuContext3D {
                 self.scissor_rectangle = rect;
             }
         }
+    }
+
+    #[instrument(level = "debug", skip_all)]
+    fn present(&mut self) {
+        std::mem::swap(
+            &mut self.back_buffer_raw_texture_handle,
+            &mut self.front_buffer_raw_texture_handle,
+        );
+        std::mem::swap(
+            &mut self.back_buffer_texture_view,
+            &mut self.front_buffer_texture_view,
+        );
+        std::mem::swap(
+            &mut self.back_buffer_resolve_texture_view,
+            &mut self.front_buffer_resolve_texture_view,
+        );
+        std::mem::swap(
+            &mut self.back_buffer_depth_texture_view,
+            &mut self.front_buffer_depth_texture_view,
+        );
+
+        self.set_render_to_back_buffer();
+        self.seen_clear_command = false;
+        self.clear_color = None;
     }
 }
 

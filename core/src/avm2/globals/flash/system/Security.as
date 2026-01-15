@@ -4,10 +4,10 @@ package flash.system {
         public static native function get pageDomain():String;
         public static native function get sandboxType():String;
 
-        public static native function allowDomain(... domains):void;
-        public static native function allowInsecureDomain(... domains):void;
-        public static native function loadPolicyFile(url: String):void;
-        public static native function showSettings(panel: String = "default"):void;
+        public static native function allowDomain(...domains):void;
+        public static native function allowInsecureDomain(...domains):void;
+        public static native function loadPolicyFile(url:String):void;
+        public static native function showSettings(panel:String = "default"):void;
 
         [API("661")]
         public static const APPLICATION:String = "application";

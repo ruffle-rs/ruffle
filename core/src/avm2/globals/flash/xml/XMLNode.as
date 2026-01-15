@@ -7,7 +7,7 @@ package flash.xml {
 
         public var nodeType:uint;
 
-        public var attributes:Object = {};
+        private var _attributes:Object;
 
         public var nodeName:String = null;
         public var nodeValue:String = null;
@@ -29,6 +29,17 @@ package flash.xml {
             } else {
                 nodeValue = input;
             }
+        }
+
+        public function get attributes():Object {
+            if (this._attributes == null) {
+                this._attributes = {};
+            }
+            return this._attributes;
+        }
+
+        public function set attributes(value:Object):void {
+            this._attributes = value;
         }
 
         public function get childNodes():Array {
@@ -83,7 +94,7 @@ package flash.xml {
             nextSibling = null;
         }
 
-        public function insertBefore(node:XMLNode, before:XMLNode = null):void {
+        public function insertBefore(node:XMLNode, before:XMLNode):void {
             if (before == null) {
                 appendChild(node);
                 return;
@@ -191,7 +202,7 @@ package flash.xml {
                 return getNamespaceForPrefix(prefix);
             }
 
-            var node: XMLNode = this;
+            var node:XMLNode = this;
             do {
                 if (node.attributes.xmlns) {
                     return node.attributes.xmlns;

@@ -3,8 +3,8 @@ use super::dispatch_added_event_only;
 use super::interactive::Avm2MousePick;
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
-    StageObject as Avm2StageObject, Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, ClassObject as Avm2ClassObject,
+    FunctionArgs as Avm2FunctionArgs, StageObject as Avm2StageObject,
 };
 use crate::backend::audio::AudioManager;
 use crate::backend::ui::MouseCursor;
@@ -14,16 +14,18 @@ use crate::display_object::container::{dispatch_added_event, dispatch_removed_ev
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
 use crate::display_object::{DisplayObjectBase, MovieClip};
 use crate::events::{ClipEvent, ClipEventResult};
-use crate::frame_lifecycle::catchup_display_object_to_frame;
+use crate::frame_lifecycle::{
+    broadcast_frame_constructed, broadcast_frame_exited, catchup_display_object_to_frame,
+};
 use crate::prelude::*;
 use crate::tag_utils::{SwfMovie, SwfSlice};
-use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use either::Either;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, RefCell};
 use std::sync::Arc;
@@ -67,7 +69,7 @@ pub struct Avm2ButtonData<'gc> {
     class: Lock<Avm2ClassObject<'gc>>,
 
     /// The AVM2 representation of this button.
-    object: Lock<Option<Avm2Object<'gc>>>,
+    object: Lock<Option<Avm2StageObject<'gc>>>,
 
     /// The current button state to render.
     state: Cell<ButtonState>,
@@ -363,16 +365,16 @@ impl<'gc> Avm2Button<'gc> {
                 dispatch_removed_event(old_state_child, context);
             }
 
-            if let Some(child) = child {
-                child.frame_constructed(context);
+            // FIXME is this correct?
+            if child.is_some() {
+                broadcast_frame_constructed(context);
             }
         }
 
-        if is_cur_state {
-            if let Some(child) = child {
-                child.run_frame_scripts(context);
-                child.exit_frame(context);
-            }
+        if is_cur_state && let Some(child) = child {
+            child.run_frame_scripts(context);
+            // FIXME is this correct?
+            broadcast_frame_exited(context);
         }
     }
 
@@ -452,15 +454,13 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         if self.0.needs_frame_construction.get() {
             if needs_avm2_construction {
                 let object_cell = unlock!(Gc::write(context.gc(), self.0), Avm2ButtonData, object);
-                let mut activation = Avm2Activation::from_nothing(context);
-                match Avm2StageObject::for_display_object(&mut activation, self.into(), class) {
-                    Ok(object) => object_cell.set(Some(object.into())),
-                    Err(e) => tracing::error!("Got {} when constructing AVM2 side of button", e),
-                };
-                if !self.placed_by_script() {
+                let object = Avm2StageObject::for_display_object(context.gc(), self.into(), class);
+                object_cell.set(Some(object));
+
+                if !self.placed_by_avm2_script() {
                     // This is run before we actually call the constructor - the un-constructed object
                     // is exposed to ActionScript via `parent.<childName>`.
-                    self.set_on_parent_field(activation.context);
+                    self.set_on_parent_field(context);
                 }
             }
 
@@ -529,16 +529,27 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
 
                     let stage = context.stage;
                     stage.construct_frame(context);
-                    stage.frame_constructed(context);
+                    broadcast_frame_constructed(context);
                     self.set_state(context, ButtonState::Up);
                     stage.run_frame_scripts(context);
-                    stage.exit_frame(context);
+                    broadcast_frame_exited(context);
                 }
 
                 if let Some(avm2_object) = self.0.object.get() {
                     let mut activation = Avm2Activation::from_nothing(context);
-                    if let Err(e) = class.call_init(avm2_object.into(), &[], &mut activation) {
-                        tracing::error!("Got {} when constructing AVM2 side of button", e);
+                    let result = class.call_init(
+                        avm2_object.into(),
+                        Avm2FunctionArgs::empty(),
+                        &mut activation,
+                    );
+
+                    if let Err(err) = result {
+                        Avm2::uncaught_error(
+                            &mut activation,
+                            Some(self.into()),
+                            err,
+                            "Error running AVM2 construction for button",
+                        );
                     }
                 }
 
@@ -623,38 +634,38 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
-        if !options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible() {
-            if let Some(child) = self.get_state_child(self.0.state.get().into()) {
-                //TODO: the if below should probably always be taken, why does the hit area
-                // sometimes have a parent?
-                let mut point = point;
-                if child.parent().is_none() {
-                    // hit_area is not actually a child, so transform point into local space before passing it down.
-                    point = if let Some(point) = self.global_to_local(point) {
-                        point
-                    } else {
-                        return false;
-                    }
+        if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
+            && let Some(child) = self.get_state_child(self.0.state.get().into())
+        {
+            //TODO: the if below should probably always be taken, why does the hit area
+            // sometimes have a parent?
+            let mut point = point;
+            if child.parent().is_none() {
+                // hit_area is not actually a child, so transform point into local space before passing it down.
+                point = if let Some(point) = self.global_to_local(point) {
+                    point
+                } else {
+                    return false;
                 }
+            }
 
-                if child.hit_test_shape(context, point, options) {
-                    return true;
-                }
+            if child.hit_test_shape(context, point, options) {
+                return true;
             }
         }
 
         false
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .object
-            .get()
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object1(self) -> Option<Avm1Object<'gc>> {
+        None
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.object.get()
+    }
+
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let write = Gc::write(context.gc(), self.0);
         unlock!(write, Avm2ButtonData, object).set(Some(to));
     }
@@ -703,10 +714,10 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
         if event.propagates() {
             let current_state = self.get_state_child(self.0.state.get().into());
 
-            if let Some(current_state) = current_state.and_then(|s| s.as_interactive()) {
-                if current_state.handle_clip_event(context, event) == ClipEventResult::Handled {
-                    return ClipEventResult::Handled;
-                }
+            if let Some(current_state) = current_state.and_then(|s| s.as_interactive())
+                && current_state.handle_clip_event(context, event) == ClipEventResult::Handled
+            {
+                return ClipEventResult::Handled;
             }
         }
 

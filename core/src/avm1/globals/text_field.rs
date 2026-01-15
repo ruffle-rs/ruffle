@@ -2,13 +2,13 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{globals, ArrayBuilder, Object, Value};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{ArrayBuilder, Object, Value, globals};
 use crate::display_object::{
     AutoSizeMode, EditText, TDisplayObject, TInteractiveObject, TextSelection,
 };
 use crate::html::TextFormat;
-use crate::string::{AvmString, StringContext, WStr};
+use crate::string::{AvmString, WStr};
 use gc_arena::Gc;
 use ruffle_macros::istr;
 use swf::Color;
@@ -53,61 +53,60 @@ macro_rules! tf_setter {
     };
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "getNewTextFormat" => method(tf_method!(get_new_text_format); DONT_ENUM | DONT_DELETE);
-    "setNewTextFormat" => method(tf_method!(set_new_text_format); DONT_ENUM | DONT_DELETE);
-    "getTextFormat" => method(tf_method!(get_text_format); DONT_ENUM | DONT_DELETE);
-    "setTextFormat" => method(tf_method!(set_text_format); DONT_ENUM | DONT_DELETE);
-    "replaceSel" => method(tf_method!(replace_sel); DONT_ENUM | DONT_DELETE);
-    "replaceText" => method(tf_method!(replace_text); DONT_ENUM | DONT_DELETE);
-    "removeTextField" => method(tf_method!(remove_text_field); DONT_ENUM | DONT_DELETE);
-    "autoSize" => property(tf_getter!(auto_size), tf_setter!(set_auto_size));
-    "background" => property(tf_getter!(background), tf_setter!(set_background));
-    "backgroundColor" => property(tf_getter!(background_color), tf_setter!(set_background_color));
-    "border" => property(tf_getter!(border), tf_setter!(set_border));
-    "borderColor" => property(tf_getter!(border_color), tf_setter!(set_border_color));
-    "bottomScroll" => property(tf_getter!(bottom_scroll));
-    "embedFonts" => property(tf_getter!(embed_fonts), tf_setter!(set_embed_fonts));
-    "filters" => property(tf_getter!(filters), tf_setter!(set_filters); DONT_DELETE | DONT_ENUM | VERSION_8);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    "replaceSel" => method(tf_method!(replace_sel); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "getTextFormat" => method(tf_method!(get_text_format); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setTextFormat" => method(tf_method!(set_text_format); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "removeTextField" => method(tf_method!(remove_text_field); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "getNewTextFormat" => method(tf_method!(get_new_text_format); DONT_ENUM | DONT_DELETE | VERSION_6);
+    "setNewTextFormat" => method(tf_method!(set_new_text_format); DONT_ENUM | DONT_DELETE | VERSION_6);
     "getDepth" => method(globals::get_depth; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
-    "hscroll" => property(tf_getter!(hscroll), tf_setter!(set_hscroll));
-    "html" => property(tf_getter!(html), tf_setter!(set_html));
-    "htmlText" => property(tf_getter!(html_text), tf_setter!(set_html_text));
-    "condenseWhite" => property(tf_getter!(condense_white), tf_setter!(set_condense_white));
-    "length" => property(tf_getter!(length));
-    "maxhscroll" => property(tf_getter!(maxhscroll));
-    "maxscroll" => property(tf_getter!(maxscroll));
-    "maxChars" => property(tf_getter!(max_chars), tf_setter!(set_max_chars));
-    "mouseWheelEnabled" => property(tf_getter!(mouse_wheel_enabled), tf_setter!(set_mouse_wheel_enabled));
-    "multiline" => property(tf_getter!(multiline), tf_setter!(set_multiline));
-    "password" => property(tf_getter!(password), tf_setter!(set_password));
-    "restrict" => property(tf_getter!(restrict), tf_setter!(set_restrict));
+    "replaceText" => method(tf_method!(replace_text); DONT_ENUM | DONT_DELETE | VERSION_7);
+    "gridFitType" => property(tf_getter!(grid_fit_type), tf_setter!(set_grid_fit_type); VERSION_8);
+    "antiAliasType" => property(tf_getter!(anti_alias_type), tf_setter!(set_anti_alias_type); VERSION_8);
+    "thickness" => property(tf_getter!(thickness), tf_setter!(set_thickness); VERSION_8);
+    "sharpness" => property(tf_getter!(sharpness), tf_setter!(set_sharpness); VERSION_8);
+    "filters" => property(tf_getter!(filters), tf_setter!(set_filters); DONT_DELETE | VERSION_8);
     "scroll" => property(tf_getter!(scroll), tf_setter!(set_scroll));
-    "selectable" => property(tf_getter!(selectable), tf_setter!(set_selectable));
-    "text" => property(tf_getter!(text), tf_setter!(set_text));
+    "maxscroll" => property(tf_getter!(maxscroll));
+    "borderColor" => property(tf_getter!(border_color), tf_setter!(set_border_color));
+    "backgroundColor" => property(tf_getter!(background_color), tf_setter!(set_background_color));
     "textColor" => property(tf_getter!(text_color), tf_setter!(set_text_color));
-    "textHeight" => property(tf_getter!(text_height));
-    "textWidth" => property(tf_getter!(text_width));
-    "type" => property(tf_getter!(get_type), tf_setter!(set_type));
-    "variable" => property(tf_getter!(variable), tf_setter!(set_variable));
-    "wordWrap" => property(tf_getter!(word_wrap), tf_setter!(set_word_wrap));
-    "antiAliasType" => property(tf_getter!(anti_alias_type), tf_setter!(set_anti_alias_type));
-    "gridFitType" => property(tf_getter!(grid_fit_type), tf_setter!(set_grid_fit_type));
-    "sharpness" => property(tf_getter!(sharpness), tf_setter!(set_sharpness));
-    "thickness" => property(tf_getter!(thickness), tf_setter!(set_thickness));
     // NOTE: `tabEnabled` is not a built-in property of TextField.
-    "tabIndex" => property(tf_getter!(tab_index), tf_setter!(set_tab_index); VERSION_6);
-    "styleSheet" => property(tf_getter!(style_sheet), tf_setter!(set_style_sheet); VERSION_7);
+    "tabIndex" => property(tf_getter!(tab_index), tf_setter!(set_tab_index));
+    "autoSize" => property(tf_getter!(auto_size), tf_setter!(set_auto_size));
+    "text" => property(tf_getter!(text), tf_setter!(set_text));
+    "type" => property(tf_getter!(get_type), tf_setter!(set_type));
+    "htmlText" => property(tf_getter!(html_text), tf_setter!(set_html_text));
+    "variable" => property(tf_getter!(variable), tf_setter!(set_variable));
+    "hscroll" => property(tf_getter!(hscroll), tf_setter!(set_hscroll));
+    "maxhscroll" => property(tf_getter!(maxhscroll));
+    "maxChars" => property(tf_getter!(max_chars), tf_setter!(set_max_chars));
+    "embedFonts" => property(tf_getter!(embed_fonts), tf_setter!(set_embed_fonts));
+    "html" => property(tf_getter!(html), tf_setter!(set_html));
+    "border" => property(tf_getter!(border), tf_setter!(set_border));
+    "background" => property(tf_getter!(background), tf_setter!(set_background));
+    "wordWrap" => property(tf_getter!(word_wrap), tf_setter!(set_word_wrap));
+    "password" => property(tf_getter!(password), tf_setter!(set_password));
+    "multiline" => property(tf_getter!(multiline), tf_setter!(set_multiline));
+    "selectable" => property(tf_getter!(selectable), tf_setter!(set_selectable));
+    "length" => property(tf_getter!(length));
+    "bottomScroll" => property(tf_getter!(bottom_scroll));
+    "textWidth" => property(tf_getter!(text_width));
+    "textHeight" => property(tf_getter!(text_height));
+    "restrict" => property(tf_getter!(restrict), tf_setter!(set_restrict));
+    "condenseWhite" => property(tf_getter!(condense_white), tf_setter!(set_condense_white));
+    "mouseWheelEnabled" => property(tf_getter!(mouse_wheel_enabled), tf_setter!(set_mouse_wheel_enabled));
+    "styleSheet" => property(tf_getter!(style_sheet), tf_setter!(set_style_sheet));
 };
 
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.empty_class(super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
 }
 
 pub fn password<'gc>(
@@ -130,7 +129,7 @@ fn new_text_format<'gc>(
     activation: &mut Activation<'_, 'gc>,
     text_format: TextFormat,
 ) -> Object<'gc> {
-    let proto = activation.context.avm1.prototypes().text_format;
+    let proto = activation.prototypes().text_format;
     let object = Object::new(&activation.context.strings, Some(proto));
     object.set_native(
         activation.gc(),
@@ -594,12 +593,23 @@ pub fn set_auto_size<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let mode = match value {
-        Value::String(s) if s.eq_ignore_case(WStr::from_units(b"left")) => AutoSizeMode::Left,
-        Value::String(s) if s.eq_ignore_case(WStr::from_units(b"center")) => AutoSizeMode::Center,
-        Value::String(s) if s.eq_ignore_case(WStr::from_units(b"right")) => AutoSizeMode::Right,
-        Value::Bool(true) => AutoSizeMode::Left,
-        _ => AutoSizeMode::None,
+    let mode = if let Value::Bool(value) = value {
+        if value {
+            AutoSizeMode::Left
+        } else {
+            AutoSizeMode::None
+        }
+    } else {
+        let mode = value.coerce_to_string(activation)?;
+        if mode.eq_ignore_case(WStr::from_units(b"left")) {
+            AutoSizeMode::Left
+        } else if mode.eq_ignore_case(WStr::from_units(b"center")) {
+            AutoSizeMode::Center
+        } else if mode.eq_ignore_case(WStr::from_units(b"right")) {
+            AutoSizeMode::Right
+        } else {
+            AutoSizeMode::None
+        }
     };
     this.set_autosize(mode, activation.context);
 
@@ -835,7 +845,9 @@ fn set_filters<'gc>(
     let mut filters = vec![];
     if let Value::Object(value) = value {
         for index in value.get_keys(activation, false).into_iter().rev() {
-            let filter_object = value.get(index, activation)?.coerce_to_object(activation);
+            let filter_object = value
+                .get(index, activation)?
+                .coerce_to_object_or_bare(activation)?;
             if let Some(filter) = bitmap_filter::avm1_to_filter(filter_object, activation.context) {
                 filters.push(filter);
             }

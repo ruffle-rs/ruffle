@@ -86,7 +86,11 @@ package flash.desktop {
 
         public function get applicationDescriptor():XML {
             stub_getter("flash.desktop.NativeApplication", "applicationDescriptor");
-            return null;
+
+            // Return some generic info in the descriptor so that SWFs that read
+            // from it don't error out
+            var genericDescriptor:XML = <application xmlns="http://ns.adobe.com/air/application/33.1"><id>com.example.Game</id><versionNumber>1.0.0</versionNumber></application>;
+            return genericDescriptor;
         }
 
         public function get autoExit():Boolean {

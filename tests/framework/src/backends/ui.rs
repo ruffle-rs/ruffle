@@ -2,13 +2,11 @@ use std::collections::HashMap;
 
 use crate::test::Font;
 use chrono::{DateTime, Utc};
-use ruffle_core::{
-    backend::ui::{
-        DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
-        FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
-    },
-    FontFileData, FontQuery,
+use ruffle_core::backend::ui::{
+    DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter, FontDefinition,
+    FullscreenError, LanguageIdentifier, MouseCursor, US_ENGLISH, UiBackend,
 };
+use ruffle_core::font::{FontFileData, FontQuery};
 use url::Url;
 
 /// A simulated file dialog response, for use in tests

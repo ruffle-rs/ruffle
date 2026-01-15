@@ -5,7 +5,7 @@ use core::fmt;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::object::{search_prototype, ExecutionName};
+use crate::avm1::object::{ExecutionName, search_prototype};
 use crate::avm1::{NativeObject, Object, Value};
 use crate::string::AvmString;
 use gc_arena::Collect;
@@ -26,7 +26,7 @@ pub struct SuperObject<'gc> {
     depth: u8,
 
     /// Adds a niche, so that enums contaning this type can use it for their discriminant.
-    _niche: crate::utils::ZeroU8,
+    _niche: ruffle_common::utils::ZeroU8,
 }
 
 impl fmt::Debug for SuperObject<'_> {
@@ -56,16 +56,22 @@ impl<'gc> SuperObject<'gc> {
         self.depth
     }
 
-    pub(super) fn base_proto(&self, activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
+    fn base_proto(&self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
         let mut proto = self.this();
         for _ in 0..self.depth() {
-            proto = proto.proto(activation).coerce_to_object(activation);
+            match proto.proto(activation) {
+                Value::Object(p) => proto = p,
+                _ => return None,
+            }
         }
-        proto
+        Some(proto)
     }
 
     pub(super) fn proto(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
-        self.base_proto(activation).proto(activation)
+        match self.base_proto(activation) {
+            Some(p) => p.proto(activation),
+            None => Value::Undefined,
+        }
     }
 
     pub(super) fn call(
@@ -74,22 +80,27 @@ impl<'gc> SuperObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let constructor = self
-            .base_proto(activation)
-            .get(istr!("__constructor__"), activation)?
-            .coerce_to_object(activation);
+        let Some(proto) = self.base_proto(activation) else {
+            return Ok(Value::Undefined);
+        };
+
+        let constructor = istr!("__constructor__");
+        let Some(Value::Object(constructor)) = proto.get_opt(constructor, activation, false)?
+        else {
+            return Ok(Value::Undefined);
+        };
 
         let NativeObject::Function(constr) = constructor.native() else {
             return Ok(Value::Undefined);
         };
 
-        constr.as_constructor().exec(
+        constr.exec_constructor(
             name.into(),
             activation,
             self.this().into(),
             self.depth() + 1,
             args,
-            ExecutionReason::FunctionCall,
+            ExecutionReason::ConstructorCall,
             constructor,
         )
     }
@@ -101,14 +112,16 @@ impl<'gc> SuperObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         reason: ExecutionReason,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let this = self.this();
-        let (method, depth) =
-            match search_prototype(self.proto(activation), name, activation, this, false)? {
-                Some((Value::Object(method), depth)) => (method, depth),
-                _ => return Ok(Value::Undefined),
-            };
+        // 'special' method calls appear to skip the `__resolve` fallback logic
+        let call_resolve_fn = !matches!(reason, ExecutionReason::Special);
+        let (this, proto) = (self.this(), self.proto(activation));
+        let Some((Value::Object(method), depth)) =
+            search_prototype(proto, name, activation, this, call_resolve_fn)?
+        else {
+            return Ok(Value::Undefined);
+        };
 
-        match method.as_executable() {
+        match method.as_function() {
             Some(exec) => exec.exec(
                 ExecutionName::Dynamic(name),
                 activation,

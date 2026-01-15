@@ -1,13 +1,14 @@
 //! Function builtin and prototype
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{eval_error, type_error};
+use crate::avm2::error::{make_error_1066, make_error_1116};
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::array::resolve_array_hole;
 use crate::avm2::globals::methods::function as function_class_methods;
 use crate::avm2::object::FunctionObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 
 /// Create a dummy function using Function.createDummyFunction. The Function class
 /// must be stored properly in SystemClasses; otherwise, this method will panic.
@@ -36,27 +37,11 @@ pub fn function_constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if !args.is_empty() {
-        return Err(Error::avm_error(eval_error(
-            activation,
-            "Error #1066: The form function('function body') is not supported.",
-            1066,
-        )?));
+        return Err(make_error_1066(activation));
     }
 
     let function_object = create_dummy_function(activation);
     Ok(function_object.into())
-}
-
-pub fn call_handler<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    activation
-        .avm2()
-        .classes()
-        .function
-        .construct(activation, args)
 }
 
 pub fn _init_function_class<'gc>(
@@ -71,7 +56,7 @@ pub fn _init_function_class<'gc>(
     activation.avm2().system_classes.as_mut().unwrap().function = function_class_object;
 
     let function_proto = create_dummy_function(activation);
-    function_class_object.link_prototype(activation, function_proto.into());
+    function_class_object.link_prototype(activation.context, function_proto.into());
 
     Ok(Value::Undefined)
 }
@@ -87,9 +72,10 @@ pub fn call<'gc>(
     let this = args.get_value(0);
 
     if args.len() > 1 {
-        Ok(func.call(activation, this, &args[1..])?)
+        let passed_args = &args[1..];
+        Ok(func.call(activation, this, FunctionArgs::from_slice(passed_args))?)
     } else {
-        Ok(func.call(activation, this, &[])?)
+        Ok(func.call(activation, this, FunctionArgs::empty())?)
     }
 }
 
@@ -115,18 +101,14 @@ pub fn apply<'gc>(
 
             resolved_args
         } else {
-            return Err(Error::avm_error(type_error(
-                activation,
-                "Error #1116: second argument to Function.prototype.apply must be an array.",
-                1116,
-            )?));
+            return Err(make_error_1116(activation));
         }
     } else {
         // Passing null or undefined results in the function being called with no arguments passed
         Vec::new()
     };
 
-    func.call(activation, this, &resolved_args)
+    func.call(activation, this, FunctionArgs::from_slice(&resolved_args))
 }
 
 pub fn get_length<'gc>(

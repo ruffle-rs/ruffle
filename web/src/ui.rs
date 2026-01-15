@@ -1,12 +1,14 @@
+mod font_renderer;
+
 use super::JavascriptPlayer;
 use rfd::{AsyncFileDialog, FileHandle};
 use ruffle_core::backend::ui::{
     DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter,
 };
 use ruffle_core::backend::ui::{
-    FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, UiBackend, US_ENGLISH,
+    FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, US_ENGLISH, UiBackend,
 };
-use ruffle_core::FontQuery;
+use ruffle_core::font::FontQuery;
 use ruffle_web_common::JsResult;
 use std::borrow::Cow;
 use url::Url;
@@ -146,10 +148,16 @@ pub struct WebUiBackend {
 
     /// Is a dialog currently open
     dialog_open: bool,
+
+    use_canvas_font_renderer: bool,
 }
 
 impl WebUiBackend {
-    pub fn new(js_player: JavascriptPlayer, canvas: &HtmlCanvasElement) -> Self {
+    pub fn new(
+        js_player: JavascriptPlayer,
+        canvas: &HtmlCanvasElement,
+        use_canvas_font_renderer: bool,
+    ) -> Self {
         let window = web_sys::window().expect("window()");
         let preferred_language = window.navigator().language();
         let language = preferred_language
@@ -163,6 +171,7 @@ impl WebUiBackend {
             language,
             clipboard_content: "".into(),
             dialog_open: false,
+            use_canvas_font_renderer,
         }
     }
 
@@ -297,9 +306,39 @@ impl UiBackend for WebUiBackend {
         self.js_player.display_unsupported_video(url.as_str());
     }
 
-    fn load_device_font(&self, _query: &FontQuery, _register: &mut dyn FnMut(FontDefinition)) {
-        // Because fonts must be loaded instantly (no async),
-        // we actually just provide them all upfront at time of Player creation.
+    fn load_device_font(&self, query: &FontQuery, register: &mut dyn FnMut(FontDefinition)) {
+        if !self.use_canvas_font_renderer {
+            // In case we don't use the canvas font renderer,
+            // because fonts must be loaded instantly (no async),
+            // we actually just provide them all upfront at time of Player creation.
+            return;
+        }
+
+        let renderer =
+            font_renderer::CanvasFontRenderer::new(query.is_italic, query.is_bold, &query.name);
+
+        match renderer {
+            Ok(renderer) => {
+                tracing::info!(
+                    "Loaded a new canvas font renderer for font \"{}\", italic: {}, bold: {}",
+                    query.name,
+                    query.is_italic,
+                    query.is_bold
+                );
+                register(FontDefinition::ExternalRenderer {
+                    name: query.name.clone(),
+                    is_bold: query.is_bold,
+                    is_italic: query.is_italic,
+                    font_renderer: Box::new(renderer),
+                });
+            }
+            Err(e) => {
+                tracing::error!(
+                    "Failed to set up canvas font renderer for font \"{}\": {e:?}",
+                    query.name
+                )
+            }
+        }
     }
 
     fn sort_device_fonts(
@@ -326,8 +365,9 @@ impl UiBackend for WebUiBackend {
                 let navigator = window.navigator();
                 let platform = navigator.platform().expect("navigator.platform");
 
-                if platform.contains("Mac") && filter.mac_type.is_some() {
-                    let mac_type = filter.mac_type.expect("Cant fail");
+                if platform.contains("Mac")
+                    && let Some(mac_type) = filter.mac_type
+                {
                     let extensions: Vec<&str> = mac_type.split(';').collect();
                     dialog = dialog.add_filter(&filter.description, &extensions);
                 } else {

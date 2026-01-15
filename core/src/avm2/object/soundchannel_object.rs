@@ -1,16 +1,15 @@
 //! Object representation for sounds
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
-use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::backend::audio::SoundInstanceHandle;
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, RefCell};
 
 /// A class instance allocator that allocates SoundChannel objects.
@@ -75,12 +74,12 @@ pub enum SoundChannelData {
 }
 
 impl<'gc> SoundChannelObject<'gc> {
-    /// Convert a bare sound instance into it's object representation.
-    pub fn empty(activation: &mut Activation<'_, 'gc>) -> Result<Self, Error<'gc>> {
+    /// Create an empty SoundChannel instance.
+    pub fn empty(activation: &mut Activation<'_, 'gc>) -> Self {
         let class = activation.avm2().classes().soundchannel;
         let base = ScriptObjectData::new(class);
 
-        let sound_object = SoundChannelObject(Gc::new(
+        SoundChannelObject(Gc::new(
             activation.gc(),
             SoundChannelObjectData {
                 base,
@@ -90,11 +89,7 @@ impl<'gc> SoundChannelObject<'gc> {
                 }),
                 position: Cell::new(0.0),
             },
-        ));
-
-        class.call_init(Value::Object(sound_object.into()), &[], activation)?;
-
-        Ok(sound_object)
+        ))
     }
 
     /// Return the position of the playing sound in seconds.
@@ -121,7 +116,7 @@ impl<'gc> SoundChannelObject<'gc> {
 
     pub fn set_sound_instance(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         instance: SoundInstanceHandle,
     ) {
         let mut sound_channel_data = self.0.sound_channel_data.borrow_mut();
@@ -131,13 +126,11 @@ impl<'gc> SoundChannelObject<'gc> {
                 should_stop,
             } => {
                 if let Some(sound_transform) = sound_transform {
-                    activation
-                        .context
-                        .set_local_sound_transform(instance, *sound_transform);
+                    context.set_local_sound_transform(instance, *sound_transform);
                 }
 
                 if *should_stop {
-                    activation.context.stop_sound(instance);
+                    context.stop_sound(instance);
                 }
                 *sound_channel_data = SoundChannelData::Loaded {
                     sound_instance: instance,

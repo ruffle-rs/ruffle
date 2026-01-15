@@ -1,11 +1,11 @@
 //! Represents AVM2 scope chain resolution.
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::object::TObject;
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::{Multiname, Namespace};
 use core::fmt;
 use gc_arena::barrier::field;

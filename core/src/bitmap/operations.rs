@@ -8,7 +8,7 @@ use crate::bitmap::bitmap_data::{
 };
 use crate::bitmap::turbulence::Turbulence;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::TDisplayObject;
+use crate::display_object::{RenderOptions, TDisplayObject};
 use gc_arena::Mutation;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{PixelRegion, PixelSnapping};
@@ -93,7 +93,11 @@ pub fn get_pixel32(target: BitmapData, renderer: &mut dyn RenderBackend, x: u32,
         return 0;
     }
     let read = target.read_area(PixelRegion::for_pixel(x, y), renderer);
-    read.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
+    if read.transparency() {
+        read.get_pixel32_raw(x, y).to_un_multiplied_alpha().into()
+    } else {
+        read.get_pixel32_raw(x, y).into()
+    }
 }
 
 pub fn set_pixel<'gc>(
@@ -137,9 +141,9 @@ pub fn flood_fill<'gc>(
     x: u32,
     y: u32,
     color: u32,
-) {
+) -> bool {
     if x >= target.width() || y >= target.height() {
-        return;
+        return false;
     }
     let target = target.sync(renderer);
     let mut write = target.borrow_mut(mc);
@@ -148,7 +152,7 @@ pub fn flood_fill<'gc>(
 
     if expected_color == replace_color {
         // If we try to replace X with X, we'll infinite loop
-        return;
+        return false;
     }
 
     let mut pending = vec![(x, y)];
@@ -176,6 +180,7 @@ pub fn flood_fill<'gc>(
         }
     }
     write.set_cpu_dirty(mc, dirty_region);
+    true
 }
 
 pub fn noise<'gc>(
@@ -189,6 +194,7 @@ pub fn noise<'gc>(
 ) {
     let (target, _) = target.overwrite_cpu_pixels_from_gpu(mc);
     let mut write = target.borrow_mut(mc);
+    let transparency = write.transparency();
 
     let true_seed = if seed <= 0 {
         (-seed + 1) as u32
@@ -202,7 +208,7 @@ pub fn noise<'gc>(
         for x in 0..write.width() {
             let pixel_color = if gray_scale {
                 let gray = rng.random_range(low..high);
-                let alpha = if channel_options.contains(ChannelOptions::ALPHA) {
+                let alpha = if transparency && channel_options.contains(ChannelOptions::ALPHA) {
                     rng.random_range(low..high)
                 } else {
                     255
@@ -228,7 +234,7 @@ pub fn noise<'gc>(
                     0
                 };
 
-                let a = if channel_options.contains(ChannelOptions::ALPHA) {
+                let a = if transparency && channel_options.contains(ChannelOptions::ALPHA) {
                     rng.random_range(low..high)
                 } else {
                     255
@@ -237,7 +243,7 @@ pub fn noise<'gc>(
                 Color::rgba(r, g, b, a)
             };
 
-            write.set_pixel32_raw(x, y, pixel_color);
+            write.set_pixel32_raw(x, y, pixel_color.to_premultiplied_alpha(transparency));
         }
     }
     let region = PixelRegion::for_whole_size(write.width(), write.height());
@@ -375,16 +381,16 @@ pub fn copy_channel<'gc>(
     let (min_x, min_y) = dest_point;
     let (src_min_x, src_min_y, src_width, src_height) = src_rect;
 
-    let channel_shift: u32 = match source_channel {
+    let channel_shift: Option<u32> = match source_channel {
         // red
-        1 => 16,
+        1 => Some(16),
         // green
-        2 => 8,
+        2 => Some(8),
         // blue
-        4 => 0,
+        4 => Some(0),
         // alpha
-        8 => 24,
-        _ => 0,
+        8 => Some(24),
+        _ => None,
     };
     let transparency = target.transparency();
 
@@ -435,7 +441,11 @@ pub fn copy_channel<'gc>(
                     .into()
             };
 
-            let source_part = (source_color >> channel_shift) & 0xFF;
+            let source_part = if let Some(shift) = channel_shift {
+                (source_color >> shift) & 0xFF
+            } else {
+                0
+            };
 
             let result_color: u32 = match dest_channel {
                 // red
@@ -576,31 +586,25 @@ pub fn threshold<'gc>(
 
             // Extract source colour
             let source_color = if let Some(source) = &source {
-                source
-                    .get_pixel32_raw(src_x, src_y)
-                    .to_un_multiplied_alpha()
+                source.get_pixel32_raw(src_x, src_y)
             } else {
-                write.get_pixel32_raw(src_x, src_y).to_un_multiplied_alpha()
+                write.get_pixel32_raw(src_x, src_y)
             };
 
             // If the test, as defined by the operation pass then set to input colour
             if operation.matches(u32::from(source_color) & mask, masked_threshold) {
                 modified_count += 1;
-                write.set_pixel32_raw(dest_x, dest_y, Color::from(colour));
+                // [NA] Spot the bug? We don't set the alpha to 0xFF for opaque BMDs. Yay flash.
+                write.set_pixel32_raw(
+                    dest_x,
+                    dest_y,
+                    Color::from(colour).to_premultiplied_alpha(true),
+                );
             } else {
                 // If the test fails, but copy_source is true then take the colour from the source
                 if copy_source {
-                    let new_color = if let Some(source) = &source {
-                        source
-                            .get_pixel32_raw(dest_x, dest_y)
-                            .to_un_multiplied_alpha()
-                    } else {
-                        write
-                            .get_pixel32_raw(dest_x, dest_y)
-                            .to_un_multiplied_alpha()
-                    };
-
-                    write.set_pixel32_raw(dest_x, dest_y, new_color);
+                    // [NA] Spot the bug? We don't set the alpha to 0xFF for opaque BMDs. Yay flash.
+                    write.set_pixel32_raw(dest_x, dest_y, source_color);
                 }
             }
             if let Some(dirty_area) = &mut dirty_area {
@@ -897,8 +901,8 @@ pub fn color_bounds_rect(
     renderer: &mut dyn RenderBackend,
     target: BitmapData,
     find_color: bool,
-    mask: u32,
-    color: u32,
+    mut mask: u32,
+    mut color: u32,
 ) -> (u32, u32, u32, u32) {
     let mut min_x = target.width();
     let mut max_x = 0;
@@ -906,6 +910,17 @@ pub fn color_bounds_rect(
     let mut max_y = 0;
 
     let target = target.sync(renderer).borrow();
+
+    // We need to work in the same colorspace (premult) - but that means the color won't always match for opaque BMD
+    // Let's just cheat it by pretending the alpha is part of the mask, that way it'll essentially ignore it (as it's always 0xFF)
+    // For transparent ones, we kinda get this for free. If they specified alpha, they need to add alpha to the mask.
+    // If they didn't specify alpha, it'll premult down to 0, and match everything (in FP too)
+    if !target.transparency() {
+        mask |= 0xFF000000;
+    }
+    color = Color::bgra_u32(color)
+        .to_premultiplied_alpha(target.transparency())
+        .to_bgra_u32();
 
     for x in 0..target.width() {
         for y in 0..target.height() {
@@ -1250,7 +1265,7 @@ pub fn apply_filter<'gc>(
     let source_handle = source.bitmap_handle(context.gc(), context.renderer);
     let (target, _) = target.overwrite_cpu_pixels_from_gpu(context.gc());
     let mut write = target.borrow_mut(context.gc());
-    let dest = write.bitmap_handle(context.renderer).unwrap();
+    let dest = write.bitmap_handle(context.renderer);
 
     let sync_handle = context.renderer.apply_filter(
         source_handle,
@@ -1559,9 +1574,11 @@ pub fn draw<'gc>(
             data.render(smoothing, &mut render_context, PixelSnapping::Never);
         }
         IBitmapDrawable::DisplayObject(object) => {
-            // Note that we do *not* use `render_base`,
-            // as we want to ignore the object's mask and normal transform
-            object.render_self(&mut render_context);
+            let options = RenderOptions {
+                apply_transform: false,
+                ..Default::default()
+            };
+            object.render_with_options(&mut render_context, options);
         }
     }
 

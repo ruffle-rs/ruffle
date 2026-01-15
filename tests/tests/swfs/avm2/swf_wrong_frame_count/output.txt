@@ -1,0 +1,38 @@
+///Parent frame 1
+///Parent framesLoaded = 1 totalFrames = 1 currentFrame = 1
+///End parent frame 1
+///Child frame 1
+///Parent frame 2
+///Parent framesLoaded = 1 totalFrames = 1 currentFrame = 2
+///Parent frame 3
+///Parent framesLoaded = 1 totalFrames = 1 currentFrame = 3
+///Child frame 3
+///End child frame 3
+///Parent frame 4
+///Parent framesLoaded = 1 totalFrames = 1 currentFrame = 4
+///Child frame 4
+///Parent frame 5
+///Parent framesLoaded = 1 totalFrames = 1 currentFrame = 5
+///End parent frame 5
+///Child frame 5
+///Parent frame 1
+///Parent framesLoaded = 1 totalFrames = 1 currentFrame = 1
+///End parent frame 1
+///Child frame 1
+///Parent frame 2
+///Parent framesLoaded = 1 totalFrames = 1 currentFrame = 2
+///Parent frame 3
+///Parent framesLoaded = 1 totalFrames = 1 currentFrame = 3
+///Child frame 3
+///End child frame 3
+///Parent frame 4
+///Parent framesLoaded = 1 totalFrames = 1 currentFrame = 4
+///Child frame 4
+///Parent frame 5
+///Parent framesLoaded = 1 totalFrames = 1 currentFrame = 5
+///End parent frame 5
+///Child frame 5
+///Parent frame 1
+///Parent framesLoaded = 1 totalFrames = 1 currentFrame = 1
+///End parent frame 1
+///Child frame 1

@@ -1,0 +1,120 @@
+var o = new Sound();
+
+trace(Sound);
+trace(typeof Sound);
+trace(Sound.prototype);
+trace(typeof Sound.prototype);
+
+trace(o);
+trace(typeof o);
+
+trace("Enumerated");
+for (var p in o) {
+    trace(p);
+}
+
+trace("Enumerated prototype");
+for (var p in Sound.prototype) {
+    trace(p);
+}
+
+trace("Props");
+trace(o.getPan);
+trace(o.getTransform);
+trace(o.getVolume);
+trace(o.setPan);
+trace(o.setTransform);
+trace(o.setVolume);
+trace(o.stop);
+trace(o.attachSound);
+trace(o.start);
+trace(o.getDuration);
+trace(o.setDuration);
+trace(o.getPosition);
+trace(o.setPosition);
+trace(o.loadSound);
+trace(o.getBytesLoaded);
+trace(o.getBytesTotal);
+trace(o.duration);
+trace(o.id3);
+trace(o.position);
+
+trace("After set");
+o.getPan = "test";
+o.getTransform = "test";
+o.getVolume = "test";
+o.setPan = "test";
+o.setTransform = "test";
+o.setVolume = "test";
+o.stop = "test";
+o.attachSound = "test";
+o.start = "test";
+o.getDuration = "test";
+o.setDuration = "test";
+o.getPosition = "test";
+o.setPosition = "test";
+o.loadSound = "test";
+o.getBytesLoaded = "test";
+o.getBytesTotal = "test";
+o.duration = "test";
+o.id3 = "test";
+o.position = "test";
+trace(o.getPan);
+trace(o.getTransform);
+trace(o.getVolume);
+trace(o.setPan);
+trace(o.setTransform);
+trace(o.setVolume);
+trace(o.stop);
+trace(o.attachSound);
+trace(o.start);
+trace(o.getDuration);
+trace(o.setDuration);
+trace(o.getPosition);
+trace(o.setPosition);
+trace(o.loadSound);
+trace(o.getBytesLoaded);
+trace(o.getBytesTotal);
+trace(o.duration);
+trace(o.id3);
+trace(o.position);
+
+trace("After delete");
+delete o.getPan;
+delete o.getTransform;
+delete o.getVolume;
+delete o.setPan;
+delete o.setTransform;
+delete o.setVolume;
+delete o.stop;
+delete o.attachSound;
+delete o.start;
+delete o.getDuration;
+delete o.setDuration;
+delete o.getPosition;
+delete o.setPosition;
+delete o.loadSound;
+delete o.getBytesLoaded;
+delete o.getBytesTotal;
+delete o.duration;
+delete o.id3;
+delete o.position;
+trace(o.getPan);
+trace(o.getTransform);
+trace(o.getVolume);
+trace(o.setPan);
+trace(o.setTransform);
+trace(o.setVolume);
+trace(o.stop);
+trace(o.attachSound);
+trace(o.start);
+trace(o.getDuration);
+trace(o.setDuration);
+trace(o.getPosition);
+trace(o.setPosition);
+trace(o.loadSound);
+trace(o.getBytesLoaded);
+trace(o.getBytesTotal);
+trace(o.duration);
+trace(o.id3);
+trace(o.position);

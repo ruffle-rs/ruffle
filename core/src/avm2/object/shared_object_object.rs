@@ -3,9 +3,10 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ScriptObject, TObject};
-use crate::utils::HasPrefixField;
+use crate::context::UpdateContext;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::Lock, Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc, GcWeak, lock::Lock};
+use ruffle_common::utils::HasPrefixField;
 use std::fmt::Debug;
 
 #[derive(Clone, Collect, Copy)]
@@ -49,15 +50,15 @@ impl<'gc> SharedObjectObject<'gc> {
         ))
     }
 
-    pub fn data(&self) -> Object<'gc> {
+    pub fn data(self) -> Object<'gc> {
         self.0.data.get()
     }
 
-    pub fn reset_data(&self, activation: &mut Activation<'_, 'gc>) {
-        let empty_data = ScriptObject::new_object(activation);
+    pub fn reset_data(&self, context: &mut UpdateContext<'gc>) {
+        let empty_data = ScriptObject::new_object(context);
 
         unlock!(
-            Gc::write(activation.gc(), self.0),
+            Gc::write(context.gc(), self.0),
             SharedObjectObjectData,
             data
         )

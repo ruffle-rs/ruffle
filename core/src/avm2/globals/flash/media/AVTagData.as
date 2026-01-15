@@ -1,7 +1,7 @@
 package flash.media {
     public class AVTagData {
-        private var _data: String;
-        private var _localTime: Number;
+        private var _data:String;
+        private var _localTime:Number;
 
         public function AVTagData(
             init_data:String,

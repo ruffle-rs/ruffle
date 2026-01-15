@@ -9,14 +9,16 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Plik
-file-menu-open-quick = Otwórz...
+file-menu-open-file = Otwórz plik...
+file-menu-open-directory = Otwórz folder...
 file-menu-open-advanced = Otwórz zaawansowane...
 file-menu-close = Zamknij
 file-menu-reload = Odśwież
 file-menu-recents = Ostatnie
 file-menu-recents-empty = Lista jest pusta
 file-menu-preferences = Preferencje...
-file-menu-exit = Wyjdź
+file-menu-exit = Zakończ
+file-menu-export = Wyeksportuj...
 controls-menu = Sterowanie
 controls-menu-suspend = Wstrzymaj
 controls-menu-resume = Wznów
@@ -31,7 +33,7 @@ help-menu-about = O Ruffle
 bookmarks-menu = Zakładki
 bookmarks-menu-add = Dodaj...
 bookmarks-menu-manage = Zarządzaj zakładkami...
-debug-menu = Narzędzia Debugowania
+debug-menu = Narzędzia debugowania
 debug-menu-open-stage = Zobacz informacje o scenie
 debug-menu-open-root-movie-clip = Zobacz główny MovieClip
 debug-menu-open-movie = Zobacz film

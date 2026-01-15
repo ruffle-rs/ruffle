@@ -1,5 +1,5 @@
-filesystem-access-dialog-title = Pedir acesso ao Sistema de Ficheiros
-filesystem-access-dialog-message = O filme atual está a tentar ler o seguinte ficheiro. Quer permitir?
-filesystem-access-dialog-allow-remember-message = Não voltar a perguntar para ficheiros do seguinte diretório durante esta sessão:
+filesystem-access-dialog-title = Pedir acesso ao sistema de ficheiros
+filesystem-access-dialog-message = O filme atual quer ler o seguinte ficheiro. Deseja permitir?
+filesystem-access-dialog-allow-remember-message = Não voltar a perguntar durante esta sessão para ficheiros do seguinte diretório:
 filesystem-access-dialog-allow = Permitir
-filesystem-access-dialog-allow-remember = Permitir e Memorizar
+filesystem-access-dialog-allow-remember = Permitir e memorizar

@@ -2,60 +2,68 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::point::{point_to_object, value_to_point};
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 
 use ruffle_macros::istr;
 use ruffle_render::matrix::Matrix;
 use swf::Twips;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "toString" => method(to_string);
-    "identity" => method(identity);
-    "clone" => method(clone);
-    "scale" => method(scale);
-    "rotate" => method(rotate);
-    "translate" => method(translate);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "concat" => method(concat);
     "invert" => method(invert);
     "createBox" => method(create_box);
     "createGradientBox" => method(create_gradient_box);
-    "transformPoint" => method(transform_point);
+    "clone" => method(clone);
+    "identity" => method(identity);
+    "rotate" => method(rotate);
+    "translate" => method(translate);
+    "scale" => method(scale);
     "deltaTransformPoint" => method(delta_transform_point);
+    "transformPoint" => method(transform_point);
+    "toString" => method(to_string);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
 
 pub fn value_to_matrix<'gc>(
     value: Value<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("a"), activation)?
         .coerce_to_f64(activation)? as f32;
     let b = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("b"), activation)?
         .coerce_to_f64(activation)? as f32;
     let c = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("c"), activation)?
         .coerce_to_f64(activation)? as f32;
     let d = value
-        .coerce_to_object(activation)
+        .coerce_to_object_or_bare(activation)?
         .get(istr!("d"), activation)?
         .coerce_to_f64(activation)? as f32;
     let tx = Twips::from_pixels(
         value
-            .coerce_to_object(activation)
+            .coerce_to_object_or_bare(activation)?
             .get(istr!("tx"), activation)?
             .coerce_to_f64(activation)?,
     );
     let ty = Twips::from_pixels(
         value
-            .coerce_to_object(activation)
+            .coerce_to_object_or_bare(activation)?
             .get(istr!("ty"), activation)?
             .coerce_to_f64(activation)?,
     );
@@ -140,12 +148,12 @@ pub fn object_to_matrix_or_default<'gc>(
 ) -> Result<Matrix, Error<'gc>> {
     if let (Some(a), Some(b), Some(c), Some(d), Some(tx), Some(ty)) = (
         // These lookups do not search the prototype chain and ignore virtual properties.
-        object.get_local_stored(istr!("a"), activation, false),
-        object.get_local_stored(istr!("b"), activation, false),
-        object.get_local_stored(istr!("c"), activation, false),
-        object.get_local_stored(istr!("d"), activation, false),
-        object.get_local_stored(istr!("tx"), activation, false),
-        object.get_local_stored(istr!("ty"), activation, false),
+        object.get_local_stored(istr!("a"), activation),
+        object.get_local_stored(istr!("b"), activation),
+        object.get_local_stored(istr!("c"), activation),
+        object.get_local_stored(istr!("d"), activation),
+        object.get_local_stored(istr!("tx"), activation),
+        object.get_local_stored(istr!("ty"), activation),
     ) {
         let a = a.coerce_to_f64(activation)? as f32;
         let b = b.coerce_to_f64(activation)? as f32;
@@ -171,7 +179,7 @@ pub fn matrix_to_value<'gc>(
         matrix.tx.to_pixels().into(),
         matrix.ty.to_pixels().into(),
     ];
-    let constructor = activation.context.avm1.prototypes().matrix_constructor;
+    let constructor = activation.prototypes().matrix_constructor;
     let object = constructor.construct(activation, &args)?;
     Ok(object)
 }
@@ -196,7 +204,7 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        apply_matrix_to_object(Matrix::IDENTITY, this, activation)?;
+        identity(activation, this, args)?;
     } else {
         if let Some(a) = args.get(0) {
             this.set(istr!("a"), *a, activation)?;
@@ -226,7 +234,12 @@ fn identity<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    apply_matrix_to_object(Matrix::IDENTITY, this, activation)?;
+    this.set(istr!("d"), 1.0.into(), activation)?;
+    this.set(istr!("a"), 1.0.into(), activation)?;
+    this.set(istr!("c"), 0.0.into(), activation)?;
+    this.set(istr!("b"), 0.0.into(), activation)?;
+    this.set(istr!("ty"), 0.0.into(), activation)?;
+    this.set(istr!("tx"), 0.0.into(), activation)?;
     Ok(Value::Undefined)
 }
 
@@ -243,7 +256,7 @@ fn clone<'gc>(
         this.get(istr!("tx"), activation)?,
         this.get(istr!("ty"), activation)?,
     ];
-    let constructor = activation.context.avm1.prototypes().matrix_constructor;
+    let constructor = activation.prototypes().matrix_constructor;
     let cloned = constructor.construct(activation, &args)?;
     Ok(cloned)
 }
@@ -478,22 +491,4 @@ fn to_string<'gc>(
         ),
     )
     .into())
-}
-
-pub fn create_matrix_object<'gc>(
-    context: &mut StringContext<'gc>,
-    matrix_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::native(context, constructor, fn_proto, matrix_proto)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
 }

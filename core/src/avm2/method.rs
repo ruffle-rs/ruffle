@@ -1,19 +1,18 @@
 //! AVM2 methods
 
+use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::error::{make_error_1014, verify_error, Error, Error1014Type};
+use crate::avm2::error::{Error, Error1014Type, make_error_1014, make_error_1027, make_error_1107};
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::value::{abc_default_value, Value};
+use crate::avm2::value::{Value, abc_default_value};
 use crate::avm2::verify::VerifiedMethodInfo;
-use crate::avm2::Multiname;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
-use gc_arena::barrier::{unlock, Write};
+use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::OnceLock;
 use gc_arena::{Collect, Gc};
 use std::borrow::Cow;
-use std::cell::Cell;
 use std::rc::Rc;
 use std::sync::Arc;
 use swf::avm2::types::{
@@ -67,7 +66,7 @@ impl<'gc> ParamConfig<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let param_type_name = txunit.pool_multiname_static_any(activation, config.kind)?;
 
-        let default_value = if let Some(dv) = &config.default_value {
+        let default_value = if let Some(dv) = config.default_value {
             Some(abc_default_value(txunit, dv, activation)?)
         } else {
             None
@@ -123,11 +122,8 @@ struct MethodData<'gc> {
     /// The resolved signature and return type.
     resolved_info: OnceLock<ResolvedMethodInfo<'gc>>,
 
-    /// Whether this method should be run in "interpreter mode" (as opposed to
-    /// "JIT mode"). Most methods run in "JIT mode", except for class
-    /// initializer and script initializer methods, which always run in
-    /// "interpreter mode". See `Activation.is_interpreter` for more information.
-    is_interpreted: Cell<bool>,
+    /// The class that this method is bound to.
+    association: OnceLock<MethodAssociation<'gc>>,
 
     /// Whether or not this method was declared as a free-standing function.
     ///
@@ -168,11 +164,7 @@ impl<'gc> Method<'gc> {
         let abc = txunit.abc();
 
         let Some(method) = abc.methods.get(method_index) else {
-            return Err(Error::avm_error(verify_error(
-                activation,
-                "Error #1027: Method_info exceeds method_count.",
-                1027,
-            )?));
+            return Err(make_error_1027(activation));
         };
 
         let mut signature = Vec::new();
@@ -225,7 +217,7 @@ impl<'gc> Method<'gc> {
                 signature,
                 return_type,
                 resolved_info: OnceLock::new(),
-                is_interpreted: Cell::new(false),
+                association: OnceLock::new(),
                 is_function,
                 is_unchecked: is_function && all_params_unchecked,
             },
@@ -233,16 +225,16 @@ impl<'gc> Method<'gc> {
     }
 
     /// Get the underlying ABC file.
-    pub fn abc(&self) -> Rc<AbcFile> {
+    pub fn abc(self) -> Rc<AbcFile> {
         self.0.txunit.abc()
     }
 
     /// Get the underlying translation unit this method was defined in.
-    pub fn translation_unit(&self) -> TranslationUnit<'gc> {
+    pub fn translation_unit(self) -> TranslationUnit<'gc> {
         self.0.txunit
     }
 
-    pub fn abc_method_index(&self) -> u32 {
+    pub fn abc_method_index(self) -> u32 {
         self.0.abc_method
     }
 
@@ -252,7 +244,7 @@ impl<'gc> Method<'gc> {
     }
 
     /// Get a reference to the SwfMovie this method came from.
-    pub fn owner_movie(&self) -> Arc<SwfMovie> {
+    pub fn owner_movie(self) -> Arc<SwfMovie> {
         self.0.txunit.movie()
     }
 
@@ -296,7 +288,7 @@ impl<'gc> Method<'gc> {
         &self.0.resolved_info.get().unwrap().param_config
     }
 
-    pub fn resolved_return_type(&self) -> Option<Class<'gc>> {
+    pub fn resolved_return_type(self) -> Option<Class<'gc>> {
         self.0.resolved_info.get().unwrap().return_type
     }
 
@@ -351,14 +343,14 @@ impl<'gc> Method<'gc> {
     /// Determine if a given method is variadic.
     ///
     /// Variadic methods shove excess parameters into a final register.
-    pub fn is_variadic(&self) -> bool {
+    pub fn is_variadic(self) -> bool {
         self.method()
             .flags
             .intersects(AbcMethodFlags::NEED_ARGUMENTS | AbcMethodFlags::NEED_REST)
     }
 
     /// Check if this method needs `arguments`.
-    pub fn needs_arguments_object(&self) -> bool {
+    pub fn needs_arguments_object(self) -> bool {
         self.method().flags.contains(AbcMethodFlags::NEED_ARGUMENTS)
     }
 
@@ -366,20 +358,73 @@ impl<'gc> Method<'gc> {
         &self.0.method_kind
     }
 
-    pub fn return_type(&self) -> Option<Gc<'gc, Multiname<'gc>>> {
+    pub fn return_type(self) -> Option<Gc<'gc, Multiname<'gc>>> {
         self.0.return_type
     }
 
-    /// Whether this method should be run in "interpreter mode" (as opposed to
-    /// "JIT mode").
-    pub fn is_interpreted(self) -> bool {
-        self.0.is_interpreted.get()
+    /// Get the bound class that this method has been associated with, or
+    /// `None` if the method is associated as freestanding. This method will
+    /// panic if the method has not been associated yet.
+    pub fn bound_class(self) -> Option<Class<'gc>> {
+        self.method_association()
+            .expect("Association should be initialized")
+            .bound_class()
     }
 
-    /// Mark this method as one that should be run in "interpreter mode" (as
-    /// opposed to "JIT mode").
-    pub fn mark_as_interpreted(self) {
-        self.0.is_interpreted.set(true);
+    /// Returns true if this method should be run in "interpreter mode". This
+    /// method will panic if the method has not been associated yet.
+    pub fn is_interpreted(self) -> bool {
+        self.method_association()
+            .expect("Association should be initialized")
+            .is_interpreted()
+    }
+
+    /// Get the `MethodAssociation` that this method is associated with, or
+    /// `None` if this method has not been associated yet.
+    pub fn method_association(self) -> Option<MethodAssociation<'gc>> {
+        self.0.association.get().copied()
+    }
+
+    /// Mark this method as associated with the given `MethodAssociation`.
+    pub fn associate(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        new_association: MethodAssociation<'gc>,
+    ) -> Result<(), Error<'gc>> {
+        // It is valid to associate a method if either:
+        //   1. It has not been associated yet
+        //   2. It has already been associated with a `bound_class` that is the
+        //      same as the `bound_class` of the new association
+
+        if let Some(association) = self.0.association.get() {
+            // `is_interpreted` does not matter and is not changed
+
+            // Ensure the bound class matches
+            if association.bound_class != new_association.bound_class {
+                return Err(make_error_1107(activation));
+            }
+        } else {
+            let write = Gc::write(activation.gc(), self.0);
+            let _ = unlock!(write, MethodData, association).set(new_association);
+        }
+
+        Ok(())
+    }
+
+    /// Check that this method has been associated as bound to a class. If it
+    /// isn't, return a VerifyError.
+    pub fn check_classbound(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+        let has_bound_class = self
+            .0
+            .association
+            .get()
+            .is_some_and(|a| a.bound_class.is_some());
+
+        if !has_bound_class {
+            Err(make_error_1107(activation))
+        } else {
+            Ok(())
+        }
     }
 
     pub fn is_function(self) -> bool {
@@ -392,7 +437,7 @@ impl<'gc> Method<'gc> {
     ///
     ///  * The method was declared as a free-standing function
     ///  * The function's parameters have no declared types or default values
-    pub fn is_unchecked(&self) -> bool {
+    pub fn is_unchecked(self) -> bool {
         self.0.is_unchecked
     }
 }
@@ -409,6 +454,51 @@ pub enum MethodKind<'gc> {
         native_method: NativeMethodImpl,
         fast_call: bool,
     },
+}
+
+/// The info this method is associated with. This includes the bound Class and
+/// whether the method should be run in interpreter mode. The association is
+/// used to ensure that, for example, a SWF cannot use `newfunction` to create
+/// a freestanding function for a method that is also class-bound, as this would
+/// break the verifier/optimizer. TODO: Add the default super-ClassObject and
+/// ScopeChain to this struct
+#[derive(Clone, Collect, Copy)]
+#[collect(no_drop)]
+pub struct MethodAssociation<'gc> {
+    /// The class this method is bound to. Once set, this cannot be changed.
+    /// The method may only be called with a receiver that is an instance of
+    /// this class.
+    bound_class: Option<Class<'gc>>,
+
+    /// Whether this method should be run in "interpreter mode" (as opposed to
+    /// "JIT mode"). Most methods run in "JIT mode", except for class
+    /// initializer and script initializer methods, which always run in
+    /// "interpreter mode". See `Activation.is_interpreter` for more information.
+    is_interpreted: bool,
+}
+
+impl<'gc> MethodAssociation<'gc> {
+    pub fn freestanding() -> Self {
+        Self {
+            bound_class: None,
+            is_interpreted: false,
+        }
+    }
+
+    pub fn classbound(bound_class: Class<'gc>, is_interpreted: bool) -> Self {
+        Self {
+            bound_class: Some(bound_class),
+            is_interpreted,
+        }
+    }
+
+    pub fn bound_class(self) -> Option<Class<'gc>> {
+        self.bound_class
+    }
+
+    pub fn is_interpreted(self) -> bool {
+        self.is_interpreted
+    }
 }
 
 /// The resolved parameters and return type of a method.

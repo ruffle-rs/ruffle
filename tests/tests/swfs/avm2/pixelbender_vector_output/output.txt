@@ -1,0 +1,11 @@
+=== 4-channel (pixel4) test ===
+Result length: 4
+result[0] = 52.5
+result[1] = 61.5
+result[2] = 8
+result[3] = 99.25
+=== 3-channel (pixel3) test ===
+Result length: 3
+result[0] = 52.5
+result[1] = 61.5
+result[2] = 8

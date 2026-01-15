@@ -1,27 +1,20 @@
+//! flash.net.FileReference object
+
 use std::cell::{Cell, RefCell};
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::backend::ui::{FileDialogResult, FileFilter};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use url::Url;
-
-// There are two undocumented functions in FileReference: convertToPPT and deleteConvertedPPT.
-// Until further reason is given, they will be unimplemented.
-// See:
-// ASSetPropFlags(flash.net.FileReference.prototype, null, 6, 1);
-// for(var k in flash.net.FileReference.prototype) {
-// 	trace(k);
-// }
 
 #[derive(Clone, Copy, Collect)]
 #[collect(no_drop)]
@@ -38,7 +31,7 @@ impl<'gc> FileReferenceObject<'gc> {
 
         self.0.is_initialised.set(true);
 
-        let date_proto = activation.context.avm1.prototypes().date_constructor;
+        let date_proto = activation.prototypes().date_constructor;
         if let Some(creation_time) = result.creation_time() {
             if let Ok(Value::Object(obj)) = date_proto.construct(
                 activation,
@@ -90,21 +83,34 @@ pub struct FileReferenceData<'gc> {
     data: RefCell<Vec<u8>>,
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    "name" => property(name; DONT_ENUM);
+    "type" => property(file_type; DONT_ENUM);
+    "size" => property(size; DONT_ENUM);
+    "modificationDate" => property(modification_date; DONT_ENUM);
     "creationDate" => property(creation_date; DONT_ENUM);
     "creator" => property(creator; DONT_ENUM);
-    "modificationDate" => property(modification_date; DONT_ENUM);
-    "name" => property(name; DONT_ENUM);
     "postData" => property(post_data, set_post_data; DONT_ENUM);
-    "size" => property(size; DONT_ENUM);
-    "type" => property(file_type; DONT_ENUM);
     "browse" => method(browse; DONT_ENUM);
-    "cancel" => method(cancel; DONT_ENUM);
-    "download" => method(download; DONT_ENUM);
     "upload" => method(upload; DONT_ENUM);
+    "download" => method(download; DONT_ENUM);
+    "cancel" => method(cancel; DONT_ENUM);
 };
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {};
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {};
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+    broadcaster_fns: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    broadcaster_fns.initialize(context.strings, class.proto, array_proto);
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
+    class
+}
 
 pub fn creation_date<'gc>(
     _activation: &mut Activation<'_, 'gc>,
@@ -219,6 +225,10 @@ pub fn browse<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if !matches!(this.native(), NativeObject::FileReference(_)) {
+        return Ok(Value::Undefined);
+    }
+
     let file_filters = match args.get(0) {
         Some(Value::Object(array)) => {
             // Array of filter objects.
@@ -233,17 +243,15 @@ pub fn browse<'gc>(
 
             for i in 0..length {
                 if let Value::Object(element) = array.get_element(activation, i) {
-                    let mac_type = if let Some(val) =
-                        element.get_local_stored(istr!("macType"), activation, false)
-                    {
-                        Some(val.coerce_to_string(activation)?.to_string())
-                    } else {
-                        None
-                    };
+                    let mac_type =
+                        if let Some(val) = element.get_local_stored(istr!("macType"), activation) {
+                            Some(val.coerce_to_string(activation)?.to_string())
+                        } else {
+                            None
+                        };
 
-                    let description =
-                        element.get_local_stored(istr!("description"), activation, false);
-                    let extension = element.get_local_stored(istr!("extension"), activation, false);
+                    let description = element.get_local_stored(istr!("description"), activation);
+                    let extension = element.get_local_stored(istr!("extension"), activation);
 
                     if let (Some(description), Some(extension)) = (description, extension) {
                         let description = description.coerce_to_string(activation)?.to_string();
@@ -279,11 +287,7 @@ pub fn browse<'gc>(
 
     let result = match dialog {
         Some(dialog) => {
-            let process = activation.context.load_manager.select_file_dialog(
-                activation.context.player.clone(),
-                this,
-                dialog,
-            );
+            let process = crate::loader::select_file_dialog_avm1(activation.context, this, dialog);
 
             activation.context.navigator.spawn_future(process);
             true
@@ -337,8 +341,8 @@ pub fn download<'gc>(
         );
         let result = match dialog {
             Some(dialog) => {
-                let process = activation.context.load_manager.download_file_dialog(
-                    activation.context.player.clone(),
+                let process = crate::loader::download_file_dialog(
+                    activation.context,
                     this,
                     dialog,
                     url_string,
@@ -387,8 +391,8 @@ pub fn upload<'gc>(
                 None => "file".to_string(),
             };
 
-            let process = activation.context.load_manager.upload_file(
-                activation.context.player.clone(),
+            let process = crate::loader::upload_file(
+                activation.context,
                 this,
                 url_string,
                 file_reference.0.data.borrow().clone(),
@@ -419,19 +423,4 @@ fn constructor<'gc>(
         ))),
     );
     Ok(Value::Undefined)
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-    array_proto: Object<'gc>,
-    broadcaster_functions: BroadcasterFunctions<'gc>,
-) -> Object<'gc> {
-    let file_reference_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, file_reference_proto, fn_proto);
-    broadcaster_functions.initialize(context, file_reference_proto, array_proto);
-    let constructor = FunctionObject::native(context, constructor, fn_proto, file_reference_proto);
-    define_properties_on(OBJECT_DECLS, context, constructor, fn_proto);
-    constructor
 }

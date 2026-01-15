@@ -44,6 +44,12 @@
     "settings_preferred_renderer_auto": {
         "message": "Automat"
     },
+    "settings_device_font_renderer": {
+        "message": "Randator de font de dispozitiv"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Încorporat"
+    },
     "settings_advanced_options": {
         "message": "Opțiuni avansate"
     },

@@ -15,11 +15,11 @@ use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
 
 use crate::backend::ui::{FontDefinition, UiBackend};
-use crate::DefaultFont;
+use crate::font::DefaultFont;
 use fnv::{FnvHashMap, FnvHashSet};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
-use weak_table::{traits::WeakElement, PtrWeakKeyHashMap, WeakValueHashMap};
+use weak_table::{PtrWeakKeyHashMap, WeakValueHashMap, traits::WeakElement};
 
 #[derive(Clone)]
 struct MovieSymbol(Arc<SwfMovie>, CharacterId);
@@ -195,10 +195,10 @@ impl<'gc> MovieLibrary<'gc> {
         &self,
         name: AvmString<'gc>,
     ) -> Option<(CharacterId, Character<'gc>)> {
-        if let Some(id) = self.export_characters.get(name, false) {
-            if let Some(character) = self.characters.get(id) {
-                return Some((*id, *character));
-            }
+        if let Some(id) = self.export_characters.get(name, false)
+            && let Some(character) = self.characters.get(id)
+        {
+            return Some((*id, *character));
         }
         None
     }
@@ -660,7 +660,9 @@ impl<'gc> Library<'gc> {
                 let name = font.descriptor().name().to_owned();
                 let is_bold = font.descriptor().bold();
                 let is_italic = font.descriptor().italic();
-                info!("Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from swf tag");
+                tracing::debug!(
+                    "Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from swf tag"
+                );
                 self.device_fonts.register(font);
             }
             FontDefinition::FontFile {
@@ -675,11 +677,26 @@ impl<'gc> Library<'gc> {
                     Font::from_font_file(gc_context, descriptor, data, index, FontType::Device)
                 {
                     let name = font.descriptor().name().to_owned();
-                    info!("Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from file");
+                    tracing::debug!(
+                        "Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from file"
+                    );
                     self.device_fonts.register(font);
                 } else {
                     warn!("Failed to load device font from file");
                 }
+            }
+            FontDefinition::ExternalRenderer {
+                name,
+                is_bold,
+                is_italic,
+                font_renderer,
+            } => {
+                let descriptor = FontDescriptor::from_parts(&name, is_bold, is_italic);
+                let font = Font::from_renderer(gc_context, descriptor, font_renderer);
+                tracing::debug!(
+                    "Loaded new externally rendered font \"{name}\" (bold: {is_bold}, italic: {is_italic})"
+                );
+                self.device_fonts.register(font);
             }
         }
         self.default_font_cache.clear();
@@ -698,12 +715,11 @@ impl<'gc> Library<'gc> {
         if let Some(font) = self.global_fonts.find(&query) {
             return Some(font);
         }
-        if let Some(movie) = movie {
-            if let Some(library) = self.library_for_movie(movie) {
-                if let Some(font) = library.fonts.find(&query) {
-                    return Some(font);
-                }
-            }
+        if let Some(movie) = movie
+            && let Some(library) = self.library_for_movie(movie)
+            && let Some(font) = library.fonts.find(&query)
+        {
+            return Some(font);
         }
         None
     }

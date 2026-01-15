@@ -1,12 +1,12 @@
 //! Object representation for `ShaderData`
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
-use crate::avm2::Error;
-use crate::utils::HasPrefixField;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use std::cell::Cell;
 
@@ -42,13 +42,13 @@ impl fmt::Debug for ShaderDataObject<'_> {
 }
 
 impl ShaderDataObject<'_> {
-    pub fn pixel_bender_shader(&self) -> Option<PixelBenderShaderHandle> {
+    pub fn pixel_bender_shader(self) -> Option<PixelBenderShaderHandle> {
         let shader = &self.0.shader;
         let guard = scopeguard::guard(shader.take(), |stolen| shader.set(stolen));
         guard.clone()
     }
 
-    pub fn set_pixel_bender_shader(&self, shader: PixelBenderShaderHandle) {
+    pub fn set_pixel_bender_shader(self, shader: PixelBenderShaderHandle) {
         self.0.shader.set(Some(shader));
     }
 }

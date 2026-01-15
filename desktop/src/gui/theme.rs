@@ -182,7 +182,7 @@ pub enum ThemePreference {
 }
 
 impl ThemePreference {
-    pub fn as_str(&self) -> Option<&'static str> {
+    pub fn as_str(self) -> Option<&'static str> {
         match self {
             ThemePreference::System => None,
             ThemePreference::Light => Some("light"),

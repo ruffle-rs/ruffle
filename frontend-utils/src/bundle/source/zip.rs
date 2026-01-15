@@ -1,8 +1,8 @@
 use crate::bundle::source::BundleSourceImpl;
 use std::cell::RefCell;
 use std::io::{Cursor, Error, ErrorKind, Read, Seek};
-use zip::result::ZipError;
 use zip::ZipArchive;
+use zip::result::ZipError;
 
 pub struct ZipSource<R: Read + Seek>(RefCell<ZipArchive<R>>);
 
@@ -40,8 +40,8 @@ impl<R: Read + Seek> BundleSourceImpl for ZipSource<R> {
 
 #[cfg(test)]
 mod tests {
-    use crate::bundle::source::zip::ZipSource;
     use crate::bundle::source::BundleSourceImpl;
+    use crate::bundle::source::zip::ZipSource;
     use std::io::{Cursor, ErrorKind, Read};
     use zip::result::ZipError;
 
@@ -70,7 +70,10 @@ mod tests {
         let mut file = source.read_file("ruffle-bundle.toml").unwrap();
         let mut string = String::new();
         file.read_to_string(&mut string).unwrap();
-        assert_eq!("[bundle]\nname = \"Ruffle Logo Animation\"\nurl = \"https://ruffle.rs/demo/logo-anim.swf\"", string);
+        assert_eq!(
+            "[bundle]\nname = \"Ruffle Logo Animation\"\nurl = \"https://ruffle.rs/demo/logo-anim.swf\"",
+            string
+        );
     }
 
     #[test]

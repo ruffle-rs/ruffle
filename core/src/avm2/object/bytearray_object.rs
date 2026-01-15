@@ -1,15 +1,15 @@
+use crate::avm2::Error;
+use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ArrayObject, ClassObject, Object, TObject};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
 use crate::character::Character;
-use crate::tag_utils::SwfSlice;
-use crate::utils::HasPrefixField;
+use crate::context::UpdateContext;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefCell, RefMut};
 
 /// A class instance allocator that allocates ByteArray objects.
@@ -26,7 +26,8 @@ pub fn byte_array_allocator<'gc>(
         if let Some(lib) = activation.context.library.library_for_movie(movie) {
             if let Some(Character::BinaryData(binary_data)) = lib.character_by_id(id) {
                 Some(ByteArrayStorage::from_vec(
-                    SwfSlice::as_ref(&binary_data).to_vec(),
+                    activation.context,
+                    binary_data.to_vec(),
                 ))
             } else {
                 None
@@ -35,7 +36,7 @@ pub fn byte_array_allocator<'gc>(
             None
         }
     } else {
-        Some(ByteArrayStorage::new())
+        Some(ByteArrayStorage::new(activation.context))
     };
 
     let storage = storage.unwrap_or_else(|| {
@@ -81,24 +82,17 @@ pub struct ByteArrayObjectData<'gc> {
 }
 
 impl<'gc> ByteArrayObject<'gc> {
-    pub fn from_storage(
-        activation: &mut Activation<'_, 'gc>,
-        bytes: ByteArrayStorage,
-    ) -> Result<ByteArrayObject<'gc>, Error<'gc>> {
-        let class = activation.avm2().classes().bytearray;
+    pub fn from_storage(context: &mut UpdateContext<'gc>, bytes: ByteArrayStorage) -> Self {
+        let class = context.avm2.classes().bytearray;
         let base = ScriptObjectData::new(class);
 
-        let instance = ByteArrayObject(Gc::new(
-            activation.gc(),
+        ByteArrayObject(Gc::new(
+            context.gc(),
             ByteArrayObjectData {
                 base,
                 storage: RefCell::new(bytes),
             },
-        ));
-
-        class.call_init(instance.into(), &[], activation)?;
-
-        Ok(instance)
+        ))
     }
 
     fn set_element(

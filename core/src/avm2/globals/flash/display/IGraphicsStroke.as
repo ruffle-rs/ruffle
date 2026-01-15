@@ -1,4 +1,4 @@
 package flash.display {
-    public interface IGraphicsStroke {
-    }
+    [API("662")]
+    public interface IGraphicsStroke {}
 }

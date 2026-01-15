@@ -1,0 +1,11 @@
+about-ruffle = Ruffle турында
+about-ruffle-version = Версия
+about-ruffle-channel = Канал
+about-ruffle-build-time = Җыю вакыты
+about-ruffle-build-features = Җыю мөмкинлекләре
+about-ruffle-commit-ref = Коммит күрсәткече
+about-ruffle-commit-time = Коммит вакыты
+about-ruffle-visit-website = Веб-сайт
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Cпонсорлау

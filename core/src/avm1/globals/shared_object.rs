@@ -1,9 +1,8 @@
-use crate::avm1::function::FunctionObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Attribute, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
 use flash_lso::types::{Lso, ObjectId, Reference, Value as AmfValue};
@@ -30,24 +29,36 @@ impl SharedObject {
     }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "clear" => method(clear; DONT_ENUM | DONT_DELETE);
-    "close" => method(close; DONT_ENUM | DONT_DELETE);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "connect" => method(connect; DONT_ENUM | DONT_DELETE);
-    "flush" => method(flush; DONT_ENUM | DONT_DELETE);
-    "getSize" => method(get_size; DONT_ENUM | DONT_DELETE);
     "send" => method(send; DONT_ENUM | DONT_DELETE);
+    "flush" => method(flush; DONT_ENUM | DONT_DELETE);
+    "close" => method(close; DONT_ENUM | DONT_DELETE);
+    "getSize" => method(get_size; DONT_ENUM | DONT_DELETE);
     "setFps" => method(set_fps; DONT_ENUM | DONT_DELETE);
+    "clear" => method(clear; DONT_ENUM | DONT_DELETE);
+
+    // TODO Looks like onStatus & onSync are not built-in properties.
     "onStatus" => method(on_status; DONT_ENUM | DONT_DELETE);
     "onSync" => method(on_sync; DONT_ENUM | DONT_DELETE);
 };
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "deleteAll" => method(delete_all; DONT_ENUM);
     "getDiskUsage" => method(get_disk_usage; DONT_ENUM);
     "getLocal" => method(get_local);
     "getRemote" => method(get_remote);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
+    class
+}
 
 fn delete_all<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -95,7 +106,7 @@ fn recursive_serialize<'gc>(
 
             match elem {
                 Value::Object(o) => {
-                    if o.as_executable().is_some() {
+                    if o.as_function().is_some() {
                     } else if o.as_display_object().is_some() {
                         writer.undefined(name.as_ref())
                     } else if let NativeObject::Array(_) = o.native() {
@@ -156,7 +167,7 @@ pub fn deserialize_value<'gc>(
         AmfValue::String(s) => Value::String(AvmString::new_utf8(activation.gc(), s)),
         AmfValue::Bool(b) => (*b).into(),
         AmfValue::ECMAArray(_, _, associative, len) => {
-            let array_constructor = activation.context.avm1.prototypes().array_constructor;
+            let array_constructor = activation.prototypes().array_constructor;
             if let Ok(Value::Object(obj)) =
                 array_constructor.construct(activation, &[(*len).into()])
             {
@@ -191,7 +202,7 @@ pub fn deserialize_value<'gc>(
             // Deserialize Object
             let obj = Object::new(
                 &activation.context.strings,
-                Some(activation.context.avm1.prototypes().object),
+                Some(activation.prototypes().object),
             );
 
             let v: Value<'gc> = obj.into();
@@ -210,7 +221,7 @@ pub fn deserialize_value<'gc>(
             v
         }
         AmfValue::Date(time, _) => {
-            let date_proto = activation.context.avm1.prototypes().date_constructor;
+            let date_proto = activation.prototypes().date_constructor;
 
             if let Ok(Value::Object(obj)) = date_proto.construct(activation, &[(*time).into()]) {
                 Value::Object(obj)
@@ -219,7 +230,7 @@ pub fn deserialize_value<'gc>(
             }
         }
         AmfValue::XML(content, _) => {
-            let xml_proto = activation.context.avm1.prototypes().xml_constructor;
+            let xml_proto = activation.prototypes().xml_constructor;
 
             if let Ok(Value::Object(obj)) = xml_proto.construct(
                 activation,
@@ -248,7 +259,7 @@ fn deserialize_lso<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     let obj = Object::new(
         &activation.context.strings,
-        Some(activation.context.avm1.prototypes().object),
+        Some(activation.prototypes().object),
     );
 
     let mut reference_cache = BTreeMap::default();
@@ -397,14 +408,10 @@ fn get_local<'gc>(
     }
 
     // Data property only should exist when created with getLocal/Remote
-    let constructor = activation
-        .context
-        .avm1
-        .prototypes()
-        .shared_object_constructor;
+    let constructor = activation.prototypes().shared_object_constructor;
     let this = constructor
         .construct(activation, &[])?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     // Set the internal name
     if let NativeObject::SharedObject(shared_object) = this.native() {
@@ -425,7 +432,7 @@ fn get_local<'gc>(
         // No data; create a fresh data object.
         data = Object::new(
             &activation.context.strings,
-            Some(activation.context.avm1.prototypes().object),
+            Some(activation.prototypes().object),
         )
         .into();
     }
@@ -456,7 +463,7 @@ fn clear<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let data = this
         .get(istr!("data"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
 
     for k in &data.get_keys(activation, false) {
         data.delete(activation, *k);
@@ -499,7 +506,7 @@ pub(crate) fn flush<'gc>(
     let name = shared_object.borrow().name();
     let data = this
         .get(istr!("data"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let mut lso = new_lso(activation, &name, data);
     flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
     // Flash does not write empty LSOs to disk
@@ -522,7 +529,7 @@ fn get_size<'gc>(
     let name = shared_object.borrow().name();
     let data = this
         .get(istr!("data"), activation)?
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let mut lso = new_lso(activation, &name, data);
     // Flash returns 0 for empty LSOs, but the actual number of bytes (including the header) otherwise
     if lso.body.is_empty() {
@@ -579,16 +586,4 @@ fn constructor<'gc>(
         NativeObject::SharedObject(Gc::new(activation.gc(), Default::default())),
     );
     Ok(Value::Undefined)
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let shared_object_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, shared_object_proto, fn_proto);
-    let constructor = FunctionObject::native(context, constructor, fn_proto, shared_object_proto);
-    define_properties_on(OBJECT_DECLS, context, constructor, fn_proto);
-    constructor
 }

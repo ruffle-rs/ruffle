@@ -19,6 +19,7 @@ use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
 use std::any::Any;
 use std::borrow::Cow;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use swf::{BlendMode, Color, ColorTransform, Point, Twips};
 use wasm_bindgen::{Clamped, JsCast, JsValue};
@@ -550,9 +551,6 @@ impl RenderBackend for WebCanvasRenderBackend {
     ) -> Result<Box<dyn Context3D>, Error> {
         Err(Error::Unimplemented("createContext3D".into()))
     }
-    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), Error> {
-        Err(Error::Unimplemented("Context3D.present".into()))
-    }
 
     fn debug_info(&self) -> Cow<'static, str> {
         Cow::Borrowed("Renderer: Canvas")
@@ -588,8 +586,13 @@ impl RenderBackend for WebCanvasRenderBackend {
         Err(Error::Unimplemented("Sync handle resolution".into()))
     }
 
-    fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error> {
-        let bitmap_data = BitmapData::empty(width, height).map_err(Error::JavascriptError)?;
+    fn create_empty_texture(
+        &mut self,
+        width: NonZeroU32,
+        height: NonZeroU32,
+    ) -> Result<BitmapHandle, Error> {
+        let bitmap_data =
+            BitmapData::empty(width.get(), height.get()).map_err(Error::JavascriptError)?;
         Ok(BitmapHandle(Arc::new(bitmap_data)))
     }
 }
@@ -883,6 +886,11 @@ impl CommandHandler for WebCanvasRenderBackend {
         commands.execute(self);
         self.pop_blend_mode();
     }
+
+    fn render_alpha_mask(&mut self, maskee_commands: CommandList, _mask_commands: CommandList) {
+        // TODO Add support for alpha masks
+        maskee_commands.execute(self);
+    }
 }
 
 /// Convert a series of `DrawCommands` to a `Path2d` shape.
@@ -986,16 +994,14 @@ fn swf_shape_to_canvas_commands(
                         is_smoothed,
                         is_repeating,
                     } => {
-                        let bitmap = if let Some(bitmap) = create_bitmap_pattern(
+                        let Some(bitmap) = create_bitmap_pattern(
                             *id,
                             *matrix,
                             *is_smoothed,
                             *is_repeating,
                             bitmap_source,
                             backend,
-                        ) {
-                            bitmap
-                        } else {
+                        ) else {
                             continue;
                         };
                         CanvasFillStyle::Bitmap(bitmap)
@@ -1036,16 +1042,14 @@ fn swf_shape_to_canvas_commands(
                         is_smoothed,
                         is_repeating,
                     } => {
-                        let bitmap = if let Some(bitmap) = create_bitmap_pattern(
+                        let Some(bitmap) = create_bitmap_pattern(
                             *id,
                             *matrix,
                             *is_smoothed,
                             *is_repeating,
                             bitmap_source,
                             backend,
-                        ) {
-                            bitmap
-                        } else {
+                        ) else {
                             continue;
                         };
                         CanvasStrokeStyle::Bitmap(bitmap)

@@ -6,6 +6,7 @@ package flash.display3D.textures {
     public final class RectangleTexture extends TextureBase {
         [API("690")]
         public native function uploadFromBitmapData(source:BitmapData):void;
+
         [API("690")]
         public native function uploadFromByteArray(data:ByteArray, byteArrayOffset:uint):void;
     }

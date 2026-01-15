@@ -1,0 +1,9 @@
+# Actual importing is part of preloading; that's not included in this count
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 100
+max_outliers = 500
+
+[player_options]
+with_renderer = { optional = true, sample_count = 4 }

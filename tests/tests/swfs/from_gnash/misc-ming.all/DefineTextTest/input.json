@@ -1,0 +1,276 @@
+[
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [
+      21,
+      330
+    ]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      21,
+      330
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      21,
+      330
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [
+      77,
+      327
+    ]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      77,
+      327
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [
+      135,
+      326
+    ]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      135,
+      326
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      135,
+      326
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [
+      1,
+      1
+    ]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      135,
+      326
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      135,
+      326
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      135,
+      326
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      135,
+      326
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      135,
+      326
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      135,
+      326
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      135,
+      326
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      135,
+      326
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      135,
+      326
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      135,
+      326
+    ],
+    "btn": "Left"
+  }
+]

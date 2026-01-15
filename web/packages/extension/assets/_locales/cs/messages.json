@@ -44,6 +44,9 @@
     "settings_preferred_renderer_auto": {
         "message": "Automatický"
     },
+    "settings_device_font_renderer": {
+        "message": "Vykreslování systémových fontů"
+    },
     "settings_advanced_options": {
         "message": "Pokročilá nastavení"
     },

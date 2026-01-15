@@ -1,0 +1,2 @@
+PASSED: executing init actions defined in sprite2 and targetting sprite1
+END OF TEST

@@ -1,8 +1,8 @@
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use cpal::SampleFormat;
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 use ruffle_core::backend::audio::{
-    swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
-    SoundStreamInfo, SoundTransform,
+    AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
+    SoundStreamInfo, SoundTransform, swf,
 };
 use ruffle_core::impl_audio_mixer_backend;
 
@@ -112,14 +112,12 @@ fn get_suitable_output_device(
     host: &cpal::Host,
 ) -> Option<cpal::Device> {
     // First let's check for any user preference...
-    if let Some(preferred_device_name) = preferred_device_name {
-        if let Ok(mut devices) = host.output_devices() {
-            if let Some(device) =
-                devices.find(|device| device.name().ok().as_deref() == Some(preferred_device_name))
-            {
-                return Some(device);
-            }
-        }
+    if let Some(preferred_device_name) = preferred_device_name
+        && let Ok(mut devices) = host.output_devices()
+        && let Some(device) =
+            devices.find(|device| device.name().ok().as_deref() == Some(preferred_device_name))
+    {
+        return Some(device);
     }
 
     // Then let's fall back to the device default

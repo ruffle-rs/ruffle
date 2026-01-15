@@ -1,30 +1,31 @@
 package flash.display {
     import flash.geom.Matrix;
 
+    [API("662")]
     public final class GraphicsGradientFill implements IGraphicsFill, IGraphicsData {
         [Ruffle(NativeAccessible)]
-        public var alphas : Array;
+        public var alphas:Array;
 
         [Ruffle(NativeAccessible)]
-        public var colors : Array;
+        public var colors:Array;
 
         [Ruffle(NativeAccessible)]
-        public var focalPointRatio : Number;
+        public var focalPointRatio:Number;
 
         [Ruffle(NativeAccessible)]
-        public var matrix : Matrix;
+        public var matrix:Matrix;
 
         [Ruffle(NativeAccessible)]
-        public var ratios : Array;
+        public var ratios:Array;
 
         [Ruffle(NativeAccessible)]
-        private var _interpolationMethod : String;
+        private var _interpolationMethod:String;
 
         [Ruffle(NativeAccessible)]
-        private var _spreadMethod : String;
+        private var _spreadMethod:String;
 
         [Ruffle(NativeAccessible)]
-        private var _type : String;
+        private var _type:String;
 
         public function GraphicsGradientFill(
             type:String = "linear",

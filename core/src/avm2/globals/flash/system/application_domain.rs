@@ -27,7 +27,7 @@ pub fn init<'gc>(
     };
 
     let target_domain = this.as_domain_object().expect("Invalid target domain");
-    let fresh_domain = Domain::movie_domain(activation, parent_domain);
+    let fresh_domain = Domain::movie_domain(activation.context, parent_domain);
     target_domain.init_domain(activation.gc(), fresh_domain);
 
     Ok(Value::Undefined)
@@ -97,12 +97,8 @@ pub fn has_definition<'gc>(
             None => return Ok(false.into()),
         };
 
-        // FIXME: Getting the defined value may error even if the value is
-        // defined (e.g. when calling a getter to get the value)
-        return Ok(appdomain
-            .get_defined_value_handling_vector(activation, name)
-            .is_ok()
-            .into());
+        let result = appdomain.has_defined_value_handling_vector(activation, name);
+        return Ok(result.into());
     }
 
     Ok(Value::Undefined)
@@ -136,7 +132,7 @@ pub fn get_qualified_definition_names<'gc>(
             Some(activation.avm2().class_defs().string),
         );
 
-        let name_vector = VectorObject::from_vector(storage, activation)?;
+        let name_vector = VectorObject::from_vector(storage, activation);
 
         return Ok(name_vector.into());
     }

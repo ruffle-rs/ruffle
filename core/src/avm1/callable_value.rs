@@ -23,7 +23,7 @@ impl<'gc> From<CallableValue<'gc>> for Value<'gc> {
 impl<'gc> CallableValue<'gc> {
     pub fn call_with_default_this(
         self,
-        default_this: Object<'gc>,
+        default_this: Value<'gc>,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
         args: &[Value<'gc>],
@@ -33,7 +33,7 @@ impl<'gc> CallableValue<'gc> {
                 val.call(name, activation, this.into(), args)
             }
             CallableValue::UnCallable(Value::Object(val)) => {
-                val.call(name, activation, default_this.into(), args)
+                val.call(name, activation, default_this, args)
             }
             _ => Ok(Value::Undefined),
         }

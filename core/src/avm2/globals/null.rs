@@ -1,6 +1,6 @@
+use crate::avm2::QName;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{Class, ClassAttributes};
-use crate::avm2::QName;
 use ruffle_macros::istr;
 
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {

@@ -90,14 +90,14 @@ package flash.system {
             return false;
         }
 
-        public native static function get language(): String;
+        public native static function get language():String;
 
         public static function get localFileReadDisable():Boolean {
             stub_getter("flash.system.Capabilities", "localFileReadDisable");
             return false;
         }
 
-        public static function get manufacturer(): String {
+        public static function get manufacturer():String {
             stub_getter("flash.system.Capabilities", "manufacturer");
             return "Adobe Windows";
         }
@@ -108,11 +108,11 @@ package flash.system {
             return "5.1";
         }
 
-        public native static function get os(): String;
+        public native static function get os():String;
 
         public native static function get pixelAspectRatio():Number;
 
-        public native static function get playerType(): String;
+        public native static function get playerType():String;
 
         public static function get screenColor():String {
             stub_getter("flash.system.Capabilities", "screenColor");
@@ -148,7 +148,7 @@ package flash.system {
             return "none";
         }
 
-        public native static function get version(): String;
+        public native static function get version():String;
 
         [API("674")]
         public static function hasMultiChannelAudio(type:String):Boolean {

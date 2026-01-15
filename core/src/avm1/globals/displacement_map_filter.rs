@@ -1,13 +1,11 @@
 //! flash.filters.DisplacementMapFilter object
 
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::UpdateContext;
-use crate::string::StringContext;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
@@ -78,11 +76,11 @@ impl<'gc> DisplacementMapFilter<'gc> {
         Self(Gc::new(gc_context, self.0.as_ref().clone()))
     }
 
-    fn map_bitmap(self, context: &mut UpdateContext<'gc>) -> Option<Object<'gc>> {
+    fn map_bitmap(self, activation: &mut Activation<'_, 'gc>) -> Option<Object<'gc>> {
         if let Some(map_bitmap) = self.0.map_bitmap.get() {
-            let proto = context.avm1.prototypes().bitmap_data;
-            let result = Object::new(&context.strings, Some(proto));
-            result.set_native(context.gc(), NativeObject::BitmapData(map_bitmap));
+            let proto = activation.prototypes().bitmap_data;
+            let result = Object::new(activation.strings(), Some(proto));
+            result.set_native(activation.gc(), NativeObject::BitmapData(map_bitmap));
             Some(result)
         } else {
             None
@@ -110,7 +108,7 @@ impl<'gc> DisplacementMapFilter<'gc> {
     fn map_point(self, activation: &mut Activation<'_, 'gc>) -> Result<Value<'gc>, Error<'gc>> {
         let map_point = self.0.map_point.get();
         let args = &[map_point.x.into(), map_point.y.into()];
-        let constructor = activation.context.avm1.prototypes().point_constructor;
+        let constructor = activation.prototypes().point_constructor;
         constructor.construct(activation, args)
     }
 
@@ -122,9 +120,9 @@ impl<'gc> DisplacementMapFilter<'gc> {
         let Some(value) = value else { return Ok(()) };
 
         if let Value::Object(object) = value {
-            if let Some(x) = object.get_local_stored(istr!("x"), activation, false) {
+            if let Some(x) = object.get_local_stored(istr!("x"), activation) {
                 let x = x.coerce_to_f64(activation)?.clamp_to_i32();
-                if let Some(y) = object.get_local_stored(istr!("y"), activation, false) {
+                if let Some(y) = object.get_local_stored(istr!("y"), activation) {
                     let y = y.coerce_to_f64(activation)?.clamp_to_i32();
                     self.0.map_point.set(Point::new(x, y));
                     return Ok(());
@@ -286,49 +284,57 @@ impl<'gc> DisplacementMapFilter<'gc> {
     }
 }
 
-macro_rules! displacement_map_filter_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "mapBitmap" => property(displacement_map_filter_method!(1), displacement_map_filter_method!(2));
-    "mapPoint" => property(displacement_map_filter_method!(3), displacement_map_filter_method!(4));
-    "componentX" => property(displacement_map_filter_method!(5), displacement_map_filter_method!(6));
-    "componentY" => property(displacement_map_filter_method!(7), displacement_map_filter_method!(8));
-    "scaleX" => property(displacement_map_filter_method!(9), displacement_map_filter_method!(10));
-    "scaleY" => property(displacement_map_filter_method!(11), displacement_map_filter_method!(12));
-    "mode" => property(displacement_map_filter_method!(13), displacement_map_filter_method!(14));
-    "color" => property(displacement_map_filter_method!(15), displacement_map_filter_method!(16));
-    "alpha" => property(displacement_map_filter_method!(17), displacement_map_filter_method!(18));
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    use fn method;
+    "mapBitmap" => property(GET_MAP_BITMAP, SET_MAP_BITMAP; VERSION_8);
+    "mapPoint" => property(GET_MAP_POINT, SET_MAP_POINT; VERSION_8);
+    "componentX" => property(GET_COMPONENT_X, SET_COMPONENT_X; VERSION_8);
+    "componentY" => property(GET_COMPONENT_Y, SET_COMPONENT_Y; VERSION_8);
+    "scaleX" => property(GET_SCALE_X, SET_SCALE_X; VERSION_8);
+    "scaleY" => property(GET_SCALE_Y, SET_SCALE_Y; VERSION_8);
+    "mode" => property(GET_MODE, SET_MODE; VERSION_8);
+    "color" => property(GET_COLOR, SET_COLOR; VERSION_8);
+    "alpha" => property(GET_ALPHA, SET_ALPHA; VERSION_8);
 };
 
-fn method<'gc>(
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(table_constructor!(method), None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+pub mod method {
+    pub const CONSTRUCTOR: u16 = 0;
+    pub const GET_MAP_BITMAP: u16 = 1;
+    pub const SET_MAP_BITMAP: u16 = 2;
+    pub const GET_MAP_POINT: u16 = 3;
+    pub const SET_MAP_POINT: u16 = 4;
+    pub const GET_COMPONENT_X: u16 = 5;
+    pub const SET_COMPONENT_X: u16 = 6;
+    pub const GET_COMPONENT_Y: u16 = 7;
+    pub const SET_COMPONENT_Y: u16 = 8;
+    pub const GET_SCALE_X: u16 = 9;
+    pub const SET_SCALE_X: u16 = 10;
+    pub const GET_SCALE_Y: u16 = 11;
+    pub const SET_SCALE_Y: u16 = 12;
+    pub const GET_MODE: u16 = 13;
+    pub const SET_MODE: u16 = 14;
+    pub const GET_COLOR: u16 = 15;
+    pub const SET_COLOR: u16 = 16;
+    pub const GET_ALPHA: u16 = 17;
+    pub const SET_ALPHA: u16 = 18;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-    index: u8,
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const CONSTRUCTOR: u8 = 0;
-    const GET_MAP_BITMAP: u8 = 1;
-    const SET_MAP_BITMAP: u8 = 2;
-    const GET_MAP_POINT: u8 = 3;
-    const SET_MAP_POINT: u8 = 4;
-    const GET_COMPONENT_X: u8 = 5;
-    const SET_COMPONENT_X: u8 = 6;
-    const GET_COMPONENT_Y: u8 = 7;
-    const SET_COMPONENT_Y: u8 = 8;
-    const GET_SCALE_X: u8 = 9;
-    const SET_SCALE_X: u8 = 10;
-    const GET_SCALE_Y: u8 = 11;
-    const SET_SCALE_Y: u8 = 12;
-    const GET_MODE: u8 = 13;
-    const SET_MODE: u8 = 14;
-    const GET_COLOR: u8 = 15;
-    const SET_COLOR: u8 = 16;
-    const GET_ALPHA: u8 = 17;
-    const SET_ALPHA: u8 = 18;
+    use method::*;
 
     if index == CONSTRUCTOR {
         let displacement_map_filter = DisplacementMapFilter::new(activation, args)?;
@@ -339,14 +345,13 @@ fn method<'gc>(
         return Ok(this.into());
     }
 
-    let this = match this.native() {
-        NativeObject::DisplacementMapFilter(displacement_map_filter) => displacement_map_filter,
-        _ => return Ok(Value::Undefined),
+    let NativeObject::DisplacementMapFilter(this) = this.native() else {
+        return Ok(Value::Undefined);
     };
 
     Ok(match index {
         GET_MAP_BITMAP => this
-            .map_bitmap(activation.context)
+            .map_bitmap(activation)
             .map_or(Value::Undefined, Value::from),
         SET_MAP_BITMAP => {
             this.set_map_bitmap(activation, args.get(0))?;
@@ -403,33 +408,4 @@ fn method<'gc>(
         }
         _ => Value::Undefined,
     })
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let displacement_map_filter_proto = Object::new(context, Some(proto));
-    define_properties_on(
-        PROTO_DECLS,
-        context,
-        displacement_map_filter_proto,
-        fn_proto,
-    );
-    displacement_map_filter_proto
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        displacement_map_filter_method!(0),
-        None,
-        fn_proto,
-        proto,
-    )
 }

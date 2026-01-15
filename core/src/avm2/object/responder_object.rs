@@ -1,12 +1,12 @@
+use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::{Activation, Error};
-use crate::context::UpdateContext;
 use crate::net_connection::ResponderCallback;
-use crate::utils::HasPrefixField;
 use flash_lso::types::Value as AMFValue;
 use gc_arena::barrier::unlock;
-use gc_arena::{lock::Lock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
+use ruffle_common::utils::HasPrefixField;
 use std::fmt;
 
 /// A class instance allocator that allocates Responder objects.
@@ -42,11 +42,11 @@ impl<'gc> TObject<'gc> for ResponderObject<'gc> {
 }
 
 impl<'gc> ResponderObject<'gc> {
-    pub fn result(&self) -> Option<FunctionObject<'gc>> {
+    pub fn result(self) -> Option<FunctionObject<'gc>> {
         self.0.result.get()
     }
 
-    pub fn status(&self) -> Option<FunctionObject<'gc>> {
+    pub fn status(self) -> Option<FunctionObject<'gc>> {
         self.0.status.get()
     }
 
@@ -62,8 +62,8 @@ impl<'gc> ResponderObject<'gc> {
     }
 
     pub fn send_callback(
-        &self,
-        context: &mut UpdateContext<'gc>,
+        self,
+        activation: &mut Activation<'_, 'gc>,
         callback: ResponderCallback,
         message: &AMFValue,
     ) -> Result<(), Error<'gc>> {
@@ -73,9 +73,9 @@ impl<'gc> ResponderObject<'gc> {
         };
 
         if let Some(function) = function {
-            let mut activation = Activation::from_nothing(context);
-            let value = crate::avm2::amf::deserialize_value(&mut activation, message)?;
-            function.call(&mut activation, (*self).into(), &[value])?;
+            let value = crate::avm2::amf::deserialize_value(activation, message)?;
+            let args = &[value];
+            function.call(activation, self.into(), FunctionArgs::from_slice(args))?;
         }
 
         Ok(())

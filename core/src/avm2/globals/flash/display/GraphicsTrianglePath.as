@@ -1,19 +1,24 @@
 package flash.display {
-
+    [API("662")]
     public final class GraphicsTrianglePath implements IGraphicsPath, IGraphicsData {
         [Ruffle(NativeAccessible)]
-        private var _culling : String;
+        private var _culling:String;
 
         [Ruffle(NativeAccessible)]
-        public var indices : Vector.<int>;
+        public var indices:Vector.<int>;
 
         [Ruffle(NativeAccessible)]
-        public var uvtData : Vector.<Number>;
+        public var uvtData:Vector.<Number>;
 
         [Ruffle(NativeAccessible)]
-        public var vertices : Vector.<Number>;
+        public var vertices:Vector.<Number>;
 
-        public function GraphicsTrianglePath(vertices:Vector.<Number> = null, indices:Vector.<int> = null, uvtData:Vector.<Number> = null, culling:String = "none") {
+        public function GraphicsTrianglePath(
+            vertices:Vector.<Number> = null,
+            indices:Vector.<int> = null,
+            uvtData:Vector.<Number> = null,
+            culling:String = "none"
+        ) {
             this.culling = culling;
             this.indices = indices;
             this.uvtData = uvtData;
@@ -28,5 +33,4 @@ package flash.display {
             this._culling = value;
         }
     }
-
 }

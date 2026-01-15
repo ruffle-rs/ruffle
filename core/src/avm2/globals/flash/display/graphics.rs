@@ -4,7 +4,7 @@
 #![allow(clippy::doc_lazy_continuation)]
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_2004, make_error_2007, make_error_2008, Error2004Type};
+use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2007, make_error_2008};
 use crate::avm2::globals::flash::geom::transform::object_to_matrix;
 use crate::avm2::globals::slots::flash_display_graphics_bitmap_fill as graphics_bitmap_fill_slots;
 use crate::avm2::globals::slots::flash_display_graphics_gradient_fill as graphics_gradient_fill_slots;
@@ -24,7 +24,7 @@ use crate::string::{AvmString, WStr};
 use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{
-    Color, FillStyle, Fixed16, Fixed8, Gradient, GradientInterpolation, GradientRecord,
+    Color, FillStyle, Fixed8, Fixed16, Gradient, GradientInterpolation, GradientRecord,
     GradientSpread, LineCapStyle, LineJoinStyle, LineStyle, Matrix, Point, Twips,
 };
 
@@ -80,8 +80,8 @@ pub fn begin_bitmap_fill<'gc>(
 
         let bitmap = ruffle_render::bitmap::BitmapInfo {
             handle,
-            width: bitmap.width() as u16,
-            height: bitmap.height() as u16,
+            width: bitmap.width(),
+            height: bitmap.height(),
         };
         let scale_matrix = Matrix::scale(
             (Twips::TWIPS_PER_PIXEL as i16).into(),
@@ -1322,8 +1322,8 @@ pub fn line_bitmap_style<'gc>(
 
         let bitmap = ruffle_render::bitmap::BitmapInfo {
             handle,
-            width: bitmap.width() as u16,
-            height: bitmap.height() as u16,
+            width: bitmap.width(),
+            height: bitmap.height(),
         };
         let scale_matrix = Matrix::scale(
             Fixed16::from_f64(bitmap.width as f64),
@@ -1353,7 +1353,7 @@ pub fn read_graphics_data<'gc>(
     avm2_stub_method!(activation, "flash.display.Graphics", "readGraphicsData");
     let value_type = activation.avm2().class_defs().igraphicsdata;
     let new_storage = VectorStorage::new(0, false, Some(value_type));
-    Ok(VectorObject::from_vector(new_storage, activation)?.into())
+    Ok(VectorObject::from_vector(new_storage, activation).into())
 }
 
 fn read_point<'gc>(
@@ -1527,7 +1527,7 @@ fn handle_igraphics_data<'gc>(
         } else {
             let caps = {
                 let caps = obj
-                    .get_slot(graphics_stroke_slots::CAPS)
+                    .get_slot(graphics_stroke_slots::_CAPS)
                     .coerce_to_string(activation);
                 caps_to_cap_style(caps.ok())
             };
@@ -1542,7 +1542,7 @@ fn handle_igraphics_data<'gc>(
             };
 
             let joints = obj
-                .get_slot(graphics_stroke_slots::JOINTS)
+                .get_slot(graphics_stroke_slots::_JOINTS)
                 .coerce_to_string(activation)
                 .ok();
             let miter_limit = obj
@@ -1552,7 +1552,7 @@ fn handle_igraphics_data<'gc>(
                 .get_slot(graphics_stroke_slots::PIXEL_HINTING)
                 .coerce_to_boolean();
             let scale_mode = obj
-                .get_slot(graphics_stroke_slots::SCALE_MODE)
+                .get_slot(graphics_stroke_slots::_SCALE_MODE)
                 .coerce_to_string(activation)?;
 
             let width = Twips::from_pixels(thickness.clamp(0.0, 255.0));
@@ -1789,8 +1789,8 @@ fn handle_bitmap_fill<'gc>(
 
     let bitmap = ruffle_render::bitmap::BitmapInfo {
         handle,
-        width: bitmap_data.width() as u16,
-        height: bitmap_data.height() as u16,
+        width: bitmap_data.width(),
+        height: bitmap_data.height(),
     };
 
     let scale_matrix = Matrix::scale(

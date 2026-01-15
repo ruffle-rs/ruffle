@@ -2,3 +2,6 @@ num_ticks = 1
 
 # Currently Ruffle falls back to device font on missing embedded font.
 known_failure = true
+
+[player_options]
+with_default_font = true

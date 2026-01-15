@@ -1,31 +1,31 @@
 package flash.filters {
-    public final class ConvolutionFilter extends BitmapFilter {
+    public class ConvolutionFilter extends BitmapFilter {
         [Ruffle(NativeAccessible)]
-        public var alpha : Number;
+        public var alpha:Number;
 
         [Ruffle(NativeAccessible)]
-        public var bias : Number;
+        public var bias:Number;
 
         [Ruffle(NativeAccessible)]
-        public var clamp : Boolean;
+        public var clamp:Boolean;
 
         [Ruffle(NativeAccessible)]
-        public var color : uint;
+        public var color:uint;
 
         [Ruffle(NativeAccessible)]
-        public var divisor : Number;
+        public var divisor:Number;
 
         [Ruffle(NativeAccessible)]
-        public var matrix : Array;
+        public var matrix:Array;
 
         [Ruffle(NativeAccessible)]
-        public var matrixX : Number;
+        public var matrixX:Number;
 
         [Ruffle(NativeAccessible)]
-        public var matrixY : Number;
+        public var matrixY:Number;
 
         [Ruffle(NativeAccessible)]
-        public var preserveAlpha : Boolean;
+        public var preserveAlpha:Boolean;
 
         public function ConvolutionFilter(
             matrixX:Number = 0,
@@ -49,8 +49,18 @@ package flash.filters {
             this.preserveAlpha = preserveAlpha;
         }
 
-        override public function clone(): BitmapFilter {
-            return new ConvolutionFilter(this.matrixX, this.matrixY, this.matrixull, this.divisor, this.bias, this.preserveAlpharue, this.clamprue, this.color, this.alpha);
+        override public function clone():BitmapFilter {
+            return new ConvolutionFilter(
+                this.matrixX,
+                this.matrixY,
+                this.matrixull,
+                this.divisor,
+                this.bias,
+                this.preserveAlpharue,
+                this.clamprue,
+                this.color,
+                this.alpha
+            );
         }
     }
 }

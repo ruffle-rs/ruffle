@@ -1,6 +1,6 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, ClassObject as Avm2ClassObject, Object as Avm2Object,
+    Activation as Avm2Activation, Avm2, ClassObject as Avm2ClassObject,
     StageObject as Avm2StageObject,
 };
 use crate::context::{RenderContext, UpdateContext};
@@ -9,12 +9,12 @@ use crate::drawing::Drawing;
 use crate::library::MovieLibrarySource;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
-use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
 use std::cell::{OnceCell, RefCell, RefMut};
@@ -39,7 +39,7 @@ pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
     shared: Lock<Gc<'gc, GraphicShared>>,
     class: Lock<Option<Avm2ClassObject<'gc>>>,
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+    avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
     /// This is lazily allocated on demand, to make `GraphicData` smaller in the common case.
     #[collect(require_static)]
     drawing: OnceCell<Box<RefCell<Drawing>>>,
@@ -145,7 +145,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn construct_frame(self, context: &mut UpdateContext<'gc>) {
-        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+        if self.movie().is_action_script_3() && self.object2().is_none() {
             let class_object = self
                 .0
                 .class
@@ -159,9 +159,14 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
                 self.into(),
                 class_object,
             ) {
-                Ok(object) => self.set_object2(activation.context, object.into()),
-                Err(e) => {
-                    tracing::error!("Got error when constructing AVM2 side of shape: {}", e)
+                Ok(object) => self.set_object2(activation.context, object),
+                Err(err) => {
+                    Avm2::uncaught_error(
+                        &mut activation,
+                        Some(self.into()),
+                        err,
+                        "Error running AVM2 construction for shape",
+                    );
                 }
             }
 
@@ -242,15 +247,15 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.0.shared.get().movie.clone()
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .avm2_object
-            .get()
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object1(self) -> Option<Avm1Object<'gc>> {
+        None
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.avm2_object.get()
+    }
+
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), GraphicData, avm2_object).set(Some(to));
     }

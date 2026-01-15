@@ -1,0 +1,11 @@
+PASSED: 200 == 200
+PASSED: 100 == 100
+_level0.static_mc1
+PASSED: 100 == 100
+PASSED: 101 == 101
+PASSED: typeof(_root.dyn1Ref)  ==  'movieclip' [new_child_in_unload_test.c:127]
+PASSED: _root.dyn1Ref.valueof()  ==  null [new_child_in_unload_test.c:128]
+PASSED: _root.dyn2testvar  ==  'executed' [new_child_in_unload_test.c:130]
+#passed: 7
+#failed: 0
+#total tests run: 7

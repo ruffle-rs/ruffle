@@ -11,7 +11,12 @@ package flash.geom {
         }
 
         // Based on https://github.com/openfl/openfl/blob/971a4c9e43b5472fd84d73920a2b7c1b3d8d9257/src/openfl/geom/Utils3D.hx
-        public static function projectVectors(m:Matrix3D, verts:Vector.<Number>, projectedVerts:Vector.<Number>, uvts:Vector.<Number>):void {
+        public static function projectVectors(
+            m:Matrix3D,
+            verts:Vector.<Number>,
+            projectedVerts:Vector.<Number>,
+            uvts:Vector.<Number>
+        ):void {
             var n = m.rawData;
             var x, y, z, w;
             var x1, y1, z1, w1;

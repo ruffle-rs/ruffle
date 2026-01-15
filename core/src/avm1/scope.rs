@@ -145,7 +145,7 @@ impl<'gc> Scope<'gc> {
         if self.locals().has_property(activation, name) {
             return self
                 .locals()
-                .get_non_slash_path(name, activation)
+                .get(name, activation)
                 .map(|v| CallableValue::Callable(self.locals_cell(), v));
         }
         if let Some(scope) = self.parent() {
@@ -158,9 +158,10 @@ impl<'gc> Scope<'gc> {
                 && self.locals().has_own_property(activation, name)
             {
                 return activation
-                    .root_object()
-                    .coerce_to_object(activation)
-                    .get_non_slash_path(name, activation)
+                    .base_clip()
+                    .avm1_root()
+                    .object1_or_bare(activation.gc())
+                    .get(name, activation)
                     .map(|v| CallableValue::Callable(self.locals_cell(), v));
             }
 

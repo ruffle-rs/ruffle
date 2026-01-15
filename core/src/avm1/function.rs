@@ -1,21 +1,21 @@
 //! Code relating to executable functions + calling conventions.
 
+use super::NativeObject;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::object::super_object::SuperObject;
+use crate::avm1::object_reference::MovieClipReference;
 use crate::avm1::property::Attribute;
 use crate::avm1::scope::Scope;
 use crate::avm1::value::Value;
 use crate::avm1::{ArrayBuilder, Object};
-use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::display_object::TDisplayObject;
 use crate::string::{AvmString, StringContext, SwfStrExt as _};
 use crate::tag_utils::SwfSlice;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::istr;
-use std::{borrow::Cow, fmt, num::NonZeroU8};
-use swf::{avm1::types::FunctionFlags, SwfStr};
-
-use super::NativeObject;
+use std::{borrow::Cow, cell::Cell, num::NonZeroU8};
+use swf::{SwfStr, avm1::types::FunctionFlags};
 
 /// Represents a function defined in Ruffle's code.
 pub type NativeFunction = for<'gc> fn(
@@ -24,11 +24,22 @@ pub type NativeFunction = for<'gc> fn(
     &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>>;
 
+/// Represents a function defined in Ruffle's code, compatible with ASnative.
+pub type TableNativeFunction = for<'gc> fn(
+    &mut Activation<'_, 'gc>,
+    Object<'gc>,
+    &[Value<'gc>],
+    u16,
+) -> Result<Value<'gc>, Error<'gc>>;
+
 /// Indicates the reason for an execution
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
 pub enum ExecutionReason {
     /// This execution is a "normal" function call from ActionScript bytecode.
     FunctionCall,
+
+    /// This execution is a "normal" constructor call from ActionScript bytecode.
+    ConstructorCall,
 
     /// This execution is a "special" internal function call from the player,
     /// such as getters, setters, `toString`, or event handlers.
@@ -64,7 +75,7 @@ pub struct Avm1Function<'gc> {
 
     /// The base movie clip that the function was defined on.
     /// This is the movie clip that contains the bytecode.
-    base_clip: DisplayObject<'gc>,
+    base_clip: MovieClipReference<'gc>,
 
     /// The flags that define the preloaded registers of the function.
     #[collect(require_static)]
@@ -80,7 +91,7 @@ impl<'gc> Avm1Function<'gc> {
         swf_function: swf::avm1::types::DefineFunction2,
         scope: Gc<'gc, Scope<'gc>>,
         constant_pool: Gc<'gc, Vec<Value<'gc>>>,
-        base_clip: DisplayObject<'gc>,
+        base_clip: MovieClipReference<'gc>,
     ) -> Self {
         let encoding = SwfStr::encoding_for_version(swf_version);
         let name = if swf_function.name.is_empty() {
@@ -220,7 +231,7 @@ impl<'gc> Avm1Function<'gc> {
         // `f[""]()` emits a CallMethod op, causing `this` to be undefined, but `super` is a function; what is it?
         let zuper = this.filter(|_| !suppress).map(|this| {
             let zuper = NativeObject::Super(SuperObject::new(this, depth));
-            Object::new_with_native(frame.strings(), None, zuper).into()
+            Object::new_with_native(frame.strings(), None::<Value<'_>>, zuper).into()
         });
 
         if preload {
@@ -234,7 +245,7 @@ impl<'gc> Avm1Function<'gc> {
 
     fn load_root(&self, frame: &mut Activation<'_, 'gc>, preload_r: &mut u8) {
         if self.flags.contains(FunctionFlags::PRELOAD_ROOT) {
-            let root = frame.base_clip().avm1_root().object();
+            let root = frame.base_clip().avm1_root().object1_or_undef();
             frame.set_local_register(*preload_r, root);
             *preload_r += 1;
         }
@@ -246,7 +257,7 @@ impl<'gc> Avm1Function<'gc> {
             // and _global ends up incorrectly taking _parent's register.
             // See test for more info.
             if let Some(parent) = frame.base_clip().avm1_parent() {
-                frame.set_local_register(*preload_r, parent.object());
+                frame.set_local_register(*preload_r, parent.object1_or_undef());
                 *preload_r += 1;
             }
         }
@@ -254,10 +265,136 @@ impl<'gc> Avm1Function<'gc> {
 
     fn load_global(&self, frame: &mut Activation<'_, 'gc>, preload_r: &mut u8) {
         if self.flags.contains(FunctionFlags::PRELOAD_GLOBAL) {
-            let global = frame.context.avm1.global_object();
+            let global = frame.global_object();
             frame.set_local_register(*preload_r, global.into());
             *preload_r += 1;
         }
+    }
+
+    /// Execute the given function bytecode.
+    #[expect(clippy::too_many_arguments)]
+    fn exec(
+        &self,
+        name: ExecutionName<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+        this: Value<'gc>,
+        depth: u8,
+        args: &[Value<'gc>],
+        reason: ExecutionReason,
+        callee: Object<'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let this_obj = match this {
+            Value::Object(obj) => Some(obj),
+            _ => None,
+        };
+
+        let target = activation.target_clip_or_root();
+        let is_closure = activation.swf_version() >= 6;
+
+        let this_do = this_obj
+            .and_then(|this| this.as_display_object())
+            .unwrap_or(target);
+
+        let base_clip = if is_closure || reason == ExecutionReason::Special {
+            self.base_clip
+                .resolve_reference(activation)
+                .map(|(_, _, dobj)| dobj)
+                .unwrap_or(this_do)
+        } else {
+            this_do
+        };
+        let (swf_version, parent_scope) = if is_closure {
+            // Function calls in a v6+ SWF are proper closures, and "close" over the scope that defined the function:
+            // * Use the SWF version from the SWF that defined the function.
+            // * Use the base clip from when the function was defined.
+            // * Close over the scope from when the function was defined.
+            (self.swf_version(), self.scope())
+        } else {
+            // Function calls in a v5 SWF are *not* closures, and will use the settings of
+            // `this`, regardless of the function's origin:
+            // * Use the SWF version of `this`.
+            // * Use the base clip of `this`.
+            // * Allocate a new scope using the given base clip. No previous scope is closed over.
+            let swf_version = base_clip.swf_version().max(5);
+            let base_clip_obj = base_clip.object1().unwrap();
+            // TODO: It would be nice to avoid these extra Scope allocs.
+            let scope = Gc::new(
+                activation.gc(),
+                Scope::new(
+                    activation.global_scope(),
+                    super::scope::ScopeClass::Target,
+                    base_clip_obj,
+                ),
+            );
+            (swf_version, scope)
+        };
+
+        let child_scope = Gc::new(
+            activation.gc(),
+            Scope::new_local_scope(parent_scope, activation.gc()),
+        );
+
+        // The caller is the previous callee.
+        let arguments_caller = activation.callee;
+
+        let name = if cfg!(feature = "avm_debug") {
+            Cow::Owned(self.debug_string_for_call(activation, name, args))
+        } else {
+            Cow::Borrowed("[Anonymous]")
+        };
+
+        let is_this_inherited = self
+            .flags
+            .intersects(FunctionFlags::PRELOAD_THIS | FunctionFlags::SUPPRESS_THIS);
+        let local_this = if is_this_inherited {
+            activation.this_cell()
+        } else {
+            this
+        };
+
+        let local_registers: Box<[_]> = (0..self.register_count())
+            .map(|_| Cell::new(Value::Undefined))
+            .collect();
+
+        let max_recursion_depth = activation.context.avm1.max_recursion_depth();
+        let mut frame = Activation::from_action(
+            activation.context,
+            activation.id.function(&name, reason, max_recursion_depth)?,
+            swf_version,
+            child_scope,
+            self.constant_pool,
+            base_clip,
+            local_this,
+            Some(callee),
+            &local_registers,
+        );
+
+        // Local register #0 is always left free.
+        let mut preload_r = 1;
+        self.load_this(&mut frame, this, &mut preload_r);
+        self.load_arguments(&mut frame, args, arguments_caller, &mut preload_r);
+        self.load_super(&mut frame, this_obj, depth, &mut preload_r);
+        self.load_root(&mut frame, &mut preload_r);
+        self.load_parent(&mut frame, &mut preload_r);
+        self.load_global(&mut frame, &mut preload_r);
+
+        // Any unassigned args are set to undefined to prevent assignments from leaking to the parent scope (#2166)
+        let args_iter = args
+            .iter()
+            .cloned()
+            .chain(std::iter::repeat(Value::Undefined));
+
+        //TODO: What happens if the argument registers clash with the
+        //preloaded registers? What gets done last?
+        for (param, value) in self.params.iter().zip(args_iter) {
+            if let Some(register) = param.register {
+                frame.set_local_register(register.get(), value);
+            } else {
+                frame.force_define_local(param.name, value);
+            }
+        }
+
+        Ok(frame.run_actions(self.data.clone())?.value())
     }
 }
 
@@ -281,28 +418,19 @@ struct Param<'gc> {
 /// AVM1 bytecode itself.
 #[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
-pub enum Executable<'gc> {
+enum Executable<'gc> {
     /// A function provided by the Ruffle runtime and implemented in Rust.
     Native(#[collect(require_static)] NativeFunction),
+
+    TableNative {
+        #[collect(require_static)]
+        native: TableNativeFunction,
+        index: u16,
+    },
 
     /// ActionScript data defined by a previous `DefineFunction` or
     /// `DefineFunction2` action.
     Action(Gc<'gc, Avm1Function<'gc>>),
-}
-
-impl fmt::Debug for Executable<'_> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            Executable::Native(nf) => f
-                .debug_tuple("Executable::Native")
-                .field(&format!("{nf:p}"))
-                .finish(),
-            Executable::Action(af) => f
-                .debug_tuple("Executable::Action")
-                .field(&Gc::as_ptr(*af))
-                .finish(),
-        }
-    }
 }
 
 /// Indicates the default name to use for this execution in debug builds.
@@ -323,158 +451,7 @@ impl<'gc> From<AvmString<'gc>> for ExecutionName<'gc> {
     }
 }
 
-impl<'gc> Executable<'gc> {
-    /// A dummy `Executable` that does nothing, and returns `undefined`.
-    const EMPTY: Self = Self::Native(|_, _, _| Ok(Value::Undefined));
-
-    /// Execute the given code.
-    ///
-    /// Execution is not guaranteed to have completed when this function
-    /// returns. If on-stack execution is possible, then this function returns
-    /// a return value you must push onto the stack. Otherwise, you must
-    /// create a new stack frame and execute the action data yourself.
-    #[expect(clippy::too_many_arguments)]
-    pub fn exec(
-        &self,
-        name: ExecutionName<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-        this: Value<'gc>,
-        depth: u8,
-        args: &[Value<'gc>],
-        reason: ExecutionReason,
-        callee: Object<'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        let af = match self {
-            Executable::Native(nf) => {
-                // TODO: Change NativeFunction to accept `this: Value`.
-                let this = this.coerce_to_object(activation);
-                return nf(activation, this, args);
-            }
-            Executable::Action(af) => af,
-        };
-
-        let this_obj = match this {
-            Value::Object(obj) => Some(obj),
-            _ => None,
-        };
-
-        let target = activation.target_clip_or_root();
-        let is_closure = activation.swf_version() >= 6;
-        let base_clip =
-            if (is_closure || reason == ExecutionReason::Special) && !af.base_clip.avm1_removed() {
-                af.base_clip
-            } else {
-                this_obj
-                    .and_then(|this| this.as_display_object())
-                    .unwrap_or(target)
-            };
-        let (swf_version, parent_scope) = if is_closure {
-            // Function calls in a v6+ SWF are proper closures, and "close" over the scope that defined the function:
-            // * Use the SWF version from the SWF that defined the function.
-            // * Use the base clip from when the function was defined.
-            // * Close over the scope from when the function was defined.
-            (af.swf_version(), af.scope())
-        } else {
-            // Function calls in a v5 SWF are *not* closures, and will use the settings of
-            // `this`, regardless of the function's origin:
-            // * Use the SWF version of `this`.
-            // * Use the base clip of `this`.
-            // * Allocate a new scope using the given base clip. No previous scope is closed over.
-            let swf_version = base_clip.swf_version().max(5);
-            let base_clip_obj = match base_clip.object() {
-                Value::Object(o) => o,
-                _ => unreachable!(),
-            };
-            // TODO: It would be nice to avoid these extra Scope allocs.
-            let scope = Gc::new(
-                activation.gc(),
-                Scope::new(
-                    activation.context.avm1.global_scope(),
-                    super::scope::ScopeClass::Target,
-                    base_clip_obj,
-                ),
-            );
-            (swf_version, scope)
-        };
-
-        let child_scope = Gc::new(
-            activation.gc(),
-            Scope::new_local_scope(parent_scope, activation.gc()),
-        );
-
-        // The caller is the previous callee.
-        let arguments_caller = activation.callee;
-
-        let name = if cfg!(feature = "avm_debug") {
-            Cow::Owned(af.debug_string_for_call(activation, name, args))
-        } else {
-            Cow::Borrowed("[Anonymous]")
-        };
-
-        let is_this_inherited = af
-            .flags
-            .intersects(FunctionFlags::PRELOAD_THIS | FunctionFlags::SUPPRESS_THIS);
-        let local_this = if is_this_inherited {
-            activation.this_cell()
-        } else {
-            this
-        };
-
-        let max_recursion_depth = activation.context.avm1.max_recursion_depth();
-        let mut frame = Activation::from_action(
-            activation.context,
-            activation.id.function(name, reason, max_recursion_depth)?,
-            swf_version,
-            child_scope,
-            af.constant_pool,
-            base_clip,
-            local_this,
-            Some(callee),
-        );
-
-        frame.allocate_local_registers(af.register_count());
-
-        let mut preload_r = 1;
-        af.load_this(&mut frame, this, &mut preload_r);
-        af.load_arguments(&mut frame, args, arguments_caller, &mut preload_r);
-        af.load_super(&mut frame, this_obj, depth, &mut preload_r);
-        af.load_root(&mut frame, &mut preload_r);
-        af.load_parent(&mut frame, &mut preload_r);
-        af.load_global(&mut frame, &mut preload_r);
-
-        // Any unassigned args are set to undefined to prevent assignments from leaking to the parent scope (#2166)
-        let args_iter = args
-            .iter()
-            .cloned()
-            .chain(std::iter::repeat(Value::Undefined));
-
-        //TODO: What happens if the argument registers clash with the
-        //preloaded registers? What gets done last?
-        for (param, value) in af.params.iter().zip(args_iter) {
-            if let Some(register) = param.register {
-                frame.set_local_register(register.get(), value);
-            } else {
-                frame.force_define_local(param.name, value);
-            }
-        }
-
-        Ok(frame.run_actions(af.data.clone())?.value())
-    }
-}
-
-impl From<NativeFunction> for Executable<'_> {
-    fn from(nf: NativeFunction) -> Self {
-        Executable::Native(nf)
-    }
-}
-
-impl<'gc> From<Gc<'gc, Avm1Function<'gc>>> for Executable<'gc> {
-    fn from(af: Gc<'gc, Avm1Function<'gc>>) -> Self {
-        Executable::Action(af)
-    }
-}
-
-#[derive(Collect)]
+#[derive(Copy, Clone, Collect)]
 #[collect(no_drop)]
 pub struct FunctionObject<'gc> {
     /// The code that will be invoked when this object is called.
@@ -487,91 +464,74 @@ pub struct FunctionObject<'gc> {
 }
 
 impl<'gc> FunctionObject<'gc> {
-    /// Construct a function sans prototype.
-    pub fn bare_function(
+    /// Builds a new function object.
+    ///
+    /// `fn_proto` refers to the implicit proto of the function object, and the
+    /// `prototype` refers to the explicit prototype of the function. If the
+    /// prototype is present, it will be linked with the newly-created object.
+    pub fn build(
+        self,
         context: &StringContext<'gc>,
-        function: Executable<'gc>,
-        constructor: Option<NativeFunction>,
         fn_proto: Object<'gc>,
+        prototype: Option<Object<'gc>>,
     ) -> Object<'gc> {
         let obj = Object::new(context, Some(fn_proto));
-        let native = NativeObject::Function(Gc::new(
-            context.gc(),
-            Self {
-                function,
-                constructor,
-            },
-        ));
+        let native = NativeObject::Function(Gc::new(context.gc(), self));
         obj.set_native(context.gc(), native);
+
+        if let Some(prototype) = prototype {
+            prototype.define_value(
+                context.gc(),
+                istr!(context, "constructor"),
+                Value::Object(obj),
+                Attribute::DONT_ENUM,
+            );
+            obj.define_value(
+                context.gc(),
+                istr!(context, "prototype"),
+                prototype.into(),
+                Attribute::DONT_ENUM | Attribute::DONT_DELETE,
+            );
+        }
+
         obj
     }
 
-    /// Construct a function with any combination of regular and constructor parts.
-    ///
-    /// Since prototypes need to link back to themselves, this function builds
-    /// both objects itself and returns the function to you, fully allocated.
-    ///
-    /// `fn_proto` refers to the implicit proto of the function object, and the
-    /// `prototype` refers to the explicit prototype of the function.
-    /// The function and its prototype will be linked to each other.
-    fn allocate_function(
-        context: &StringContext<'gc>,
-        function: Executable<'gc>,
-        constructor: Option<NativeFunction>,
-        fn_proto: Object<'gc>,
-        prototype: Object<'gc>,
-    ) -> Object<'gc> {
-        let function = Self::bare_function(context, function, constructor, fn_proto);
-
-        prototype.define_value(
-            context.gc(),
-            istr!(context, "constructor"),
-            Value::Object(function),
-            Attribute::DONT_ENUM,
-        );
-        function.define_value(
-            context.gc(),
-            istr!(context, "prototype"),
-            prototype.into(),
-            Attribute::empty(),
-        );
-
-        function
-    }
-
-    /// Constructs a function that does nothing.
+    /// A function that does nothing.
     ///
     /// This can also serve as a no-op constructor.
-    pub fn empty(
-        context: &StringContext<'gc>,
-        fn_proto: Object<'gc>,
-        prototype: Object<'gc>,
-    ) -> Object<'gc> {
-        Self::allocate_function(context, Executable::EMPTY, None, fn_proto, prototype)
+    pub fn empty() -> Self {
+        Self {
+            function: Executable::Native(|_, _, _| Ok(Value::Undefined)),
+            constructor: None,
+        }
     }
 
-    /// Construct a function from AVM1 bytecode and associated protos.
-    pub fn function(
-        context: &StringContext<'gc>,
-        function: Gc<'gc, Avm1Function<'gc>>,
-        fn_proto: Object<'gc>,
-        prototype: Object<'gc>,
-    ) -> Object<'gc> {
-        Self::allocate_function(context, function.into(), None, fn_proto, prototype)
+    /// A function with AVM1 bytecode.
+    pub fn bytecode(function: Gc<'gc, Avm1Function<'gc>>) -> Self {
+        Self {
+            function: Executable::Action(function),
+            constructor: None,
+        }
     }
 
-    /// Construct a function from a native executable and associated protos.
-    pub fn native(
-        context: &StringContext<'gc>,
-        function: NativeFunction,
-        fn_proto: Object<'gc>,
-        prototype: Object<'gc>,
-    ) -> Object<'gc> {
-        let function = Executable::Native(function);
-        Self::allocate_function(context, function, None, fn_proto, prototype)
+    /// A function with a native executable.
+    pub fn native(function: NativeFunction) -> Self {
+        Self {
+            function: Executable::Native(function),
+            constructor: None,
+        }
     }
 
-    /// Construct a native constructor from native executables and associated protos.
+    /// A function with a native executable, compatible with ASnative.
+    pub fn table_native(native: TableNativeFunction, index: u16) -> Self {
+        Self {
+            function: Executable::TableNative { native, index },
+            constructor: None,
+        }
+    }
+
+    /// A native constructor.
     ///
     /// This differs from [`Self::native`] in two important ways:
     /// - When called through `new`, the return value will always become the result of the
@@ -579,47 +539,84 @@ impl<'gc> FunctionObject<'gc> {
     ///   if the object was successfully constructed, or `undefined` if not.
     /// - When called as a normal function, `function` will be called instead of `constructor`;
     ///   if it is `None`, the return value will be `undefined`.
-    pub fn constructor(
-        context: &StringContext<'gc>,
-        constructor: NativeFunction,
-        function: Option<NativeFunction>,
-        fn_proto: Object<'gc>,
-        prototype: Object<'gc>,
-    ) -> Object<'gc> {
-        Self::allocate_function(
-            context,
-            Executable::Native(function.unwrap_or(|_, _, _| Ok(Value::Undefined))),
-            Some(constructor),
-            fn_proto,
-            prototype,
-        )
-    }
-
-    pub fn as_executable(&self) -> Executable<'gc> {
-        self.function
-    }
-
-    pub fn as_constructor(&self) -> Executable<'gc> {
-        if let Some(constr) = self.constructor {
-            Executable::Native(constr)
-        } else {
-            self.function
+    pub fn constructor(constructor: NativeFunction, function: Option<NativeFunction>) -> Self {
+        Self {
+            function: Executable::Native(function.unwrap_or(|_, _, _| Ok(Value::Undefined))),
+            constructor: Some(constructor),
         }
     }
 
-    pub fn is_native_constructor(&self) -> bool {
-        self.constructor.is_some()
+    /// Execute the given code.
+    ///
+    /// This is fairly low-level; prefer using other call methods if possible.
+    #[expect(clippy::too_many_arguments)]
+    pub fn exec(
+        self,
+        name: ExecutionName<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+        this: Value<'gc>,
+        depth: u8,
+        args: &[Value<'gc>],
+        reason: ExecutionReason,
+        callee: Object<'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        match self.function {
+            Executable::Native(nf) => {
+                // TODO: Change NativeFunction to accept `this: Value`.
+                let this = this.coerce_to_object_or_bare(activation)?;
+                nf(activation, this, args)
+            }
+            Executable::TableNative { native, index } => {
+                // TODO: Change TableNativeFunction to accept `this: Value`.
+                let this = this.coerce_to_object_or_bare(activation)?;
+                native(activation, this, args, index)
+            }
+            Executable::Action(af) => af.exec(name, activation, this, depth, args, reason, callee),
+        }
+    }
+
+    /// Execute the given code as a constructor.
+    ///
+    /// This is fairly low-level; prefer using other call methods if possible.
+    #[expect(clippy::too_many_arguments)]
+    pub fn exec_constructor(
+        self,
+        name: ExecutionName<'gc>,
+        activation: &mut Activation<'_, 'gc>,
+        this: Value<'gc>,
+        depth: u8,
+        args: &[Value<'gc>],
+        reason: ExecutionReason,
+        callee: Object<'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let constr = match self.constructor {
+            Some(constr) => Executable::Native(constr),
+            None => self.function,
+        };
+        match constr {
+            Executable::Native(nf) => {
+                // TODO: Change NativeFunction to accept `this: Value`.
+                let this = this.coerce_to_object_or_bare(activation)?;
+                nf(activation, this, args)
+            }
+            Executable::TableNative { native, index } => {
+                // TODO: Change TableNativeFunction to accept `this: Value`.
+                let this = this.coerce_to_object_or_bare(activation)?;
+                native(activation, this, args, index)
+            }
+            Executable::Action(af) => af.exec(name, activation, this, depth, args, reason, callee),
+        }
     }
 
     pub fn call(
-        &self,
+        self,
         name: impl Into<ExecutionName<'gc>>,
         activation: &mut Activation<'_, 'gc>,
         callee: Object<'gc>,
         this: Value<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.function.exec(
+        self.exec(
             name.into(),
             activation,
             this,
@@ -631,36 +628,22 @@ impl<'gc> FunctionObject<'gc> {
     }
 
     pub fn construct_on_existing(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         callee: Object<'gc>,
         this: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<(), Error<'gc>> {
-        // TODO: de-duplicate code.
-        this.define_value(
-            activation.gc(),
-            istr!("__constructor__"),
-            callee.into(),
-            Attribute::DONT_ENUM,
-        );
-        if activation.swf_version() < 7 {
-            this.define_value(
-                activation.gc(),
-                istr!("constructor"),
-                callee.into(),
-                Attribute::DONT_ENUM,
-            );
-        }
+        Self::define_constructor_props(activation, this, callee.into());
 
         // Always ignore the constructor's return value.
-        let _ = self.as_constructor().exec(
+        let _ = self.exec_constructor(
             ExecutionName::Static("[ctor]"),
             activation,
             this.into(),
             1,
             args,
-            ExecutionReason::FunctionCall,
+            ExecutionReason::ConstructorCall,
             callee,
         )?;
 
@@ -668,47 +651,48 @@ impl<'gc> FunctionObject<'gc> {
     }
 
     pub fn construct(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         callee: Object<'gc>,
         args: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let prototype = callee
-            .get(istr!("prototype"), activation)?
-            .coerce_to_object(activation);
+        let prototype = callee.get(istr!("prototype"), activation)?;
         let this = Object::new(activation.strings(), Some(prototype));
 
-        // TODO: de-duplicate code.
+        Self::define_constructor_props(activation, this, callee.into());
+
+        // Propagate the return value only for native constructors.
+        let propagate = self.constructor.is_some();
+        let ret = self.exec_constructor(
+            ExecutionName::Static("[ctor]"),
+            activation,
+            this.into(),
+            1,
+            args,
+            ExecutionReason::ConstructorCall,
+            callee,
+        )?;
+        Ok(if propagate { ret } else { this.into() })
+    }
+
+    fn define_constructor_props(
+        activation: &mut Activation<'_, 'gc>,
+        this: Object<'gc>,
+        callee: Value<'gc>,
+    ) {
         this.define_value(
             activation.gc(),
             istr!("__constructor__"),
-            callee.into(),
+            callee,
             Attribute::DONT_ENUM,
         );
         if activation.swf_version() < 7 {
             this.define_value(
                 activation.gc(),
                 istr!("constructor"),
-                callee.into(),
+                callee,
                 Attribute::DONT_ENUM,
             );
-        }
-
-        let result = self.as_constructor().exec(
-            ExecutionName::Static("[ctor]"),
-            activation,
-            this.into(),
-            1,
-            args,
-            ExecutionReason::FunctionCall,
-            callee,
-        )?;
-
-        if self.is_native_constructor() {
-            // Propagate the native method's return value.
-            Ok(result)
-        } else {
-            Ok(this.into())
         }
     }
 }

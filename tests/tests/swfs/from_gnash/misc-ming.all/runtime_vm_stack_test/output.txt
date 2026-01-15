@@ -1,0 +1,9 @@
+PASSED: testvar1  ==  1 [runtime_vm_stack_test.c:103]
+PASSED: testvar2  ==  2 [runtime_vm_stack_test.c:104]
+PASSED: testvar3  ==  3 [runtime_vm_stack_test.c:105]
+PASSED: testvar1  ==  1 [runtime_vm_stack_test.c:123]
+PASSED: testvar2  ==  2 [runtime_vm_stack_test.c:124]
+PASSED: testvar3  ==  3 [runtime_vm_stack_test.c:125]
+#passed: 6
+#failed: 0
+#total tests run: 6

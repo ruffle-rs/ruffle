@@ -1,5 +1,6 @@
 #[cfg(feature = "cpal")]
 pub mod audio;
-pub mod executor;
+#[cfg(feature = "navigator")]
 pub mod navigator;
+#[cfg(feature = "fs")]
 pub mod storage;

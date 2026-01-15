@@ -3,7 +3,7 @@
 use ruffle_wstr::Units;
 
 use crate::avm2::activation::Activation;
-use crate::avm2::error::{make_error_1052, Error};
+use crate::avm2::error::{Error, make_error_1052};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::string::{AvmString, WStr, WString};

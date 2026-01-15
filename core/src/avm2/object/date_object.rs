@@ -1,12 +1,13 @@
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Hint;
-use crate::avm2::Error;
-use crate::utils::HasPrefixField;
+use crate::context::UpdateContext;
 use chrono::{DateTime, Utc};
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
 
 /// A class instance allocator that allocates Date objects.
@@ -41,31 +42,27 @@ impl fmt::Debug for DateObject<'_> {
 
 impl<'gc> DateObject<'gc> {
     pub fn from_date_time(
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         date_time: DateTime<Utc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let class = activation.avm2().classes().date;
+    ) -> Object<'gc> {
+        let class = context.avm2.classes().date;
         let base = ScriptObjectData::new(class);
 
-        let instance: Object<'gc> = DateObject(Gc::new(
-            activation.gc(),
+        DateObject(Gc::new(
+            context.gc(),
             DateObjectData {
                 base,
                 date_time: Cell::new(Some(date_time)),
             },
         ))
-        .into();
-
-        class.call_init(instance.into(), &[], activation)?;
-
-        Ok(instance)
+        .into()
     }
 
     pub fn for_prototype(
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         date_class: ClassObject<'gc>,
     ) -> Object<'gc> {
-        let object_class = activation.avm2().classes().object;
+        let object_class = context.avm2.classes().object;
         let base = ScriptObjectData::custom_new(
             date_class.inner_class_definition(),
             Some(object_class.prototype()),
@@ -73,7 +70,7 @@ impl<'gc> DateObject<'gc> {
         );
 
         let instance: Object<'gc> = DateObject(Gc::new(
-            activation.gc(),
+            context.gc(),
             DateObjectData {
                 base,
                 date_time: Cell::new(None),

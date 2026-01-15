@@ -1,13 +1,11 @@
 //! flash.filters.DropShadowFilter object
 
-use crate::avm1::function::FunctionObject;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
-use crate::string::StringContext;
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::Cell;
-use swf::{Color, DropShadowFilterFlags, Fixed16, Fixed8};
+use swf::{Color, DropShadowFilterFlags, Fixed8, Fixed16};
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -307,55 +305,63 @@ impl<'gc> DropShadowFilter<'gc> {
     }
 }
 
-macro_rules! drop_shadow_filter_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "distance" => property(drop_shadow_filter_method!(1), drop_shadow_filter_method!(2); VERSION_8);
-    "angle" => property(drop_shadow_filter_method!(3), drop_shadow_filter_method!(4); VERSION_8);
-    "color" => property(drop_shadow_filter_method!(5), drop_shadow_filter_method!(6); VERSION_8);
-    "alpha" => property(drop_shadow_filter_method!(7), drop_shadow_filter_method!(8); VERSION_8);
-    "quality" => property(drop_shadow_filter_method!(9), drop_shadow_filter_method!(10); VERSION_8);
-    "inner" => property(drop_shadow_filter_method!(11), drop_shadow_filter_method!(12); VERSION_8);
-    "knockout" => property(drop_shadow_filter_method!(13), drop_shadow_filter_method!(14); VERSION_8);
-    "blurX" => property(drop_shadow_filter_method!(15), drop_shadow_filter_method!(16); VERSION_8);
-    "blurY" => property(drop_shadow_filter_method!(17), drop_shadow_filter_method!(18); VERSION_8);
-    "strength" => property(drop_shadow_filter_method!(19), drop_shadow_filter_method!(20); VERSION_8);
-    "hideObject" => property(drop_shadow_filter_method!(21), drop_shadow_filter_method!(22); VERSION_8);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    use fn method;
+    "distance" => property(GET_DISTANCE, SET_DISTANCE; VERSION_8);
+    "angle" => property(GET_ANGLE, SET_ANGLE; VERSION_8);
+    "color" => property(GET_COLOR, SET_COLOR; VERSION_8);
+    "alpha" => property(GET_ALPHA, SET_ALPHA; VERSION_8);
+    "quality" => property(GET_QUALITY, SET_QUALITY; VERSION_8);
+    "inner" => property(GET_INNER, SET_INNER; VERSION_8);
+    "knockout" => property(GET_KNOCKOUT, SET_KNOCKOUT; VERSION_8);
+    "blurX" => property(GET_BLUR_X, SET_BLUR_X; VERSION_8);
+    "blurY" => property(GET_BLUR_Y, SET_BLUR_Y; VERSION_8);
+    "strength" => property(GET_STRENGTH, SET_STRENGTH; VERSION_8);
+    "hideObject" => property(GET_HIDE_OBJECT, SET_HIDE_OBJECT; VERSION_8);
 };
 
-fn method<'gc>(
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(table_constructor!(method), None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+pub mod method {
+    pub const CONSTRUCTOR: u16 = 0;
+    pub const GET_DISTANCE: u16 = 1;
+    pub const SET_DISTANCE: u16 = 2;
+    pub const GET_ANGLE: u16 = 3;
+    pub const SET_ANGLE: u16 = 4;
+    pub const GET_COLOR: u16 = 5;
+    pub const SET_COLOR: u16 = 6;
+    pub const GET_ALPHA: u16 = 7;
+    pub const SET_ALPHA: u16 = 8;
+    pub const GET_QUALITY: u16 = 9;
+    pub const SET_QUALITY: u16 = 10;
+    pub const GET_INNER: u16 = 11;
+    pub const SET_INNER: u16 = 12;
+    pub const GET_KNOCKOUT: u16 = 13;
+    pub const SET_KNOCKOUT: u16 = 14;
+    pub const GET_BLUR_X: u16 = 15;
+    pub const SET_BLUR_X: u16 = 16;
+    pub const GET_BLUR_Y: u16 = 17;
+    pub const SET_BLUR_Y: u16 = 18;
+    pub const GET_STRENGTH: u16 = 19;
+    pub const SET_STRENGTH: u16 = 20;
+    pub const GET_HIDE_OBJECT: u16 = 21;
+    pub const SET_HIDE_OBJECT: u16 = 22;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-    index: u8,
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const CONSTRUCTOR: u8 = 0;
-    const GET_DISTANCE: u8 = 1;
-    const SET_DISTANCE: u8 = 2;
-    const GET_ANGLE: u8 = 3;
-    const SET_ANGLE: u8 = 4;
-    const GET_COLOR: u8 = 5;
-    const SET_COLOR: u8 = 6;
-    const GET_ALPHA: u8 = 7;
-    const SET_ALPHA: u8 = 8;
-    const GET_QUALITY: u8 = 9;
-    const SET_QUALITY: u8 = 10;
-    const GET_INNER: u8 = 11;
-    const SET_INNER: u8 = 12;
-    const GET_KNOCKOUT: u8 = 13;
-    const SET_KNOCKOUT: u8 = 14;
-    const GET_BLUR_X: u8 = 15;
-    const SET_BLUR_X: u8 = 16;
-    const GET_BLUR_Y: u8 = 17;
-    const SET_BLUR_Y: u8 = 18;
-    const GET_STRENGTH: u8 = 19;
-    const SET_STRENGTH: u8 = 20;
-    const GET_HIDE_OBJECT: u8 = 21;
-    const SET_HIDE_OBJECT: u8 = 22;
+    use method::*;
 
     if index == CONSTRUCTOR {
         let drop_shadow_filter = DropShadowFilter::new(activation, args)?;
@@ -366,9 +372,8 @@ fn method<'gc>(
         return Ok(this.into());
     }
 
-    let this = match this.native() {
-        NativeObject::DropShadowFilter(drop_shadow_filter) => drop_shadow_filter,
-        _ => return Ok(Value::Undefined),
+    let NativeObject::DropShadowFilter(this) = this.native() else {
+        return Ok(Value::Undefined);
     };
 
     Ok(match index {
@@ -429,28 +434,4 @@ fn method<'gc>(
         }
         _ => Value::Undefined,
     })
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let drop_shadow_filter_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, drop_shadow_filter_proto, fn_proto);
-    drop_shadow_filter_proto
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context,
-        drop_shadow_filter_method!(0),
-        None,
-        fn_proto,
-        proto,
-    )
 }

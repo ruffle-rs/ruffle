@@ -4,15 +4,16 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::dynamic_map::{DynamicKey, DynamicMap};
 use crate::avm2::error;
-use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Error, Multiname, QName};
+use crate::context::UpdateContext;
 use crate::string::AvmString;
-use gc_arena::barrier::{unlock, Write};
+use gc_arena::barrier::{Write, unlock};
 use gc_arena::{
+    Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable,
     lock::{Lock, RefLock},
-    Collect, Gc, GcWeak, Mutation,
 };
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -36,6 +37,19 @@ pub struct ScriptObject<'gc>(pub Gc<'gc, ScriptObjectData<'gc>>);
 #[collect(no_drop)]
 pub struct ScriptObjectWeak<'gc>(pub GcWeak<'gc, ScriptObjectData<'gc>>);
 
+#[derive(Clone)]
+pub struct ScriptObjectHandle(DynamicRoot<Rootable![ScriptObjectData<'_>]>);
+
+impl ScriptObjectHandle {
+    pub fn stash<'gc>(context: &UpdateContext<'gc>, this: ScriptObject<'gc>) -> Self {
+        Self(context.dynamic_root.stash(context.gc(), this.0))
+    }
+
+    pub fn fetch<'gc>(&self, context: &UpdateContext<'gc>) -> ScriptObject<'gc> {
+        ScriptObject(context.dynamic_root.fetch(&self.0))
+    }
+}
+
 /// Base data common to all `TObject` implementations.
 ///
 /// Host implementations of `TObject` should embed `ScriptObjectData` and
@@ -49,7 +63,7 @@ pub struct ScriptObjectData<'gc> {
     values: RefLock<DynamicMap<DynamicKey<'gc>, Value<'gc>>>,
 
     /// Slots stored on this object.
-    slots: Vec<Lock<Value<'gc>>>,
+    slots: Box<[Lock<Value<'gc>>]>,
 
     /// Methods stored on this object.
     bound_methods: RefLock<Vec<Option<FunctionObject<'gc>>>>,
@@ -84,14 +98,10 @@ impl<'gc> ScriptObject<'gc> {
     /// Creates an instance of the Object class, exactly as if `new Object()`
     /// were called, but without going through any construction or call
     /// machinery (since it's unnecessary for the Object class).
-    pub fn new_object(activation: &mut Activation<'_, 'gc>) -> Object<'gc> {
-        let object_class = activation.avm2().classes().object;
+    pub fn new_object(context: &mut UpdateContext<'gc>) -> Object<'gc> {
+        let object_class = context.avm2.classes().object;
 
-        ScriptObject(Gc::new(
-            activation.gc(),
-            ScriptObjectData::new(object_class),
-        ))
-        .into()
+        ScriptObject(Gc::new(context.gc(), ScriptObjectData::new(object_class))).into()
     }
 
     /// Construct an instance with a possibly-none class and proto chain.
@@ -101,7 +111,7 @@ impl<'gc> ScriptObject<'gc> {
     /// You shouldn't let scripts observe this weirdness.
     ///
     /// The proper way to create a normal empty ScriptObject (AS "Object") is to call
-    /// `ScriptObject::new_object(activation)`.
+    /// `ScriptObject::new_object(activation.context)`.
     ///
     /// Calling `custom_object(mc, object_class, object_class.prototype()` is
     /// technically also equivalent, but not recommended outside VM initialization code
@@ -141,13 +151,21 @@ impl<'gc> ScriptObjectData<'gc> {
         vtable: VTable<'gc>,
     ) -> Self {
         let default_slots = vtable.default_slots();
-        let mut slots = vec![Lock::new(Value::Undefined); default_slots.len()];
 
-        for (i, value) in default_slots.iter().enumerate() {
-            if let Some(value) = value {
-                slots[i] = Lock::new(*value);
-            }
-        }
+        // We use `iter` and `collect` rather than setting elements of a Box<[]>
+        // or pushing to a Vec for better performance
+        let slots = default_slots
+            .iter()
+            .map(|value| {
+                if let Some(value) = value {
+                    Lock::new(*value)
+                } else {
+                    // FIXME this case throws a VerifyError during vtable
+                    // construction in Flash Player
+                    Lock::new(Value::Undefined)
+                }
+            })
+            .collect::<Box<_>>();
 
         ScriptObjectData {
             values: RefLock::new(Default::default()),
@@ -188,7 +206,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn get_property_local(
-        &self,
+        self,
         multiname: &Multiname<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -220,7 +238,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn set_property_local(
-        &self,
+        self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
@@ -252,7 +270,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn init_property_local(
-        &self,
+        self,
         multiname: &Multiname<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
@@ -260,7 +278,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         self.set_property_local(multiname, value, activation)
     }
 
-    pub fn delete_property_local(&self, mc: &Mutation<'gc>, multiname: &Multiname<'gc>) -> bool {
+    pub fn delete_property_local(self, mc: &Mutation<'gc>, multiname: &Multiname<'gc>) -> bool {
         // TODO: FP behaves differently here in interpreter mode vs JIT mode
         if !multiname.valid_dynamic_name() {
             return false;
@@ -276,7 +294,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     #[inline(always)]
-    pub fn get_slot(&self, id: u32) -> Value<'gc> {
+    pub fn get_slot(self, id: u32) -> Value<'gc> {
         self.0
             .slots
             .get(id as usize)
@@ -286,7 +304,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     /// Set a slot by its index.
-    pub fn set_slot(&self, id: u32, value: Value<'gc>, mc: &Mutation<'gc>) {
+    pub fn set_slot(self, id: u32, value: Value<'gc>, mc: &Mutation<'gc>) {
         let slot = self
             .0
             .slots
@@ -300,11 +318,11 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     /// Retrieve a bound method from the method table.
-    pub fn get_bound_method(&self, id: u32) -> Option<FunctionObject<'gc>> {
+    pub fn get_bound_method(self, id: u32) -> Option<FunctionObject<'gc>> {
         self.bound_methods().get(id as usize).and_then(|v| *v)
     }
 
-    pub fn has_own_dynamic_property(&self, name: &Multiname<'gc>) -> bool {
+    pub fn has_own_dynamic_property(self, name: &Multiname<'gc>) -> bool {
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 let key = maybe_int_property(name);
@@ -314,11 +332,11 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         false
     }
 
-    pub fn has_own_property(&self, name: &Multiname<'gc>) -> bool {
+    pub fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         self.vtable().has_trait(name) || self.has_own_dynamic_property(name)
     }
 
-    pub fn proto(&self) -> Option<Object<'gc>> {
+    pub fn proto(self) -> Option<Object<'gc>> {
         self.0.proto.get()
     }
 
@@ -326,14 +344,14 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         unlock!(Gc::write(mc, self.0), ScriptObjectData, proto).set(Some(proto));
     }
 
-    pub fn get_next_enumerant(&self, last_index: u32) -> u32 {
+    pub fn get_next_enumerant(self, last_index: u32) -> u32 {
         self.values()
             .next(last_index as usize)
             .map(|val| val as u32)
             .unwrap_or(0)
     }
 
-    pub fn get_enumerant_name(&self, index: u32) -> Option<Value<'gc>> {
+    pub fn get_enumerant_name(self, index: u32) -> Option<Value<'gc>> {
         self.values().key_at(index as usize).map(|key| match key {
             DynamicKey::String(name) => Value::String(*name),
             DynamicKey::Object(obj) => Value::Object(*obj),
@@ -341,7 +359,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         })
     }
 
-    pub fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
+    pub fn property_is_enumerable(self, name: AvmString<'gc>) -> bool {
         let key = maybe_int_property(name);
         self.values()
             .as_hashmap()
@@ -350,7 +368,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn set_local_property_is_enumerable(
-        &self,
+        self,
         mc: &Mutation<'gc>,
         name: AvmString<'gc>,
         is_enumerable: bool,
@@ -363,7 +381,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
 
     /// Install a method into the object.
     pub fn install_bound_method(
-        &self,
+        self,
         mc: &Mutation<'gc>,
         disp_id: u32,
         function: FunctionObject<'gc>,
@@ -378,16 +396,16 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     /// Get the `Class` for this object.
-    pub fn instance_class(&self) -> Class<'gc> {
+    pub fn instance_class(self) -> Class<'gc> {
         self.0.instance_class
     }
 
     /// Get the vtable for this object, if it has one.
-    pub fn vtable(&self) -> VTable<'gc> {
+    pub fn vtable(self) -> VTable<'gc> {
         self.0.vtable.get()
     }
 
-    pub fn is_sealed(&self) -> bool {
+    pub fn is_sealed(self) -> bool {
         self.instance_class().is_sealed()
     }
 
@@ -401,7 +419,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         unlock!(Gc::write(mc, self.0), ScriptObjectData, vtable).set(vtable);
     }
 
-    pub fn class_name(&self) -> QName<'gc> {
+    pub fn class_name(self) -> QName<'gc> {
         self.instance_class().name()
     }
 }
@@ -465,14 +483,29 @@ pub fn get_dynamic_property<'gc>(
 
     // follow the prototype chain
     let mut proto = prototype;
-    while let Some(obj) = proto {
-        let obj = obj.base();
+    while let Some(this_proto) = proto {
+        // First search dynamic properties
+        let obj = this_proto.base();
         let values = obj.values();
         let value = values.as_hashmap().get(&key);
         if let Some(value) = value {
             return Ok(Some(value.value));
         }
-        proto = obj.proto();
+
+        // Special-case: `Array.prototype` is an instance of `Array`, so to make
+        // sure that property lookups work correctly it, also check dynamic
+        // array elements (if this prototype is an `Array`).
+        //
+        // This special-case doesn't apply to anything else (e.g. Vector elements).
+        if let Some(array) = this_proto.as_array_object() {
+            if let Some(index) = ArrayObject::as_array_index(&local_name) {
+                if let Some(value) = array.get_index_property(index) {
+                    return Ok(Some(value));
+                }
+            }
+        }
+
+        proto = this_proto.proto();
     }
 
     Ok(None)

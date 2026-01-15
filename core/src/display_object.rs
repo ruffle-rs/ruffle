@@ -2,19 +2,19 @@ use crate::avm1::{
     ActivationIdentifier as Avm1ActivationIdentifier, Object as Avm1Object, Value as Avm1Value,
 };
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, Error as Avm2Error, EventObject as Avm2EventObject,
-    Multiname as Avm2Multiname, Object as Avm2Object, TObject as _, Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, Error as Avm2Error, LoaderInfoObject,
+    Multiname as Avm2Multiname, Object as Avm2Object, StageObject as Avm2StageObject, TObject as _,
+    Value as Avm2Value,
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
-use crate::loader::LoadManager;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
 use crate::types::{Degrees, Percent};
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
-use gc_arena::barrier::{unlock, Write};
+use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
@@ -24,6 +24,7 @@ use ruffle_render::transform::{Transform, TransformStack};
 use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
+use std::num::NonZero;
 use std::sync::Arc;
 use swf::{ColorTransform, Fixed8};
 
@@ -44,8 +45,8 @@ mod video;
 use crate::avm1::Activation;
 use crate::display_object::bitmap::BitmapWeak;
 pub use crate::display_object::container::{
-    dispatch_added_event_only, dispatch_added_to_stage_event_only, DisplayObjectContainer,
-    TDisplayObjectContainer,
+    DisplayObjectContainer, TDisplayObjectContainer, dispatch_added_event_only,
+    dispatch_added_to_stage_event_only,
 };
 pub use avm1_button::{Avm1Button, ButtonState, ButtonTracking};
 pub use avm2_button::Avm2Button;
@@ -57,7 +58,7 @@ pub use graphic::Graphic;
 pub use interactive::{Avm2MousePick, InteractiveObject, TInteractiveObject};
 pub use loader_display::LoaderDisplay;
 pub use morph_shape::MorphShape;
-pub use movie_clip::{MovieClip, MovieClipWeak, Scene};
+pub use movie_clip::{MovieClip, MovieClipHandle, MovieClipWeak, Scene};
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelSnapping};
 use ruffle_render::blend::ExtendedBlendMode;
@@ -97,10 +98,10 @@ pub struct BitmapCache {
     matrix_d: f32,
 
     /// The width of the original bitmap, pre-filters
-    source_width: u16,
+    source_width: u32,
 
     /// The height of the original bitmap, pre-filters
-    source_height: u16,
+    source_height: u32,
 
     /// The offset used to draw the final bitmap (i.e. if a filter increases the size)
     draw_offset: Point<i32>,
@@ -121,7 +122,7 @@ impl BitmapCache {
         self.matrix_a = f32::NAN;
     }
 
-    fn is_dirty(&self, other: &Matrix, source_width: u16, source_height: u16) -> bool {
+    fn is_dirty(&self, other: &Matrix, source_width: u32, source_height: u32) -> bool {
         self.matrix_a != other.a
             || self.matrix_b != other.b
             || self.matrix_c != other.c
@@ -137,10 +138,10 @@ impl BitmapCache {
         &mut self,
         renderer: &mut dyn RenderBackend,
         matrix: Matrix,
-        source_width: u16,
-        source_height: u16,
-        actual_width: u16,
-        actual_height: u16,
+        source_width: u32,
+        source_height: u32,
+        actual_width: u32,
+        actual_height: u32,
         draw_offset: Point<i32>,
         swf_version: u8,
     ) {
@@ -151,26 +152,28 @@ impl BitmapCache {
         self.source_width = source_width;
         self.source_height = source_height;
         self.draw_offset = draw_offset;
-        if let Some(current) = &mut self.bitmap {
-            if current.width == actual_width && current.height == actual_height {
-                return; // No need to resize it
-            }
+        if let Some(current) = &mut self.bitmap
+            && current.width == actual_width
+            && current.height == actual_height
+        {
+            return; // No need to resize it
         }
         let acceptable_size = if swf_version > 9 {
-            let total = actual_width as u32 * actual_height as u32;
+            let total = actual_width * actual_height;
             actual_width < 8191 && actual_height < 8191 && total < 16777215
         } else {
             actual_width < 2880 && actual_height < 2880
         };
+
         if renderer.is_offscreen_supported()
-            && actual_width > 0
-            && actual_height > 0
+            && let Some(actual_width) = NonZero::new(actual_width)
+            && let Some(actual_height) = NonZero::new(actual_height)
             && acceptable_size
         {
-            let handle = renderer.create_empty_texture(actual_width as u32, actual_height as u32);
+            let handle = renderer.create_empty_texture(actual_width, actual_height);
             self.bitmap = handle.ok().map(|handle| BitmapInfo {
-                width: actual_width,
-                height: actual_height,
+                width: actual_width.get(),
+                height: actual_height.get(),
                 handle,
             });
         } else {
@@ -190,6 +193,65 @@ impl BitmapCache {
     }
 }
 
+#[derive(Clone)]
+pub struct RenderOptions {
+    /// Whether to skip rendering masks.
+    ///
+    /// Masks are usually skipped when rendering, but when e.g. rendering
+    /// the mask itself, it can't be skipped.
+    ///
+    /// Masks are skipped by default.
+    pub skip_masks: bool,
+
+    /// Whether to apply object's base transform.
+    ///
+    /// For instance, when calling BitmapData.draw, object's transform is not
+    /// applied.
+    ///
+    /// Transform is applied by default.
+    pub apply_transform: bool,
+
+    /// Whether to apply base transform's matrix when rendering.
+    ///
+    /// Sometimes we need to render an object without applying its matrix, but
+    /// with applying other parts of its transform (e.g. color transform).
+    /// This happens e.g. when rendering alpha masks.
+    ///
+    /// Matrix is applied by default.
+    pub apply_matrix: bool,
+}
+
+impl Default for RenderOptions {
+    fn default() -> Self {
+        Self {
+            apply_transform: true,
+            skip_masks: true,
+            apply_matrix: true,
+        }
+    }
+}
+
+#[derive(Clone, Collect, Debug)]
+#[collect(no_drop)]
+pub enum RenderMask<'gc> {
+    /// There's no mask.
+    None,
+
+    /// Stencil masks are the classic, default masks used in Flash Player.
+    ///
+    /// The masker behaves like a stencil, and masks everything outside its
+    /// rendered pixels irrespectively of the pixels themselves.
+    /// The maskee acts like being masked with the masker's hit test image.
+    Stencil(DisplayObject<'gc>),
+
+    /// Alpha masks are the more advanced (and more intuitive) masks used when
+    /// CAB is enabled.
+    ///
+    /// The maskee is being masked based on the value of the masker's alpha
+    /// channel.
+    Alpha(DisplayObject<'gc>),
+}
+
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 // Ensure this always has the same alignment as its subclasses (needed for `Gc` casts).
@@ -199,6 +261,7 @@ pub struct DisplayObjectBase<'gc> {
     parent: Lock<Option<DisplayObject<'gc>>>,
     place_frame: Cell<u16>,
     depth: Cell<Depth>,
+    ratio: Cell<u16>,
     name: Lock<Option<AvmString<'gc>>>,
     clip_depth: Cell<Depth>,
 
@@ -277,6 +340,7 @@ impl Default for DisplayObjectBase<'_> {
             parent: Default::default(),
             place_frame: Default::default(),
             depth: Default::default(),
+            ratio: Default::default(),
             name: Lock::new(None),
             clip_depth: Default::default(),
             matrix: Default::default(),
@@ -333,9 +397,13 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.place_frame.set(frame);
     }
 
-    fn transform(&self) -> Transform {
+    fn transform(&self, apply_matrix: bool) -> Transform {
         Transform {
-            matrix: self.matrix.get(),
+            matrix: if apply_matrix {
+                self.matrix.get()
+            } else {
+                Matrix::IDENTITY
+            },
             color_transform: self.color_transform.get(),
             perspective_projection: self.perspective_projection.get(),
         }
@@ -714,12 +782,28 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_flag(DisplayObjectFlags::TRANSFORMED_BY_SCRIPT, value);
     }
 
-    fn placed_by_script(&self) -> bool {
-        self.contains_flag(DisplayObjectFlags::PLACED_BY_SCRIPT)
+    fn placed_by_avm1_script(&self) -> bool {
+        self.contains_flag(DisplayObjectFlags::PLACED_BY_AVM1_SCRIPT)
     }
 
-    fn set_placed_by_script(&self, value: bool) {
-        self.set_flag(DisplayObjectFlags::PLACED_BY_SCRIPT, value);
+    fn set_placed_by_avm1_script(&self, value: bool) {
+        self.set_flag(DisplayObjectFlags::PLACED_BY_AVM1_SCRIPT, value);
+    }
+
+    fn placed_by_avm2_script(&self) -> bool {
+        self.contains_flag(DisplayObjectFlags::PLACED_BY_AVM2_SCRIPT)
+    }
+
+    fn set_placed_by_avm2_script(&self, value: bool) {
+        self.set_flag(DisplayObjectFlags::PLACED_BY_AVM2_SCRIPT, value);
+    }
+
+    fn manual_frame_construct(&self) -> bool {
+        self.contains_flag(DisplayObjectFlags::MANUAL_FRAME_CONSTRUCT)
+    }
+
+    fn set_manual_frame_construct(&self, value: bool) {
+        self.set_flag(DisplayObjectFlags::MANUAL_FRAME_CONSTRUCT, value);
     }
 
     fn is_bitmap_cached_preference(&self) -> bool {
@@ -831,11 +915,21 @@ struct DrawCacheInfo {
     filters: Vec<Filter>,
 }
 
-pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_, 'gc>) {
-    if this.maskee().is_some() {
+pub fn render_base<'gc>(
+    this: DisplayObject<'gc>,
+    context: &mut RenderContext<'_, 'gc>,
+    options: RenderOptions,
+) {
+    if options.skip_masks && this.maskee().is_some() {
+        // Skip rendering masks (unless we are rendering one explicitly).
         return;
     }
-    context.transform_stack.push(&this.base().transform());
+
+    if options.apply_transform {
+        let transform = this.base().transform(options.apply_matrix);
+        context.transform_stack.push(&transform);
+    }
+
     let blend_mode = this.blend_mode();
     let original_commands = if blend_mode != ExtendedBlendMode::Normal {
         Some(std::mem::take(&mut context.commands))
@@ -860,8 +954,8 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
             let width = bounds.width().to_pixels().ceil().max(0.0);
             let height = bounds.height().to_pixels().ceil().max(0.0);
             if width <= u16::MAX as f64 && height <= u16::MAX as f64 {
-                let width = width as u16;
-                let height = height as u16;
+                let width = width as u32;
+                let height = height as u32;
                 let mut filter_rect = Rectangle {
                     x_min: Twips::ZERO,
                     x_max: Twips::from_pixels_i32(width as i32),
@@ -887,8 +981,8 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                         base_transform.matrix,
                         width,
                         height,
-                        filter_rect.width() as u16,
-                        filter_rect.height() as u16,
+                        filter_rect.width() as u32,
+                        filter_rect.height() as u32,
                         draw_offset,
                         swf_version,
                     );
@@ -969,22 +1063,27 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         }
 
         // When rendering it back, ensure we're only keeping the translation - scale/rotation is within the image already
-        apply_standard_mask_and_scroll(this, context, |context| {
-            context.commands.render_bitmap(
-                cache_info.handle,
-                Transform {
-                    matrix: Matrix {
-                        tx: context.transform_stack.transform().matrix.tx + offset_x,
-                        ty: context.transform_stack.transform().matrix.ty + offset_y,
-                        ..Default::default()
+        apply_standard_mask_and_scroll(
+            this,
+            context,
+            |context| {
+                context.commands.render_bitmap(
+                    cache_info.handle,
+                    Transform {
+                        matrix: Matrix {
+                            tx: context.transform_stack.transform().matrix.tx + offset_x,
+                            ty: context.transform_stack.transform().matrix.ty + offset_y,
+                            ..Default::default()
+                        },
+                        color_transform: cache_info.base_transform.color_transform,
+                        perspective_projection: cache_info.base_transform.perspective_projection,
                     },
-                    color_transform: cache_info.base_transform.color_transform,
-                    perspective_projection: cache_info.base_transform.perspective_projection,
-                },
-                true,
-                PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
-            )
-        });
+                    true,
+                    PixelSnapping::Always, // cacheAsBitmap forces pixel snapping
+                )
+            },
+            &options,
+        );
     } else {
         if let Some(background) = this.opaque_background() {
             // This is intended for use with cacheAsBitmap, but can be set for non-cached objects too
@@ -998,7 +1097,12 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
                 .commands
                 .draw_rect(background, Matrix::create_box_from_rectangle(&bounds));
         }
-        apply_standard_mask_and_scroll(this, context, |context| this.render_self(context));
+        apply_standard_mask_and_scroll(
+            this,
+            context,
+            |context| this.render_self(context),
+            &options,
+        );
     }
 
     if let Some(original_commands) = original_commands {
@@ -1018,7 +1122,9 @@ pub fn render_base<'gc>(this: DisplayObject<'gc>, context: &mut RenderContext<'_
         }
     }
 
-    context.transform_stack.pop();
+    if options.apply_transform {
+        context.transform_stack.pop();
+    }
 }
 
 /// This applies the **standard** method of `mask` and `scrollRect`.
@@ -1029,6 +1135,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
     this: DisplayObject<'gc>,
     context: &mut RenderContext<'_, 'gc>,
     draw: F,
+    options: &RenderOptions,
 ) where
     F: FnOnce(&mut RenderContext<'_, 'gc>),
 {
@@ -1056,11 +1163,15 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         });
     }
 
-    let mask = this.masker();
+    let mask = this.get_render_mask();
     let mut mask_transform = ruffle_render::transform::Transform::default();
-    if let Some(m) = mask {
-        mask_transform.matrix = this.global_to_local_matrix().unwrap_or_default();
+    if let RenderMask::Stencil(m) | RenderMask::Alpha(m) = mask {
+        if options.apply_transform {
+            mask_transform.matrix = this.global_to_local_matrix().unwrap_or_default();
+        }
         mask_transform.matrix *= m.local_to_global_matrix();
+    }
+    if let RenderMask::Stencil(m) = mask {
         context.commands.push_mask();
         context.transform_stack.push(&mask_transform);
         m.render_self(context);
@@ -1086,7 +1197,30 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         context.commands.activate_mask();
     }
 
-    draw(context);
+    if let RenderMask::Alpha(m) = mask {
+        let original_commands = std::mem::take(&mut context.commands);
+
+        draw(context);
+
+        let maskee_commands = std::mem::take(&mut context.commands);
+
+        context.transform_stack.push(&mask_transform);
+        let options = RenderOptions {
+            skip_masks: false,
+            apply_matrix: false,
+            ..Default::default()
+        };
+        m.render_with_options(context, options);
+        context.transform_stack.pop();
+
+        let mask_commands = std::mem::replace(&mut context.commands, original_commands);
+
+        context
+            .commands
+            .render_alpha_mask(maskee_commands, mask_commands);
+    } else {
+        draw(context);
+    }
 
     if let Some(rect_mat) = scroll_rect_matrix {
         // Draw the rectangle again after deactivating the mask,
@@ -1096,7 +1230,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         context.commands.pop_mask();
     }
 
-    if let Some(m) = mask {
+    if let RenderMask::Stencil(m) = mask {
         context.commands.deactivate_mask();
         context.transform_stack.push(&mask_transform);
         m.render_self(context);
@@ -1292,12 +1426,11 @@ pub trait TDisplayObject<'gc>:
         if self
             .base()
             .set_perspective_projection(perspective_projection)
+            && let Some(parent) = self.parent()
         {
-            if let Some(parent) = self.parent() {
-                // Self-transform changes are automatically handled,
-                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                parent.invalidate_cached_bitmap();
-            }
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
         }
     }
 
@@ -1387,12 +1520,12 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_x`/`x` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_x(self, x: Twips) {
-        if self.base().set_x(x) {
-            if let Some(parent) = self.parent() {
-                // Self-transform changes are automatically handled,
-                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                parent.invalidate_cached_bitmap();
-            }
+        if self.base().set_x(x)
+            && let Some(parent) = self.parent()
+        {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
         }
     }
 
@@ -1406,12 +1539,12 @@ pub trait TDisplayObject<'gc>:
     /// Set by the `_y`/`y` ActionScript properties.
     /// This invalidates any ancestors cacheAsBitmap automatically.
     fn set_y(self, y: Twips) {
-        if self.base().set_y(y) {
-            if let Some(parent) = self.parent() {
-                // Self-transform changes are automatically handled,
-                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                parent.invalidate_cached_bitmap();
-            }
+        if self.base().set_y(y)
+            && let Some(parent) = self.parent()
+        {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
         }
     }
 
@@ -1582,6 +1715,20 @@ pub trait TDisplayObject<'gc>:
         self.set_scale_y(Percent::from_unit(new_scale_y));
     }
 
+    #[no_dynamic]
+    fn ratio(self) -> u16 {
+        self.base().ratio.get()
+    }
+
+    #[no_dynamic]
+    fn set_ratio(self, context: &mut UpdateContext<'gc>, ratio: u16) {
+        self.base().ratio.set(ratio);
+        self.invalidate_cached_bitmap();
+        self.on_ratio_changed(context, ratio);
+    }
+
+    fn on_ratio_changed(self, _context: &mut UpdateContext<'gc>, _new_ratio: u16) {}
+
     /// The opacity of this display object.
     /// 1 is fully opaque.
     /// Returned by the `_alpha`/`alpha` ActionScript properties.
@@ -1596,11 +1743,11 @@ pub trait TDisplayObject<'gc>:
     /// This invalidates any cacheAsBitmap automatically.
     #[no_dynamic]
     fn set_alpha(self, value: f64) {
-        if self.base().set_alpha(value) {
-            if let Some(parent) = self.parent() {
-                // Self-transform changes are automatically handled
-                parent.invalidate_cached_bitmap();
-            }
+        if self.base().set_alpha(value)
+            && let Some(parent) = self.parent()
+        {
+            // Self-transform changes are automatically handled
+            parent.invalidate_cached_bitmap();
         }
     }
 
@@ -1781,6 +1928,30 @@ pub trait TDisplayObject<'gc>:
     }
 
     #[no_dynamic]
+    fn get_render_mask(self) -> RenderMask<'gc> {
+        match self.masker() {
+            None => RenderMask::None,
+            Some(mask) if self.is_bitmap_cached() && mask.is_bitmap_cached() => {
+                RenderMask::Alpha(mask)
+            }
+            Some(mask) => RenderMask::Stencil(mask),
+        }
+    }
+
+    /// High level method for setting the mask. Sets both masker and maskee.
+    ///
+    /// Equivalent to setting the mask from AVM.
+    #[no_dynamic]
+    fn set_mask(self, mask: Option<DisplayObject<'gc>>, mc: &Mutation<'gc>) {
+        self.set_clip_depth(0);
+        self.set_masker(mc, mask, true);
+        if let Some(mask) = mask {
+            mask.set_clip_depth(0);
+            mask.set_maskee(mc, Some(self), true);
+        }
+    }
+
+    #[no_dynamic]
     fn scroll_rect(self) -> Option<Rectangle<Twips>> {
         self.base().scroll_rect.get()
     }
@@ -1846,18 +2017,16 @@ pub trait TDisplayObject<'gc>:
     /// Returned by the `_visible`/`visible` ActionScript properties.
     #[no_dynamic]
     fn set_visible(self, context: &mut UpdateContext<'gc>, value: bool) {
-        if self.base().set_visible(value) {
-            if let Some(parent) = self.parent() {
-                // We don't need to invalidate ourselves, we're just toggling if the bitmap is rendered.
-                parent.invalidate_cached_bitmap();
-            }
+        if self.base().set_visible(value)
+            && let Some(parent) = self.parent()
+        {
+            // We don't need to invalidate ourselves, we're just toggling if the bitmap is rendered.
+            parent.invalidate_cached_bitmap();
         }
 
-        if !value {
-            if let Some(int) = self.as_interactive() {
-                // The focus is dropped when it's made invisible.
-                int.drop_focus(context);
-            }
+        if !value && let Some(int) = self.as_interactive() {
+            // The focus is dropped when it's made invisible.
+            int.drop_focus(context);
         }
     }
 
@@ -1882,14 +2051,14 @@ pub trait TDisplayObject<'gc>:
     /// Values other than the default `BlendMode::Normal` implicitly cause cache-as-bitmap behavior.
     #[no_dynamic]
     fn set_blend_mode(self, value: ExtendedBlendMode) {
-        if self.base().set_blend_mode(value) {
-            if let Some(parent) = self.parent() {
-                // We don't need to invalidate ourselves, we're just toggling how the bitmap is rendered.
+        if self.base().set_blend_mode(value)
+            && let Some(parent) = self.parent()
+        {
+            // We don't need to invalidate ourselves, we're just toggling how the bitmap is rendered.
 
-                // Note that Flash does not always invalidate on changing the blend mode;
-                // but that's a bug we don't need to copy :)
-                parent.invalidate_cached_bitmap();
-            }
+            // Note that Flash does not always invalidate on changing the blend mode;
+            // but that's a bug we don't need to copy :)
+            parent.invalidate_cached_bitmap();
         }
     }
 
@@ -2005,20 +2174,43 @@ pub trait TDisplayObject<'gc>:
         self.base().set_has_scroll_rect(value)
     }
 
+    /// Whether this display object has been created by ActionScript 1/2.
+    #[no_dynamic]
+    fn placed_by_avm1_script(self) -> bool {
+        self.base().placed_by_avm1_script()
+    }
+
+    /// Sets whether this display object has been created by ActionScript 1/2.
+    #[no_dynamic]
+    fn set_placed_by_avm1_script(self, value: bool) {
+        self.base().set_placed_by_avm1_script(value);
+    }
+
     /// Whether this display object has been created by ActionScript 3.
     /// When this flag is set, changes from SWF `RemoveObject` tags are
     /// ignored.
     #[no_dynamic]
-    fn placed_by_script(self) -> bool {
-        self.base().placed_by_script()
+    fn placed_by_avm2_script(self) -> bool {
+        self.base().placed_by_avm2_script()
     }
 
-    /// Sets whether this display object has been created by ActionScript 3.
     /// When this flag is set, changes from SWF `RemoveObject` tags are
     /// ignored.
     #[no_dynamic]
-    fn set_placed_by_script(self, value: bool) {
-        self.base().set_placed_by_script(value)
+    fn set_placed_by_avm2_script(self, value: bool) {
+        self.base().set_placed_by_avm2_script(value)
+    }
+
+    #[no_dynamic]
+    fn manual_frame_construct(&self) -> bool {
+        self.base().manual_frame_construct()
+    }
+
+    /// When this flag is set, the object will not be instantiated in-line with
+    /// normal frame construction by `MovieClip::construct_frame`.
+    #[no_dynamic]
+    fn set_manual_frame_construct(&self, value: bool) {
+        self.base().set_manual_frame_construct(value);
     }
 
     /// Whether this display object has been instantiated by the timeline.
@@ -2097,18 +2289,17 @@ pub trait TDisplayObject<'gc>:
     #[no_dynamic]
     #[inline(never)]
     fn on_construction_complete(self, context: &mut UpdateContext<'gc>) {
-        let placed_by_script = self.placed_by_script();
+        let placed_by_avm2_script = self.placed_by_avm2_script();
         self.fire_added_events(context);
-        // Check `self.placed_by_script()` before we fire events, since those
-        // events might `placed_by_script`
-        if !placed_by_script {
+        // Check `self.placed_by_avm2_script()` before we fire events, since those
+        // events might `placed_by_avm2_script`
+        if !placed_by_avm2_script {
             self.set_on_parent_field(context);
         }
 
         if let Some(movie) = self.as_movie_clip() {
             let obj = movie
                 .object2()
-                .as_object()
                 .expect("MovieClip object should have been constructed");
             let movieclip_class = context.avm2.classes().movieclip.inner_class_definition();
             // It's possible to have a DefineSprite tag with multiple frames, but have
@@ -2124,7 +2315,7 @@ pub trait TDisplayObject<'gc>:
 
     #[no_dynamic]
     fn fire_added_events(self, context: &mut UpdateContext<'gc>) {
-        if !self.placed_by_script() {
+        if !self.placed_by_avm2_script() {
             // Since we construct AVM2 display objects after they are
             // allocated and placed on the render list, we have to emit all
             // events after this point.
@@ -2141,43 +2332,34 @@ pub trait TDisplayObject<'gc>:
 
     #[no_dynamic]
     fn set_on_parent_field(self, context: &mut UpdateContext<'gc>) {
-        //TODO: Don't report missing property errors.
-        //TODO: Don't attempt to set properties if object was placed without a name.
-        if self.has_explicit_name() {
-            if let Some(parent @ Avm2Value::Object(_)) = self.parent().map(|p| p.object2()) {
-                if let Avm2Value::Object(child) = self.object2() {
-                    if let Some(name) = self.name() {
-                        let domain = context
-                            .library
-                            .library_for_movie(self.movie())
-                            .unwrap()
-                            .avm2_domain();
-                        let mut activation = Avm2Activation::from_domain(context, domain);
-                        let multiname =
-                            Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
-                        if let Err(e) =
-                            parent.init_property(&multiname, child.into(), &mut activation)
-                        {
-                            tracing::error!(
-                                "Got error when setting AVM2 child named \"{}\": {}",
-                                &name,
-                                e
-                            );
-                        }
-                    }
+        if self.has_explicit_name()
+            && let Some(parent) = self.parent().and_then(|p| p.object2())
+        {
+            let parent = Avm2Value::from(parent);
+
+            if let Some(child) = self.object2()
+                && let Some(name) = self.name()
+            {
+                let domain = context
+                    .library
+                    .library_for_movie(self.movie())
+                    .unwrap()
+                    .avm2_domain();
+
+                let mut activation = Avm2Activation::from_domain(context, domain);
+                let multiname = Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
+                let set_result = parent.init_property(&multiname, child.into(), &mut activation);
+
+                if let Err(err) = set_result {
+                    Avm2::uncaught_error(
+                        &mut activation,
+                        Some(self),
+                        err,
+                        &format!("Error setting AVM2 child named \"{}\"", name),
+                    );
                 }
             }
         }
-    }
-
-    /// Emit a `frameConstructed` event on this DisplayObject and any children it
-    /// may have.
-    #[no_dynamic]
-    fn frame_constructed(self, context: &mut UpdateContext<'gc>) {
-        let frame_constructed_evt =
-            Avm2EventObject::bare_default_event(context, "frameConstructed");
-        let dobject_constr = context.avm2.classes().display_object;
-        Avm2::broadcast_event(context, frame_constructed_evt, dobject_constr);
     }
 
     /// Run any frame scripts (if they exist and this object needs to run them).
@@ -2187,16 +2369,6 @@ pub trait TDisplayObject<'gc>:
                 child.run_frame_scripts(context);
             }
         }
-    }
-
-    /// Emit an `exitFrame` broadcast event.
-    #[no_dynamic]
-    fn exit_frame(self, context: &mut UpdateContext<'gc>) {
-        let exit_frame_evt = Avm2EventObject::bare_default_event(context, "exitFrame");
-        let dobject_constr = context.avm2.classes().display_object;
-        Avm2::broadcast_event(context, exit_frame_evt, dobject_constr);
-
-        LoadManager::run_exit_frame(context);
     }
 
     /// Called before the child is about to be rendered.
@@ -2212,8 +2384,13 @@ pub trait TDisplayObject<'gc>:
 
     fn render_self(self, _context: &mut RenderContext<'_, 'gc>) {}
 
+    #[no_dynamic]
     fn render(self, context: &mut RenderContext<'_, 'gc>) {
-        render_base(self.into(), context)
+        self.render_with_options(context, Default::default())
+    }
+
+    fn render_with_options(self, context: &mut RenderContext<'_, 'gc>, options: RenderOptions) {
+        render_base(self.into(), context, options)
     }
 
     #[cfg(not(feature = "avm_debug"))]
@@ -2231,7 +2408,7 @@ pub trait TDisplayObject<'gc>:
         let bounds = self.world_bounds();
 
         let mut classname = "".to_string();
-        if let Some(o) = self.object2().as_object() {
+        if let Some(o) = self.object2() {
             classname = format!("{:?}", o.base().class_name());
         }
 
@@ -2304,11 +2481,7 @@ pub trait TDisplayObject<'gc>:
                 }
             }
             if let Some(ratio) = place_object.ratio {
-                if let Some(morph_shape) = self.as_morph_shape() {
-                    morph_shape.set_ratio(ratio);
-                } else if let Some(video) = self.as_video() {
-                    video.seek(context, ratio.into());
-                }
+                self.set_ratio(context, ratio);
             }
             if let Some(is_bitmap_cached) = place_object.is_bitmap_cached {
                 self.set_bitmap_cached_preference(is_bitmap_cached);
@@ -2346,15 +2519,34 @@ pub trait TDisplayObject<'gc>:
         // Noop for most symbols; only shapes can replace their innards with another Graphic.
     }
 
-    fn object(self) -> Avm1Value<'gc> {
-        Avm1Value::Undefined // TODO: Implement for every type and delete this fallback.
+    fn object1(self) -> Option<Avm1Object<'gc>>;
+
+    #[no_dynamic]
+    fn object1_or_undef(self) -> Avm1Value<'gc> {
+        self.object1()
+            .map(|o| o.into())
+            .unwrap_or(Avm1Value::Undefined)
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        Avm2Value::Undefined // TODO: See above. Also, unconstructed objects should return null.
+    /// Equivalent to `self.object1_or_undef().coerce_to_object_or_bare()`, but avoids
+    /// the need for an activation.
+    ///
+    /// [MOULINS]: Like `coerce_to_object_bare`, I suspect that usages of this method
+    /// are incorrect,
+    #[no_dynamic]
+    fn object1_or_bare(self, mc: &Mutation<'gc>) -> Avm1Object<'gc> {
+        self.object1()
+            .unwrap_or_else(|| Avm1Object::new_without_proto(mc))
     }
 
-    fn set_object2(self, _context: &mut UpdateContext<'gc>, _to: Avm2Object<'gc>) {}
+    fn object2(self) -> Option<Avm2StageObject<'gc>>;
+
+    fn set_object2(self, _context: &mut UpdateContext<'gc>, _to: Avm2StageObject<'gc>) {}
+
+    #[no_dynamic]
+    fn object2_or_null(self) -> Avm2Value<'gc> {
+        self.object2().map(|o| o.into()).unwrap_or(Avm2Value::Null)
+    }
 
     /// Tests if a given stage position point intersects with the world bounds of this object.
     #[no_dynamic]
@@ -2399,7 +2591,7 @@ pub trait TDisplayObject<'gc>:
     /// Return the SWF that defines this display object.
     fn movie(self) -> Arc<SwfMovie>;
 
-    fn loader_info(self) -> Option<Avm2Object<'gc>> {
+    fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         None
     }
 
@@ -2483,11 +2675,11 @@ pub trait TDisplayObject<'gc>:
             if p.is_root() {
                 return parent;
             }
-            if let Some(p_parent) = p.parent() {
-                if !p_parent.movie().is_action_script_3() {
-                    // We've traversed upwards into a loader AVM1 movie, so return the current parent.
-                    return parent;
-                }
+            if let Some(p_parent) = p.parent()
+                && !p_parent.movie().is_action_script_3()
+            {
+                // We've traversed upwards into a loader AVM1 movie, so return the current parent.
+                return parent;
             }
             parent = p.parent();
         }
@@ -2578,7 +2770,7 @@ pub trait TDisplayObject<'gc>:
     where
         F: FnOnce(&mut UpdateContext<'gc>) -> bool,
     {
-        if let Avm1Value::Object(object) = self.object() {
+        if let Some(object) = self.object1() {
             let mut activation = Activation::from_nothing(
                 context,
                 Avm1ActivationIdentifier::root("[AVM1 Boolean Property]"),
@@ -2604,7 +2796,7 @@ pub trait TDisplayObject<'gc>:
         value: Avm1Value<'gc>,
         context: &mut UpdateContext<'gc>,
     ) {
-        if let Avm1Value::Object(object) = self.object() {
+        if let Some(object) = self.object1() {
             let mut activation = Activation::from_nothing(
                 context,
                 Avm1ActivationIdentifier::root("[AVM1 Property Set]"),
@@ -2694,7 +2886,7 @@ impl<'gc> DisplayObject<'gc> {
 bitflags! {
     /// Bit flags used by `DisplayObject`.
     #[derive(Clone, Copy)]
-    struct DisplayObjectFlags: u16 {
+    struct DisplayObjectFlags: u32 {
         /// Whether this object has been removed from the display list.
         /// Necessary in AVM1 to throw away queued actions from removed movie clips.
         const AVM1_REMOVED             = 1 << 0;
@@ -2711,7 +2903,8 @@ bitflags! {
 
         /// Whether this object has been placed in a container by ActionScript 3.
         /// When this flag is set, changes from SWF `RemoveObject` tags are ignored.
-        const PLACED_BY_SCRIPT         = 1 << 4;
+        // TODO [KJ] Can we repurpose it to cover PLACED_BY_AVM1_SCRIPT too?
+        const PLACED_BY_AVM2_SCRIPT    = 1 << 4;
 
         /// Whether this object has been instantiated by a SWF tag.
         /// When this flag is set, attempts to change the object's name from AVM2 throw an exception.
@@ -2749,6 +2942,23 @@ bitflags! {
 
         /// Whether this object has matrix3D (used for stubbing).
         const HAS_MATRIX3D_STUB        = 1 << 14;
+
+        /// Whether this object has been placed by an AVM1 method,
+        /// i.e. attachMovie, createEmptyMovieClip, duplicateMovieClip.
+        // TODO [KJ] Can this be merged with PLACED_BY_AVM2_SCRIPT?
+        const PLACED_BY_AVM1_SCRIPT    = 1 << 15;
+
+        /// Whether this object was placed by the timeline on a `MovieClip`
+        /// before the `MovieClip` had its AVM2 object constructed. Such objects
+        /// are only instantiated by `Sprite.constructChildren`, which is
+        /// usually called when `super()` is called in a `Sprite` subclass.
+        /// However, if `super()` (and therefore `Sprite.constructChildren()`)
+        /// is never called, the object will never be instantiated. We mark all
+        /// objects placed by the timeline on a load frame with this flag to
+        /// ensure that `MovieClip::construct_frame` does not instantiate them
+        /// (they need to be instantiated "manually" by
+        /// `Sprite.constructChildren`).
+        const MANUAL_FRAME_CONSTRUCT  = 1 << 16;
     }
 }
 

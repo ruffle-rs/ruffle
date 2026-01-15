@@ -27,7 +27,7 @@ jobs:
     if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Check for repo activity
         id: activity
@@ -62,6 +62,11 @@ jobs:
           # Ensure newlines at the end of file
           shopt -s globstar
           sed -i -e '$a\' **/package.json
+
+      - name: Update metainfo
+        if: steps.activity.outputs.is_active == 'true'
+        run: |
+          $RELEASE_SCRIPT metainfo
 
       - name: Create release commit
         if: steps.activity.outputs.is_active == 'true'
@@ -100,13 +105,13 @@ jobs:
 
           # Mac does two Rust builds to make a universal binary
           - build_name: macos-x86_64
-            os: macos-14
+            os: macos-15
             target: x86_64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 10.7
             DESKTOP_FEATURES: sandbox,jpegxr
 
           - build_name: macos-aarch64
-            os: macos-14
+            os: macos-15
             target: aarch64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 11.0
             DESKTOP_FEATURES: sandbox,jpegxr
@@ -132,7 +137,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
@@ -214,7 +219,7 @@ jobs:
 
       - name: Upload macOS build artifact
         if: runner.os == 'macOS'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: ${{ matrix.build_name }}
           path: |
@@ -224,28 +229,28 @@ jobs:
 
   build-mac-universal-binary:
     name: Build macOS universal binary
-    needs: [create-nightly-release, build, build-browser-extensions]
-    runs-on: macos-14
+    needs: [create-nightly-release, build, build-web]
+    runs-on: macos-15
     env:
       PACKAGE_FILE: ${{ needs.create-nightly-release.outputs.package_prefix }}-macos-universal.tar.gz
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
       - name: Download aarch64 binary
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: macos-aarch64
 
       - name: Download x86_64 binary
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: macos-x86_64
 
       - name: Download Safari extension
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: macos-safari
 
@@ -329,7 +334,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
@@ -346,11 +351,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  # The first couple steps of this and the `build-web-demo-and-selfhosted` job
-  # (tool setup and dependency install) are identical. Hopefully in the future
-  # https://github.com/actions/runner/issues/1182 can help deduplicate them.
-  build-browser-extensions:
-    name: Build browser extensions
+  build-web:
+    # Build browser extensions, web demo, selfhosted package, and docs
+    name: Build web
     needs: create-nightly-release
     if: needs.create-nightly-release.outputs.is_active == 'true'
     runs-on: ubuntu-24.04
@@ -364,7 +367,7 @@ jobs:
       statuses: write
     steps:
       - name: Clone Ruffle repo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
@@ -376,16 +379,16 @@ jobs:
           components: rust-src
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: https://registry.npmjs.org
 
       # wasm-bindgen-cli version must match wasm-bindgen crate version.
       # Be sure to update in test_web.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.100
+        run: cargo install wasm-bindgen-cli --version 0.2.101
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
@@ -393,7 +396,7 @@ jobs:
         uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
-          tag: version_123
+          tag: version_124
           name: wasm-opt
 
       - name: Install node packages
@@ -415,12 +418,14 @@ jobs:
         env:
           CFG_RELEASE_CHANNEL: nightly
           VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
+          # NOTE: In the future, we might want to enable some features (like `webgpu`) only in
+          # the demo build, for limited testing (like a Chrome origin trial) on ruffle.rs.
           CARGO_FEATURES: jpegxr
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
           WASM_SOURCE: cargo_and_store
         working-directory: web
         shell: bash -l {0}
-        run: npm run build:repro
+        run: npm run build:dual-wasm-repro
 
       - name: Produce reproducible source archive
         shell: bash -l {0}
@@ -448,7 +453,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Safari build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: macos-safari
           path: ./web/packages/extension/dist/ruffle_extension.zip
@@ -503,113 +508,15 @@ jobs:
         shell: bash -l {0}
         run: npm run sign-firefox
 
-  build-web-demo-and-selfhosted:
-    name: Build web demo and selfhosted package with docs, and release assets for dual-wasm extensions
-    needs: create-nightly-release
-    if: needs.create-nightly-release.outputs.is_active == 'true'
-    runs-on: ubuntu-24.04
-    permissions:
-      actions: read
-      attestations: write
-      checks: read
-      contents: write
-      id-token: write
-      pull-requests: read
-      statuses: write
-    steps:
-      - name: Clone Ruffle repo
-        uses: actions/checkout@v5
-        with:
-          ref: ${{ needs.create-nightly-release.outputs.tag_name }}
-
-      - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@stable
-        with:
-          toolchain: stable
-          targets: wasm32-unknown-unknown
-          components: rust-src
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: "22"
-          registry-url: https://registry.npmjs.org
-
-      # wasm-bindgen-cli version must match wasm-bindgen crate version.
-      # Be sure to update in test_web.yml, Cargo.toml, web/docker/Dockerfile,
-      # and web/README.md as well.
-      - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.100
-
-      # Keep the version number in sync in all workflows,
-      # and in the extension builder Dockerfile!
-      - name: Install wasm-opt
-        uses: sigoden/install-binary@v1
-        with:
-          repo: WebAssembly/binaryen
-          tag: version_123
-          name: wasm-opt
-
-      - name: Install node packages
-        working-directory: web
-        shell: bash -l {0}
-        run: npm ci
-
-      - name: Seal version data
-        shell: bash -l {0}
-        working-directory: web
-        env:
-          CFG_RELEASE_CHANNEL: nightly
-          VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
-          ENABLE_VERSION_SEAL: "true"
-          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
-        run: npm run version-seal
-
-      - name: Build web
-        env:
-          CFG_RELEASE_CHANNEL: nightly
-          VERSION4: ${{ needs.create-nightly-release.outputs.version4 }}
-          # NOTE: In the future, we might want to enable some features (like `webgpu`) only in
-          # the demo build, for limited testing (like a Chrome origin trial) on ruffle.rs.
-          CARGO_FEATURES: jpegxr
-          FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
-          WASM_SOURCE: cargo_and_store
-        working-directory: web
-        shell: bash -l {0}
-        run: npm run build:dual-wasm-repro
-
-      # NOTE: This is done here because the job that builds the extensions for publication doesn't have the vanilla (MVP) WASM modules, but for the selfhosted package we build them both
-      - name: Upload dual-wasm generic extension
-        run: |
-          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-dual-wasm.zip"
-          cp "./web/packages/extension/dist/ruffle_extension.zip" "$package_file"
-          gh release upload "$tag_name" "$package_file"
-          rm "$package_file"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload dual-wasm Firefox extension (unsigned)
-        run: |
-          tag_name="${{ needs.create-nightly-release.outputs.tag_name }}"
-          package_file="${{ needs.create-nightly-release.outputs.package_prefix }}-web-extension-firefox-dual-wasm-unsigned.xpi"
-          cp "./web/packages/extension/dist/firefox_unsigned.xpi" "$package_file"
-          gh release upload "$tag_name" "$package_file"
-          rm "$package_file"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Build web docs
         working-directory: web
         run: npm run docs
 
       - name: Publish npm package
         # npm scoped packages are private by default, explicitly make public
-        run: npm publish --access public --provenance
+        run: npm publish --tag latest --access public --provenance
         continue-on-error: true
         working-directory: web/packages/selfhosted/dist
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Package selfhosted
         run: zip -r "${{ needs.create-nightly-release.outputs.package_prefix }}-web-selfhosted.zip" .
@@ -625,7 +532,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Clone JS docs
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ruffle-rs/js-docs
           path: js-docs
@@ -658,7 +565,7 @@ jobs:
           force: true
 
       - name: Clone web demo
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ruffle-rs/demo
           path: demo
@@ -699,7 +606,7 @@ jobs:
     runs-on: ubuntu-24.04
     if: github.repository == 'ruffle-rs/ruffle'
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           ref: ${{ needs.create-nightly-release.outputs.tag_name }}
 
@@ -713,10 +620,10 @@ jobs:
         uses: josStorer/get-current-time@v2.1.2
         id: current_time_dots
         with:
-          format: YYYY.MM.DD
+          format: YYYY.M.D
 
       - name: Download package
-        run: gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz"
+        run: gh release download "${{ needs.create-nightly-release.outputs.tag_name }}" --pattern "${{ needs.create-nightly-release.outputs.package_prefix }}-linux-*.tar.gz"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -724,7 +631,10 @@ jobs:
         run: >
           sed -i desktop/packages/linux/aur/ruffle-nightly-bin/PKGBUILD
           -e "s/@VERSION@/${{ steps.current_time_dots.outputs.formattedTime }}/"
-          -e "s/@SHA512SUM@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
+          -e "s/@TAG_NAME@/${{ needs.create-nightly-release.outputs.tag_name }}/"
+          -e "s/@PACKAGE_PREFIX@/${{ needs.create-nightly-release.outputs.package_prefix }}/"
+          -e "s/@SHA512SUM_x86_64@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-x86_64.tar.gz | cut -d' ' -f1)/"
+          -e "s/@SHA512SUM_aarch64@/$(sha512sum ${{ needs.create-nightly-release.outputs.package_prefix }}-linux-aarch64.tar.gz | cut -d' ' -f1)/"
 
       - name: Publish AUR package
         uses: KSXGitHub/github-actions-deploy-aur@v4.1.1
@@ -734,4 +644,4 @@ jobs:
           commit_username: RuffleBuild
           commit_email: ruffle@ruffle.rs
           ssh_private_key: ${{ secrets.AUR_SSH_PRIVATE_KEY }}
-          commit_message: Update to Nightly ${{ steps.current_time_dashes.outputs.formattedTime }}
+          commit_message: Update to ${{ needs.create-nightly-release.outputs.tag_name }}

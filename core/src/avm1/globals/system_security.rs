@@ -1,29 +1,36 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::prelude::TDisplayObject;
-use crate::sandbox::SandboxType;
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "PolicyFileResolver" => method(policy_file_resolver);
+use ruffle_common::sandbox::SandboxType;
+
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "allowDomain" => method(allow_domain);
     "allowInsecureDomain" => method(allow_insecure_domain);
     "loadPolicyFile" => method(load_policy_file);
+    "chooseLocalSwfPath" => property(get_choose_local_swf_path);
     "escapeDomain" => method(escape_domain);
     "sandboxType" => property(get_sandbox_type);
-    "chooseLocalSwfPath" => property(get_choose_local_swf_path);
+    "PolicyFileResolver" => method(policy_file_resolver);
 };
+
+pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
+    let security = Object::new(context.strings, Some(context.object_proto));
+    context.define_properties_on(security, OBJECT_DECLS(context));
+    security
+}
 
 fn allow_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm1_stub!(activation, "System.security", "allowDomain");
-    Ok(Value::Undefined)
+    Ok(Value::Bool(args.get(0).is_some()))
 }
 
 fn allow_insecure_domain<'gc>(
@@ -87,14 +94,4 @@ fn policy_file_resolver<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm1_stub!(activation, "System.security", "chooseLocalSwfPath");
     Ok(Value::Undefined)
-}
-
-pub fn create<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let security = Object::new(context, Some(proto));
-    define_properties_on(OBJECT_DECLS, context, security, fn_proto);
-    security
 }

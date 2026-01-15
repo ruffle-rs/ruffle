@@ -2,14 +2,13 @@
 
 use crate::context::UpdateContext;
 use crate::drawing::Drawing;
-use crate::font::{EvalParameters, Font, FontLike, FontSet, FontType};
+use crate::font::{DefaultFont, EvalParameters, Font, FontLike, FontSet, FontType};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
-use crate::string::{utils as string_utils, WStr};
+use crate::string::{WStr, utils as string_utils};
 use crate::tag_utils::SwfMovie;
-use crate::DefaultFont;
 use gc_arena::Collect;
-use std::cmp::{max, min, Ordering};
+use std::cmp::{Ordering, max, min};
 use std::fmt::{Debug, Formatter};
 use std::mem;
 use std::ops::Range;
@@ -301,8 +300,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 linebox.as_renderable_text(self.text).expect("text");
 
             // Flash ignores trailing spaces when aligning lines, so should we
-            // TODO This behavior is dependent on SWF version
-            if self.current_line_span.align != swf::TextAlign::Left {
+            if self.movie.version() >= 8 && self.current_line_span.align != swf::TextAlign::Left {
                 linebox.bounds = linebox
                     .bounds
                     .with_width(font_set.measure(text.trim_end(), params));
@@ -538,8 +536,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         // Note that the SWF can still contain a DefineFont tag with no glyphs/layout info in this case (see #451).
         // In an ideal world, device fonts would search for a matching font on the system and render it in some way.
-        if self.font_type.is_embedded() {
-            if let Some(font) = context
+        if self.font_type.is_embedded()
+            && let Some(font) = context
                 .library
                 .get_embedded_font_by_name(
                     &font_name,
@@ -549,14 +547,13 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     Some(self.movie.clone()),
                 )
                 .filter(|f| f.has_glyphs())
-            {
-                return FontSet::from_one_font(context.gc(), font);
-            }
-            // TODO: If set to use embedded fonts and we couldn't find any matching font, show nothing
-            // However - at time of writing, we don't support DefineFont4. If we matched this behaviour,
-            // then a bunch of SWFs would just show no text suddenly.
-            // return new_empty_font(context, span, self.font_type);
+        {
+            return FontSet::from_one_font(context.gc(), font);
         }
+        // TODO: If set to use embedded fonts and we couldn't find any matching font, show nothing
+        // However - at time of writing, we don't support DefineFont4. If we matched this behaviour,
+        // then a bunch of SWFs would just show no text suddenly.
+        // return new_empty_font(context, span, self.font_type);
 
         // Specifying multiple font names is supported only for device fonts.
         let font_names: Vec<&str> = font_name.split(",").collect();
@@ -1065,12 +1062,11 @@ impl<'gc> LayoutLine<'gc> {
         // and its bounds will end where the next character starts.
         // If it's not a space or the text is not justified, it won't change the value.
         // TODO [KJ] We need to test this behavior with letter spacing or kerning enabled.
-        if layout_box.end() == position + 1 {
-            if let Some(next_box) = self.boxes.get(box_index + 1) {
-                if let Some(next_start) = next_box.char_x_bounds(position + 1).map(|(s, _)| s) {
-                    end = next_start;
-                }
-            }
+        if layout_box.end() == position + 1
+            && let Some(next_box) = self.boxes.get(box_index + 1)
+            && let Some(next_start) = next_box.char_x_bounds(position + 1).map(|(s, _)| s)
+        {
+            end = next_start;
         }
 
         Some((start, end))
@@ -1270,7 +1266,7 @@ impl<'gc> LayoutBox<'gc> {
     ///
     /// TODO It's currently unused, but will be useful when adding support for
     /// images embedded in HTML.
-    #[expect(unused)]
+    #[allow(unused)]
     pub fn from_drawing(position: usize, drawing: Drawing) -> Self {
         Self {
             bounds: Default::default(),
@@ -1378,6 +1374,10 @@ impl<'gc> LayoutBox<'gc> {
         }
     }
 
+    pub fn text_range(&self) -> Range<usize> {
+        self.start()..self.end()
+    }
+
     /// Return x-axis char bounds of the given char relative to the whole layout.
     pub fn char_x_bounds(&self, position: usize) -> Option<(Twips, Twips)> {
         let relative_position = position.checked_sub(self.start())?;
@@ -1420,10 +1420,10 @@ impl<'layout, 'gc> Iterator for LayoutBoxIter<'layout, 'gc> {
 
     fn next(&mut self) -> Option<Self::Item> {
         loop {
-            if let Some(boxes_iter) = self.boxes_iter.as_mut() {
-                if let Some(next) = boxes_iter.next() {
-                    return Some(next);
-                }
+            if let Some(boxes_iter) = self.boxes_iter.as_mut()
+                && let Some(next) = boxes_iter.next()
+            {
+                return Some(next);
             }
 
             if let Some(next_line) = self.lines_iter.next() {

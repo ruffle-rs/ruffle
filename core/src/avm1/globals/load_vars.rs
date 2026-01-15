@@ -5,14 +5,14 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::backend::navigator::{NavigationMethod, Request};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use ruffle_macros::istr;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "load" => method(load; DONT_ENUM | DONT_DELETE);
     "send" => method(send; DONT_ENUM | DONT_DELETE);
     "sendAndLoad" => method(send_and_load; DONT_ENUM | DONT_DELETE);
@@ -20,20 +20,19 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "getBytesLoaded" => method(get_bytes_loaded; DONT_ENUM | DONT_DELETE);
     "getBytesTotal" => method(get_bytes_total; DONT_ENUM | DONT_DELETE);
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
-    "contentType" => string("application/x-www-form-urlencoded"; DONT_ENUM | DONT_DELETE);
+    "contentType" => value("application/x-www-form-urlencoded"; DONT_ENUM | DONT_DELETE);
     "onLoad" => method(on_load; DONT_ENUM | DONT_DELETE);
     "onData" => method(on_data; DONT_ENUM | DONT_DELETE);
     "addRequestHeader" => method(add_request_header; DONT_ENUM | DONT_DELETE);
 };
 
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.empty_class(super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
 }
 
 fn add_request_header<'gc>(
@@ -253,11 +252,8 @@ fn spawn_load_var_fetch<'gc>(
         Request::get(url.to_utf8_lossy().into_owned())
     };
 
-    let future = activation.context.load_manager.load_form_into_load_vars(
-        activation.context.player.clone(),
-        loader_object,
-        request,
-    );
+    let future =
+        crate::loader::load_form_into_load_vars(activation.context, loader_object, request);
     activation.context.navigator.spawn_future(future);
 
     // Create hidden properties on object.

@@ -1,6 +1,7 @@
 package flash.ui {
-    import flash.display.NativeMenu;
     import __ruffle__.stub_getter;
+
+    import flash.display.NativeMenu;
 
     public final class ContextMenu extends NativeMenu {
         [Ruffle(NativeAccessible)]

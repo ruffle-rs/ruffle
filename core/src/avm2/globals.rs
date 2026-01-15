@@ -6,6 +6,7 @@ use crate::avm2::object::{ClassObject, ScriptObject};
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Avm2, Error, Multiname, Namespace, QName};
+use crate::context::UpdateContext;
 use crate::string::WStr;
 use crate::tag_utils::{self, ControlFlow, SwfMovie, SwfSlice, SwfStream};
 use gc_arena::Collect;
@@ -125,6 +126,8 @@ pub struct SystemClasses<'gc> {
     pub syntaxerror: ClassObject<'gc>,
     pub typeerror: ClassObject<'gc>,
     pub verifyerror: ClassObject<'gc>,
+    pub definitionerror: ClassObject<'gc>,
+    pub uninitializederror: ClassObject<'gc>,
     pub ioerror: ClassObject<'gc>,
     pub eoferror: ClassObject<'gc>,
     pub urierror: ClassObject<'gc>,
@@ -197,6 +200,15 @@ pub struct SystemClassDefs<'gc> {
     pub uint: Class<'gc>,
     pub xml: Class<'gc>,
     pub xml_list: Class<'gc>,
+
+    // Vector.<Number> aka Vector$double
+    pub number_vector: Class<'gc>,
+    // Vector.<int> aka Vector$int
+    pub int_vector: Class<'gc>,
+    // Vector.<uint> aka Vector$uint
+    pub uint_vector: Class<'gc>,
+    // Vector.<*> aka Vector$object
+    pub object_vector: Class<'gc>,
 
     pub bitmap: Class<'gc>,
     pub bitmapdata: Class<'gc>,
@@ -292,6 +304,8 @@ impl<'gc> SystemClasses<'gc> {
             syntaxerror: object,
             typeerror: object,
             verifyerror: object,
+            definitionerror: object,
+            uninitializederror: object,
             ioerror: object,
             eoferror: object,
             urierror: object,
@@ -367,6 +381,11 @@ impl<'gc> SystemClassDefs<'gc> {
             uint: object,
             xml: object,
             xml_list: object,
+
+            number_vector: object,
+            int_vector: object,
+            uint_vector: object,
+            object_vector: object,
 
             bitmap: object,
             bitmapdata: object,
@@ -478,12 +497,12 @@ pub fn init_early_classes<'gc>(
 
     // Finally, we can actually create the ClassObjects for `Object` and `Class`.
 
-    let object_class = ClassObject::from_class_partial(activation, object_i_class, None);
+    let object_class = ClassObject::from_class_minimal(activation, object_i_class, None);
     let object_proto =
         ScriptObject::custom_object(mc, object_i_class, None, object_class.instance_vtable());
 
     let class_class =
-        ClassObject::from_class_partial(activation, class_i_class, Some(object_class));
+        ClassObject::from_class_minimal(activation, class_i_class, Some(object_class));
     let class_proto = ScriptObject::custom_object(
         mc,
         object_i_class,
@@ -492,10 +511,10 @@ pub fn init_early_classes<'gc>(
     );
 
     // Now to weave the Gordian knot...
-    object_class.link_prototype(activation, object_proto);
+    object_class.link_prototype(activation.context, object_proto);
     object_class.link_type(mc, class_proto);
 
-    class_class.link_prototype(activation, class_proto);
+    class_class.link_prototype(activation.context, class_proto);
     class_class.link_type(mc, class_proto);
 
     // At this point, we need both early classes to be available in `SystemClasses`
@@ -506,6 +525,13 @@ pub fn init_early_classes<'gc>(
     // Construct the `ClassObject`s. We will run the class initializers later.
     class_class.into_finished_class(activation);
     object_class.into_finished_class(activation);
+
+    // We don't need to validate the classes, as we already know that the
+    // `Object` and `Class` classes are valid
+
+    // However, we do need to bind their methods
+    object_class.bind_methods(activation)?;
+    class_class.bind_methods(activation)?;
 
     // Reset the Activation's outer scope.
     activation.set_outer(empty_scope);
@@ -589,6 +615,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "ArgumentError", argumenterror),
             ("", "Array", array),
             ("", "Boolean", boolean),
+            ("", "DefinitionError", definitionerror),
             ("", "Error", error),
             ("", "EvalError", evalerror),
             ("", "int", int),
@@ -602,6 +629,7 @@ pub fn init_builtin_system_classes(activation: &mut Activation<'_, '_>) {
             ("", "SyntaxError", syntaxerror),
             ("", "TypeError", typeerror),
             ("", "uint", uint),
+            ("", "UninitializedError", uninitializederror),
             ("", "URIError", urierror),
             ("", "VerifyError", verifyerror),
             ("", "XML", xml),
@@ -788,15 +816,12 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
 
 /// Loads classes from our custom 'playerglobal' (which are written in ActionScript)
 /// into the environment. See 'core/src/avm2/globals/README.md' for more information
-pub fn load_playerglobal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    domain: Domain<'gc>,
-) -> Result<(), Error<'gc>> {
-    activation.avm2().native_method_table = native::NATIVE_METHOD_TABLE;
-    activation.avm2().native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
-    activation.avm2().native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
-    activation.avm2().native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
-    activation.avm2().native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
+pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'gc>) {
+    context.avm2.native_method_table = native::NATIVE_METHOD_TABLE;
+    context.avm2.native_instance_allocator_table = native::NATIVE_INSTANCE_ALLOCATOR_TABLE;
+    context.avm2.native_call_handler_table = native::NATIVE_CALL_HANDLER_TABLE;
+    context.avm2.native_custom_constructor_table = native::NATIVE_CUSTOM_CONSTRUCTOR_TABLE;
+    context.avm2.native_fast_call_list = native::NATIVE_FAST_CALL_LIST;
 
     let movie = Arc::new(
         SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
@@ -812,7 +837,7 @@ pub fn load_playerglobal<'gc>(
             let do_abc = reader
                 .read_do_abc_2()
                 .expect("playerglobal.swf should be valid");
-            Avm2::load_builtin_abc(activation.context, do_abc.data, domain, movie.clone());
+            Avm2::load_builtin_abc(context, do_abc.data, domain, movie.clone());
         } else if tag_code != TagCode::End {
             panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")
         }
@@ -822,10 +847,9 @@ pub fn load_playerglobal<'gc>(
     let _ = tag_utils::decode_tags(&mut reader, tag_callback);
 
     // Domain memory must be initialized after playerglobals is loaded because it relies on ByteArray.
-    domain.init_default_domain_memory(activation)?;
-    activation
-        .avm2()
+    domain.init_default_domain_memory(context);
+    context
+        .avm2
         .stage_domain()
-        .init_default_domain_memory(activation)?;
-    Ok(())
+        .init_default_domain_memory(context);
 }

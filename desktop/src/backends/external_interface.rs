@@ -20,22 +20,20 @@ impl ExternalInterfaceProvider for DesktopExternalInterfaceProvider {
         name: &str,
         args: &[ExternalValue],
     ) -> ExternalValue {
-        if let Some(ref url) = self.spoof_url {
+        if let Some(ref url) = self.spoof_url
             // Check for e.g. "window.location.href.toString"
-            if let Some(name) = name.strip_suffix(".toString") {
-                if is_location_href(name) {
-                    return url.to_string().into();
-                }
-            }
+            && let Some(name) = name.strip_suffix(".toString")
+            && is_location_href(name)
+        {
+            return url.to_string().into();
         }
 
         if name == "eval" {
-            if let Some(ref url) = self.spoof_url {
-                if let [ExternalValue::String(ref code)] = args {
-                    if is_location_href(code) {
-                        return ExternalValue::String(url.to_string());
-                    }
-                }
+            if let Some(ref url) = self.spoof_url
+                && let [ExternalValue::String(code)] = args
+                && is_location_href(code)
+            {
+                return ExternalValue::String(url.to_string());
             }
 
             tracing::warn!("Trying to call eval with ExternalInterface: {args:?}");

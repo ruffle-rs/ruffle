@@ -1,7 +1,7 @@
 package flash.net {
+    import __ruffle__.stub_method;
 
     import flash.net.URLRequest;
-    import __ruffle__.stub_method;
 
     public native function navigateToURL(request:URLRequest, window:String = null):void;
 

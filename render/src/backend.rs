@@ -13,6 +13,7 @@ use std::any::Any;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::fmt::Debug;
+use std::num::NonZeroU32;
 use std::rc::Rc;
 use std::sync::Arc;
 use swf::{Color, Rectangle, Twips};
@@ -76,7 +77,11 @@ pub trait RenderBackend: Any {
         cache_entries: Vec<BitmapCacheEntry>,
     );
 
-    fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error>;
+    fn create_empty_texture(
+        &mut self,
+        width: NonZeroU32,
+        height: NonZeroU32,
+    ) -> Result<BitmapHandle, Error>;
 
     fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, Error>;
     fn update_texture(
@@ -87,7 +92,6 @@ pub trait RenderBackend: Any {
     ) -> Result<(), Error>;
 
     fn create_context3d(&mut self, profile: Context3DProfile) -> Result<Box<dyn Context3D>, Error>;
-    fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
     /// An internal name that is used to identify the render-backend.
@@ -253,7 +257,7 @@ pub trait Context3D: Any {
     fn disposed_vertex_buffer_handle(&self) -> Rc<dyn VertexBuffer>;
 
     fn create_index_buffer(&mut self, usage: BufferUsage, num_indices: u32)
-        -> Box<dyn IndexBuffer>;
+    -> Box<dyn IndexBuffer>;
     fn create_vertex_buffer(
         &mut self,
         usage: BufferUsage,
@@ -278,6 +282,8 @@ pub trait Context3D: Any {
     ) -> Result<Rc<dyn Texture>, Error>;
 
     fn process_command(&mut self, command: Context3DCommand<'_>);
+
+    fn present(&mut self);
 }
 
 #[derive(Copy, Clone, Debug)]

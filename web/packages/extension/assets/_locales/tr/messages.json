@@ -44,8 +44,14 @@
     "settings_preferred_renderer_auto": {
         "message": "Otomatik"
     },
+    "settings_device_font_renderer": {
+        "message": "Cihaz yazı tipi oluşturucusu"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Gömülü"
+    },
     "settings_advanced_options": {
-        "message": "Gelişmiş Seçenekler"
+        "message": "Gelişmiş seçenekler"
     },
     "settings_reset": {
         "message": "Ayarları sıfırla"
@@ -87,25 +93,25 @@
         "message": "Değişiklikleri uygulamak için sekmeyi yenile"
     },
     "open_player_page": {
-        "message": "SWF Oynatıcıyı Aç"
+        "message": "SWF oynatıcıyı aç"
     },
     "open_settings_page": {
-        "message": "Ayarlar Sayfasını Aç"
+        "message": "Ayarlar sayfasını aç"
     },
     "settings_page": {
-        "message": "Ayarlar Sayfası"
+        "message": "Ayarlar sayfası"
     },
     "description": {
         "message": "Flash'ı ağda ait olduğu yere geri koyar."
     },
     "save_settings": {
-        "message": "Ayarları Kaydet"
+        "message": "Ayarları kaydet"
     },
     "settings_saved": {
-        "message": "Ayarlar Kaydedildi"
+        "message": "Ayarlar kaydedildi"
     },
     "onboarding_page": {
-        "message": "Karşılama Sayfası"
+        "message": "Karşılama sayfası"
     },
     "permissions_grant": {
         "message": "Ruffle'a verilerime tüm sitelerde erişmesine izin ver"

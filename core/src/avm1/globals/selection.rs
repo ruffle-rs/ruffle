@@ -3,19 +3,29 @@ use ruffle_macros::istr;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 use crate::display_object::{EditText, TDisplayObject, TInteractiveObject, TextSelection};
-use crate::string::StringContext;
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "getBeginIndex" => method(get_begin_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getEndIndex" => method(get_end_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getCaretIndex" => method(get_caret_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setSelection" => method(set_selection; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setFocus" => method(set_focus; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getFocus" => method(get_focus; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setFocus" => method(set_focus; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setSelection" => method(set_selection; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
+
+pub fn create<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    broadcaster_fns: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
+) -> Object<'gc> {
+    let selection = Object::new(context.strings, Some(context.object_proto));
+    broadcaster_fns.initialize(context.strings, selection, array_proto);
+    context.define_properties_on(selection, OBJECT_DECLS(context));
+    selection
+}
 
 pub fn get_begin_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -105,7 +115,7 @@ pub fn get_focus<'gc>(
     Ok(match focus {
         Some(focus) => focus
             .as_displayobject()
-            .object()
+            .object1_or_undef()
             .coerce_to_string(activation)
             .unwrap_or_else(|_| istr!(""))
             .into(),
@@ -137,22 +147,4 @@ pub fn set_focus<'gc>(
             Ok(false.into())
         }
     }
-}
-
-pub fn create_selection_object<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-    broadcaster_functions: BroadcasterFunctions<'gc>,
-    array_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    broadcaster_functions.initialize(context, object, array_proto);
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
-    object
-}
-
-pub fn create_proto<'gc>(context: &mut StringContext<'gc>, proto: Object<'gc>) -> Object<'gc> {
-    // It's a custom prototype but it's empty.
-    Object::new(context, Some(proto))
 }

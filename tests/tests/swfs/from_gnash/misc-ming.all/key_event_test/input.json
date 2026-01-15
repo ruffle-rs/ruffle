@@ -1,0 +1,278 @@
+[
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "a"
+    }
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [
+      310,
+      25
+    ]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      310,
+      25
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      310,
+      25
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "KeyDown",
+    "key": {
+      "Char": "i"
+    }
+  },
+  {
+    "type": "TextInput",
+    "codepoint": "i"
+  },
+  {
+    "type": "KeyUp",
+    "key": {
+      "Char": "i"
+    }
+  }
+]

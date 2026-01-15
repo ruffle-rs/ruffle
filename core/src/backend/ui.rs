@@ -1,11 +1,11 @@
 pub use crate::loader::Error as DialogLoaderError;
 use crate::{
     backend::navigator::OwnedFuture,
-    font::{FontFileData, FontQuery},
+    font::{FontFileData, FontQuery, FontRenderer},
 };
 use chrono::{DateTime, Utc};
-use fluent_templates::loader::langid;
 pub use fluent_templates::LanguageIdentifier;
+use fluent_templates::loader::langid;
 use std::{any::Any, borrow::Cow};
 use url::Url;
 
@@ -23,6 +23,14 @@ pub enum FontDefinition<'a> {
         is_italic: bool,
         data: FontFileData,
         index: u32,
+    },
+
+    /// Font rendered externally.
+    ExternalRenderer {
+        name: String,
+        is_bold: bool,
+        is_italic: bool,
+        font_renderer: Box<dyn FontRenderer>,
     },
 }
 

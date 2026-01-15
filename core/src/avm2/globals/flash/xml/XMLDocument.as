@@ -1,18 +1,27 @@
 package flash.xml {
+    import __ruffle__.stub_method;
+
     import flash.xml.XMLNode;
     import flash.xml.XMLNodeType;
 
     public class XMLDocument extends XMLNode {
-        public var ignoreWhite: Boolean = false;
+        public var docTypeDecl:Object = null;
+        public var idMap:Object;
+        public var ignoreWhite:Boolean = false;
+        public var xmlDecl:Object = null;
 
-        public function XMLDocument(input: String = null) {
-            super(XMLNodeType.ELEMENT_NODE, null);
+        public function XMLDocument(input:String = null) {
+            super(XMLNodeType.ELEMENT_NODE, "");
+
+            this.idMap = {};
+            this.nodeName = null;
+
             if (input != null) {
                 parseXML(input);
             }
         }
 
-        public function parseXML(input: String): void {
+        public function parseXML(input:String):void {
             // This is something of a hack, but that's somewhat the nature of XMLDocument
             // It accepts things like `<node>...</node> <!-- comment --> foo` which is FOUR children:
             // `<node>...</node>` gets parsed as an element
@@ -37,7 +46,7 @@ package flash.xml {
             }
         }
 
-        private function _convertXmlNode(original: XML): XMLNode {
+        private function _convertXmlNode(original:XML):XMLNode {
             var nodeType = _convertXmlNodeType(original.nodeKind());
             var nodeValue = nodeType == XMLNodeType.ELEMENT_NODE ?
                 _convertXmlName(original) : original.toString();
@@ -62,7 +71,7 @@ package flash.xml {
             return result;
         }
 
-        private function _convertXmlName(node: XML): String {
+        private function _convertXmlName(node:XML):String {
             var ns = node.namespace();
             if (ns.prefix) {
             return ns.prefix + ":" + node.localName();
@@ -70,7 +79,7 @@ package flash.xml {
             return node.localName();
         }
 
-        private function _convertXmlNodeType(kind: String): uint {
+        private function _convertXmlNodeType(kind:String):uint {
             if (kind == "text") {
                 return XMLNodeType.TEXT_NODE;
             }
@@ -83,12 +92,17 @@ package flash.xml {
             throw new Error("Invalid XML Node kind '" + kind + "' found whilst constructing (legacy) XMLDocument");
         }
 
-        public function createElement(name:String): XMLNode {
+        public function createElement(name:String):XMLNode {
             return new XMLNode(XMLNodeType.ELEMENT_NODE, name);
         }
 
-        public function createTextNode(text:String): XMLNode {
+        public function createTextNode(text:String):XMLNode {
             return new XMLNode(XMLNodeType.TEXT_NODE, text);
+        }
+
+        override public function toString():String {
+            stub_method("flash.xml.XMLDocument", "toString");
+            return super.toString();
         }
     }
 }

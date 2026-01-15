@@ -1,9 +1,10 @@
 package flash.geom {
+    import __ruffle__.stub_getter;
+    import __ruffle__.stub_method;
+
     import flash.display.DisplayObject;
     import flash.geom.Matrix3D;
     import flash.geom.PerspectiveProjection;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_method;
 
     public class Transform {
         [Ruffle(NativeAccessible)]
@@ -30,11 +31,8 @@ package flash.geom {
         public native function set matrix3D(m:Matrix3D):*;
 
         public native function get perspectiveProjection():PerspectiveProjection;
-        public native function set perspectiveProjection(val: PerspectiveProjection):void;
+        public native function set perspectiveProjection(val:PerspectiveProjection):void;
 
-        public function getRelativeMatrix3D(relativeTo:DisplayObject):Matrix3D {
-            stub_method("flash.geom.Transform", "getRelativeMatrix3D");
-            return new Matrix3D();
-        }
+        public native function getRelativeMatrix3D(relativeTo:DisplayObject):Matrix3D;
     }
 }

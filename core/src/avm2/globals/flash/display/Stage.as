@@ -2,11 +2,14 @@ package flash.display {
     import __ruffle__.stub_method;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
+
+    import flash.accessibility.AccessibilityImplementation;
     import flash.accessibility.AccessibilityProperties;
     import flash.errors.IllegalOperationError;
     import flash.events.Event;
     import flash.geom.Rectangle;
     import flash.geom.Transform;
+    import flash.media.StageVideo;
     import flash.text.TextSnapshot;
     import flash.ui.ContextMenu;
 
@@ -16,6 +19,10 @@ package flash.display {
         private var _mouseLock:Boolean = false;
         private var _nativeWindow:NativeWindow;
         private var _fullScreenSourceRect:Rectangle;
+
+        override public function set accessibilityImplementation(value:AccessibilityImplementation):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
 
         override public function set accessibilityProperties(value:AccessibilityProperties):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
@@ -29,7 +36,13 @@ package flash.display {
             return super.addChildAt(child, index);
         }
 
-        override public function addEventListener(type:String, listener:Function, useCapture:Boolean = false, priority:int = 0, useWeakReference:Boolean = false):void {
+        override public function addEventListener(
+            type:String,
+            listener:Function,
+            useCapture:Boolean = false,
+            priority:int = 0,
+            useWeakReference:Boolean = false
+        ):void {
             super.addEventListener(type, listener, useCapture, priority, useWeakReference);
         }
 
@@ -89,10 +102,6 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
-        override public function get name():String {
-            return null;
-        }
-
         override public function set name(value:String):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
@@ -113,6 +122,21 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
+        [API("662")]
+        override public function set rotationX(value:Number):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        [API("662")]
+        override public function set rotationY(value:Number):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        [API("662")]
+        override public function set rotationZ(value:Number):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
         override public function set scale9Grid(value:Rectangle):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
@@ -122,6 +146,11 @@ package flash.display {
         }
 
         override public function set scaleY(value:Number):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
+        [API("662")]
+        override public function set scaleZ(value:Number):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
@@ -157,7 +186,7 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
-        override public function set transform(value: Transform):void {
+        override public function set transform(value:Transform):void {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
@@ -185,6 +214,11 @@ package flash.display {
             throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
         }
 
+        [API("662")]
+        override public function set z(value:Number):void {
+            throw new IllegalOperationError("Error #2071: The Stage class does not implement this property or method.", 2071);
+        }
+
         // End of overrides
 
         public native function get align():String;
@@ -206,6 +240,11 @@ package flash.display {
 
         public native function get focus():InteractiveObject;
         public native function set focus(value:InteractiveObject):void;
+
+        public function isFocusInaccessible():Boolean {
+            stub_method("flash.display.Stage", "isFocusInaccessible");
+            return false;
+        }
 
         public native function get frameRate():Number;
         public native function set frameRate(value:Number):void;
@@ -239,8 +278,14 @@ package flash.display {
         public native function get stageFocusRect():Boolean;
         public native function set stageFocusRect(value:Boolean):void;
 
+        [API("665")]
+        public function get wmodeGPU():Boolean {
+            stub_getter("flash.display.Stage", "wmodeGPU");
+            return true;
+        }
+
         [API("670")]
-        public function get softKeyboardRect() : Rectangle {
+        public function get softKeyboardRect():Rectangle {
             stub_getter("flash.display.Stage", "softKeyboardRect");
             // This is technically a valid implementation most of the time,
             // as 0x0 Rect is the expected value with no soft keyboard.
@@ -256,20 +301,29 @@ package flash.display {
         public native function get quality():String;
         public native function set quality(value:String):void;
 
+        [API("667")]
+        public function get stageVideos():Vector.<StageVideo> {
+            stub_getter("flash.display.Stage", "stageVideos");
+            return null;
+        }
+
         [API("674")]
         public native function get stage3Ds():Vector.<Stage3D>;
 
         public native function invalidate():void;
 
+        [API("662")]
         public function get colorCorrection():String {
             return this._colorCorrection;
         }
+        [API("662")]
         public function set colorCorrection(value:String):void {
             stub_setter("flash.display.Stage", "colorCorrection");
             if (value == null) throw new TypeError("Error #2007: Parameter colorCorrection must be non-null.", 2007);
             this._colorCorrection = value;
         }
 
+        [API("662")]
         public function get colorCorrectionSupport():String {
             stub_getter("flash.display.Stage", "colorCorrectionSupport");
             return ColorCorrectionSupport.UNSUPPORTED;
@@ -332,6 +386,26 @@ package flash.display {
             stub_method("flash.display.Stage", "setAspectRatio");
         }
 
+        // Undocumented function, what does it do? Running it in standalone
+        // debug FP32, it always seems to return `null`
+        [API("674")]
+        public function get displayContextInfo():String {
+            stub_getter("flash.display.Stage", "displayContextInfo");
+            return null;
+        }
+
+        // Undocumented accessors, what do they do? Running them in standalone
+        // debug FP32, `get constructor` always seems to return `null` and `set
+        // constructor` seems to do nothing
+        public function get constructor():* {
+            stub_getter("flash.display.Stage", "constructor");
+            return null;
+        }
+        public function set constructor(value:*):* {
+            stub_setter("flash.display.Stage", "constructor");
+        }
+
+        // TODO: Construct the NativeWindow as a native object
         [API("661")]
         public function get nativeWindow():NativeWindow {
             stub_getter("flash.display.Stage", "nativeWindow");

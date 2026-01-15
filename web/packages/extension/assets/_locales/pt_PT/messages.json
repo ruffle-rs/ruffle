@@ -24,7 +24,13 @@
         "message": "Avisos"
     },
     "settings_log_level_info": {
-        "message": "Informação"
+        "message": "Infos"
+    },
+    "settings_log_level_debug": {
+        "message": "Depuração"
+    },
+    "settings_log_level_trace": {
+        "message": "Rastreio"
     },
     "settings_max_execution_duration": {
         "message": "Duração máxima permitida para execução de ActionScript (em segundos)"
@@ -38,8 +44,14 @@
     "settings_preferred_renderer_auto": {
         "message": "Automático"
     },
+    "settings_device_font_renderer": {
+        "message": "Renderizador de fontes do dispositivo"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Embutido"
+    },
     "settings_advanced_options": {
-        "message": "Opções Avançadas"
+        "message": "Opções avançadas"
     },
     "settings_reset": {
         "message": "Redefinir opções"
@@ -78,19 +90,19 @@
         "message": "O Ruffle não pode carregar em páginas protegidas do navegador."
     },
     "action_reload": {
-        "message": "Recarregar separador para aplicar alterações"
+        "message": "Recarregar separador para aplicar"
     },
     "open_player_page": {
-        "message": "Abrir Leitor de SWF"
+        "message": "Abrir leitor de SWF"
     },
     "open_settings_page": {
         "message": "Abrir página de opções"
     },
     "settings_page": {
-        "message": "Página de Opções"
+        "message": "Página de opções"
     },
     "description": {
-        "message": "Põe o Flash de volta na web, onde deve estar."
+        "message": "Traz o Flash de volta à web, onde deve estar."
     },
     "save_settings": {
         "message": "Gravar opções"
@@ -102,18 +114,18 @@
         "message": "Página de integração"
     },
     "permissions_grant": {
-        "message": "Conceder permissão ao Ruffle para aceder aos meus dados em todos os sites"
+        "message": "Permitir ao Ruffle aceder aos meus dados em todos os sites"
     },
     "permissions_not_granted": {
         "message": "Precisará de clicar no ícone do Ruffle em todos os sites em que pretenda usar o Ruffle"
     },
     "grant_single_site_permission": {
-        "message": "Ativar permanentemente neste site"
+        "message": "Ativar neste site para sempre"
     },
     "permissions_explanation": {
         "message": "A extensão Ruffle funciona melhor se puder aceder aos dados de todos os sites. Isso permite-lhe ser executada quando qualquer site carrega pela primeira vez, permitindo assim convencer sites que fazem deteção do Flash Player a deixar o conteúdo do Flash ser executado imediatamente. Isso permite-lhe ainda carregar ficheiros SWF na sua página interna do leitor a partir de outros locais na web e permite-lhe carregar automaticamente links SWF dirigidos a essa página. Se não conceder esta permissão, precisará de ativar o Ruffle manualmente em cada site em que deseje usá-lo, clicando no ícone da extensão e ativando-o nesse site."
     },
     "swf_player_permissions": {
-        "message": "Deve conceder permissão a esta origem de URL para carregar SWFs a partir dela."
+        "message": "Deve permitir esta origem de URL para poder carregar SWFs a partir dela."
     }
 }

@@ -2,8 +2,11 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{self};
-use crate::avm2::error::{make_error_1006, type_error};
-use crate::avm2::function::{exec, FunctionArgs};
+use crate::avm2::error::{
+    make_error_1006, make_error_1007, make_error_1034, make_error_1050, make_error_1064,
+    make_error_1115,
+};
+use crate::avm2::function::{FunctionArgs, exec};
 use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
@@ -118,20 +121,20 @@ impl From<u16> for Value<'_> {
 
 impl From<i32> for Value<'_> {
     fn from(value: i32) -> Self {
-        if value >= (1 << 28) || value < -(1 << 28) {
-            Value::Number(value as f64)
-        } else {
+        if fits_in_value_integer_i32(value) {
             Value::Integer(value)
+        } else {
+            Value::Number(value as f64)
         }
     }
 }
 
 impl From<u32> for Value<'_> {
     fn from(value: u32) -> Self {
-        if value >= (1 << 28) {
-            Value::Number(value as f64)
-        } else {
+        if fits_in_value_integer_u32(value) {
             Value::Integer(value as i32)
+        } else {
+            Value::Number(value as f64)
         }
     }
 }
@@ -157,6 +160,14 @@ impl PartialEq for Value<'_> {
             _ => false,
         }
     }
+}
+
+fn fits_in_value_integer_i32(value: i32) -> bool {
+    value < (1 << 28) && value >= -(1 << 28)
+}
+
+fn fits_in_value_integer_u32(value: u32) -> bool {
+    value < (1 << 28)
 }
 
 /// Strips leading whitespace.
@@ -502,13 +513,13 @@ pub fn abc_double<'gc>(
 /// Retrieve a default value as an AVM2 `Value`.
 pub fn abc_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
-    default: &AbcDefaultValue,
+    default: AbcDefaultValue,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     match default {
-        AbcDefaultValue::Int(i) => abc_int(translation_unit, *i).map(|v| v.into()),
-        AbcDefaultValue::Uint(u) => abc_uint(translation_unit, *u).map(|v| v.into()),
-        AbcDefaultValue::Double(d) => abc_double(translation_unit, *d).map(|v| v.into()),
+        AbcDefaultValue::Int(i) => abc_int(translation_unit, i).map(|v| v.into()),
+        AbcDefaultValue::Uint(u) => abc_uint(translation_unit, u).map(|v| v.into()),
+        AbcDefaultValue::Double(d) => abc_double(translation_unit, d).map(|v| v.into()),
         AbcDefaultValue::String(s) => translation_unit
             .pool_string(s.0, activation.strings())
             .map(Into::into),
@@ -523,7 +534,7 @@ pub fn abc_default_value<'gc>(
         | AbcDefaultValue::Explicit(ns)
         | AbcDefaultValue::StaticProtected(ns)
         | AbcDefaultValue::Private(ns) => {
-            let ns = translation_unit.pool_namespace(activation, *ns)?;
+            let ns = translation_unit.pool_namespace(activation, ns)?;
             Ok(NamespaceObject::from_namespace(activation, ns).into())
         }
     }
@@ -536,6 +547,40 @@ impl<'gc> Value<'gc> {
                 .as_namespace()
                 .ok_or_else(|| "Expected Namespace, found Object".into()),
             _ => Err(format!("Expected Namespace, found {self:?}").into()),
+        }
+    }
+
+    /// Normalize this value to an equivalent, normal value.
+    ///
+    /// It should be fine to call this method whenever, it does not change
+    /// semantics, but has an effect on performance only.
+    ///
+    /// Flash Player does this normalization on every atom instantiation,
+    /// but for Ruffle it's too inefficient (we aren't doing any allocs).
+    /// However, there are some observable behaviors that result from it, and
+    /// that's why this method is provided in order to cover such cases.
+    ///
+    /// The rule of thumb is to normalize the value before differentiating
+    /// between a [`Value::Number`] and [`Value::Integer`]. If there's no need
+    /// to differentiate between those variants, no normalization is needed.
+    pub fn normalize(self) -> Self {
+        match self {
+            Value::Number(n) => {
+                let i = n as i32;
+                if n.to_bits() == (i as f64).to_bits() && fits_in_value_integer_i32(i) {
+                    Value::Integer(i)
+                } else {
+                    self
+                }
+            }
+            Value::Integer(i) => {
+                if !fits_in_value_integer_i32(i) {
+                    Value::Number(i as f64)
+                } else {
+                    self
+                }
+            }
+            _ => self,
         }
     }
 
@@ -559,7 +604,7 @@ impl<'gc> Value<'gc> {
         self.try_as_f64().expect("Expected Number or Integer")
     }
 
-    /// Like `as_number`, but for `i32`
+    /// Like `as_f64`, but for `i32`
     pub fn as_i32(&self) -> i32 {
         match self {
             Value::Number(num) => f64_to_wrapping_i32(*num),
@@ -568,13 +613,26 @@ impl<'gc> Value<'gc> {
         }
     }
 
-    /// Like `as_number`, but for `u32`
+    /// Like `as_f64`, but for `u32`
     pub fn as_u32(&self) -> u32 {
         match self {
             Value::Number(num) => f64_to_wrapping_u32(*num),
             Value::Integer(num) => *num as u32,
             _ => panic!("Expected Number or Integer"),
         }
+    }
+
+    // If the current value represents an index (a unsigned integer less than u32::MAX),
+    // then return that value. Returns None otherwise.
+    pub fn try_as_index(&self) -> Option<usize> {
+        Some(match self {
+            value @ Value::Integer(num) if value.is_u32() => *num as usize,
+            value @ Value::Number(num) if value.is_u32() && *num < u32::MAX as f64 => {
+                assert!(num.is_finite());
+                *num as usize
+            }
+            _ => return None,
+        })
     }
 
     /// Yields `true` if the given value is an unboxed primitive value.
@@ -625,42 +683,40 @@ impl<'gc> Value<'gc> {
 
         match self {
             Value::Object(_) if hint == Hint::String => {
-                let prim = self.call_public_property(istr!("toString"), &[], activation)?;
-                if prim.is_primitive() {
-                    return Ok(prim);
-                }
-
-                let prim = self.call_public_property(istr!("valueOf"), &[], activation)?;
-                if prim.is_primitive() {
-                    return Ok(prim);
-                }
-
-                let class_name = self.instance_of_class_name(activation);
-
-                Err(Error::avm_error(type_error(
+                let prim = self.call_public_property(
+                    istr!("toString"),
+                    FunctionArgs::empty(),
                     activation,
-                    &format!("Error #1050: Cannot convert {class_name} to primitive."),
-                    1050,
-                )?))
+                )?;
+                if prim.is_primitive() {
+                    return Ok(prim);
+                }
+
+                let prim =
+                    self.call_public_property(istr!("valueOf"), FunctionArgs::empty(), activation)?;
+                if prim.is_primitive() {
+                    return Ok(prim);
+                }
+
+                Err(make_error_1050(activation, *self))
             }
             Value::Object(_) if hint == Hint::Number => {
-                let prim = self.call_public_property(istr!("valueOf"), &[], activation)?;
+                let prim =
+                    self.call_public_property(istr!("valueOf"), FunctionArgs::empty(), activation)?;
                 if prim.is_primitive() {
                     return Ok(prim);
                 }
 
-                let prim = self.call_public_property(istr!("toString"), &[], activation)?;
-                if prim.is_primitive() {
-                    return Ok(prim);
-                }
-
-                let class_name = self.instance_of_class_name(activation);
-
-                Err(Error::avm_error(type_error(
+                let prim = self.call_public_property(
+                    istr!("toString"),
+                    FunctionArgs::empty(),
                     activation,
-                    &format!("Error #1050: Cannot convert {class_name} to primitive."),
-                    1050,
-                )?))
+                )?;
+                if prim.is_primitive() {
+                    return Ok(prim);
+                }
+
+                Err(make_error_1050(activation, *self))
             }
             _ => Ok(*self),
         }
@@ -897,7 +953,7 @@ impl<'gc> Value<'gc> {
                     }
 
                     let bound_method = vtable
-                        .make_bound_method(activation, *self, disp_id)
+                        .make_bound_method(activation.context, *self, disp_id)
                         .expect("Method should exist");
 
                     // TODO: Bound methods should be cached on the Method in a
@@ -907,7 +963,7 @@ impl<'gc> Value<'gc> {
                     Ok(bound_method.into())
                 } else {
                     let bound_method = vtable
-                        .make_bound_method(activation, *self, disp_id)
+                        .make_bound_method(activation.context, *self, disp_id)
                         .expect("Method should exist");
 
                     // TODO: Bound methods should be cached on the Method in a
@@ -1131,8 +1187,6 @@ impl<'gc> Value<'gc> {
 
         match vtable.get_trait(multiname) {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                let arguments = &arguments.to_slice();
-
                 // Only objects can have slots
                 let object = self.as_object().unwrap();
 
@@ -1145,7 +1199,6 @@ impl<'gc> Value<'gc> {
             Some(Property::Virtual { get: Some(get), .. }) => {
                 let obj = self.call_method_with_args(get, FunctionArgs::empty(), activation)?;
 
-                let arguments = &arguments.to_slice();
                 obj.call(activation, *self, arguments)
             }
             Some(Property::Virtual { get: None, .. }) => {
@@ -1159,8 +1212,6 @@ impl<'gc> Value<'gc> {
                 ))
             }
             None => {
-                let arguments = &arguments.to_slice();
-
                 if let Some(object) = self.as_object() {
                     object.call_property_local(multiname, arguments, activation)
                 } else {
@@ -1189,10 +1240,9 @@ impl<'gc> Value<'gc> {
     pub fn call_public_property(
         &self,
         name: AvmString<'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let arguments = FunctionArgs::AsArgSlice { arguments };
         self.call_property(
             &Multiname::new(activation.avm2().find_public_namespace(), name),
             arguments,
@@ -1211,7 +1261,7 @@ impl<'gc> Value<'gc> {
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.call_method_with_args(id, FunctionArgs::AsArgSlice { arguments }, activation)
+        self.call_method_with_args(id, FunctionArgs::from_slice(arguments), activation)
     }
 
     pub fn call_method_with_args(
@@ -1224,7 +1274,6 @@ impl<'gc> Value<'gc> {
         // WeakKeyHashMap<Value, FunctionObject>, not on the Object
         if let Some(object) = self.as_object() {
             if let Some(bound_method) = object.get_bound_method(id) {
-                let arguments = &arguments.to_slice();
                 return bound_method.call(activation, *self, arguments);
             }
         }
@@ -1240,14 +1289,13 @@ impl<'gc> Value<'gc> {
                 full_method.scope(),
                 *self,
                 full_method.super_class_obj,
-                Some(full_method.class),
                 arguments,
                 activation,
                 None,
             );
         }
 
-        let bound_method = VTable::bind_method(activation, *self, full_method);
+        let bound_method = VTable::bind_method(activation.context, *self, full_method);
 
         // TODO: Bound methods should be cached on the Method in a
         // WeakKeyHashMap<Value, FunctionObject>, not on the Object
@@ -1255,7 +1303,6 @@ impl<'gc> Value<'gc> {
             object.install_bound_method(activation.gc(), id, bound_method);
         }
 
-        let arguments = &arguments.to_slice();
         bound_method.call(activation, *self, arguments)
     }
 
@@ -1302,6 +1349,92 @@ impl<'gc> Value<'gc> {
                     multiname,
                     instance_class,
                 ))
+            }
+        }
+    }
+
+    pub fn construct_prop(
+        &self,
+        activation: &mut Activation<'_, 'gc>,
+        multiname: &Multiname<'gc>,
+        arguments: FunctionArgs<'_, 'gc>,
+    ) -> Result<Value<'gc>, Error<'gc>> {
+        let vtable = self.vtable(activation);
+
+        match vtable.get_trait(multiname) {
+            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+                // Only objects can have slots
+                let object = self.as_object().unwrap();
+
+                let value = object.get_slot(slot_id);
+
+                // If the value is a `Function` or `Class`, it's constructible
+                let is_constructible = value.as_object().is_some_and(|o| {
+                    o.as_class_object().is_some() || o.as_function_object().is_some()
+                });
+
+                // This check might seem redundant, as `Value::construct` will
+                // throw an error anyway if the value isn't constructible.
+                // However, in avmplus, attempting to construct a
+                // non-constructible value using `constructprop` in interpreter
+                // mode in SWFv9/v10 throws a different error, error #1115 (see
+                // below). So here, we have to manually check for
+                // `Function`/`Class` and throw error 1115 or 1007 (depending on
+                // the SWF version) if the value is neither of them.
+                if is_constructible {
+                    value.construct(activation, arguments)
+                } else {
+                    // Error 1115 is only thrown in SWFv9/v10 in interpreter-mode code
+                    if activation.context.root_swf.version() < 11 && activation.is_interpreter() {
+                        Err(make_error_1115(activation, "value"))
+                    } else {
+                        Err(make_error_1007(activation))
+                    }
+                }
+            }
+            Some(Property::Method { disp_id }) => {
+                // Attempting to `construct_prop` a method always throws error 1064
+
+                let method = vtable.get_method(disp_id).expect("Method should exist");
+                Err(make_error_1064(activation, method))
+            }
+            Some(Property::Virtual { get: Some(get), .. }) => {
+                let value = self.call_method_with_args(get, FunctionArgs::empty(), activation)?;
+
+                value.construct(activation, arguments)
+            }
+            Some(Property::Virtual { get: None, .. }) => {
+                let instance_class = self.instance_class(activation);
+
+                Err(error::make_reference_error(
+                    activation,
+                    error::ReferenceErrorCode::ReadFromWriteOnly,
+                    multiname,
+                    instance_class,
+                ))
+            }
+            None => {
+                let value = if let Some(object) = self.as_object() {
+                    object.get_property_local(multiname, activation)?
+                } else {
+                    // Unlike `Value::get_property`, error messages report that
+                    // the read failed on the `Object` class, not the
+                    // `instance_class` of this `Value`.
+                    let object_class = activation.avm2().class_defs().object;
+                    let proto = self.proto(activation);
+
+                    let dynamic_lookup = crate::avm2::object::get_dynamic_property(
+                        activation,
+                        multiname,
+                        None,
+                        proto,
+                        object_class,
+                    )?;
+
+                    dynamic_lookup.unwrap_or(Value::Undefined)
+                };
+
+                value.construct(activation, arguments)
             }
         }
     }
@@ -1357,7 +1490,7 @@ impl<'gc> Value<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
         receiver: Value<'gc>,
-        args: &[Value<'gc>],
+        args: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         match self.as_object() {
             Some(Object::ClassObject(class_object)) => class_object.call(activation, args),
@@ -1380,19 +1513,7 @@ impl<'gc> Value<'gc> {
             Some(Object::FunctionObject(function_object)) => {
                 function_object.construct(activation, args).map(Into::into)
             }
-            _ => {
-                let error = if activation.context.root_swf.version() < 11 {
-                    type_error(activation, "Error #1115: value is not a constructor.", 1115)
-                } else {
-                    type_error(
-                        activation,
-                        "Error #1007: Instantiation attempted on a non-constructor.",
-                        1007,
-                    )
-                };
-
-                Err(Error::avm_error(error?))
-            }
+            _ => Err(make_error_1007(activation)),
         }
     }
 
@@ -1446,15 +1567,7 @@ impl<'gc> Value<'gc> {
             }
         }
 
-        let name = class.name().to_qualified_name_err_message(activation.gc());
-
-        let debug_str = self.as_debug_string(activation)?;
-
-        Err(Error::avm_error(type_error(
-            activation,
-            &format!("Error #1034: Type Coercion failed: cannot convert {debug_str} to {name}."),
-            1034,
-        )?))
+        Err(make_error_1034(activation, *self, class))
     }
 
     /// Determine if this value is any kind of number.

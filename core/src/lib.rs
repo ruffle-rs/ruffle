@@ -15,9 +15,9 @@ extern crate num_derive;
 #[macro_use]
 mod avm1;
 mod avm2;
+mod avm_rng;
 mod binary_data;
 pub mod bitmap;
-pub mod buffer;
 mod character;
 pub mod context;
 pub mod context_menu;
@@ -25,7 +25,7 @@ mod drawing;
 mod ecma_conversions;
 pub mod events;
 pub mod focus_tracker;
-mod font;
+pub mod font;
 mod frame_lifecycle;
 mod html;
 mod input;
@@ -35,10 +35,10 @@ pub mod loader;
 mod local_connection;
 mod locale;
 mod net_connection;
+mod orphan_manager;
 pub mod pixel_bender;
 mod player;
 mod prelude;
-pub mod sandbox;
 pub mod socket;
 mod streams;
 pub mod string;
@@ -46,9 +46,7 @@ mod system_properties;
 pub mod tag_utils;
 pub mod timer;
 mod types;
-pub mod utils;
 mod vminterface;
-mod xml;
 
 pub mod backend;
 pub mod compatibility_rules;
@@ -61,7 +59,6 @@ pub mod stub;
 
 pub use context_menu::ContextMenuItem;
 pub use events::PlayerEvent;
-pub use font::{DefaultFont, FontFileData, FontQuery, FontType};
 pub use indexmap;
 pub use loader::LoadBehavior;
 pub use player::{Player, PlayerBuilder, PlayerMode, PlayerRuntime, StaticCallstack};
@@ -69,3 +66,9 @@ pub use ruffle_render::backend::ViewportDimensions;
 pub use swf;
 pub use swf::Color;
 pub use ttf_parser;
+
+/// The newest Flash Player version known to Ruffle.
+pub const NEWEST_PLAYER_VERSION: u8 = 51;
+
+/// The default Flash Player version that Ruffle will emulate.
+pub const DEFAULT_PLAYER_VERSION: u8 = 32;

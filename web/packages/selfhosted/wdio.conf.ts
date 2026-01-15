@@ -222,7 +222,8 @@ export const config: WebdriverIO.Config = {
     ],
     maxInstances: maxInstances,
     capabilities,
-    logLevel: "info",
+    // wdio produces a lot of spam on info
+    logLevel: "warn",
     bail: 0,
     baseUrl: "http://localhost",
     waitforTimeout: 30000,
@@ -235,6 +236,19 @@ export const config: WebdriverIO.Config = {
     mochaOpts: {
         ui: "bdd",
         timeout: 120000,
+    },
+
+    async beforeSuite() {
+        if (!browserstack) {
+            await browser.sessionSubscribe({ events: ["log.entryAdded"] });
+            browser.on("log.entryAdded", (entryAdded) => {
+                console.log(
+                    "[Console] [%s] %s",
+                    entryAdded.level,
+                    entryAdded.text,
+                );
+            });
+        }
     },
 
     async beforeTest() {

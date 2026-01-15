@@ -14,11 +14,13 @@ use std::fs::File;
 use std::path::Path;
 use std::process::exit;
 
+// This function is used in macros and they require such signature with &bool.
+#[allow(clippy::trivially_copy_pass_by_ref)]
 fn is_false(b: &bool) -> bool {
     !(*b)
 }
 
-fn escape_string(string: &AvmString) -> String {
+fn escape_string(string: AvmString) -> String {
     let mut output = "".to_string();
     output.push('\"');
 
@@ -46,7 +48,7 @@ fn escape_string(string: &AvmString) -> String {
 }
 
 fn format_value(value: &Value) -> Option<String> {
-    match value {
+    match value.normalize() {
         Value::Undefined => None,
         Value::Null => Some("null".to_string()),
         Value::Bool(value) => Some(value.to_string()),
@@ -115,7 +117,7 @@ struct VariableInfo {
 impl VariableInfo {
     pub fn from_value<'gc>(value: Value<'gc>, activation: &mut Activation<'_, 'gc>) -> Self {
         Self {
-            type_info: match value {
+            type_info: match value.normalize() {
                 Value::Bool(_) => Some("Boolean".to_string()),
                 Value::Number(_) => Some("Number".to_string()),
                 Value::Integer(_) => Some("int".to_string()),
@@ -154,7 +156,7 @@ struct FunctionInfo {
 }
 
 impl FunctionInfo {
-    pub fn from_method(method: &Method, stubbed: bool) -> Self {
+    pub fn from_method(method: Method, stubbed: bool) -> Self {
         Self {
             returns: method
                 .return_type()
@@ -302,12 +304,7 @@ impl Definition {
                 }
             };
             if &name != b"constructor" {
-                Self::add_prototype_value(
-                    &name,
-                    value.value,
-                    &mut definition.prototype,
-                    activation,
-                );
+                Self::add_prototype_value(name, value.value, &mut definition.prototype, activation);
             }
         }
 
@@ -328,7 +325,7 @@ impl Definition {
     }
 
     fn add_prototype_value<'gc>(
-        name: &AvmString<'gc>,
+        name: AvmString<'gc>,
         value: Value<'gc>,
         output: &mut Option<TraitList>,
         activation: &mut Activation<'_, 'gc>,
@@ -388,7 +385,7 @@ impl Definition {
                     output
                         .get_or_insert_default()
                         .function
-                        .insert(trait_name, FunctionInfo::from_method(method, stubbed));
+                        .insert(trait_name, FunctionInfo::from_method(*method, stubbed));
                 }
                 TraitKind::Getter { method, .. } => {
                     let stubbed = stubs.has_getter(&trait_name);

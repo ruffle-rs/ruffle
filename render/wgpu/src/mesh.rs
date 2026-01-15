@@ -1,7 +1,7 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    as_texture, Descriptors, GradientUniforms, PosColorVertex, PosVertex, TextureTransforms,
+    Descriptors, GradientUniforms, PosColorVertex, PosVertex, TextureTransforms, as_texture,
 };
 use std::any::Any;
 use std::ops::Range;

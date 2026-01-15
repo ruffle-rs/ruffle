@@ -44,8 +44,14 @@
     "settings_preferred_renderer_auto": {
         "message": "Automatique"
     },
+    "settings_device_font_renderer": {
+        "message": "Rendu des polices système"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Intégré"
+    },
     "settings_advanced_options": {
-        "message": "Options Avancées"
+        "message": "Options avancées"
     },
     "settings_reset": {
         "message": "Réinitialiser les paramètres"
@@ -66,7 +72,7 @@
         "message": "Vérification de l'état de Ruffle dans l'onglet actuel…"
     },
     "status_result_running": {
-        "message": "Ruffle est chargé et prêt à lire du contenu Flash dans l'onglet actuel."
+        "message": "Ruffle est prêt à lire du contenu Flash dans l'onglet actuel."
     },
     "status_result_running_protected": {
         "message": "Ruffle est prêt à exécuter le contenu Flash de votre choix."

@@ -72,7 +72,7 @@ impl<'gc> Stack<'gc> {
         StackFrame::for_data(subslice)
     }
 
-    pub fn dispose_stack_frame(&self, stack_frame: StackFrame<'_, 'gc>) {
+    pub fn dispose_stack_frame(self, stack_frame: StackFrame<'_, 'gc>) {
         self.0
             .stack_pointer
             .set(self.0.stack_pointer.get() - stack_frame.data.len());
@@ -153,9 +153,7 @@ impl<'a, 'gc> StackFrame<'a, 'gc> {
 
         self.stack_pointer.set(base);
 
-        FunctionArgs::AsCellArgSlice {
-            arguments: &self.data[base..base + num_args],
-        }
+        FunctionArgs::from_cell_slice(&self.data[base..base + num_args])
     }
 
     pub fn pop_args(&self, arg_count: u32) -> Vec<Value<'gc>> {

@@ -1,7 +1,23 @@
 num_frames = 1
 
-[image_comparisons.output]
+[[image_comparisons.output.checks]]
 tolerance = 0
+max_outliers = 5200
+
+[[image_comparisons.output.checks]]
+tolerance = 64
+max_outliers = 1500
+
+[[image_comparisons.output.checks]]
+tolerance = 128
+max_outliers = 600
 
 [player_options]
-with_renderer = { optional = true, sample_count = 1 }
+with_renderer = { optional = true, sample_count = 4 }
+
+[default_fonts]
+serif = ["Noto Sans"]
+
+[fonts.noto_sans]
+family = "Noto Sans"
+path = "NotoSans.ttf"

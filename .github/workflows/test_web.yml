@@ -18,9 +18,9 @@ jobs:
     outputs:
       should_run: ${{ steps.filter.outputs.src }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
-      - uses: AurorNZ/paths-filter@v4
+      - uses: AurorNZ/paths-filter@v5
         id: filter
         with:
           filters: |
@@ -39,10 +39,10 @@ jobs:
         os: [ubuntu-24.04, windows-2025]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js ${{ matrix.node_version }}
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
           node-version: ${{ matrix.node_version }}
           cache: npm
@@ -63,7 +63,7 @@ jobs:
       # Be sure to update in release_nightly.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.100
+        run: cargo install wasm-bindgen-cli --version 0.2.101
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
@@ -74,7 +74,7 @@ jobs:
         uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
-          tag: version_123
+          tag: version_124
           name: wasm-opt
 
       - name: Build
@@ -104,12 +104,12 @@ jobs:
     runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: web/package-lock.json
 
@@ -128,7 +128,7 @@ jobs:
       # Be sure to update in release_nightly.yml, Cargo.toml, web/docker/Dockerfile,
       # and web/README.md as well.
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.100
+        run: cargo install wasm-bindgen-cli --version 0.2.101
 
       # No real need to install wasm-opt here
 
@@ -145,7 +145,7 @@ jobs:
           npm run build --workspace=ruffle-selfhosted
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: selfhosted-dist
           path: web/packages/selfhosted/dist
@@ -162,17 +162,17 @@ jobs:
         browser: ["chrome", "firefox", "edge"]
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v6
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
           cache-dependency-path: web/package-lock.json
 
       - name: Download artifact
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v7
         with:
           name: selfhosted-dist
           path: web/packages/selfhosted/dist

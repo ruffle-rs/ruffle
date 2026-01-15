@@ -1,0 +1,1959 @@
+AVLoader not accessible
+<type name="flash.display::AVM1Movie" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::AVM1Movie">
+      <accessor name="accessibilityProperties" access="readwrite" type="flash.accessibility::AccessibilityProperties" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="alpha" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="blendMode" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="cacheAsBitmap" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="filters" access="readwrite" type="Array" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="height" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="loaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mask" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseX" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseY" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="name" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="opaqueBackground" access="readwrite" type="Object" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="parent" access="readonly" type="flash.display::DisplayObjectContainer" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="root" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="rotation" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scale9Grid" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleX" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleY" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scrollRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="stage" access="readonly" type="flash.display::Stage" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="transform" access="readwrite" type="flash.geom::Transform" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="visible" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="width" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="x" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="y" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.display::DisplayObject"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addCallback" declaredBy="flash.display::AVM1Movie" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+    </method>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="call" declaredBy="flash.display::AVM1Movie" returnType="*">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="getBounds" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getRect" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="globalToLocal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hitTestObject" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="hitTestPoint" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="localToGlobal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display::ActionScriptVersion" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="ACTIONSCRIPT2" type="uint"/>
+  <constant name="ACTIONSCRIPT3" type="uint"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::ActionScriptVersion">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display::Bitmap" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::Bitmap">
+      <accessor name="accessibilityProperties" access="readwrite" type="flash.accessibility::AccessibilityProperties" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="alpha" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="bitmapData" access="readwrite" type="flash.display::BitmapData" declaredBy="flash.display::Bitmap"/>
+      <accessor name="blendMode" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="cacheAsBitmap" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="filters" access="readwrite" type="Array" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="height" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="loaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mask" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseX" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseY" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="name" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="opaqueBackground" access="readwrite" type="Object" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="parent" access="readonly" type="flash.display::DisplayObjectContainer" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="pixelSnapping" access="readwrite" type="String" declaredBy="flash.display::Bitmap"/>
+      <accessor name="root" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="rotation" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scale9Grid" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleX" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleY" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scrollRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="smoothing" access="readwrite" type="Boolean" declaredBy="flash.display::Bitmap"/>
+      <accessor name="stage" access="readonly" type="flash.display::Stage" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="transform" access="readwrite" type="flash.geom::Transform" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="visible" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="width" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="x" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="y" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <constructor>
+          <parameter index="1" type="flash.display::BitmapData" optional="true"/>
+          <parameter index="2" type="String" optional="true"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </constructor>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.display::DisplayObject"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="getBounds" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getRect" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="globalToLocal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hitTestObject" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="hitTestPoint" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="localToGlobal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display::BitmapData" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::BitmapData">
+      <accessor name="height" access="readonly" type="int" declaredBy="flash.display::BitmapData"/>
+      <accessor name="rect" access="readonly" type="flash.geom::Rectangle" declaredBy="flash.display::BitmapData"/>
+      <accessor name="transparent" access="readonly" type="Boolean" declaredBy="flash.display::BitmapData"/>
+      <accessor name="width" access="readonly" type="int" declaredBy="flash.display::BitmapData"/>
+      <constructor>
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="uint" optional="true"/>
+    </constructor>
+      <extendsClass type="Object"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <method name="applyFilter" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="flash.display::BitmapData" optional="false"/>
+          <parameter index="2" type="flash.geom::Rectangle" optional="false"/>
+          <parameter index="3" type="flash.geom::Point" optional="false"/>
+          <parameter index="4" type="flash.filters::BitmapFilter" optional="false"/>
+    </method>
+      <method name="clone" declaredBy="flash.display::BitmapData" returnType="flash.display::BitmapData"/>
+      <method name="colorTransform" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="flash.geom::Rectangle" optional="false"/>
+          <parameter index="2" type="flash.geom::ColorTransform" optional="false"/>
+    </method>
+      <method name="compare" declaredBy="flash.display::BitmapData" returnType="Object">
+          <parameter index="1" type="flash.display::BitmapData" optional="false"/>
+    </method>
+      <method name="copyChannel" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="flash.display::BitmapData" optional="false"/>
+          <parameter index="2" type="flash.geom::Rectangle" optional="false"/>
+          <parameter index="3" type="flash.geom::Point" optional="false"/>
+          <parameter index="4" type="uint" optional="false"/>
+          <parameter index="5" type="uint" optional="false"/>
+    </method>
+      <method name="copyPixels" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="flash.display::BitmapData" optional="false"/>
+          <parameter index="2" type="flash.geom::Rectangle" optional="false"/>
+          <parameter index="3" type="flash.geom::Point" optional="false"/>
+          <parameter index="4" type="flash.display::BitmapData" optional="true"/>
+          <parameter index="5" type="flash.geom::Point" optional="true"/>
+          <parameter index="6" type="Boolean" optional="true"/>
+    </method>
+      <method name="dispose" declaredBy="flash.display::BitmapData" returnType="void"/>
+      <method name="draw" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="flash.display::IBitmapDrawable" optional="false"/>
+          <parameter index="2" type="flash.geom::Matrix" optional="true"/>
+          <parameter index="3" type="flash.geom::ColorTransform" optional="true"/>
+          <parameter index="4" type="String" optional="true"/>
+          <parameter index="5" type="flash.geom::Rectangle" optional="true"/>
+          <parameter index="6" type="Boolean" optional="true"/>
+    </method>
+      <method name="fillRect" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="flash.geom::Rectangle" optional="false"/>
+          <parameter index="2" type="uint" optional="false"/>
+    </method>
+      <method name="floodFill" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="uint" optional="false"/>
+    </method>
+      <method name="generateFilterRect" declaredBy="flash.display::BitmapData" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.geom::Rectangle" optional="false"/>
+          <parameter index="2" type="flash.filters::BitmapFilter" optional="false"/>
+    </method>
+      <method name="getColorBoundsRect" declaredBy="flash.display::BitmapData" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="uint" optional="false"/>
+          <parameter index="2" type="uint" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="getPixel" declaredBy="flash.display::BitmapData" returnType="uint">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="getPixel32" declaredBy="flash.display::BitmapData" returnType="uint">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="getPixels" declaredBy="flash.display::BitmapData" returnType="flash.utils::ByteArray">
+          <parameter index="1" type="flash.geom::Rectangle" optional="false"/>
+    </method>
+      <method name="hitTest" declaredBy="flash.display::BitmapData" returnType="Boolean">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+          <parameter index="2" type="uint" optional="false"/>
+          <parameter index="3" type="Object" optional="false"/>
+          <parameter index="4" type="flash.geom::Point" optional="true"/>
+          <parameter index="5" type="uint" optional="true"/>
+    </method>
+      <method name="lock" declaredBy="flash.display::BitmapData" returnType="void"/>
+      <method name="merge" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="flash.display::BitmapData" optional="false"/>
+          <parameter index="2" type="flash.geom::Rectangle" optional="false"/>
+          <parameter index="3" type="flash.geom::Point" optional="false"/>
+          <parameter index="4" type="uint" optional="false"/>
+          <parameter index="5" type="uint" optional="false"/>
+          <parameter index="6" type="uint" optional="false"/>
+          <parameter index="7" type="uint" optional="false"/>
+    </method>
+      <method name="noise" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="uint" optional="true"/>
+          <parameter index="3" type="uint" optional="true"/>
+          <parameter index="4" type="uint" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="paletteMap" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="flash.display::BitmapData" optional="false"/>
+          <parameter index="2" type="flash.geom::Rectangle" optional="false"/>
+          <parameter index="3" type="flash.geom::Point" optional="false"/>
+          <parameter index="4" type="Array" optional="true"/>
+          <parameter index="5" type="Array" optional="true"/>
+          <parameter index="6" type="Array" optional="true"/>
+          <parameter index="7" type="Array" optional="true"/>
+    </method>
+      <method name="perlinNoise" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="uint" optional="false"/>
+          <parameter index="4" type="int" optional="false"/>
+          <parameter index="5" type="Boolean" optional="false"/>
+          <parameter index="6" type="Boolean" optional="false"/>
+          <parameter index="7" type="uint" optional="true"/>
+          <parameter index="8" type="Boolean" optional="true"/>
+          <parameter index="9" type="Array" optional="true"/>
+    </method>
+      <method name="pixelDissolve" declaredBy="flash.display::BitmapData" returnType="int">
+          <parameter index="1" type="flash.display::BitmapData" optional="false"/>
+          <parameter index="2" type="flash.geom::Rectangle" optional="false"/>
+          <parameter index="3" type="flash.geom::Point" optional="false"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="int" optional="true"/>
+          <parameter index="6" type="uint" optional="true"/>
+    </method>
+      <method name="scroll" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="setPixel" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="uint" optional="false"/>
+    </method>
+      <method name="setPixel32" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+          <parameter index="3" type="uint" optional="false"/>
+    </method>
+      <method name="setPixels" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="flash.geom::Rectangle" optional="false"/>
+          <parameter index="2" type="flash.utils::ByteArray" optional="false"/>
+    </method>
+      <method name="threshold" declaredBy="flash.display::BitmapData" returnType="uint">
+          <parameter index="1" type="flash.display::BitmapData" optional="false"/>
+          <parameter index="2" type="flash.geom::Rectangle" optional="false"/>
+          <parameter index="3" type="flash.geom::Point" optional="false"/>
+          <parameter index="4" type="String" optional="false"/>
+          <parameter index="5" type="uint" optional="false"/>
+          <parameter index="6" type="uint" optional="true"/>
+          <parameter index="7" type="uint" optional="true"/>
+          <parameter index="8" type="Boolean" optional="true"/>
+    </method>
+      <method name="unlock" declaredBy="flash.display::BitmapData" returnType="void">
+          <parameter index="1" type="flash.geom::Rectangle" optional="true"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display::BitmapDataChannel" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="ALPHA" type="uint"/>
+  <constant name="BLUE" type="uint"/>
+  <constant name="GREEN" type="uint"/>
+  <constant name="RED" type="uint"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::BitmapDataChannel">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+BitmapEncodingColorSpace not accessible
+<type name="flash.display::BlendMode" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="ADD" type="String"/>
+  <constant name="ALPHA" type="String"/>
+  <constant name="DARKEN" type="String"/>
+  <constant name="DIFFERENCE" type="String"/>
+  <constant name="ERASE" type="String"/>
+  <constant name="HARDLIGHT" type="String"/>
+  <constant name="INVERT" type="String"/>
+  <constant name="LAYER" type="String"/>
+  <constant name="LIGHTEN" type="String"/>
+  <constant name="MULTIPLY" type="String"/>
+  <constant name="NORMAL" type="String"/>
+  <constant name="OVERLAY" type="String"/>
+  <constant name="SCREEN" type="String"/>
+  <constant name="SHADER" type="String"/>
+  <constant name="SUBTRACT" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::BlendMode">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display::CapsStyle" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="NONE" type="String"/>
+  <constant name="ROUND" type="String"/>
+  <constant name="SQUARE" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::CapsStyle">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+ColorCorrection not accessible
+ColorCorrectionSupport not accessible
+<type name="flash.display::DisplayObject" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::DisplayObject">
+      <accessor name="accessibilityProperties" access="readwrite" type="flash.accessibility::AccessibilityProperties" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="alpha" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="blendMode" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="cacheAsBitmap" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="filters" access="readwrite" type="Array" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="height" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="loaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mask" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseX" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseY" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="name" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="opaqueBackground" access="readwrite" type="Object" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="parent" access="readonly" type="flash.display::DisplayObjectContainer" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="root" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="rotation" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scale9Grid" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleX" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleY" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scrollRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="stage" access="readonly" type="flash.display::Stage" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="transform" access="readwrite" type="flash.geom::Transform" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="visible" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="width" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="x" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="y" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="getBounds" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getRect" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="globalToLocal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hitTestObject" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="hitTestPoint" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="localToGlobal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display::DisplayObjectContainer" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::DisplayObjectContainer">
+      <accessor name="accessibilityImplementation" access="readwrite" type="flash.accessibility::AccessibilityImplementation" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="accessibilityProperties" access="readwrite" type="flash.accessibility::AccessibilityProperties" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="alpha" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="blendMode" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="cacheAsBitmap" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="contextMenu" access="readwrite" type="flash.ui::ContextMenu" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="doubleClickEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="filters" access="readwrite" type="Array" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="focusRect" access="readwrite" type="Object" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="height" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="loaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mask" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseChildren" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="mouseEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="mouseX" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseY" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="name" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="numChildren" access="readonly" type="int" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="opaqueBackground" access="readwrite" type="Object" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="parent" access="readonly" type="flash.display::DisplayObjectContainer" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="root" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="rotation" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scale9Grid" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleX" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleY" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scrollRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="stage" access="readonly" type="flash.display::Stage" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="tabChildren" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="tabEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="tabIndex" access="readwrite" type="int" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="textSnapshot" access="readonly" type="flash.text::TextSnapshot" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="transform" access="readwrite" type="flash.geom::Transform" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="visible" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="width" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="x" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="y" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.display::DisplayObject"/>
+      <extendsClass type="flash.display::InteractiveObject"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addChild" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="addChildAt" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="areInaccessibleObjectsUnderPoint" declaredBy="flash.display::DisplayObjectContainer" returnType="Boolean">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="contains" declaredBy="flash.display::DisplayObjectContainer" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="getBounds" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getChildAt" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="int" optional="false"/>
+    </method>
+      <method name="getChildByName" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="getChildIndex" declaredBy="flash.display::DisplayObjectContainer" returnType="int">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getObjectsUnderPoint" declaredBy="flash.display::DisplayObjectContainer" returnType="Array">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="getRect" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="globalToLocal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hitTestObject" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="hitTestPoint" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="localToGlobal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="removeChild" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="removeChildAt" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="int" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="setChildIndex" declaredBy="flash.display::DisplayObjectContainer" returnType="void">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="swapChildren" declaredBy="flash.display::DisplayObjectContainer" returnType="void">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="swapChildrenAt" declaredBy="flash.display::DisplayObjectContainer" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display::FrameLabel" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::FrameLabel">
+      <accessor name="frame" access="readonly" type="int" declaredBy="flash.display::FrameLabel"/>
+      <accessor name="name" access="readonly" type="String" declaredBy="flash.display::FrameLabel"/>
+      <constructor>
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </constructor>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display::GradientType" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="LINEAR" type="String"/>
+  <constant name="RADIAL" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::GradientType">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display::Graphics" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::Graphics">
+      <extendsClass type="Object"/>
+      <method name="beginBitmapFill" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="flash.display::BitmapData" optional="false"/>
+          <parameter index="2" type="flash.geom::Matrix" optional="true"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="Boolean" optional="true"/>
+    </method>
+      <method name="beginFill" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="uint" optional="false"/>
+          <parameter index="2" type="Number" optional="true"/>
+    </method>
+      <method name="beginGradientFill" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Array" optional="false"/>
+          <parameter index="3" type="Array" optional="false"/>
+          <parameter index="4" type="Array" optional="false"/>
+          <parameter index="5" type="flash.geom::Matrix" optional="true"/>
+          <parameter index="6" type="String" optional="true"/>
+          <parameter index="7" type="String" optional="true"/>
+          <parameter index="8" type="Number" optional="true"/>
+    </method>
+      <method name="clear" declaredBy="flash.display::Graphics" returnType="void"/>
+      <method name="curveTo" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Number" optional="false"/>
+          <parameter index="4" type="Number" optional="false"/>
+    </method>
+      <method name="drawCircle" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Number" optional="false"/>
+    </method>
+      <method name="drawEllipse" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Number" optional="false"/>
+          <parameter index="4" type="Number" optional="false"/>
+    </method>
+      <method name="drawRect" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Number" optional="false"/>
+          <parameter index="4" type="Number" optional="false"/>
+    </method>
+      <method name="drawRoundRect" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Number" optional="false"/>
+          <parameter index="4" type="Number" optional="false"/>
+          <parameter index="5" type="Number" optional="false"/>
+          <parameter index="6" type="Number" optional="true"/>
+    </method>
+      <method name="drawRoundRectComplex" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Number" optional="false"/>
+          <parameter index="4" type="Number" optional="false"/>
+          <parameter index="5" type="Number" optional="false"/>
+          <parameter index="6" type="Number" optional="false"/>
+          <parameter index="7" type="Number" optional="false"/>
+          <parameter index="8" type="Number" optional="false"/>
+    </method>
+      <method name="endFill" declaredBy="flash.display::Graphics" returnType="void"/>
+      <method name="lineGradientStyle" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Array" optional="false"/>
+          <parameter index="3" type="Array" optional="false"/>
+          <parameter index="4" type="Array" optional="false"/>
+          <parameter index="5" type="flash.geom::Matrix" optional="true"/>
+          <parameter index="6" type="String" optional="true"/>
+          <parameter index="7" type="String" optional="true"/>
+          <parameter index="8" type="Number" optional="true"/>
+    </method>
+      <method name="lineStyle" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="Number" optional="true"/>
+          <parameter index="2" type="uint" optional="true"/>
+          <parameter index="3" type="Number" optional="true"/>
+          <parameter index="4" type="Boolean" optional="true"/>
+          <parameter index="5" type="String" optional="true"/>
+          <parameter index="6" type="String" optional="true"/>
+          <parameter index="7" type="String" optional="true"/>
+          <parameter index="8" type="Number" optional="true"/>
+    </method>
+      <method name="lineTo" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+    </method>
+      <method name="moveTo" declaredBy="flash.display::Graphics" returnType="void">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+    </method>
+  </factory>
+</type>
+GraphicsBitmapFill not accessible
+GraphicsEndFill not accessible
+GraphicsGradientFill not accessible
+GraphicsPath not accessible
+GraphicsPathCommand not accessible
+GraphicsPathWinding not accessible
+GraphicsShaderFill not accessible
+GraphicsSolidFill not accessible
+GraphicsStroke not accessible
+GraphicsTrianglePath not accessible
+<type name="flash.display::IBitmapDrawable" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::IBitmapDrawable"/>
+</type>
+IDrawCommand not accessible
+IGraphicsData not accessible
+IGraphicsFill not accessible
+IGraphicsPath not accessible
+IGraphicsStroke not accessible
+<type name="flash.display::InteractiveObject" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::InteractiveObject">
+      <accessor name="accessibilityImplementation" access="readwrite" type="flash.accessibility::AccessibilityImplementation" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="accessibilityProperties" access="readwrite" type="flash.accessibility::AccessibilityProperties" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="alpha" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="blendMode" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="cacheAsBitmap" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="contextMenu" access="readwrite" type="flash.ui::ContextMenu" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="doubleClickEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="filters" access="readwrite" type="Array" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="focusRect" access="readwrite" type="Object" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="height" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="loaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mask" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="mouseX" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseY" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="name" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="opaqueBackground" access="readwrite" type="Object" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="parent" access="readonly" type="flash.display::DisplayObjectContainer" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="root" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="rotation" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scale9Grid" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleX" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleY" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scrollRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="stage" access="readonly" type="flash.display::Stage" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="tabEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="tabIndex" access="readwrite" type="int" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="transform" access="readwrite" type="flash.geom::Transform" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="visible" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="width" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="x" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="y" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.display::DisplayObject"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="getBounds" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getRect" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="globalToLocal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hitTestObject" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="hitTestPoint" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="localToGlobal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display::InterpolationMethod" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="LINEAR_RGB" type="String"/>
+  <constant name="RGB" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::InterpolationMethod">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+JPEGEncoderOptions not accessible
+JPEGXREncoderOptions not accessible
+<type name="flash.display::JointStyle" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="BEVEL" type="String"/>
+  <constant name="MITER" type="String"/>
+  <constant name="ROUND" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::JointStyle">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display::LineScaleMode" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="HORIZONTAL" type="String"/>
+  <constant name="NONE" type="String"/>
+  <constant name="NORMAL" type="String"/>
+  <constant name="VERTICAL" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::LineScaleMode">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display::Loader" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::Loader">
+      <accessor name="accessibilityImplementation" access="readwrite" type="flash.accessibility::AccessibilityImplementation" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="accessibilityProperties" access="readwrite" type="flash.accessibility::AccessibilityProperties" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="alpha" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="blendMode" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="cacheAsBitmap" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="content" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::Loader"/>
+      <accessor name="contentLoaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::Loader"/>
+      <accessor name="contextMenu" access="readwrite" type="flash.ui::ContextMenu" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="doubleClickEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="filters" access="readwrite" type="Array" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="focusRect" access="readwrite" type="Object" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="height" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="loaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mask" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseChildren" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="mouseEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="mouseX" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseY" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="name" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="numChildren" access="readonly" type="int" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="opaqueBackground" access="readwrite" type="Object" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="parent" access="readonly" type="flash.display::DisplayObjectContainer" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="root" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="rotation" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scale9Grid" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleX" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleY" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scrollRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="stage" access="readonly" type="flash.display::Stage" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="tabChildren" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="tabEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="tabIndex" access="readwrite" type="int" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="textSnapshot" access="readonly" type="flash.text::TextSnapshot" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="transform" access="readwrite" type="flash.geom::Transform" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="visible" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="width" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="x" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="y" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.display::DisplayObject"/>
+      <extendsClass type="flash.display::DisplayObjectContainer"/>
+      <extendsClass type="flash.display::InteractiveObject"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addChild" declaredBy="flash.display::Loader" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="addChildAt" declaredBy="flash.display::Loader" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="areInaccessibleObjectsUnderPoint" declaredBy="flash.display::DisplayObjectContainer" returnType="Boolean">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="close" declaredBy="flash.display::Loader" returnType="void"/>
+      <method name="contains" declaredBy="flash.display::DisplayObjectContainer" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="getBounds" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getChildAt" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="int" optional="false"/>
+    </method>
+      <method name="getChildByName" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="getChildIndex" declaredBy="flash.display::DisplayObjectContainer" returnType="int">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getObjectsUnderPoint" declaredBy="flash.display::DisplayObjectContainer" returnType="Array">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="getRect" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="globalToLocal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hitTestObject" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="hitTestPoint" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="load" declaredBy="flash.display::Loader" returnType="void">
+          <parameter index="1" type="flash.net::URLRequest" optional="false"/>
+          <parameter index="2" type="flash.system::LoaderContext" optional="true"/>
+    </method>
+      <method name="loadBytes" declaredBy="flash.display::Loader" returnType="void">
+          <parameter index="1" type="flash.utils::ByteArray" optional="false"/>
+          <parameter index="2" type="flash.system::LoaderContext" optional="true"/>
+    </method>
+      <method name="localToGlobal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="removeChild" declaredBy="flash.display::Loader" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="removeChildAt" declaredBy="flash.display::Loader" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="int" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="setChildIndex" declaredBy="flash.display::Loader" returnType="void">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="swapChildren" declaredBy="flash.display::DisplayObjectContainer" returnType="void">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="swapChildrenAt" declaredBy="flash.display::DisplayObjectContainer" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="unload" declaredBy="flash.display::Loader" returnType="void"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display::LoaderInfo" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::LoaderInfo">
+      <accessor name="actionScriptVersion" access="readonly" type="uint" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="applicationDomain" access="readonly" type="flash.system::ApplicationDomain" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="bytes" access="readonly" type="flash.utils::ByteArray" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="bytesLoaded" access="readonly" type="uint" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="bytesTotal" access="readonly" type="uint" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="childAllowsParent" access="readonly" type="Boolean" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="childSandboxBridge" access="readwrite" type="Object" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="content" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="contentType" access="readonly" type="String" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="frameRate" access="readonly" type="Number" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="height" access="readonly" type="int" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="isURLInaccessible" access="readonly" type="Boolean" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="loader" access="readonly" type="flash.display::Loader" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="loaderURL" access="readonly" type="String" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="parameters" access="readonly" type="Object" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="parentAllowsChild" access="readonly" type="Boolean" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="parentSandboxBridge" access="readwrite" type="Object" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="sameDomain" access="readonly" type="Boolean" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="sharedEvents" access="readonly" type="flash.events::EventDispatcher" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="swfVersion" access="readonly" type="uint" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="url" access="readonly" type="String" declaredBy="flash.display::LoaderInfo"/>
+      <accessor name="width" access="readonly" type="int" declaredBy="flash.display::LoaderInfo"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.display::LoaderInfo" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+  <method name="getLoaderInfoByDefinition" declaredBy="flash.display::LoaderInfo" returnType="flash.display::LoaderInfo">
+      <parameter index="1" type="Object" optional="false"/>
+  </method>
+</type>
+<type name="flash.display::MorphShape" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::MorphShape">
+      <accessor name="accessibilityProperties" access="readwrite" type="flash.accessibility::AccessibilityProperties" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="alpha" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="blendMode" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="cacheAsBitmap" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="filters" access="readwrite" type="Array" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="height" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="loaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mask" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseX" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseY" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="name" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="opaqueBackground" access="readwrite" type="Object" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="parent" access="readonly" type="flash.display::DisplayObjectContainer" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="root" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="rotation" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scale9Grid" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleX" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleY" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scrollRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="stage" access="readonly" type="flash.display::Stage" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="transform" access="readwrite" type="flash.geom::Transform" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="visible" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="width" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="x" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="y" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.display::DisplayObject"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="getBounds" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getRect" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="globalToLocal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hitTestObject" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="hitTestPoint" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="localToGlobal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display::MovieClip" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::MovieClip">
+      <accessor name="accessibilityImplementation" access="readwrite" type="flash.accessibility::AccessibilityImplementation" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="accessibilityProperties" access="readwrite" type="flash.accessibility::AccessibilityProperties" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="alpha" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="blendMode" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="buttonMode" access="readwrite" type="Boolean" declaredBy="flash.display::Sprite"/>
+      <accessor name="cacheAsBitmap" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="contextMenu" access="readwrite" type="flash.ui::ContextMenu" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="currentFrame" access="readonly" type="int" declaredBy="flash.display::MovieClip"/>
+      <accessor name="currentLabel" access="readonly" type="String" declaredBy="flash.display::MovieClip"/>
+      <accessor name="currentLabels" access="readonly" type="Array" declaredBy="flash.display::MovieClip"/>
+      <accessor name="currentScene" access="readonly" type="flash.display::Scene" declaredBy="flash.display::MovieClip"/>
+      <accessor name="doubleClickEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="dropTarget" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::Sprite"/>
+      <accessor name="enabled" access="readwrite" type="Boolean" declaredBy="flash.display::MovieClip"/>
+      <accessor name="filters" access="readwrite" type="Array" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="focusRect" access="readwrite" type="Object" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="framesLoaded" access="readonly" type="int" declaredBy="flash.display::MovieClip"/>
+      <accessor name="graphics" access="readonly" type="flash.display::Graphics" declaredBy="flash.display::Sprite"/>
+      <accessor name="height" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="hitArea" access="readwrite" type="flash.display::Sprite" declaredBy="flash.display::Sprite"/>
+      <accessor name="loaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mask" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseChildren" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="mouseEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="mouseX" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseY" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="name" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="numChildren" access="readonly" type="int" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="opaqueBackground" access="readwrite" type="Object" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="parent" access="readonly" type="flash.display::DisplayObjectContainer" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="root" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="rotation" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scale9Grid" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleX" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleY" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scenes" access="readonly" type="Array" declaredBy="flash.display::MovieClip"/>
+      <accessor name="scrollRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="soundTransform" access="readwrite" type="flash.media::SoundTransform" declaredBy="flash.display::Sprite"/>
+      <accessor name="stage" access="readonly" type="flash.display::Stage" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="tabChildren" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="tabEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="tabIndex" access="readwrite" type="int" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="textSnapshot" access="readonly" type="flash.text::TextSnapshot" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="totalFrames" access="readonly" type="int" declaredBy="flash.display::MovieClip"/>
+      <accessor name="trackAsMenu" access="readwrite" type="Boolean" declaredBy="flash.display::MovieClip"/>
+      <accessor name="transform" access="readwrite" type="flash.geom::Transform" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="useHandCursor" access="readwrite" type="Boolean" declaredBy="flash.display::Sprite"/>
+      <accessor name="visible" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="width" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="x" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="y" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.display::DisplayObject"/>
+      <extendsClass type="flash.display::DisplayObjectContainer"/>
+      <extendsClass type="flash.display::InteractiveObject"/>
+      <extendsClass type="flash.display::Sprite"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addChild" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="addChildAt" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="addFrameScript" declaredBy="flash.display::MovieClip" returnType="void"/>
+      <method name="areInaccessibleObjectsUnderPoint" declaredBy="flash.display::DisplayObjectContainer" returnType="Boolean">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="contains" declaredBy="flash.display::DisplayObjectContainer" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="getBounds" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getChildAt" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="int" optional="false"/>
+    </method>
+      <method name="getChildByName" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="getChildIndex" declaredBy="flash.display::DisplayObjectContainer" returnType="int">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getObjectsUnderPoint" declaredBy="flash.display::DisplayObjectContainer" returnType="Array">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="getRect" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="globalToLocal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="gotoAndPlay" declaredBy="flash.display::MovieClip" returnType="void">
+          <parameter index="1" type="Object" optional="false"/>
+          <parameter index="2" type="String" optional="true"/>
+    </method>
+      <method name="gotoAndStop" declaredBy="flash.display::MovieClip" returnType="void">
+          <parameter index="1" type="Object" optional="false"/>
+          <parameter index="2" type="String" optional="true"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hitTestObject" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="hitTestPoint" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="localToGlobal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="nextFrame" declaredBy="flash.display::MovieClip" returnType="void"/>
+      <method name="nextScene" declaredBy="flash.display::MovieClip" returnType="void"/>
+      <method name="play" declaredBy="flash.display::MovieClip" returnType="void"/>
+      <method name="prevFrame" declaredBy="flash.display::MovieClip" returnType="void"/>
+      <method name="prevScene" declaredBy="flash.display::MovieClip" returnType="void"/>
+      <method name="removeChild" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="removeChildAt" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="int" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="setChildIndex" declaredBy="flash.display::DisplayObjectContainer" returnType="void">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="startDrag" declaredBy="flash.display::Sprite" returnType="void">
+          <parameter index="1" type="Boolean" optional="true"/>
+          <parameter index="2" type="flash.geom::Rectangle" optional="true"/>
+    </method>
+      <method name="stop" declaredBy="flash.display::MovieClip" returnType="void"/>
+      <method name="stopDrag" declaredBy="flash.display::Sprite" returnType="void"/>
+      <method name="swapChildren" declaredBy="flash.display::DisplayObjectContainer" returnType="void">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="swapChildrenAt" declaredBy="flash.display::DisplayObjectContainer" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+NativeMenu not accessible
+PNGEncoderOptions not accessible
+<type name="flash.display::PixelSnapping" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="ALWAYS" type="String"/>
+  <constant name="AUTO" type="String"/>
+  <constant name="NEVER" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::PixelSnapping">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display::SWFVersion" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="FLASH1" type="uint"/>
+  <constant name="FLASH10" type="uint"/>
+  <constant name="FLASH11" type="uint"/>
+  <constant name="FLASH12" type="uint"/>
+  <constant name="FLASH2" type="uint"/>
+  <constant name="FLASH3" type="uint"/>
+  <constant name="FLASH4" type="uint"/>
+  <constant name="FLASH5" type="uint"/>
+  <constant name="FLASH6" type="uint"/>
+  <constant name="FLASH7" type="uint"/>
+  <constant name="FLASH8" type="uint"/>
+  <constant name="FLASH9" type="uint"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::SWFVersion">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display::Scene" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::Scene">
+      <accessor name="labels" access="readonly" type="Array" declaredBy="flash.display::Scene"/>
+      <accessor name="name" access="readonly" type="String" declaredBy="flash.display::Scene"/>
+      <accessor name="numFrames" access="readonly" type="int" declaredBy="flash.display::Scene"/>
+      <constructor>
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Array" optional="false"/>
+          <parameter index="3" type="int" optional="false"/>
+    </constructor>
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+Shader not accessible
+ShaderData not accessible
+ShaderInput not accessible
+ShaderJob not accessible
+ShaderParameter not accessible
+ShaderParameterType not accessible
+ShaderPrecision not accessible
+<type name="flash.display::Shape" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::Shape">
+      <accessor name="accessibilityProperties" access="readwrite" type="flash.accessibility::AccessibilityProperties" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="alpha" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="blendMode" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="cacheAsBitmap" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="filters" access="readwrite" type="Array" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="graphics" access="readonly" type="flash.display::Graphics" declaredBy="flash.display::Shape"/>
+      <accessor name="height" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="loaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mask" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseX" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseY" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="name" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="opaqueBackground" access="readwrite" type="Object" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="parent" access="readonly" type="flash.display::DisplayObjectContainer" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="root" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="rotation" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scale9Grid" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleX" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleY" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scrollRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="stage" access="readonly" type="flash.display::Stage" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="transform" access="readwrite" type="flash.geom::Transform" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="visible" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="width" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="x" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="y" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.display::DisplayObject"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="getBounds" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getRect" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="globalToLocal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hitTestObject" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="hitTestPoint" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="localToGlobal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display::SimpleButton" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::SimpleButton">
+      <accessor name="accessibilityImplementation" access="readwrite" type="flash.accessibility::AccessibilityImplementation" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="accessibilityProperties" access="readwrite" type="flash.accessibility::AccessibilityProperties" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="alpha" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="blendMode" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="cacheAsBitmap" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="contextMenu" access="readwrite" type="flash.ui::ContextMenu" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="doubleClickEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="downState" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::SimpleButton"/>
+      <accessor name="enabled" access="readwrite" type="Boolean" declaredBy="flash.display::SimpleButton"/>
+      <accessor name="filters" access="readwrite" type="Array" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="focusRect" access="readwrite" type="Object" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="height" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="hitTestState" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::SimpleButton"/>
+      <accessor name="loaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mask" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="mouseX" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseY" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="name" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="opaqueBackground" access="readwrite" type="Object" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="overState" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::SimpleButton"/>
+      <accessor name="parent" access="readonly" type="flash.display::DisplayObjectContainer" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="root" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="rotation" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scale9Grid" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleX" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleY" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scrollRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="soundTransform" access="readwrite" type="flash.media::SoundTransform" declaredBy="flash.display::SimpleButton"/>
+      <accessor name="stage" access="readonly" type="flash.display::Stage" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="tabEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="tabIndex" access="readwrite" type="int" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="trackAsMenu" access="readwrite" type="Boolean" declaredBy="flash.display::SimpleButton"/>
+      <accessor name="transform" access="readwrite" type="flash.geom::Transform" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="upState" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::SimpleButton"/>
+      <accessor name="useHandCursor" access="readwrite" type="Boolean" declaredBy="flash.display::SimpleButton"/>
+      <accessor name="visible" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="width" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="x" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="y" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <constructor>
+          <parameter index="1" type="flash.display::DisplayObject" optional="true"/>
+          <parameter index="2" type="flash.display::DisplayObject" optional="true"/>
+          <parameter index="3" type="flash.display::DisplayObject" optional="true"/>
+          <parameter index="4" type="flash.display::DisplayObject" optional="true"/>
+    </constructor>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.display::DisplayObject"/>
+      <extendsClass type="flash.display::InteractiveObject"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="getBounds" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getRect" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="globalToLocal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hitTestObject" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="hitTestPoint" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="localToGlobal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display::SpreadMethod" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="PAD" type="String"/>
+  <constant name="REFLECT" type="String"/>
+  <constant name="REPEAT" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::SpreadMethod">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display::Sprite" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::Sprite">
+      <accessor name="accessibilityImplementation" access="readwrite" type="flash.accessibility::AccessibilityImplementation" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="accessibilityProperties" access="readwrite" type="flash.accessibility::AccessibilityProperties" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="alpha" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="blendMode" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="buttonMode" access="readwrite" type="Boolean" declaredBy="flash.display::Sprite"/>
+      <accessor name="cacheAsBitmap" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="contextMenu" access="readwrite" type="flash.ui::ContextMenu" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="doubleClickEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="dropTarget" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::Sprite"/>
+      <accessor name="filters" access="readwrite" type="Array" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="focusRect" access="readwrite" type="Object" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="graphics" access="readonly" type="flash.display::Graphics" declaredBy="flash.display::Sprite"/>
+      <accessor name="height" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="hitArea" access="readwrite" type="flash.display::Sprite" declaredBy="flash.display::Sprite"/>
+      <accessor name="loaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mask" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseChildren" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="mouseEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="mouseX" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseY" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="name" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="numChildren" access="readonly" type="int" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="opaqueBackground" access="readwrite" type="Object" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="parent" access="readonly" type="flash.display::DisplayObjectContainer" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="root" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="rotation" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scale9Grid" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleX" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleY" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scrollRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="soundTransform" access="readwrite" type="flash.media::SoundTransform" declaredBy="flash.display::Sprite"/>
+      <accessor name="stage" access="readonly" type="flash.display::Stage" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="tabChildren" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="tabEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="tabIndex" access="readwrite" type="int" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="textSnapshot" access="readonly" type="flash.text::TextSnapshot" declaredBy="flash.display::DisplayObjectContainer"/>
+      <accessor name="transform" access="readwrite" type="flash.geom::Transform" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="useHandCursor" access="readwrite" type="Boolean" declaredBy="flash.display::Sprite"/>
+      <accessor name="visible" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="width" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="x" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="y" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.display::DisplayObject"/>
+      <extendsClass type="flash.display::DisplayObjectContainer"/>
+      <extendsClass type="flash.display::InteractiveObject"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addChild" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="addChildAt" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="addEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="areInaccessibleObjectsUnderPoint" declaredBy="flash.display::DisplayObjectContainer" returnType="Boolean">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="contains" declaredBy="flash.display::DisplayObjectContainer" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="getBounds" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getChildAt" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="int" optional="false"/>
+    </method>
+      <method name="getChildByName" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="getChildIndex" declaredBy="flash.display::DisplayObjectContainer" returnType="int">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getObjectsUnderPoint" declaredBy="flash.display::DisplayObjectContainer" returnType="Array">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="getRect" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="globalToLocal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hitTestObject" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="hitTestPoint" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="localToGlobal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="removeChild" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="removeChildAt" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="int" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="setChildIndex" declaredBy="flash.display::DisplayObjectContainer" returnType="void">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="startDrag" declaredBy="flash.display::Sprite" returnType="void">
+          <parameter index="1" type="Boolean" optional="true"/>
+          <parameter index="2" type="flash.geom::Rectangle" optional="true"/>
+    </method>
+      <method name="stopDrag" declaredBy="flash.display::Sprite" returnType="void"/>
+      <method name="swapChildren" declaredBy="flash.display::DisplayObjectContainer" returnType="void">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="swapChildrenAt" declaredBy="flash.display::DisplayObjectContainer" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.events::EventDispatcher" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+<type name="flash.display::Stage" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::Stage">
+      <accessor name="accessibilityImplementation" access="readwrite" type="flash.accessibility::AccessibilityImplementation" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="accessibilityProperties" access="readwrite" type="flash.accessibility::AccessibilityProperties" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="align" access="readwrite" type="String" declaredBy="flash.display::Stage"/>
+      <accessor name="alpha" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="blendMode" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="cacheAsBitmap" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="constructor" access="readwrite" type="*" declaredBy="flash.display::Stage"/>
+      <accessor name="contextMenu" access="readwrite" type="flash.ui::ContextMenu" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="displayState" access="readwrite" type="String" declaredBy="flash.display::Stage"/>
+      <accessor name="doubleClickEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="filters" access="readwrite" type="Array" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="focus" access="readwrite" type="flash.display::InteractiveObject" declaredBy="flash.display::Stage"/>
+      <accessor name="focusRect" access="readwrite" type="Object" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="frameRate" access="readwrite" type="Number" declaredBy="flash.display::Stage"/>
+      <accessor name="fullScreenHeight" access="readonly" type="uint" declaredBy="flash.display::Stage"/>
+      <accessor name="fullScreenSourceRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::Stage"/>
+      <accessor name="fullScreenWidth" access="readonly" type="uint" declaredBy="flash.display::Stage"/>
+      <accessor name="height" access="readwrite" type="Number" declaredBy="flash.display::Stage"/>
+      <accessor name="loaderInfo" access="readonly" type="flash.display::LoaderInfo" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mask" access="readwrite" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseChildren" access="readwrite" type="Boolean" declaredBy="flash.display::Stage"/>
+      <accessor name="mouseEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="mouseX" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="mouseY" access="readonly" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="name" access="readwrite" type="String" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="numChildren" access="readonly" type="int" declaredBy="flash.display::Stage"/>
+      <accessor name="opaqueBackground" access="readwrite" type="Object" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="parent" access="readonly" type="flash.display::DisplayObjectContainer" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="quality" access="readwrite" type="String" declaredBy="flash.display::Stage"/>
+      <accessor name="root" access="readonly" type="flash.display::DisplayObject" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="rotation" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scale9Grid" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleMode" access="readwrite" type="String" declaredBy="flash.display::Stage"/>
+      <accessor name="scaleX" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scaleY" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="scrollRect" access="readwrite" type="flash.geom::Rectangle" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="showDefaultContextMenu" access="readwrite" type="Boolean" declaredBy="flash.display::Stage"/>
+      <accessor name="stage" access="readonly" type="flash.display::Stage" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="stageFocusRect" access="readwrite" type="Boolean" declaredBy="flash.display::Stage"/>
+      <accessor name="stageHeight" access="readwrite" type="int" declaredBy="flash.display::Stage"/>
+      <accessor name="stageWidth" access="readwrite" type="int" declaredBy="flash.display::Stage"/>
+      <accessor name="tabChildren" access="readwrite" type="Boolean" declaredBy="flash.display::Stage"/>
+      <accessor name="tabEnabled" access="readwrite" type="Boolean" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="tabIndex" access="readwrite" type="int" declaredBy="flash.display::InteractiveObject"/>
+      <accessor name="textSnapshot" access="readonly" type="flash.text::TextSnapshot" declaredBy="flash.display::Stage"/>
+      <accessor name="transform" access="readwrite" type="flash.geom::Transform" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="visible" access="readwrite" type="Boolean" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="width" access="readwrite" type="Number" declaredBy="flash.display::Stage"/>
+      <accessor name="x" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <accessor name="y" access="readwrite" type="Number" declaredBy="flash.display::DisplayObject"/>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.display::DisplayObject"/>
+      <extendsClass type="flash.display::DisplayObjectContainer"/>
+      <extendsClass type="flash.display::InteractiveObject"/>
+      <extendsClass type="flash.events::EventDispatcher"/>
+      <implementsInterface type="flash.display::IBitmapDrawable"/>
+      <implementsInterface type="flash.events::IEventDispatcher"/>
+      <method name="addChild" declaredBy="flash.display::Stage" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="addChildAt" declaredBy="flash.display::Stage" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="addEventListener" declaredBy="flash.display::Stage" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="int" optional="true"/>
+          <parameter index="5" type="Boolean" optional="true"/>
+    </method>
+      <method name="areInaccessibleObjectsUnderPoint" declaredBy="flash.display::DisplayObjectContainer" returnType="Boolean">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="contains" declaredBy="flash.display::DisplayObjectContainer" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="dispatchEvent" declaredBy="flash.display::Stage" returnType="Boolean">
+          <parameter index="1" type="flash.events::Event" optional="false"/>
+    </method>
+      <method name="getBounds" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getChildAt" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="int" optional="false"/>
+    </method>
+      <method name="getChildByName" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="getChildIndex" declaredBy="flash.display::DisplayObjectContainer" returnType="int">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="getObjectsUnderPoint" declaredBy="flash.display::DisplayObjectContainer" returnType="Array">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="getRect" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Rectangle">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="globalToLocal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="hasEventListener" declaredBy="flash.display::Stage" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="hitTestObject" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="hitTestPoint" declaredBy="flash.display::DisplayObject" returnType="Boolean">
+          <parameter index="1" type="Number" optional="false"/>
+          <parameter index="2" type="Number" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="invalidate" declaredBy="flash.display::Stage" returnType="void"/>
+      <method name="isFocusInaccessible" declaredBy="flash.display::Stage" returnType="Boolean"/>
+      <method name="localToGlobal" declaredBy="flash.display::DisplayObject" returnType="flash.geom::Point">
+          <parameter index="1" type="flash.geom::Point" optional="false"/>
+    </method>
+      <method name="removeChild" declaredBy="flash.display::DisplayObjectContainer" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="removeChildAt" declaredBy="flash.display::Stage" returnType="flash.display::DisplayObject">
+          <parameter index="1" type="int" optional="false"/>
+    </method>
+      <method name="removeEventListener" declaredBy="flash.events::EventDispatcher" returnType="void">
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Function" optional="false"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+    </method>
+      <method name="setChildIndex" declaredBy="flash.display::Stage" returnType="void">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="swapChildren" declaredBy="flash.display::DisplayObjectContainer" returnType="void">
+          <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+          <parameter index="2" type="flash.display::DisplayObject" optional="false"/>
+    </method>
+      <method name="swapChildrenAt" declaredBy="flash.display::Stage" returnType="void">
+          <parameter index="1" type="int" optional="false"/>
+          <parameter index="2" type="int" optional="false"/>
+    </method>
+      <method name="toString" declaredBy="flash.events::EventDispatcher" returnType="String"/>
+      <method name="willTrigger" declaredBy="flash.display::Stage" returnType="Boolean">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+  </factory>
+</type>
+Stage3D not accessible
+<type name="flash.display::StageAlign" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="BOTTOM" type="String"/>
+  <constant name="BOTTOM_LEFT" type="String"/>
+  <constant name="BOTTOM_RIGHT" type="String"/>
+  <constant name="LEFT" type="String"/>
+  <constant name="RIGHT" type="String"/>
+  <constant name="TOP" type="String"/>
+  <constant name="TOP_LEFT" type="String"/>
+  <constant name="TOP_RIGHT" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::StageAlign">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display::StageDisplayState" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="FULL_SCREEN" type="String"/>
+  <constant name="FULL_SCREEN_INTERACTIVE" type="String"/>
+  <constant name="NORMAL" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::StageDisplayState">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display::StageQuality" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="BEST" type="String"/>
+  <constant name="HIGH" type="String"/>
+  <constant name="HIGH_16X16" type="String"/>
+  <constant name="HIGH_16X16_LINEAR" type="String"/>
+  <constant name="HIGH_8X8" type="String"/>
+  <constant name="HIGH_8X8_LINEAR" type="String"/>
+  <constant name="LOW" type="String"/>
+  <constant name="MEDIUM" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::StageQuality">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+<type name="flash.display::StageScaleMode" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="EXACT_FIT" type="String"/>
+  <constant name="NO_BORDER" type="String"/>
+  <constant name="NO_SCALE" type="String"/>
+  <constant name="SHOW_ALL" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.display::StageScaleMode">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+TriangleCulling not accessible

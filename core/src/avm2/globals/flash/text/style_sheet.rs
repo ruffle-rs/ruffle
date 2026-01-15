@@ -1,7 +1,7 @@
 use crate::avm2::object::{ScriptObject, TObject as _};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
-use crate::html::{transform_dashes_to_camel_case, CssStream};
+use crate::html::{CssStream, transform_dashes_to_camel_case};
 use crate::string::AvmString;
 use ruffle_wstr::WStr;
 
@@ -13,11 +13,11 @@ pub fn inner_parse_css<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let document = args.get_string(activation, 0);
-    let result = ScriptObject::new_object(activation);
+    let result = ScriptObject::new_object(activation.context);
 
     if let Ok(css) = CssStream::new(&document).parse() {
         for (selector, properties) in css.into_iter() {
-            let object = ScriptObject::new_object(activation);
+            let object = ScriptObject::new_object(activation.context);
 
             for (key, value) in properties.into_iter() {
                 object.set_dynamic_property(

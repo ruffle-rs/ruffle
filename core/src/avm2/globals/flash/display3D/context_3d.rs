@@ -1,12 +1,15 @@
-use crate::avm2::error::{argument_error, error, make_error_2008};
-use crate::avm2::globals::methods::flash_geom_matrix_3d as matrix3d_methods;
-use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
-use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
-use crate::avm2::parameters::ParametersExt;
 use crate::avm2::Activation;
 use crate::avm2::Error;
 use crate::avm2::TObject as _;
 use crate::avm2::Value;
+use crate::avm2::error::{
+    make_error_2008, make_error_3669, make_error_3670, make_error_3671, make_error_3771,
+    make_error_3772, make_error_3773, make_error_3780, make_error_3781,
+};
+use crate::avm2::globals::methods::flash_geom_matrix_3d as matrix3d_methods;
+use crate::avm2::globals::slots::flash_geom_matrix_3d as matrix3d_slots;
+use crate::avm2::globals::slots::flash_geom_rectangle as rectangle_slots;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2_stub_method;
 use ruffle_macros::istr;
 use ruffle_render::backend::Context3DWrapMode;
@@ -29,14 +32,10 @@ pub fn create_index_buffer<'gc>(
         let num_indices = args.get_u32(0);
 
         if num_indices == 0 {
-            return Err(Error::avm_error(argument_error(
-                activation,
-                "Error #3671: Buffer has zero size.",
-                3671,
-            )?));
+            return Err(make_error_3671(activation));
         }
 
-        return context.create_index_buffer(num_indices, activation);
+        return Ok(context.create_index_buffer(num_indices, activation));
     }
     Ok(Value::Undefined)
 }
@@ -54,25 +53,17 @@ pub fn create_vertex_buffer<'gc>(
         let data_32_per_vertex = args.get_u32(1);
 
         if data_32_per_vertex > 64 {
-            return Err(Error::avm_error(argument_error(
-                activation,
-                "Error #3670: Buffer too big.",
-                3670,
-            )?));
+            return Err(make_error_3670(activation));
         } else if data_32_per_vertex == 0 {
-            return Err(Error::avm_error(argument_error(
-                activation,
-                "Error #3671: Buffer has zero size.",
-                3671,
-            )?));
+            return Err(make_error_3671(activation));
         }
 
-        return context.create_vertex_buffer(
+        return Ok(context.create_vertex_buffer(
             num_vertices,
             data_32_per_vertex as u8,
             BufferUsage::DynamicDraw,
             activation,
-        );
+        ));
     }
     Ok(Value::Undefined)
 }
@@ -84,7 +75,7 @@ pub fn configure_back_buffer<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut context) = this.as_context_3d() {
+    if let Some(context) = this.as_context_3d() {
         let width = args.get_u32(0);
         let height = args.get_u32(1);
         let anti_alias = args.get_u32(2);
@@ -97,27 +88,19 @@ pub fn configure_back_buffer<'gc>(
         }
 
         if width < 32 || width > 16384 {
-            return Err(Error::avm_error(error(
-                activation,
-                if old_swf {
-                    "Error #3669: Bad input size."
-                } else {
-                    "Error #3780: Requested width of backbuffer is not in allowed range 32 to 16384."
-                },
-                if old_swf { 3669 } else { 3780 },
-            )?));
+            return Err(if old_swf {
+                make_error_3669(activation)
+            } else {
+                make_error_3780(activation)
+            });
         }
 
         if height < 32 || height > 16384 {
-            return Err(Error::avm_error(error(
-                activation,
-                if old_swf {
-                    "Error #3669: Bad input size."
-                } else {
-                    "Error #3781: Requested height of backbuffer is not in allowed range 32 to 16384."
-                },
-                if old_swf { 3669 } else { 3781 },
-            )?));
+            return Err(if old_swf {
+                make_error_3669(activation)
+            } else {
+                make_error_3781(activation)
+            });
         }
 
         let wants_best_resolution = args.get_bool(4);
@@ -178,11 +161,7 @@ pub fn set_vertex_buffer_at<'gc>(
             } else if &*format == b"bytes4" {
                 Context3DVertexBufferFormat::Bytes4
             } else {
-                return Err(Error::avm_error(argument_error(
-                    activation,
-                    "Error #2008: Parameter vertexStreamFormat must be one of the accepted values.",
-                    2008,
-                )?));
+                return Err(make_error_2008(activation, "vertexStreamFormat"));
             };
 
             Some((buffer.as_vertex_buffer().unwrap(), format))
@@ -205,7 +184,7 @@ pub fn create_program<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(context) = this.as_context_3d() {
-        return context.create_program(activation);
+        return Ok(context.create_program(activation));
     }
     Ok(Value::Undefined)
 }
@@ -246,14 +225,14 @@ pub fn draw_triangles<'gc>(
 }
 
 pub fn present<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
     if let Some(context) = this.as_context_3d() {
-        context.present(activation)?;
+        context.present();
     }
     Ok(Value::Undefined)
 }
@@ -630,32 +609,19 @@ pub fn set_render_to_texture<'gc>(
     let surface_selector = args.get_u32(3);
     let color_output_index = args.get_u32(4);
 
-    let mut error = None;
     if texture.instance_class() == activation.avm2().class_defs().cubetexture {
         if surface_selector > 5 {
-            error = Some((
-                3772,
-                "Error #3772: Cube textures need to have surfaceSelector [0..5].",
-            ));
+            return Err(make_error_3772(activation));
         }
     } else if texture.instance_class() == activation.avm2().class_defs().rectangletexture {
         if surface_selector != 0 {
-            error = Some((
-                3773,
-                "Error #3773: Rectangle textures need to have surfaceSelector = 0.",
-            ));
+            return Err(make_error_3773(activation));
         }
     } else {
         // normal Texture or video texture (but the latter should probably not be supported here anyway)
         if surface_selector != 0 {
-            error = Some((
-                3771,
-                "Error #3771: 2D textures need to have surfaceSelector = 0.",
-            ));
+            return Err(make_error_3771(activation));
         }
-    }
-    if let Some((code, message)) = error {
-        return Err(Error::avm_error(argument_error(activation, message, code)?));
     }
 
     if anti_alias != 0 {

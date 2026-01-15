@@ -1,7 +1,7 @@
 use crate::custom_event::RuffleEvent;
 use egui::{
-    vec2, Align, Area, Button, Checkbox, Color32, Frame, Id, Key, KeyboardShortcut, Layout,
-    Modifiers, Order, Pos2, Stroke, Style, Widget,
+    Align, Area, Button, Checkbox, Color32, Frame, Id, Key, KeyboardShortcut, Layout, Modifiers,
+    Order, Pos2, Stroke, Style, Widget, vec2,
 };
 use ruffle_core::{ContextMenuItem, PlayerEvent};
 use unic_langid::LanguageIdentifier;
@@ -41,7 +41,7 @@ impl ContextMenu {
         let area = Area::new(Id::new("context_menu"))
             .order(Order::Foreground)
             .fixed_pos(self.position.unwrap_or_default())
-            .constrain_to(egui_ctx.screen_rect())
+            .constrain_to(egui_ctx.content_rect())
             .interactable(true)
             .show(egui_ctx, |ui| {
                 set_menu_style(ui.style_mut());

@@ -20,7 +20,7 @@ jobs:
       ARCH: "amd64"
       SHA256: "923b80494b09b362d4fdb0d706913b67da0d60b4e2d34e5e346aa7e4118d6ab3"
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install editorconfig-checker
         run: |

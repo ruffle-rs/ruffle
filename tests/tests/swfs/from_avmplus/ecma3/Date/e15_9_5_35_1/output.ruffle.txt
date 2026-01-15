@@ -1,0 +1,54 @@
+DateString+.getTime() PASSED!
+DateString+.valueOf() PASSED!
+DateString+.getUTCFullYear() PASSED!
+DateString+.getUTCMonth() PASSED!
+DateString+.getUTCDate() PASSED!
+DateString+.getUTCDay() PASSED!
+DateString+.getUTCHours() PASSED!
+DateString+.getUTCMinutes() PASSED!
+DateString+.getUTCSeconds() PASSED!
+DateString+.getUTCMilliseconds() PASSED!
+DateString+.getFullYear() PASSED!
+DateString+.getMonth() PASSED!
+Thu Jan 1 05:45:00 GMT+0545 1970.getDate() PASSED!
+Thu Jan 1 05:45:00 GMT+0545 1970.getDay() PASSED!
+Thu Jan 1 05:45:00 GMT+0545 1970.getHours() PASSED!
+DateString+.getMinutes() PASSED!
+DateString+.getSeconds() PASSED!
+DateString+.getMilliseconds() PASSED!
+DateString+.getTime() PASSED!
+DateString+.valueOf() PASSED!
+DateString+.getUTCFullYear() PASSED!
+DateString+.getUTCMonth() PASSED!
+DateString+.getUTCDate() PASSED!
+DateString+.getUTCDay() PASSED!
+DateString+.getUTCHours() PASSED!
+DateString+.getUTCMinutes() PASSED!
+DateString+.getUTCSeconds() PASSED!
+DateString+.getUTCMilliseconds() PASSED!
+DateString+.getFullYear() PASSED!
+DateString+.getMonth() PASSED!
+Tue Dec 1 05:45:00 GMT+0545 1970.getDate() PASSED!
+Tue Dec 1 05:45:00 GMT+0545 1970.getDay() PASSED!
+Tue Dec 1 05:45:00 GMT+0545 1970.getHours() PASSED!
+DateString+.getMinutes() PASSED!
+DateString+.getSeconds() PASSED!
+DateString+.getMilliseconds() PASSED!
+DateString+.getTime() PASSED!
+DateString+.valueOf() PASSED!
+DateString+.getUTCFullYear() PASSED!
+DateString+.getUTCMonth() PASSED!
+DateString+.getUTCDate() PASSED!
+DateString+.getUTCDay() PASSED!
+DateString+.getUTCHours() PASSED!
+DateString+.getUTCMinutes() PASSED!
+DateString+.getUTCSeconds() PASSED!
+DateString+.getUTCMilliseconds() PASSED!
+DateString+.getFullYear() PASSED!
+DateString+.getMonth() PASSED!
+Sat Apr 4 05:45:00 GMT+0545 1970.getDate() PASSED!
+Sat Apr 4 05:45:00 GMT+0545 1970.getDay() PASSED!
+Sat Apr 4 05:45:00 GMT+0545 1970.getHours() PASSED!
+DateString+.getMinutes() PASSED!
+DateString+.getSeconds() PASSED!
+DateString+.getMilliseconds() PASSED!

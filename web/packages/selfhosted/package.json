@@ -11,7 +11,10 @@
     ],
     "homepage": "https://ruffle.rs",
     "bugs": "https://github.com/ruffle-rs/ruffle/issues",
-    "repository": "github:ruffle-rs/ruffle",
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/ruffle-rs/ruffle.git"
+    },
     "scripts": {
         "build": "webpack",
         "serve": "webpack-dev-server",
@@ -22,12 +25,12 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "@types/chai": "^5.2.2",
+        "@types/chai": "^5.2.3",
         "@types/chai-html": "^3.0.0",
         "json5": "^2.2.3",
         "ts-node": "^10.9.2",
-        "webpack": "^5.101.0",
+        "webpack": "^5.104.1",
         "webpack-cli": "^6.0.1",
-        "webpack-dev-server": "^5.2.2"
+        "webpack-dev-server": "^5.2.3"
     }
 }

@@ -1,18 +1,23 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
-use crate::string::StringContext;
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "exactSettings" => property(get_exact_settings, set_exact_settings);
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
+    "exactSettings" => property(get_exact_settings, set_exact_settings; VERSION_6);
     "useCodepage" => property(get_use_code_page, set_use_code_page);
     "setClipboard" => method(set_clipboard);
     "showSettings" => method(show_settings);
     // Pretty sure this is a variable
     "onStatus" => method(on_status);
 };
+
+pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
+    let system = Object::new(context.strings, Some(context.object_proto));
+    context.define_properties_on(system, OBJECT_DECLS(context));
+    system
+}
 
 #[derive(Debug, Copy, Clone, FromPrimitive)]
 enum SettingsPanel {
@@ -118,14 +123,4 @@ pub fn on_status<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm1_stub!(activation, "System", "onStatus");
     Ok(Value::Undefined)
-}
-
-pub fn create<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let system = Object::new(context, Some(proto));
-    define_properties_on(OBJECT_DECLS, context, system, fn_proto);
-    system
 }

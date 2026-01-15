@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Fichier
-file-menu-open-quick = Ouvrir...
 file-menu-open-advanced = Ouvrir avec options...
 file-menu-close = Fermer
 file-menu-reload = Recharger
@@ -17,6 +16,7 @@ file-menu-recents = Fichiers récents
 file-menu-recents-empty = Aucun fichier récent
 file-menu-preferences = Préférences...
 file-menu-exit = Quitter
+file-menu-export = Exporter...
 controls-menu = Contrôles
 controls-menu-suspend = Suspendre
 controls-menu-resume = Reprendre

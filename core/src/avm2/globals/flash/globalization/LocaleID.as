@@ -2,6 +2,7 @@ package flash.globalization {
     import __ruffle__.stub_constructor;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
+
     import flash.globalization.LastOperationStatus;
 
     [API("667")]
@@ -24,7 +25,11 @@ package flash.globalization {
             return this._name;
         }
 
-        public static function determinePreferredLocales(want:Vector.<String>, have:Vector.<String>, keyword:String = "userinterface"):Vector.<String> {
+        public static function determinePreferredLocales(
+            want:Vector.<String>,
+            have:Vector.<String>,
+            keyword:String = "userinterface"
+        ):Vector.<String> {
             stub_method("flash.globalization.LocaleID", "determinePreferredLocales");
             return null;
         }

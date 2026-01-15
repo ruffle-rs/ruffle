@@ -22,7 +22,11 @@ pub fn text_field_allocator<'gc>(
     let movie = activation.caller_movie_or_root();
     let display_object = EditText::new(activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
 
-    initialize_for_allocator(activation, display_object, class)
+    Ok(initialize_for_allocator(
+        activation.context,
+        display_object,
+        class,
+    ))
 }
 
 pub fn get_always_show_selection<'gc>(
@@ -1551,7 +1555,7 @@ pub fn get_text_runs<'gc>(
             textrun_class.construct(activation, &[start.into(), end.into(), tf.into()])
         })
         .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
-    Ok(ArrayObject::from_storage(activation, array).into())
+    Ok(ArrayObject::from_storage(activation.context, array).into())
 }
 
 pub fn get_line_index_of_char<'gc>(

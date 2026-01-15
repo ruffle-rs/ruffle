@@ -6,22 +6,31 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 
 use ruffle_macros::istr;
 use swf::Fixed8;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "getRGB" => method(get_rgb; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getTransform" => method(get_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "setRGB" => method(set_rgb; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "setTransform" => method(set_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getRGB" => method(get_rgb; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getTransform" => method(get_transform; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
 
-pub fn constructor<'gc>(
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -36,16 +45,6 @@ pub fn constructor<'gc>(
         Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
     );
     Ok(Value::Undefined)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object
 }
 
 /// Gets the target display object of this color transform.
@@ -93,7 +92,7 @@ fn get_transform<'gc>(
         let color_transform = base.color_transform();
         let out = Object::new(
             &activation.context.strings,
-            Some(activation.context.avm1.prototypes().object),
+            Some(activation.prototypes().object),
         );
         out.set(
             istr!("ra"),
@@ -204,7 +203,7 @@ fn set_transform<'gc>(
         let transform = args
             .get(0)
             .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation);
+            .coerce_to_object_or_bare(activation)?;
         set_color_mult(
             activation,
             transform,

@@ -1,7 +1,7 @@
 use crate::context::UpdateContext;
-use crate::debug_ui::display_object::{open_display_object_button, DEFAULT_DEBUG_COLORS};
-use crate::debug_ui::handle::DisplayObjectHandle;
 use crate::debug_ui::Message;
+use crate::debug_ui::display_object::{DEFAULT_DEBUG_COLORS, open_display_object_button};
+use crate::debug_ui::handle::DisplayObjectHandle;
 use crate::display_object::{
     DisplayObject, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
 };

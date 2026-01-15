@@ -3,25 +3,25 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::object::Stage3DObject;
 use crate::avm2::{
-    Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, Object as Avm2Object,
-    StageObject as Avm2StageObject, Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject, LoaderInfoObject,
+    Object as Avm2Object, StageObject as Avm2StageObject,
 };
 use crate::backend::ui::MouseCursor;
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
+use crate::display_object::DisplayObjectBase;
 use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
-use crate::display_object::{render_base, DisplayObjectBase};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::focus_tracker::FocusTracker;
 use crate::prelude::*;
 use crate::string::{FromWStr, WStr};
 use crate::tag_utils::SwfMovie;
-use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::barrier::unlock;
 use gc_arena::{Collect, Gc, Lock, Mutation, RefLock};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::backend::ViewportDimensions;
 use ruffle_render::commands::CommandHandler;
@@ -64,10 +64,10 @@ pub struct StageData<'gc> {
     child: RefLock<ChildContainer<'gc>>,
 
     /// The AVM2 view of this stage object.
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+    avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
 
     /// The AVM2 'LoaderInfo' object for this stage object
-    loader_info: Lock<Option<Avm2Object<'gc>>>,
+    loader_info: Lock<Option<LoaderInfoObject<'gc>>>,
 
     /// An array of AVM2 'Stage3D' instances
     stage3ds: RefLock<Vec<Avm2Object<'gc>>>,
@@ -87,6 +87,13 @@ pub struct StageData<'gc> {
     /// in the ActionScript-exposed `Stage.matrix` (which is always the
     /// identity matrix unless explicitly set from ActionScript)
     viewport_matrix: Cell<Matrix>,
+
+    /// Matrix used for rendering the letterbox.
+    ///
+    /// It represents the transformation of the whole window into the
+    /// letterboxed area.  Note that it's different from the viewport matrix, as
+    /// it doesn't include any additional transformations of the content.
+    letterbox_matrix: Cell<Matrix>,
 
     /// The bounds of the current viewport in twips, used for culling.
     view_bounds: Cell<Rectangle<Twips>>,
@@ -180,6 +187,7 @@ impl<'gc> Stage<'gc> {
                 stage3ds: RefLock::new(vec![]),
                 movie: RefCell::new(movie),
                 viewport_matrix: Cell::new(Matrix::IDENTITY),
+                letterbox_matrix: Cell::new(Matrix::IDENTITY),
                 focus_tracker: FocusTracker::new(gc_context),
             },
         ));
@@ -237,7 +245,7 @@ impl<'gc> Stage<'gc> {
             .set_is_action_script_3(is_action_script_3);
     }
 
-    pub fn set_loader_info(self, gc_context: &Mutation<'gc>, loader_info: Avm2Object<'gc>) {
+    pub fn set_loader_info(self, gc_context: &Mutation<'gc>, loader_info: LoaderInfoObject<'gc>) {
         unlock!(Gc::write(gc_context, self.0), StageData, loader_info).set(Some(loader_info));
     }
 
@@ -547,14 +555,25 @@ impl<'gc> Stage<'gc> {
             height_delta / 2.0
         };
 
-        self.0.viewport_matrix.set(Matrix {
+        // The viewport can be additionally translated from within the SWF header.
+        let stage_tx = {
+            let movie = self.movie();
+            let stage_size = movie.stage_size();
+            Matrix::translate(stage_size.x_min, stage_size.y_min)
+        };
+
+        let letterbox_matrix = Matrix {
             a: scale_x as f32,
             b: 0.0,
             c: 0.0,
             d: scale_y as f32,
             tx: Twips::from_pixels(tx),
             ty: Twips::from_pixels(ty),
-        });
+        };
+        self.0.letterbox_matrix.set(letterbox_matrix);
+        self.0
+            .viewport_matrix
+            .set(letterbox_matrix * stage_tx.inverse().unwrap());
 
         let view_bounds = if self.should_letterbox() {
             // Letterbox: movie area
@@ -577,12 +596,52 @@ impl<'gc> Stage<'gc> {
                 y_max: Twips::from_pixels(movie_height + margin_bottom),
             }
         };
-        self.0.view_bounds.set(view_bounds);
+
+        self.0.view_bounds.set(stage_tx * view_bounds);
 
         // Fire resize handler if stage size has changed.
         if scale_mode == StageScaleMode::NoScale && stage_size_changed {
             self.fire_resize_event(context);
         }
+    }
+
+    /// Render stage from the perspective of the viewport.
+    ///
+    /// This differs from rendering the stage directly, because it takes into
+    /// account the viewport matrix, the letterbox, etc.
+    ///
+    /// You can easily observe the difference between render_viewport and render
+    /// in FP by checking which stuff can be rendered using `BitmapData.draw`.
+    pub fn render_viewport(self, context: &mut RenderContext<'_, 'gc>) {
+        context.transform_stack.push(&Transform {
+            matrix: self.0.viewport_matrix.get(),
+            color_transform: Default::default(),
+            // TODO: Verify perspective_projection when its rendering is implemented.
+            perspective_projection: self.as_displayobject().base().perspective_projection(),
+        });
+
+        // All of our Stage3D instances get rendered *underneath* the main stage.
+        // Note that the stage background color is actually the lowest possible
+        // layer, and gets applied when we start the frame (before
+        // `render_viewport` is called).
+        for stage3d in self.stage3ds().iter() {
+            let stage3d = stage3d.as_stage_3d().unwrap();
+            if stage3d.visible()
+                && let Some(context3d) = stage3d.context3d()
+            {
+                context3d.as_context_3d().unwrap().render(context);
+            }
+        }
+
+        self.render(context);
+
+        self.focus_tracker().render_highlight(context);
+
+        if self.should_letterbox() {
+            self.draw_letterbox(context);
+        }
+
+        context.transform_stack.pop();
     }
 
     /// Draw the stage's letterbox.
@@ -595,15 +654,15 @@ impl<'gc> Stage<'gc> {
         let viewport_width = viewport_width as f32;
         let viewport_height = viewport_height as f32;
 
-        let view_matrix = self.0.viewport_matrix.get();
+        let letterbox_matrix = self.0.letterbox_matrix.get();
 
         let (movie_width, movie_height) = self.0.movie_size.get();
-        let movie_width = movie_width as f32 * view_matrix.a;
-        let movie_height = movie_height as f32 * view_matrix.d;
+        let movie_width = movie_width as f32 * letterbox_matrix.a;
+        let movie_height = movie_height as f32 * letterbox_matrix.d;
 
-        let margin_left = view_matrix.tx.to_pixels() as f32;
+        let margin_left = letterbox_matrix.tx.to_pixels() as f32;
         let margin_right = viewport_width - movie_width - margin_left;
-        let margin_top = view_matrix.ty.to_pixels() as f32;
+        let margin_top = letterbox_matrix.ty.to_pixels() as f32;
         let margin_bottom = viewport_height - movie_height - margin_top;
 
         // Letterboxing only occurs in `StageScaleMode::ShowAll`, and they would only appear on the top+bottom or left+right.
@@ -679,9 +738,9 @@ impl<'gc> Stage<'gc> {
                     context,
                 );
             }
-        } else if let Avm2Value::Object(stage) = self.object2() {
+        } else if let Some(stage) = self.object2() {
             let resized_event = Avm2EventObject::bare_default_event(context, "resize");
-            Avm2::dispatch_event(context, resized_event, stage);
+            Avm2::dispatch_event(context, resized_event, stage.into());
         }
     }
 
@@ -709,7 +768,7 @@ impl<'gc> Stage<'gc> {
                     context,
                 );
             }
-        } else if let Avm2Value::Object(stage) = self.object2() {
+        } else if let Some(stage) = self.object2() {
             let mut activation = Avm2Activation::from_nothing(context);
 
             let full_screen_event_cls = activation.avm2().classes().fullscreenevent;
@@ -726,7 +785,7 @@ impl<'gc> Stage<'gc> {
                 ],
             );
 
-            Avm2::dispatch_event(context, full_screen_event, stage);
+            Avm2::dispatch_event(context, full_screen_event, stage.into());
         }
     }
 
@@ -758,30 +817,18 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     ) {
         let stage_constr = context.avm2.classes().stage;
 
-        // TODO: Replace this when we have a convenience method for constructing AVM2 native objects.
         // TODO: We should only do this if the movie is actually an AVM2 movie.
-        // This is necessary for EventDispatcher super-constructor to run.
-        let global_domain = context.avm2.stage_domain();
-        let mut activation = Avm2Activation::from_domain(context, global_domain);
-        let avm2_stage = Avm2StageObject::for_display_object_childless(
-            &mut activation,
-            self.into(),
-            stage_constr,
-        );
+        // This is necessary for DisplayObject and EventDispatcher super-constructors to run.
+        let avm2_stage =
+            Avm2StageObject::for_display_object(context.gc(), self.into(), stage_constr);
 
-        match avm2_stage {
-            Ok(avm2_stage) => {
-                // Always create 4 Stage3D instances for now, which matches the flash projector behavior
-                let stage3ds: Vec<Avm2Object<'gc>> = (0..4)
-                    .map(|_| Stage3DObject::new(&mut activation).into())
-                    .collect();
+        // Always create 4 Stage3D instances for now, which matches the flash projector behavior
+        let stage3ds: Vec<Avm2Object<'gc>> =
+            (0..4).map(|_| Stage3DObject::new(context).into()).collect();
 
-                let write = Gc::write(activation.gc(), self.0);
-                unlock!(write, StageData, avm2_object).set(Some(avm2_stage.into()));
-                unlock!(write, StageData, stage3ds).replace(stage3ds);
-            }
-            Err(e) => tracing::error!("Unable to construct AVM2 Stage: {}", e),
-        }
+        let write = Gc::write(context.gc(), self.0);
+        unlock!(write, StageData, avm2_object).set(Some(avm2_stage));
+        unlock!(write, StageData, stage3ds).replace(stage3ds);
     }
 
     fn id(self) -> CharacterId {
@@ -794,37 +841,6 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         self.render_children(context);
-    }
-
-    fn render(self, context: &mut RenderContext<'_, 'gc>) {
-        context.transform_stack.push(&Transform {
-            matrix: self.0.viewport_matrix.get(),
-            color_transform: Default::default(),
-            // TODO: Verify perspective_projection when its rendering is implemented.
-            perspective_projection: self.as_displayobject().base().perspective_projection(),
-        });
-
-        // All of our Stage3D instances get rendered *underneath* the main stage.
-        // Note that the stage background color is actually the lowest possible layer,
-        // and get applied when we start the frame (before `render` is called).
-        for stage3d in self.stage3ds().iter() {
-            let stage3d = stage3d.as_stage_3d().unwrap();
-            if stage3d.visible() {
-                if let Some(context3d) = stage3d.context3d() {
-                    context3d.as_context_3d().unwrap().render(context);
-                }
-            }
-        }
-
-        render_base(self.into(), context);
-
-        self.focus_tracker().render_highlight(context);
-
-        if self.should_letterbox() {
-            self.draw_letterbox(context);
-        }
-
-        context.transform_stack.pop();
     }
 
     fn enter_frame(self, context: &mut UpdateContext<'gc>) {
@@ -843,12 +859,12 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         }
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .avm2_object
-            .get()
-            .expect("Attempted to access Stage::object2 before initialization")
-            .into()
+    fn object1(self) -> Option<Avm1Object<'gc>> {
+        None
+    }
+
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.avm2_object.get()
     }
 
     fn set_perspective_projection(self, mut perspective_projection: Option<PerspectiveProjection>) {
@@ -859,16 +875,15 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         if self
             .base()
             .set_perspective_projection(perspective_projection)
+            && let Some(parent) = self.parent()
         {
-            if let Some(parent) = self.parent() {
-                // Self-transform changes are automatically handled,
-                // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                parent.invalidate_cached_bitmap();
-            }
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
         }
     }
 
-    fn loader_info(self) -> Option<Avm2Object<'gc>> {
+    fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         self.0.loader_info.get()
     }
 
@@ -948,12 +963,11 @@ pub enum StageScaleMode {
 
 impl Display for StageScaleMode {
     fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        // Match string values returned by AS.
         let s = match *self {
-            StageScaleMode::ExactFit => "exactFit",
-            StageScaleMode::NoBorder => "noBorder",
-            StageScaleMode::NoScale => "noScale",
-            StageScaleMode::ShowAll => "showAll",
+            StageScaleMode::ExactFit => "exact_fit",
+            StageScaleMode::NoBorder => "no_border",
+            StageScaleMode::NoScale => "no_scale",
+            StageScaleMode::ShowAll => "show_all",
         };
         f.write_str(s)
     }
@@ -988,6 +1002,17 @@ impl FromWStr for StageScaleMode {
             Ok(StageScaleMode::ShowAll)
         } else {
             Err(ParseEnumError)
+        }
+    }
+}
+
+impl StageScaleMode {
+    pub fn to_avm_string(self) -> &'static str {
+        match self {
+            Self::ExactFit => "exactFit",
+            Self::NoBorder => "noBorder",
+            Self::NoScale => "noScale",
+            Self::ShowAll => "showAll",
         }
     }
 }
@@ -1091,6 +1116,34 @@ impl FromStr for StageAlign {
             _ => return Err(ParseEnumError),
         };
         Ok(align)
+    }
+}
+
+impl Display for StageAlign {
+    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
+        f.write_str(match *self {
+            StageAlign::BOTTOM => "bottom",
+            StageAlign::LEFT => "left",
+            StageAlign::RIGHT => "right",
+            StageAlign::TOP => "top",
+            _ => {
+                if self.contains(StageAlign::BOTTOM) {
+                    match self.difference(StageAlign::BOTTOM) {
+                        StageAlign::LEFT => "bottom_left",
+                        StageAlign::RIGHT => "bottom_right",
+                        _ => "center",
+                    }
+                } else if self.contains(StageAlign::TOP) {
+                    match self.difference(StageAlign::TOP) {
+                        StageAlign::LEFT => "top_left",
+                        StageAlign::RIGHT => "top_right",
+                        _ => "center",
+                    }
+                } else {
+                    "center"
+                }
+            }
+        })
     }
 }
 

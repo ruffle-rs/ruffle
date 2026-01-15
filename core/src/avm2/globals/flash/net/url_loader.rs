@@ -26,9 +26,9 @@ fn spawn_fetch<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let request = request_from_url_request(activation, url_request)?;
 
-    let future = activation.context.load_manager.load_data_into_url_loader(
-        activation.context.player.clone(),
-        loader_object,
+    let future = crate::loader::load_data_into_url_loader(
+        activation.context,
+        loader_object.as_script_object().unwrap(),
         request,
     );
     activation.context.navigator.spawn_future(future);

@@ -1,15 +1,17 @@
 package flash.display {
+    import __ruffle__.stub_setter;
+
     import flash.events.ErrorEvent;
     import flash.events.EventDispatcher;
     import flash.display3D.Context3D;
     import flash.display3D.Context3DProfile;
     import flash.utils.setTimeout;
-    import __ruffle__.stub_setter;
 
     [API("674")]
     [Ruffle(Abstract)]
     public class Stage3D extends EventDispatcher {
         public native function get context3D():Context3D;
+
         private native function requestContext3D_internal(context3DRenderMode:String, profiles:Vector.<String>):void;
 
         public function requestContext3D(context3DRenderMode:String = "auto", profile:String = "baseline"):void {
@@ -20,8 +22,8 @@ package flash.display {
             var stage3d = this;
             this.checkProfile(profile);
             setTimeout(function() {
-                    stage3d.requestContext3D_internal(context3DRenderMode, Vector.<String>([profile]));
-                }, 0);
+                stage3d.requestContext3D_internal(context3DRenderMode, Vector.<String>([profile]));
+            }, 0);
         }
 
         [API("692")]
@@ -35,12 +37,20 @@ package flash.display {
                 this.checkProfile(profile);
             }
             setTimeout(function() {
-                    stage3d.requestContext3D_internal("auto", profiles);
-                }, 0);
+                stage3d.requestContext3D_internal("auto", profiles);
+            }, 0);
         }
 
         private function checkProfile(profile:String):Boolean {
-            if ([Context3DProfile.BASELINE, Context3DProfile.BASELINE_CONSTRAINED, Context3DProfile.BASELINE_EXTENDED, Context3DProfile.STANDARD, Context3DProfile.STANDARD_CONSTRAINED, Context3DProfile.STANDARD_EXTENDED].indexOf(profile) == -1) {
+            var acceptedValues:Array = [
+                Context3DProfile.BASELINE,
+                Context3DProfile.BASELINE_CONSTRAINED,
+                Context3DProfile.BASELINE_EXTENDED,
+                Context3DProfile.STANDARD,
+                Context3DProfile.STANDARD_CONSTRAINED,
+                Context3DProfile.STANDARD_EXTENDED
+            ];
+            if (acceptedValues.indexOf(profile) == -1) {
                 throw new ArgumentError("Error #2008: Parameter profile must be one of the accepted values.", 2008);
             }
         }

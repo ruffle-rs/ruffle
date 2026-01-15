@@ -1,21 +1,23 @@
-use crate::avm1::globals::netconnection::NetConnection as Avm1NetConnectionObject;
+use crate::Player;
 use crate::avm1::Object as Avm1Object;
+use crate::avm1::globals::netconnection::NetConnection as Avm1NetConnectionObject;
 use crate::avm2::object::{
     NetConnectionObject as Avm2NetConnectionObject, ResponderObject as Avm2ResponderObject,
 };
 use crate::avm2::{Activation as Avm2Activation, Avm2, EventObject as Avm2EventObject};
-use crate::backend::navigator::{ErrorResponse, NavigatorBackend, OwnedFuture, Request};
+use crate::backend::navigator::{
+    ErrorResponse, FetchReason, NavigatorBackend, OwnedFuture, Request,
+};
 use crate::context::UpdateContext;
 use crate::loader::Error;
-use crate::Player;
 use flash_lso::packet::{Header, Message, Packet};
 use flash_lso::types::{AMFVersion, Value as AmfValue};
 use gc_arena::collect::Trace;
 use gc_arena::{Collect, DynamicRoot, Gc, Rootable};
-use slotmap::{new_key_type, SlotMap};
+use slotmap::{SlotMap, new_key_type};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
-use std::sync::{Mutex, Weak};
+use std::sync::{Arc, Mutex};
 
 new_key_type! {
     pub struct NetConnectionHandle;
@@ -52,8 +54,15 @@ impl ResponderHandle {
         match self {
             ResponderHandle::Avm2(handle) => {
                 let object = context.dynamic_root.fetch(handle);
-                if let Err(e) = object.send_callback(context, callback, &message) {
-                    tracing::error!("Unhandled error sending {callback:?} callback: {e}");
+                let mut activation = Avm2Activation::from_nothing(context);
+
+                if let Err(err) = object.send_callback(&mut activation, callback, &message) {
+                    Avm2::uncaught_error(
+                        &mut activation,
+                        None, // TODO we need to set this, but how?
+                        err,
+                        "Error running AVM2 NetConnection callback",
+                    );
                 }
             }
             ResponderHandle::Avm1(handle) => {
@@ -229,19 +238,18 @@ impl<'gc> NetConnections<'gc> {
                 }
                 if is_explicit
                     && matches!(connection.protocol, NetConnectionProtocol::FlashRemoting(_))
+                    && let Err(e) = Avm1NetConnectionObject::on_empty_status_event(context, object)
                 {
-                    if let Err(e) = Avm1NetConnectionObject::on_empty_status_event(context, object)
-                    {
-                        tracing::error!("Unhandled error sending connection callback: {e}");
-                    }
+                    tracing::error!("Unhandled error sending connection callback: {e}");
                 }
             }
         }
     }
 
     pub fn update_connections(context: &mut UpdateContext<'gc>) {
+        let player = context.player_handle();
         for (handle, connection) in context.net_connections.connections.iter_mut() {
-            connection.update(handle, context.navigator, context.player.clone());
+            connection.update(handle, context.navigator, &player);
         }
     }
 
@@ -431,13 +439,13 @@ impl NetConnection<'_> {
         &mut self,
         self_handle: NetConnectionHandle,
         navigator: &mut dyn NavigatorBackend,
-        player: Weak<Mutex<Player>>,
+        player: &Arc<Mutex<Player>>,
     ) {
         match &mut self.protocol {
             NetConnectionProtocol::Local => {}
             NetConnectionProtocol::FlashRemoting(remoting) => {
                 if remoting.has_pending_packet() {
-                    navigator.spawn_future(remoting.flush_queue(self_handle, player));
+                    navigator.spawn_future(remoting.flush_queue(self_handle, player.clone()));
                 }
             }
         }
@@ -501,7 +509,7 @@ impl FlashRemoting {
     pub fn flush_queue(
         &mut self,
         self_handle: NetConnectionHandle,
-        player: Weak<Mutex<Player>>,
+        player: Arc<Mutex<Player>>,
     ) -> OwnedFuture<(), Error> {
         let queue = std::mem::take(&mut self.outgoing_queue);
         let (messages, responder_handles): (Vec<_>, Vec<_>) = queue.into_iter().unzip();
@@ -513,13 +521,10 @@ impl FlashRemoting {
         let url = self.url.clone();
 
         Box::pin(async move {
-            let player = player
-                .upgrade()
-                .expect("Could not upgrade weak reference to player");
             let bytes = flash_lso::packet::write::write_to_bytes(&packet, true)
                 .expect("Must be able to serialize a packet");
             let request = Request::post(url, Some((bytes, "application/x-amf".to_string())));
-            let fetch = player.lock().unwrap().navigator().fetch(request);
+            let fetch = player.lock().unwrap().fetch(request, FetchReason::Other);
             let response: Result<_, ErrorResponse> = async {
                 let response = fetch.await?;
                 let url = response.url().to_string();

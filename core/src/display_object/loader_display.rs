@@ -1,5 +1,6 @@
+use crate::avm1::Object as Avm1Object;
 use crate::avm2::Activation;
-use crate::avm2::Object as Avm2Object;
+use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::RenderContext;
 use crate::context::UpdateContext;
 use crate::display_object::InteractiveObject;
@@ -11,11 +12,12 @@ use crate::prelude::*;
 use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::InteractiveObjectBase;
 use crate::tag_utils::SwfMovie;
-use crate::utils::HasPrefixField;
+use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefMut};
 use std::sync::Arc;
 
@@ -39,7 +41,7 @@ impl fmt::Debug for LoaderDisplay<'_> {
 pub struct LoaderDisplayData<'gc> {
     base: InteractiveObjectBase<'gc>,
     container: RefLock<ChildContainer<'gc>>,
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+    avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
     movie: Arc<SwfMovie>,
 }
 
@@ -55,8 +57,8 @@ impl<'gc> LoaderDisplay<'gc> {
             },
         ));
 
-        obj.set_placed_by_script(true);
-        activation.context.avm2.add_orphan_obj(obj.into());
+        obj.set_placed_by_avm2_script(true);
+        activation.context.orphan_manager.add_orphan_obj(obj.into());
         obj
     }
 
@@ -86,15 +88,15 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         Default::default()
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .avm2_object
-            .get()
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object1(self) -> Option<crate::avm1::Object<'gc>> {
+        None
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.avm2_object.get()
+    }
+
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let mc = context.gc();
         unlock!(Gc::write(mc, self.0), LoaderDisplayData, avm2_object).set(Some(to))
     }
@@ -117,13 +119,23 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         }
     }
 
+    fn post_instantiation(
+        self,
+        context: &mut UpdateContext<'gc>,
+        _init_object: Option<Avm1Object<'gc>>,
+        _instantiated_by: Instantiator,
+        _run_frame: bool,
+    ) {
+        self.set_default_instance_name(context);
+    }
+
     fn movie(self) -> Arc<SwfMovie> {
         self.0.movie.clone()
     }
 
     fn on_parent_removed(self, context: &mut UpdateContext<'gc>) {
         if self.movie().is_action_script_3() {
-            context.avm2.add_orphan_obj(self.into())
+            context.orphan_manager.add_orphan_obj(self.into())
         }
     }
 }

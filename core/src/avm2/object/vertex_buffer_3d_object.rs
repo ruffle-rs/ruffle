@@ -3,9 +3,8 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::Error;
-use crate::utils::HasPrefixField;
 use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::VertexBuffer;
 use std::rc::Rc;
 
@@ -25,10 +24,10 @@ impl<'gc> VertexBuffer3DObject<'gc> {
         context3d: Context3DObject<'gc>,
         handle: Rc<dyn VertexBuffer>,
         data32_per_vertex: u8,
-    ) -> Result<Object<'gc>, Error<'gc>> {
+    ) -> Object<'gc> {
         let class = activation.avm2().classes().vertexbuffer3d;
 
-        let this: Object<'gc> = VertexBuffer3DObject(Gc::new(
+        VertexBuffer3DObject(Gc::new(
             activation.gc(),
             VertexBuffer3DObjectData {
                 base: ScriptObjectData::new(class),
@@ -37,22 +36,18 @@ impl<'gc> VertexBuffer3DObject<'gc> {
                 data32_per_vertex,
             },
         ))
-        .into();
-
-        class.call_init(this.into(), &[], activation)?;
-
-        Ok(this)
+        .into()
     }
 
-    pub fn handle(&self) -> Rc<dyn VertexBuffer> {
+    pub fn handle(self) -> Rc<dyn VertexBuffer> {
         self.0.handle.clone()
     }
 
-    pub fn context3d(&self) -> Context3DObject<'gc> {
+    pub fn context3d(self) -> Context3DObject<'gc> {
         self.0.context3d
     }
 
-    pub fn data32_per_vertex(&self) -> u8 {
+    pub fn data32_per_vertex(self) -> u8 {
         self.0.data32_per_vertex
     }
 }

@@ -1,12 +1,11 @@
+use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
-use crate::avm2::error::{make_mismatch_error, Error};
+use crate::avm2::error::{Error, make_error_1063};
 use crate::avm2::method::{Method, MethodKind, ParamConfig};
 use crate::avm2::object::{ClassObject, FunctionObject};
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::TraitKind;
 use crate::avm2::value::Value;
-use crate::avm2::Multiname;
 use crate::string::WString;
 use gc_arena::{Collect, Gc};
 use std::borrow::Cow;
@@ -37,8 +36,6 @@ pub struct BoundMethod<'gc> {
     /// this method. If `None`, then there is no defining class and `super`
     /// operations should be invalid.
     bound_superclass: Option<ClassObject<'gc>>,
-
-    bound_class: Option<Class<'gc>>,
 }
 
 impl<'gc> BoundMethod<'gc> {
@@ -47,14 +44,12 @@ impl<'gc> BoundMethod<'gc> {
         scope: ScopeChain<'gc>,
         receiver: Option<Value<'gc>>,
         superclass: Option<ClassObject<'gc>>,
-        class: Option<Class<'gc>>,
     ) -> Self {
         Self {
             method,
             scope,
             bound_receiver: receiver,
             bound_superclass: superclass,
-            bound_class: class,
         }
     }
 
@@ -81,15 +76,10 @@ impl<'gc> BoundMethod<'gc> {
             self.scope,
             receiver,
             self.bound_superclass,
-            self.bound_class,
             arguments,
             activation,
             callee,
         )
-    }
-
-    pub fn bound_class(&self) -> Option<Class<'gc>> {
-        self.bound_class
     }
 
     pub fn as_method(&self) -> Method<'gc> {
@@ -98,7 +88,7 @@ impl<'gc> BoundMethod<'gc> {
 
     pub fn debug_full_name(&self) -> WString {
         let mut output = WString::new();
-        display_function(&mut output, self.as_method(), self.bound_class());
+        display_function(&mut output, self.as_method());
         output
     }
 
@@ -117,35 +107,68 @@ impl<'gc> BoundMethod<'gc> {
 
 #[derive(Clone, Copy)]
 pub enum FunctionArgs<'a, 'gc> {
-    AsCellArgSlice { arguments: &'a [Cell<Value<'gc>>] },
-    AsArgSlice { arguments: &'a [Value<'gc>] },
+    AsCellArgs(&'a [Cell<Value<'gc>>]),
+    AsArgs(&'a [Value<'gc>]),
 }
 
 impl<'a, 'gc> FunctionArgs<'a, 'gc> {
     pub fn empty() -> Self {
-        FunctionArgs::AsArgSlice { arguments: &[] }
+        FunctionArgs::AsArgs(&[])
+    }
+
+    pub fn from_slice(args: &'a [Value<'gc>]) -> Self {
+        FunctionArgs::AsArgs(args)
+    }
+
+    pub fn from_cell_slice(args: &'a [Cell<Value<'gc>>]) -> Self {
+        FunctionArgs::AsCellArgs(args)
     }
 
     pub fn to_slice(self) -> Cow<'a, [Value<'gc>]> {
         match self {
-            FunctionArgs::AsCellArgSlice { arguments } => {
+            FunctionArgs::AsCellArgs(arguments) => {
                 Cow::Owned(arguments.iter().map(|o| o.get()).collect::<Vec<_>>())
             }
-            FunctionArgs::AsArgSlice { arguments } => Cow::Borrowed(arguments),
+            FunctionArgs::AsArgs(arguments) => Cow::Borrowed(arguments),
         }
     }
 
     pub fn get_at(&self, index: usize) -> Value<'gc> {
         match self {
-            FunctionArgs::AsCellArgSlice { arguments } => arguments[index].get(),
-            FunctionArgs::AsArgSlice { arguments } => arguments[index],
+            FunctionArgs::AsCellArgs(arguments) => arguments[index].get(),
+            FunctionArgs::AsArgs(arguments) => arguments[index],
+        }
+    }
+
+    pub fn iter(&'a self) -> FunctionArgsIter<'a, 'gc> {
+        FunctionArgsIter {
+            args: self,
+            next: 0,
         }
     }
 
     pub fn len(&self) -> usize {
         match self {
-            FunctionArgs::AsCellArgSlice { arguments } => arguments.len(),
-            FunctionArgs::AsArgSlice { arguments } => arguments.len(),
+            FunctionArgs::AsCellArgs(arguments) => arguments.len(),
+            FunctionArgs::AsArgs(arguments) => arguments.len(),
+        }
+    }
+}
+
+pub struct FunctionArgsIter<'a, 'gc> {
+    args: &'a FunctionArgs<'a, 'gc>,
+    next: usize,
+}
+
+impl<'a, 'gc> Iterator for FunctionArgsIter<'a, 'gc> {
+    type Item = Value<'gc>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.next == self.args.len() {
+            None
+        } else {
+            self.next += 1;
+            Some(self.args.get_at(self.next - 1))
         }
     }
 }
@@ -164,13 +187,11 @@ impl<'a, 'gc> FunctionArgs<'a, 'gc> {
 ///
 /// It is the caller's responsibility to ensure that the `receiver` passed
 /// to this method is not Value::Null or Value::Undefined.
-#[expect(clippy::too_many_arguments)]
 pub fn exec<'gc>(
     method: Method<'gc>,
     scope: ScopeChain<'gc>,
     receiver: Value<'gc>,
     bound_superclass: Option<ClassObject<'gc>>,
-    bound_class: Option<Class<'gc>>,
     arguments: FunctionArgs<'_, 'gc>,
     activation: &mut Activation<'_, 'gc>,
     callee: Option<FunctionObject<'gc>>,
@@ -179,14 +200,11 @@ pub fn exec<'gc>(
 
     let ret = match method.method_kind() {
         MethodKind::Native { native_method, .. } => {
-            let arguments = &arguments.to_slice();
-
             let caller_domain = activation.caller_domain();
             let caller_movie = activation.caller_movie();
             let mut activation = Activation::from_builtin(
                 activation.context,
                 bound_superclass,
-                bound_class,
                 scope,
                 caller_domain,
                 caller_movie,
@@ -199,21 +217,15 @@ pub fn exec<'gc>(
             // Check for too many arguments
             if arguments.len() > signature.len() && !method.is_variadic() && !method.is_unchecked()
             {
-                return Err(Error::avm_error(make_mismatch_error(
-                    &mut activation,
-                    method,
-                    arguments.len(),
-                    bound_class,
-                )?));
+                return Err(make_error_1063(&mut activation, method, arguments.len()));
             }
 
-            let arguments =
-                activation.resolve_parameters(method, arguments, signature, bound_class)?;
+            let arguments = activation.resolve_parameters(method, arguments, signature)?;
 
             #[cfg(feature = "tracy_avm")]
             let _span = {
                 let mut name = WString::new();
-                display_function(&mut name, method, bound_class);
+                display_function(&mut name, method);
                 let span = tracy_client::Client::running()
                     .expect("tracy_client should be running")
                     .span_alloc(None, &name.to_utf8_lossy(), "rust", 0, 0);
@@ -221,7 +233,7 @@ pub fn exec<'gc>(
                 span
             };
 
-            activation.context.avm2.push_call(mc, method, bound_class);
+            activation.context.avm2.push_call(mc, method);
 
             native_method(&mut activation, receiver, &arguments)
         }
@@ -240,7 +252,6 @@ pub fn exec<'gc>(
                 arguments,
                 stack_frame,
                 bound_superclass,
-                bound_class,
                 callee,
             ) {
                 // If an error is thrown during verification or argument coercion,
@@ -252,7 +263,7 @@ pub fn exec<'gc>(
             #[cfg(feature = "tracy_avm")]
             let _span = {
                 let mut name = WString::new();
-                display_function(&mut name, method, bound_class);
+                display_function(&mut name, method);
                 let option = tracy_client::Client::running();
                 let span = option.expect("tracy_client should be running").span_alloc(
                     None,
@@ -265,7 +276,7 @@ pub fn exec<'gc>(
                 span
             };
 
-            activation.context.avm2.push_call(mc, method, bound_class);
+            activation.context.avm2.push_call(mc, method);
 
             let result = activation.run_actions(method);
 
@@ -288,11 +299,9 @@ impl fmt::Debug for BoundMethod<'_> {
     }
 }
 
-pub fn display_function<'gc>(
-    output: &mut WString,
-    method: Method<'gc>,
-    bound_class: Option<Class<'gc>>,
-) {
+pub fn display_function<'gc>(output: &mut WString, method: Method<'gc>) {
+    let bound_class = method.bound_class();
+
     if let Some(bound_class) = bound_class {
         let name = bound_class.name().to_qualified_name_no_mc();
         output.push_str(&name);

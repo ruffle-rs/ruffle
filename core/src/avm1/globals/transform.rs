@@ -1,14 +1,13 @@
 //! flash.geom.Transform
 
-use crate::avm1::function::FunctionObject;
 use crate::avm1::globals::color_transform::ColorTransformObject;
 use crate::avm1::globals::matrix::{matrix_to_value, object_to_matrix};
 use crate::avm1::object::NativeObject;
 use crate::avm1::object_reference::MovieClipReference;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
-use crate::string::{AvmString, StringContext};
+use crate::string::AvmString;
 use gc_arena::Collect;
 use ruffle_macros::istr;
 use swf::{Rectangle, Twips};
@@ -30,40 +29,48 @@ impl<'gc> TransformObject<'gc> {
         Some(Self { clip })
     }
 
-    pub fn clip(&self, activation: &mut Activation<'_, 'gc>) -> Option<DisplayObject<'gc>> {
+    pub fn clip(self, activation: &mut Activation<'_, 'gc>) -> Option<DisplayObject<'gc>> {
         let (_, _, clip) = self.clip?.resolve_reference(activation)?;
         Some(clip)
     }
 }
 
-macro_rules! transform_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "matrix" => property(transform_method!(101), transform_method!(102); VERSION_8);
-    "concatenatedMatrix" => property(transform_method!(103), transform_method!(104); VERSION_8);
-    "colorTransform" => property(transform_method!(105), transform_method!(106); VERSION_8);
-    "concatenatedColorTransform" => property(transform_method!(107), transform_method!(108); VERSION_8);
-    "pixelBounds" => property(transform_method!(109), transform_method!(110); VERSION_8);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    use fn method;
+    "matrix" => property(GET_MATRIX, SET_MATRIX; VERSION_8);
+    "concatenatedMatrix" => property(GET_CONCATENATED_MATRIX; VERSION_8);
+    "colorTransform" => property(GET_COLOR_TRANSFORM, SET_COLOR_TRANSFORM; VERSION_8);
+    "concatenatedColorTransform" => property(GET_CONCATENATED_COLOR_TRANSFORM; VERSION_8);
+    "pixelBounds" => property(GET_PIXEL_BOUNDS; VERSION_8);
 };
 
-fn method<'gc>(
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(table_constructor!(method), None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+pub mod method {
+    pub const CONSTRUCTOR: u16 = 0;
+    pub const GET_MATRIX: u16 = 101;
+    pub const SET_MATRIX: u16 = 102;
+    pub const GET_CONCATENATED_MATRIX: u16 = 103;
+    pub const GET_COLOR_TRANSFORM: u16 = 105;
+    pub const SET_COLOR_TRANSFORM: u16 = 106;
+    pub const GET_CONCATENATED_COLOR_TRANSFORM: u16 = 107;
+    pub const GET_PIXEL_BOUNDS: u16 = 109;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
-    index: u8,
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const CONSTRUCTOR: u8 = 0;
-    const GET_MATRIX: u8 = 101;
-    const SET_MATRIX: u8 = 102;
-    const GET_CONCATENATED_MATRIX: u8 = 103;
-    const GET_COLOR_TRANSFORM: u8 = 105;
-    const SET_COLOR_TRANSFORM: u8 = 106;
-    const GET_CONCATENATED_COLOR_TRANSFORM: u8 = 107;
-    const GET_PIXEL_BOUNDS: u8 = 109;
+    use method::*;
 
     if index == CONSTRUCTOR {
         let Some(transform) = TransformObject::new(activation, args) else {
@@ -93,7 +100,7 @@ fn method<'gc>(
             ];
 
             if let [value] = args {
-                let object = value.coerce_to_object(activation);
+                let object = value.coerce_to_object_or_bare(activation)?;
                 // Assignment only occurs for an object with Matrix properties (a, b, c, d, tx, ty).
                 let is_matrix = matrix_props
                     .iter()
@@ -160,7 +167,7 @@ fn method<'gc>(
             };
 
             // Return Rectangle object.
-            let constructor = activation.context.avm1.prototypes().rectangle_constructor;
+            let constructor = activation.prototypes().rectangle_constructor;
             constructor.construct(
                 activation,
                 &[
@@ -173,20 +180,4 @@ fn method<'gc>(
         }
         _ => Value::Undefined,
     })
-}
-
-pub fn create_constructor<'gc>(
-    context: &mut StringContext<'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let transform_proto = Object::new(context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, transform_proto, fn_proto);
-    FunctionObject::constructor(
-        context,
-        transform_method!(0),
-        None,
-        fn_proto,
-        transform_proto,
-    )
 }

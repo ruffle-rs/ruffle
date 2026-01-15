@@ -1,7 +1,7 @@
 use std::rc::Rc;
 
 use crate::avm2::bytearray::{Endian, ObjectEncoding};
-use crate::avm2::error::{io_error, make_error_2008, security_error};
+use crate::avm2::error::{make_error_2002, make_error_2003, make_error_2008};
 pub use crate::avm2::object::socket_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
@@ -18,10 +18,10 @@ macro_rules! assert_socket_open {
     ($activation:expr, $socket:expr) => {
         let handle = $socket
             .handle()
-            .ok_or_else(|| invalid_socket_error($activation))?;
+            .ok_or_else(|| make_error_2002($activation))?;
 
         if !$activation.context.sockets.is_connected(handle) {
-            return Err(invalid_socket_error($activation));
+            return Err(make_error_2002($activation));
         }
     };
 }
@@ -40,9 +40,7 @@ pub fn connect<'gc>(
 
     let host = args.get_string(activation, 0);
     let port = args.get_u32(1);
-    let port: u16 = port
-        .try_into()
-        .map_err(|_| invalid_port_number(activation))?;
+    let port: u16 = port.try_into().map_err(|_| make_error_2003(activation))?;
 
     let UpdateContext {
         sockets, navigator, ..
@@ -91,10 +89,10 @@ pub fn close<'gc>(
 
     if let Some(socket) = this.as_socket() {
         // We throw an IOError when socket is not open.
-        let handle = socket.handle().ok_or(invalid_socket_error(activation))?;
+        let handle = socket.handle().ok_or(make_error_2002(activation))?;
 
         if !activation.context.sockets.is_connected(handle) {
-            return Err(invalid_socket_error(activation));
+            return Err(make_error_2002(activation));
         }
 
         let UpdateContext { sockets, .. } = activation.context;
@@ -220,9 +218,9 @@ pub fn flush<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(socket) = this.as_socket() {
-        let handle = socket.handle().ok_or(invalid_socket_error(activation))?;
+        let handle = socket.handle().ok_or(make_error_2002(activation))?;
         if !activation.context.sockets.is_connected(handle) {
-            return Err(invalid_socket_error(activation));
+            return Err(make_error_2002(activation));
         }
 
         let UpdateContext { sockets, .. } = activation.context;
@@ -403,11 +401,14 @@ pub fn read_object<'gc>(
 
         let mut bytes = socket.read_buffer();
 
+        // AMF parsing requires contiguous data.
+        let bytes_slice = bytes.make_contiguous();
+
         let (bytes_left, value) = match socket.object_encoding() {
             ObjectEncoding::Amf0 => {
                 let mut decoder = AMF0Decoder::default();
                 let (extra, amf) = decoder
-                    .parse_single_element(&bytes)
+                    .parse_single_element(bytes_slice)
                     .map_err(|_| "Error: Invalid object")?;
                 (
                     extra.len(),
@@ -417,7 +418,7 @@ pub fn read_object<'gc>(
             ObjectEncoding::Amf3 => {
                 let mut decoder = AMF3Decoder::default();
                 let (extra, amf) = decoder
-                    .parse_single_element(&bytes)
+                    .parse_single_element(bytes_slice)
                     .map_err(|_| "Error: Invalid object")?;
                 (
                     extra.len(),
@@ -808,26 +809,4 @@ pub fn write_utf_bytes<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-fn invalid_socket_error<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    match io_error(
-        activation,
-        "Error #2002: Operation attempted on invalid socket.",
-        2002,
-    ) {
-        Ok(err) => Error::avm_error(err),
-        Err(e) => e,
-    }
-}
-
-fn invalid_port_number<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    match security_error(
-        activation,
-        "Error #2003: Invalid socket port number specified.",
-        2003,
-    ) {
-        Ok(err) => Error::avm_error(err),
-        Err(e) => e,
-    }
 }

@@ -1,0 +1,68 @@
+[type Function]
+function
+[object Object]
+object
+[object Object]
+object
+Enumerated
+Enumerated prototype
+Props
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+undefined
+undefined
+undefined
+undefined
+undefined
+undefined
+undefined
+undefined
+undefined
+undefined
+After set
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+test
+After delete
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+[type Function]
+undefined
+undefined
+undefined
+undefined
+undefined
+undefined
+undefined
+undefined
+undefined
+undefined

@@ -1,22 +1,22 @@
 //! Bitmap display object
 
-use crate::avm1;
+use crate::avm1::Object as Avm1Object;
 use crate::avm2::{
-    Activation as Avm2Activation, BitmapDataObject as Avm2BitmapDataObject,
-    ClassObject as Avm2ClassObject, Object as Avm2Object, StageObject as Avm2StageObject,
-    Value as Avm2Value,
+    Activation as Avm2Activation, Avm2, BitmapDataObject as Avm2BitmapDataObject,
+    ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs,
+    StageObject as Avm2StageObject,
 };
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{DisplayObjectBase, DisplayObjectPtr, DisplayObjectWeak};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
-use crate::utils::HasPrefixField;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
 use std::cell::Cell;
 use std::sync::Arc;
@@ -107,7 +107,7 @@ pub struct BitmapGraphicData<'gc> {
     ///
     /// AVM1 code cannot directly reference `Bitmap`s, so this does not support
     /// storing an AVM1 object.
-    avm2_object: Lock<Option<Avm2Object<'gc>>>,
+    avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
 
     /// The class associated with this Bitmap.
     avm2_bitmap_class: Lock<BitmapClass<'gc>>,
@@ -270,7 +270,7 @@ impl<'gc> Bitmap<'gc> {
         unlock!(Gc::write(mc, self.0), BitmapGraphicData, avm2_bitmap_class).set(class);
     }
 
-    fn set_avm2_object(self, mc: &Mutation<'gc>, object: Option<Avm2Object<'gc>>) {
+    fn set_avm2_object(self, mc: &Mutation<'gc>, object: Option<Avm2StageObject<'gc>>) {
         unlock!(Gc::write(mc, self.0), BitmapGraphicData, avm2_object).set(object);
     }
 
@@ -312,39 +312,74 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
     fn post_instantiation(
         self,
         context: &mut UpdateContext<'gc>,
-        _init_object: Option<avm1::Object<'gc>>,
+        _init_object: Option<Avm1Object<'gc>>,
         instantiated_by: Instantiator,
         _run_frame: bool,
     ) {
+        let mc = context.gc();
+
         if self.movie().is_action_script_3() {
-            let mut activation = Avm2Activation::from_nothing(context);
+            self.set_default_instance_name(context);
+
             if !instantiated_by.is_avm() {
                 let bitmap_cls = self
                     .avm2_bitmap_class()
-                    .unwrap_or_else(|| activation.context.avm2.classes().bitmap);
+                    .unwrap_or_else(|| context.avm2.classes().bitmap);
                 let bitmapdata_cls = self
                     .avm2_bitmapdata_class()
-                    .unwrap_or_else(|| activation.context.avm2.classes().bitmapdata);
+                    .unwrap_or_else(|| context.avm2.classes().bitmapdata);
 
-                let mc = activation.gc();
+                let mut activation = Avm2Activation::from_nothing(context);
 
-                let bitmap = Avm2StageObject::for_display_object_childless(
+                let bitmap_obj =
+                    Avm2StageObject::for_display_object(activation.gc(), self.into(), bitmap_cls);
+
+                let call_result = bitmap_cls.call_init(
+                    bitmap_obj.into(),
+                    Avm2FunctionArgs::empty(),
                     &mut activation,
-                    self.into(),
-                    bitmap_cls,
-                )
-                .expect("can't throw from post_instantiation -_-");
-                self.set_avm2_object(activation.gc(), Some(bitmap.into()));
+                );
+                if let Err(err) = call_result {
+                    Avm2::uncaught_error(
+                        &mut activation,
+                        Some(self.into()),
+                        err,
+                        "Error running AVM2 construction for bitmap",
+                    );
+                };
+
+                self.set_avm2_object(activation.gc(), Some(bitmap_obj));
 
                 // Use a dummy BitmapData when calling the constructor on the user subclass
                 // - the constructor should see an invalid BitmapData before calling 'super',
                 // even if it's linked to an image.
-                let bitmap_data_obj = Avm2BitmapDataObject::from_bitmap_data_internal(
-                    &mut activation,
+
+                let bitmap_data_obj = Avm2BitmapDataObject::from_bitmap_data_and_class(
+                    activation.gc(),
                     BitmapData::dummy(mc),
                     bitmapdata_cls,
-                )
-                .expect("can't throw from post_instantiation -_-");
+                );
+
+                // We call the custom BitmapData class with width and height...
+                // but, it always seems to be 1 in Flash Player when constructed
+                // from timeline? This will not actually cause us to create a
+                // BitmapData with dimensions (1, 1) - when the custom class
+                // makes a super() call, the BitmapData constructor will load
+                // in the real data from the linked SymbolClass.
+                let args = &[1.into(), 1.into()];
+                let call_result = bitmapdata_cls.call_init(
+                    bitmap_data_obj.into(),
+                    Avm2FunctionArgs::from_slice(args),
+                    &mut activation,
+                );
+                if let Err(err) = call_result {
+                    Avm2::uncaught_error(
+                        &mut activation,
+                        Some(self.into()),
+                        err,
+                        "Error running AVM2 construction for bitmap data",
+                    );
+                }
 
                 self.set_bitmap_data(activation.context, bitmap_data_obj.get_bitmap_data());
             }
@@ -366,15 +401,15 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         );
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .avm2_object
-            .get()
-            .map(|o| o.into())
-            .unwrap_or(Avm2Value::Null)
+    fn object1(self) -> Option<crate::avm1::Object<'gc>> {
+        None
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.avm2_object.get()
+    }
+
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         self.set_avm2_object(context.gc(), Some(to));
     }
 

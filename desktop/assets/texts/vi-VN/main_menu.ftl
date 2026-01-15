@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Tệp
-file-menu-open-quick = Mở...
 file-menu-open-advanced = Mở với tuỳ chọn...
 file-menu-close = Đóng
 file-menu-reload = Tải lại
@@ -17,6 +16,7 @@ file-menu-recents = Gần đây
 file-menu-recents-empty = Không có tệp nào gần đây
 file-menu-preferences = Tuỳ biến...
 file-menu-exit = Thoát
+file-menu-export = Xuất...
 controls-menu = Điều khiển
 controls-menu-suspend = Tạm hoãn
 controls-menu-resume = Tiếp tục

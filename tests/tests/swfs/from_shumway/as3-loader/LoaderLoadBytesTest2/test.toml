@@ -1,0 +1,4 @@
+num_ticks = 2
+
+# FIXME The URL is wrong
+known_failure = true

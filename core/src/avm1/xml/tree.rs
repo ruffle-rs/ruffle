@@ -5,11 +5,12 @@ use crate::avm1::{Activation, ArrayBuilder, Attribute, Error, NativeObject, Obje
 use crate::string::{AvmString, StringContext, WStr, WString};
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    lock::{Lock, RefLock},
     Collect, Gc, Mutation,
+    lock::{Lock, RefLock},
 };
 use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
+use ruffle_common::xml::custom_unescape;
 use ruffle_macros::istr;
 use std::cell::RefMut;
 use std::fmt;
@@ -92,7 +93,7 @@ impl<'gc> XmlNode<'gc> {
         let attributes = attributes?;
         for attribute in attributes.iter().rev() {
             let key = AvmString::new_utf8_bytes(activation.gc(), attribute.key.into_inner());
-            let value_str = crate::xml::custom_unescape(&attribute.value, decoder)?;
+            let value_str = custom_unescape(&attribute.value, decoder)?;
             let value = AvmString::new_utf8_bytes(activation.gc(), value_str.as_bytes());
 
             // Insert an attribute.
@@ -346,7 +347,10 @@ impl<'gc> XmlNode<'gc> {
     /// call this if you need to instantiate the script object for the first
     /// time. Attempting to call it a second time will panic.
     pub fn introduce_script_object(self, gc_context: &Mutation<'gc>, new_object: Object<'gc>) {
-        assert!(self.get_script_object().is_none(), "An attempt was made to change the already-established link between script object and XML node. This has been denied and is likely a bug.");
+        assert!(
+            self.get_script_object().is_none(),
+            "An attempt was made to change the already-established link between script object and XML node. This has been denied and is likely a bug."
+        );
 
         unlock!(Gc::write(gc_context, self.0), XmlNodeData, script_object).set(Some(new_object));
     }
@@ -357,11 +361,9 @@ impl<'gc> XmlNode<'gc> {
         match self.get_script_object() {
             Some(object) => object,
             None => {
-                let xml_node = activation.context.avm1.prototypes().xml_node_constructor;
-                let prototype = xml_node
-                    .get(istr!("prototype"), activation)
-                    .map(|p| p.coerce_to_object(activation))
-                    .ok();
+                let xml_node = activation.prototypes().xml_node_constructor;
+                // TODO(moulins): should this use `Object::prototype`?
+                let prototype = xml_node.get(istr!("prototype"), activation).ok();
                 let object = Object::new(&activation.context.strings, prototype);
                 self.introduce_script_object(activation.gc(), object);
                 object.set_native(activation.gc(), NativeObject::XmlNode(self));
@@ -371,7 +373,7 @@ impl<'gc> XmlNode<'gc> {
     }
 
     /// Obtain the script object for a given XML tree node's attributes.
-    pub fn attributes(&self) -> Object<'gc> {
+    pub fn attributes(self) -> Object<'gc> {
         self.0.attributes
     }
 
@@ -398,7 +400,7 @@ impl<'gc> XmlNode<'gc> {
 
     /// Refreshes the .childNodes array. Call this after every child list mutation.
     pub fn refresh_cached_child_nodes(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let array = self.0.cached_child_nodes.get();

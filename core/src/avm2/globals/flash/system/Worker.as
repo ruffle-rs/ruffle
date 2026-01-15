@@ -1,10 +1,10 @@
 package flash.system {
+    import __ruffle__.stub_getter;
+    import __ruffle__.stub_method;
 
     import flash.events.Event;
     import flash.events.EventDispatcher;
     import flash.system.MessageChannel;
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_method;
 
     [API("682")]
     [Ruffle(Abstract)]

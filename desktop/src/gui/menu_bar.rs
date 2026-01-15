@@ -1,9 +1,9 @@
-use crate::custom_event::RuffleEvent;
+use crate::custom_event::{OpenType, RuffleEvent};
 use crate::gui::dialogs::Dialogs;
-use crate::gui::{text, DebugMessage};
+use crate::gui::{DebugMessage, text};
 use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
-use egui::{containers::menu, Button, Key, KeyboardShortcut, Modifiers, Widget};
+use egui::{Button, Key, KeyboardShortcut, Modifiers, Widget};
 use ruffle_core::config::Letterbox;
 use ruffle_core::focus_tracker::DisplayObject;
 use ruffle_core::{Player, StageScaleMode};
@@ -58,7 +58,7 @@ impl MenuBar {
             dialogs.open_file_advanced();
         }
         if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_OPEN)) {
-            self.open_file();
+            self.browse_and_open(OpenType::File);
         }
         if egui_ctx.input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_QUIT)) {
             self.request_exit();
@@ -82,11 +82,11 @@ impl MenuBar {
             fullscreen_pressed = egui_ctx
                 .input_mut(|input| input.consume_shortcut(&Self::SHORTCUT_FULLSCREEN_WINDOWS));
         }
-        if fullscreen_pressed {
-            if let Some(player) = &mut player {
-                let is_fullscreen = player.is_fullscreen();
-                player.set_fullscreen(!is_fullscreen);
-            }
+        if let Some(player) = &mut player
+            && fullscreen_pressed
+        {
+            let is_fullscreen = player.is_fullscreen();
+            player.set_fullscreen(!is_fullscreen);
         }
     }
 
@@ -98,7 +98,7 @@ impl MenuBar {
         mut player: Option<&mut Player>,
     ) {
         egui::TopBottomPanel::top("menu_bar").show(egui_ctx, |ui| {
-             menu::Bar::new().ui(ui, |ui| {
+             egui::MenuBar::new().ui(ui, |ui| {
                 self.file_menu(locale, ui, dialogs, player.is_some());
                 self.view_menu(locale, ui, &mut player);
                 self.controls_menu(locale, ui, dialogs, &mut player);
@@ -206,13 +206,21 @@ impl MenuBar {
         player_exists: bool,
     ) {
         ui.menu_button(text(locale, "file-menu"), |ui| {
-            if Button::new(text(locale, "file-menu-open-quick"))
+            if Button::new(text(locale, "file-menu-open-file"))
                 .shortcut_text(ui.ctx().format_shortcut(&Self::SHORTCUT_OPEN))
                 .ui(ui)
                 .clicked()
             {
                 ui.close();
-                self.open_file();
+                self.browse_and_open(OpenType::File);
+            }
+
+            if Button::new(text(locale, "file-menu-open-directory"))
+                .ui(ui)
+                .clicked()
+            {
+                ui.close();
+                self.browse_and_open(OpenType::Directory);
             }
 
             if Button::new(text(locale, "file-menu-open-advanced"))
@@ -223,6 +231,7 @@ impl MenuBar {
                 ui.close();
                 dialogs.open_file_advanced();
             }
+            ui.separator();
 
             if ui
                 .add_enabled(player_exists, Button::new(text(locale, "file-menu-reload")))
@@ -280,8 +289,16 @@ impl MenuBar {
                 None if self.cached_recents.is_some() => self.cached_recents = None,
                 _ => {}
             }
-
             ui.separator();
+
+            if ui
+                .add_enabled(player_exists, Button::new(text(locale, "file-menu-export")))
+                .clicked()
+            {
+                self.export_bundle(ui);
+            }
+            ui.separator();
+
             if Button::new(text(locale, "file-menu-preferences"))
                 .ui(ui)
                 .clicked()
@@ -357,10 +374,10 @@ impl MenuBar {
                     let mut forced_scale_mode = original_forced_scale_mode;
                     ui.checkbox(&mut forced_scale_mode, text(locale, "scale-mode-force"))
                         .on_hover_text_at_pointer(text(locale, "scale-mode-force-tooltip"));
-                    if forced_scale_mode != original_forced_scale_mode {
-                        if let Some(player) = player {
-                            player.set_forced_scale_mode(forced_scale_mode);
-                        }
+                    if let Some(player) = player
+                        && forced_scale_mode != original_forced_scale_mode
+                    {
+                        player.set_forced_scale_mode(forced_scale_mode);
                     }
                 });
 
@@ -371,14 +388,14 @@ impl MenuBar {
                 };
                 let mut letterbox = original_letterbox;
                 ui.checkbox(&mut letterbox, text(locale, "letterbox"));
-                if letterbox != original_letterbox {
-                    if let Some(player) = player {
-                        player.set_letterbox(if letterbox {
-                            Letterbox::On
-                        } else {
-                            Letterbox::Off
-                        });
-                    }
+                if let Some(player) = player
+                    && letterbox != original_letterbox
+                {
+                    player.set_letterbox(if letterbox {
+                        Letterbox::On
+                    } else {
+                        Letterbox::Off
+                    });
                 }
                 ui.separator();
 
@@ -473,12 +490,11 @@ impl MenuBar {
         });
     }
 
-    fn open_file(&mut self) {
-        let _ = self
-            .event_loop
-            .send_event(RuffleEvent::BrowseAndOpen(Box::new(
-                self.default_launch_options.clone(),
-            )));
+    fn browse_and_open(&mut self, open_type: OpenType) {
+        let _ = self.event_loop.send_event(RuffleEvent::BrowseAndOpen(
+            Box::new(self.default_launch_options.clone()),
+            open_type,
+        ));
     }
 
     fn close_movie(&mut self, ui: &mut egui::Ui) {
@@ -503,6 +519,11 @@ impl MenuBar {
 
     fn launch_website(&mut self, ui: &mut egui::Ui, url: &str) {
         let _ = webbrowser::open(url);
+        ui.close();
+    }
+
+    fn export_bundle(&mut self, ui: &mut egui::Ui) {
+        let _ = self.event_loop.send_event(RuffleEvent::ExportBundle);
         ui.close();
     }
 }

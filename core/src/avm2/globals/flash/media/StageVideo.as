@@ -3,7 +3,5 @@ package flash.media {
     // available in FP 10,0,42,34.
     [API("667")]
     [Ruffle(Abstract)]
-    public class StageVideo {
-
-    }
+    public class StageVideo {}
 }

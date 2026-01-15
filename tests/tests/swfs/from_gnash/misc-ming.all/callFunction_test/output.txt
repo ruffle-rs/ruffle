@@ -1,0 +1,11 @@
+PASSED: _root.x1  ==  1 [callFunction_test.c:148]
+PASSED: _root.x2  ==  _root.mc1.mc11 [callFunction_test.c:149]
+PASSED: _root.x3  ==  1 [callFunction_test.c:150]
+PASSED: _root.x4  ==  0 [callFunction_test.c:151]
+PASSED: _root.x5  ==  1 [callFunction_test.c:152]
+PASSED: _root.x6  ==  _root.mc1 [callFunction_test.c:153]
+PASSED: _root.x7  ==  1 [callFunction_test.c:154]
+PASSED: _root.x8  ==  1 [callFunction_test.c:155]
+#passed: 8
+#failed: 0
+#total tests run: 8

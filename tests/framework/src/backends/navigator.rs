@@ -4,8 +4,8 @@ use async_channel::{Receiver, Sender};
 use percent_encoding::percent_decode_str;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, ErrorResponse, NavigationMethod, NavigatorBackend,
-    NullExecutor, NullSpawner, OwnedFuture, Request, SuccessResponse,
+    ErrorResponse, NavigationMethod, NavigatorBackend, NullExecutor, NullSpawner, OwnedFuture,
+    Request, SuccessResponse, async_return, create_fetch_error,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -28,6 +28,10 @@ struct TestResponse {
 impl SuccessResponse for TestResponse {
     fn url(&self) -> Cow<'_, str> {
         Cow::Borrowed(&self.url)
+    }
+
+    fn set_url(&mut self, url: String) {
+        self.url = url;
     }
 
     fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
@@ -177,7 +181,7 @@ impl NavigatorBackend for TestNavigatorBackend {
 
         let url = match self.resolve_url(request.url()) {
             Ok(url) => url,
-            Err(e) => return async_return(create_fetch_error(request.url(), e)),
+            Err(e) => return async_return(Err(create_fetch_error(request.url(), e))),
         };
 
         let base_path = self.relative_base_path.clone();

@@ -1,1 +1,1 @@
-context-menu-exit-fullscreen = Fechar Ecrã Inteiro
+context-menu-exit-fullscreen = Fechar ecrã inteiro

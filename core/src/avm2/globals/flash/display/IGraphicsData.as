@@ -1,4 +1,4 @@
 package flash.display {
-    public interface IGraphicsData {
-    }
+    [API("662")]
+    public interface IGraphicsData {}
 }

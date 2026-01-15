@@ -34,7 +34,7 @@ pub fn add_event_listener<'gc>(
 
     let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0);
-    let listener = args.get_object(activation, 1, "listener")?;
+    let listener = args.get_function(activation, 1, "listener")?;
     let use_capture = args.get_bool(2);
     let priority = args.get_i32(3);
 
@@ -59,7 +59,7 @@ pub fn remove_event_listener<'gc>(
 
     let dispatch_list = dispatch_list(activation, this)?;
     let event_type = args.get_string(activation, 0);
-    let listener = args.get_object(activation, 1, "listener")?;
+    let listener = args.get_function(activation, 1, "listener")?;
     let use_capture = args.get_bool(2);
 
     dispatch_list
@@ -131,7 +131,7 @@ pub fn dispatch_event_internal<'gc>(
     // AS3-side typing guarantees that the event is actually an Event
     let event = event.as_event_object().unwrap();
 
-    events::dispatch_event(activation, this, event, false)?;
+    events::dispatch_event(activation, this, event, false);
 
     let not_canceled = !event.event().is_cancelled();
     Ok(not_canceled.into())

@@ -1,10 +1,16 @@
 //! Class object impl
 
+use crate::avm2::Error;
+use crate::avm2::Multiname;
+use crate::avm2::QName;
+use crate::avm2::TranslationUnit;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::{AllocatorFn, Class, CustomConstructorFn};
-use crate::avm2::error::{self, argument_error, make_error_1127, reference_error, type_error};
-use crate::avm2::function::{exec, FunctionArgs};
-use crate::avm2::method::{Method, NativeMethodImpl};
+use crate::avm2::error::{
+    self, make_error_1070, make_error_1107, make_error_1112, make_error_1127, make_error_1128,
+};
+use crate::avm2::function::{FunctionArgs, exec};
+use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::function_object::FunctionObject;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ScriptObject, TObject};
@@ -12,18 +18,15 @@ use crate::avm2::property::Property;
 use crate::avm2::scope::{Scope, ScopeChain};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
-use crate::avm2::Error;
-use crate::avm2::Multiname;
-use crate::avm2::QName;
-use crate::avm2::TranslationUnit;
+use crate::context::UpdateContext;
 use crate::string::AvmString;
-use crate::utils::HasPrefixField;
 use fnv::FnvHashMap;
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    lock::{Lock, RefLock},
     Collect, Gc, GcWeak, Mutation,
+    lock::{Lock, RefLock},
 };
+use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
@@ -89,14 +92,14 @@ impl<'gc> ClassObject<'gc> {
     /// prototypes are weaved together separately.
     fn allocate_prototype(
         self,
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
     ) -> Object<'gc> {
-        let proto = ScriptObject::new_object(activation);
+        let proto = ScriptObject::new_object(context);
 
         if let Some(superclass_object) = superclass_object {
             let base_proto = superclass_object.prototype();
-            proto.set_proto(activation.gc(), base_proto);
+            proto.set_proto(context.gc(), base_proto);
         }
         proto
     }
@@ -117,17 +120,34 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let class_object = Self::from_class_partial(activation, class, superclass_object);
 
-        let class_proto = class_object.allocate_prototype(activation, superclass_object);
-        class_object.link_prototype(activation, class_proto);
+        class_object.bind_methods(activation)?;
+        class_object.validate_class(activation)?;
+        class_object.run_class_initializer(activation)?;
+
+        Ok(class_object)
+    }
+
+    /// Like `from_class`, but skips the method binding, class validation, and
+    /// class initializer execution steps. This method is used for Vector.<T>
+    /// ClassObject creation, since Vector.<T> classes have their methods
+    /// already bound and do not need to be validated or have their initializers
+    /// run.
+    fn from_class_partial(
+        activation: &mut Activation<'_, 'gc>,
+        class: Class<'gc>,
+        superclass_object: Option<ClassObject<'gc>>,
+    ) -> Self {
+        let class_object = Self::from_class_minimal(activation, class, superclass_object);
+
+        let class_proto = class_object.allocate_prototype(activation.context, superclass_object);
+        class_object.link_prototype(activation.context, class_proto);
 
         let class_class_proto = activation.avm2().classes().class.prototype();
         class_object.link_type(activation.gc(), class_class_proto);
 
         class_object.into_finished_class(activation);
 
-        class_object.run_class_initializer(activation)?;
-
-        Ok(class_object)
+        class_object
     }
 
     /// Allocate a class but do not properly construct it.
@@ -137,12 +157,12 @@ impl<'gc> ClassObject<'gc> {
     /// object graph. The resulting class will be a bare object and should not
     /// be used or presented to user code until you finish initializing it. You
     /// do that by calling `link_prototype`, `link_type`, `into_finished_class`,
-    /// and `run_class_initializer` in that order.
+    /// `bind_methods`, `validate_class`, and `run_class_initializer` in that order.
     ///
     /// This returns the class object directly (*not* an `Object`), to allow
     /// further manipulation of the class once it's dependent types have been
     /// allocated.
-    pub fn from_class_partial(
+    pub fn from_class_minimal(
         activation: &mut Activation<'_, 'gc>,
         class: Class<'gc>,
         superclass_object: Option<ClassObject<'gc>>,
@@ -240,12 +260,13 @@ impl<'gc> ClassObject<'gc> {
     }
 
     /// Link this class to a prototype.
-    pub fn link_prototype(self, activation: &mut Activation<'_, 'gc>, class_proto: Object<'gc>) {
-        let mc = activation.gc();
+    pub fn link_prototype(self, context: &mut UpdateContext<'gc>, class_proto: Object<'gc>) {
+        let mc = context.gc();
+        let constructor_str = istr!(context, "constructor");
 
         unlock!(Gc::write(mc, self.0), ClassObjectData, prototype).set(Some(class_proto));
-        class_proto.set_dynamic_property(istr!("constructor"), self.into(), mc);
-        class_proto.set_local_property_is_enumerable(mc, istr!("constructor"), false);
+        class_proto.set_dynamic_property(constructor_str, self.into(), mc);
+        class_proto.set_local_property_is_enumerable(mc, constructor_str, false);
     }
 
     /// Manually set the type of this `Class`.
@@ -257,16 +278,52 @@ impl<'gc> ClassObject<'gc> {
         self.base().set_proto(gc_context, proto);
     }
 
-    /// Validate signatures of the class and run the class's initializer method.
-    pub fn run_class_initializer(
-        self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
+    /// Validate signatures of the class.
+    pub fn validate_class(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         let class = self.inner_class_definition();
         let c_class = class.c_class().expect("ClassObject stores an i_class");
 
         class.validate_signatures(activation)?;
         c_class.validate_signatures(activation)?;
+
+        Ok(())
+    }
+
+    /// Bind all the methods declared by the ClassObject to itself.
+    pub fn bind_methods(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
+        let i_class = self.inner_class_definition();
+        let c_class = i_class
+            .c_class()
+            .expect("ClassObject should have an i_class");
+
+        // Bind all the methods that are declared on the i_class and c_class
+        i_class.bind_methods(activation, MethodAssociation::classbound(i_class, false))?;
+        c_class.bind_methods(activation, MethodAssociation::classbound(c_class, false))?;
+
+        i_class
+            .instance_init()
+            .expect("Cannot create ClassObject for Class without init")
+            .associate(activation, MethodAssociation::classbound(i_class, false))?;
+
+        // The class initializer (but not the instance initializer) is always
+        // in "interpreter mode"
+        c_class
+            .instance_init()
+            .expect("c_class always has initializer")
+            .associate(activation, MethodAssociation::classbound(c_class, true))?;
+
+        Ok(())
+    }
+
+    /// Run the class's initializer method.
+    pub fn run_class_initializer(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<(), Error<'gc>> {
+        let c_class = self
+            .inner_class_definition()
+            .c_class()
+            .expect("ClassObject stores an i_class");
 
         let self_value: Value<'gc> = self.into();
         let class_classobject = activation.avm2().classes().class;
@@ -278,15 +335,14 @@ impl<'gc> ClassObject<'gc> {
         };
 
         let class_init_fn = FunctionObject::from_method(
-            activation,
+            activation.context,
             class_initializer,
             scope,
             Some(self_value),
             Some(class_classobject),
-            Some(c_class),
         );
 
-        class_init_fn.call(activation, self_value, &[])?;
+        class_init_fn.call(activation, self_value, FunctionArgs::empty())?;
 
         Ok(())
     }
@@ -295,15 +351,6 @@ impl<'gc> ClassObject<'gc> {
     ///
     /// This method may panic if called with a Null or Undefined receiver.
     pub fn call_init(
-        self,
-        receiver: Value<'gc>,
-        arguments: &[Value<'gc>],
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Value<'gc>, Error<'gc>> {
-        self.call_init_with_args(receiver, FunctionArgs::AsArgSlice { arguments }, activation)
-    }
-
-    pub fn call_init_with_args(
         self,
         receiver: Value<'gc>,
         arguments: FunctionArgs<'_, 'gc>,
@@ -316,12 +363,11 @@ impl<'gc> ClassObject<'gc> {
             // Provide a callee object if necessary
             let callee = if method.needs_arguments_object() {
                 Some(FunctionObject::from_method(
-                    activation,
+                    activation.context,
                     method,
                     scope,
                     Some(receiver),
                     self.superclass_object(),
-                    Some(self.inner_class_definition()),
                 ))
             } else {
                 None
@@ -332,7 +378,6 @@ impl<'gc> ClassObject<'gc> {
                 scope,
                 receiver,
                 self.superclass_object(),
-                Some(self.inner_class_definition()),
                 arguments,
                 activation,
                 callee,
@@ -376,9 +421,8 @@ impl<'gc> ClassObject<'gc> {
         let property = self.instance_vtable().get_trait(multiname);
         match property {
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
-                let arguments = &arguments.to_slice();
-
                 let func = receiver.get_slot(slot_id);
+
                 func.call(activation, receiver.into(), arguments)
             }
             Some(Property::Method { disp_id }) => {
@@ -389,7 +433,6 @@ impl<'gc> ClassObject<'gc> {
                 let obj =
                     self.call_method_super(activation, receiver, get, FunctionArgs::empty())?;
 
-                let arguments = &arguments.to_slice();
                 obj.call(activation, receiver.into(), arguments)
             }
             Some(Property::Virtual { get: None, .. }) => Err(error::make_reference_error(
@@ -398,21 +441,11 @@ impl<'gc> ClassObject<'gc> {
                 multiname,
                 self.inner_class_definition(),
             )),
-            None => {
-                let qualified_multiname_name = multiname.as_uri(activation.strings());
-                let qualified_class_name = self
-                    .inner_class_definition()
-                    .name()
-                    .to_qualified_name_err_message(activation.gc());
-
-                return Err(Error::avm_error(reference_error(
-                    activation,
-                    &format!(
-                        "Error #1070: Method {qualified_multiname_name} not found on {qualified_class_name}",
-                    ),
-                    1070,
-                )?));
-            }
+            None => Err(make_error_1070(
+                activation,
+                self.inner_class_definition(),
+                multiname,
+            )),
         }
     }
 
@@ -455,12 +488,11 @@ impl<'gc> ClassObject<'gc> {
             Some(Property::Method { disp_id }) => {
                 let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
                 let callee = FunctionObject::from_method(
-                    activation,
+                    activation.context,
                     full_method.method,
                     full_method.scope(),
                     Some(receiver.into()),
                     full_method.super_class_obj,
-                    Some(full_method.class),
                 );
 
                 Ok(callee.into())
@@ -529,9 +561,8 @@ impl<'gc> ClassObject<'gc> {
             Some(Property::Virtual {
                 set: Some(disp_id), ..
             }) => {
-                let args = FunctionArgs::AsArgSlice {
-                    arguments: &[value],
-                };
+                let args = &[value];
+                let args = FunctionArgs::from_slice(args);
 
                 self.call_method_super(activation, receiver, disp_id, args)?;
 
@@ -575,12 +606,11 @@ impl<'gc> ClassObject<'gc> {
         // Only create callee if the method needs it
         let callee = if full_method.method.needs_arguments_object() {
             Some(FunctionObject::from_method(
-                activation,
+                activation.context,
                 full_method.method,
                 full_method.scope(),
                 Some(receiver.into()),
                 full_method.super_class_obj,
-                Some(full_method.class),
             ))
         } else {
             None
@@ -591,7 +621,6 @@ impl<'gc> ClassObject<'gc> {
             full_method.scope(),
             receiver.into(),
             full_method.super_class_obj,
-            Some(full_method.class),
             arguments,
             activation,
             callee,
@@ -614,11 +643,11 @@ impl<'gc> ClassObject<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
         class_param: Option<Class<'gc>>,
-    ) -> Result<ClassObject<'gc>, Error<'gc>> {
+    ) -> ClassObject<'gc> {
         let self_class = self.inner_class_definition();
 
         if let Some(application) = self.0.applications.borrow().get(&class_param) {
-            return Ok(*application);
+            return *application;
         }
 
         // if it's not a known application, then it's not int/uint/Number/*,
@@ -633,7 +662,7 @@ impl<'gc> ClassObject<'gc> {
 
         let vector_star_cls = activation.avm2().classes().object_vector;
         let class_object =
-            Self::from_class(activation, parameterized_class, Some(vector_star_cls))?;
+            Self::from_class_partial(activation, parameterized_class, Some(vector_star_cls));
 
         unlock!(
             Gc::write(activation.gc(), self.0),
@@ -643,27 +672,23 @@ impl<'gc> ClassObject<'gc> {
         .borrow_mut()
         .insert(class_param, class_object);
 
-        Ok(class_object)
+        class_object
     }
 
     pub fn call(
         self,
         activation: &mut Activation<'_, 'gc>,
-        arguments: &[Value<'gc>],
+        arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         if let Some(call_handler) = self.call_handler() {
+            let arguments = &arguments.to_slice();
             call_handler(activation, self.into(), arguments)
         } else if arguments.len() == 1 {
-            arguments[0].coerce_to_type(activation, self.inner_class_definition())
+            arguments
+                .get_at(0)
+                .coerce_to_type(activation, self.inner_class_definition())
         } else {
-            Err(Error::avm_error(argument_error(
-                activation,
-                &format!(
-                    "Error #1112: Argument count mismatch on class coercion.  Expected 1, got {}.",
-                    arguments.len()
-                ),
-                1112,
-            )?))
+            Err(make_error_1112(activation, arguments.len()))
         }
     }
 
@@ -672,7 +697,7 @@ impl<'gc> ClassObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         arguments: &[Value<'gc>],
     ) -> Result<Value<'gc>, Error<'gc>> {
-        self.construct_with_args(activation, FunctionArgs::AsArgSlice { arguments })
+        self.construct_with_args(activation, FunctionArgs::from_slice(arguments))
     }
 
     pub fn construct_with_args(
@@ -688,7 +713,7 @@ impl<'gc> ClassObject<'gc> {
 
             let instance = instance_allocator(self, activation)?;
 
-            self.call_init_with_args(instance.into(), arguments, activation)?;
+            self.call_init(instance.into(), arguments, activation)?;
 
             Ok(instance.into())
         }
@@ -740,7 +765,7 @@ impl<'gc> ClassObject<'gc> {
             .map(|c| c.0)
     }
 
-    pub fn name(&self) -> QName<'gc> {
+    pub fn name(self) -> QName<'gc> {
         self.inner_class_definition().name()
     }
 }
@@ -768,20 +793,11 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
         }
 
         if nullable_params.len() != 1 {
-            let class_name = self
-                .inner_class_definition()
-                .name()
-                .to_qualified_name(activation.gc());
-
-            return Err(Error::avm_error(type_error(
+            return Err(make_error_1128(
                 activation,
-                &format!(
-                    "Error #1128: Incorrect number of type parameters for {}. Expected 1, got {}.",
-                    class_name,
-                    nullable_params.len()
-                ),
-                1128,
-            )?));
+                self.inner_class_definition(),
+                nullable_params.len(),
+            ));
         }
 
         //Because `null` is a valid parameter, we have to accept values as
@@ -795,18 +811,12 @@ impl<'gc> TObject<'gc> for ClassObject<'gc> {
             Some(cls) => Some(
                 cls.as_object()
                     .and_then(|c| c.as_class_object())
-                    .ok_or_else(|| {
-                        // Note: FP throws VerifyError #1107 here
-                        format!(
-                            "Cannot apply class {:?} with non-class parameter",
-                            self_class.name()
-                        )
-                    })?
+                    .ok_or_else(|| make_error_1107(activation))?
                     .inner_class_definition(),
             ),
         };
 
-        self.parametrize(activation, class_param)
+        Ok(self.parametrize(activation, class_param))
     }
 }
 

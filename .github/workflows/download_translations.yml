@@ -15,10 +15,11 @@ jobs:
       max-parallel: 1
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Install dependencies
         run: |
+          sudo apt-get update
           sudo apt-get install -y itstool gettext appstream
 
       - name: Generate desktop & metainfo sources
@@ -53,7 +54,7 @@ jobs:
           make apply
 
       - name: Upload intermediate files
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           path: desktop/packages/linux/locale
 

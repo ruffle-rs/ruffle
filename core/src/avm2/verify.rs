@@ -1,7 +1,9 @@
 use crate::avm2::class::Class;
 use crate::avm2::error::{
-    make_error_1014, make_error_1021, make_error_1025, make_error_1032, make_error_1054,
-    make_error_1107, verify_error, Error1014Type,
+    Error1014Type, make_error_1011, make_error_1014, make_error_1019, make_error_1020,
+    make_error_1021, make_error_1025, make_error_1026, make_error_1032, make_error_1043,
+    make_error_1051, make_error_1054, make_error_1072, make_error_1078, make_error_1107,
+    make_error_1113, make_error_1124,
 };
 use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
@@ -85,11 +87,7 @@ pub fn verify_method<'gc>(
     use swf::extensions::ReadSwfExt;
 
     if body.code.is_empty() {
-        return Err(Error::avm_error(verify_error(
-            activation,
-            "Error #1043: Invalid code_length=0.",
-            1043,
-        )?));
+        return Err(make_error_1043(activation));
     }
 
     let activation_class = create_activation_class(activation, method)?;
@@ -122,18 +120,12 @@ pub fn verify_method<'gc>(
                 Ok(op) => op,
 
                 Err(AbcReadError::InvalidData(_)) => {
-                    return Err(Error::avm_error(verify_error(
-                        activation,
-                        "Error #1011: Method contained illegal opcode.",
-                        1011,
-                    )?));
+                    // Invalid opcode
+                    return Err(make_error_1011(activation));
                 }
                 Err(AbcReadError::IoError(_)) => {
-                    return Err(Error::avm_error(verify_error(
-                        activation,
-                        "Error #1020: Code cannot fall off the end of a method.",
-                        1020,
-                    )?));
+                    // Code flow continued past end of method
+                    return Err(make_error_1020(activation));
                 }
                 Err(_) => unreachable!(),
             };
@@ -221,7 +213,7 @@ pub fn verify_method<'gc>(
                     }
                 }
 
-                AbcOp::LookupSwitch(ref lookup_switch) => {
+                AbcOp::LookupSwitch(lookup_switch) => {
                     check_target(&seen_targets, lookup_switch.default_offset, false)?;
                     let default_offset = lookup_switch.default_offset + previous_position;
 
@@ -524,7 +516,7 @@ pub fn verify_method<'gc>(
         &mut verified_code,
         &mut new_exceptions,
         resolved_param_config,
-        &jump_targets,
+        jump_targets,
     )?;
 
     Ok(VerifiedMethodInfo {
@@ -761,25 +753,17 @@ fn translate_op<'gc>(
             } else if index_register >= max_locals {
                 return Err(make_error_1025(activation, index_register));
             } else if index_register == object_register {
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1124: OP_hasnext2 requires object and index to be distinct registers.",
-                    1124,
-                )?));
+                return Err(make_error_1124(activation));
             }
         }
 
         // Misc opcode verification
         AbcOp::CallMethod { index, .. } => {
-            return Err(Error::avm_error(if index == 0 {
-                verify_error(activation, "Error #1072: Disp_id 0 is illegal.", 1072)?
+            return Err(if index == 0 {
+                make_error_1072(activation)
             } else {
-                verify_error(
-                    activation,
-                    "Error #1051: Illegal early binding access.",
-                    1051,
-                )?
-            }));
+                make_error_1051(activation)
+            });
         }
 
         AbcOp::FindDef { index } | AbcOp::GetLex { index } => {
@@ -787,21 +771,13 @@ fn translate_op<'gc>(
                 translation_unit.pool_maybe_uninitialized_multiname(activation, index)?;
 
             if multiname.has_lazy_component() {
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1078: Illegal opcode/multiname combination.",
-                    1078,
-                )?));
+                return Err(make_error_1078(activation));
             }
         }
 
         AbcOp::GetOuterScope { index } => {
             if activation.outer().get(index as usize).is_none() {
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1019: Getscopeobject  is out of bounds.",
-                    1019,
-                )?));
+                return Err(make_error_1019(activation, None));
             }
         }
 
@@ -810,11 +786,7 @@ fn translate_op<'gc>(
         | AbcOp::GetGlobalSlot { index }
         | AbcOp::SetGlobalSlot { index } => {
             if index == 0 {
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1026: Slot 0 exceeds slotCount",
-                    1026,
-                )?));
+                return Err(make_error_1026(activation, 0, None, None));
             }
         }
 
@@ -1071,11 +1043,7 @@ fn translate_op<'gc>(
                 // This results in this VerifyError being thrown upon
                 // encountering any `newactivation` op in the bytecode.
 
-                return Err(Error::avm_error(verify_error(
-                    activation,
-                    "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
-                    1113,
-                )?));
+                return Err(make_error_1113(activation));
             }
         }
         AbcOp::NewObject { num_args } => Op::NewObject { num_args },

@@ -1,16 +1,19 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, ExecutionName, ExecutionReason};
-use crate::avm1::object::{stage_object, NativeObject};
+use crate::avm1::function::{ExecutionName, ExecutionReason, FunctionObject};
+use crate::avm1::object::{NativeObject, stage_object};
 use crate::avm1::property::{Attribute, Property};
 use crate::avm1::property_map::{Entry, PropertyMap};
 use crate::avm1::{ObjectPtr, Value};
+use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject as _};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::string::{AvmString, StringContext};
 use core::{fmt, mem};
-use gc_arena::{lock::RefLock, Collect, Gc, GcWeak, Mutation};
+use gc_arena::lock::RefLock;
+use gc_arena::{Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable};
 use ruffle_macros::istr;
+use std::cell::Ref;
 
 use super::super_object::SuperObject;
 
@@ -38,7 +41,7 @@ impl<'gc> Watcher<'gc> {
         this: Object<'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let args = [Value::String(name), old_value, new_value, self.user_data];
-        let exec = self.callback.as_executable().unwrap();
+        let exec = self.callback.as_function().unwrap();
         exec.exec(
             ExecutionName::Dynamic(name),
             activation,
@@ -73,12 +76,26 @@ impl fmt::Debug for ObjectWeak<'_> {
     }
 }
 
+#[derive(Clone)]
+#[expect(clippy::type_complexity)]
+pub struct ObjectHandle(DynamicRoot<Rootable![RefLock<ObjectData<'_>>]>);
+
+impl ObjectHandle {
+    pub fn stash<'gc>(context: &UpdateContext<'gc>, this: Object<'gc>) -> Self {
+        Self(context.dynamic_root.stash(context.gc(), this.0))
+    }
+
+    pub fn fetch<'gc>(&self, context: &UpdateContext<'gc>) -> Object<'gc> {
+        Object(context.dynamic_root.fetch(&self.0))
+    }
+}
+
 #[derive(Collect)]
 #[collect(no_drop)]
 struct ObjectData<'gc> {
     native: NativeObject<'gc>,
     properties: PropertyMap<'gc, Property<'gc>>,
-    interfaces: Vec<Object<'gc>>,
+    interfaces: Option<Vec<Object<'gc>>>,
     watchers: PropertyMap<'gc, Watcher<'gc>>,
 }
 
@@ -95,13 +112,29 @@ impl<'gc> Object<'gc> {
         ObjectWeak(Gc::downgrade(self.0))
     }
 
-    pub fn new(context: &StringContext<'gc>, proto: Option<Object<'gc>>) -> Self {
+    pub fn new(context: &StringContext<'gc>, proto: Option<impl Into<Value<'gc>>>) -> Self {
+        Self::new_impl(context, proto.map(Into::into), NativeObject::None)
+    }
+
+    pub fn new_with_native(
+        context: &StringContext<'gc>,
+        proto: Option<impl Into<Value<'gc>>>,
+        native: NativeObject<'gc>,
+    ) -> Self {
+        Self::new_impl(context, proto.map(Into::into), native)
+    }
+
+    fn new_impl(
+        context: &StringContext<'gc>,
+        proto: Option<Value<'gc>>,
+        native: NativeObject<'gc>,
+    ) -> Self {
         let object = Self(Gc::new(
             context.gc(),
             RefLock::new(ObjectData {
-                native: NativeObject::None,
+                native,
                 properties: PropertyMap::new(),
-                interfaces: vec![],
+                interfaces: None,
                 watchers: PropertyMap::new(),
             }),
         ));
@@ -109,21 +142,11 @@ impl<'gc> Object<'gc> {
             object.define_value(
                 context.gc(),
                 istr!(context, "__proto__"),
-                proto.into(),
+                proto,
                 Attribute::DONT_ENUM | Attribute::DONT_DELETE,
             );
         }
         object
-    }
-
-    pub fn new_with_native(
-        context: &StringContext<'gc>,
-        proto: Option<Object<'gc>>,
-        native: NativeObject<'gc>,
-    ) -> Self {
-        let obj = Self::new(context, proto);
-        obj.set_native(context.gc(), native);
-        obj
     }
 
     // Creates a Object, without assigning any __proto__ property.
@@ -133,18 +156,18 @@ impl<'gc> Object<'gc> {
             RefLock::new(ObjectData {
                 native: NativeObject::None,
                 properties: PropertyMap::new(),
-                interfaces: vec![],
+                interfaces: None,
                 watchers: PropertyMap::new(),
             }),
         ))
     }
 
-    /// Gets the value of a data property on this object.
+    /// Gets the value of a data property on this object, ignoring attributes.
     ///
     /// Doesn't look up the prototype chain and ignores virtual properties, thus cannot cause
     /// any side-effects.
     pub(super) fn get_data(
-        &self,
+        self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Value<'gc> {
@@ -155,12 +178,12 @@ impl<'gc> Object<'gc> {
             .map_or(Value::Undefined, |property| property.data())
     }
 
-    /// Sets a data property on this object.
+    /// Sets a data property on this object, ignoring attributes.
     ///
     /// Doesn't look up the prototype chain and ignores virtual properties, but still might
     /// call to watchers.
     pub fn set_data(
-        &self,
+        self,
         name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
@@ -179,7 +202,7 @@ impl<'gc> Object<'gc> {
     }
 
     // TODO: Make an iterator?
-    pub fn own_properties(&self) -> Vec<(AvmString<'gc>, Value<'gc>)> {
+    pub fn own_properties(self) -> Vec<(AvmString<'gc>, Value<'gc>)> {
         self.0
             .borrow()
             .properties
@@ -194,15 +217,15 @@ impl<'gc> Object<'gc> {
             .collect()
     }
 
-    /// Retrieve a named, non-virtual property from this object exclusively.
+    /// Retrieve a named, non-virtual property from this object exclusively, taking
+    /// attributes into account.
     ///
     /// This function should not inspect prototype chains. Instead, use
     /// `get_stored` to do ordinary property look-up and resolution.
     pub fn get_local_stored(
-        &self,
+        self,
         name: impl Into<AvmString<'gc>>,
         activation: &mut Activation<'_, 'gc>,
-        is_slash_path: bool,
     ) -> Option<Value<'gc>> {
         // TODO(moulins): can this special case be removed? (as `super` never has properties)
         if self.as_super_object().is_some() {
@@ -217,15 +240,15 @@ impl<'gc> Object<'gc> {
             .filter(|property| property.allow_swf_version(activation.swf_version()))
             .map(|property| property.data())
             .or_else(|| {
-                read.native.as_display_object().and_then(|dobj| {
-                    stage_object::get_property(dobj, name, activation, is_slash_path)
-                })
+                read.native
+                    .as_display_object()
+                    .and_then(|dobj| stage_object::get_property(dobj, name, activation))
             })
     }
 
     /// Set a named property on the object.
     pub(super) fn set_local(
-        &self,
+        self,
         name: AvmString<'gc>,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
@@ -288,7 +311,7 @@ impl<'gc> Object<'gc> {
         };
 
         if let Some(setter) = setter {
-            if let Some(exec) = setter.as_executable() {
+            if let Some(exec) = setter.as_function() {
                 if let Err(Error::ThrownValue(e)) = exec.exec(
                     ExecutionName::Static("[Setter]"),
                     activation,
@@ -357,7 +380,7 @@ impl<'gc> Object<'gc> {
 
     /// Retrieve a getter defined on this object.
     pub(super) fn getter(
-        &self,
+        self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Option<Object<'gc>> {
@@ -376,7 +399,7 @@ impl<'gc> Object<'gc> {
 
     /// Retrieve a setter defined on this object.
     pub(super) fn setter(
-        &self,
+        self,
         name: AvmString<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Option<Object<'gc>> {
@@ -396,7 +419,7 @@ impl<'gc> Object<'gc> {
     /// Delete a named property from the object.
     ///
     /// Returns false if the property cannot be deleted.
-    pub fn delete(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
+    pub fn delete(self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
         // TODO(moulins): can this special case be removed (`super` never has properties to delete)
         if self.as_super_object().is_some() {
             // `super` cannot have properties deleted from it
@@ -428,7 +451,7 @@ impl<'gc> Object<'gc> {
     /// especially if a property name conflicts with a built-in property, such
     /// as `__proto__`.
     pub fn add_property(
-        &self,
+        self,
         gc_context: &Mutation<'gc>,
         name: AvmString<'gc>,
         getter: Object<'gc>,
@@ -457,7 +480,7 @@ impl<'gc> Object<'gc> {
     /// especially if a property name conflicts with a built-in property, such
     /// as `__proto__`.
     pub fn add_property_with_case(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         name: AvmString<'gc>,
         getter: Object<'gc>,
@@ -482,7 +505,7 @@ impl<'gc> Object<'gc> {
 
     /// Calls the 'watcher' of a given property, if it exists.
     pub(super) fn call_watcher(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         name: AvmString<'gc>,
         value: &mut Value<'gc>,
@@ -519,7 +542,7 @@ impl<'gc> Object<'gc> {
     ///
     /// The property does not need to exist at the time of this being called.
     pub fn watch(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         name: AvmString<'gc>,
         callback: Object<'gc>,
@@ -541,7 +564,7 @@ impl<'gc> Object<'gc> {
     ///
     /// The return value will indicate if there was a watcher present before this method was
     /// called.
-    pub fn unwatch(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
+    pub fn unwatch(self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
         //`super` cannot have properties defined on it
         // TODO(moulins): can this special case be removed? `super` can never have watched properties.
         if self.as_super_object().is_some() {
@@ -567,7 +590,7 @@ impl<'gc> Object<'gc> {
     /// especially if a property name conflicts with a built-in property, such
     /// as `__proto__`.
     pub fn define_value(
-        &self,
+        self,
         gc_context: &Mutation<'gc>,
         name: impl Into<AvmString<'gc>>,
         value: Value<'gc>,
@@ -593,7 +616,7 @@ impl<'gc> Object<'gc> {
     /// Attributes can be set, cleared, or left as-is using the pairs of `set_`
     /// and `clear_attributes` parameters.
     pub fn set_attributes(
-        &self,
+        self,
         gc_context: &Mutation<'gc>,
         name: Option<AvmString<'gc>>,
         set_attributes: Attribute,
@@ -628,11 +651,12 @@ impl<'gc> Object<'gc> {
     }
 
     /// Retrieve the `__proto__` of a given object.
+    /// (don't confuse this with `self.prototype()`!)
     ///
     /// The proto is another object used to resolve methods across a class of
     /// multiple objects. It should also be accessible as `__proto__` from
     /// `get`.
-    pub(super) fn proto(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+    pub(super) fn proto(self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
         if let Some(zuper) = self.as_super_object() {
             return zuper.proto(activation);
         }
@@ -640,8 +664,15 @@ impl<'gc> Object<'gc> {
         self.get_data(istr!("__proto__"), activation)
     }
 
+    /// Retrieve the `prototype` of this object, as if it was a function.
+    /// (don't confuse this with `self.proto()`!)
+    pub fn prototype(self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+        // Ignore getters, __proto__, and SWF version attributes.
+        self.get_data(istr!("prototype"), activation)
+    }
+
     /// Checks if the object has a given named property.
-    pub fn has_property(&self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
+    pub fn has_property(self, activation: &mut Activation<'_, 'gc>, name: AvmString<'gc>) -> bool {
         let dobj = match self.native_no_super() {
             // `super` forwards property membership tests to its underlying object.
             NativeObject::Super(zuper) => {
@@ -668,7 +699,7 @@ impl<'gc> Object<'gc> {
     /// Checks if the object has a given named property on itself (and not,
     /// say, the object's prototype or superclass)
     pub fn has_own_property(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         name: AvmString<'gc>,
     ) -> bool {
@@ -688,7 +719,7 @@ impl<'gc> Object<'gc> {
     /// Checks if the object has a given named property on itself that is
     /// virtual.
     pub(super) fn has_own_virtual(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         name: AvmString<'gc>,
     ) -> bool {
@@ -709,7 +740,7 @@ impl<'gc> Object<'gc> {
 
     /// Checks if a named property appears when enumerating the object.
     pub fn is_property_enumerable(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         name: AvmString<'gc>,
     ) -> bool {
@@ -728,7 +759,7 @@ impl<'gc> Object<'gc> {
 
     /// Enumerate the object.
     pub fn get_keys(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         include_hidden: bool,
     ) -> Vec<AvmString<'gc>> {
@@ -770,30 +801,30 @@ impl<'gc> Object<'gc> {
     }
 
     /// Enumerate all interfaces implemented by this object.
-    pub(super) fn interfaces(&self) -> Vec<Object<'gc>> {
-        if self.as_super_object().is_some() {
-            // `super` does not implement interfaces
-            return vec![];
-        }
-
-        self.0.borrow().interfaces.clone()
+    pub(super) fn interfaces(self) -> Ref<'gc, [Object<'gc>]> {
+        Ref::map(self.0.borrow(), |this| match &this.interfaces {
+            Some(slice) => slice.as_slice(),
+            None => &[],
+        })
     }
 
     /// Set the interface list for this object. (Only useful for prototypes.)
-    pub fn set_interfaces(&self, gc_context: &Mutation<'gc>, iface_list: Vec<Object<'gc>>) {
+    /// Calling this a second time will have no effect.
+    pub fn set_interfaces(self, gc_context: &Mutation<'gc>, iface_list: Vec<Object<'gc>>) {
         if self.as_super_object().is_some() {
-            // `super` probably cannot have interfaces set on it
+            // `super` cannot have interfaces set on it
             return;
         }
 
-        self.0.borrow_mut(gc_context).interfaces = iface_list;
+        let mut write = self.0.borrow_mut(gc_context);
+        write.interfaces.get_or_insert(iface_list);
     }
 
-    pub(super) fn native_no_super(&self) -> NativeObject<'gc> {
+    pub(super) fn native_no_super(self) -> NativeObject<'gc> {
         self.0.borrow().native
     }
 
-    pub fn native(&self) -> NativeObject<'gc> {
+    pub fn native(self) -> NativeObject<'gc> {
         match self.0.borrow().native {
             // TODO(moulins): can `super` point to another `super`?
             NativeObject::Super(zuper) => zuper.this().native(),
@@ -801,7 +832,7 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    pub fn set_native(&self, mc: &Mutation<'gc>, native: NativeObject<'gc>) {
+    pub fn set_native(self, mc: &Mutation<'gc>, native: NativeObject<'gc>) {
         assert!(!matches!(native, NativeObject::None));
 
         let old_native = self.0.borrow().native;
@@ -821,7 +852,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Get the underlying super object, if it exists.
-    pub(super) fn as_super_object(&self) -> Option<SuperObject<'gc>> {
+    pub(super) fn as_super_object(self) -> Option<SuperObject<'gc>> {
         if let NativeObject::Super(zuper) = self.native_no_super() {
             Some(zuper)
         } else {
@@ -829,23 +860,23 @@ impl<'gc> Object<'gc> {
         }
     }
 
-    /// Get the underlying executable for this object, if it exists.
-    pub fn as_executable(&self) -> Option<Executable<'gc>> {
-        // Even though `super` calls the class constructor, it doesn't count as an executable.
+    /// Get the underlying function for this object, if it exists.
+    pub fn as_function(self) -> Option<FunctionObject<'gc>> {
+        // Even though `super` calls the class constructor, it doesn't count as a function.
         if let NativeObject::Function(func) = self.native_no_super() {
-            Some(func.as_executable())
+            Some(*func)
         } else {
             None
         }
     }
 
     /// Get the underlying stage object, if it exists, but doesn't follow `super` objects.
-    pub fn as_display_object_no_super(&self) -> Option<DisplayObject<'gc>> {
+    pub fn as_display_object_no_super(self) -> Option<DisplayObject<'gc>> {
         self.0.borrow().native.as_display_object()
     }
 
     /// Get the underlying display node for this object, if it exists.
-    pub fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
+    pub fn as_display_object(self) -> Option<DisplayObject<'gc>> {
         //`super` actually can be used to invoke MovieClip methods
         self.native().as_display_object()
     }
@@ -855,7 +886,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Gets the length of this object, as if it were an array.
-    pub fn length(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
+    pub fn length(self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
         // TODO(moulins): can this special case be removed? `super` should never have a length property
         if self.as_super_object().is_some() {
             return Ok(0);
@@ -867,7 +898,7 @@ impl<'gc> Object<'gc> {
 
     /// Sets the length of this object, as if it were an array.
     pub fn set_length(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         new_length: i32,
     ) -> Result<(), Error<'gc>> {
@@ -889,7 +920,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Checks if this object has an element, as if it were an array.
-    pub fn has_element(&self, activation: &mut Activation<'_, 'gc>, index: i32) -> bool {
+    pub fn has_element(self, activation: &mut Activation<'_, 'gc>, index: i32) -> bool {
         // TODO(moulins): can this special case be removed? (as `super` never has elements)
         if self.as_super_object().is_some() {
             return false;
@@ -900,7 +931,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Gets a property of this object, as if it were an array.
-    pub fn get_element(&self, activation: &mut Activation<'_, 'gc>, index: i32) -> Value<'gc> {
+    pub fn get_element(self, activation: &mut Activation<'_, 'gc>, index: i32) -> Value<'gc> {
         // TODO(moulins): can this special case be removed? (as `super` never has elements to delete)
         if self.as_super_object().is_some() {
             return Value::Undefined;
@@ -912,7 +943,7 @@ impl<'gc> Object<'gc> {
 
     /// Sets a property of this object, as if it were an array.
     pub fn set_element(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         index: i32,
         value: Value<'gc>,
@@ -934,7 +965,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Deletes a property of this object as if it were an array.
-    pub fn delete_element(&self, activation: &mut Activation<'_, 'gc>, index: i32) -> bool {
+    pub fn delete_element(self, activation: &mut Activation<'_, 'gc>, index: i32) -> bool {
         // TODO(moulins): can this special case be removed? (as `super` never has elements to delete)
         if self.as_super_object().is_some() {
             return false;

@@ -1,0 +1,10 @@
+num_frames = 30
+known_failure = true
+
+[subtests.fp9]
+output_path = "output.fp9.txt"
+player_options.version = 9
+
+[subtests.fp10]
+output_path = "output.fp10.txt"
+player_options.version = 10

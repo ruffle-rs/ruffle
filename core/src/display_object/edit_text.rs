@@ -5,8 +5,8 @@ use crate::avm1::{
     NativeObject as Avm1NativeObject, Object as Avm1Object, Value as Avm1Value,
 };
 use crate::avm2::object::{
-    ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, Object as Avm2Object,
-    StageObject as Avm2StageObject, StyleSheetObject as Avm2StyleSheetObject,
+    ClassObject as Avm2ClassObject, EventObject as Avm2EventObject, StageObject as Avm2StageObject,
+    StyleSheetObject as Avm2StyleSheetObject,
 };
 use crate::avm2::{Activation as Avm2Activation, Avm2};
 use crate::backend::ui::MouseCursor;
@@ -19,16 +19,15 @@ use crate::events::{
     ClipEvent, ClipEventResult, ImeCursorArea, ImeEvent, ImeNotification, ImePurpose,
     PlayerNotification, TextControlCode,
 };
-use crate::font::{FontLike, FontType, Glyph, TextRenderSettings};
+use crate::font::{FontLike, FontType, TextRenderSettings};
 use crate::html;
 use crate::html::StyleSheet;
 use crate::html::{
     FormatSpans, Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, Position, TextFormat,
 };
 use crate::prelude::*;
-use crate::string::{utils as string_utils, AvmString, SwfStrExt as _, WStr, WString};
+use crate::string::{AvmString, SwfStrExt as _, WStr, WString, utils as string_utils};
 use crate::tag_utils::SwfMovie;
-use crate::utils::HasPrefixField;
 use crate::vminterface::{AvmObject, Instantiator};
 use chrono::DateTime;
 use chrono::Utc;
@@ -36,6 +35,7 @@ use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use ruffle_render::commands::Command as RenderCommand;
 use ruffle_render::commands::CommandHandler;
@@ -46,7 +46,7 @@ use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::collections::VecDeque;
 use std::sync::Arc;
 use swf::ColorTransform;
-use unic_segment::WordBoundIndices;
+use unicode_segmentation::UnicodeSegmentation;
 
 use super::interactive::Avm2MousePick;
 
@@ -826,16 +826,9 @@ impl<'gc> EditText<'gc> {
     /// This `text_transform` is separate from and relative to the base
     /// transform that this `EditText` automatically gets by virtue of being a
     /// `DisplayObject`.
-    pub fn text_transform(self, color: Color, baseline_adjustment: Twips) -> Transform {
+    pub fn text_transform(self, color: Color) -> Transform {
         let mut transform: Transform = Default::default();
-        transform.color_transform.set_mult_color(&color);
-
-        // TODO MIKE: This feels incorrect here but is necessary for correct vertical position;
-        // the glyphs are rendered relative to the baseline. This should be taken into account either
-        // by the layout code earlier (cursor should start at the baseline, not 0,0) and/or by
-        // font.evaluate (should return transforms relative to the baseline).
-        transform.matrix.ty = baseline_adjustment;
-
+        transform.color_transform.set_mult_color(color);
         transform
     }
 
@@ -1273,15 +1266,14 @@ impl<'gc> EditText<'gc> {
         {
             let baseline = font.get_baseline_for_height(params.height());
             let descent = font.get_descent_for_height(params.height());
-            let baseline_adjustment = baseline - params.height();
             let caret_height = baseline + descent;
             let mut caret_x = Twips::ZERO;
             font.evaluate(
                 text,
-                self.text_transform(color, baseline_adjustment),
+                self.text_transform(color),
                 params,
-                |pos, transform, glyph: &Glyph, advance, x| {
-                    if let Some(glyph_shape_handle) = glyph.shape_handle(context.renderer) {
+                |pos, transform, glyph, advance, x| {
+                    if glyph.renderable(context) {
                         // If it's highlighted, override the color.
                         if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
                             // Set text color to white
@@ -1293,11 +1285,7 @@ impl<'gc> EditText<'gc> {
                         } else {
                             context.transform_stack.push(transform);
                         }
-
-                        // Render glyph.
-                        context
-                            .commands
-                            .render_shape(glyph_shape_handle, context.transform_stack.transform());
+                        glyph.render(context);
                         context.transform_stack.pop();
                     }
 
@@ -1469,26 +1457,25 @@ impl<'gc> EditText<'gc> {
     pub fn propagate_text_binding(self, activation: &mut Avm1Activation<'_, 'gc>) {
         if !self.contains_flag(EditTextFlag::FIRING_VARIABLE_BINDING) {
             self.set_flag(EditTextFlag::FIRING_VARIABLE_BINDING, true);
-            if let Some(variable_path) = self.variable() {
-                if let Ok(Some((object, property))) =
+            if let Some(variable_path) = self.variable()
+                && let Ok(Some((object, property))) =
                     activation.resolve_variable_path(self.avm1_parent().unwrap(), &variable_path)
-                {
-                    // Note that this can call virtual setters, even though the opposite direction won't work
-                    // (virtual property changes do not affect the text field)
-                    activation.run_with_child_frame_for_display_object(
-                        "[Propagate Text Binding]",
-                        self.avm1_parent().unwrap(),
-                        self.movie().version(),
-                        |activation| {
-                            let property = AvmString::new(activation.gc(), property);
-                            let _ = object.set(
-                                property,
-                                AvmString::new(activation.gc(), self.html_text()).into(),
-                                activation,
-                            );
-                        },
-                    );
-                }
+            {
+                // Note that this can call virtual setters, even though the opposite direction won't work
+                // (virtual property changes do not affect the text field)
+                activation.run_with_child_frame_for_display_object(
+                    "[Propagate Text Binding]",
+                    self.avm1_parent().unwrap(),
+                    self.movie().version(),
+                    |activation| {
+                        let property = AvmString::new(activation.gc(), property);
+                        let _ = object.set(
+                            property,
+                            AvmString::new(activation.gc(), self.html_text()).into(),
+                            activation,
+                        );
+                    },
+                );
             }
             self.set_flag(EditTextFlag::FIRING_VARIABLE_BINDING, false);
         }
@@ -1539,6 +1526,10 @@ impl<'gc> EditText<'gc> {
 
     pub fn spans(&self) -> Ref<'_, FormatSpans> {
         self.0.text_spans.borrow()
+    }
+
+    pub fn layout(&self) -> Ref<'_, Layout<'gc>> {
+        self.0.layout.borrow()
     }
 
     pub fn render_settings(self) -> TextRenderSettings {
@@ -1629,13 +1620,11 @@ impl<'gc> EditText<'gc> {
                 layout_box.as_renderable_text(self.0.text_spans.borrow().text())
             {
                 let mut result = 0;
-                let baseline_adjustment =
-                    font.get_baseline_for_height(params.height()) - params.height();
                 font.evaluate(
                     text,
-                    self.text_transform(color, baseline_adjustment),
+                    self.text_transform(color),
                     params,
-                    |pos, _transform, _glyph: &Glyph, advance, x| {
+                    |pos, _transform, _glyph, advance, x| {
                         if local_position.x >= x {
                             if local_position.x > x + (advance / 2) {
                                 result = string_utils::next_char_boundary(text, pos);
@@ -1964,7 +1953,9 @@ impl<'gc> EditText<'gc> {
             return pos;
         }
         let to_utf8 = WStrToUtf8::new(head);
-        WordBoundIndices::new(&to_utf8.to_utf8_lossy())
+        to_utf8
+            .to_utf8_lossy()
+            .split_word_bound_indices()
             .rev()
             .find(|(_, span)| !span.trim().is_empty())
             .map(|(position, _)| position)
@@ -1984,7 +1975,9 @@ impl<'gc> EditText<'gc> {
             return pos;
         }
         let to_utf8 = WStrToUtf8::new(tail);
-        WordBoundIndices::new(&to_utf8.to_utf8_lossy())
+        to_utf8
+            .to_utf8_lossy()
+            .split_word_bound_indices()
             .skip_while(|(_, span)| span.trim().is_empty())
             .nth(1)
             .map(|p| p.0)
@@ -2058,7 +2051,7 @@ impl<'gc> EditText<'gc> {
 
         let filtered_text = self.0.restrict.borrow().filter_allowed(&text);
 
-        if let Avm2Value::Object(target) = self.object2() {
+        if let Some(target) = self.object2() {
             let character_string =
                 AvmString::new(context.gc(), text.replace(b'\r', WStr::from_units(b"\n")));
 
@@ -2070,7 +2063,7 @@ impl<'gc> EditText<'gc> {
                 true,
                 true,
             );
-            Avm2::dispatch_event(activation.context, text_evt, target);
+            Avm2::dispatch_event(activation.context, text_evt, target.into());
 
             if text_evt.event().is_cancelled() {
                 return;
@@ -2096,12 +2089,16 @@ impl<'gc> EditText<'gc> {
     }
 
     fn initialize_as_broadcaster(self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if let Avm1Value::Object(object) = self.object() {
-            activation.context.avm1.broadcaster_functions().initialize(
-                &activation.context.strings,
-                object,
-                activation.context.avm1.prototypes().array,
-            );
+        if let Some(object) = self.object1() {
+            activation
+                .context
+                .avm1
+                .broadcaster_functions(activation.swf_version())
+                .initialize(
+                    &activation.context.strings,
+                    object,
+                    activation.prototypes().array,
+                );
 
             if let Ok(Avm1Value::Object(listeners)) = object.get(istr!("_listeners"), activation) {
                 let length = listeners.length(activation);
@@ -2117,26 +2114,26 @@ impl<'gc> EditText<'gc> {
     }
 
     fn on_changed(self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if let Avm1Value::Object(object) = self.object() {
+        if let Some(object) = self.object1() {
             let _ = object.call_method(
                 istr!("broadcastMessage"),
                 &[istr!("onChanged").into(), object.into()],
                 activation,
                 ExecutionReason::Special,
             );
-        } else if let Avm2Value::Object(object) = self.object2() {
+        } else if let Some(object) = self.object2() {
             let change_evt = Avm2EventObject::bare_event(
                 activation.context,
                 "change",
                 true,  /* bubbles */
                 false, /* cancelable */
             );
-            Avm2::dispatch_event(activation.context, change_evt, object);
+            Avm2::dispatch_event(activation.context, change_evt, object.into());
         }
     }
 
     fn on_scroller(self, activation: &mut Avm1Activation<'_, 'gc>) {
-        if let Avm1Value::Object(object) = self.object() {
+        if let Some(object) = self.object1() {
             let _ = object.call_method(
                 istr!("broadcastMessage"),
                 &[istr!("onScroller").into(), object.into()],
@@ -2152,7 +2149,7 @@ impl<'gc> EditText<'gc> {
         if self.0.object.get().is_none() {
             let object = Avm1Object::new_with_native(
                 &context.strings,
-                Some(context.avm1.prototypes().text_field),
+                Some(context.avm1.prototypes(self.swf_version()).text_field),
                 Avm1NativeObject::EditText(self),
             );
 
@@ -2191,13 +2188,16 @@ impl<'gc> EditText<'gc> {
             class_object,
         ) {
             Ok(object) => {
-                let object: Avm2Object<'gc> = object.into();
                 self.set_object(Some(object.into()), context.gc());
             }
-            Err(e) => tracing::error!(
-                "Got error when constructing AVM2 side of dynamic text field: {}",
-                e
-            ),
+            Err(err) => {
+                Avm2::uncaught_error(
+                    &mut activation,
+                    Some(self.into()),
+                    err,
+                    "Error running AVM2 construction for dynamic text",
+                );
+            }
         }
     }
 
@@ -2398,10 +2398,25 @@ impl<'gc> EditText<'gc> {
         Some(index - start_index)
     }
 
-    pub fn char_bounds(self, index: usize) -> Option<Rectangle<Twips>> {
-        let bounds = self.0.layout.borrow().char_bounds(index)?;
-        let padding = Self::GUTTER;
-        let bounds = Matrix::translate(padding, padding) * bounds;
+    pub fn char_bounds(self, position: usize) -> Option<Rectangle<Twips>> {
+        let layout = self.0.layout.borrow();
+
+        let line_index = layout.find_line_index_by_position(position)?;
+        if line_index + 1 < self.scroll() {
+            // Return null for lines above the viewport.
+            // TODO It also should return null for lines below the viewport,
+            //      but the logic is not trivial.
+            return None;
+        }
+
+        let line = layout.lines().get(line_index)?;
+        let bounds = line.char_bounds(position)?;
+        let bounds = self.layout_to_local_matrix() * bounds;
+
+        // FP does not apply hscroll to char boundaries, so just revert it.
+        // TODO Check if that's fixed in versions newer than 32.
+        let bounds =
+            Matrix::translate(Twips::from_pixels(self.0.hscroll.get()), Twips::ZERO) * bounds;
         Some(bounds)
     }
 
@@ -2421,7 +2436,7 @@ impl<'gc> EditText<'gc> {
         );
         // [NA]: Should all `from_nothings` be scoped to root? It definitely should here.
         activation.set_scope_to_display_object(parent);
-        let this = parent.object().coerce_to_object(&mut activation);
+        let this = parent.object1_or_undef();
 
         if let Some((name, args)) = address.split_once(b',') {
             let name = AvmString::new(activation.gc(), name);
@@ -2442,12 +2457,12 @@ impl<'gc> EditText<'gc> {
                 error!("Couldn't execute URL \"{url:?}\": {e:?}");
             }
         } else if let Some(address) = url.strip_prefix(WStr::from_units(b"event:")) {
-            if let Avm2Value::Object(object) = self.object2() {
+            if let Some(object) = self.object2() {
                 let mut activation = Avm2Activation::from_nothing(context);
                 let text = AvmString::new(activation.gc(), address);
                 let event = Avm2EventObject::text_event(&mut activation, "link", text, true, false);
 
-                Avm2::dispatch_event(activation.context, event, object);
+                Avm2::dispatch_event(activation.context, event, object.into());
             }
         } else {
             context
@@ -2535,7 +2550,7 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
     /// Construct objects placed on this frame.
     fn construct_frame(self, context: &mut UpdateContext<'gc>) {
-        if self.movie().is_action_script_3() && matches!(self.object2(), Avm2Value::Null) {
+        if self.movie().is_action_script_3() && self.object2().is_none() {
             self.construct_as_avm2_object(context, self.into());
             self.on_construction_complete(context);
         }
@@ -2555,25 +2570,15 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         }
     }
 
-    fn object(self) -> Avm1Value<'gc> {
-        self.0
-            .object
-            .get()
-            .and_then(|o| o.as_avm1_object())
-            .map(Avm1Value::from)
-            .unwrap_or(Avm1Value::Undefined)
+    fn object1(self) -> Option<Avm1Object<'gc>> {
+        self.0.object.get().and_then(|o| o.as_avm1_object())
     }
 
-    fn object2(self) -> Avm2Value<'gc> {
-        self.0
-            .object
-            .get()
-            .and_then(|o| o.as_avm2_object())
-            .map(Avm2Value::from)
-            .unwrap_or(Avm2Value::Null)
+    fn object2(self) -> Option<Avm2StageObject<'gc>> {
+        self.0.object.get().and_then(|o| o.as_avm2_object())
     }
 
-    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2Object<'gc>) {
+    fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         self.set_object(Some(to.into()), context.gc());
     }
 
@@ -2666,7 +2671,12 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         fn is_transform_positive_scale_only(context: &mut RenderContext) -> bool {
             let Matrix { a, b, c, d, .. } = context.transform_stack.transform().matrix;
-            b == 0.0 && c == 0.0 && a > 0.0 && d > 0.0
+            // Flash does allow small shear. The following value is higher than
+            // expected due to the fact that the final calculated shear differs
+            // between Flash and Ruffle, and using a precise value would hide
+            // some objects that should otherwise be shown.
+            const ALLOWED_SHEAR: f32 = 0.006;
+            b.abs() < ALLOWED_SHEAR && c.abs() < ALLOWED_SHEAR && a > 0.0 && d > 0.0
         }
 
         // EditText is not rendered if device font is used
@@ -3009,15 +3019,15 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
                 self.set_selection(Some(TextSelection::for_position(self.text_length())));
             }
 
-            if let Some((url, target)) = link_to_open {
-                if !url.is_empty() {
-                    // TODO: This fires on mouse DOWN but it should be mouse UP...
-                    // but only if it went down in the same span.
-                    // Needs more advanced focus handling than we have at time of writing this comment.
-                    // TODO This also needs to fire only if the user clicked on the link,
-                    //   currently it fires when the cursor position resolves to one in the link.
-                    self.open_url(context, &url, &target);
-                }
+            if let Some((url, target)) = link_to_open
+                && !url.is_empty()
+            {
+                // TODO: This fires on mouse DOWN but it should be mouse UP...
+                // but only if it went down in the same span.
+                // Needs more advanced focus handling than we have at time of writing this comment.
+                // TODO This also needs to fire only if the user clicked on the link,
+                //   currently it fires when the cursor position resolves to one in the link.
+                self.open_url(context, &url, &target);
             }
 
             return ClipEventResult::Handled;
@@ -3025,10 +3035,10 @@ impl<'gc> TInteractiveObject<'gc> for EditText<'gc> {
 
         if let ClipEvent::MouseMove = event {
             // If a mouse has moved and this EditTest is pressed, we need to update the selection.
-            if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, Some(self.into())) {
-                if let Some(position) = self.screen_position_to_index(*context.mouse_position) {
-                    self.handle_drag(position);
-                }
+            if InteractiveObject::option_ptr_eq(context.mouse_data.pressed, Some(self.into()))
+                && let Some(position) = self.screen_position_to_index(*context.mouse_position)
+            {
+                self.handle_drag(position);
             }
         }
 
@@ -3519,8 +3529,8 @@ impl EditTextRestrict {
             && !self.intervals_contain(character, &self.disallowed)
     }
 
-    fn intervals_contain(&self, character: char, intervals: &Vec<(char, char)>) -> bool {
-        for interval in intervals {
+    fn intervals_contain(&self, character: char, intervals: &[(char, char)]) -> bool {
+        for &interval in intervals {
             if self.interval_contains(character, interval) {
                 return true;
             }
@@ -3529,7 +3539,7 @@ impl EditTextRestrict {
     }
 
     #[inline]
-    fn interval_contains(&self, character: char, interval: &(char, char)) -> bool {
+    fn interval_contains(&self, character: char, interval: (char, char)) -> bool {
         character >= interval.0 && character <= interval.1
     }
 
@@ -3599,9 +3609,10 @@ impl EditTextPixelSnapping {
     }
 }
 
-#[derive(Debug, Clone, Copy, Collect)]
+#[derive(Clone, Copy, Collect, Debug, Default)]
 #[collect(no_drop)]
 enum EditTextStyleSheet<'gc> {
+    #[default]
     None,
     Avm1(Avm1Object<'gc>),
     Avm2(Avm2StyleSheetObject<'gc>),
@@ -3628,12 +3639,6 @@ impl<'gc> EditTextStyleSheet<'gc> {
             }
             EditTextStyleSheet::Avm2(style_sheet_object) => Some(style_sheet_object.style_sheet()),
         }
-    }
-}
-
-impl Default for EditTextStyleSheet<'_> {
-    fn default() -> Self {
-        Self::None
     }
 }
 

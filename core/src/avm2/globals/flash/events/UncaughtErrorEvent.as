@@ -4,7 +4,12 @@ package flash.events {
 
         private var _error:*;
 
-        public function UncaughtErrorEvent(type:String = "uncaughtError", bubbles:Boolean = true, cancelable:Boolean = true, error_in:* = null) {
+        public function UncaughtErrorEvent(
+            type:String = "uncaughtError",
+            bubbles:Boolean = true,
+            cancelable:Boolean = true,
+            error_in:* = null
+        ) {
             super(type, bubbles, cancelable);
             this._error = error_in;
         }
@@ -14,7 +19,14 @@ package flash.events {
         }
 
         override public function toString():String {
-            return this.formatToString("UncaughtErrorEvent", "type", "bubbles", "cancelable", "eventPhase", "error");
+            return this.formatToString(
+                "UncaughtErrorEvent",
+                "type",
+                "bubbles",
+                "cancelable",
+                "eventPhase",
+                "error"
+            );
         }
 
         public function get error():* {

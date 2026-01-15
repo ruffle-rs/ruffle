@@ -1,0 +1,7 @@
+PASSED: 2 == 2
+PASSED: 1 == 1
+PASSED: _root.x  ==  1 [action_execution_order_test7.c:76]
+PASSED: typeof(mc)  ==  'undefined' [action_execution_order_test7.c:77]
+#passed: 4
+#failed: 0
+#total tests run: 4

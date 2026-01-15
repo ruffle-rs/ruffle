@@ -1,7 +1,7 @@
 use crate::bookmarks::{Bookmark, Bookmarks};
 use crate::parse::DocumentHolder;
 use crate::write::TableExt;
-use toml_edit::{value, ArrayOfTables, Table};
+use toml_edit::{ArrayOfTables, Table, value};
 
 pub struct BookmarksWriter<'a>(&'a mut DocumentHolder<Bookmarks>);
 
@@ -78,10 +78,16 @@ mod tests {
             },
             "[[bookmark]]\nurl = \"file:///home/user/example.swf\"\nname = \"example.swf\"\n",
         );
-        test("[[bookmark]]\nurl = \"file:///home/user/example.swf\"\n", |writer| writer.add(Bookmark {
-            url: Url::parse("file:///home/user/another_file.swf").unwrap(),
-            name: "another_file.swf".to_string(),
-        }), "[[bookmark]]\nurl = \"file:///home/user/example.swf\"\n\n[[bookmark]]\nurl = \"file:///home/user/another_file.swf\"\nname = \"another_file.swf\"\n");
+        test(
+            "[[bookmark]]\nurl = \"file:///home/user/example.swf\"\n",
+            |writer| {
+                writer.add(Bookmark {
+                    url: Url::parse("file:///home/user/another_file.swf").unwrap(),
+                    name: "another_file.swf".to_string(),
+                })
+            },
+            "[[bookmark]]\nurl = \"file:///home/user/example.swf\"\n\n[[bookmark]]\nurl = \"file:///home/user/another_file.swf\"\nname = \"another_file.swf\"\n",
+        );
     }
 
     #[test]
@@ -107,9 +113,13 @@ mod tests {
             },
             "[[bookmark]]\nurl = \"file://home/user/example.swf\"\n\n[[bookmark]]\nurl = \"file:///another_file.swf\"\n",
         );
-        test("[[bookmark]]\nurl = \"file://home/user/example.swf\"\n\n[[bookmark]]\n\n[[bookmark]]\nurl = \"https://ruffle.rs/logo-anim.swf\"\n\n[[bookmark]]\nurl = \"invalid\"\n", |writer| {
-            writer.remove(2);
-        }, "[[bookmark]]\nurl = \"file://home/user/example.swf\"\n\n[[bookmark]]\n\n[[bookmark]]\nurl = \"invalid\"\n");
+        test(
+            "[[bookmark]]\nurl = \"file://home/user/example.swf\"\n\n[[bookmark]]\n\n[[bookmark]]\nurl = \"https://ruffle.rs/logo-anim.swf\"\n\n[[bookmark]]\nurl = \"invalid\"\n",
+            |writer| {
+                writer.remove(2);
+            },
+            "[[bookmark]]\nurl = \"file://home/user/example.swf\"\n\n[[bookmark]]\n\n[[bookmark]]\nurl = \"invalid\"\n",
+        );
 
         // check if we can remove invalid entries.
         test("[[bookmark]]", |writer| writer.remove(0), "");

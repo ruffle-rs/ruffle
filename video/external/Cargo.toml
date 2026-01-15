@@ -17,10 +17,10 @@ ruffle_video_software = { path = "../software" }
 thiserror = { workspace = true }
 
 # Needed for OpenH264:
-libloading = { version = "0.8.8", optional = true }
-reqwest = { version = "0.12.22", default-features = false, features = ["blocking"], optional = true }
+libloading = { version = "0.8.9", optional = true }
+reqwest = { version = "0.12.28", default-features = false, features = ["blocking"], optional = true }
 hex = { version = "0.4.3", optional = true }
-bzip2 = { version = "0.6.0", features = ["static"], optional = true }
+bzip2 = { version = "0.6.1", features = ["static"], optional = true }
 tempfile = { workspace = true, optional = true }
 sha2 = { workspace = true, optional = true }
 

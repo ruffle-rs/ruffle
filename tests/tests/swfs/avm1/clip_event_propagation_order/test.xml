@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<movie version="8" width="100" height="100" framerate="30">
+  <background color="#ffffff" />
+
+  <clip import="classes.swf" />
+
+  <frame>
+    <library>
+      <clip id="main" class="Main" />
+      <clip id="child" class="Child" />
+    </library>
+
+    <place id="main" name="main_mc" />
+  </frame>
+</movie>
