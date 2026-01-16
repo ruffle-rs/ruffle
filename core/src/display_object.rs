@@ -908,11 +908,10 @@ impl<'gc> DisplayObjectBase<'gc> {
 
 /// Indicates which kind of bounds should be returned by `self_bounds`.
 /// In most cases `BoundsMode::Engine` should be used.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+#[derive(Debug)]
 pub enum BoundsMode {
     /// The bounds visible on the stage (e.g. takes MorphShape ratio into
     /// account). Used for hit testing and rendering.
-    #[default]
     Engine,
 
     /// The bounds returned by ActionScript (e.g. doesn't take MorphShape
@@ -1318,30 +1317,30 @@ pub trait TDisplayObject<'gc>:
     /// Implementors must override this method.
     /// Leaf DisplayObjects should return their bounds.
     /// Composite DisplayObjects that only contain children should return `Default::default()`
-    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips>;
+    fn self_bounds(self, mode: &BoundsMode) -> Rectangle<Twips>;
 
     /// The untransformed bounding box of this object including children.
     #[no_dynamic]
-    fn bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+    fn bounds(self, mode: &BoundsMode) -> Rectangle<Twips> {
         self.bounds_with_transform(&Matrix::default(), mode)
     }
 
     /// The local bounding box of this object including children, in its parent's coordinate system.
     #[no_dynamic]
     fn local_bounds(self) -> Rectangle<Twips> {
-        self.bounds_with_transform(&self.base().matrix(), BoundsMode::Engine)
+        self.bounds_with_transform(&self.base().matrix(), &BoundsMode::Engine)
     }
 
     /// The world bounding box of this object including children, relative to the stage.
     #[no_dynamic]
-    fn world_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+    fn world_bounds(self, mode: &BoundsMode) -> Rectangle<Twips> {
         self.bounds_with_transform(&self.local_to_global_matrix(), mode)
     }
 
     /// The world bounding box of this object, as reported by `Transform.pixelBounds`.
     fn pixel_bounds(self) -> Rectangle<Twips> {
         // Uses BoundsMode::Script as it's only used in ActionScript.
-        self.world_bounds(BoundsMode::Script)
+        self.world_bounds(&BoundsMode::Script)
     }
 
     /// Bounds used for drawing debug rects and picking objects.
@@ -1353,7 +1352,7 @@ pub trait TDisplayObject<'gc>:
             .as_interactive()
             .map(|int| int.highlight_bounds())
             .unwrap_or_default();
-        self.world_bounds(BoundsMode::Engine)
+        self.world_bounds(&BoundsMode::Engine)
             .union(&highlight_bounds)
     }
 
@@ -1363,7 +1362,7 @@ pub trait TDisplayObject<'gc>:
     /// the overall AABB.
     ///
     /// The `mode` parameter indicates which kind of bounds to return.
-    fn bounds_with_transform(self, matrix: &Matrix, mode: BoundsMode) -> Rectangle<Twips> {
+    fn bounds_with_transform(self, matrix: &Matrix, mode: &BoundsMode) -> Rectangle<Twips> {
         // A scroll rect completely overrides an object's bounds,
         // and can even grow the bounding box to be larger than the actual content
         if let Some(scroll_rect) = self.scroll_rect() {
@@ -1400,7 +1399,7 @@ pub trait TDisplayObject<'gc>:
         include_own_filters: bool,
         view_matrix: &Matrix,
     ) -> Rectangle<Twips> {
-        let mut bounds = *matrix * self.self_bounds(BoundsMode::Engine);
+        let mut bounds = *matrix * self.self_bounds(&BoundsMode::Engine);
 
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
@@ -1656,7 +1655,7 @@ pub trait TDisplayObject<'gc>:
     /// Set by the ActionScript `_width`/`width` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_width(self, _context: &mut UpdateContext<'gc>, value: f64) {
-        let object_bounds = self.bounds(BoundsMode::Script);
+        let object_bounds = self.bounds(&BoundsMode::Script);
         let object_width = object_bounds.width().to_pixels();
         let object_height = object_bounds.height().to_pixels();
         let aspect_ratio = object_height / object_width;
@@ -1703,7 +1702,7 @@ pub trait TDisplayObject<'gc>:
     /// Set by the ActionScript `_height`/`height` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_height(self, _context: &mut UpdateContext<'gc>, value: f64) {
-        let object_bounds = self.bounds(BoundsMode::Script);
+        let object_bounds = self.bounds(&BoundsMode::Script);
         let object_width = object_bounds.width().to_pixels();
         let object_height = object_bounds.height().to_pixels();
         let aspect_ratio = object_width / object_height;
@@ -2430,7 +2429,7 @@ pub trait TDisplayObject<'gc>:
             self_str = &self_str[..end_char];
         }
 
-        let bounds = self.world_bounds(BoundsMode::Engine);
+        let bounds = self.world_bounds(&BoundsMode::Engine);
 
         let mut classname = "".to_string();
         if let Some(o) = self.object2() {
@@ -2576,7 +2575,7 @@ pub trait TDisplayObject<'gc>:
     /// Tests if a given stage position point intersects with the world bounds of this object.
     #[no_dynamic]
     fn hit_test_bounds(self, point: Point<Twips>) -> bool {
-        self.world_bounds(BoundsMode::Engine).contains(point)
+        self.world_bounds(&BoundsMode::Engine).contains(point)
     }
 
     /// Tests if a given object's world bounds intersects with the world bounds
@@ -2584,8 +2583,8 @@ pub trait TDisplayObject<'gc>:
     #[no_dynamic]
     fn hit_test_object(self, other: DisplayObject<'gc>) -> bool {
         // This is only used in ActionScript so it gets a BoundsMode::Script.
-        self.world_bounds(BoundsMode::Script)
-            .intersects(&other.world_bounds(BoundsMode::Script))
+        self.world_bounds(&BoundsMode::Script)
+            .intersects(&other.world_bounds(&BoundsMode::Script))
     }
 
     /// Tests if a given stage position point intersects within this object, considering the art.

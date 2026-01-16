@@ -152,7 +152,7 @@ pub fn method<'gc>(
         }
         GET_PIXEL_BOUNDS => {
             // This is equivalent to `clip.getBounds()`.
-            let world_bounds = clip.world_bounds(BoundsMode::Script);
+            let world_bounds = clip.world_bounds(&BoundsMode::Script);
 
             // If the bounds are invalid, the pixelBounds rectangle consists only of zeroes.
             let bounds = if world_bounds == Rectangle::default() {

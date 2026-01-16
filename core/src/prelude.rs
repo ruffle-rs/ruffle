@@ -1,5 +1,5 @@
 pub use crate::display_object::{
-    BoundsMode, DisplayObject, HitTestOptions, TDisplayObject, TDisplayObjectContainer,
+    DisplayObject, HitTestOptions, TDisplayObject, TDisplayObjectContainer,
 };
 pub use ruffle_render::matrix::Matrix;
 pub use std::ops::RangeBounds;
