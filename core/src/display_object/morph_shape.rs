@@ -122,11 +122,8 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
 
     fn self_bounds(self, mode: &BoundsMode) -> Rectangle<Twips> {
         let ratio = match mode {
-            // For getBounds() or hitTestObject(), return start bounds (0) unless fully morphed (65535)
-            BoundsMode::Script => match self.ratio() {
-                65535 => 65535,
-                _ => 0,
-            },
+            // For getBounds(), getRect() or hitTestObject(), return start bounds (0)
+            BoundsMode::Script => 0,
             // otherwise, use the actual interpolated ratio
             _ => self.ratio(),
         };
