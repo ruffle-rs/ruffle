@@ -915,7 +915,7 @@ pub enum BoundsMode {
     Engine,
 
     /// The bounds returned by ActionScript (e.g. doesn't take MorphShape
-    /// ratio into account - always uses ratio either 0/65535, start/end shape).
+    /// ratio into account - always uses ratio 0 AKA start shape).
     Script,
 }
 
