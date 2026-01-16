@@ -125,7 +125,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             // For getBounds(), getRect() or hitTestObject(), return start bounds (0)
             BoundsMode::Script => 0,
             // otherwise, use the actual interpolated ratio
-            _ => self.ratio(),
+            BoundsMode::Engine => self.ratio(),
         };
 
         let shared = self.0.shared.get();
