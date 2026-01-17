@@ -1012,7 +1012,7 @@ pub fn get_bounds<'gc>(
             .try_get_object(0)
             .and_then(|o| o.as_display_object())
             .unwrap_or(dobj);
-        let bounds = dobj.bounds(&BoundsMode::Script);
+        let bounds = dobj.bounds(BoundsMode::Script);
         let mut out_bounds = if DisplayObject::ptr_eq(dobj, target) {
             // Getting the clips bounds in its own coordinate space; no AABB transform needed.
             bounds

@@ -574,12 +574,12 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
     }
 
-    fn self_bounds(self, _mode: &BoundsMode) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         // No inherent bounds; contains child DisplayObjects.
         Default::default()
     }
 
-    fn bounds_with_transform(self, matrix: &Matrix, mode: &BoundsMode) -> Rectangle<Twips> {
+    fn bounds_with_transform(self, matrix: &Matrix, mode: BoundsMode) -> Rectangle<Twips> {
         // A scroll rect completely overrides an object's bounds,
         // and can even grow the bounding box to be larger than the actual content
         if let Some(scroll_rect) = self.scroll_rect() {
@@ -611,7 +611,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         include_own_filters: bool,
         view_matrix: &Matrix,
     ) -> Rectangle<Twips> {
-        let mut bounds = *matrix * self.self_bounds(&BoundsMode::Engine);
+        let mut bounds = *matrix * self.self_bounds(BoundsMode::Engine);
 
         if let Some(child) = self.get_state_child(self.0.state.get().into()) {
             let matrix = *matrix * child.base().matrix();
@@ -810,7 +810,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
     fn highlight_bounds(self) -> Rectangle<Twips> {
         let hit_area = self.0.hit_area.get();
         let hit_bounds = hit_area
-            .map(|hit| hit.bounds(&BoundsMode::Engine))
+            .map(|hit| hit.bounds(BoundsMode::Engine))
             .unwrap_or(Rectangle::INVALID);
         self.local_to_global_matrix() * hit_bounds
     }

@@ -159,7 +159,7 @@ impl<'gc> FocusTracker<'gc> {
         if let Some(obj) = new {
             // Flash has to access the object's bounds somewhere around here,
             // because TextField's lazy autosize bounds are flushed when it's focused.
-            obj.as_displayobject().world_bounds(&BoundsMode::Engine);
+            obj.as_displayobject().world_bounds(BoundsMode::Engine);
         }
 
         let old = self.0.focus.get();

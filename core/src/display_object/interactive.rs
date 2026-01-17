@@ -684,7 +684,7 @@ pub trait TInteractiveObject<'gc>:
 
     /// Get the bounds of the focus highlight.
     fn highlight_bounds(self) -> Rectangle<Twips> {
-        self.as_displayobject().world_bounds(&BoundsMode::Engine)
+        self.as_displayobject().world_bounds(BoundsMode::Engine)
     }
 
     /// Whether this object is included in tab ordering.

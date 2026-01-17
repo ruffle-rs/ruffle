@@ -957,7 +957,7 @@ impl IBitmapDrawable<'_> {
                 y_min: Twips::ZERO,
                 y_max: Twips::from_pixels(bmd.height() as f64),
             },
-            IBitmapDrawable::DisplayObject(o) => o.bounds(&BoundsMode::Engine),
+            IBitmapDrawable::DisplayObject(o) => o.bounds(BoundsMode::Engine),
         }
     }
 }

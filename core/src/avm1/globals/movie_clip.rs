@@ -1466,7 +1466,7 @@ fn get_bounds<'gc>(
             }
         }
 
-        let bounds = movie_clip.bounds(&BoundsMode::Script);
+        let bounds = movie_clip.bounds(BoundsMode::Script);
         let out_bounds = if DisplayObject::ptr_eq(movie_clip.into(), target) {
             // Getting the clips bounds in its own coordinate space; no AABB transform needed.
             bounds

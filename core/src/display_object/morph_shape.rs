@@ -120,7 +120,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .render_shape(shape_handle, context.transform_stack.transform());
     }
 
-    fn self_bounds(self, mode: &BoundsMode) -> Rectangle<Twips> {
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
         let ratio = match mode {
             // For getBounds(), getRect() or hitTestObject(), return start bounds (0)
             BoundsMode::Script => 0,
@@ -140,7 +140,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         options: HitTestOptions,
     ) -> bool {
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
-            && self.world_bounds(&BoundsMode::Engine).contains(point)
+            && self.world_bounds(BoundsMode::Engine).contains(point)
         {
             if let Some(frame) = self.0.shared.get().frames.borrow().get(&self.ratio()) {
                 let Some(local_matrix) = self.global_to_local_matrix() else {

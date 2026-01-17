@@ -136,7 +136,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.0.shared.get().id
     }
 
-    fn self_bounds(self, _mode: &BoundsMode) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         if let Some(drawing) = self.0.drawing.get() {
             drawing.borrow().self_bounds()
         } else {
@@ -192,7 +192,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     fn render_self(self, context: &mut RenderContext) {
         if !context.is_offscreen
             && !self
-                .world_bounds(&BoundsMode::Engine)
+                .world_bounds(BoundsMode::Engine)
                 .intersects(&context.stage.view_bounds())
         {
             // Off-screen; culled
@@ -216,7 +216,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     ) -> bool {
         // Transform point to local coordinates and test.
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
-            && self.world_bounds(&BoundsMode::Engine).contains(point)
+            && self.world_bounds(BoundsMode::Engine).contains(point)
         {
             let Some(local_matrix) = self.global_to_local_matrix() else {
                 return false;

@@ -326,7 +326,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.render_children(context);
     }
 
-    fn self_bounds(self, _mode: &BoundsMode) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         // No inherent bounds; contains child DisplayObjects.
         Default::default()
     }

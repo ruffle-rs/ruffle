@@ -1538,7 +1538,7 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("Self Bounds");
-                bounds_label(ui, object.self_bounds(&BoundsMode::Engine), &mut None);
+                bounds_label(ui, object.self_bounds(BoundsMode::Engine), &mut None);
                 ui.end_row();
 
                 ui.label("Scroll Rect");
@@ -1574,7 +1574,7 @@ impl DisplayObjectWindow {
                 let no_hover = &mut None;
                 bounds_label(
                     ui,
-                    object.bounds_with_transform(matrix, &BoundsMode::Engine),
+                    object.bounds_with_transform(matrix, BoundsMode::Engine),
                     if hoverable_bounds {
                         &mut self.hovered_bounds
                     } else {
