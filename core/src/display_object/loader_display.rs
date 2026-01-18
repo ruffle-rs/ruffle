@@ -211,26 +211,28 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         let mut options = HitTestOptions::SKIP_INVISIBLE;
         options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
 
-        // We have at most one child
-        if let Some(child) = self.iter_render_list().next() {
-            if let Some(int) = child.as_interactive() {
-                if int.as_displayobject().movie().is_action_script_3() {
-                    return int
-                        .mouse_pick_avm2(context, point, require_button_mode)
-                        .combine_with_parent(self.into());
-                } else {
-                    let avm1_result = int.mouse_pick_avm1(context, point, require_button_mode);
-                    if let Some(result) = avm1_result {
-                        return Avm2MousePick::Hit(result);
+        if self.visible() {
+            // We have at most one child
+            if let Some(child) = self.iter_render_list().next() {
+                if let Some(int) = child.as_interactive() {
+                    if int.as_displayobject().movie().is_action_script_3() {
+                        return int
+                            .mouse_pick_avm2(context, point, require_button_mode)
+                            .combine_with_parent(self.into());
                     } else {
-                        return Avm2MousePick::Miss;
+                        let avm1_result = int.mouse_pick_avm1(context, point, require_button_mode);
+                        if let Some(result) = avm1_result {
+                            return Avm2MousePick::Hit(result);
+                        } else {
+                            return Avm2MousePick::Miss;
+                        }
                     }
-                }
-            } else if child.hit_test_shape(context, point, options) {
-                if self.mouse_enabled() {
-                    return Avm2MousePick::Hit(self.into());
-                } else {
-                    return Avm2MousePick::PropagateToParent;
+                } else if child.hit_test_shape(context, point, options) {
+                    if self.mouse_enabled() {
+                        return Avm2MousePick::Hit(self.into());
+                    } else {
+                        return Avm2MousePick::PropagateToParent;
+                    }
                 }
             }
         }
