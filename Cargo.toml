@@ -62,7 +62,7 @@ slotmap = "1.1.1"
 async-channel = "2.5.0"
 bitflags = "2.10.0"
 bytemuck = "1.24.0"
-chrono = { version = "0.4.42", default-features = false }
+chrono = { version = "0.4.43", default-features = false }
 enum-map = "2.7.3"
 flate2 = "1.1.8"
 futures = "0.3.31"
@@ -73,7 +73,7 @@ log = "0.4"
 num-derive = "0.4.2"
 num-traits = "0.2.19"
 serde = "1.0.228"
-thiserror = "2.0.17"
+thiserror = "2.0.18"
 url = "2.5.8"
 quick-xml = "0.37.5"
 regress = { git = "https://github.com/ruffle-rs/regras3", rev = "5fcb02513c5ab4e00df4346459f5a8d0521d8fed" }

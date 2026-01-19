@@ -65,7 +65,7 @@ enum-map = { workspace = true }
 ttf-parser = "0.25"
 num-bigint = "0.4"
 unicode-segmentation = "1.12.0"
-id3 = "1.16.3"
+id3 = "1.16.4"
 either = "1.15.0"
 chardetng = "0.1.17"
 tracy-client = { version = "0.18.2", optional = true, default-features = false }
