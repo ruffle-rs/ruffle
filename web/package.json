@@ -35,7 +35,7 @@
         "globals": "^17.0.0",
         "mocha": "^11.7.5",
         "prettier": "^3.8.0",
-        "stylelint": "^16.26.1",
+        "stylelint": "^17.0.0",
         "stylelint-config-standard": "^39.0.1",
         "stylelint-prettier": "^5.0.3",
         "ts-loader": "^9.5.4",
