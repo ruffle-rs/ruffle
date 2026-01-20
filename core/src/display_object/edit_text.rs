@@ -2591,13 +2591,13 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.0.bounds.get()
     }
 
-    fn pixel_bounds(self) -> Rectangle<Twips> {
+    fn pixel_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
         // For pixel bounds we can't apply lazy autosize bounds.
         // It's a bit hacky, but it seems that pixelBounds are
         // an exception to the rule that lazy autosize bounds
         // are applied when reading anything related to bounds.
         let old = self.0.autosize_lazy_bounds.take();
-        let bounds = self.world_bounds(BoundsMode::Script);
+        let bounds = self.world_bounds(mode);
         self.0.autosize_lazy_bounds.set(old);
         bounds
     }

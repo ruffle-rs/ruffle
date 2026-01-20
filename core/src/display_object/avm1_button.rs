@@ -316,7 +316,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             for (child, depth) in new_children {
                 child.post_instantiation(context, None, Instantiator::Movie, false);
                 write.borrow_mut().hit_area.insert(depth, child);
-                hit_bounds = hit_bounds.union(&child.local_bounds());
+                hit_bounds = hit_bounds.union(&child.local_bounds(BoundsMode::Engine));
             }
             write.borrow_mut().hit_bounds = hit_bounds;
         }

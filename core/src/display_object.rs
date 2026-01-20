@@ -916,6 +916,9 @@ pub enum BoundsMode {
 
     /// The bounds returned by ActionScript (e.g. doesn't take MorphShape
     /// ratio into account - always uses ratio 0 AKA start shape).
+    /// This is used in AVM1 in MovieClip::getBounds(), getRect(), _width, _height, hitTest (object)
+    /// Used in AVM2 in DO::getBounds(), getRect(), width, height, hitTestObject()
+    /// Used in both AVM1 and AVM2 for Transform.pixelBounds.
     Script,
 }
 
@@ -1327,8 +1330,8 @@ pub trait TDisplayObject<'gc>:
 
     /// The local bounding box of this object including children, in its parent's coordinate system.
     #[no_dynamic]
-    fn local_bounds(self) -> Rectangle<Twips> {
-        self.bounds_with_transform(&self.base().matrix(), BoundsMode::Engine)
+    fn local_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        self.bounds_with_transform(&self.base().matrix(), mode)
     }
 
     /// The world bounding box of this object including children, relative to the stage.
@@ -1338,9 +1341,8 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// The world bounding box of this object, as reported by `Transform.pixelBounds`.
-    fn pixel_bounds(self) -> Rectangle<Twips> {
-        // Uses BoundsMode::Script as it's only used in ActionScript.
-        self.world_bounds(BoundsMode::Script)
+    fn pixel_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        self.world_bounds(mode)
     }
 
     /// Bounds used for drawing debug rects and picking objects.
@@ -1647,7 +1649,7 @@ pub trait TDisplayObject<'gc>:
     /// Gets the pixel width of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_width`/`width` properties.
     fn width(self) -> f64 {
-        self.local_bounds().width().to_pixels()
+        self.local_bounds(BoundsMode::Script).width().to_pixels()
     }
 
     /// Sets the pixel width of this display object in local space.
@@ -1695,7 +1697,7 @@ pub trait TDisplayObject<'gc>:
     /// Gets the pixel height of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_height`/`height` properties.
     fn height(self) -> f64 {
-        self.local_bounds().height().to_pixels()
+        self.local_bounds(BoundsMode::Script).height().to_pixels()
     }
 
     /// Sets the pixel height of this display object in local space.
