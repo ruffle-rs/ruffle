@@ -47,6 +47,22 @@ pub struct FileFilter {
     pub mac_type: Option<String>,
 }
 
+impl FileFilter {
+    /// Returns extensions suitable for file dialogs.
+    /// When `is_mac` is true, uses `mac_type` if available; otherwise uses `extensions` with wildcards stripped.
+    /// `is_mac` should be true when the user uses a Mac.
+    pub fn extensions_for_dialog(&self, is_mac: bool) -> Vec<&str> {
+        if is_mac && let Some(mac_type) = &self.mac_type {
+            return mac_type.split(';').collect();
+        }
+
+        self.extensions
+            .split(';')
+            .map(|x| x.trim_start_matches("*."))
+            .collect()
+    }
+}
+
 /// A result of a file selection
 pub trait FileDialogResult: Any {
     /// Was the file selection canceled by the user

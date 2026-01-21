@@ -357,27 +357,20 @@ impl UiBackend for WebUiBackend {
         self.dialog_open = true;
 
         // Create the dialog future
+        let is_mac = web_sys::window()
+            .expect("window()")
+            .navigator()
+            .platform()
+            .expect("navigator.platform")
+            .contains("Mac");
+
         Some(Box::pin(async move {
             let mut dialog = AsyncFileDialog::new();
 
-            for filter in filters {
-                let window = web_sys::window().expect("window()");
-                let navigator = window.navigator();
-                let platform = navigator.platform().expect("navigator.platform");
+            for filter in &filters {
+                let extensions = filter.extensions_for_dialog(is_mac);
 
-                if platform.contains("Mac")
-                    && let Some(mac_type) = filter.mac_type
-                {
-                    let extensions: Vec<&str> = mac_type.split(';').collect();
-                    dialog = dialog.add_filter(&filter.description, &extensions);
-                } else {
-                    let extensions: Vec<&str> = filter
-                        .extensions
-                        .split(';')
-                        .map(|x| x.trim_start_matches("*."))
-                        .collect();
-                    dialog = dialog.add_filter(&filter.description, &extensions);
-                }
+                dialog = dialog.add_filter(&filter.description, &extensions);
             }
 
             let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> = Ok(Box::new(

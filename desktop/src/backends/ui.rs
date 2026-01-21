@@ -354,20 +354,10 @@ impl UiBackend for DesktopUiBackend {
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
         let mut dialog = AsyncFileDialog::new();
 
-        for filter in filters {
-            if cfg!(target_os = "macos")
-                && let Some(mac_type) = filter.mac_type
-            {
-                let extensions: Vec<&str> = mac_type.split(';').collect();
-                dialog = dialog.add_filter(&filter.description, &extensions);
-            } else {
-                let extensions: Vec<&str> = filter
-                    .extensions
-                    .split(';')
-                    .map(|x| x.trim_start_matches("*."))
-                    .collect();
-                dialog = dialog.add_filter(&filter.description, &extensions);
-            }
+        for filter in &filters {
+            let extensions = filter.extensions_for_dialog(cfg!(target_os = "macos"));
+
+            dialog = dialog.add_filter(&filter.description, &extensions);
         }
 
         let result = self.file_picker.show_dialog(dialog, |d| d.pick_file())?;
