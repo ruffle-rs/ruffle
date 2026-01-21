@@ -110,6 +110,45 @@ pub fn swf_to_uppercase(c: u16) -> u16 {
     }
 }
 
+#[inline(always)]
+pub fn swf_is_cjk_like(c: char) -> bool {
+    // NOTE: not guaranteed to be equivalent to FP's set.
+    matches!(c, '\u{2300}'..)
+}
+
+#[rustfmt::skip]
+pub fn swf_is_opening(c: char) -> bool {
+    // NOTE: not guaranteed to be equivalent to FP's set.
+    matches!(c,
+        '(' | '[' | '{'
+        | '（' | '［' | '｛' | '〈' | '《' | '「' | '⁅' | '『'
+        | '【' | '〖' | '〚'
+        | '﴾'
+        | '﹙'
+        | '〝'
+        | '︻' | '﹁' | '﹃'
+        | '︵'
+    )
+}
+
+#[rustfmt::skip]
+pub fn swf_is_closing(c: char) -> bool {
+    // NOTE: not guaranteed to be equivalent to FP's set.
+    matches!(c,
+        ')' | ']' | '}'
+        | '）' | '］' | '｝' | '〉' | '》'
+        | '?' | '!' | ';' | ':' | ',' | '.' | '」' | '⁆' | '』'
+        | '】' | '〕' | '〙' | '﹞'
+        | '﴿'
+        | '﹚'
+        | '？' | '！' | '；' | '：' | '，' | '．'
+        | '、' | '。'
+        | '〜'
+        | '︺' | '﹀' | '﹂' | '﹄' | '︶'
+        | '〟'
+    )
+}
+
 /// This is the same idea as std::str::Chars, except it uses flash's weird UTF-8 decoding rules,
 /// and works on raw bytes. It also does not return `char`, but raw u32's that may or may not be valid chars.
 ///

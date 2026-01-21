@@ -10,6 +10,7 @@ use ruffle_render::bitmap::{Bitmap, BitmapHandle};
 use ruffle_render::error::Error;
 use ruffle_render::shape_utils::{DrawCommand, FillRule};
 use ruffle_render::transform::Transform;
+use ruffle_wstr::utils::{swf_is_cjk_like, swf_is_closing, swf_is_opening};
 use std::cell::{Cell, OnceCell, Ref, RefCell};
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
@@ -950,68 +951,31 @@ pub trait FontLike<'gc> {
     // - Final fallback:
     //   if resulting length has <=1 char, yield entire line without wrapping.
 
-    fn is_cjk_like_char(c: char) -> bool {
-        // NOTE: not guaranteed to be equivalent to FP's set.
-        matches!(c, '\u{2300}'..)
-    }
-
-    #[rustfmt::skip]
-    fn is_opening_char(c: char) -> bool {
-        // NOTE: not guaranteed to be equivalent to FP's set.
-        matches!(c,
-            '(' | '[' | '{'
-            | '（' | '［' | '｛' | '〈' | '《' | '「' | '⁅' | '『'
-            | '【' | '〖' | '〚'
-            | '﴾'
-            | '﹙'
-            | '〝'
-            | '︻' | '﹁' | '﹃'
-            | '︵'
-        )
-    }
-
-    #[rustfmt::skip]
-    fn is_closing_char(c: char) -> bool {
-        // NOTE: not guaranteed to be equivalent to FP's set.
-        matches!(c,
-            ')' | ']' | '}'
-            | '）' | '］' | '｝' | '〉' | '》'
-            | '?' | '!' | ';' | ':' | ',' | '.' | '」' | '⁆' | '』'
-            | '】' | '〕' | '〙' | '﹞'
-            | '﴿'
-            | '﹚'
-            | '？' | '！' | '；' | '：' | '，' | '．'
-            | '、' | '。'
-            | '〜'
-            | '︺' | '﹀' | '﹂' | '﹄' | '︶'
-            | '〟'
-        )
-    }
-
     // IMO way more readable the way it is rn
     #[allow(clippy::if_same_then_else)]
     #[allow(clippy::collapsible_if)]
-    fn find_allowed_breaks(text: &WStr, swf7: bool) -> Vec<usize> {
-        let mut ret = vec![];
-        if text.is_empty() {
-            return ret;
-        }
+    fn find_allowed_breaks(text: &WStr, swf8: bool) -> Vec<usize> {
         // note: FP probably handles bad utf16 in some universal way
         const FALLBACK: char = char::REPLACEMENT_CHARACTER;
-        let mut prev = text.chars().next().unwrap().unwrap_or(FALLBACK);
+
+        let mut ret = vec![];
+        let Some(ch) = text.chars().next() else {
+            return ret;
+        };
+        let mut prev = ch.unwrap_or(FALLBACK);
         for (i, curr) in text.char_indices().skip(1) {
             let curr = curr.unwrap_or(FALLBACK);
-            if !swf7 && curr == ' ' {
+            if swf8 && curr == ' ' {
                 // in swf>=8, only last space is a break
                 prev = curr;
                 continue;
             }
             if prev == ' ' {
                 ret.push(i);
-            } else if prev == '-' || (swf7 && curr == '-') {
+            } else if prev == '-' || (!swf8 && curr == '-') {
                 ret.push(i);
-            } else if Self::is_cjk_like_char(prev) || Self::is_cjk_like_char(curr) {
-                if !Self::is_opening_char(prev) && !Self::is_closing_char(curr) {
+            } else if swf_is_cjk_like(prev) || swf_is_cjk_like(curr) {
+                if !swf_is_opening(prev) && !swf_is_closing(curr) {
                     ret.push(i);
                 }
             }
@@ -1055,7 +1019,7 @@ pub trait FontLike<'gc> {
 
         let mut line_end = 0;
 
-        let allowed_breaks = Self::find_allowed_breaks(text, true);
+        let allowed_breaks = Self::find_allowed_breaks(text, false);
 
         let mut last_stop = 0;
         for (i, word_end) in allowed_breaks.into_iter().enumerate() {
@@ -1154,7 +1118,7 @@ pub trait FontLike<'gc> {
 
         let mut line_end = 0;
 
-        let allowed_breaks = Self::find_allowed_breaks(text, false);
+        let allowed_breaks = Self::find_allowed_breaks(text, true);
 
         let mut last_stop = 0;
         for (i, word_end) in allowed_breaks.into_iter().enumerate() {
