@@ -178,6 +178,7 @@ pub fn encode_uri<'gc>(
         args,
         // Characters that are not escaped, sourced from as3 docs
         "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ@;/?:@&=+$,#-_.!~*'()",
+        "encodeURI",
     )
 }
 
@@ -191,6 +192,7 @@ pub fn encode_uri_component<'gc>(
         args,
         // Characters that are not escaped, sourced from as3 docs
         "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ-_.!~*'()",
+        "encodeURIComponent",
     )
 }
 
@@ -198,6 +200,7 @@ fn encode_utf8_with_exclusions<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
     not_converted: &str,
+    func_name: &str,
 ) -> Result<Value<'gc>, Error<'gc>> {
     let input = args.get_string(activation, 0);
     let mut output = String::new();
@@ -206,7 +209,9 @@ fn encode_utf8_with_exclusions<'gc>(
         // Latin-1 values map directly to unicode codepoints,
         // so we can directly convert to a `char`
         Units::Bytes(bytes) => bytes.iter().map(|b| *b as char).collect(),
-        Units::Wide(wide) => String::from_utf16_lossy(wide),
+        Units::Wide(wide) => {
+            String::from_utf16(wide).map_err(|_| make_error_1052(activation, func_name))?
+        }
     };
 
     for x in input_string.chars() {
@@ -215,12 +220,10 @@ fn encode_utf8_with_exclusions<'gc>(
         } else {
             let mut bytes = [0; 4];
             let utf8_bytes = x.encode_utf8(&mut bytes);
-            let mut encoded = String::new();
             // Each byte in the utf-8 encoding is encoded as a hex value
             for byte in utf8_bytes.bytes() {
-                write!(encoded, "%{byte:02X}").unwrap();
+                write!(output, "%{byte:02X}").unwrap();
             }
-            output.push_str(&encoded);
         }
     }
 
