@@ -18,7 +18,7 @@ let setupLogging = async () => {};
 let reportLogging = async () => {};
 
 if (chrome) {
-    const args = ["--disable-gpu"];
+    const args = ["--disable-gpu", "--enable-unsafe-swiftshader"];
     if (headless) {
         args.push("--headless");
     }
