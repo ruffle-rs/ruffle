@@ -4,6 +4,8 @@ import {
     isFallbackElement,
     isYoutubeFlashSource,
     workaroundYoutubeMixedContent,
+    clearDocumentNamedAccessor,
+    defineDocumentNamedAccessor,
 } from "./inner";
 import { FLASH_ACTIVEX_CLASSID } from "../../flash-identifiers";
 import { registerElement } from "../register-element";
@@ -65,6 +67,7 @@ function paramsOf(elem: Element): Record<string, string> {
  */
 export class RuffleObjectElement extends RufflePlayerElement {
     private params: Record<string, string> = {};
+    private _name: string = "";
 
     /**
      * @ignore
@@ -101,8 +104,21 @@ export class RuffleObjectElement extends RufflePlayerElement {
             const options = getPolyfillOptions(url, getOptionString);
 
             // Kick off the SWF download.
-            this.load(options, true);
+            this.load(options, true).then(() => {
+                const name = this.attributes.getNamedItem("name")?.value;
+                defineDocumentNamedAccessor(this, name);
+            });
         }
+    }
+
+    /**
+     * @ignore
+     * @internal
+     */
+    override disconnectedCallback(): void {
+        const name = this.attributes.getNamedItem("name")?.value;
+        clearDocumentNamedAccessor(this, name);
+        super.disconnectedCallback();
     }
 
     protected override debugPlayerInfo(): string {
@@ -343,5 +359,55 @@ export class RuffleObjectElement extends RufflePlayerElement {
      */
     set type(typeVal: string) {
         this.setAttribute("type", typeVal);
+    }
+
+    /**
+     * @ignore
+     * @internal
+     */
+    static override get observedAttributes(): string[] {
+        return [...RufflePlayerElement.observedAttributes, "name"];
+    }
+
+    /**
+     * @ignore
+     * @internal
+     */
+    override attributeChangedCallback(
+        name: string,
+        oldValue: string | undefined,
+        newValue: string | undefined,
+    ): void {
+        super.attributeChangedCallback(name, oldValue, newValue);
+        if (name === "name" && oldValue !== newValue) {
+            this.name = newValue ?? "";
+            return;
+        }
+    }
+
+    /**
+     * Polyfill of name getter
+     *
+     * @ignore
+     * @internal
+     */
+    get name(): string {
+        return this._name ?? "";
+    }
+
+    /**
+     * Polyfill of name setter
+     *
+     * @ignore
+     * @internal
+     */
+    set name(name: string) {
+        const oldName = this._name;
+        this._name = name;
+        if (oldName !== name) {
+            clearDocumentNamedAccessor(this, oldName);
+            defineDocumentNamedAccessor(this, name);
+        }
+        this.setAttribute("name", name);
     }
 }
