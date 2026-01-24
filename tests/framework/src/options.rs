@@ -12,6 +12,7 @@ use crate::options::image_comparison::ImageComparison;
 use crate::options::known_failure::KnownFailure;
 use crate::options::player::PlayerOptions;
 use anyhow::{Result, bail};
+use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
 use std::collections::{HashMap, HashSet};
 use toml::Spanned;
@@ -207,14 +208,35 @@ impl RequiredFeatures {
 #[serde(default, deny_unknown_fields)]
 pub struct RenderOptions {
     optional: bool,
-    pub sample_count: u32,
+    quality: Quality,
 }
 
 impl Default for RenderOptions {
     fn default() -> Self {
         Self {
             optional: false,
-            sample_count: 1,
+            quality: Quality(StageQuality::High),
         }
+    }
+}
+
+impl RenderOptions {
+    pub fn quality(&self) -> StageQuality {
+        self.quality.0
+    }
+}
+
+#[derive(Clone, Copy)]
+struct Quality(StageQuality);
+
+impl<'de> Deserialize<'de> for Quality {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        let quality = std::str::FromStr::from_str(&s)
+            .map_err(|_| serde::de::Error::custom(format!("Unknown quality: {s}")))?;
+        Ok(Quality(quality))
     }
 }

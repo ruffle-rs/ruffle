@@ -3,5 +3,5 @@ num_ticks = 1
 image_comparisons."output".trigger = 1
 
 [player_options]
-with_renderer = { optional = false, sample_count = 4 }
+with_renderer = { optional = false, quality = "high" }
 viewport_dimensions = { width = 200, height = 200, scale_factor = 1 }

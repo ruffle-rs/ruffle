@@ -5,4 +5,4 @@ tolerance = 10
 max_outliers = 4000 # FIXME: High max_outliers. FP renders objects with a matrix3D transformation in a different way from 2D objects especially around the object edges.
 
 [player_options]
-with_renderer = { optional = true, sample_count = 4 }
+with_renderer = { optional = true, quality = "high" }

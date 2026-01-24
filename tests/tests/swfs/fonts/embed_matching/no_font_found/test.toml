@@ -7,5 +7,5 @@ known_failure = true # Right now we intentionally fall back, because we don't su
 tolerance = 0
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, quality = "low" }
 with_default_font = true

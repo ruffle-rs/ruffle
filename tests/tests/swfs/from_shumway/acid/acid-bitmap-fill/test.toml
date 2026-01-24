@@ -21,4 +21,4 @@ tolerance = 128
 max_outliers = 300
 
 [player_options]
-with_renderer = { optional = false, sample_count = 4 }
+with_renderer = { optional = false, quality = "high" }

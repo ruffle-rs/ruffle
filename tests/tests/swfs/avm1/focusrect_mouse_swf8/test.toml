@@ -10,4 +10,4 @@ image_comparisons."output.07.middle_down".trigger = 7
 image_comparisons."output.08.middle_up".trigger = 8
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, quality = "low" }

@@ -4,7 +4,6 @@ use crate::options::RenderOptions;
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_core::{PlayerBuilder, PlayerMode, PlayerRuntime};
 use ruffle_render::backend::{RenderBackend, ViewportDimensions};
-use ruffle_render::quality::StageQuality;
 use serde::Deserialize;
 use std::time::Duration;
 
@@ -29,13 +28,7 @@ impl PlayerOptions {
         }
 
         if let Some(render_options) = &self.with_renderer {
-            player_builder = player_builder.with_quality(match render_options.sample_count {
-                16 => StageQuality::High16x16,
-                8 => StageQuality::High8x8,
-                4 => StageQuality::High,
-                2 => StageQuality::Medium,
-                _ => StageQuality::Low,
-            });
+            player_builder = player_builder.with_quality(render_options.quality());
         }
 
         if self.with_audio {

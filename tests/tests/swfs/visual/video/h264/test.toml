@@ -70,5 +70,5 @@ tolerance = 2
 trigger = 115
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, quality = "low" }
 with_video = true

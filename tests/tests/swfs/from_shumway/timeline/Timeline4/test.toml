@@ -6,4 +6,4 @@ num_frames = 10
 tolerance = 2
 
 [player_options]
-with_renderer = { optional = true, sample_count = 4 }
+with_renderer = { optional = true, quality = "high" }

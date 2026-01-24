@@ -11,7 +11,7 @@ tolerance = 64
 max_outliers = 600
 
 [player_options]
-with_renderer = { optional = false, sample_count = 4 }
+with_renderer = { optional = false, quality = "high" }
 
 [default_fonts]
 sans = ["Noto Sans"]
