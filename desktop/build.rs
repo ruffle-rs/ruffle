@@ -1,3 +1,4 @@
+use std::borrow::Cow;
 use std::env;
 use std::error::Error;
 use vergen::EmitBuilder;
@@ -12,22 +13,28 @@ fn main() -> Result<(), Box<dyn Error>> {
         .git_commit_date()
         .emit()?;
 
-    // Embed resource file w/ icon on windows
-    // To allow for cross-compilation, this must not be behind cfg(windows)!
-    println!("cargo:rerun-if-changed=assets/ruffle_desktop.rc");
-    embed_resource::compile("assets/ruffle_desktop.rc", embed_resource::NONE)
-        .manifest_required()?;
+    // Embed resource file w/ icon and version info on Windows.
+    // Note: We check CARGO_CFG_TARGET_OS rather than cfg! because build.rs
+    // runs on the host, not the target.
+    let target_os = env::var("CARGO_CFG_TARGET_OS").expect("CARGO_CFG_TARGET_OS not set");
+    if target_os == "windows" {
+        set_windows_resource()?;
+    }
 
     println!("cargo:rerun-if-env-changed=CFG_RELEASE_CHANNEL");
-    let channel = channel();
-    println!("cargo:rustc-env=CFG_RELEASE_CHANNEL={channel}");
+    println!(
+        "cargo:rustc-env=CFG_RELEASE_CHANNEL={channel}",
+        channel = get_channel()
+    );
 
     // Some SWFS have a large amount of recursion (particularly
     // around `goto`s). Increase the stack size on Windows
     // accommodate this (the default on Linux is high enough). We
     // do the same thing for wasm in web/build.rs.
-    if std::env::var("TARGET").unwrap().contains("windows") {
-        if std::env::var("TARGET").unwrap().contains("msvc") {
+    let target = std::env::var("TARGET").expect("TARGET not set");
+
+    if target.contains("windows") {
+        if target.contains("msvc") {
             println!("cargo:rustc-link-arg=/STACK:4000000");
         } else {
             println!("cargo:rustc-link-arg=-Xlinker");
@@ -39,10 +46,39 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn channel() -> String {
+fn get_channel() -> Cow<'static, str> {
     if let Ok(channel) = env::var("CFG_RELEASE_CHANNEL") {
-        channel
+        Cow::Owned(channel)
     } else {
-        "local".to_owned()
+        Cow::Borrowed("local")
     }
+}
+
+fn set_windows_resource() -> Result<(), Box<dyn Error>> {
+    let mut res = winresource::WindowsResource::new();
+
+    // Set language to US English (0x0409)
+    res.set_language(0x0409);
+
+    // Set the application icon
+    let manifest_dir = env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set");
+    let icon_path = format!("{manifest_dir}/assets/favicon.ico");
+
+    println!("cargo:rerun-if-changed={icon_path}");
+
+    res.set_icon(&icon_path);
+
+    // Set debug flag when building in debug mode
+    if let Ok(profile) = env::var("PROFILE")
+        && profile == "debug"
+    {
+        res.set_version_info(
+            winresource::VersionInfo::FILEFLAGS,
+            winresource::VersionInfo::VS_FF_DEBUG,
+        );
+    }
+
+    res.compile()?;
+
+    Ok(())
 }
