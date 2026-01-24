@@ -63,8 +63,18 @@ ashpd = "0.11.0"
 windows-sys = { version = "0.61.2", features = ["Win32_System_Console", "Win32_Storage_FileSystem"] }
 
 [build-dependencies]
-embed-resource = "3"
 vergen = { version = "8.3.2", features = ["build", "git", "gitcl", "cargo"] }
+winresource = "0.1"
+
+[package.metadata.winresource]
+# https://learn.microsoft.com/en-us/windows/win32/menurc/stringfileinfo-block
+ProductName = "Ruffle"
+FileDescription = "Adobe Flash Player emulator"
+CompanyName = "Ruffle LLC"
+LegalCopyright = "Copyright © 2018 Ruffle LLC and Ruffle contributors"
+# InternalName should be the same as the module name
+InternalName = "ruffle_desktop"
+OriginalFilename = "ruffle.exe"
 
 [features]
 default = ["software_video", "external_video", "lzma", "fontconfig"]
