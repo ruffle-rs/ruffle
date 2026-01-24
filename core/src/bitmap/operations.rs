@@ -1221,7 +1221,7 @@ pub fn apply_filter<'gc>(
     source: BitmapData<'gc>,
     source_point: (u32, u32),
     source_size: (u32, u32),
-    dest_point: (u32, u32),
+    dest_point: (i32, i32),
     filter: Filter,
 ) {
     // Prevent creating 0x0 textures.
@@ -1239,7 +1239,7 @@ pub fn apply_filter<'gc>(
         let mut source_region = PixelRegion::for_whole_size(source.width(), source.height());
         let mut dest_region = PixelRegion::for_whole_size(target.width(), target.height());
         dest_region.clamp_with_intersection(
-            (dest_point.0 as i32, dest_point.1 as i32),
+            dest_point,
             (source_point.0 as i32, source_point.1 as i32),
             (source_size.0 as i32, source_size.1 as i32),
             &mut source_region,
