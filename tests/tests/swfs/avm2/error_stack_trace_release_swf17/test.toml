@@ -5,4 +5,4 @@ tolerance = 0
 
 [player_options]
 mode = "Release"
-with_renderer = { optional = false, sample_count = 4 }
+with_renderer = { optional = false, quality = "high" }

@@ -14,4 +14,4 @@ max_outliers = 8
 max_outliers = 8
 
 [player_options]
-with_renderer = { optional = false, sample_count = 4 }
+with_renderer = { optional = false, quality = "high" }

@@ -5,6 +5,6 @@ tolerance = 4
 max_outliers = 18
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, quality = "low" }
 # TODO Fix this test. It shouldn't depend on the default font.
 with_default_font = true

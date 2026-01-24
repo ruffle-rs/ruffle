@@ -4,7 +4,7 @@ num_ticks = 1
 tolerance = 0
 
 [player_options]
-with_renderer = { optional = false, sample_count = 4 }
+with_renderer = { optional = false, quality = "high" }
 
 [fonts.a]
 family = "TestFont"

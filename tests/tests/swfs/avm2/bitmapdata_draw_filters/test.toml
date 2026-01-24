@@ -7,4 +7,4 @@ known_failure = true
 tolerance = 0
 
 [player_options]
-with_renderer = { optional = false, sample_count = 4 }
+with_renderer = { optional = false, quality = "high" }

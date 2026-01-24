@@ -5,4 +5,4 @@ known_failure = true # Broken after the inaccuracy in getPixel/getPixel32 was fi
 tolerance = 0
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, quality = "low" }

@@ -4,5 +4,5 @@ num_ticks = 1
 tolerance = 0
 
 [player_options]
-with_renderer = { optional = false, sample_count = 4 }
+with_renderer = { optional = false, quality = "high" }
 viewport_dimensions = { width = 800, height = 800, scale_factor = 1.0 }

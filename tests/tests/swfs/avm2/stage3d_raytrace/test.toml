@@ -12,4 +12,4 @@ max_outliers = 10
 # This test runs very slowly on unoptimized `test` builds,
 # so give it plenty of time.
 max_execution_duration = { secs = 1000, nanos = 0 }
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, quality = "low" }

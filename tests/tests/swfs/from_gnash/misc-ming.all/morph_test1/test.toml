@@ -26,4 +26,4 @@ tolerance = 5
 trigger = 7
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, quality = "low" }

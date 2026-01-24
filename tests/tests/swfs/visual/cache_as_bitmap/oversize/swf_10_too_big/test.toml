@@ -5,4 +5,4 @@ known_failure = true
 tolerance = 1 # Should be set to 0 when removing known_failure
 
 [player_options]
-with_renderer = { optional = false, sample_count = 4 }
+with_renderer = { optional = false, quality = "high" }

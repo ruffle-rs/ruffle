@@ -4,6 +4,6 @@ num_frames = 1
 tolerance = 2
 
 [player_options]
-with_renderer = { sample_count = 1 }
+with_renderer = { quality = "low" }
 # TODO Fix this test. It shouldn't depend on the default font.
 with_default_font = true
