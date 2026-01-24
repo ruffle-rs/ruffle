@@ -1,5 +1,10 @@
 file-picker-title-open-file = Mở một tệp duy nhất
+file-picker-title-open-directory = Mở thư mục
 file-picker-filter-supported = Các loại tệp được hỗ trợ
 file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
+file-picker-filter-ruf = Gói Ruffle (*.ruf)
 file-picker-filter-all = Tất cả các tệp
+file-picker-select-root-movie-title = Chọn hoạt cảnh chính
+file-picker-select-root-movie-message = Chọn hoạt cảnh chính từ thư mục đã mở.
+file-picker-select-root-movie-select = Chọn

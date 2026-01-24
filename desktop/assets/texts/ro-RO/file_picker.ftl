@@ -1,6 +1,10 @@
-file-picker-title-open-file = Deschideți un singur fișier
+file-picker-title-open-file = Deschide un singur fișier
+file-picker-title-open-directory = Deschide un folder
 file-picker-filter-supported = Toate fișierele suportate
 file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Pachet Ruffle (*.ruf)
 file-picker-filter-all = Toate fișierele
+file-picker-select-root-movie-title = Selectează filmul rădăcină
+file-picker-select-root-movie-message = Selectează filmul rădăcină din directorul deschis.
+file-picker-select-root-movie-select = Selectează

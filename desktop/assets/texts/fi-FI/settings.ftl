@@ -57,3 +57,4 @@ player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = Mukautettu kuvanopeus
 custom-framerate-suffix = { " " } fps
+dummy-external-interface = Ulkoinen näennäisliitäntä
