@@ -795,7 +795,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         source_point: (u32, u32),
         source_size: (u32, u32),
         destination: BitmapHandle,
-        dest_point: (u32, u32),
+        dest_point: (i32, i32),
         filter: Filter,
     ) -> Option<Box<dyn SyncHandle>> {
         let source_texture = as_texture(&source);
@@ -829,26 +829,51 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             },
             filter,
         );
+
+        let (dest_x, dest_y) = dest_point;
+
+        let src_offset_x = dest_x.min(0).unsigned_abs();
+        let src_offset_y = dest_y.min(0).unsigned_abs();
+
+        let final_dest_x = dest_x.max(0) as u32;
+        let final_dest_y = dest_y.max(0) as u32;
+
+        let available_width = applied_filter.width().saturating_sub(src_offset_x);
+        let available_height = applied_filter.height().saturating_sub(src_offset_y);
+        let dest_available_width = dest_texture.texture.width().saturating_sub(final_dest_x);
+        let dest_available_height = dest_texture.texture.height().saturating_sub(final_dest_y);
+
+        let copy_width = available_width.min(dest_available_width);
+        let copy_height = available_height.min(dest_available_height);
+
+        if copy_width == 0 || copy_height == 0 {
+            return None;
+        }
+
         self.active_frame.command_encoder.copy_texture_to_texture(
             wgpu::TexelCopyTextureInfo {
                 texture: applied_filter.color_texture(),
                 mip_level: 0,
-                origin: wgpu::Origin3d { x: 0, y: 0, z: 0 },
+                origin: wgpu::Origin3d {
+                    x: src_offset_x,
+                    y: src_offset_y,
+                    z: 0,
+                },
                 aspect: Default::default(),
             },
             wgpu::TexelCopyTextureInfo {
                 texture: &dest_texture.texture,
                 mip_level: 0,
                 origin: wgpu::Origin3d {
-                    x: dest_point.0,
-                    y: dest_point.1,
+                    x: final_dest_x,
+                    y: final_dest_y,
                     z: 0,
                 },
                 aspect: Default::default(),
             },
             wgpu::Extent3d {
-                width: (applied_filter.width()).min(dest_texture.texture.width() - dest_point.0),
-                height: (applied_filter.height()).min(dest_texture.texture.height() - dest_point.1),
+                width: copy_width,
+                height: copy_height,
                 depth_or_array_layers: 1,
             },
         );
