@@ -94,7 +94,6 @@ impl AtomicExportStatus {
 pub struct ExportBundleDialog {
     config: ExportBundleDialogConfiguration,
     picker: FilePicker,
-    suggested_name: String,
     bundle_name: String,
 
     bundle_local_files: bool,
@@ -132,7 +131,6 @@ impl ExportBundleDialog {
         Self {
             config,
             picker,
-            suggested_name: suggested_name.clone() + ".ruf",
             bundle_name: suggested_name,
             bundle_local_files,
             local_files,
@@ -289,7 +287,7 @@ impl ExportBundleDialog {
     }
 
     fn trigger_export(&mut self) -> ExportStatus {
-        let dialog = rfd::AsyncFileDialog::new().set_file_name(&self.suggested_name);
+        let dialog = rfd::AsyncFileDialog::new().set_file_name(self.bundle_name.clone() + ".ruf");
         let selected_file = self.picker.show_dialog(dialog, |d| d.save_file());
         let Some(selected_file) = selected_file else {
             return ExportStatus::FailedToShowPicker;
