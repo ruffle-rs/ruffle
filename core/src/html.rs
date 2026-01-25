@@ -3,12 +3,14 @@
 mod dimensions;
 mod iterators;
 mod layout;
+mod line_wrapping;
 mod text_format;
 
 pub use dimensions::Position;
 pub use layout::{
     Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, lower_from_text_spans,
 };
+pub use line_wrapping::wrap_line;
 pub use style_sheet::{CssStream, StyleSheet, parse_font_list, transform_dashes_to_camel_case};
 pub use text_format::{FormatSpans, TextDisplay, TextFormat, TextSpan};
 

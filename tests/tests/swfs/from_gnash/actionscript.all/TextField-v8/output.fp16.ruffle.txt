@@ -446,9 +446,9 @@ PASSED: tf._width > 10 [./TextField.as:965]
 PASSED: tf.textWidth == origTextWidth [./TextField.as:966]
 After setting wordWrap flat: textWidth: 63 origTextWidth:63
 PASSED: tf.textWidth == origTextWidth [./TextField.as:970]
-After reducing _width: textWidth: 63 origTextWidth:63
+After reducing _width: textWidth: 9 origTextWidth:63
 PASSED: tf._width == 10 [./TextField.as:973]
-FAILED: origTextWidth > tf.textWidth [./TextField.as:978]
+PASSED: origTextWidth > tf.textWidth [./TextField.as:978]
 PASSED: tf._width == 10 [./TextField.as:986]
 PASSED: tf._width == 10 [./TextField.as:990]
 PASSED: tf._width == 10 [./TextField.as:995]
@@ -566,6 +566,6 @@ FAILED: expected: 0 obtained: 3 [./TextField.as:1289]
 PASSED: this[2] == 3 [./TextField.as:1290]
 FAILED: expected: "number" obtained: undefined [./TextField.as:1295]
 PASSED: typeof(this.getTime()) == "undefined" [./TextField.as:1299]
-#passed: 468
-#failed: 88
+#passed: 469
+#failed: 87
 #total tests run: 556

@@ -1275,7 +1275,7 @@ impl<'gc> EditText<'gc> {
                 text,
                 self.text_transform(color),
                 params,
-                |pos, transform, glyph, advance, x| {
+                &mut |pos, transform, glyph, advance, x| {
                     if glyph.renderable(context) {
                         // If it's highlighted, override the color.
                         if matches!(visible_selection, Some(visible_selection) if visible_selection.contains(start + pos)) {
@@ -1627,7 +1627,7 @@ impl<'gc> EditText<'gc> {
                     text,
                     self.text_transform(color),
                     params,
-                    |pos, _transform, _glyph, advance, x| {
+                    &mut |pos, _transform, _glyph, advance, x| {
                         if local_position.x >= x {
                             if local_position.x > x + (advance / 2) {
                                 result = string_utils::next_char_boundary(text, pos);

@@ -5,7 +5,8 @@ use crate::drawing::Drawing;
 use crate::font::{DefaultFont, EvalParameters, Font, FontLike, FontSet, FontType};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
-use crate::string::{WStr, utils as string_utils};
+use crate::html::wrap_line;
+use crate::string::WStr;
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
 use std::cmp::{Ordering, max, min};
@@ -177,26 +178,28 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             if self.is_word_wrap {
                 let (mut width, mut offset) = self.wrap_dimensions(span);
 
-                while let Some(breakpoint) = font_set.wrap_line(
-                    &text[last_breakpoint..],
-                    params,
-                    width,
-                    offset,
-                    self.is_start_of_line(),
-                ) {
-                    // This ensures that the space causing the line break
-                    // is included in the line it broke.
-                    let next_breakpoint =
-                        string_utils::next_char_boundary(text, last_breakpoint + breakpoint);
-
-                    // If text doesn't fit at the start of a line, it
-                    // won't fit on the next either, abort and put the
-                    // whole text on the line (will be cut-off). This
-                    // can happen for small text fields with single
-                    // characters.
-                    if breakpoint == 0 && self.is_start_of_line() {
+                loop {
+                    let breakpoint = wrap_line(
+                        &font_set,
+                        &text[last_breakpoint..],
+                        params,
+                        width,
+                        offset,
+                        self.is_start_of_line(),
+                        self.movie.version(),
+                    );
+                    let Some(breakpoint) = breakpoint else {
                         break;
-                    } else if breakpoint == 0 {
+                    };
+
+                    let next_breakpoint = last_breakpoint + breakpoint;
+
+                    if breakpoint == 0 {
+                        if self.is_start_of_line() {
+                            unreachable!(
+                                "wrap_line is supposed to return nonzero if is_start_of_line"
+                            );
+                        }
                         self.newline(context, start + next_breakpoint, span, false);
 
                         let next_dim = self.wrap_dimensions(span);
@@ -1227,9 +1230,14 @@ impl<'gc> LayoutBox<'gc> {
         let params = EvalParameters::from_span(span);
         let mut char_end_pos = Vec::with_capacity(end - start);
 
-        font_set.evaluate(text, Default::default(), params, |_, _, _, advance, x| {
-            char_end_pos.push(x + advance);
-        });
+        font_set.evaluate(
+            text,
+            Default::default(),
+            params,
+            &mut |_, _, _, advance, x| {
+                char_end_pos.push(x + advance);
+            },
+        );
 
         Self {
             bounds: Default::default(),

@@ -10,6 +10,7 @@ use ruffle_render::bitmap::{Bitmap, BitmapHandle};
 use ruffle_render::error::Error;
 use ruffle_render::shape_utils::{DrawCommand, FillRule};
 use ruffle_render::transform::Transform;
+
 use std::cell::{Cell, OnceCell, Ref, RefCell};
 use std::hash::{Hash, Hasher};
 use std::rc::Rc;
@@ -112,18 +113,18 @@ fn round_to_pixel(t: Twips) -> Twips {
 #[derive(Copy, Clone, Debug)]
 pub struct EvalParameters {
     /// The height of each glyph, equivalent to a font size.
-    height: Twips,
+    pub height: Twips,
 
     /// Additional letter spacing to be added to or removed from each glyph
     /// after normal or kerned glyph advances are applied.
-    letter_spacing: Twips,
+    pub letter_spacing: Twips,
 
     /// Whether to allow use of font-provided kerning metrics.
     ///
     /// Fonts can optionally add or remove additional spacing between specific
     /// pairs of letters, separate from the ordinary width between glyphs. This
     /// parameter allows enabling or disabling that feature.
-    kerning: bool,
+    pub kerning: bool,
 }
 
 impl EvalParameters {
@@ -841,15 +842,13 @@ pub trait FontLike<'gc> {
     ///
     /// It's guaranteed that this function will iterate over all characters
     /// from the text, irrespectively of whether they have a glyph or not.
-    fn evaluate<FGlyph>(
+    fn evaluate(
         &self,
         text: &WStr, // TODO: take an `IntoIterator<Item=char>`, to not depend on string representation?
         mut transform: Transform,
         params: EvalParameters,
-        mut glyph_func: FGlyph,
-    ) where
-        FGlyph: FnMut(usize, &Transform, GlyphRef, Twips, Twips),
-    {
+        glyph_func: &mut dyn FnMut(usize, &Transform, GlyphRef, Twips, Twips),
+    ) {
         let baseline = self.get_baseline_for_height(params.height);
 
         // TODO [KJ] I'm not sure whether we should iterate over characters here or over code units.
@@ -918,99 +917,12 @@ pub trait FontLike<'gc> {
             text,
             Default::default(),
             params,
-            |_pos, _transform, _glyph, advance, x| {
+            &mut |_pos, _transform, _glyph, advance, x| {
                 width = width.max(x + advance);
             },
         );
 
         width
-    }
-
-    /// Given a line of text, find the first breakpoint within the text.
-    ///
-    /// This function assumes only `" "` is valid whitespace to split words on,
-    /// and will not attempt to break words that are longer than `width`, nor
-    /// will it break at newlines.
-    ///
-    /// The given `offset` determines the start of the initial line, while the
-    /// `width` indicates how long the line is supposed to be. Be careful to
-    /// note that it is possible for this function to return `0`; that
-    /// indicates that the string itself cannot fit on the line and should
-    /// break onto the next one.
-    ///
-    /// This function yields `None` if the line is not broken.
-    ///
-    /// TODO: This function and, more generally, this entire file will need to
-    /// be internationalized to implement AS3 `flash.text.engine`.
-    fn wrap_line(
-        &self,
-        text: &WStr,
-        params: EvalParameters,
-        width: Twips,
-        offset: Twips,
-        mut is_start_of_line: bool,
-    ) -> Option<usize> {
-        let mut remaining_width = width - offset;
-        if remaining_width < Twips::ZERO {
-            return Some(0);
-        }
-
-        let mut line_end = 0;
-
-        for word in text.split(b' ') {
-            let word_start = word.offset_in(text).unwrap();
-            let word_end = word_start + word.len();
-
-            let measure = self.measure(
-                // +1 is fine because ' ' is 1 unit
-                text.slice(word_start..word_end + 1).unwrap_or(word),
-                params,
-            );
-
-            if is_start_of_line && measure > remaining_width {
-                //Failsafe for if we get a word wider than the field.
-                let mut last_passing_breakpoint = Twips::ZERO;
-
-                let cur_slice = &text[word_start..];
-                let mut char_iter = cur_slice.char_indices();
-                let mut char_index = word_start;
-                let mut prev_char_index = char_index;
-                let mut prev_frag_end = 0;
-
-                char_iter.next(); // No need to check cur_slice[0..0]
-                while last_passing_breakpoint <= remaining_width {
-                    prev_char_index = char_index;
-                    char_index = word_start + prev_frag_end;
-
-                    if let Some((frag_end, _)) = char_iter.next() {
-                        last_passing_breakpoint = self.measure(&cur_slice[..frag_end], params);
-
-                        prev_frag_end = frag_end;
-                    } else {
-                        break;
-                    }
-                }
-
-                return Some(prev_char_index);
-            } else if measure > remaining_width {
-                //The word is wider than our remaining width, return the end of
-                //the line.
-                return Some(line_end);
-            } else {
-                //Space remains for our current word, move up the word pointer.
-                line_end = word_end;
-                is_start_of_line = is_start_of_line && text[0..line_end].trim().is_empty();
-
-                //If the additional space were to cause an overflow, then
-                //return now.
-                remaining_width -= measure;
-                if remaining_width < Twips::ZERO {
-                    return Some(word_end);
-                }
-            }
-        }
-
-        None
     }
 }
 
@@ -1607,188 +1519,5 @@ impl<'gc> FontLike<'gc> for FontSet<'gc> {
 
     fn font_type(&self) -> FontType {
         self.0.main_font.font_type()
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::string::WStr;
-    use flate2::read::DeflateDecoder;
-    use gc_arena::{Mutation, arena::rootless_mutate};
-    use std::io::Read;
-    use swf::Twips;
-
-    const DEVICE_FONT: &[u8] = include_bytes!("../assets/notosans.subset.ttf.gz");
-
-    /// Construct eval parameters from their individual parts.
-    fn eval_parameters_from_parts(
-        height: Twips,
-        letter_spacing: Twips,
-        kerning: bool,
-    ) -> EvalParameters {
-        EvalParameters {
-            height,
-            letter_spacing,
-            kerning,
-        }
-    }
-
-    fn with_device_font<F>(callback: F)
-    where
-        F: for<'gc> FnOnce(&Mutation<'gc>, Font<'gc>),
-    {
-        rootless_mutate(|mc| {
-            let mut data = Vec::new();
-            let mut decoder = DeflateDecoder::new(DEVICE_FONT);
-            decoder
-                .read_to_end(&mut data)
-                .expect("default font decompression must succeed");
-
-            let descriptor = FontDescriptor::from_parts("Noto Sans", false, false);
-            let device_font =
-                Font::from_font_file(mc, descriptor, FontFileData::new(data), 0, FontType::Device)
-                    .unwrap();
-            callback(mc, device_font);
-        })
-    }
-
-    #[test]
-    fn wrap_line_no_breakpoint() {
-        with_device_font(|_mc, df| {
-            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
-            let string = WStr::from_units(b"abcdefghijklmnopqrstuv");
-            let breakpoint =
-                df.wrap_line(string, params, Twips::from_pixels(200.0), Twips::ZERO, true);
-
-            assert_eq!(None, breakpoint);
-        });
-    }
-
-    #[test]
-    fn wrap_line_breakpoint_every_word() {
-        with_device_font(|_mc, df| {
-            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
-            let string = WStr::from_units(b"abcd efgh ijkl mnop");
-            let mut last_bp = 0;
-            let breakpoint =
-                df.wrap_line(string, params, Twips::from_pixels(35.0), Twips::ZERO, true);
-
-            assert_eq!(Some(4), breakpoint);
-
-            last_bp += breakpoint.unwrap() + 1;
-
-            let breakpoint2 = df.wrap_line(
-                &string[last_bp..],
-                params,
-                Twips::from_pixels(35.0),
-                Twips::ZERO,
-                true,
-            );
-
-            assert_eq!(Some(4), breakpoint2);
-
-            last_bp += breakpoint2.unwrap() + 1;
-
-            let breakpoint3 = df.wrap_line(
-                &string[last_bp..],
-                params,
-                Twips::from_pixels(35.0),
-                Twips::ZERO,
-                true,
-            );
-
-            assert_eq!(Some(4), breakpoint3);
-
-            last_bp += breakpoint3.unwrap() + 1;
-
-            let breakpoint4 = df.wrap_line(
-                &string[last_bp..],
-                params,
-                Twips::from_pixels(35.0),
-                Twips::ZERO,
-                true,
-            );
-
-            assert_eq!(None, breakpoint4);
-        });
-    }
-
-    #[test]
-    fn wrap_line_breakpoint_no_room() {
-        with_device_font(|_mc, df| {
-            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
-            let string = WStr::from_units(b"abcd efgh ijkl mnop");
-            let breakpoint = df.wrap_line(
-                string,
-                params,
-                Twips::from_pixels(30.0),
-                Twips::from_pixels(29.0),
-                false,
-            );
-
-            assert_eq!(Some(0), breakpoint);
-        });
-    }
-
-    #[test]
-    fn wrap_line_breakpoint_irregular_sized_words() {
-        with_device_font(|_mc, df| {
-            let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
-            let string = WStr::from_units(b"abcdi j kl mnop q rstuv");
-            let mut last_bp = 0;
-            let breakpoint =
-                df.wrap_line(string, params, Twips::from_pixels(37.0), Twips::ZERO, true);
-
-            assert_eq!(Some(5), breakpoint);
-
-            last_bp += breakpoint.unwrap() + 1;
-
-            let breakpoint2 = df.wrap_line(
-                &string[last_bp..],
-                params,
-                Twips::from_pixels(37.0),
-                Twips::ZERO,
-                true,
-            );
-
-            assert_eq!(Some(4), breakpoint2);
-
-            last_bp += breakpoint2.unwrap() + 1;
-
-            let breakpoint3 = df.wrap_line(
-                &string[last_bp..],
-                params,
-                Twips::from_pixels(37.0),
-                Twips::ZERO,
-                true,
-            );
-
-            assert_eq!(Some(4), breakpoint3);
-
-            last_bp += breakpoint3.unwrap() + 1;
-
-            let breakpoint4 = df.wrap_line(
-                &string[last_bp..],
-                params,
-                Twips::from_pixels(37.0),
-                Twips::ZERO,
-                true,
-            );
-
-            assert_eq!(Some(1), breakpoint4);
-
-            last_bp += breakpoint4.unwrap() + 1;
-
-            let breakpoint5 = df.wrap_line(
-                &string[last_bp..],
-                params,
-                Twips::from_pixels(37.0),
-                Twips::ZERO,
-                true,
-            );
-
-            assert_eq!(None, breakpoint5);
-        });
     }
 }
