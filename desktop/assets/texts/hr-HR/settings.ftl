@@ -46,6 +46,26 @@ align-top-right = Gore desno
 align-bottom-right = Dolje desno
 scale-mode = Način skaliranja
 scale-mode-noscale = Neskalirano (100%)
+scale-mode-noscale-tooltip =
+    Prikazuje film u izvornoj veličini, bez ikakvog zumiranja.
+    
+    Odgovara StageScaleMode.NO_SCALE
+scale-mode-showall = Zumiraj da stane
+scale-mode-showall-tooltip =
+    Zumira film kako bi što više ispunio prozor bez obrezivanja, održavajući omjer slike.
+    
+    Odgovara StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Rastegni da stane
+scale-mode-exactfit-tooltip =
+    Osigurava da film ispuni cijeli prozor, zanemarujući omjer slike.
+    
+    Odgovara StageScaleMode.EXACT_FIT
+scale-mode-noborder = Obreži da stane
+scale-mode-noborder-tooltip =
+    Ispunjava cijeli prozor uz zadržavanje omjera slike, po potrebi obrezujući film.
+    
+    Odgovara StageScaleMode.NO_BORDER
+scale-mode-force-tooltip = Sprječava promjenu načina skaliranja filma, zaključavajući ga na odabranu postavku.
 player-version = Verzija igrača
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR

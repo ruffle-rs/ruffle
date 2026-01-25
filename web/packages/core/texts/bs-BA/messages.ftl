@@ -11,9 +11,21 @@ continue = Nastavi
 report-bug = Prijavi grešku
 update-ruffle = Ažuriraj Ruffle
 ruffle-demo = Web probna verzija
+ruffle-desktop = Desktop aplikacija
 ruffle-wiki = Pogledaj Ruffle Wiki
 enable-hardware-acceleration = Izgleda da je hardversko ubrzanje onemogućeno. Iako Ruffle možda radi, moguće je da je vrlo spor. Možete saznati kako omogućiti hardversko ubrzanje slijedeći link ispod:
-enable-hardware-acceleration-link = Često postavljana pitanja - Hardversko ubrzanje u Chrome-u
+enable-hardware-acceleration-link = Često postavljana pitanja - Hardversko ubrzanje u Chromeu
+view-error-details = Prikaži detalje greške
+open-in-new-tab = Otvori u novoj kartici
+click-to-unmute = Kliknite da biste uključili zvuk
+clipboard-message-title = Kopiranje i naljepljivanje u Ruffle-u
+clipboard-message-description =
+    { $variant ->
+    *[unsupported] Vaš preglednik ne podržava potpuni pristup međuspremniku,
+    [access-denied] Pristup međuspremniku je odbijen,
+    } ali uvijek možete koristiti ove prečice:
+clipboard-message-copy = { " " } za kopiranje
+clipboard-message-cut = { " " } za isijecanje
 clipboard-message-paste = { " " } za lijepljenje
 error-canvas-reload = Nije moguće ponovo učitati renderer kada je renderer već u upotrebi.
 error-file-protocol =

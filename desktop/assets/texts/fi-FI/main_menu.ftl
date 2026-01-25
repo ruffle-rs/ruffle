@@ -9,6 +9,8 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Tiedosto
+file-menu-open-file = Avaa tiedosto...
+file-menu-open-directory = Avaa kansio...
 file-menu-open-advanced = Avaa edistynyt...
 file-menu-close = Sulje
 file-menu-reload = Lataa uudelleen
@@ -31,5 +33,7 @@ bookmarks-menu = Kirjamerkit
 bookmarks-menu-add = Lisää...
 bookmarks-menu-manage = Hallitse kirjanmerkkejä...
 debug-menu = Vianjäljitystyökalut
+debug-menu-open-movie = Näytä elokuva
+debug-menu-open-movie-list = Näytä tunnetut elokuvat
 view-menu = Näytä
 view-menu-fullscreen = Koko näyttö

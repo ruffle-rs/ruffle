@@ -46,9 +46,25 @@ align-bottom-right = Alhaalla oikealla
 align-force = Pakota
 scale-mode = Skaalaustila
 scale-mode-noscale = Skaalaamaton (100%)
+scale-mode-noscale-tooltip =
+    Näyttää elokuvan alkuperäisessä koossa ilman minkäänlaista suurennusta.
+    
+    Sama kuin StageScaleMode.NO_SCALE
 scale-mode-showall = Sovita lähentämällä
+scale-mode-showall-tooltip =
+    Suurentaa elokuvan ikkunan täyttämiseksi niin paljon kuin mahdollista ilman, että rajausta tapahtuu, säilyttäen kuvasuhteen.
+    
+    Sama kuin StageScaleMode.SHOW_ALL
 scale-mode-exactfit = Sovita venyttämällä
+scale-mode-exactfit-tooltip =
+    Varmistaa, että elokuva täyttää koko ikkunan, huomioimatta kuvasuhdetta.
+    
+    Sama kuin StageScaleMode.EXACT_FIT
 scale-mode-noborder = Sovita rajaamalla
+scale-mode-noborder-tooltip =
+    Täyttää koko ikkunan säilyttäen kuvasuhteen, rajaten elokuvaa tarvittaessa.
+    
+    Sama kuin StageScaleMode.NO_BORDER
 scale-mode-force = Pakota
 scale-mode-force-tooltip = Estää elokuvaa vaihtamasta skaalaustilaa, lukiten sen valittuun asetukseen.
 player-version = Toistimen versio

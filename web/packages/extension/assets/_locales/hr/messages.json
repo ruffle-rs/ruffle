@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Automatska reprodukcija Flash sadržaja (kliknite za uključivanje zvuka)"
     },
+    "settings_swf_takeover": {
+        "message": "Reproducirajte SWF datoteke u pregledniku umjesto preuzimanja"
+    },
     "settings_log_level": {
         "message": "Razina zapisnika"
     },
@@ -82,6 +85,9 @@
     },
     "status_result_protected": {
         "message": "Ruffle se ne može učitati na zaštićenim stranicama preglednika."
+    },
+    "action_reload": {
+        "message": "Ponovno učitajte karticu za primjenu promjena"
     },
     "open_player_page": {
         "message": "Otvori SWF player"

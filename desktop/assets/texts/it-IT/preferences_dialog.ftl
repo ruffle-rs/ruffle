@@ -6,6 +6,7 @@ graphics-power = Preferenza di alimentazione
 graphics-power-low = Basso (es. GPU integrata)
 graphics-power-high = Alto (es. GPU)
 language = Lingua
+audio-output-device = Dispositivo audio di output
 audio-output-device-default = Predefinito dal sistema
 enable-openh264 = Abilita OpenH264
 show-license = Visualizza licenza
@@ -31,4 +32,5 @@ gamemode-default = Predefinito
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Metodo di input
 ime-enabled-experimental = (sperimentale)
+ime-enabled-tooltip = Un metodo di input consente di immettere caratteri che non sono disponibili nella tastiera, per esempio caratteri cinesi, giapponesi o coreani.
 ime-enabled-default = Predefinito
