@@ -46,59 +46,60 @@ pub fn wrap_line(
     params: EvalParameters,
     width: Twips,
     offset: Twips,
-    is_start_of_line: bool,
+    mut is_start_of_line: bool,
     swf_version: u8,
 ) -> Option<usize> {
-    if swf_version >= 8 {
-        wrap_line_swf8(font, text, params, width, offset, is_start_of_line)
-    } else {
-        wrap_line_swf7(font, text, params, width, offset, is_start_of_line)
-    }
-}
+    let swf8 = swf_version >= 8;
 
-// This implements the SWF <= 7 variant of the comment above.
-fn wrap_line_swf7(
-    font: &dyn FontLike<'_>,
-    text: &WStr,
-    params: EvalParameters,
-    width: Twips,
-    offset: Twips,
-    mut is_start_of_line: bool,
-) -> Option<usize> {
     if text.is_empty() {
         return None;
     }
 
     let mut remaining_width = width - offset;
     if remaining_width < Twips::ZERO {
-        // If even 1st char doesn't fit, give up on wrapping.
-        return None;
+        if swf8 {
+            // If even 1st char doesn't fit, let's write _anything_.
+            return Some(1);
+        } else {
+            // If even 1st char doesn't fit, give up on wrapping.
+            return None;
+        }
     }
 
     let mut line_end = 0;
 
-    let allowed_breaks = find_allowed_breaks(text, false);
+    let allowed_breaks = find_allowed_breaks(text, swf8);
 
     let mut last_stop = 0;
     for (i, word_end) in allowed_breaks.into_iter().enumerate() {
         let word_start = last_stop;
 
-        // For details, see the comment in wrap_line_swf8.
-        // The difference is that every space is a break point
-        // and we only trim the final space,
-        // So given "a  b ", the checked words are:
-        // - word: "a ", trimmed_word: "a",
-        // - word: "  ", trimmed_word: " ",
-        // - word: " b ", trimmed_word: " b",
-
         let word = &text[word_start..word_end];
 
-        assert!(!word.is_empty(), "trying to line-break an empty string?");
-
-        let trimmed_word = if word.get(word.len() - 1) == Some(b' ' as u16) {
-            &word[..word.len() - 1]
+        let trimmed_word = if swf8 {
+            // Given "aaa      bbb",
+            //  the allowed break "splits" the text to "aaa     " and "bbb".
+            //  but we want to measure "aaa", then check if "     bbb" still fits.
+            // The way we do it is, when measuring "aaa     ", we pretend it's "aaa"
+            //  and when measuring "bbb", we pretend it's "     bbb".
+            // So given "a  b ", the checked words are:
+            // - word: "a  ", trimmed_word: "a",
+            // - word: "  b ", trimmed_word: "  b",
+            word.trim_end()
         } else {
-            word
+            // The swf7 difference is that every space is a break point
+            //  and we only trim the final space,
+            // So given "a  b ", the checked words are:
+            // - word: "a ", trimmed_word: "a",
+            // - word: "  ", trimmed_word: " ",
+            // - word: " b ", trimmed_word: " b",
+            assert!(!word.is_empty(), "trying to line-break an empty string?");
+
+            if word.get(word.len() - 1) == Some(b' ' as u16) {
+                &word[..word.len() - 1]
+            } else {
+                word
+            }
         };
 
         let trimmed_word_end = word_start + trimmed_word.len();
@@ -130,89 +131,15 @@ fn wrap_line_swf7(
                 }
                 line_end = last_fitting_end;
 
-                // If result has <= 1 char, give up on wrapping.
-                if line_end <= 1 {
-                    return None;
-                };
-            }
-            return Some(line_end);
-        }
-    }
-
-    None
-}
-
-// This implements the SWF >= 8 variant of the comment above.
-fn wrap_line_swf8(
-    font: &dyn FontLike<'_>,
-    text: &WStr,
-    params: EvalParameters,
-    width: Twips,
-    offset: Twips,
-    mut is_start_of_line: bool,
-) -> Option<usize> {
-    if text.is_empty() {
-        return None;
-    }
-
-    let mut remaining_width = width - offset;
-    if remaining_width < Twips::ZERO {
-        // If even 1st char doesn't fit, let's write _anything_.
-        return Some(1);
-    }
-
-    let mut line_end = 0;
-
-    let allowed_breaks = find_allowed_breaks(text, true);
-
-    let mut last_stop = 0;
-    for (i, word_end) in allowed_breaks.into_iter().enumerate() {
-        let word_start = last_stop;
-
-        // Given "aaa      bbb",
-        //  the allowed break "splits" the text to "aaa     " and "bbb".
-        //  but we want to measure "aaa", then check if "     bbb" still fits.
-        // The way we do it is, when measuring "aaa     ", we pretend it's "aaa"
-        //  and when measuring "bbb", we pretend it's "     bbb".
-
-        // So given "a  b ", the checked words are:
-        // - word: "a  ", trimmed_word: "a",
-        // - word: "  b ", trimmed_word: "  b",
-
-        let word = &text[word_start..word_end];
-        let trimmed_word = word.trim_end();
-
-        let trimmed_word_end = word_start + trimmed_word.len();
-        last_stop = trimmed_word_end;
-
-        let measure = font.measure(trimmed_word, params);
-
-        if measure <= remaining_width {
-            //Space remains for our current word, move up the word pointer.
-            line_end = word_end;
-
-            is_start_of_line = false;
-
-            remaining_width -= measure;
-        } else {
-            if is_start_of_line {
-                //Failsafe: we get a word wider than the field, break anywhere.
-
-                assert!(i == 0);
-                assert!(word_start == 0);
-
-                let mut last_fitting_end = 0;
-                for (frag_end, _) in trimmed_word.char_indices() {
-                    let width = font.measure(&trimmed_word[..frag_end], params);
-                    if width > remaining_width {
-                        break;
-                    }
-                    last_fitting_end = frag_end;
+                if swf8 {
+                    // If even 1st char doesn't fit, let's write _anything_.
+                    line_end = line_end.max(1);
+                } else {
+                    // If result has <= 1 char, give up on wrapping.
+                    if line_end <= 1 {
+                        return None;
+                    };
                 }
-                line_end = last_fitting_end;
-
-                // If even 1st char doesn't fit, let's write _anything_.
-                line_end = line_end.max(1);
             }
             return Some(line_end);
         }
