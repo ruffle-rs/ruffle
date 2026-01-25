@@ -3,6 +3,8 @@ use crate::prelude::*;
 use crate::string::WStr;
 use ruffle_wstr::utils::{swf_is_cjk_like, swf_is_closing, swf_is_opening};
 
+use itertools::Itertools;
+
 // FP line wrapping behavior summary.
 // NOTE: this is derived from experiment and is not guaranteed to fully match FP.
 // SWF >= 8:
@@ -234,23 +236,24 @@ fn wrap_line_swf8(
     None
 }
 
+
+/// Find the text indices delimiting (ending) non-breakable spans of text.
 // IMO way more readable the way it is rn
-#[expect(clippy::if_same_then_else)]
-#[expect(clippy::collapsible_if)]
+#[allow(clippy::if_same_then_else)]
+#[allow(clippy::collapsible_if)]
 fn find_allowed_breaks(text: &WStr, swf8: bool) -> Vec<usize> {
     // note: FP probably handles bad utf16 in some universal way
     const FALLBACK: char = char::REPLACEMENT_CHARACTER;
 
     let mut ret = vec![];
-    let Some(ch) = text.chars().next() else {
+    if text.is_empty() {
         return ret;
     };
-    let mut prev = ch.unwrap_or(FALLBACK);
-    for (i, curr) in text.char_indices().skip(1) {
+    for ((_, prev), (i, curr)) in text.char_indices().tuple_windows() {
+        let prev = prev.unwrap_or(FALLBACK);
         let curr = curr.unwrap_or(FALLBACK);
         if swf8 && curr == ' ' {
             // in swf>=8, only last space is a break
-            prev = curr;
             continue;
         }
         if prev == ' ' {
@@ -262,7 +265,6 @@ fn find_allowed_breaks(text: &WStr, swf8: bool) -> Vec<usize> {
                 ret.push(i);
             }
         }
-        prev = curr;
     }
     ret.push(text.len());
     ret
