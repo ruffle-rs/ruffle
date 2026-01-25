@@ -91,7 +91,7 @@ fn main() {
 
 fn load_test_dir<'a>(test_dir: &'a VfsPath, name: &'a str) -> impl Iterator<Item = Test> + 'a {
     let options = TestOptions::read_with_subtests(&test_dir.join("test.toml").unwrap())
-        .context("Couldn't load test options")
+        .with_context(|| format!("Couldn't load test options for test {name}"))
         .unwrap();
     options.into_iter().map(move |opts| {
         Test::from_options(opts, test_dir.to_owned(), name.to_owned())
