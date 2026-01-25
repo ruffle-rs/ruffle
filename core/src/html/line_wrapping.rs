@@ -310,6 +310,7 @@ mod tests {
                 Twips::from_pixels(200.0),
                 Twips::ZERO,
                 true,
+                // TODO: parametrize tests on swf7/8
                 8,
             );
 
