@@ -5,6 +5,7 @@ use crate::drawing::Drawing;
 use crate::font::{DefaultFont, EvalParameters, Font, FontLike, FontSet, FontType};
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
+use crate::html::wrap_line;
 use crate::string::WStr;
 use crate::tag_utils::SwfMovie;
 use gc_arena::Collect;
@@ -178,23 +179,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                 let (mut width, mut offset) = self.wrap_dimensions(span);
 
                 loop {
-                    let breakpoint = if self.movie.version() >= 8 {
-                        font_set.wrap_line_swf8(
-                            &text[last_breakpoint..],
-                            params,
-                            width,
-                            offset,
-                            self.is_start_of_line(),
-                        )
-                    } else {
-                        font_set.wrap_line_swf7(
-                            &text[last_breakpoint..],
-                            params,
-                            width,
-                            offset,
-                            self.is_start_of_line(),
-                        )
-                    };
+                    let breakpoint = wrap_line(
+                        &font_set,
+                        &text[last_breakpoint..],
+                        params,
+                        width,
+                        offset,
+                        self.is_start_of_line(),
+                        self.movie.version(),
+                    );
                     let Some(breakpoint) = breakpoint else {
                         break;
                     };
@@ -1237,7 +1230,7 @@ impl<'gc> LayoutBox<'gc> {
         let params = EvalParameters::from_span(span);
         let mut char_end_pos = Vec::with_capacity(end - start);
 
-        font_set.evaluate(text, Default::default(), params, |_, _, _, advance, x| {
+        font_set.evaluate(text, Default::default(), params, &mut |_, _, _, advance, x| {
             char_end_pos.push(x + advance);
         });
 
