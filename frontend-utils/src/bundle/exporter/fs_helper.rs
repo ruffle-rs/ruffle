@@ -145,14 +145,14 @@ impl<P: AsRef<Path>> FilesystemHelper<P> {
 }
 
 #[cfg(test)]
-mod fs_tests {
+mod tests {
     use std::path::{Path, PathBuf};
 
     use url::Url;
 
     use crate::bundle::Bundle;
-    use crate::bundle::exporter::helpers::FilesystemHelper;
-    use crate::bundle::exporter::helpers::FilesystemHelperError;
+    use crate::bundle::exporter::fs_helper::FilesystemHelper;
+    use crate::bundle::exporter::fs_helper::FilesystemHelperError;
     use crate::bundle::info::BundleInformation;
     use crate::bundle::source::BundleSource;
     use crate::player_options::PlayerOptions;
