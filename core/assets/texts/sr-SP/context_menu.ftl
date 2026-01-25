@@ -1,3 +1,4 @@
+context-menu-play = Покрените
 context-menu-rewind = Премотај уназад
 context-menu-forward = Напред
 context-menu-back = Назад

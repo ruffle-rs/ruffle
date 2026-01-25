@@ -9,7 +9,7 @@
         "message": "Permitir descarregar SWFs pelo menu de contexto"
     },
     "settings_autostart": {
-        "message": "Reproduzir automaticamente sem ecrã inicial (depois clique para ativar o som)"
+        "message": "Reproduzir automaticamente sem ecrã inicial (depois clicar para ativar o som)"
     },
     "settings_swf_takeover": {
         "message": "Reproduzir ficheiros SWF no navegador em vez de descarregá-los"

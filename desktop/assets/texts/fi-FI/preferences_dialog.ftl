@@ -29,4 +29,5 @@ gamemode-default = Oletus
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Syötetapa
 ime-enabled-experimental = (kokeellinen)
+ime-enabled-tooltip = Syötetapa sallii merkkien, joita ei ole läsnä näppäimistöllä, kuten esimerkiksi kiinalaisten, japanilaisten tai korealaisten merkkien, syöttämisen.
 ime-enabled-default = Oletus
