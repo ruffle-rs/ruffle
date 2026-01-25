@@ -8,14 +8,14 @@ use crate::bundle::info::BundleInformation;
 
 #[derive(Debug, Error)]
 pub enum FilesystemHelperError {
-    #[error("No files to export")]
-    NoFilesToExport,
-
     #[error("Some provided paths are not absolute")]
     NonAbsolutePaths,
 
     #[error("Provided files do not have a common directory")]
     NoCommonDirectory,
+
+    #[error("Provided a local path, but there are no files to export")]
+    NoFilesToExport,
 
     #[error("Provided path is outside of the common directory: {0}")]
     PathOutOfCommonDirectory(PathBuf),
@@ -31,7 +31,7 @@ pub enum FilesystemHelperError {
 }
 
 pub struct FilesystemHelper<P: AsRef<Path>> {
-    root_dir: PathBuf,
+    root_dir: Option<PathBuf>,
     files_to_export: Vec<P>,
 }
 
@@ -45,10 +45,12 @@ impl<P: AsRef<Path>> FilesystemHelper<P> {
         })
     }
 
-    fn calculate_common_prefix(files: &[P]) -> Result<PathBuf, FilesystemHelperError> {
-        let mut common_prefix = files
-            .first()
-            .ok_or(FilesystemHelperError::NoFilesToExport)?
+    fn calculate_common_prefix(files: &[P]) -> Result<Option<PathBuf>, FilesystemHelperError> {
+        let Some(first_file) = files.first() else {
+            return Ok(None);
+        };
+
+        let mut common_prefix = first_file
             .as_ref()
             .parent()
             .ok_or(FilesystemHelperError::NoCommonDirectory)?
@@ -67,15 +69,19 @@ impl<P: AsRef<Path>> FilesystemHelper<P> {
             }
         }
 
-        Ok(common_prefix)
+        Ok(Some(common_prefix))
     }
 
     pub fn real_path_to_bundle_path<'b>(
         &self,
         real_path: &'b Path,
     ) -> Result<&'b Path, FilesystemHelperError> {
+        let Some(root_path) = self.root_dir.as_ref() else {
+            return Err(FilesystemHelperError::NoFilesToExport);
+        };
+
         real_path
-            .strip_prefix(&self.root_dir)
+            .strip_prefix(root_path)
             .map_err(|_| FilesystemHelperError::PathOutOfCommonDirectory(real_path.to_owned()))
     }
 
@@ -166,7 +172,7 @@ mod fs_tests {
 
         assert_eq!(
             FilesystemHelper::calculate_common_prefix(&files_to_export).unwrap(),
-            new_pathbuf("/a/b/c")
+            Some(new_pathbuf("/a/b/c"))
         );
     }
 
@@ -183,7 +189,7 @@ mod fs_tests {
 
         assert_eq!(
             FilesystemHelper::calculate_common_prefix(&files_to_export).unwrap(),
-            new_pathbuf("/a/b")
+            Some(new_pathbuf("/a/b"))
         );
     }
 
@@ -201,7 +207,7 @@ mod fs_tests {
 
         assert_eq!(
             FilesystemHelper::calculate_common_prefix(&files_to_export).unwrap(),
-            new_pathbuf("/")
+            Some(new_pathbuf("/"))
         );
     }
 
@@ -214,7 +220,17 @@ mod fs_tests {
 
         assert_eq!(
             FilesystemHelper::calculate_common_prefix(&files_to_export).unwrap(),
-            new_pathbuf("/a/b/c/d")
+            Some(new_pathbuf("/a/b/c/d"))
+        );
+    }
+
+    #[test]
+    fn test_calculate_common_prefix_root_dir_no_files() {
+        let files_to_export: Vec<PathBuf> = vec![];
+
+        assert_eq!(
+            FilesystemHelper::calculate_common_prefix(&files_to_export).unwrap(),
+            None
         );
     }
 
