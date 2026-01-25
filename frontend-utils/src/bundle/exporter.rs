@@ -1,5 +1,7 @@
 #[cfg(feature = "fs")]
-pub mod helpers;
+mod fs_helper;
+#[cfg(feature = "fs")]
+pub use fs_helper::{FilesystemHelper, FilesystemHelperError};
 
 use super::info::{BUNDLE_INFORMATION_FILENAME, BundleInformation};
 use std::{
