@@ -76,6 +76,12 @@ pub fn wrap_line(
 
         let word = &text[word_start..word_end];
 
+        debug_assert!(!word.is_empty());
+        if word.is_empty() {
+            tracing::error!("Tried to fit an empty span during line breaking");
+            continue;
+        }
+
         let trimmed_word = if swf8 {
             // Given "aaa      bbb",
             //  the allowed break "splits" the text to "aaa     " and "bbb".
@@ -93,7 +99,6 @@ pub fn wrap_line(
             // - word: "a ", trimmed_word: "a",
             // - word: "  ", trimmed_word: " ",
             // - word: " b ", trimmed_word: " b",
-            assert!(!word.is_empty(), "trying to line-break an empty string?");
 
             if word.get(word.len() - 1) == Some(b' ' as u16) {
                 &word[..word.len() - 1]
