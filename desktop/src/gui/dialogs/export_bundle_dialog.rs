@@ -1,8 +1,8 @@
 use crate::gui::{FilePicker, text};
 use egui::{Align2, Ui, Window};
 use rfd::FileHandle;
-use ruffle_frontend_utils::bundle::exporter::helpers::FilesystemHelper;
-use ruffle_frontend_utils::bundle::exporter::helpers::FilesystemHelperError;
+use ruffle_frontend_utils::bundle::exporter::FilesystemHelper;
+use ruffle_frontend_utils::bundle::exporter::FilesystemHelperError;
 use ruffle_frontend_utils::bundle::info::BundleInformation;
 use ruffle_frontend_utils::content::ContentDescriptor;
 use ruffle_frontend_utils::player_options::PlayerOptions;
