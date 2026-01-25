@@ -1,4 +1,4 @@
-use crate::font::{FontLike, EvalParameters};
+use crate::font::{EvalParameters, FontLike};
 use crate::prelude::*;
 use crate::string::WStr;
 use ruffle_wstr::utils::{swf_is_cjk_like, swf_is_closing, swf_is_opening};
@@ -29,7 +29,6 @@ use itertools::Itertools;
 // - Final fallback:
 //   if resulting length has <=1 char, yield entire line without wrapping.
 
-
 /// Given a line of text, find the first breakpoint within the text.
 /// This assumes the input doesn't contain any mandatory breaks (newlines).
 ///
@@ -51,23 +50,9 @@ pub fn wrap_line(
     swf_version: u8,
 ) -> Option<usize> {
     if swf_version >= 8 {
-        wrap_line_swf8(
-            font,
-            text,
-            params,
-            width,
-            offset,
-            is_start_of_line,
-        )
+        wrap_line_swf8(font, text, params, width, offset, is_start_of_line)
     } else {
-        wrap_line_swf7(
-            font,
-            text,
-            params,
-            width,
-            offset,
-            is_start_of_line,
-        )
+        wrap_line_swf7(font, text, params, width, offset, is_start_of_line)
     }
 }
 
@@ -236,7 +221,6 @@ fn wrap_line_swf8(
     None
 }
 
-
 /// Find the text indices delimiting (ending) non-breakable spans of text.
 // IMO way more readable the way it is rn
 #[allow(clippy::if_same_then_else)]
@@ -319,8 +303,15 @@ mod tests {
         with_device_font(|_mc, df| {
             let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcdefghijklmnopqrstuv");
-            let breakpoint =
-                wrap_line(&df, string, params, Twips::from_pixels(200.0), Twips::ZERO, true, 8);
+            let breakpoint = wrap_line(
+                &df,
+                string,
+                params,
+                Twips::from_pixels(200.0),
+                Twips::ZERO,
+                true,
+                8,
+            );
 
             assert_eq!(None, breakpoint);
         });
@@ -332,15 +323,22 @@ mod tests {
             let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let mut last_bp = 0;
-            let breakpoint =
-                wrap_line(&df, string, params, Twips::from_pixels(35.0), Twips::ZERO, true, 8);
+            let breakpoint = wrap_line(
+                &df,
+                string,
+                params,
+                Twips::from_pixels(35.0),
+                Twips::ZERO,
+                true,
+                8,
+            );
 
             assert_eq!(Some(5), breakpoint);
 
             last_bp += breakpoint.unwrap();
 
             let breakpoint2 = wrap_line(
-                &df, 
+                &df,
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(35.0),
@@ -354,7 +352,7 @@ mod tests {
             last_bp += breakpoint2.unwrap();
 
             let breakpoint3 = wrap_line(
-                &df, 
+                &df,
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(35.0),
@@ -368,7 +366,7 @@ mod tests {
             last_bp += breakpoint3.unwrap();
 
             let breakpoint4 = wrap_line(
-                &df, 
+                &df,
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(35.0),
@@ -387,7 +385,7 @@ mod tests {
             let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcd efgh ijkl mnop");
             let breakpoint = wrap_line(
-                &df, 
+                &df,
                 string,
                 params,
                 Twips::from_pixels(30.0),
@@ -406,15 +404,22 @@ mod tests {
             let params = eval_parameters_from_parts(Twips::from_pixels(12.0), Twips::ZERO, true);
             let string = WStr::from_units(b"abcdi j kl mnop q rstuv");
             let mut last_bp = 0;
-            let breakpoint =
-                wrap_line(&df, string, params, Twips::from_pixels(35.0), Twips::ZERO, true, 8);
+            let breakpoint = wrap_line(
+                &df,
+                string,
+                params,
+                Twips::from_pixels(35.0),
+                Twips::ZERO,
+                true,
+                8,
+            );
 
             assert_eq!(Some(6), breakpoint);
 
             last_bp += breakpoint.unwrap();
 
             let breakpoint2 = wrap_line(
-                &df, 
+                &df,
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(37.0),
@@ -428,7 +433,7 @@ mod tests {
             last_bp += breakpoint2.unwrap();
 
             let breakpoint3 = wrap_line(
-                &df, 
+                &df,
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(37.0),
@@ -442,7 +447,7 @@ mod tests {
             last_bp += breakpoint3.unwrap();
 
             let breakpoint4 = wrap_line(
-                &df, 
+                &df,
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(37.0),
@@ -456,7 +461,7 @@ mod tests {
             last_bp += breakpoint4.unwrap();
 
             let breakpoint5 = wrap_line(
-                &df, 
+                &df,
                 &string[last_bp..],
                 params,
                 Twips::from_pixels(37.0),

@@ -1230,9 +1230,14 @@ impl<'gc> LayoutBox<'gc> {
         let params = EvalParameters::from_span(span);
         let mut char_end_pos = Vec::with_capacity(end - start);
 
-        font_set.evaluate(text, Default::default(), params, &mut |_, _, _, advance, x| {
-            char_end_pos.push(x + advance);
-        });
+        font_set.evaluate(
+            text,
+            Default::default(),
+            params,
+            &mut |_, _, _, advance, x| {
+                char_end_pos.push(x + advance);
+            },
+        );
 
         Self {
             bounds: Default::default(),
