@@ -38,6 +38,16 @@ impl<R: Read + Seek> BundleSourceImpl for ZipSource<R> {
     }
 }
 
+impl<R: Read + Seek> ZipSource<R> {
+    pub fn file_names(&self) -> Vec<String> {
+        self.0
+            .borrow()
+            .file_names()
+            .map(ToOwned::to_owned)
+            .collect()
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::bundle::source::BundleSourceImpl;
