@@ -14,6 +14,6 @@ workspace = true
 proc-macro = true
 
 [dependencies]
-proc-macro2 = "1.0.105"
-quote = "1.0.43"
+proc-macro2 = "1.0.106"
+quote = "1.0.44"
 syn = { version = "2.0.114", features = ["extra-traits", "full"] }

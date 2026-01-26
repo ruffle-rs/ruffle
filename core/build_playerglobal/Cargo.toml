@@ -12,8 +12,8 @@ workspace = true
 
 [dependencies]
 convert_case = "0.10.0"
-proc-macro2 = "1.0.105"
-quote = "1.0.43"
+proc-macro2 = "1.0.106"
+quote = "1.0.44"
 swf = { path = "../../swf" }
 clap = { workspace = true }
 regex = { workspace = true }
