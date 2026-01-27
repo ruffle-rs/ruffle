@@ -1,0 +1,9 @@
+num_frames = 1
+
+[image_comparisons.output]
+# Higher tolerance due to BC3 compression artifacts
+tolerance = 10
+max_outliers = 100
+
+[player_options]
+with_renderer = { optional = false, sample_count = 1 }

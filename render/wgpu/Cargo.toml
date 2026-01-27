@@ -25,6 +25,8 @@ naga-pixelbender = { path = "../naga-pixelbender" }
 profiling = { version = "1.0", default-features = false, optional = true }
 lru = "0.16.2"
 naga = { workspace = true }
+texpresso = "2.0.2"
+half = "2.7"
 indexmap = { workspace = true }
 smallvec = { workspace = true }
 
