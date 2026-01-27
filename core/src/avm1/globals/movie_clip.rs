@@ -1053,50 +1053,42 @@ fn get_instance_at_depth<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() >= 7 {
-        let depth = if let Some(depth) = args.get(0) {
-            depth
-                .coerce_to_i32(activation)?
-                .wrapping_add(AVM_DEPTH_BIAS)
-        } else {
-            avm_error!(
-                activation,
-                "MovieClip.get_instance_at_depth: Too few parameters"
-            );
-            return Ok(Value::Undefined);
-        };
-        match movie_clip.child_by_depth(depth) {
-            Some(child) => {
-                // If the child doesn't have a corresponding AVM object, return mc itself.
-                // NOTE: this behavior was guessed from observing behavior for Text and Graphic;
-                // I didn't test other variants like Bitmap, MorphSpahe, Video
-                // or objects that weren't fully initialized yet.
-                match child.object1() {
-                    None => Ok(movie_clip.object1_or_undef()),
-                    Some(obj) => Ok(obj.into()),
-                }
-            }
-            None => Ok(Value::Undefined),
-        }
+    let depth = if let Some(depth) = args.get(0) {
+        depth
+            .coerce_to_i32(activation)?
+            .wrapping_add(AVM_DEPTH_BIAS)
     } else {
-        Ok(Value::Undefined)
+        avm_error!(
+            activation,
+            "MovieClip.get_instance_at_depth: Too few parameters"
+        );
+        return Ok(Value::Undefined);
+    };
+    match movie_clip.child_by_depth(depth) {
+        Some(child) => {
+            // If the child doesn't have a corresponding AVM object, return mc itself.
+            // NOTE: this behavior was guessed from observing behavior for Text and Graphic;
+            // I didn't test other variants like Bitmap, MorphSpahe, Video
+            // or objects that weren't fully initialized yet.
+            match child.object1() {
+                None => Ok(movie_clip.object1_or_undef()),
+                Some(obj) => Ok(obj.into()),
+            }
+        }
+        None => Ok(Value::Undefined),
     }
 }
 
 fn get_next_highest_depth<'gc>(
     movie_clip: MovieClip<'gc>,
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.swf_version() >= 7 {
-        let depth = movie_clip
-            .highest_depth()
-            .wrapping_sub(AVM_DEPTH_BIAS - 1)
-            .max(0);
-        Ok(depth.into())
-    } else {
-        Ok(Value::Undefined)
-    }
+    let depth = movie_clip
+        .highest_depth()
+        .wrapping_sub(AVM_DEPTH_BIAS - 1)
+        .max(0);
+    Ok(depth.into())
 }
 
 fn goto_and_play<'gc>(
