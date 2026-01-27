@@ -138,11 +138,12 @@ pub fn set_focus<'gc>(
         Some(focus) => {
             let start_clip = activation.target_clip_or_root();
             let object = activation.resolve_target_display_object(start_clip, *focus, false)?;
-            if let Some(object) = object.and_then(|o| o.as_interactive()) {
-                if object.is_focusable(activation.context) {
-                    tracker.set(Some(object), activation.context);
-                    return Ok(true.into());
-                }
+            if let Some(object) = object
+                && let Some(object) = object.as_interactive()
+                && object.is_focusable(activation.context)
+            {
+                tracker.set(Some(object), activation.context);
+                return Ok(true.into());
             }
             Ok(false.into())
         }
