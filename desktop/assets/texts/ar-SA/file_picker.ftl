@@ -4,3 +4,4 @@ file-picker-filter-swf = ملف SWF (*.swf)
 file-picker-filter-spl = ملف FutureSplash (*.spl)
 file-picker-filter-ruf = حزم رفل (*.ruf)
 file-picker-filter-all = كل الملفات
+file-picker-select-root-movie-select = تحديد
