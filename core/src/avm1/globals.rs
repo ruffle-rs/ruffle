@@ -812,15 +812,13 @@ const AVM_MAX_DEPTH: i32 = 2_130_706_428;
 const AVM_MAX_REMOVE_DEPTH: i32 = 2_130_706_416;
 
 fn get_depth<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(display_object) = this.as_display_object() {
-        if activation.swf_version() >= 6 {
-            let depth = display_object.depth().wrapping_sub(AVM_DEPTH_BIAS);
-            return Ok(depth.into());
-        }
+        let depth = display_object.depth().wrapping_sub(AVM_DEPTH_BIAS);
+        return Ok(depth.into());
     }
     Ok(Value::Undefined)
 }
