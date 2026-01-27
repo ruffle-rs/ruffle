@@ -515,30 +515,32 @@ fn load_sound<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::Sound(sound) = this.native() {
-        if let Some(url) = args.get(0) {
-            let url = url.coerce_to_string(activation)?;
-            let is_streaming = args
-                .get(1)
-                .unwrap_or(&Value::Undefined)
-                .as_bool(activation.swf_version());
-            if is_streaming {
-                // Streaming MP3s can only have a single active instance.
-                // (Previous `attachSound` instances will continue to play.)
-                if let Some(sound_instance) = sound.sound_instance() {
-                    activation.context.stop_sound(sound_instance);
-                }
+    let NativeObject::Sound(sound) = this.native() else {
+        return Ok(Value::Undefined);
+    };
+
+    if let Some(url) = args.get(0) {
+        let url = url.coerce_to_string(activation)?;
+        let is_streaming = args
+            .get(1)
+            .unwrap_or(&Value::Undefined)
+            .as_bool(activation.swf_version());
+        if is_streaming {
+            // Streaming MP3s can only have a single active instance.
+            // (Previous `attachSound` instances will continue to play.)
+            if let Some(sound_instance) = sound.sound_instance() {
+                activation.context.stop_sound(sound_instance);
             }
-            sound.set_is_streaming(is_streaming);
-            sound.set_is_loading(activation.context);
-            let future = crate::loader::load_sound_avm1(
-                activation.context,
-                this,
-                Request::get(url.to_utf8_lossy().into_owned()),
-                is_streaming,
-            );
-            activation.context.navigator.spawn_future(future);
         }
+        sound.set_is_streaming(is_streaming);
+        sound.set_is_loading(activation.context);
+        let future = crate::loader::load_sound_avm1(
+            activation.context,
+            this,
+            Request::get(url.to_utf8_lossy().into_owned()),
+            is_streaming,
+        );
+        activation.context.navigator.spawn_future(future);
     }
     Ok(Value::Undefined)
 }
