@@ -1227,15 +1227,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             let mut is_load_vars = true;
             if !(action.is_target_sprite() || level_target > -1) {
                 is_load_vars = false;
-                if matches!(target_val, Value::Object(_)) {
-                    if let Some(clip) = clip_target {
-                        is_load_vars = DisplayObject::ptr_eq(clip, self.base_clip().avm1_root());
-                    }
-                }
-                if matches!(target_val, Value::MovieClip(_)) {
-                    if let Some(clip) = clip_target {
-                        is_load_vars = DisplayObject::ptr_eq(clip, self.base_clip().avm1_root());
-                    }
+                if matches!(target_val, Value::Object(_) | Value::MovieClip(_))
+                    && let Some(clip) = clip_target
+                {
+                    is_load_vars = DisplayObject::ptr_eq(clip, self.base_clip().avm1_root());
                 }
             }
             if is_load_vars {
