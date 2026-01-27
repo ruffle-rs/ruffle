@@ -1010,6 +1010,16 @@ pub fn make_error_1113<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1114<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1114: Illegal default xml namespace.",
+        1114,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1115<'gc>(activation: &mut Activation<'_, 'gc>, name: &str) -> Error<'gc> {
     make_error!(type_error(
         activation,
