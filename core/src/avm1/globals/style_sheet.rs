@@ -126,15 +126,14 @@ fn set_style<'gc>(
     )?;
     styles.set(name, text_format, activation)?;
 
-    if let NativeObject::StyleSheet(style_sheet) = this.native() {
-        if let Value::Object(text_format) = text_format {
-            if let NativeObject::TextFormat(text_format) = text_format.native() {
-                style_sheet.set_style(
-                    name.as_wstr().to_ascii_lowercase(),
-                    text_format.borrow().clone(),
-                );
-            }
-        }
+    if let NativeObject::StyleSheet(style_sheet) = this.native()
+        && let Value::Object(text_format) = text_format
+        && let NativeObject::TextFormat(text_format) = text_format.native()
+    {
+        style_sheet.set_style(
+            name.as_wstr().to_ascii_lowercase(),
+            text_format.borrow().clone(),
+        );
     }
 
     Ok(Value::Undefined)

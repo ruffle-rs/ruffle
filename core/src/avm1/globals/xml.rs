@@ -460,10 +460,10 @@ fn doc_type_decl<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::Xml(xml) = this.native() {
-        if let Some(doctype) = xml.doctype() {
-            return Ok(doctype.into());
-        }
+    if let NativeObject::Xml(xml) = this.native()
+        && let Some(doctype) = xml.doctype()
+    {
+        return Ok(doctype.into());
     }
 
     Ok(Value::Undefined)
@@ -474,10 +474,10 @@ fn xml_decl<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::Xml(xml) = this.native() {
-        if let Some(xml_decl) = xml.xml_decl() {
-            return Ok(xml_decl.into());
-        }
+    if let NativeObject::Xml(xml) = this.native()
+        && let Some(xml_decl) = xml.xml_decl()
+    {
+        return Ok(xml_decl.into());
     }
 
     Ok(Value::Undefined)

@@ -92,15 +92,15 @@ impl<'gc> DisplacementMapFilter<'gc> {
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
-        if let Some(Value::Object(object)) = value {
-            if let NativeObject::BitmapData(bitmap_data) = object.native() {
-                unlock!(
-                    Gc::write(activation.gc(), self.0),
-                    DisplacementMapFilterData,
-                    map_bitmap
-                )
-                .set(Some(bitmap_data));
-            }
+        if let Some(Value::Object(object)) = value
+            && let NativeObject::BitmapData(bitmap_data) = object.native()
+        {
+            unlock!(
+                Gc::write(activation.gc(), self.0),
+                DisplacementMapFilterData,
+                map_bitmap
+            )
+            .set(Some(bitmap_data));
         }
         Ok(())
     }

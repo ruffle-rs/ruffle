@@ -431,11 +431,10 @@ impl<'gc> Object<'gc> {
             .borrow_mut(activation.gc())
             .properties
             .entry(name, activation.is_case_sensitive())
+            && entry.get().can_delete()
         {
-            if entry.get().can_delete() {
-                entry.remove_entry();
-                return true;
-            }
+            entry.remove_entry();
+            return true;
         }
         false
     }
@@ -685,10 +684,10 @@ impl<'gc> Object<'gc> {
         if dobj.is_none_or(|o| !o.avm1_removed()) {
             if self.has_own_property(activation, name) {
                 return true;
-            } else if let Value::Object(proto) = self.proto(activation) {
-                if proto.has_property(activation, name) {
-                    return true;
-                }
+            } else if let Value::Object(proto) = self.proto(activation)
+                && proto.has_property(activation, name)
+            {
+                return true;
             }
         }
 

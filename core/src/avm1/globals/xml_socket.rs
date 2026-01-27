@@ -45,10 +45,10 @@ impl<'gc> XmlSocket<'gc> {
     }
 
     pub fn cast(value: Value<'gc>) -> Option<Self> {
-        if let Value::Object(object) = value {
-            if let NativeObject::XmlSocket(xml_socket) = object.native() {
-                return Some(xml_socket);
-            }
+        if let Value::Object(object) = value
+            && let NativeObject::XmlSocket(xml_socket) = object.native()
+        {
+            return Some(xml_socket);
         }
         None
     }
@@ -108,10 +108,10 @@ pub fn close<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(xml_socket) = XmlSocket::cast(this.into()) {
-        if let Some(handle) = xml_socket.handle() {
-            activation.context.sockets.close(handle)
-        }
+    if let Some(xml_socket) = XmlSocket::cast(this.into())
+        && let Some(handle) = xml_socket.handle()
+    {
+        activation.context.sockets.close(handle)
     }
 
     Ok(Value::Undefined)
@@ -167,20 +167,20 @@ pub fn send<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(xml_socket) = XmlSocket::cast(this.into()) {
-        if let Some(handle) = xml_socket.handle() {
-            let mut data = args
-                .get(0)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_string(activation)?
-                .to_string()
-                .into_bytes();
+    if let Some(xml_socket) = XmlSocket::cast(this.into())
+        && let Some(handle) = xml_socket.handle()
+    {
+        let mut data = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_string(activation)?
+            .to_string()
+            .into_bytes();
 
-            // The string needs to end with a null byte.
-            data.push(0);
+        // The string needs to end with a null byte.
+        data.push(0);
 
-            activation.context.sockets.send(handle, data);
-        }
+        activation.context.sockets.send(handle, data);
     }
 
     Ok(Value::Undefined)

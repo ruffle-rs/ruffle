@@ -25,10 +25,8 @@ pub fn get_property<'gc>(
 
     // 1) Path properties such as `_root`, `_parent`, `_levelN` (obeys case sensitivity)
     let magic_property = name.starts_with(b'_');
-    if magic_property {
-        if let Some(object) = resolve_path_property(dobj, name, activation) {
-            return Some(object);
-        }
+    if magic_property && let Some(object) = resolve_path_property(dobj, name, activation) {
+        return Some(object);
     }
 
     // 2) Child display objects with the given instance name
@@ -46,15 +44,14 @@ pub fn get_property<'gc>(
     }
 
     // 3) Display object properties such as `_x`, `_y` (never case sensitive)
-    if magic_property {
-        if let Some(property) = activation
+    if magic_property
+        && let Some(property) = activation
             .context
             .avm1
             .display_properties()
             .get_by_name(name)
-        {
-            return Some(property.get(activation, dobj));
-        }
+    {
+        return Some(property.get(activation, dobj));
     }
 
     None

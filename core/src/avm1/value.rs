@@ -564,12 +564,11 @@ impl<'gc> Value<'gc> {
     ) -> Result<bool, Error<'gc>> {
         if !self.is_primitive() {
             // These coercions happen even if `obj` is a dead `MovieClipReference`.
-            if let Some(class) = class.coerce_to_object(activation)? {
-                if let Some(p) = class.prototype(activation).coerce_to_object(activation)? {
-                    if let Some(obj) = self.as_object(activation) {
-                        return obj.is_instance_of(activation, p);
-                    }
-                }
+            if let Some(class) = class.coerce_to_object(activation)?
+                && let Some(p) = class.prototype(activation).coerce_to_object(activation)?
+                && let Some(obj) = self.as_object(activation)
+            {
+                return obj.is_instance_of(activation, p);
             }
         }
 

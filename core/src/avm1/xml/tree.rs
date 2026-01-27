@@ -219,10 +219,10 @@ impl<'gc> XmlNode<'gc> {
             return;
         }
 
-        if let Some(old_parent) = child.parent() {
-            if !Gc::ptr_eq(self.0, old_parent.0) {
-                old_parent.orphan_child(mc, child);
-            }
+        if let Some(old_parent) = child.parent()
+            && !Gc::ptr_eq(self.0, old_parent.0)
+        {
+            old_parent.orphan_child(mc, child);
         }
 
         child.set_parent(mc, Some(self));

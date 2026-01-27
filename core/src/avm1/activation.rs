@@ -2470,10 +2470,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         allow_empty: bool,
     ) -> Result<Option<DisplayObject<'gc>>, Error<'gc>> {
         // If the value you got was a display object, we can just toss it straight back.
-        if let Value::Object(o) = target {
-            if let Some(o) = o.as_display_object() {
-                return Ok(Some(o));
-            }
+        if let Value::Object(o) = target
+            && let Some(o) = o.as_display_object()
+        {
+            return Ok(Some(o));
         }
 
         // Otherwise, we coerce it into a string and try to resolve it as a path.

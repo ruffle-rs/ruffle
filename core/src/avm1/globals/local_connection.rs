@@ -27,10 +27,10 @@ pub struct LocalConnection<'gc>(Gc<'gc, LocalConnectionData>);
 
 impl<'gc> LocalConnection<'gc> {
     pub fn cast(value: Value<'gc>) -> Option<Self> {
-        if let Value::Object(object) = value {
-            if let NativeObject::LocalConnection(local_connection) = object.native() {
-                return Some(local_connection);
-            }
+        if let Value::Object(object) = value
+            && let NativeObject::LocalConnection(local_connection) = object.native()
+        {
+            return Some(local_connection);
         }
         None
     }
