@@ -155,14 +155,14 @@ fn get_rgb<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(color_transform) = ColorTransformObject::cast(this.into()) {
-        let rgb = ((color_transform.red_offset.get() as i32) << 16)
-            | ((color_transform.green_offset.get() as i32) << 8)
-            | (color_transform.blue_offset.get() as i32);
-        Ok(rgb.into())
-    } else {
-        Ok(Value::Undefined)
-    }
+    let Some(color_transform) = ColorTransformObject::cast(this.into()) else {
+        return Ok(Value::Undefined);
+    };
+
+    let rgb = ((color_transform.red_offset.get() as i32) << 16)
+        | ((color_transform.green_offset.get() as i32) << 8)
+        | (color_transform.blue_offset.get() as i32);
+    Ok(rgb.into())
 }
 
 fn set_rgb<'gc>(
@@ -170,17 +170,19 @@ fn set_rgb<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(color_transform) = ColorTransformObject::cast(this.into()) {
-        if let [rgb, ..] = args {
-            let rgb = rgb.coerce_to_u32(activation)?;
-            let [b, g, r, _] = rgb.to_le_bytes();
-            color_transform.red_multiplier.set(0.0);
-            color_transform.green_multiplier.set(0.0);
-            color_transform.blue_multiplier.set(0.0);
-            color_transform.red_offset.set(r.into());
-            color_transform.green_offset.set(g.into());
-            color_transform.blue_offset.set(b.into());
-        }
+    let Some(color_transform) = ColorTransformObject::cast(this.into()) else {
+        return Ok(Value::Undefined);
+    };
+
+    if let [rgb, ..] = args {
+        let rgb = rgb.coerce_to_u32(activation)?;
+        let [b, g, r, _] = rgb.to_le_bytes();
+        color_transform.red_multiplier.set(0.0);
+        color_transform.green_multiplier.set(0.0);
+        color_transform.blue_multiplier.set(0.0);
+        color_transform.red_offset.set(r.into());
+        color_transform.green_offset.set(g.into());
+        color_transform.blue_offset.set(b.into());
     }
 
     Ok(Value::Undefined)
@@ -262,13 +264,13 @@ fn concat<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let Some(this) = ColorTransformObject::cast(this.into()) else {
+        return Ok(Value::Undefined);
+    };
+
     if let [other, ..] = args {
-        let (this, other) = match (
-            ColorTransformObject::cast(this.into()),
-            ColorTransformObject::cast(*other),
-        ) {
-            (Some(this), Some(other)) => (this, other),
-            _ => return Ok(Value::Undefined),
+        let Some(other) = ColorTransformObject::cast(*other) else {
+            return Ok(Value::Undefined);
         };
 
         // The offsets are set before the multipliers because the calculations
