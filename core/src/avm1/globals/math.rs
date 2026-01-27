@@ -75,14 +75,14 @@ fn pow<'gc>(
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(y) = args.get(0) {
-        if let Some(x) = args.get(1) {
-            let x = x.coerce_to_f64(activation)?;
-            if x.is_nan() {
-                return Ok(f64::NAN.into());
-            }
-            return Ok(y.coerce_to_f64(activation)?.powf(x).into());
+    if let Some(y) = args.get(0)
+        && let Some(x) = args.get(1)
+    {
+        let x = x.coerce_to_f64(activation)?;
+        if x.is_nan() {
+            return Ok(f64::NAN.into());
         }
+        return Ok(y.coerce_to_f64(activation)?.powf(x).into());
     }
     Ok(f64::NAN.into())
 }

@@ -152,10 +152,10 @@ fn set_new_text_format<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let [Value::Object(text_format), ..] = args {
-        if let NativeObject::TextFormat(text_format) = text_format.native() {
-            text_field.set_new_text_format(text_format.borrow().clone());
-        }
+    if let [Value::Object(text_format), ..] = args
+        && let NativeObject::TextFormat(text_format) = text_format.native()
+    {
+        text_field.set_new_text_format(text_format.borrow().clone());
     }
 
     Ok(Value::Undefined)
@@ -212,15 +212,15 @@ fn set_text_format<'gc>(
         _ => return Ok(Value::Undefined),
     };
 
-    if let Value::Object(text_format) = text_format {
-        if let NativeObject::TextFormat(text_format) = text_format.native() {
-            text_field.set_text_format(
-                begin_index,
-                end_index,
-                text_format.borrow().clone(),
-                activation.context,
-            );
-        }
+    if let Value::Object(text_format) = text_format
+        && let NativeObject::TextFormat(text_format) = text_format.native()
+    {
+        text_field.set_text_format(
+            begin_index,
+            end_index,
+            text_format.borrow().clone(),
+            activation.context,
+        );
     }
 
     Ok(Value::Undefined)

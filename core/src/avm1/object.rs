@@ -227,18 +227,18 @@ impl<'gc> Object<'gc> {
             // prototype chain for virtual setters.
             while let Value::Object(this_proto) = proto {
                 if this_proto.has_own_virtual(activation, name) {
-                    if let Some(setter) = this_proto.setter(name, activation) {
-                        if let Some(exec) = setter.as_function() {
-                            let _ = exec.exec(
-                                ExecutionName::Static("[Setter]"),
-                                activation,
-                                this.into(),
-                                1,
-                                &[value],
-                                ExecutionReason::Special,
-                                setter,
-                            );
-                        }
+                    if let Some(setter) = this_proto.setter(name, activation)
+                        && let Some(exec) = setter.as_function()
+                    {
+                        let _ = exec.exec(
+                            ExecutionName::Static("[Setter]"),
+                            activation,
+                            this.into(),
+                            1,
+                            &[value],
+                            ExecutionReason::Special,
+                            setter,
+                        );
                     }
                     return Ok(());
                 }
@@ -397,24 +397,24 @@ pub fn search_prototype<'gc>(
             return Err(Error::PrototypeRecursionLimit);
         }
 
-        if let Some(getter) = p.getter(name, activation) {
-            if let Some(exec) = getter.as_function() {
-                let result = exec.exec(
-                    ExecutionName::Static("[Getter]"),
-                    activation,
-                    this.into(),
-                    1,
-                    &[],
-                    ExecutionReason::Special,
-                    getter,
-                );
-                let value = match result {
-                    Ok(v) => v,
-                    Err(Error::ThrownValue(e)) => return Err(Error::ThrownValue(e)),
-                    Err(_) => Value::Undefined,
-                };
-                return Ok(Some((value, depth)));
-            }
+        if let Some(getter) = p.getter(name, activation)
+            && let Some(exec) = getter.as_function()
+        {
+            let result = exec.exec(
+                ExecutionName::Static("[Getter]"),
+                activation,
+                this.into(),
+                1,
+                &[],
+                ExecutionReason::Special,
+                getter,
+            );
+            let value = match result {
+                Ok(v) => v,
+                Err(Error::ThrownValue(e)) => return Err(Error::ThrownValue(e)),
+                Err(_) => Value::Undefined,
+            };
+            return Ok(Some((value, depth)));
         }
 
         if let Some(value) = p.get_local_stored(name, activation) {
@@ -425,12 +425,9 @@ pub fn search_prototype<'gc>(
         depth += 1;
     }
 
-    if call_resolve_fn {
-        if let Some(resolve) = find_resolve_method(orig_proto, activation)? {
-            let result =
-                resolve.call(istr!("__resolve"), activation, this.into(), &[name.into()])?;
-            return Ok(Some((result, 0)));
-        }
+    if call_resolve_fn && let Some(resolve) = find_resolve_method(orig_proto, activation)? {
+        let result = resolve.call(istr!("__resolve"), activation, this.into(), &[name.into()])?;
+        return Ok(Some((result, 0)));
     }
 
     Ok(None)

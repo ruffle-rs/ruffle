@@ -265,41 +265,35 @@ fn attach_bitmap<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let [Value::Object(bitmap_data), ..] = args {
-        if let NativeObject::BitmapData(bitmap_data) = bitmap_data.native() {
-            if let Some(depth) = args.get(1) {
-                let depth = depth
-                    .coerce_to_i32(activation)?
-                    .wrapping_add(AVM_DEPTH_BIAS);
+    if let [Value::Object(bitmap_data), ..] = args
+        && let NativeObject::BitmapData(bitmap_data) = bitmap_data.native()
+        && let Some(depth) = args.get(1)
+    {
+        let depth = depth
+            .coerce_to_i32(activation)?
+            .wrapping_add(AVM_DEPTH_BIAS);
 
-                // TODO: Implement pixel snapping
-                let _pixel_snapping = args
-                    .get(2)
-                    .unwrap_or(&Value::Undefined)
-                    .as_bool(activation.swf_version());
+        // TODO: Implement pixel snapping
+        let _pixel_snapping = args
+            .get(2)
+            .unwrap_or(&Value::Undefined)
+            .as_bool(activation.swf_version());
 
-                let smoothing = args
-                    .get(3)
-                    .unwrap_or(&Value::Undefined)
-                    .as_bool(activation.swf_version());
+        let smoothing = args
+            .get(3)
+            .unwrap_or(&Value::Undefined)
+            .as_bool(activation.swf_version());
 
-                //TODO: do attached BitmapDatas have character ids?
-                let display_object = Bitmap::new_with_bitmap_data(
-                    activation.gc(),
-                    0,
-                    bitmap_data,
-                    smoothing,
-                    &movie_clip.movie(),
-                );
-                movie_clip.replace_at_depth(activation.context, display_object.into(), depth);
-                display_object.post_instantiation(
-                    activation.context,
-                    None,
-                    Instantiator::Avm1,
-                    true,
-                );
-            }
-        }
+        //TODO: do attached BitmapDatas have character ids?
+        let display_object = Bitmap::new_with_bitmap_data(
+            activation.gc(),
+            0,
+            bitmap_data,
+            smoothing,
+            &movie_clip.movie(),
+        );
+        movie_clip.replace_at_depth(activation.context, display_object.into(), depth);
+        display_object.post_instantiation(activation.context, None, Instantiator::Avm1, true);
     }
 
     Ok(Value::Undefined)
@@ -1679,24 +1673,23 @@ fn set_transform<'gc>(
     activation: &mut Activation<'_, 'gc>,
     value: Value<'gc>,
 ) -> Result<(), Error<'gc>> {
-    if let Value::Object(object) = value {
-        if let NativeObject::Transform(transform) = object.native() {
-            if let Some(clip) = transform.clip(activation) {
-                let matrix = clip.base().matrix();
-                this.set_matrix(matrix);
+    if let Value::Object(object) = value
+        && let NativeObject::Transform(transform) = object.native()
+        && let Some(clip) = transform.clip(activation)
+    {
+        let matrix = clip.base().matrix();
+        this.set_matrix(matrix);
 
-                let color_transform = clip.base().color_transform();
-                this.set_color_transform(color_transform);
+        let color_transform = clip.base().color_transform();
+        this.set_color_transform(color_transform);
 
-                if let Some(parent) = this.parent() {
-                    // Self-transform changes are automatically handled,
-                    // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
-                    parent.invalidate_cached_bitmap();
-                }
-
-                this.set_transformed_by_script(true);
-            }
+        if let Some(parent) = this.parent() {
+            // Self-transform changes are automatically handled,
+            // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
+            parent.invalidate_cached_bitmap();
         }
+
+        this.set_transformed_by_script(true);
     }
 
     Ok(())

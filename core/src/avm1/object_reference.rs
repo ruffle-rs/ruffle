@@ -122,19 +122,18 @@ impl<'gc> MovieClipReference<'gc> {
             .cached_object
             .get()
             .and_then(|c| c.upgrade(activation.gc()))
+            && let Some(display_object) = cache.as_display_object_no_super()
         {
-            if let Some(display_object) = cache.as_display_object_no_super() {
-                // We have to fallback to manual path-walking if the object is removed
-                if !display_object.avm1_removed() {
-                    let display_object = Self::process_swf5_references(activation, display_object)?;
+            // We have to fallback to manual path-walking if the object is removed
+            if !display_object.avm1_removed() {
+                let display_object = Self::process_swf5_references(activation, display_object)?;
 
-                    // Note that there is a bug here but this *is* how it works in Flash:
-                    // If we are using the cached DisplayObject, we return it's path, which can be changed by modifying `_name`
-                    // However, if we remove and re-create the clip, the stored path (the original path) will differ from the path of the cached object (the modified path)
-                    // Essentially, changes to `_name` are reverted after the clip is re-created
+                // Note that there is a bug here but this *is* how it works in Flash:
+                // If we are using the cached DisplayObject, we return it's path, which can be changed by modifying `_name`
+                // However, if we remove and re-create the clip, the stored path (the original path) will differ from the path of the cached object (the modified path)
+                // Essentially, changes to `_name` are reverted after the clip is re-created
 
-                    return Some((true, cache, display_object));
-                }
+                return Some((true, cache, display_object));
             }
         }
 
@@ -155,10 +154,10 @@ impl<'gc> MovieClipReference<'gc> {
 
         // Keep traversing to find the target DisplayObject
         for part in self.0.path.path_segments.iter() {
-            if let Some(s) = start {
-                if let Some(con) = s.as_container() {
-                    start = con.child_by_name(part, activation.is_case_sensitive());
-                }
+            if let Some(s) = start
+                && let Some(con) = s.as_container()
+            {
+                start = con.child_by_name(part, activation.is_case_sensitive());
             }
         }
 

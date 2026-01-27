@@ -37,10 +37,10 @@ impl<'gc> NetConnection<'gc> {
     }
 
     pub fn cast(value: Value<'gc>) -> Option<Self> {
-        if let Value::Object(object) = value {
-            if let NativeObject::NetConnection(net_connection) = object.native() {
-                return Some(net_connection);
-            }
+        if let Value::Object(object) = value
+            && let NativeObject::NetConnection(net_connection) = object.native()
+        {
+            return Some(net_connection);
         }
         None
     }

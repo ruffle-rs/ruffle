@@ -55,10 +55,10 @@ impl<'gc> ColorTransformObject {
     }
 
     pub fn cast(value: Value<'gc>) -> Option<Gc<'gc, Self>> {
-        if let Value::Object(object) = value {
-            if let NativeObject::ColorTransform(color_transform) = object.native() {
-                return Some(color_transform);
-            }
+        if let Value::Object(object) = value
+            && let NativeObject::ColorTransform(color_transform) = object.native()
+        {
+            return Some(color_transform);
         }
         None
     }
