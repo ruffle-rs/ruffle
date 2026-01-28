@@ -119,18 +119,39 @@ impl<'gc> DisplacementMapFilter<'gc> {
     ) -> Result<(), Error<'gc>> {
         let Some(value) = value else { return Ok(()) };
 
-        if let Value::Object(object) = value {
-            if let Some(x) = object.get_local_stored(istr!("x"), activation) {
-                let x = x.coerce_to_f64(activation)?.clamp_to_i32();
-                if let Some(y) = object.get_local_stored(istr!("y"), activation) {
-                    let y = y.coerce_to_f64(activation)?.clamp_to_i32();
-                    self.0.map_point.set(Point::new(x, y));
-                    return Ok(());
-                }
+        fn result_to_i32(result: &Result<f64, Error<'_>>) -> i32 {
+            match result {
+                Ok(x) => x.clamp_to_i32(),
+                Err(_) => i32::MIN,
             }
         }
 
-        self.0.map_point.set(Point::default());
+        if let Value::Object(object) = value {
+            let x = object
+                .get_local_stored(istr!("x"), activation)
+                .map(|x| x.coerce_to_f64(activation));
+            let y = object
+                .get_local_stored(istr!("y"), activation)
+                .map(|y| y.coerce_to_f64(activation));
+
+            let mut point = Point::new(0, 0);
+            if let (Some(x), Some(y)) = (&x, &y) {
+                point.x = result_to_i32(x);
+                point.y = result_to_i32(y);
+            }
+            self.0.map_point.set(point);
+
+            // Propagate possible errors. The value is set regardless of those.
+            if let Some(x) = x {
+                x?;
+            }
+            if let Some(y) = y {
+                y?;
+            }
+        } else {
+            self.0.map_point.set(Default::default());
+        }
+
         Ok(())
     }
 
