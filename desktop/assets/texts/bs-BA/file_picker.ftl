@@ -5,4 +5,6 @@ file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Ruffle paket (*.ruf)
 file-picker-filter-all = Sve datoteke
+file-picker-select-root-movie-title = Odaberi rutu videa
+file-picker-select-root-movie-message = Odaberi rutu videa iz odabrane mape.
 file-picker-select-root-movie-select = Odaberi
