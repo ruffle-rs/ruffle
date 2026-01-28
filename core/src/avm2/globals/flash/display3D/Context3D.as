@@ -126,15 +126,13 @@ package flash.display3D {
         ):void;
 
         [API("676")]
-        public function setProgramConstantsFromByteArray(
+        public native function setProgramConstantsFromByteArray(
             programType:String,
             firstRegister:int,
             numRegisters:int,
             data:ByteArray,
             dataOffset:uint
-        ):void {
-            stub_method("flash.display3D.Context3D", "setProgramConstantsFromByteArray");
-        }
+        ):void;
 
         public native function setColorMask(red:Boolean, green:Boolean, blue:Boolean, alpha:Boolean):void;
 
