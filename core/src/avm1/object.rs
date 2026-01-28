@@ -409,12 +409,18 @@ pub fn search_prototype<'gc>(
                 ExecutionReason::Special,
                 getter,
             );
-            let value = match result {
-                Ok(v) => v,
+
+            match result {
                 Err(Error::ThrownValue(e)) => return Err(Error::ThrownValue(e)),
-                Err(_) => Value::Undefined,
+                Err(Error::SpecialRecursionLimit) => {
+                    // Fall back to local resolution for compatibility
+                    // with SWF<7.
+                }
+                _ => {
+                    let value = result.unwrap_or(Value::Undefined);
+                    return Ok(Some((value, depth)));
+                }
             };
-            return Ok(Some((value, depth)));
         }
 
         if let Some(value) = p.get_local_stored(name, activation) {
