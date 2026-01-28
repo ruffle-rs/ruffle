@@ -67,6 +67,7 @@ scale-mode-noborder-tooltip =
     Odgovara StageScaleMode.NO_BORDER
 scale-mode-force-tooltip = Sprječava promjenu načina skaliranja filma, zaključavajući ga na odabranu postavku.
 player-version = Verzija igrača
+player-runtime = Radno okruženje video igrača
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = Prilagođena brzina sličica u sekundi
