@@ -349,15 +349,10 @@ impl<'gc> GradientFilter<'gc> {
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let type_ = value.coerce_to_string(activation)?;
-
-            let type_ = if &type_ == b"inner" {
-                BevelFilterType::Inner
-            } else if &type_ == b"outer" {
-                BevelFilterType::Outer
-            } else {
-                BevelFilterType::Full
-            };
+            let type_ = value
+                .coerce_to_string(activation)?
+                .parse()
+                .unwrap_or(BevelFilterType::Full);
 
             self.0.type_.set(type_);
         }
