@@ -12,6 +12,7 @@ use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfSlice;
 use crate::{avm_debug, avm1};
 use gc_arena::{Collect, Gc, Mutation};
+use std::borrow::Cow;
 use swf::avm1::read::Reader;
 use tracing::instrument;
 
@@ -596,16 +597,23 @@ pub fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
     }
 }
 
-pub fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc>, error: Error<'gc>) {
+fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc>, error: Error<'gc>) {
     match &error {
         Error::ThrownValue(value) => {
-            if let Ok(message) = value.coerce_to_string(activation) {
-                activation.context.avm_trace(&message.to_utf8_lossy());
+            tracing::warn!("Uncaught AVM1 error: {value:?}");
+
+            let string = if let Ok(message) = value.coerce_to_string(activation) {
+                Cow::Owned(message.to_utf8_lossy().to_string())
             } else {
                 // The only Value variant that can throw an error when being stringified
                 // is Object, so just print "[type Object]".
-                activation.context.avm_trace("[type Object]");
-            }
+                Cow::Borrowed("[type Object]")
+            };
+
+            activation
+                .context
+                .avm_warning(&format!("Uncaught exception, {string}"));
+
             // Continue execution without halting.
             return;
         }
