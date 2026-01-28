@@ -528,6 +528,10 @@ impl<'gc> EditText<'gc> {
     }
 
     pub fn text_format(self, from: usize, to: usize) -> TextFormat {
+        if from == to {
+            return Default::default();
+        }
+
         // TODO: Convert to byte indices
         self.0.text_spans.borrow().get_text_format(from, to)
     }
