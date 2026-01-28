@@ -12,7 +12,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::avm1_button::{ButtonState, ButtonTracking};
 use crate::display_object::container::{dispatch_added_event, dispatch_removed_event};
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
-use crate::display_object::{DisplayObjectBase, MovieClip};
+use crate::display_object::{BoundsMode, DisplayObjectBase, MovieClip};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::frame_lifecycle::{
     broadcast_frame_constructed, broadcast_frame_exited, catchup_display_object_to_frame,
@@ -574,12 +574,12 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         // No inherent bounds; contains child DisplayObjects.
         Default::default()
     }
 
-    fn bounds_with_transform(self, matrix: &Matrix) -> Rectangle<Twips> {
+    fn bounds_with_transform(self, matrix: &Matrix, mode: BoundsMode) -> Rectangle<Twips> {
         // A scroll rect completely overrides an object's bounds,
         // and can even grow the bounding box to be larger than the actual content
         if let Some(scroll_rect) = self.scroll_rect() {
@@ -593,12 +593,12 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         }
 
         // Get self bounds
-        let mut bounds = *matrix * self.self_bounds();
+        let mut bounds = *matrix * self.self_bounds(mode);
 
         // Add the bounds of the child, dictated by current state
         if let Some(child) = self.get_state_child(self.0.state.get().into()) {
             let matrix = *matrix * child.base().matrix();
-            let child_bounds = child.bounds_with_transform(&matrix);
+            let child_bounds = child.bounds_with_transform(&matrix, mode);
             bounds = bounds.union(&child_bounds);
         }
 
@@ -611,7 +611,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         include_own_filters: bool,
         view_matrix: &Matrix,
     ) -> Rectangle<Twips> {
-        let mut bounds = *matrix * self.self_bounds();
+        let mut bounds = *matrix * self.self_bounds(BoundsMode::Engine);
 
         if let Some(child) = self.get_state_child(self.0.state.get().into()) {
             let matrix = *matrix * child.base().matrix();
@@ -810,7 +810,7 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
     fn highlight_bounds(self) -> Rectangle<Twips> {
         let hit_area = self.0.hit_area.get();
         let hit_bounds = hit_area
-            .map(|hit| hit.bounds())
+            .map(|hit| hit.bounds(BoundsMode::Engine))
             .unwrap_or(Rectangle::INVALID);
         self.local_to_global_matrix() * hit_bounds
     }

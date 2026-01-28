@@ -6,7 +6,7 @@ use crate::avm1::object::NativeObject;
 use crate::avm1::object_reference::MovieClipReference;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, Error, Object, Value};
-use crate::display_object::{DisplayObject, TDisplayObject};
+use crate::display_object::{BoundsMode, DisplayObject, TDisplayObject};
 use crate::string::AvmString;
 use gc_arena::Collect;
 use ruffle_macros::istr;
@@ -152,7 +152,7 @@ pub fn method<'gc>(
         }
         GET_PIXEL_BOUNDS => {
             // This is equivalent to `clip.getBounds()`.
-            let world_bounds = clip.world_bounds();
+            let world_bounds = clip.world_bounds(BoundsMode::Script);
 
             // If the bounds are invalid, the pixelBounds rectangle consists only of zeroes.
             let bounds = if world_bounds == Rectangle::default() {

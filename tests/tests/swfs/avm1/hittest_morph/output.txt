@@ -1,0 +1,70 @@
+// frame1
+Bounds:
+	yMax: 32.8
+	yMin: -32.75
+	xMax: 32.8
+	xMin: -32.75
+Rectangle:
+	yMax: 32.8
+	yMin: -32.75
+	xMax: 32.8
+	xMin: -32.75
+hitTest:false
+hitTestPoint:true
+hitTestPoint Non-Shape:true
+// hitbox.gotoAndStop(2);
+Bounds:
+	yMax: 32.8
+	yMin: -32.75
+	xMax: 32.8
+	xMin: -32.75
+Rectangle:
+	yMax: 32.8
+	yMin: -32.75
+	xMax: 32.8
+	xMin: -32.75
+hitTest:false
+hitTestPoint:true
+hitTestPoint Non-Shape:true
+// hitbox.gotoAndStop(3);
+Bounds:
+	yMax: 32.8
+	yMin: -32.75
+	xMax: 32.8
+	xMin: -32.75
+Rectangle:
+	yMax: 32.8
+	yMin: -32.75
+	xMax: 32.8
+	xMin: -32.75
+hitTest:false
+hitTestPoint:true
+hitTestPoint Non-Shape:true
+// hitbox.gotoAndStop(4);
+Bounds:
+	yMax: 32.8
+	yMin: -32.75
+	xMax: 32.8
+	xMin: -32.75
+Rectangle:
+	yMax: 32.8
+	yMin: -32.75
+	xMax: 32.8
+	xMin: -32.75
+hitTest:false
+hitTestPoint:true
+hitTestPoint Non-Shape:true
+// hitbox.gotoAndStop(5);
+Bounds:
+	yMax: 32.8
+	yMin: -32.75
+	xMax: 87.25
+	xMin: -32.75
+Rectangle:
+	yMax: 32.8
+	yMin: -32.75
+	xMax: 87.25
+	xMin: -32.75
+hitTest:true
+hitTestPoint:true
+hitTestPoint Non-Shape:true
