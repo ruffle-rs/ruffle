@@ -230,7 +230,7 @@ impl<'gc> Object<'gc> {
                     if let Some(setter) = this_proto.setter(name, activation)
                         && let Some(exec) = setter.as_function()
                     {
-                        let _ = exec.exec(
+                        exec.exec(
                             ExecutionName::Static("[Setter]"),
                             activation,
                             this.into(),
@@ -238,7 +238,7 @@ impl<'gc> Object<'gc> {
                             &[value],
                             ExecutionReason::Special,
                             setter,
-                        );
+                        )?;
                     }
                     return Ok(());
                 }
