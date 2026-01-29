@@ -515,15 +515,15 @@ impl PixelRegion {
 
         // Mutate.
 
-        self.x_min = r1_result.0 as u32;
-        self.y_min = r1_result.1 as u32;
-        self.x_max = r1_result.2 as u32;
-        self.y_max = r1_result.3 as u32;
+        self.x_min = u32::try_from(r1_result.0).unwrap_or(0);
+        self.y_min = u32::try_from(r1_result.1).unwrap_or(0);
+        self.x_max = u32::try_from(r1_result.2).unwrap_or(0);
+        self.y_max = u32::try_from(r1_result.3).unwrap_or(0);
 
-        other.x_min = r2_result.0 as u32;
-        other.y_min = r2_result.1 as u32;
-        other.x_max = r2_result.2 as u32;
-        other.y_max = r2_result.3 as u32;
+        other.x_min = u32::try_from(r2_result.0).unwrap_or(0);
+        other.y_min = u32::try_from(r2_result.1).unwrap_or(0);
+        other.x_max = u32::try_from(r2_result.2).unwrap_or(0);
+        other.y_max = u32::try_from(r2_result.3).unwrap_or(0);
     }
 }
 

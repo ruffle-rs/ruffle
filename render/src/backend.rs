@@ -56,7 +56,7 @@ pub trait RenderBackend: Any {
         _source_point: (u32, u32),
         _source_size: (u32, u32),
         _destination: BitmapHandle,
-        _dest_point: (u32, u32),
+        _dest_point: (i32, i32),
         _filter: Filter,
     ) -> Option<Box<dyn SyncHandle>> {
         None
