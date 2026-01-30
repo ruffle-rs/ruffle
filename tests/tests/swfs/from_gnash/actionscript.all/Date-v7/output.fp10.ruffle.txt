@@ -85,7 +85,7 @@ PASSED: d.setUTCMonth [./Date.as:127]
 PASSED: d.setUTCSeconds [./Date.as:128]
 PASSED: d.setYear [./Date.as:129]
 PASSED: d.toString [./Date.as:130]
-FAILED: d.toLocaleString [./Date.as:131]
+PASSED: d.toLocaleString [./Date.as:131]
 PASSED: d.UTC == undefined [./Date.as:133]
 PASSED: Date.UTC [./Date.as:134]
 PASSED: d.getdate == undefined [./Date.as:138]
@@ -145,7 +145,7 @@ PASSED: d.getUTCSeconds() == 0 [./Date.as:253]
 PASSED: d.getUTCMilliseconds() == 0 [./Date.as:254]
 PASSED: d.getSeconds() == 0 [./Date.as:265]
 PASSED: d.getMilliseconds() == 0 [./Date.as:266]
-FAILED: expected: Date.toString() obtained: undefined [./Date.as:269]
+PASSED: Date.toLocaleString() == Date.toString() [./Date.as:269]
 PASSED: d.valueOf() == 1 [./Date.as:274]
 PASSED: d.valueOf() == 0 [./Date.as:276]
 PASSED: d.valueOf() == 12345.0 [./Date.as:279]
@@ -352,6 +352,6 @@ PASSED: o.valueOf().toString() == "NaN" [./Date.as:703]
 PASSED: o.valueOf().toString() == "NaN" [./Date.as:703]
 PASSED: o.valueOf().toString() == "NaN" [./Date.as:703]
 PASSED: o.valueOf().toString() == "NaN" [./Date.as:703]
-#passed: 343
-#failed: 6
+#passed: 345
+#failed: 4
 #total tests run: 349
