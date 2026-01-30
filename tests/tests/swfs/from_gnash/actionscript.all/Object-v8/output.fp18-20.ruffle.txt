@@ -198,8 +198,8 @@ PASSED: noset_setter_calls == 1 [./Object.as:552]
 PASSED: v == 2 [./Object.as:554]
 PASSED: noset_setter_calls == 2 [./Object.as:556]
 PASSED: v == 5 [./Object.as:558]
-FAILED: expected: 2 obtained: 7.37869762948382e+19 [./Object.as:570]
-FAILED: expected: 5 obtained: 1.84467440737096e+20 [./Object.as:573]
+PASSED: v == 2 [./Object.as:570]
+PASSED: v == 5 [./Object.as:573]
 PASSED: obj8_getter_cnt == 1 [./Object.as:592]
 PASSED: obj8_setter_cnt == 1 [./Object.as:593]
 PASSED: obj9_getter_cnt == 0 [./Object.as:608]
@@ -269,7 +269,7 @@ PASSED: _root.get_l_calls == 0 [./Object.as:815]
 PASSED: _root.set_l_calls == 0 [./Object.as:816]
 FAILED: expected: 'return from watch' obtained: undefined [./Object.as:818]
 FAILED: expected: 'return from watch' obtained: undefined [./Object.as:823]
-PASSED: _root.info.ov == 'return from watch' [./Object.as:837]
+FAILED: expected: 'return from watch' obtained: undefined [./Object.as:837]
 PASSED: _root.info.nv == 'return from watch' [./Object.as:838]
 PASSED: _root.info.d == 'cust2' [./Object.as:839]
 PASSED: _root.info.tv == o [./Object.as:840]
@@ -328,6 +328,6 @@ FAILED: expected: "undefined" obtained: object [./Object.as:1019]
 PASSED: typeof(o) == "object" [./Object.as:1021]
 PASSED: o.toString() == "true" [./Object.as:1022]
 FAILED: expected: "undefined" obtained: object [./Object.as:1026]
-#passed: 303
-#failed: 24
+#passed: 304
+#failed: 23
 #total tests run: 327
