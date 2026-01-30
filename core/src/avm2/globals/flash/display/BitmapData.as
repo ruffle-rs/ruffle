@@ -208,9 +208,6 @@ package flash.display {
         }
 
         [API("680")]
-        public function encode(rect:Rectangle, compressor:Object, byteArray:ByteArray = null):ByteArray {
-            stub_method("flash.display.BitmapData", "encode");
-            return null;
-        }
+        public native function encode(rect:Rectangle, compressor:Object, byteArray:ByteArray = null):ByteArray;
     }
 }
