@@ -1,0 +1,232 @@
+onLoadStart
+  d=0
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc0
+  mc._target=/mc0
+  mc._name=mc0
+  mc._url=file:///child5.swf
+onLoadProgress
+  d=0
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc0
+  mc._target=/mc0
+  mc._name=mc0
+  mc._url=file:///child5.swf
+onLoadComplete
+  d=0
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc0
+  mc._target=/mc0
+  mc._name=mc0
+  mc._url=file:///child5.swf
+Child: 5
+onLoadInit
+  d=0
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc0
+  mc._target=/mc0
+  mc._name=mc0
+  mc._url=file:///child5.swf
+onLoadStart
+  d=1
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc1
+  mc._target=/mc1
+  mc._name=mc1
+  mc._url=file:///child6.swf
+onLoadProgress
+  d=1
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc1
+  mc._target=/mc1
+  mc._name=mc1
+  mc._url=file:///child6.swf
+onLoadComplete
+  d=1
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc1
+  mc._target=/mc1
+  mc._name=mc1
+  mc._url=file:///child6.swf
+Child: 6
+onLoadInit
+  d=1
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc1
+  mc._target=/mc1
+  mc._name=mc1
+  mc._url=file:///child6.swf
+onLoadStart
+  d=2
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc2
+  mc._target=/mc2
+  mc._name=mc2
+  mc._url=file:///child7.swf
+onLoadProgress
+  d=2
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc2
+  mc._target=/mc2
+  mc._name=mc2
+  mc._url=file:///child7.swf
+onLoadComplete
+  d=2
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc2
+  mc._target=/mc2
+  mc._name=mc2
+  mc._url=file:///child7.swf
+Child: 7
+onLoadInit
+  d=2
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc2
+  mc._target=/mc2
+  mc._name=mc2
+  mc._url=file:///child7.swf
+onLoadStart
+  d=3
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc3
+  mc._target=/mc3
+  mc._name=mc3
+  mc._url=file:///child8.swf
+onLoadProgress
+  d=3
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc3
+  mc._target=/mc3
+  mc._name=mc3
+  mc._url=file:///child8.swf
+onLoadComplete
+  d=3
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc3
+  mc._target=/mc3
+  mc._name=mc3
+  mc._url=file:///child8.swf
+Child: 8
+onLoadInit
+  d=3
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc3
+  mc._target=/mc3
+  mc._name=mc3
+  mc._url=file:///child8.swf
+onLoadStart
+  d=4
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc4
+  mc._target=/mc4
+  mc._name=mc4
+  mc._url=file:///child9.swf
+onLoadProgress
+  d=4
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc4
+  mc._target=/mc4
+  mc._name=mc4
+  mc._url=file:///child9.swf
+onLoadComplete
+  d=4
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc4
+  mc._target=/mc4
+  mc._name=mc4
+  mc._url=file:///child9.swf
+Child: 9
+onLoadInit
+  d=4
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc4
+  mc._target=/mc4
+  mc._name=mc4
+  mc._url=file:///child9.swf
+onLoadStart
+  d=5
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc5
+  mc._target=/mc5
+  mc._name=mc5
+  mc._url=file:///child10.swf
+onLoadProgress
+  d=5
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc5
+  mc._target=/mc5
+  mc._name=mc5
+  mc._url=file:///child10.swf
+onLoadComplete
+  d=5
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc5
+  mc._target=/mc5
+  mc._name=mc5
+  mc._url=file:///child10.swf
+Child: 10
+onLoadInit
+  d=5
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc5
+  mc._target=/mc5
+  mc._name=mc5
+  mc._url=file:///child10.swf
+onLoadError
+  d=6
+  _target=/
+  _name=root movie
+  _url=file:////test.swf
+  mc=_level0.mc6
+  mc._target=/mc6
+  mc._name=mc6
+  mc._url=file:///non_existent.swf
+Done
