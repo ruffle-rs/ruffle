@@ -111,7 +111,7 @@ impl<'gc> Graphic<'gc> {
     }
 
     pub fn drawing_mut(&self) -> RefMut<'_, Drawing> {
-        self.0.drawing.get_or_init(Default::default).borrow_mut()
+        self.0.drawing.get_or_init(||Box::new(RefCell::new(Drawing::from_swf_shape(&self.0.shared.get().shape)))).borrow_mut()
     }
 
     pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
