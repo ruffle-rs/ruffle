@@ -14,6 +14,7 @@ use web_sys::OffscreenCanvasRenderingContext2d;
 pub struct CanvasFontRenderer {
     canvas: OffscreenCanvas,
     ctx: OffscreenCanvasRenderingContext2d,
+    font_str: String,
     ascent: f64,
     descent: f64,
 }
@@ -30,17 +31,16 @@ impl CanvasFontRenderer {
             return Err(JsValue::from_str("OffscreenCanvas unsupported"));
         }
 
-        let canvas = OffscreenCanvas::new(1024, 1024)?;
+        let canvas = OffscreenCanvas::new(1, 1)?;
 
         let ctx = canvas.get_context("2d")?.expect("2d context");
         let ctx = ctx
             .dyn_into::<OffscreenCanvasRenderingContext2d>()
             .map_err(|err| JsValue::from_str(&format!("Not a 2d context: {err:?}")))?;
 
-        ctx.set_fill_style_str("white");
         let font_str = Self::to_font_str(italic, bold, Self::SIZE_PX, font_family);
         tracing::debug!("Using the following font string: {font_str}");
-        ctx.set_font(&font_str);
+        Self::apply_style(&ctx, &font_str);
 
         let measurement = ctx.measure_text("Myjg")?;
         let ascent = measurement.font_bounding_box_ascent();
@@ -49,6 +49,7 @@ impl CanvasFontRenderer {
         Ok(Self {
             canvas,
             ctx,
+            font_str,
             ascent,
             descent,
         })
@@ -75,12 +76,35 @@ impl CanvasFontRenderer {
         format!("{italic}{bold}{size}px {font_family}")
     }
 
+    fn apply_style(ctx: &OffscreenCanvasRenderingContext2d, font_str: &str) {
+        ctx.set_fill_style_str("white");
+        ctx.set_font(font_str);
+    }
+
     fn calculate_width(&self, text: &str) -> Result<f64, JsValue> {
         Ok(self.ctx.measure_text(text)?.width())
     }
 
+    fn ensure_canvas_large_enough(&self, width: f64, height: f64) {
+        let width = width.ceil() as u32;
+        let height = height.ceil() as u32;
+        if self.canvas.width() < width || self.canvas.height() < height {
+            self.canvas.set_width(width);
+            self.canvas.set_height(height);
+
+            // After changing canvas size, we need to reapply the style.
+            // Somehow, when canvas size is too small for the text, the
+            // text is rendered smaller, but its reported metrics are correct.
+            Self::apply_style(&self.ctx, &self.font_str);
+        }
+    }
+
     fn render_glyph_internal(&self, character: char) -> Result<Glyph, JsValue> {
         let text = &character.to_string();
+        let width = self.calculate_width(text)?;
+        let height = self.ascent + self.descent;
+
+        self.ensure_canvas_large_enough(width, height);
 
         self.ctx.clear_rect(
             0.0,
@@ -89,9 +113,6 @@ impl CanvasFontRenderer {
             self.canvas.height() as f64,
         );
         self.ctx.fill_text(text, 0.0, self.ascent)?;
-
-        let width = self.calculate_width(text)?;
-        let height = self.ascent + self.descent;
 
         let image_data = self.ctx.get_image_data(0.0, 0.0, width, height)?;
         let width = image_data.width();
