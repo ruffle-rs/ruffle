@@ -9,6 +9,8 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = ملف
+file-menu-open-file = فتح ملف...
+file-menu-open-directory = فتح مجلد...
 file-menu-open-advanced = أستعراض متقدم...
 file-menu-close = أغلق
 file-menu-reload = أعد التحميل
@@ -16,6 +18,7 @@ file-menu-recents = الملفات الحديثة
 file-menu-recents-empty = لا ملفات مفتوحة مؤخرًا
 file-menu-preferences = الإعدادات...
 file-menu-exit = اخرج
+file-menu-export = تصدير...
 controls-menu = عناصر التحكم
 controls-menu-suspend = علِّق
 controls-menu-resume = استأنِف
