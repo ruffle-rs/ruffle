@@ -293,22 +293,12 @@ impl<'gc> Object<'gc> {
             }
         }
 
-        let setter = match self
+        let setter = self
             .0
-            .borrow_mut(activation.gc())
+            .borrow()
             .properties
-            .entry(name, activation.is_case_sensitive())
-        {
-            Entry::Occupied(mut entry) => {
-                let entry = entry.get_mut();
-                entry.set_data(value);
-                entry.setter()
-            }
-            Entry::Vacant(entry) => {
-                entry.insert(Property::new_stored(value, Attribute::empty()));
-                None
-            }
-        };
+            .get(name, activation.is_case_sensitive())
+            .and_then(|v| v.setter());
 
         if let Some(setter) = setter {
             if let Some(exec) = setter.as_function() {
@@ -325,6 +315,20 @@ impl<'gc> Object<'gc> {
                 }
             }
         }
+
+        match self
+            .0
+            .borrow_mut(activation.gc())
+            .properties
+            .entry(name, activation.is_case_sensitive())
+        {
+            Entry::Occupied(mut entry) => {
+                entry.get_mut().set_data(value);
+            }
+            Entry::Vacant(entry) => {
+                entry.insert(Property::new_stored(value, Attribute::empty()));
+            }
+        };
 
         Ok(())
     }
