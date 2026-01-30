@@ -569,7 +569,7 @@ impl<'gc> MovieLoader<'gc> {
         status: u16,
         redirected: bool,
     ) -> Result<bool, Error> {
-        let mc = match context.load_manager.get_loader_mut(handle) {
+        let mc = match context.load_manager.get_loader(handle) {
             Some(Self {
                 target_clip,
                 movie,
@@ -1441,7 +1441,7 @@ pub fn load_netstream<'gc>(
 impl<'gc> MovieLoader<'gc> {
     /// Report a movie loader start event to script code.
     fn movie_loader_start(handle: LoaderHandle, uc: &mut UpdateContext<'gc>) -> Result<(), Error> {
-        let (clip, vm_data) = match uc.load_manager.get_loader_mut(handle) {
+        let (clip, vm_data) = match uc.load_manager.get_loader(handle) {
             Some(Self {
                 target_clip,
                 vm_data,
@@ -1804,7 +1804,7 @@ impl<'gc> MovieLoader<'gc> {
         cur_len: usize,
         total_len: usize,
     ) -> Result<(), Error> {
-        let (target_clip, vm_data) = match uc.load_manager.get_loader_mut(handle) {
+        let (target_clip, vm_data) = match uc.load_manager.get_loader(handle) {
             Some(Self {
                 target_clip,
                 vm_data,
@@ -1855,7 +1855,7 @@ impl<'gc> MovieLoader<'gc> {
         status: u16,
         redirected: bool,
     ) -> Result<(), Error> {
-        let (target_clip, vm_data, movie) = match uc.load_manager.get_loader_mut(handle) {
+        let (target_clip, vm_data, movie) = match uc.load_manager.get_loader(handle) {
             Some(Self {
                 target_clip,
                 movie,
@@ -2010,7 +2010,7 @@ impl<'gc> MovieLoader<'gc> {
         //error types we can actually inspect.
         //This also can get errors from decoding an invalid SWF file,
         //too. We should distinguish those to player code.
-        let (clip, vm_data) = match uc.load_manager.get_loader_mut(handle) {
+        let (clip, vm_data) = match uc.load_manager.get_loader(handle) {
             Some(Self {
                 target_clip,
                 vm_data,
