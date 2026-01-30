@@ -1191,6 +1191,7 @@ Testing __proto__()
 testing _global.Object(function)
 Trying to construct _global.Object
 Object was constructed
+Testing toLocaleString()
 Testing isPropertyEnumerable()
 Testing isPrototypeOf()
 Testing hasOwnProperty()

@@ -1823,6 +1823,7 @@ Testing _global.Object
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.Object.prototype
+  toLocaleString, own, type=[function]
   isPropertyEnumerable, own, type=[function]
   isPrototypeOf, own, type=[function]
   hasOwnProperty, own, type=[function]
@@ -1833,6 +1834,7 @@ Testing _global.Object.prototype
   watch, own, type=[function]
   constructor, own, type=[function]
 Testing _global.ASnative
+  toLocaleString, type=[function]
   isPropertyEnumerable, type=[function]
   isPrototypeOf, type=[function]
   hasOwnProperty, type=[function]

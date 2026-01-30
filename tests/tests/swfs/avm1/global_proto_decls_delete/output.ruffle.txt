@@ -1231,6 +1231,7 @@ Testing _global.Object
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Object.prototype
+  toLocaleString, DONT_DELETE
   isPropertyEnumerable, DONT_DELETE
   isPrototypeOf, DONT_DELETE
   hasOwnProperty, DONT_DELETE
@@ -1240,6 +1241,7 @@ Testing _global.Object.prototype
   unwatch, DONT_DELETE
   watch, DONT_DELETE
 Testing _global.ASnative
+  toLocaleString, DONT_DELETE
   isPropertyEnumerable, DONT_DELETE
   isPrototypeOf, DONT_DELETE
   hasOwnProperty, DONT_DELETE

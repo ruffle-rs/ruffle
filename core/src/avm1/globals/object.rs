@@ -6,6 +6,7 @@ use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
+use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 
@@ -19,6 +20,8 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "hasOwnProperty" => method(HAS_OWN_PROPERTY; DONT_ENUM | DONT_DELETE | VERSION_6);
     "isPrototypeOf" => method(IS_PROTOTYPE_OF; DONT_ENUM | DONT_DELETE | VERSION_6);
     "isPropertyEnumerable" => method(IS_PROPERTY_ENUMERABLE; DONT_DELETE | DONT_ENUM | VERSION_6);
+    use default;
+    "toLocaleString" => method(to_locale_string; DONT_ENUM | DONT_DELETE);
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
@@ -344,4 +347,16 @@ pub fn as_set_prop_flags<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Implements `toLocaleString`.
+fn to_locale_string<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "Object", "toLocaleString");
+
+    let string = Value::Object(this).coerce_to_string(activation)?;
+    Ok(string.into())
 }

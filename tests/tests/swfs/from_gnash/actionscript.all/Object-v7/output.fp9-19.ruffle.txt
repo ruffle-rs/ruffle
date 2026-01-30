@@ -8,7 +8,7 @@ PASSED: typeof(Object.__proto__) == 'object' [./Object.as:37]
 PASSED: typeof(Object.registerClass) == 'function' [./Object.as:40]
 PASSED: Object.prototype.registerClass == undefined [./Object.as:41]
 PASSED: typeof(Object.prototype.toString) == 'function' [./Object.as:44]
-FAILED: expected: 'function' obtained: undefined [./Object.as:45]
+PASSED: typeof(Object.prototype.toLocaleString) == 'function' [./Object.as:45]
 PASSED: typeof(Object.prototype.valueOf) == 'function' [./Object.as:46]
 PASSED: typeof(Object.prototype.constructor) == 'function' [./Object.as:47]
 PASSED: typeof(Object.prototype.addProperty) == 'function' [./Object.as:59]
@@ -210,7 +210,7 @@ PASSED: obj9_setter_cnt == 1 [./Object.as:612]
 PASSED: Object.prototype.toString() == '[object Object]' [./Object.as:621]
 PASSED: typeof(Object.prototype.toString()) == 'object' [./Object.as:624]
 PASSED: Object.prototype.toString() == 0 [./Object.as:626]
-FAILED: expected: "toString0" obtained: undefined [./Object.as:641]
+PASSED: Object.prototype.toLocaleString(1) == "toString0" [./Object.as:641]
 PASSED: enumlen == 6 [./Object.as:668]
 PASSED: enum["a"] == 1 [./Object.as:670]
 PASSED: enum["b"] == 2 [./Object.as:671]
@@ -328,6 +328,6 @@ FAILED: expected: "undefined" obtained: object [./Object.as:1019]
 PASSED: typeof(o) == "object" [./Object.as:1021]
 PASSED: o.toString() == "true" [./Object.as:1022]
 FAILED: expected: "undefined" obtained: object [./Object.as:1026]
-#passed: 304
-#failed: 23
+#passed: 306
+#failed: 21
 #total tests run: 327
