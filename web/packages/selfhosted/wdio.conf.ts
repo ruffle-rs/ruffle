@@ -32,7 +32,7 @@ if (chrome) {
 }
 
 if (edge) {
-    const args = ["--disable-gpu"];
+    const args = ["--disable-gpu", "--enable-unsafe-swiftshader"];
     if (headless) {
         args.push("--headless");
     }
