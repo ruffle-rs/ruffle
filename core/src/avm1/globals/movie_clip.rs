@@ -1625,7 +1625,10 @@ fn load_movie<'gc>(
         DisplayObject::MovieClip(target),
         request,
         None,
-        crate::loader::MovieLoaderVMData::Avm1 { broadcaster: None },
+        crate::loader::MovieLoaderVMData::Avm1 {
+            broadcaster: None,
+            base_clip: activation.base_clip(),
+        },
     );
     activation.context.navigator.spawn_future(future);
 

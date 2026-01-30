@@ -434,6 +434,7 @@ enum Executable<'gc> {
 }
 
 /// Indicates the default name to use for this execution in debug builds.
+#[derive(Debug)]
 pub enum ExecutionName<'gc> {
     Static(&'static str),
     Dynamic(AvmString<'gc>),
