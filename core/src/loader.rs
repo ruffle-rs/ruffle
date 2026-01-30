@@ -669,9 +669,13 @@ impl<'gc> MovieLoader<'gc> {
                     if !mc.movie().is_action_script_3() {
                         mc.avm1_unload(uc);
 
-                        // Clear deletable properties on the target before loading
-                        // Properties written during the subsequent onLoad events will persist
-                        if let Some(clip_object) = mc.object1() {
+                        // Clear deletable properties on the target before loading.
+                        // Properties written during the subsequent onLoad events will persist.
+                        // Note: skip this step when we can't execute code (swf_version is 0).
+                        //   This will happen in case we're replacing an error movie.
+                        if let Some(clip_object) = mc.object1()
+                            && mc.swf_version() > 0
+                        {
                             let mut activation = Activation::from_nothing(
                                 uc,
                                 ActivationIdentifier::root("unknown"),
