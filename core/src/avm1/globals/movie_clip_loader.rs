@@ -75,6 +75,7 @@ fn load_clip<'gc>(
                     None,
                     MovieLoaderVMData::Avm1 {
                         broadcaster: Some(this),
+                        base_clip: activation.base_clip(),
                     },
                 );
                 activation.context.navigator.spawn_future(future);

@@ -503,6 +503,11 @@ pub enum LoaderStatus {
 pub enum MovieLoaderVMData<'gc> {
     Avm1 {
         broadcaster: Option<Object<'gc>>,
+
+        /// The clip that loads the movie.
+        ///
+        /// Used as base clip for invoking loader events.
+        base_clip: DisplayObject<'gc>,
     },
     Avm2 {
         loader_info: LoaderInfoObject<'gc>,
@@ -1451,10 +1456,13 @@ impl<'gc> MovieLoader<'gc> {
         };
 
         match vm_data {
-            MovieLoaderVMData::Avm1 { broadcaster } => {
+            MovieLoaderVMData::Avm1 {
+                broadcaster,
+                base_clip,
+            } => {
                 if let Some(broadcaster) = broadcaster {
                     Avm1::run_stack_frame_for_method(
-                        clip,
+                        base_clip,
                         broadcaster,
                         istr!(uc, "broadcastMessage"),
                         &[istr!(uc, "onLoadStart").into(), clip.object1_or_undef()],
@@ -1814,10 +1822,13 @@ impl<'gc> MovieLoader<'gc> {
         };
 
         match vm_data {
-            MovieLoaderVMData::Avm1 { broadcaster } => {
+            MovieLoaderVMData::Avm1 {
+                broadcaster,
+                base_clip,
+            } => {
                 if let Some(broadcaster) = broadcaster {
                     Avm1::run_stack_frame_for_method(
-                        target_clip,
+                        base_clip,
                         broadcaster,
                         istr!(uc, "broadcastMessage"),
                         &[
@@ -1956,10 +1967,13 @@ impl<'gc> MovieLoader<'gc> {
         }
 
         match vm_data {
-            MovieLoaderVMData::Avm1 { broadcaster } => {
+            MovieLoaderVMData::Avm1 {
+                broadcaster,
+                base_clip,
+            } => {
                 if let Some(broadcaster) = broadcaster {
                     Avm1::run_stack_frame_for_method(
-                        target_clip,
+                        base_clip,
                         broadcaster,
                         istr!(uc, "broadcastMessage"),
                         // TODO: Pass an actual httpStatus argument instead of 0.
@@ -2025,12 +2039,15 @@ impl<'gc> MovieLoader<'gc> {
         }
 
         match vm_data {
-            MovieLoaderVMData::Avm1 { broadcaster } => {
+            MovieLoaderVMData::Avm1 {
+                broadcaster,
+                base_clip,
+            } => {
                 if let Some(broadcaster) = broadcaster {
                     let error_message = AvmString::new_ascii_static(uc.gc(), b"LoadNeverCompleted");
 
                     Avm1::run_stack_frame_for_method(
-                        clip,
+                        base_clip,
                         broadcaster,
                         istr!(uc, "broadcastMessage"),
                         &[
@@ -2146,10 +2163,11 @@ impl<'gc> MovieLoader<'gc> {
                 // AVM2 is handled separately
                 if let MovieLoaderVMData::Avm1 {
                     broadcaster: Some(broadcaster),
+                    base_clip,
                 } = self.vm_data
                 {
                     queue.queue_action(
-                        self.target_clip,
+                        base_clip,
                         ActionType::Method {
                             object: broadcaster,
                             name: istr!(strings, "broadcastMessage"),

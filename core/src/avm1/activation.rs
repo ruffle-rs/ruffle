@@ -1150,7 +1150,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                             level,
                             Request::get(url.to_string()),
                             None,
-                            MovieLoaderVMData::Avm1 { broadcaster: None },
+                            MovieLoaderVMData::Avm1 {
+                                broadcaster: None,
+                                base_clip: self.base_clip,
+                            },
                         );
                         self.context.navigator.spawn_future(future);
                     }
@@ -1269,7 +1272,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         clip_target,
                         request,
                         None,
-                        MovieLoaderVMData::Avm1 { broadcaster: None },
+                        MovieLoaderVMData::Avm1 {
+                            broadcaster: None,
+                            base_clip: self.base_clip,
+                        },
                     );
                     self.context.navigator.spawn_future(future);
                 }
@@ -1294,7 +1300,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         clip_target,
                         Request::get(url.to_utf8_lossy().into_owned()),
                         None,
-                        MovieLoaderVMData::Avm1 { broadcaster: None },
+                        MovieLoaderVMData::Avm1 {
+                            broadcaster: None,
+                            base_clip: self.base_clip,
+                        },
                     );
                     self.context.navigator.spawn_future(future);
                 }
