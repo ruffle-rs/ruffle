@@ -1,6 +1,6 @@
 use crate::avm2::error::{
-    make_error_1010, make_error_1085, make_error_1088, make_error_1118, make_unknown_ns_error,
-    make_xml_error,
+    XmlErrorCode, make_error_1010, make_error_1085, make_error_1088, make_error_1118,
+    make_unknown_ns_error, make_xml_error,
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
@@ -15,8 +15,8 @@ use gc_arena::{
 
 use quick_xml::{
     Error as XmlError, NsReader,
-    errors::IllFormedError,
-    events::{BytesStart, Event},
+    errors::{IllFormedError, SyntaxError as XmlSyntaxError},
+    events::{BytesStart, Event, attributes::AttrError as XmlAttrError},
     name::ResolveResult,
 };
 use ruffle_common::xml::custom_unescape;
@@ -765,32 +765,63 @@ impl<'gc> E4XNode<'gc> {
         loop {
             let event = match parser.read_event() {
                 Ok(event) => event,
-                Err(XmlError::IllFormed(IllFormedError::MismatchedEndTag { expected, found })) => {
-                    // We must accept </a/>, </a />, and </a b="c">
-                    // TODO: Reject </a bc>, </a//>, <a //> etc.
-                    if let Some(rest) = found.strip_prefix(&expected) {
-                        if rest.starts_with([' ', '\t', '/']) {
-                            let node = open_tags.pop().unwrap();
-                            if open_tags.is_empty() {
-                                top_level.push(node);
+                Err(err) => {
+                    let err = match err {
+                        XmlError::IllFormed(IllFormedError::MismatchedEndTag {
+                            expected,
+                            found,
+                        }) => {
+                            // We must accept </a/>, </a />, and </a b="c">
+                            // TODO: Reject </a bc>, </a//>, <a //> etc.
+                            if let Some(rest) = found.strip_prefix(&expected) {
+                                if rest.starts_with([' ', '\t', '/']) {
+                                    let node = open_tags.pop().unwrap();
+                                    if open_tags.is_empty() {
+                                        top_level.push(node);
+                                    }
+                                    continue;
+                                }
                             }
-                            continue;
+                            make_error_1085(activation, &expected)
                         }
-                    }
-                    return Err(make_error_1085(activation, &expected));
+                        XmlError::IllFormed(IllFormedError::UnmatchedEndTag(_))
+                            if open_tags.is_empty() =>
+                        {
+                            make_error_1088(activation)
+                        }
+                        XmlError::InvalidAttr(XmlAttrError::Duplicated(_, _)) => {
+                            make_xml_error(activation, XmlErrorCode::DuplicateAttribute)
+                        }
+                        XmlError::Syntax(syntax_error) => {
+                            let code = match syntax_error {
+                                XmlSyntaxError::UnclosedPIOrXmlDecl => {
+                                    XmlErrorCode::UnterminatedProcessingInstruction
+                                }
+                                XmlSyntaxError::UnclosedComment => {
+                                    XmlErrorCode::UnterminatedComment
+                                }
+                                XmlSyntaxError::UnclosedDoctype => {
+                                    XmlErrorCode::UnterminatedDoctype
+                                }
+                                XmlSyntaxError::UnclosedCData => XmlErrorCode::UnterminatedCData,
+                                XmlSyntaxError::UnclosedTag => XmlErrorCode::ElementMalformed,
+                                // TODO: handle other errors properly
+                                _ => XmlErrorCode::ElementMalformed,
+                            };
+
+                            make_xml_error(activation, code)
+                        }
+                        // TODO: handle other errors properly
+                        _ => make_xml_error(activation, XmlErrorCode::ElementMalformed),
+                    };
+
+                    return Err(err);
                 }
-                Err(XmlError::IllFormed(IllFormedError::UnmatchedEndTag(_)))
-                    if open_tags.is_empty() =>
-                {
-                    return Err(make_error_1088(activation));
-                }
-                Err(err) => return Err(make_xml_error(activation, err)),
             };
 
             match &event {
                 Event::Start(bs) => {
-                    let child =
-                        E4XNode::from_start_event(activation, &parser, bs, parser.decoder())?;
+                    let child = E4XNode::from_start_event(activation, &parser, bs)?;
 
                     if let Some(current_tag) = open_tags.last_mut() {
                         current_tag.append_child(activation.gc(), child);
@@ -798,8 +829,7 @@ impl<'gc> E4XNode<'gc> {
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
-                    let node =
-                        E4XNode::from_start_event(activation, &parser, bs, parser.decoder())?;
+                    let node = E4XNode::from_start_event(activation, &parser, bs)?;
                     push_childless_node(node, &mut open_tags, &mut top_level, activation);
                 }
                 Event::End(_) => {
@@ -810,8 +840,10 @@ impl<'gc> E4XNode<'gc> {
                 }
                 Event::Text(bt) => {
                     handle_text_cdata(
-                        custom_unescape(bt, parser.decoder())
-                            .map_err(|e| make_xml_error(activation, e))?
+                        custom_unescape(bt)
+                            .map_err(|_| {
+                                make_xml_error(activation, XmlErrorCode::ElementMalformed)
+                            })?
                             .as_bytes(),
                         ignore_white,
                         &mut open_tags,
@@ -836,9 +868,11 @@ impl<'gc> E4XNode<'gc> {
                     if ignore_comments {
                         continue;
                     }
-                    let text = custom_unescape(bt, parser.decoder())
-                        .map_err(|e| make_xml_error(activation, e))?;
-                    let text = AvmString::new_utf8_bytes(activation.gc(), text.as_bytes());
+
+                    let text = custom_unescape(bt)
+                        .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
+                    let text = AvmString::new_utf8(activation.gc(), text);
+
                     let node = E4XNode(Gc::new(
                         activation.gc(),
                         E4XNodeData {
@@ -856,8 +890,10 @@ impl<'gc> E4XNode<'gc> {
                     if ignore_processing_instructions {
                         continue;
                     }
-                    let text = custom_unescape(bt, parser.decoder())
-                        .map_err(|e| make_xml_error(activation, e))?;
+
+                    let text = custom_unescape(bt)
+                        .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
+
                     let (name, value) = if let Some((name, value)) = text.split_once(' ') {
                         (
                             AvmString::new_utf8_bytes(activation.gc(), name.as_bytes()),
@@ -910,18 +946,26 @@ impl<'gc> E4XNode<'gc> {
         activation: &mut Activation<'_, 'gc>,
         parser: &NsReader<&[u8]>,
         bs: &BytesStart<'_>,
-        decoder: quick_xml::Decoder,
     ) -> Result<Self, Error<'gc>> {
         let mut attribute_nodes = Vec::new();
         let mut namespaces = Vec::new();
 
-        let attributes: Result<Vec<_>, _> = bs.attributes().collect();
-        for attribute in
-            attributes.map_err(|e| make_xml_error(activation, XmlError::InvalidAttr(e)))?
-        {
-            let value_str = custom_unescape(&attribute.value, decoder)
-                .map_err(|e| make_xml_error(activation, e))?;
-            let value = AvmString::new_utf8_bytes(activation.gc(), value_str.as_bytes());
+        let attributes = bs
+            .attributes()
+            .collect::<Result<Vec<_>, XmlAttrError>>()
+            .map_err(|e| {
+                let code = match e {
+                    XmlAttrError::Duplicated(_, _) => XmlErrorCode::DuplicateAttribute,
+                    _ => XmlErrorCode::ElementMalformed,
+                };
+
+                make_xml_error(activation, code)
+            })?;
+
+        for attribute in attributes {
+            let value_str = custom_unescape(&attribute.value)
+                .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
+            let value = AvmString::new_utf8(activation.gc(), value_str);
 
             let (ns, local_name) = parser.resolve_attribute(attribute.key);
 
