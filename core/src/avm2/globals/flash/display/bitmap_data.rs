@@ -17,7 +17,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2_stub_method;
-use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
+use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::{Character, CompressedBitmap};
@@ -25,7 +25,6 @@ use crate::ecma_conversions::round_to_even;
 use crate::swf::BlendMode;
 use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
-use std::str::FromStr;
 use swf::{Rectangle, Twips};
 
 // Computes the integer x,y,width,height values from
@@ -935,7 +934,7 @@ pub fn draw<'gc>(
         }
 
         if let Some(mode) = args.try_get_string(3) {
-            if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
+            if let Ok(mode) = mode.parse() {
                 blend_mode = mode;
             } else {
                 tracing::error!("Unknown blend mode {:?}", mode);
@@ -1016,7 +1015,7 @@ pub fn draw_with_quality<'gc>(
         }
 
         if let Some(mode) = args.try_get_string(3) {
-            if let Ok(mode) = BlendMode::from_str(&mode.to_string()) {
+            if let Ok(mode) = mode.parse() {
                 blend_mode = mode;
             } else {
                 tracing::error!("Unknown blend mode {:?}", mode);
@@ -1410,12 +1409,10 @@ pub fn threshold<'gc>(
             let mask = args.get_u32(6);
             let copy_source = args.get_bool(7);
 
-            let operation = if let Some(operation) = ThresholdOperation::from_wstr(&operation) {
-                operation
-            } else {
+            let operation = operation
+                .parse()
                 // It's wrong but this is what Flash says.
-                return Err(make_error_2005(activation, 0, "Operation"));
-            };
+                .map_err(|_| make_error_2005(activation, 0, "Operation"))?;
 
             let (src_min_x, src_min_y, src_width, src_height) =
                 get_rectangle_x_y_width_height(activation, source_rect)?;

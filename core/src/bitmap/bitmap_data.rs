@@ -8,7 +8,7 @@ use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{
     Bitmap, BitmapFormat, BitmapHandle, PixelRegion, PixelSnapping, SyncHandle,
 };
-use ruffle_wstr::WStr;
+use ruffle_wstr::{FromWStr, WStr};
 use std::cell::Ref;
 use std::fmt::Debug;
 use std::ops::Range;
@@ -1005,25 +1005,29 @@ pub enum ThresholdOperation {
     GreaterThanOrEquals,
 }
 
-impl ThresholdOperation {
-    pub fn from_wstr(str: &WStr) -> Option<Self> {
-        if str == b"==" {
-            Some(Self::Equals)
-        } else if str == b"!=" {
-            Some(Self::NotEquals)
-        } else if str == b"<" {
-            Some(Self::LessThan)
-        } else if str == b"<=" {
-            Some(Self::LessThanOrEquals)
-        } else if str == b">" {
-            Some(Self::GreaterThan)
-        } else if str == b">=" {
-            Some(Self::GreaterThanOrEquals)
+impl FromWStr for ThresholdOperation {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"==" {
+            Ok(Self::Equals)
+        } else if s == b"!=" {
+            Ok(Self::NotEquals)
+        } else if s == b"<" {
+            Ok(Self::LessThan)
+        } else if s == b"<=" {
+            Ok(Self::LessThanOrEquals)
+        } else if s == b">" {
+            Ok(Self::GreaterThan)
+        } else if s == b">=" {
+            Ok(Self::GreaterThanOrEquals)
         } else {
-            None
+            Err(())
         }
     }
+}
 
+impl ThresholdOperation {
     pub fn matches(&self, value: u32, masked_threshold: u32) -> bool {
         match self {
             ThresholdOperation::Equals => value == masked_threshold,
