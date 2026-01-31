@@ -619,10 +619,10 @@ fn apply_filter<'gc>(
 
     let dest_x = dest_point
         .get(istr!("x"), activation)?
-        .coerce_to_f64(activation)? as u32;
+        .coerce_to_f64(activation)? as i32;
     let dest_y = dest_point
         .get(istr!("y"), activation)?
-        .coerce_to_f64(activation)? as u32;
+        .coerce_to_f64(activation)? as i32;
 
     let filter_object = args
         .get(3)
