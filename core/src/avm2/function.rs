@@ -198,6 +198,8 @@ pub fn exec<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mc = activation.gc();
 
+    let caller_dxns = activation.default_xml_namespace();
+
     let ret = match method.method_kind() {
         MethodKind::Native { native_method, .. } => {
             let caller_domain = activation.caller_domain();
@@ -209,6 +211,9 @@ pub fn exec<'gc>(
                 caller_domain,
                 caller_movie,
             );
+            // Native methods always inherit the caller's default XML namespace,
+            // since they can't set their own via dxns opcodes.
+            activation.set_default_xml_namespace(caller_dxns);
 
             method.resolve_info(&mut activation)?;
 
@@ -275,6 +280,10 @@ pub fn exec<'gc>(
                 span.emit_color(0x425fa1);
                 span
             };
+
+            if !method.sets_dxns() {
+                activation.set_default_xml_namespace(caller_dxns);
+            }
 
             activation.context.avm2.push_call(mc, method);
 

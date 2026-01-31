@@ -1,6 +1,8 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
-use crate::avm2::e4x::{E4XNamespace, E4XNode, E4XNodeKind, string_to_multiname};
+use crate::avm2::e4x::{
+    E4XNamespace, E4XNode, E4XNodeKind, namespace_for_multiname, string_to_multiname,
+};
 use crate::avm2::error::make_error_1089;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::script_object::ScriptObjectData;
@@ -729,7 +731,7 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                             // 2.c.vi. Else let y.[[Class]] = "element"
                             Some(property) => E4XNode::element(
                                 activation.gc(),
-                                property.explicit_namespace().map(E4XNamespace::new_uri),
+                                namespace_for_multiname(&property, activation),
                                 property.local_name().expect("Local name should exist"),
                                 r,
                             ),
@@ -796,11 +798,10 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
                                     if let Some(name) = target_property.local_name() {
                                         y.set_local_name(name, activation.gc());
                                     }
-                                    if let Some(namespace) = target_property.explicit_namespace() {
-                                        y.set_namespace(
-                                            Some(E4XNamespace::new_uri(namespace)),
-                                            activation.gc(),
-                                        );
+
+                                    let ns = namespace_for_multiname(&target_property, activation);
+                                    if ns.is_some() {
+                                        y.set_namespace(ns, activation.gc());
                                     }
                                 }
                             }
