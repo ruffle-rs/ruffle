@@ -295,7 +295,7 @@ impl Definition {
         let prototype = class_object.prototype();
         let prototype_base = prototype.base();
         let prototype_values = prototype_base.values();
-        for (key, value) in prototype_values.as_hashmap().iter() {
+        for (key, value) in prototype_values.iter() {
             let name = match key {
                 DynamicKey::String(name) => *name,
                 DynamicKey::Uint(key) => AvmString::new_utf8(activation.gc(), key.to_string()),

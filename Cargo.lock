@@ -2294,16 +2294,6 @@ dependencies = [
 
 [[package]]
 name = "hashbrown"
-version = "0.14.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
-dependencies = [
- "ahash",
- "allocator-api2",
-]
-
-[[package]]
-name = "hashbrown"
 version = "0.15.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
@@ -4411,7 +4401,7 @@ version = "0.1.0"
 dependencies = [
  "fnv",
  "gc-arena",
- "hashbrown 0.14.5",
+ "hashbrown 0.16.1",
  "quick-xml",
  "regress",
  "ruffle_macros",
@@ -4449,7 +4439,7 @@ dependencies = [
  "fnv",
  "futures",
  "gc-arena",
- "hashbrown 0.14.5",
+ "hashbrown 0.16.1",
  "id3",
  "image",
  "indexmap",
