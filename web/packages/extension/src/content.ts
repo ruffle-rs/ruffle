@@ -43,36 +43,6 @@ function sendMessageToPage(data: unknown): Promise<unknown> {
 }
 
 /**
- * Inject a raw script to the main world.
- * @param {string} src - Script to inject.
- */
-function injectScriptRaw(src: string) {
-    const script = document.createElement("script");
-    script.textContent = src;
-    (document.head || document.documentElement).append(script);
-    script.remove();
-}
-
-/**
- * Inject a script by URL to the main world.
- * @param {string} url - Script URL to inject.
- */
-function injectScriptURL(url: string): Promise<void> {
-    const script = document.createElement("script");
-    const promise = new Promise<void>((resolve, reject) => {
-        script.addEventListener("load", function () {
-            resolve();
-            this.remove();
-        });
-        script.addEventListener("error", (e) => reject(e));
-    });
-    script.charset = "utf-8";
-    script.src = url;
-    (document.head || document.documentElement).append(script);
-    return promise;
-}
-
-/**
  * Check whether the current page (or one of its ancestors) is configured
  * to opt-out from Ruffle.
  * @returns {boolean} Whether the current page opts-out or not.
@@ -144,21 +114,6 @@ function isXMLDocument(): boolean {
 
     if (!shouldLoad) {
         return;
-    }
-
-    // We must run the plugin polyfill before any flash detection scripts.
-    // Unfortunately, this might still be too late for some websites (issue #969).
-    // NOTE: The script code injected here is the compiled form of
-    // plugin-polyfill.ts. It is injected by tools/inject_plugin_polyfill.ts
-    // which just search-and-replaces for this particular string.
-    // On browsers which support ExecutionWorld MAIN this will be done earlier.
-    if (
-        navigator.wrappedJSObject &&
-        navigator.wrappedJSObject.plugins.namedItem("Shockwave Flash")
-            ?.filename !== "ruffle.js"
-    ) {
-        injectScriptRaw("%PLUGIN_POLYFILL_SOURCE%");
-        await injectScriptURL(utils.runtime.getURL("dist/ruffle.js"));
     }
 
     window.addEventListener("message", (event) => {
