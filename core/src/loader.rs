@@ -2135,6 +2135,13 @@ impl<'gc> MovieLoader<'gc> {
                 initial_loading_movie.set_url(url.to_string());
 
                 mc.replace_with_movie(uc, Some(Arc::new(initial_loading_movie)), true, None);
+
+                if let Some(root) = uc.stage.root_clip()
+                    && DisplayObject::ptr_eq(mc.into(), root)
+                {
+                    // Looks like replacing the root movie also resets its name here.
+                    mc.set_default_root_name(uc);
+                }
             }
         }
     }
