@@ -2,7 +2,7 @@ onLoadStart
   d=0
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc0
   mc._target=/mc0
   mc._name=mc0
@@ -11,7 +11,7 @@ onLoadProgress
   d=0
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc0
   mc._target=/mc0
   mc._name=mc0
@@ -20,7 +20,7 @@ onLoadComplete
   d=0
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc0
   mc._target=/mc0
   mc._name=mc0
@@ -30,7 +30,7 @@ onLoadInit
   d=0
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc0
   mc._target=/mc0
   mc._name=mc0
@@ -39,7 +39,7 @@ onLoadStart
   d=1
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc1
   mc._target=/mc1
   mc._name=mc1
@@ -48,7 +48,7 @@ onLoadProgress
   d=1
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc1
   mc._target=/mc1
   mc._name=mc1
@@ -57,7 +57,7 @@ onLoadComplete
   d=1
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc1
   mc._target=/mc1
   mc._name=mc1
@@ -67,7 +67,7 @@ onLoadInit
   d=1
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc1
   mc._target=/mc1
   mc._name=mc1
@@ -76,7 +76,7 @@ onLoadStart
   d=2
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc2
   mc._target=/mc2
   mc._name=mc2
@@ -85,7 +85,7 @@ onLoadProgress
   d=2
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc2
   mc._target=/mc2
   mc._name=mc2
@@ -94,7 +94,7 @@ onLoadComplete
   d=2
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc2
   mc._target=/mc2
   mc._name=mc2
@@ -104,7 +104,7 @@ onLoadInit
   d=2
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc2
   mc._target=/mc2
   mc._name=mc2
@@ -113,7 +113,7 @@ onLoadStart
   d=3
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc3
   mc._target=/mc3
   mc._name=mc3
@@ -122,7 +122,7 @@ onLoadProgress
   d=3
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc3
   mc._target=/mc3
   mc._name=mc3
@@ -131,7 +131,7 @@ onLoadComplete
   d=3
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc3
   mc._target=/mc3
   mc._name=mc3
@@ -141,7 +141,7 @@ onLoadInit
   d=3
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc3
   mc._target=/mc3
   mc._name=mc3
@@ -150,7 +150,7 @@ onLoadStart
   d=4
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc4
   mc._target=/mc4
   mc._name=mc4
@@ -159,7 +159,7 @@ onLoadProgress
   d=4
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc4
   mc._target=/mc4
   mc._name=mc4
@@ -168,7 +168,7 @@ onLoadComplete
   d=4
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc4
   mc._target=/mc4
   mc._name=mc4
@@ -178,7 +178,7 @@ onLoadInit
   d=4
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc4
   mc._target=/mc4
   mc._name=mc4
@@ -187,7 +187,7 @@ onLoadStart
   d=5
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc5
   mc._target=/mc5
   mc._name=mc5
@@ -196,7 +196,7 @@ onLoadProgress
   d=5
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc5
   mc._target=/mc5
   mc._name=mc5
@@ -205,7 +205,7 @@ onLoadComplete
   d=5
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc5
   mc._target=/mc5
   mc._name=mc5
@@ -215,7 +215,7 @@ onLoadInit
   d=5
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc5
   mc._target=/mc5
   mc._name=mc5
@@ -224,7 +224,7 @@ onLoadError
   d=6
   _target=/
   _name=root movie
-  _url=file:////test.swf
+  _url=file:///test.swf
   mc=_level0.mc6
   mc._target=/mc6
   mc._name=mc6
