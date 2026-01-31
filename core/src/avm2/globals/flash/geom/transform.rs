@@ -8,7 +8,7 @@ use crate::avm2::object::VectorObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Object, TObject as _, Value};
-use crate::display_object::TDisplayObject;
+use crate::display_object::{BoundsMode, TDisplayObject};
 use crate::prelude::{DisplayObject, Matrix, Twips};
 use crate::{avm2_stub_getter, avm2_stub_method, avm2_stub_setter};
 use ruffle_render::matrix3d::Matrix3D;
@@ -333,7 +333,7 @@ pub fn get_pixel_bounds<'gc>(
     let this = this.as_object().unwrap();
 
     let display_object = get_display_object(this);
-    rectangle_to_object(display_object.pixel_bounds(), activation)
+    rectangle_to_object(display_object.pixel_bounds(BoundsMode::Script), activation)
 }
 
 fn rectangle_to_object<'gc>(

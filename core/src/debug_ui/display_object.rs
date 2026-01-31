@@ -10,9 +10,9 @@ use crate::debug_ui::Message;
 use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::movie::open_movie_button;
 use crate::display_object::{
-    AutoSizeMode, Avm2Button, Bitmap, ButtonState, DisplayObject, EditText, InteractiveObject,
-    LayoutDebugBoxesFlag, MovieClip, RenderMask, Stage, TDisplayObject, TDisplayObjectContainer,
-    TInteractiveObject,
+    AutoSizeMode, Avm2Button, Bitmap, BoundsMode, ButtonState, DisplayObject, EditText,
+    InteractiveObject, LayoutDebugBoxesFlag, MovieClip, RenderMask, Stage, TDisplayObject,
+    TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
 use crate::font::{FontDescriptor, FontLike};
@@ -1538,7 +1538,7 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("Self Bounds");
-                bounds_label(ui, object.self_bounds(), &mut None);
+                bounds_label(ui, object.self_bounds(BoundsMode::Engine), &mut None);
                 ui.end_row();
 
                 ui.label("Scroll Rect");
@@ -1574,7 +1574,7 @@ impl DisplayObjectWindow {
                 let no_hover = &mut None;
                 bounds_label(
                     ui,
-                    object.bounds_with_transform(matrix),
+                    object.bounds_with_transform(matrix, BoundsMode::Engine),
                     if hoverable_bounds {
                         &mut self.hovered_bounds
                     } else {

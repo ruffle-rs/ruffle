@@ -5,7 +5,7 @@ use crate::context::RenderContext;
 use crate::context::UpdateContext;
 use crate::display_object::InteractiveObject;
 use crate::display_object::TInteractiveObject;
-use crate::display_object::{DisplayObjectBase, DisplayObjectPtr};
+use crate::display_object::{BoundsMode, DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 
@@ -84,7 +84,7 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         self.render_children(context);
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         Default::default()
     }
 
