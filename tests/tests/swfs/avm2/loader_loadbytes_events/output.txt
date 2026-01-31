@@ -11,7 +11,7 @@ Event [ProgressEvent type="progress" bubbles=false cancelable=false eventPhase=2
 bytes.position = 0
 Hello from loaded SWF:
 Loaded swf loaderInfo.url: null content: null
-Added to stage: this.loaderInfo.url = file:/// / this.loaderInfo.content = [object Loadable] / this.loaderInfo.loaderURL = file:////test.swf
+Added to stage: this.loaderInfo.url = file:/// / this.loaderInfo.content = [object Loadable] / this.loaderInfo.loaderURL = file:///test.swf
 Framescript frame 1
 loader.contentLoaderInfo === loader.content.loaderInfo : true
 loader.contentLoaderInfo.content === loader.content : true
@@ -22,7 +22,7 @@ bytes.position = 0
 Stage children before addChild attempt: 2
 loader.numChildren before addChild attempt: 1
 loader.content before addChild attempt: [object Loadable]
-Added to stage: this.loaderInfo.url = file:/// / this.loaderInfo.content = [object Loadable] / this.loaderInfo.loaderURL = file:////test.swf
+Added to stage: this.loaderInfo.url = file:/// / this.loaderInfo.content = [object Loadable] / this.loaderInfo.loaderURL = file:///test.swf
 Stage children after addChild attempt: 3
 loader.numChildren after addChild attempt: 0
 loader.content after addChild attempt: [object Loadable]
