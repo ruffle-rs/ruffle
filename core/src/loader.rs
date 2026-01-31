@@ -660,7 +660,7 @@ impl<'gc> MovieLoader<'gc> {
                     .map(|root| DisplayObject::ptr_eq(clip, root))
                     .unwrap_or(false);
 
-                if let Some(mut mc) = clip.as_movie_clip() {
+                if let Some(mc) = clip.as_movie_clip() {
                     if !mc.movie().is_action_script_3() {
                         mc.avm1_unload(uc);
 
@@ -680,7 +680,7 @@ impl<'gc> MovieLoader<'gc> {
                     }
 
                     // Before the actual SWF is loaded, an initial loading state is entered.
-                    MovieLoader::load_initial_loading_swf(&mut mc, uc, &request_url, resolved_url);
+                    MovieLoader::load_initial_loading_swf(mc, uc, &request_url, resolved_url);
                 }
 
                 MovieLoader::movie_loader_start(handle, uc)
@@ -1763,8 +1763,8 @@ impl<'gc> MovieLoader<'gc> {
                 match vm_data {
                     MovieLoaderVMData::Avm1 { .. } => {
                         // If the file is no valid supported file, the MovieClip enters the error state
-                        if let Some(mut mc) = clip.as_movie_clip() {
-                            MovieLoader::load_error_swf(&mut mc, uc, url);
+                        if let Some(mc) = clip.as_movie_clip() {
+                            MovieLoader::load_error_swf(mc, uc, url);
                         }
 
                         // AVM1 fires the event with the current and total length as 0
@@ -2034,8 +2034,8 @@ impl<'gc> MovieLoader<'gc> {
         };
 
         // If the SWF can't be loaded, the MovieClip enters the error state
-        if let Some(mut mc) = clip.as_movie_clip() {
-            MovieLoader::load_error_swf(&mut mc, uc, swf_url);
+        if let Some(mc) = clip.as_movie_clip() {
+            MovieLoader::load_error_swf(mc, uc, swf_url);
         }
 
         match vm_data {
@@ -2085,7 +2085,7 @@ impl<'gc> MovieLoader<'gc> {
     /// currently being loaded and neither an error has occurred nor the first frame
     /// has been successfully loaded yet.
     fn load_initial_loading_swf(
-        mc: &mut MovieClip<'gc>,
+        mc: MovieClip<'gc>,
         uc: &mut UpdateContext<'gc>,
         request_url: &str,
         resolved_url: Result<Url, ParseError>,
@@ -2129,7 +2129,7 @@ impl<'gc> MovieLoader<'gc> {
     /// supported content.
     ///
     /// swf_url is always the final URL obtained after any redirects.
-    fn load_error_swf(mc: &mut MovieClip<'gc>, uc: &mut UpdateContext<'gc>, mut swf_url: String) {
+    fn load_error_swf(mc: MovieClip<'gc>, uc: &mut UpdateContext<'gc>, mut swf_url: String) {
         // If a local URL is fetched using the flash plugin, the _url property
         // won't be changed => It keeps being the parent SWF URL.
         if cfg!(target_family = "wasm")
