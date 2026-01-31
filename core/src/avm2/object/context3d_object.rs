@@ -365,6 +365,7 @@ impl<'gc> Context3DObject<'gc> {
                 source_height: source.height(),
                 dest,
                 layer,
+                needs_conversion: true,
             })
         });
     }
@@ -378,6 +379,7 @@ impl<'gc> Context3DObject<'gc> {
                 source_height: dest.height(),
                 dest,
                 layer,
+                needs_conversion: false,
             })
         });
     }
