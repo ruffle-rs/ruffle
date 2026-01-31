@@ -557,6 +557,13 @@ pub struct MovieLoader<'gc> {
 }
 
 impl<'gc> MovieLoader<'gc> {
+    fn replace_root_movie(&mut self, new_root: DisplayObject<'gc>) {
+        self.target_clip = new_root;
+        if let MovieLoaderVMData::Avm1 { base_clip, .. } = &mut self.vm_data {
+            *base_clip = new_root;
+        }
+    }
+
     /// Process tags on a loaded movie.
     ///
     /// Is only callable on Movie loaders, panics otherwise. Will
@@ -708,12 +715,12 @@ impl<'gc> MovieLoader<'gc> {
 
     fn on_success_root_movie(
         mut player: MutexGuard<'_, Player>,
-        _handle: LoaderHandle,
+        handle: LoaderHandle,
         loader_url: Option<String>,
         body: Vec<u8>,
         url: String,
-        _status: u16,
-        _redirected: bool,
+        status: u16,
+        redirected: bool,
     ) -> Result<(), Error> {
         ContentType::sniff(&body).expect(ContentType::Swf)?;
 
@@ -736,6 +743,14 @@ impl<'gc> MovieLoader<'gc> {
 
             uc.replace_root_movie(movie);
 
+            if let Some(root_clip) = uc.stage.root_clip()
+                && let Some(ml) = uc.load_manager.get_loader_mut(handle)
+            {
+                // Further AVM1 events are dispatched in relation to the new root.
+                // TODO Maybe we could use a MCR here?
+                ml.replace_root_movie(root_clip);
+            }
+
             // Add the copied properties back onto the new root
             if !root_properties.is_empty()
                 && let Some(root) = uc.stage.root_clip()
@@ -747,7 +762,13 @@ impl<'gc> MovieLoader<'gc> {
                     let _ = clip_object.set(key, val, &mut activation);
                 }
             }
-        });
+
+            // For some reason, progress event is dispatched twice here.
+            MovieLoader::movie_loader_progress(handle, uc, body.len(), body.len())?;
+            MovieLoader::movie_loader_progress(handle, uc, body.len(), body.len())?;
+
+            MovieLoader::movie_loader_complete(handle, uc, None, status, redirected)
+        })?;
         Ok(())
     }
 
