@@ -10,9 +10,11 @@ update-ruffle = Actualitza Ruffle
 ruffle-demo = Demostració web
 ruffle-desktop = Aplicació d'escriptori
 ruffle-wiki = Obre la wiki de Ruffle
+enable-hardware-acceleration-link = FAQ - Acceleració per Hardware a Chrome
 view-error-details = Mostra detalls de l'error
 open-in-new-tab = Obre en una pestanya nova
 click-to-unmute = Feu clic per activar el so
+clipboard-message-title = Copiar i enganxar en Ruffle
 error-file-protocol =
     Sembla que esteu executant Ruffle al protocol "file:".
     Això no funcionarà perquè els navegadors bloquegen moltes característiques per raons de seguretat. En comptes d'això, us suggerim que configureu un servidor local o bé utilitzeu la demostració web o l'aplicació d'escriptori.
