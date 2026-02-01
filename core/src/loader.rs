@@ -2126,27 +2126,15 @@ impl<'gc> MovieLoader<'gc> {
                 MovieLoader::load_error_swf(mc, uc, request_url.to_string());
             }
             Ok(url) => {
-                // If the loaded SWF is a local file, the initial loading state equals the error state.
-                if url.scheme() == "file" {
-                    MovieLoader::load_error_swf(mc, uc, url.to_string());
-                } else {
-                    // Replacing the movie sets total_frames and frames_loaded correctly.
-                    // The movie just needs to be the default empty movie with the correct URL.
-                    // In this loading state, the URL is the URL of the parent movie / doesn't change.
+                // Replacing the movie sets total_frames and frames_loaded correctly.
+                // The movie just needs to be the default empty movie with the correct URL.
 
-                    let current_movie = mc.movie();
-                    let current_version = current_movie.version();
-                    let current_url = current_movie.url();
-                    let mut initial_loading_movie = SwfMovie::empty(current_version, None);
-                    initial_loading_movie.set_url(current_url.to_string());
+                let current_movie = mc.movie();
+                let current_version = current_movie.version();
+                let mut initial_loading_movie = SwfMovie::empty(current_version, None);
+                initial_loading_movie.set_url(url.to_string());
 
-                    mc.replace_with_movie(uc, Some(Arc::new(initial_loading_movie)), true, None);
-
-                    // Maybe this (keeping the current URL) should be the default behaviour
-                    // of replace_with_movie?
-                    // TODO: See where it gets invoked without a movie as well and what the
-                    // correct URL result is in these cases.
-                }
+                mc.replace_with_movie(uc, Some(Arc::new(initial_loading_movie)), true, None);
             }
         }
     }
