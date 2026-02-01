@@ -110,6 +110,11 @@ pub fn swf_to_uppercase(c: u16) -> u16 {
     }
 }
 
+#[inline]
+pub fn swf_is_ascii_hexdigit(c: u16) -> bool {
+    u8::try_from(c).is_ok_and(|c| c.is_ascii_hexdigit())
+}
+
 #[inline(always)]
 pub fn swf_is_cjk_like(c: char) -> bool {
     // NOTE: not guaranteed to be equivalent to FP's set.
