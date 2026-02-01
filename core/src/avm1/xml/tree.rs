@@ -8,9 +8,10 @@ use gc_arena::{
     Collect, Gc, Mutation,
     lock::{Lock, RefLock},
 };
+use quick_xml::encoding::EncodingError;
 use quick_xml::escape::escape;
 use quick_xml::events::BytesStart;
-use ruffle_common::xml::custom_unescape;
+use ruffle_common::xml::avm1_unescape;
 use ruffle_macros::istr;
 use std::cell::RefMut;
 use std::fmt;
@@ -83,18 +84,19 @@ impl<'gc> XmlNode<'gc> {
         activation: &mut Activation<'_, 'gc>,
         bs: BytesStart<'_>,
         id_map: Object<'gc>,
-        decoder: quick_xml::Decoder,
     ) -> Result<Self, quick_xml::Error> {
         let name = AvmString::new_utf8_bytes(activation.gc(), bs.name().into_inner());
         let node = Self::new(activation.gc(), ELEMENT_NODE, Some(name));
 
         // Reverse attributes so they appear in the `PropertyMap` in their definition order.
-        let attributes: Result<Vec<_>, _> = bs.attributes().collect();
-        let attributes = attributes?;
+        let attributes = bs.attributes().collect::<Result<Vec<_>, _>>()?;
+
         for attribute in attributes.iter().rev() {
             let key = AvmString::new_utf8_bytes(activation.gc(), attribute.key.into_inner());
-            let value_str = custom_unescape(&attribute.value, decoder)?;
-            let value = AvmString::new_utf8_bytes(activation.gc(), value_str.as_bytes());
+
+            let value_str = avm1_unescape(&attribute.value)
+                .map_err(|e| quick_xml::Error::Encoding(EncodingError::Utf8(e)))?;
+            let value = AvmString::new_utf8(activation.gc(), value_str);
 
             // Insert an attribute.
             node.attributes()

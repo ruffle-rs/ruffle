@@ -12,10 +12,11 @@ use crate::string::{AvmString, StringContext, WStr, WString};
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
 use gc_arena::{Collect, Gc};
+use quick_xml::encoding::EncodingError;
 use quick_xml::errors::IllFormedError;
 use quick_xml::events::attributes::AttrError;
 use quick_xml::{Reader, events::Event};
-use ruffle_common::xml::custom_unescape;
+use ruffle_common::xml::avm1_unescape;
 use ruffle_macros::istr;
 
 #[derive(Clone, Copy, Collect)]
@@ -174,8 +175,7 @@ impl<'gc> Xml<'gc> {
 
             match event {
                 Event::Start(bs) => {
-                    let child =
-                        XmlNode::from_start_event(activation, bs, self.id_map(), parser.decoder())?;
+                    let child = XmlNode::from_start_event(activation, bs, self.id_map())?;
                     open_tags
                         .last()
                         .unwrap()
@@ -183,8 +183,7 @@ impl<'gc> Xml<'gc> {
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
-                    let child =
-                        XmlNode::from_start_event(activation, bs, self.id_map(), parser.decoder())?;
+                    let child = XmlNode::from_start_event(activation, bs, self.id_map())?;
                     open_tags
                         .last()
                         .unwrap()
@@ -195,7 +194,9 @@ impl<'gc> Xml<'gc> {
                 }
                 Event::Text(bt) => {
                     Self::handle_text_cdata(
-                        custom_unescape(&bt.into_inner(), parser.decoder())?.as_bytes(),
+                        avm1_unescape(&bt)
+                            .map_err(|e| quick_xml::Error::Encoding(EncodingError::Utf8(e)))?
+                            .as_bytes(),
                         ignore_white,
                         &open_tags,
                         activation,
