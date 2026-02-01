@@ -13,9 +13,9 @@ PASSED: tf.text == "green" [./TextFieldHTML.as:67]
 PASSED: tf.textColor == 0 [./TextFieldHTML.as:69]
 PASSED: format.color == 0x00ff00 [./TextFieldHTML.as:72]
 PASSED: tf.text == "" [./TextFieldHTML.as:76]
-FAILED: expected: 0 obtained:  [./TextFieldHTML.as:78]
+PASSED: tf.textColor == 0 [./TextFieldHTML.as:78]
 PASSED: tf.text == "blue" [./TextFieldHTML.as:82]
-FAILED: expected: 0 obtained:  [./TextFieldHTML.as:84]
+PASSED: tf.textColor == 0 [./TextFieldHTML.as:84]
 PASSED: format.color == 0x0000ff [./TextFieldHTML.as:86]
 PASSED: tf.text == "too short" [./TextFieldHTML.as:94]
 FAILED: expected: 0x0000ff obtained: 0 [./TextFieldHTML.as:96]
@@ -32,6 +32,6 @@ FAILED: expected: 0xffffee obtained: 16711935 [./TextFieldHTML.as:124]
 PASSED: tf.text == "corrupt" [./TextFieldHTML.as:128]
 FAILED: expected: 0x00ff00 obtained: 0 [./TextFieldHTML.as:130]
 PASSED: tf.text == "#32508" [./TextFieldHTML.as:134]
-#passed: 24
-#failed: 7
+#passed: 26
+#failed: 5
 #total tests run: 31
