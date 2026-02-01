@@ -63,7 +63,8 @@ ashpd = "0.11.0"
 windows-sys = { version = "0.61.2", features = ["Win32_System_Console", "Win32_Storage_FileSystem"] }
 
 [build-dependencies]
-vergen = { version = "8.3.2", features = ["build", "git", "gitcl", "cargo"] }
+vergen = { version = "9.1.0", features = ["build", "cargo"] }
+vergen-gitcl = { version = "9.1.0" }
 winresource = "0.1"
 
 [package.metadata.winresource]

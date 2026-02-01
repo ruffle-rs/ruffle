@@ -1,16 +1,23 @@
 use std::borrow::Cow;
 use std::env;
 use std::error::Error;
-use vergen::EmitBuilder;
+use vergen::Emitter;
+use vergen::{BuildBuilder, CargoBuilder};
+use vergen_gitcl::GitclBuilder;
 
 fn main() -> Result<(), Box<dyn Error>> {
     // Emit version info, and "rerun-if-changed" for relevant files, including build.rs
-    EmitBuilder::builder()
-        .build_timestamp()
-        .cargo_features()
-        .git_sha(false)
-        .git_commit_timestamp()
-        .git_commit_date()
+    let build = BuildBuilder::default().build_timestamp(true).build()?;
+    let cargo = CargoBuilder::default().features(true).build()?;
+    let gitcl = GitclBuilder::default()
+        .sha(false)
+        .commit_timestamp(true)
+        .commit_date(true)
+        .build()?;
+    Emitter::default()
+        .add_instructions(&build)?
+        .add_instructions(&cargo)?
+        .add_instructions(&gitcl)?
         .emit()?;
 
     // Embed resource file w/ icon and version info on Windows.
