@@ -740,7 +740,10 @@ impl FormatSpans {
                         Ok(attributes) => attributes,
                         Err(e) => {
                             tracing::warn!("Error while parsing HTML: {}", e);
-                            return Default::default();
+                            return Self {
+                                default_format,
+                                ..Default::default()
+                            };
                         }
                     };
                     let attribute = move |name| {
