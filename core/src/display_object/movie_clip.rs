@@ -2757,7 +2757,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
     }
 
     fn allow_as_mask(self) -> bool {
-        !self.is_empty()
+        !self.is_empty() || self.drawing().is_some()
     }
 }
 
