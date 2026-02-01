@@ -1,0 +1,114 @@
+Color: 202020;
+  default color: 1
+  inner color: 123456
+Color: #202020;
+  default color: 1
+  inner color: 202020
+Color: #2;
+  default color: 1
+  inner color: 2
+Color: #23;
+  default color: 1
+  inner color: 23
+Color: #234;
+  default color: 1
+  inner color: 234
+Color: #2345;
+  default color: 1
+  inner color: 2345
+Color: #23456;
+  default color: 1
+  inner color: 23456
+Color: #234567;
+  default color: 1
+  inner color: 234567
+Color: #2345678;
+  default color: 1
+  inner color: 345678
+Color: #23456789;
+  default color: 1
+  inner color: 456789
+Color: #23456789a;
+  default color: 1
+  inner color: 56789a
+Color: #abf;
+  default color: 1
+  inner color: abf
+Color: #abfg;
+  default color: 1
+  inner color: abf
+Color: #g101010;
+  default color: 1
+  inner color: 123456
+Color: #g234567;
+  default color: 1
+  inner color: 123456
+Color: #g2345678;
+  default color: 1
+  inner color: 123456
+Color: #g23456789abc;
+  default color: 1
+  inner color: 123456
+Color: #g23456789abcd;
+  default color: 1
+  inner color: 123456
+Color: #2g;
+  default color: 1
+  inner color: 2
+Color: #23g;
+  default color: 1
+  inner color: 23
+Color: #234g;
+  default color: 1
+  inner color: 234
+Color: #2345g;
+  default color: 1
+  inner color: 2345
+Color: #23456789ag;
+  default color: 1
+  inner color: 56789a
+Color: #123456789abcdef123456789abcdef123456789abcdef123456789abcdef;
+  default color: 1
+  inner color: abcdef
+Color:  #234567;
+  default color: 1
+  inner color: 123456
+Color: # 234567;
+  default color: 1
+  inner color: 234567
+Color: #2 34567;
+  default color: 1
+  inner color: 2
+Color: #234567 ;
+  default color: 1
+  inner color: 234567
+Color: #     234567;
+  default color: 1
+  inner color: 234567
+Color: #	234567;
+  default color: 1
+  inner color: 234567
+Color: #   234567  ;
+  default color: 1
+  inner color: 234567
+Color: #abc;
+  default color: 1
+  inner color: abc
+Color: #ABC;
+  default color: 1
+  inner color: abc
+Color: #AbC;
+  default color: 1
+  inner color: abc
+Color: #0123456789abcdefABCDEF2a4;
+  default color: 1
+  inner color: def2a4
+Color: #g;
+  default color: 1
+  inner color: 123456
+Color: # ;
+  default color: 1
+  inner color: 123456
+Color: #23g45;
+  default color: 1
+  inner color: 23
