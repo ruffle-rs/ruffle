@@ -5,3 +5,19 @@ A & ' B
 A & &thing; B
 
 A & &thing; B
+
+A &&thing; B
+
+A &&thing; B
+
+A &&&thing; B
+
+A &&&thing; B
+
+A && B
+
+A && B
+
+A && B
+
+A && B
