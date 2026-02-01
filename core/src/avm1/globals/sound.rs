@@ -389,7 +389,9 @@ fn attach_sound<'gc>(
         if let Some((_, Character::Sound(sound_handle))) = activation
             .context
             .library
-            .library_for_movie_mut(movie)
+            .library_for_movie_gc(movie, activation.gc())
+            .unwrap()
+            .borrow()
             .character_by_export_name(name)
         {
             sound.load_sound(activation, this, sound_handle);
@@ -705,7 +707,9 @@ fn stop<'gc>(
             if let Some((_, Character::Sound(sound))) = activation
                 .context
                 .library
-                .library_for_movie_mut(movie)
+                .library_for_movie_gc(movie, activation.gc())
+                .unwrap()
+                .borrow()
                 .character_by_export_name(name)
             {
                 // Stop all sounds with the given name.

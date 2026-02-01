@@ -263,7 +263,7 @@ impl Avm2ObjectWindow {
 
                 if let Some(tuint) = class.translation_unit() {
                     ui.label("Movie");
-                    open_movie_button(ui, &tuint.movie(), messages);
+                    open_movie_button(ui, &mut *activation.context, tuint.movie(), messages);
                     ui.end_row();
                 }
 

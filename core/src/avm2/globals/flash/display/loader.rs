@@ -1,5 +1,6 @@
 //! `flash.display.Loader` builtin/prototype
 
+use gc_arena::Gc;
 use indexmap::IndexMap;
 
 use crate::avm2::ClassObject;
@@ -7,8 +8,10 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2007;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::slots::flash_display_loader as loader_slots;
+use crate::avm2::globals::slots::flash_events_event_dispatcher as dispatch_slots;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::globals::slots::flash_net_url_request_header as url_request_header_slots;
+use crate::avm2::object::DispatchObject;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject as _;
@@ -17,12 +20,12 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
-use crate::display_object::LoaderDisplay;
-use crate::display_object::MovieClip;
+use crate::display_object::{
+    DisplayObject, LoaderDisplay, MovieClip, TDisplayObject, TDisplayObjectContainer,
+};
 use crate::loader::LoadManager;
 use crate::loader::MovieLoaderVMData;
 use crate::tag_utils::SwfMovie;
-use std::sync::Arc;
 
 pub fn loader_allocator<'gc>(
     class: ClassObject<'gc>,
@@ -30,8 +33,7 @@ pub fn loader_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     // Loader does not have an associated `Character` variant, and can never be
     // instantiated from the timeline.
-    let display_object =
-        LoaderDisplay::empty(activation, activation.context.root_swf.clone()).into();
+    let display_object = LoaderDisplay::empty(activation, activation.context.root_movie()).into();
     let loader = initialize_for_allocator(activation.context, display_object, class);
 
     // Note that the initialization of `_contentLoaderInfo` is intentionally done here,
@@ -41,10 +43,13 @@ pub fn loader_allocator<'gc>(
     // Some LoaderInfo properties (such as 'bytesLoaded' and 'bytesTotal') are always
     // accessible, even before the 'init' event has fired. Using an empty movie gives
     // us the correct value (0) for them.
-    let movie = &activation.context.root_swf;
+    let movie = activation.context.root_movie();
     let loader_info = LoaderInfoObject::not_yet_loaded(
         activation,
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
+        Gc::new(
+            activation.gc(),
+            SwfMovie::empty(movie.version(), Some(movie.url().into())),
+        ),
         Some(loader),
         None,
         false,
@@ -89,19 +94,16 @@ pub fn load<'gc>(
     loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
-    let movie = &activation.context.root_swf;
-    let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
+    let movie = activation.context.root_movie();
+    let empty_movie = Gc::new(
         activation.gc(),
+        SwfMovie::empty(movie.version(), Some(movie.url().into())),
     );
+    let content = MovieClip::new(empty_movie, activation.context);
 
     // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
     loader_info.set_loader_stream(
-        LoaderStream::NotYetLoaded(
-            Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
-            Some(content.into()),
-            false,
-        ),
+        LoaderStream::NotYetLoaded(empty_movie, Some(content.into()), false),
         activation.gc(),
     );
 
@@ -260,10 +262,13 @@ pub fn load_bytes<'gc>(
     loader_info.unload(activation);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
-    let movie = &activation.context.root_swf;
+    let movie = activation.context.root_movie();
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
-        activation.gc(),
+        Gc::new(
+            activation.gc(),
+            SwfMovie::empty(movie.version(), Some(movie.url().into())),
+        ),
+        activation.context,
     );
 
     let default_domain = activation
@@ -288,6 +293,25 @@ pub fn load_bytes<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn close<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let loader_info = this
+        .get_slot(loader_slots::_CONTENT_LOADER_INFO)
+        .as_object()
+        .unwrap()
+        .as_loader_info_object()
+        .unwrap();
+    activation
+        .context
+        .load_manager
+        .remove_loader_by_loader_info(loader_info);
+    Ok(Value::Undefined)
+}
+
 pub fn unload<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -308,4 +332,57 @@ pub fn unload<'gc>(
     loader_info.unload(activation);
 
     Ok(Value::Undefined)
+}
+
+pub fn unload_and_stop<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let loader_info = this
+        .get_slot(loader_slots::_CONTENT_LOADER_INFO)
+        .as_object()
+        .unwrap()
+        .as_loader_info_object()
+        .unwrap();
+
+    // Get content before unloading
+    {
+        let stream = loader_info.loader_stream();
+        if let LoaderStream::Swf(_, root) = &*stream {
+            let root = *root;
+            drop(stream); // Release borrow before mutating
+            // Stop sounds on content tree
+            activation.context.stop_sounds_on_parent_and_children(root);
+            // Stop MovieClips and clear event listeners recursively
+            stop_content_tree(activation, root);
+        }
+    }
+
+    loader_info.unload(activation);
+    Ok(Value::Undefined)
+}
+
+fn stop_content_tree<'gc>(activation: &mut Activation<'_, 'gc>, dobj: DisplayObject<'gc>) {
+    // Stop MovieClip playback
+    if let Some(mc) = dobj.as_movie_clip() {
+        mc.stop(activation.context);
+    }
+    // Clear event listeners on the AVM2 object
+    if let Some(stage_obj) = dobj.object2() {
+        let obj: Object<'gc> = stage_obj.into();
+        let empty_dispatch = DispatchObject::empty_list(activation);
+        let _ = obj.set_slot(
+            dispatch_slots::DISPATCH_LIST,
+            empty_dispatch.into(),
+            activation,
+        );
+    }
+    // Recurse into children
+    if let Some(ctr) = dobj.as_container() {
+        for child in ctr.iter_render_list() {
+            stop_content_tree(activation, child);
+        }
+    }
 }
