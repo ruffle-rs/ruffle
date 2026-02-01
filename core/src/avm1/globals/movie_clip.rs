@@ -290,7 +290,7 @@ fn attach_bitmap<'gc>(
             0,
             bitmap_data,
             smoothing,
-            &movie_clip.movie(),
+            movie_clip.movie(),
         );
         movie_clip.replace_at_depth(activation.context, display_object.into(), depth);
         display_object.post_instantiation(activation.context, None, Instantiator::Avm1, true);
@@ -788,8 +788,11 @@ fn attach_movie<'gc>(
     if let Some(new_clip) = activation
         .context
         .library
-        .library_for_movie(movie_clip.movie())
-        .and_then(|l| l.instantiate_by_export_name(export_name, activation.gc()))
+        .library_for_movie_gc(movie_clip.movie(), activation.gc())
+        .and_then(|l| {
+            l.borrow()
+                .instantiate_by_export_name(export_name, activation.gc(), movie_clip.movie())
+        })
     {
         new_clip.set_placed_by_avm1_script(true);
         // Set name and attach to parent.
@@ -832,7 +835,7 @@ fn create_empty_movie_clip<'gc>(
 
     // Create empty movie clip.
     let swf_movie = movie_clip.movie();
-    let new_clip = MovieClip::new(swf_movie, activation.gc());
+    let new_clip = MovieClip::new(swf_movie, activation.context);
     new_clip.set_placed_by_avm1_script(true);
 
     // Set name and attach to parent.
@@ -969,13 +972,17 @@ pub fn clone_sprite<'gc>(
     let movie = parent.movie();
     let cloned_sprite = if sprite.id() != 0 {
         // Clip from SWF; instantiate a new copy.
-        let library = context.library.library_for_movie(movie).unwrap();
+        let library = context
+            .library
+            .library_for_movie_gc(movie, context.gc())
+            .unwrap();
         library
-            .instantiate_by_id(sprite.id(), context.gc())
+            .borrow()
+            .instantiate_by_id(sprite.id(), context.gc(), movie)
             .unwrap()
     } else if sprite.as_movie_clip().is_some() {
         // Dynamically created MovieClip; create a new empty movie clip.
-        MovieClip::new(movie, context.gc()).as_displayobject()
+        MovieClip::new(movie, context).as_displayobject()
     } else if let Some(et) = sprite.as_edit_text() {
         // Dynamically created TextField; create a new text field.
         EditText::new(
@@ -1004,7 +1011,7 @@ pub fn clone_sprite<'gc>(
     if let (Some(cloned_sprite), Some(sprite)) =
         (cloned_sprite.as_movie_clip(), sprite.as_movie_clip())
     {
-        cloned_sprite.init_clip_event_handlers(sprite.clip_actions().into());
+        cloned_sprite.init_clip_event_handlers(context, sprite.clip_actions().into());
 
         if let Some(drawing) = sprite.drawing().as_deref().cloned() {
             *cloned_sprite.drawing_mut() = drawing;
@@ -1441,7 +1448,7 @@ fn get_bounds<'gc>(
         if !activation.context.avm1.get_use_new_invalid_bounds_value() {
             // The value is set to true if the activation SWF version is >= 8 or if the SWF
             // version of the root movie is >= 8.
-            if activation.swf_version() >= 8 || activation.context.root_swf.version() >= 8 {
+            if activation.swf_version() >= 8 || (*activation.context.root_swf).version() >= 8 {
                 // If only the activation SWF version (and not the root movie SWF version)
                 // is >= 8 and the movie clip equals the target, the value sometimes isn't set
                 // in Flash Player 10.

@@ -25,7 +25,6 @@ use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::num::NonZero;
-use std::sync::Arc;
 use swf::{ColorTransform, Fixed8};
 
 mod avm1_button;
@@ -2342,8 +2341,9 @@ pub trait TDisplayObject<'gc>:
             {
                 let domain = context
                     .library
-                    .library_for_movie(self.movie())
+                    .library_for_movie_gc(self.movie(), context.gc())
                     .unwrap()
+                    .borrow()
                     .avm2_domain();
 
                 let mut activation = Avm2Activation::from_domain(context, domain);
@@ -2589,7 +2589,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Return the SWF that defines this display object.
-    fn movie(self) -> Arc<SwfMovie>;
+    fn movie(self) -> Gc<'gc, SwfMovie>;
 
     fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         None

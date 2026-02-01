@@ -16,7 +16,6 @@ use gc_arena::{
 };
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, Ref};
-use std::sync::Arc;
 
 /// Represents a thing which can be loaded by a loader.
 #[derive(Collect, Clone)]
@@ -36,19 +35,19 @@ pub enum LoaderStream<'gc> {
     /// The `bool` parameter indicates if this is the `Stage`'s loader info;
     /// this is because certain `Stage` properties are accessible even when the
     /// associated movie is not yet loaded.
-    NotYetLoaded(Arc<SwfMovie>, Option<DisplayObject<'gc>>, bool),
+    NotYetLoaded(Gc<'gc, SwfMovie>, Option<DisplayObject<'gc>>, bool),
 
     /// A loaded SWF movie.
     ///
     /// The associated `DisplayObject` is the root movieclip.
-    Swf(Arc<SwfMovie>, DisplayObject<'gc>),
+    Swf(Gc<'gc, SwfMovie>, DisplayObject<'gc>),
 }
 
-impl LoaderStream<'_> {
-    pub fn movie(&self) -> &Arc<SwfMovie> {
+impl<'gc> LoaderStream<'gc> {
+    pub fn movie(&self) -> Gc<'gc, SwfMovie> {
         match self {
-            LoaderStream::NotYetLoaded(movie, _, _) => movie,
-            LoaderStream::Swf(movie, _) => movie,
+            LoaderStream::NotYetLoaded(movie, _, _) => *movie,
+            LoaderStream::Swf(movie, _) => *movie,
         }
     }
 }
@@ -112,7 +111,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     /// info.
     pub fn not_yet_loaded(
         activation: &mut Activation<'_, 'gc>,
-        movie: Arc<SwfMovie>,
+        movie: Gc<'gc, SwfMovie>,
         loader: Option<Object<'gc>>,
         root_clip: Option<DisplayObject<'gc>>,
         is_stage: bool,
@@ -270,9 +269,13 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     pub fn unload(self, activation: &mut Activation<'_, 'gc>) {
-        // Reset properties
-        let movie = &activation.context.root_swf;
-        let empty_swf = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
+        // With GC-managed SwfMovie, cleanup happens automatically when unreachable.
+        // Just reset properties to empty state.
+        let movie = *activation.context.root_swf;
+        let empty_swf = Gc::new(
+            activation.gc(),
+            SwfMovie::empty(movie.version(), Some(movie.url().into())),
+        );
         let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
         self.set_loader_stream(loader_stream, activation.gc());
         self.set_errored(false);

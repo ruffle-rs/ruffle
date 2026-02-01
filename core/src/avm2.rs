@@ -31,7 +31,6 @@ use crate::tag_utils::SwfMovie;
 use fnv::FnvHashMap;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, Gc, Mutation};
-use std::sync::Arc;
 use swf::DoAbc2Flag;
 use swf::avm2::read::Reader;
 
@@ -472,8 +471,12 @@ impl<'gc> Avm2<'gc> {
 
         let class = class_object.inner_class_definition();
 
-        let library = activation.context.library.library_for_movie_mut(movie);
-        let character = library.character_by_id(id);
+        let library = activation
+            .context
+            .library
+            .library_for_movie_gc(movie, activation.gc())
+            .unwrap();
+        let character = library.borrow().character_by_id(id);
 
         if let Some(character) = character {
             if matches!(
@@ -509,7 +512,7 @@ impl<'gc> Avm2<'gc> {
         name: Option<AvmString<'gc>>,
         flags: DoAbc2Flag,
         domain: Domain<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: Gc<'gc, SwfMovie>,
     ) -> Result<Option<Script<'gc>>, Error<'gc>> {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
@@ -547,7 +550,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'gc>,
         data: &[u8],
         domain: Domain<'gc>,
-        movie: Arc<SwfMovie>,
+        movie: Gc<'gc, SwfMovie>,
     ) {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {

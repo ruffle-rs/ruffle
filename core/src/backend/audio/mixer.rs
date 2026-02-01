@@ -1,7 +1,6 @@
 use super::decoders::{self, AdpcmDecoder, Decoder, PcmDecoder, SeekableDecoder};
-use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
+use super::{AudioSlice, SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
-use crate::tag_utils::SwfSlice;
 use ruffle_common::buffer::Substream;
 use slotmap::SlotMap;
 use std::io::Cursor;
@@ -396,13 +395,14 @@ impl AudioMixer {
     }
 
     /// Creates a `Stream` that decodes and resamples a timeline "stream" sound.
-    fn make_stream_from_swf_slice(
+    fn make_stream_from_audio_slice(
         &self,
         stream_info: &swf::SoundStreamHead,
-        data_stream: SwfSlice,
+        data_stream: AudioSlice,
+        version: u8,
     ) -> Result<Box<dyn Stream>, DecodeError> {
         // Instantiate a decoder for the compression that the sound data uses.
-        let clip_stream_decoder = decoders::make_stream_decoder(stream_info, data_stream)?;
+        let clip_stream_decoder = decoders::make_stream_decoder(stream_info, data_stream, version)?;
 
         // Convert the `Decoder` to a `Stream`, and resample it to the output sample rate.
         let stream = DecoderStream::new(clip_stream_decoder);
@@ -554,13 +554,14 @@ impl AudioMixer {
     /// Starts a timeline audio stream.
     pub fn start_stream(
         &mut self,
-        clip_data: SwfSlice,
+        clip_data: AudioSlice,
+        version: u8,
         stream_info: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError> {
         // The audio data for stream sounds is distributed among the frames of a
         // movie clip. The stream tag reader will parse through the SWF and
         // feed the decoder audio data on the fly.
-        let stream = self.make_stream_from_swf_slice(stream_info, clip_data)?;
+        let stream = self.make_stream_from_audio_slice(stream_info, clip_data, version)?;
 
         let mut sound_instances = self
             .sound_instances
@@ -1081,10 +1082,11 @@ macro_rules! impl_audio_mixer_backend {
         #[inline]
         fn start_stream(
             &mut self,
-            clip_data: $crate::tag_utils::SwfSlice,
+            clip_data: $crate::backend::audio::AudioSlice,
+            version: u8,
             stream_info: &swf::SoundStreamHead,
         ) -> Result<SoundInstanceHandle, DecodeError> {
-            self.$mixer.start_stream(clip_data, stream_info)
+            self.$mixer.start_stream(clip_data, version, stream_info)
         }
 
         #[inline]

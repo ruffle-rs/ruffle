@@ -742,7 +742,7 @@ impl<'gc> Value<'gc> {
             Value::Number(n) => *n,
             Value::Integer(i) => *i as f64,
             Value::String(s) => {
-                let swf_version = activation.context.root_swf.version();
+                let swf_version = (*activation.context.root_swf).version();
                 string_to_f64(s, swf_version, true).unwrap_or_else(|| string_to_int(s, 0, true))
             }
             Value::Object(_) => self
@@ -1385,7 +1385,8 @@ impl<'gc> Value<'gc> {
                     value.construct(activation, arguments)
                 } else {
                     // Error 1115 is only thrown in SWFv9/v10 in interpreter-mode code
-                    if activation.context.root_swf.version() < 11 && activation.is_interpreter() {
+                    if (*activation.context.root_swf).version() < 11 && activation.is_interpreter()
+                    {
                         Err(make_error_1115(activation, "value"))
                     } else {
                         Err(make_error_1007(activation))

@@ -55,7 +55,7 @@ pub struct Avm1Function<'gc> {
     swf_version: u8,
 
     /// A reference to the underlying SWF data.
-    data: SwfSlice,
+    data: SwfSlice<'gc>,
 
     /// The name of the function, if not anonymous.
     name: Option<AvmString<'gc>>,
@@ -87,7 +87,7 @@ impl<'gc> Avm1Function<'gc> {
     pub fn from_swf_function(
         gc_context: &Mutation<'gc>,
         swf_version: u8,
-        actions: SwfSlice,
+        actions: SwfSlice<'gc>,
         swf_function: swf::avm1::types::DefineFunction2,
         scope: Gc<'gc, Scope<'gc>>,
         constant_pool: Gc<'gc, Vec<Value<'gc>>>,
@@ -394,7 +394,7 @@ impl<'gc> Avm1Function<'gc> {
             }
         }
 
-        Ok(frame.run_actions(self.data.clone())?.value())
+        Ok(frame.run_actions(self.data)?.value())
     }
 }
 

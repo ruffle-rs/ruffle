@@ -28,7 +28,6 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::filters::Filter;
 use std::cell::{Cell, RefCell};
-use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -48,7 +47,7 @@ impl fmt::Debug for Avm2Button<'_> {
 pub struct Avm2ButtonData<'gc> {
     base: InteractiveObjectBase<'gc>,
 
-    shared: Gc<'gc, ButtonShared>,
+    shared: Gc<'gc, ButtonShared<'gc>>,
 
     /// The display object tree to render when the button is in the UP state.
     up_state: Lock<Option<DisplayObject<'gc>>>,
@@ -102,7 +101,7 @@ pub struct Avm2ButtonData<'gc> {
 impl<'gc> Avm2Button<'gc> {
     pub fn from_swf_tag(
         button: &swf::Button,
-        source_movie: &SwfSlice,
+        source_movie: SwfSlice<'gc>,
         context: &mut UpdateContext<'gc>,
         construct_blank_states: bool,
     ) -> Self {
@@ -113,7 +112,7 @@ impl<'gc> Avm2Button<'gc> {
                 shared: Gc::new(
                     context.gc(),
                     ButtonShared {
-                        swf: source_movie.movie.clone(),
+                        swf: source_movie.movie,
                         id: button.id,
                         cell: RefCell::new(ButtonSharedMut {
                             records: button.records.clone(),
@@ -146,7 +145,7 @@ impl<'gc> Avm2Button<'gc> {
     }
 
     pub fn empty_button(context: &mut UpdateContext<'gc>) -> Self {
-        let movie = context.root_swf.clone();
+        let movie = *context.root_swf;
         let button_record = swf::Button {
             id: 0,
             is_track_as_menu: false,
@@ -154,7 +153,7 @@ impl<'gc> Avm2Button<'gc> {
             actions: Vec::new(),
         };
 
-        Self::from_swf_tag(&button_record, &movie.into(), context, false)
+        Self::from_swf_tag(&button_record, movie.into(), context, false)
     }
 
     pub fn set_sounds(self, sounds: swf::ButtonSounds) {
@@ -204,8 +203,10 @@ impl<'gc> Avm2Button<'gc> {
             if record.states.contains(swf_state) {
                 match context
                     .library
-                    .library_for_movie_mut(movie.clone())
-                    .instantiate_by_id(record.id, context.gc_context)
+                    .library_for_movie_gc(movie, context.gc())
+                    .unwrap()
+                    .borrow()
+                    .instantiate_by_id(record.id, context.gc_context, movie)
                 {
                     Some(child) => {
                         child.set_matrix(record.matrix.into());
@@ -246,7 +247,7 @@ impl<'gc> Avm2Button<'gc> {
 
             (child, false)
         } else {
-            let state_sprite = MovieClip::new(movie, context.gc());
+            let state_sprite = MovieClip::new(movie, context);
             state_sprite.set_avm2_class(context.gc(), Some(sprite_class));
             state_sprite.set_parent(context, Some(self.into()));
             catchup_display_object_to_frame(context, state_sprite.into());
@@ -423,8 +424,8 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         self.0.shared.id
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
-        self.0.shared.swf.clone()
+    fn movie(self) -> Gc<'gc, SwfMovie> {
+        self.0.shared.swf
     }
 
     fn post_instantiation(
@@ -818,10 +819,12 @@ impl<'gc> TInteractiveObject<'gc> for Avm2Button<'gc> {
 
 /// Data shared between all instances of a button.
 #[derive(Collect, Debug)]
-#[collect(require_static)]
-struct ButtonShared {
-    swf: Arc<SwfMovie>,
+#[collect(no_drop)]
+struct ButtonShared<'gc> {
+    swf: Gc<'gc, SwfMovie>,
+    #[collect(require_static)]
     id: CharacterId,
+    #[collect(require_static)]
     cell: RefCell<ButtonSharedMut>,
 }
 
