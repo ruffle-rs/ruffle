@@ -419,8 +419,8 @@ impl<'gc> MovieLibraries<'gc> {
             .or_insert_with(|| MovieLibrary::new(movie))
     }
 
-    fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
-        self.0.keys().collect()
+    fn known_movies(&self) -> impl Iterator<Item = Arc<SwfMovie>> {
+        self.0.keys()
     }
 }
 
@@ -479,7 +479,7 @@ impl<'gc> Library<'gc> {
         self.movie_libraries.get_or_insert_mut(movie)
     }
 
-    pub fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
+    pub fn known_movies(&self) -> impl Iterator<Item = Arc<SwfMovie>> {
         self.movie_libraries.known_movies()
     }
 
