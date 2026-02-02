@@ -1,0 +1,9 @@
+num_frames = 1
+
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 35
+known_failure = true
+
+[player_options]
+with_renderer = { quality = "high" }
