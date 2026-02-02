@@ -1,0 +1,84 @@
+{}: non-native
+[]: native
+"": non-object: string
+5: non-object: number
+true: non-object: boolean
+null: non-object: null
+undefined: non-object: undefined
+new Array(): native
+new Object(): non-native
+new String(): native
+new Number(): native
+new Number(3): native
+new Boolean(): native
+new Boolean(true): native
+new Button(): native
+timelineButton: native
+new Camera(): non-native
+new Color(): native
+new Color(_root): native
+new ContextMenu(): non-native
+new ContextMenuItem(): non-native
+new ContextMenuItem([...]): non-native
+new Error(): non-native
+new Error("e"): non-native
+new Function(): non-native
+Key: native
+new LoadVars(): native
+new LocalConnection(): native
+Math: native
+new Microphone(): non-native
+Mouse: native
+new MovieClip(): non-native
+movieClip: non-object: movieclip
+timelineSprite: non-object: movieclip
+new MovieClipLoader(): native
+new NetConnection(): native
+new NetStream(): non-native
+new NetStream(new NetConnection()): non-native
+new PrintJob(): native
+Selection: native
+SharedObject: non-object: function
+new Sound(): native
+new Sound(2): native
+new Sound(_root): native
+Stage: non-native
+System: non-native
+new TextField(): native
+textField: native
+timelineEditText: native
+new TextFormat(): native
+new TextSnapshot(): non-native
+new TextSnapshot(_root): native
+new Video(): non-native
+timelineVideo: native
+new XML(): native
+new XML(""): native
+new XML("<a></a>"): native
+new XMLNode(): non-native
+new XMLNode(1): non-native
+new XMLNode(1, "name"): native
+new XMLSocket(): non-native
+new flash.display.BitmapData(): non-object: undefined
+new flash.display.BitmapData(1,1): native
+new flash.filters.BevelFilter(): native
+new flash.filters.BitmapFilter(): non-native
+new flash.filters.BlurFilter(): native
+new flash.filters.ColorMatrixFilter(): native
+new flash.filters.ColorMatrixFilter([...]): native
+new flash.filters.ConvolutionFilter(): native
+new flash.filters.ConvolutionFilter([...]): native
+new flash.filters.DisplacementMapFilter(): native
+new flash.filters.DisplacementMapFilter([...]): native
+new flash.filters.DropShadowFilter(): native
+new flash.filters.GlowFilter(): native
+new flash.filters.GradientBevelFilter(): native
+new flash.filters.GradientGlowFilter(): native
+new flash.geom.ColorTransform(): native
+new flash.geom.Matrix(): non-native
+new flash.geom.Point(): non-native
+new flash.geom.Rectangle(): non-native
+new flash.geom.Rectangle(1,2,3,4): non-native
+new flash.geom.Transform(): non-object: undefined
+new flash.geom.Transform(_root): native
+new flash.text.TextRenderer(): non-object: undefined
