@@ -1,0 +1,6 @@
+Starting tone: tone_alaw_mono.flv
+Measuring...
+PASS
+Starting tone: tone_mulaw_mono.flv
+Measuring...
+PASS
