@@ -117,6 +117,7 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "lineGradientStyle" => method(mc_method!(line_gradient_style); DONT_ENUM | DONT_DELETE | VERSION_8);
     "beginBitmapFill" => method(mc_method!(begin_bitmap_fill); DONT_ENUM | DONT_DELETE | VERSION_8);
     "createTextField" => method(mc_method!(create_text_field); DONT_ENUM | DONT_DELETE);
+    "getTextSnapshot" => method(get_text_snapshot; DONT_ENUM | DONT_DELETE);
     // NOTE: `focusEnabled` is not a built-in property of MovieClip.
     // NOTE: `tabEnabled` is not a built-in property of MovieClip.
     // NOTE: `tabChildren` is not a built-in property of MovieClip.
@@ -1840,4 +1841,14 @@ fn set_tab_index<'gc>(
     };
     this.set_tab_index(value);
     Ok(())
+}
+
+fn get_text_snapshot<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let text_snapshot_class: Value<'gc> = activation.resolve(istr!("TextSnapshot"))?.into();
+    let text_snapshot_class = text_snapshot_class.coerce_to_object_or_bare(activation)?;
+    text_snapshot_class.construct(activation, &[this.into()])
 }

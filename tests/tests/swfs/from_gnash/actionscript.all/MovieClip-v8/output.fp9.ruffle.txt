@@ -15,7 +15,7 @@ PASSED: MovieClip.prototype.hasOwnProperty("lineStyle") [./MovieClip.as:57]
 PASSED: MovieClip.prototype.hasOwnProperty("endFill") [./MovieClip.as:58]
 PASSED: MovieClip.prototype.hasOwnProperty("clear") [./MovieClip.as:59]
 PASSED: MovieClip.prototype.hasOwnProperty("createTextField") [./MovieClip.as:60]
-FAILED: MovieClip.prototype.hasOwnProperty("getTextSnapshot") [./MovieClip.as:61]
+PASSED: MovieClip.prototype.hasOwnProperty("getTextSnapshot") [./MovieClip.as:61]
 PASSED: MovieClip.prototype.hasOwnProperty("blendMode") [./MovieClip.as:62]
 PASSED: MovieClip.prototype.hasOwnProperty("attachBitmap") [./MovieClip.as:63]
 PASSED: MovieClip.prototype.hasOwnProperty("cacheAsBitmap") [./MovieClip.as:64]
@@ -151,7 +151,7 @@ PASSED: typeof(mc.stop) == 'function' [./MovieClip.as:252]
 PASSED: typeof(mc.swapDepths) == 'function' [./MovieClip.as:253]
 PASSED: typeof(mc.startDrag) == 'function' [./MovieClip.as:254]
 PASSED: typeof(mc.stopDrag) == 'function' [./MovieClip.as:255]
-FAILED: expected: 'function' obtained: undefined [./MovieClip.as:256]
+PASSED: typeof(mc.getTextSnapshot) == 'function' [./MovieClip.as:256]
 PASSED: typeof(mc['loadMovie']) == 'function' [./MovieClip.as:260]
 PASSED: typeof(mc['removeMovieClip']) == 'function' [./MovieClip.as:261]
 PASSED: MovieClip.prototype.hasOwnProperty('removeMovieClip') [./MovieClip.as:263]
@@ -1082,6 +1082,6 @@ PASSED: arguments.length == 0 [./MovieClip.as:2207]
 FAILED: expected: 'val1' obtained: undefined [./MovieClip.as:2209]
 PASSED: _root.var2 == 'val2' [./MovieClip.as:2214]
 PASSED: _root.var3 == 'val3\n' [./MovieClip.as:2215]
-#passed: 994
-#failed: 83
+#passed: 996
+#failed: 81
 #total tests run: 1077

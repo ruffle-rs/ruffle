@@ -1747,6 +1747,7 @@ Testing _global.MovieClip
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.MovieClip.prototype
+  getTextSnapshot, own, DONT_ENUM, type=[function]
   createTextField, own, DONT_ENUM, type=[function]
   beginBitmapFill, own, DONT_ENUM, type=[function]
   lineGradientStyle, own, DONT_ENUM, type=[function]
