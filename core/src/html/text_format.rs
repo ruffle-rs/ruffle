@@ -4,14 +4,13 @@ use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
 use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
-use gc_arena::Collect;
+use gc_arena::{Collect, Gc};
 use quick_xml::{Reader, escape::escape, events::Event};
 use ruffle_wstr::utils::swf_is_newline;
 use std::borrow::Cow;
 use std::cmp::{Ordering, min};
 use std::collections::VecDeque;
 use std::fmt::Write;
-use std::sync::Arc;
 
 use super::StyleSheet;
 
@@ -148,14 +147,18 @@ impl TextFormat {
     ///
     /// This requires an `UpdateContext` as we will need to retrieve some font
     /// information from the actually-referenced font.
-    pub fn from_swf_tag(
+    pub fn from_swf_tag<'gc>(
         et: swf::EditText<'_>,
-        swf_movie: Arc<SwfMovie>,
-        context: &mut UpdateContext<'_>,
+        swf_movie: Gc<'gc, SwfMovie>,
+        context: &mut UpdateContext<'gc>,
     ) -> Self {
         let encoding = swf_movie.encoding();
         let swf_version = swf_movie.version();
-        let movie_library = context.library.library_for_movie_mut(swf_movie);
+        let movie_library = context
+            .library
+            .library_for_movie_gc(swf_movie, context.gc())
+            .unwrap();
+        let movie_library = movie_library.borrow();
         let font = et.font_id().and_then(|fid| movie_library.get_font(fid));
         let font_class = et
             .font_class()

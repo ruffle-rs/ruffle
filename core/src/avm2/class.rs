@@ -16,12 +16,14 @@ use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::context::UpdateContext;
+use crate::library::MovieLibrary;
+use crate::prelude::CharacterId;
 use crate::string::{AvmString, WString};
 use bitflags::bitflags;
 use fnv::FnvHashMap;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{OnceLock, RefLock};
-use gc_arena::{Collect, Gc, Lock, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Lock, Mutation};
 use swf::avm2::types::Trait as AbcTrait;
 
 use std::cell::{Cell, Ref};
@@ -86,6 +88,15 @@ impl fmt::Debug for Allocator {
             .field(&"<native code>".to_string())
             .finish()
     }
+}
+
+/// Link from an AVM2 class to its SymbolClass-registered library character.
+/// Uses `GcWeak` so this does NOT keep the library alive.
+#[derive(Copy, Clone, Collect)]
+#[collect(no_drop)]
+struct SymbolClassLink<'gc> {
+    character_id: CharacterId,
+    library: GcWeak<'gc, RefLock<MovieLibrary<'gc>>>,
 }
 
 #[derive(Copy, Clone, Collect)]
@@ -175,6 +186,10 @@ pub struct ClassData<'gc> {
     #[collect(require_static)]
     builtin_type: Cell<Option<BuiltinType>>,
 
+    /// If this class was registered via SymbolClass, this links to the library
+    /// character. Uses GcWeak so the class does NOT keep the library alive.
+    symbol_class: Lock<Option<SymbolClassLink<'gc>>>,
+
     cell: RefLock<ClassDataMut<'gc>>,
 }
 
@@ -232,6 +247,7 @@ impl<'gc> ClassData<'gc> {
             custom_constructor: None,
             linked_class: Lock::new(ClassLink::Unlinked),
             builtin_type: Cell::new(None),
+            symbol_class: Lock::new(None),
             cell: RefLock::new(ClassDataMut {
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
@@ -243,6 +259,47 @@ impl<'gc> ClassData<'gc> {
 impl<'gc> Class<'gc> {
     pub fn as_ptr(self) -> *const () {
         Gc::as_ptr(self.0).cast()
+    }
+
+    /// Set the SymbolClass link for this class.
+    /// If the class is already linked, the first registration wins (matches Flash behavior).
+    pub fn set_symbol_class(
+        self,
+        mc: &Mutation<'gc>,
+        character_id: CharacterId,
+        library: Gc<'gc, RefLock<MovieLibrary<'gc>>>,
+    ) {
+        if let Some(existing) = self.0.symbol_class.get() {
+            // If the old library is still alive, keep the first registration (matches Flash).
+            if existing.library.upgrade(mc).is_some() {
+                if existing.character_id != character_id {
+                    tracing::warn!(
+                        "Tried to overwrite class {:?} id={:?} with symbol id={:?}",
+                        self.name(),
+                        existing.character_id,
+                        character_id,
+                    );
+                }
+                return;
+            }
+            // Old library was collected — replace with the new one.
+        }
+        let cell = unlock!(Gc::write(mc, self.0), ClassData, symbol_class);
+        cell.set(Some(SymbolClassLink {
+            character_id,
+            library: Gc::downgrade(library),
+        }));
+    }
+
+    /// Look up the SymbolClass link for this class.
+    /// Returns `None` if the class has no symbol link or the library was collected.
+    pub fn symbol_class(
+        self,
+        mc: &Mutation<'gc>,
+    ) -> Option<(CharacterId, Gc<'gc, RefLock<MovieLibrary<'gc>>>)> {
+        let link = self.0.symbol_class.get()?;
+        let library = link.library.upgrade(mc)?;
+        Some((link.character_id, library))
     }
 
     /// Create an unlinked class from its name, superclass, and traits.

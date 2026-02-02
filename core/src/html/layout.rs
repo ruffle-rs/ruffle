@@ -8,19 +8,18 @@ use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::html::wrap_line;
 use crate::string::WStr;
 use crate::tag_utils::SwfMovie;
-use gc_arena::Collect;
+use gc_arena::{Collect, Gc};
 use std::cmp::{Ordering, max, min};
 use std::fmt::{Debug, Formatter};
 use std::mem;
 use std::ops::Range;
 use std::slice::Iter;
-use std::sync::Arc;
 use swf::{Rectangle, Twips};
 
 /// Contains information relating to the current layout operation.
 pub struct LayoutContext<'a, 'gc> {
     /// The movie this layout context is pulling fonts from.
-    movie: Arc<SwfMovie>,
+    movie: Gc<'gc, SwfMovie>,
 
     /// Whether user input is allowed.
     is_input: bool,
@@ -103,7 +102,7 @@ pub struct LayoutContext<'a, 'gc> {
 
 impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn new(
-        movie: Arc<SwfMovie>,
+        movie: Gc<'gc, SwfMovie>,
         max_bounds: Twips,
         text: &'a WStr,
         is_input: bool,
@@ -547,7 +546,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     self.font_type,
                     span.style.bold,
                     span.style.italic,
-                    Some(self.movie.clone()),
+                    Some(self.movie),
+                    context.gc(),
                 )
                 .filter(|f| f.has_glyphs())
         {
@@ -802,7 +802,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 pub fn lower_from_text_spans<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
-    movie: Arc<SwfMovie>,
+    movie: Gc<'gc, SwfMovie>,
     requested_width: Option<Twips>,
     is_input: bool,
     is_word_wrap: bool,
@@ -815,7 +815,7 @@ pub fn lower_from_text_spans<'gc>(
         let layout = lower_from_text_spans_known_width(
             fs,
             context,
-            movie.clone(),
+            movie,
             Twips::ZERO,
             is_input,
             false,
@@ -842,7 +842,7 @@ pub fn lower_from_text_spans<'gc>(
 fn lower_from_text_spans_known_width<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
-    movie: Arc<SwfMovie>,
+    movie: Gc<'gc, SwfMovie>,
     bounds: Twips,
     is_input: bool,
     is_word_wrap: bool,

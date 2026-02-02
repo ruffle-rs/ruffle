@@ -341,7 +341,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         &mut self,
         name: &str,
         active_clip: DisplayObject<'gc>,
-        code: SwfSlice,
+        code: SwfSlice<'gc>,
     ) -> Result<ReturnType<'gc>, Error<'gc>> {
         let clip_obj = active_clip.object1_or_bare(self.gc());
         let child_scope = Gc::new(
@@ -405,7 +405,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         function(&mut activation)
     }
 
-    pub fn run_actions(&mut self, code: SwfSlice) -> Result<ReturnType<'gc>, Error<'gc>> {
+    pub fn run_actions(&mut self, code: SwfSlice<'gc>) -> Result<ReturnType<'gc>, Error<'gc>> {
         let mut read = Reader::new(&code.movie.data()[code.start..], self.swf_version());
 
         loop {
@@ -421,7 +421,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// Run a single action from a given action reader.
     fn do_action<'b>(
         &mut self,
-        data: &'b SwfSlice,
+        data: &'b SwfSlice<'gc>,
         reader: &mut Reader<'b>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         *self.context.actions_since_timeout_check += 1;
@@ -850,7 +850,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_define_function(
         &mut self,
         action: DefineFunction2,
-        parent_data: &SwfSlice,
+        parent_data: &SwfSlice<'gc>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let swf_version = self.swf_version();
         let func_data = parent_data.to_unbounded_subslice(action.actions);
@@ -2168,7 +2168,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_try(
         &mut self,
         action: &Try,
-        parent_data: &SwfSlice,
+        parent_data: &SwfSlice<'gc>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let mut result = self.run_actions(parent_data.to_unbounded_subslice(action.try_body));
 
@@ -2296,7 +2296,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn action_with(
         &mut self,
         action: With,
-        parent_data: &SwfSlice,
+        parent_data: &SwfSlice<'gc>,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let code = parent_data.to_unbounded_subslice(action.actions);
         let value = self.context.avm1.pop();
@@ -2799,7 +2799,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             level
         } else {
             let level: DisplayObject<'_> =
-                MovieClip::new(self.base_clip().movie(), self.gc()).into();
+                MovieClip::new(self.base_clip().movie(), self.context).into();
 
             level.set_depth(level_id);
             level.set_default_root_name(self.context);
