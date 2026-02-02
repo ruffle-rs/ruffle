@@ -1,0 +1,28 @@
+// new Color()
+false
+true
+// new Color(_root)
+false
+true
+// new Date(), new Color()
+false
+false
+false
+// {}, new Color(_root)
+false
+undefined
+false
+true
+_level0
+// new Color(), new Color(_root)
+true
+undefined
+false
+true
+undefined
+
+// Check how methods work on a non-native Color
+0
+[object Object]
+42
+24
