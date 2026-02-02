@@ -1,4 +1,14 @@
 function getNativeStatus(obj) {
+    // Note: the following check works only for objects.
+    // It also doesn't work for the following objects for some reason
+    // (to be investigated):
+    //  * Color,
+    //  * Key,
+    //  * Math,
+    //  * Mouse,
+    //  * NetConnection,
+    //  * Selection.
+
     if (typeof obj !== "object") {
         return "non-object: " + typeof obj;
     }
@@ -10,12 +20,18 @@ function getNativeStatus(obj) {
             __proto__: Date.prototype,
             __constructor__: Date
         };
+        if ((typeof this.getDate) !== "function") {
+            trace("ERROR");
+        }
         if ((typeof this.getDate()) !== "undefined") {
             trace("ERROR");
         }
         super();
     };
     obj.__initializeNative();
+    if ((typeof obj.getDate) !== "function") {
+        trace("ERROR");
+    }
     if ((typeof obj.getDate()) !== "undefined") {
         return "non-native";
     } else {
@@ -46,30 +62,23 @@ check("new Boolean(true)", new Boolean(true));
 check("new Button()", new Button());
 check("timelineButton", timelineButton);
 check("new Camera()", new Camera());
-check("new Color()", new Color());
-check("new Color(_root)", new Color(_root));
 check("new ContextMenu()", new ContextMenu());
 check("new ContextMenuItem()", new ContextMenuItem());
 check("new ContextMenuItem([...])", new ContextMenuItem("name", function(){}));
 check("new Error()", new Error());
 check("new Error(\"e\")", new Error("e"));
 check("new Function()", new Function());
-check("Key", Key);
 check("new LoadVars()", new LoadVars());
 check("new LocalConnection()", new LocalConnection());
-check("Math", Math);
 check("new Microphone()", new Microphone());
-check("Mouse", Mouse);
 check("new MovieClip()", new MovieClip());
 createEmptyMovieClip("movieClip", 10);
 check("movieClip", movieClip);
 check("timelineSprite", timelineSprite);
 check("new MovieClipLoader()", new MovieClipLoader());
-check("new NetConnection()", new NetConnection());
 check("new NetStream()", new NetStream());
 check("new NetStream(new NetConnection())", new NetStream(new NetConnection()));
 check("new PrintJob()", new PrintJob());
-check("Selection", Selection);
 check("SharedObject", SharedObject);
 check("new Sound()", new Sound());
 check("new Sound(2)", new Sound(2));
@@ -82,7 +91,11 @@ check("textField", textField);
 check("timelineEditText", timelineEditText);
 check("new TextFormat()", new TextFormat());
 check("new TextSnapshot()", new TextSnapshot());
+check("new TextSnapshot(3)", new TextSnapshot(3));
+check("new TextSnapshot(timelineButton)", new TextSnapshot(timelineButton));
 check("new TextSnapshot(_root)", new TextSnapshot(_root));
+check("new TextSnapshot(_root, 4)", new TextSnapshot(_root, 4));
+check("new TextSnapshot(_root, _root)", new TextSnapshot(_root, _root));
 check("new Video()", new Video());
 check("timelineVideo", timelineVideo);
 check("new XML()", new XML());
@@ -91,6 +104,9 @@ check("new XML(\"<a></a>\")", new XML("<a></a>"));
 check("new XMLNode()", new XMLNode());
 check("new XMLNode(1)", new XMLNode());
 check("new XMLNode(1, \"name\")", new XMLNode(1, "name"));
+check("new XMLNode(1, \"name\", 1)", new XMLNode(1, "name", 1));
+check("new XMLNode(1, \"name\", true)", new XMLNode(1, "name", true));
+check("new XMLNode(1, \"name\", 1, 2)", new XMLNode(1, "name", 1, 2));
 check("new XMLSocket()", new XMLSocket());
 
 check("new flash.display.BitmapData()", new flash.display.BitmapData());

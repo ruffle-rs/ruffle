@@ -15,29 +15,22 @@ new Boolean(true): native
 new Button(): non-native
 timelineButton: native
 new Camera(): non-native
-new Color(): non-native
-new Color(_root): non-native
 new ContextMenu(): non-native
 new ContextMenuItem(): non-native
 new ContextMenuItem([...]): non-native
 new Error(): non-native
 new Error("e"): non-native
 new Function(): non-native
-Key: non-native
 new LoadVars(): non-native
 new LocalConnection(): native
-Math: non-native
 new Microphone(): non-native
-Mouse: non-native
 new MovieClip(): non-native
 movieClip: non-object: movieclip
 timelineSprite: non-object: movieclip
 new MovieClipLoader(): non-native
-new NetConnection(): native
 new NetStream(): native
 new NetStream(new NetConnection()): native
 new PrintJob(): non-native
-Selection: non-native
 SharedObject: non-object: function
 new Sound(): native
 new Sound(2): native
@@ -49,7 +42,11 @@ textField: native
 timelineEditText: native
 new TextFormat(): native
 new TextSnapshot(): non-native
+new TextSnapshot(3): non-native
+new TextSnapshot(timelineButton): non-native
 new TextSnapshot(_root): non-native
+new TextSnapshot(_root, 4): non-native
+new TextSnapshot(_root, _root): non-native
 new Video(): non-native
 timelineVideo: native
 new XML(): native
@@ -58,6 +55,9 @@ new XML("<a></a>"): native
 new XMLNode(): native
 new XMLNode(1): native
 new XMLNode(1, "name"): native
+new XMLNode(1, "name", 1): native
+new XMLNode(1, "name", true): native
+new XMLNode(1, "name", 1, 2): native
 new XMLSocket(): native
 new flash.display.BitmapData(): non-object: undefined
 new flash.display.BitmapData(1,1): native
