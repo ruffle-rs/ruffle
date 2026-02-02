@@ -74,26 +74,30 @@ impl<'gc> Text<'gc> {
         self.invalidate_cached_bitmap();
     }
 
-    pub fn text(self, context: &mut UpdateContext<'gc>) -> WString {
+    pub fn text(self, context: &mut UpdateContext<'gc>) -> Option<WString> {
         let mut ret = WString::new();
 
+        let mut font_id = None;
+
         for block in &self.0.shared.get().text_blocks {
-            let font_id = block.font_id.unwrap_or_default();
-            if let Some(font) = context
+            if block.font_id.is_some() {
+                font_id = block.font_id;
+            }
+
+            let font = context
                 .library
                 .library_for_movie(self.movie())
                 .unwrap()
-                .get_font(font_id)
-            {
-                for glyph in &block.glyphs {
-                    if let Some(g) = font.get_glyph(glyph.index as usize) {
-                        ret.push_char(g.character());
-                    }
+                .get_font(font_id?)?;
+
+            for glyph in &block.glyphs {
+                if let Some(g) = font.get_glyph(glyph.index as usize) {
+                    ret.push_char(g.character());
                 }
             }
         }
 
-        ret
+        if ret.is_empty() { None } else { Some(ret) }
     }
 }
 
