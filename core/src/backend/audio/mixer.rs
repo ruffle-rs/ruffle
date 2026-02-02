@@ -1,4 +1,6 @@
-use super::decoders::{self, AdpcmDecoder, Decoder, PcmDecoder, SeekableDecoder};
+use super::decoders::{
+    self, AdpcmDecoder, Decoder, G711ALawDecoder, G711MuLawDecoder, PcmDecoder, SeekableDecoder,
+};
 use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
 use crate::tag_utils::SwfSlice;
@@ -327,6 +329,8 @@ impl AudioMixer {
                 data,
                 format.sample_rate.into(),
             )),
+            AudioCompression::G711ALawPCM => Box::new(G711ALawDecoder::new(data)),
+            AudioCompression::G711MuLawPCM => Box::new(G711MuLawDecoder::new(data)),
             _ => return Err(decoders::Error::UnhandledCompression(format.compression)),
         };
         Ok(decoder)
