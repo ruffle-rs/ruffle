@@ -1163,6 +1163,7 @@ Testing _global.MovieClip
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.MovieClip.prototype
+  getTextSnapshot, DONT_DELETE
   createTextField, DONT_DELETE
   beginBitmapFill, DONT_DELETE
   lineGradientStyle, DONT_DELETE

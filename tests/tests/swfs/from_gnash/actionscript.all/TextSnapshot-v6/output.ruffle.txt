@@ -40,7 +40,7 @@ FAILED: expected: 0 obtained:  [./TextSnapshot.as:87]
 PASSED: gh.toString() == "[object Object]" [./TextSnapshot.as:90]
 PASSED: gh.getCount.toString() == "[type Function]" [./TextSnapshot.as:91]
 PASSED: gh.getCount() == undefined [./TextSnapshot.as:92]
-FAILED: ts instanceof TextSnapshot [./TextSnapshot.as:95]
+PASSED: ts instanceof TextSnapshot [./TextSnapshot.as:95]
 PASSED: !ts.hasOwnProperty('findText') [./TextSnapshot.as:96]
 PASSED: !ts.hasOwnProperty('getCount') [./TextSnapshot.as:97]
 PASSED: !ts.hasOwnProperty('getSelected') [./TextSnapshot.as:98]
@@ -168,6 +168,6 @@ PASSED: typeof(ts.setSelected(0, 10, true)) == "undefined" [./TextSnapshot.as:24
 PASSED: typeof(ts.setSelected(0, 10, "a", 11)) == "undefined" [./TextSnapshot.as:243]
 PASSED: typeof(ts.setSelected(0, 10, 10, "hello")) == "undefined" [./TextSnapshot.as:244]
 PASSED: typeof(ts.setSelected(0, 10, true, [3, 4])) == "undefined" [./TextSnapshot.as:245]
-#passed: 112
-#failed: 55
+#passed: 113
+#failed: 54
 #total tests run: 167

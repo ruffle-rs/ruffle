@@ -15,7 +15,7 @@ PASSED: MovieClip.prototype.hasOwnProperty("lineStyle") [./MovieClip.as:57]
 PASSED: MovieClip.prototype.hasOwnProperty("endFill") [./MovieClip.as:58]
 PASSED: MovieClip.prototype.hasOwnProperty("clear") [./MovieClip.as:59]
 PASSED: MovieClip.prototype.hasOwnProperty("createTextField") [./MovieClip.as:60]
-FAILED: MovieClip.prototype.hasOwnProperty("getTextSnapshot") [./MovieClip.as:61]
+PASSED: MovieClip.prototype.hasOwnProperty("getTextSnapshot") [./MovieClip.as:61]
 PASSED: MovieClip.prototype.hasOwnProperty("blendMode") [./MovieClip.as:62]
 PASSED: MovieClip.prototype.hasOwnProperty("attachBitmap") [./MovieClip.as:63]
 PASSED: MovieClip.prototype.hasOwnProperty("cacheAsBitmap") [./MovieClip.as:64]
@@ -359,6 +359,6 @@ PASSED: arguments.length == 0 [./MovieClip.as:2207]
 FAILED: expected: 'undefined' obtained: string [./MovieClip.as:2212]
 PASSED: _root.var2 == 'val2' [./MovieClip.as:2214]
 PASSED: _root.var3 == 'val3\n' [./MovieClip.as:2215]
-#passed: 313
-#failed: 42
+#passed: 314
+#failed: 41
 #total tests run: 355

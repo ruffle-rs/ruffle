@@ -284,6 +284,7 @@ define_common_strings! {
     str_target: b"target",
     str_textFieldHeight: b"textFieldHeight",
     str_textFieldWidth: b"textFieldWidth",
+    str_TextSnapshot: b"TextSnapshot",
     str_toJSON: b"toJSON",
     str_toString: b"toString",
     str_toXMLString: b"toXMLString",
