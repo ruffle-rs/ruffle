@@ -7,7 +7,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
-use crate::avm1::{Object, Value};
+use crate::avm1::{NativeObject, Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
 
@@ -37,13 +37,18 @@ fn constructor<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // The target display object that this color will modify.
     let target = args.get(0).cloned().unwrap_or(Value::Undefined);
-    // Set undocumented `target` property
-    this.define_value(
-        activation.gc(),
-        istr!("target"),
-        target,
-        Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
-    );
+
+    if matches!(this.native(), NativeObject::Color(()) | NativeObject::None) {
+        this.set_native(activation.gc(), NativeObject::Color(()));
+        // Set undocumented `target` property
+        this.define_value(
+            activation.gc(),
+            istr!("target"),
+            target,
+            Attribute::DONT_DELETE | Attribute::READ_ONLY | Attribute::DONT_ENUM,
+        );
+    }
+
     Ok(Value::Undefined)
 }
 
