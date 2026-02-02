@@ -1,0 +1,112 @@
+/////// Within /
+this.getTextSnapshot=[type Function] (function)
+_root.getTextSnapshot=[type Function] (function)
+_root.child.getTextSnapshot=[type Function] (function)
+TextSnapshot instantiated:
+  a=_level0
+  b=undefined
+  c=undefined
+  typeof a=movieclip
+  typeof b=undefined
+  typeof c=undefined
+this.getTextSnapshot()=[object Object] (object)
+is _global.TextSnapshot: true
+is oldTextSnapshot: false
+TextSnapshot instantiated:
+  a=_level0
+  b=undefined
+  c=undefined
+  typeof a=movieclip
+  typeof b=undefined
+  typeof c=undefined
+_root.getTextSnapshot()=[object Object] (object)
+is _global.TextSnapshot: true
+is oldTextSnapshot: false
+TextSnapshot instantiated:
+  a=_level0.child
+  b=undefined
+  c=undefined
+  typeof a=movieclip
+  typeof b=undefined
+  typeof c=undefined
+_root.child.getTextSnapshot()=[object Object] (object)
+is _global.TextSnapshot: true
+is oldTextSnapshot: false
+clip1.getTextSnapshot=[type Function] (function)
+TextSnapshot instantiated:
+  a=_level0.clip1
+  b=undefined
+  c=undefined
+  typeof a=movieclip
+  typeof b=undefined
+  typeof c=undefined
+clip1.getTextSnapshot()=[object Object] (object)
+is _global.TextSnapshot: true
+is oldTextSnapshot: false
+clip2.getTextSnapshot=[type Function] (function)
+TextSnapshot instantiated:
+  a=_level0.clip2
+  b=undefined
+  c=undefined
+  typeof a=movieclip
+  typeof b=undefined
+  typeof c=undefined
+clip2.getTextSnapshot()=[object Object] (object)
+is _global.TextSnapshot: true
+is oldTextSnapshot: false
+/////// Within /child
+this.getTextSnapshot=[type Function] (function)
+_root.getTextSnapshot=[type Function] (function)
+_root.child.getTextSnapshot=[type Function] (function)
+TextSnapshot instantiated:
+  a=_level0.child
+  b=undefined
+  c=undefined
+  typeof a=movieclip
+  typeof b=undefined
+  typeof c=undefined
+this.getTextSnapshot()=[object Object] (object)
+is _global.TextSnapshot: true
+is oldTextSnapshot: false
+TextSnapshot instantiated:
+  a=_level0
+  b=undefined
+  c=undefined
+  typeof a=movieclip
+  typeof b=undefined
+  typeof c=undefined
+_root.getTextSnapshot()=[object Object] (object)
+is _global.TextSnapshot: true
+is oldTextSnapshot: false
+TextSnapshot instantiated:
+  a=_level0.child
+  b=undefined
+  c=undefined
+  typeof a=movieclip
+  typeof b=undefined
+  typeof c=undefined
+_root.child.getTextSnapshot()=[object Object] (object)
+is _global.TextSnapshot: true
+is oldTextSnapshot: false
+clip1.getTextSnapshot=[type Function] (function)
+TextSnapshot instantiated:
+  a=_level0.child.clip1
+  b=undefined
+  c=undefined
+  typeof a=movieclip
+  typeof b=undefined
+  typeof c=undefined
+clip1.getTextSnapshot()=[object Object] (object)
+is _global.TextSnapshot: true
+is oldTextSnapshot: false
+clip2.getTextSnapshot=[type Function] (function)
+TextSnapshot instantiated:
+  a=_level0.clip2
+  b=undefined
+  c=undefined
+  typeof a=movieclip
+  typeof b=undefined
+  typeof c=undefined
+clip2.getTextSnapshot()=[object Object] (object)
+is _global.TextSnapshot: true
+is oldTextSnapshot: false
