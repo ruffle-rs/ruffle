@@ -197,7 +197,7 @@ impl Slice {
         let new_start = self.start + start;
         let new_end = self.start + end;
 
-        if new_start <= new_end && new_end < self.end {
+        if new_start <= new_end && new_end <= self.end {
             if let Some(result) = self.buf.get(new_start..new_end) {
                 result
             } else {
