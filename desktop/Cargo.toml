@@ -57,7 +57,7 @@ walkdir.workspace = true
 async-task = "4.7.1"
 
 [target.'cfg(target_os = "linux")'.dependencies]
-ashpd = "0.11.0"
+ashpd = "0.12.1"
 
 [target.'cfg(windows)'.dependencies]
 windows-sys = { version = "0.61.2", features = ["Win32_System_Console", "Win32_Storage_FileSystem"] }
