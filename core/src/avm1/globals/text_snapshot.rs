@@ -159,11 +159,25 @@ fn set_select_color<'gc>(
 
 fn find_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "TextSnapshot", "findText");
-    Ok(Value::Undefined)
+    let NativeObject::TextSnapshot(object) = this.native() else {
+        return Ok(Value::Undefined);
+    };
+
+    let [start, text, case_sensitive] = args else {
+        return Ok(Value::Undefined);
+    };
+
+    let start = start.coerce_to_i32(activation)?;
+    let text = text.coerce_to_string(activation)?;
+    let case_sensitive = case_sensitive.as_bool(activation.swf_version());
+
+    let index = object
+        .text_snapshot()
+        .find_text(start, text.as_wstr(), case_sensitive);
+    Ok(index.into())
 }
 
 fn get_text_run_info<'gc>(

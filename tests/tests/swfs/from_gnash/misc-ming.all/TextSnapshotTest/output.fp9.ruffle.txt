@@ -13,15 +13,15 @@ Zweites Textfeld
 Some more static text here... abcdefgh' [TextSnapshotTest.c:144]
 PASSED: ts.getText(0, 14, true)  ==  'First text
 Zwei' [TextSnapshotTest.c:146]
-FAILED: expected: -1 obtained: undefined [TextSnapshotTest.c:148] 
-FAILED: expected: 0 obtained: undefined [TextSnapshotTest.c:149] 
-FAILED: expected: 22 obtained: undefined [TextSnapshotTest.c:150] 
-FAILED: expected: 2 obtained: undefined [TextSnapshotTest.c:151] 
-FAILED: expected: -1 obtained: undefined [TextSnapshotTest.c:152] 
-FAILED: expected: -1 obtained: undefined [TextSnapshotTest.c:153] 
-FAILED: expected: -1 obtained: undefined [TextSnapshotTest.c:154] 
-FAILED: expected: -1 obtained: undefined [TextSnapshotTest.c:155] 
-FAILED: expected: -1 obtained: undefined [TextSnapshotTest.c:156] 
+PASSED: ts.findText(0, '', false)  ==  -1 [TextSnapshotTest.c:148]
+PASSED: ts.findText(0, 'f', false)  ==  0 [TextSnapshotTest.c:149]
+PASSED: ts.findText(0, 'f', true)  ==  22 [TextSnapshotTest.c:150]
+PASSED: ts.findText(1, 'Rst', false)  ==  2 [TextSnapshotTest.c:151]
+PASSED: ts.findText(3, 'RSt', false)  ==  -1 [TextSnapshotTest.c:152]
+PASSED: ts.findText(100, 'h', false)  ==  -1 [TextSnapshotTest.c:153]
+PASSED: ts.findText(64, 'h', false)  ==  -1 [TextSnapshotTest.c:154]
+PASSED: ts.findText(-5, 'Zwei', true)  ==  -1 [TextSnapshotTest.c:155]
+PASSED: ts.findText(-5, 'gh', true)  ==  -1 [TextSnapshotTest.c:156]
 FAILED: expected: ' textZweites TextfeldSome' obtained: undefined [TextSnapshotTest.c:159] 
 FAILED: expected: ' text
 Zweites Textfeld
@@ -127,6 +127,6 @@ PASSED: typeof(ts)  ==  'undefined' [TextSnapshotTest.c:295]
 PASSED: typeof(ts)  ==  'object' [TextSnapshotTest.c:298]
 PASSED: typeof(ts)  ==  'object' [TextSnapshotTest.c:303]
 PASSED: typeof(ts)  ==  'object' [TextSnapshotTest.c:306]
-#passed: 28
-#failed: 96
+#passed: 37
+#failed: 87
 #total tests run: 124
