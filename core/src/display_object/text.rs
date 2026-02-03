@@ -13,6 +13,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::transform::Transform;
 use ruffle_wstr::{WStr, WString};
+use std::borrow::Cow;
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -402,5 +403,41 @@ impl<'gc> TextSnapshot<'gc> {
         }
 
         ret
+    }
+
+    pub fn find_text(self, from: i32, text: &WStr, case_sensitive: bool) -> i32 {
+        if text.is_empty() {
+            return -1;
+        }
+
+        let Ok(from) = usize::try_from(from) else {
+            return -1;
+        };
+        let count = self.count();
+
+        let chunks = self
+            .0
+            .chunks
+            .iter()
+            .filter(|c| c.global_index + c.text.len() > from)
+            .map(|c| c.sub_string(from, count));
+
+        let mut full_text = WString::new();
+        for chunk in chunks {
+            full_text.push_str(chunk);
+        }
+
+        let text = if !case_sensitive {
+            full_text.make_ascii_lowercase();
+            Cow::Owned(text.to_ascii_lowercase())
+        } else {
+            Cow::Borrowed(text)
+        };
+
+        let Some(index) = full_text.find(text.as_ref()) else {
+            return -1;
+        };
+
+        i32::try_from(from + index).unwrap_or(-1)
     }
 }
