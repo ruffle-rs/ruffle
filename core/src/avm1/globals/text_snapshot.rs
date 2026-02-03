@@ -1,6 +1,7 @@
 //! TextSnapshot object
 
 use gc_arena::Collect;
+use ruffle_common::avm_string::AvmString;
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
@@ -106,11 +107,27 @@ fn get_selected<'gc>(
 
 fn get_text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "TextSnapshot", "getText");
-    Ok(Value::Undefined)
+    let NativeObject::TextSnapshot(object) = this.native() else {
+        return Ok(Value::Undefined);
+    };
+
+    let [from, to, ..] = args else {
+        return Ok(Value::Undefined);
+    };
+
+    if args.len() > 3 {
+        return Ok(Value::Undefined);
+    }
+
+    let from = from.coerce_to_i32(activation)?;
+    let to = to.coerce_to_i32(activation)?;
+    let include_newlines = args.get_bool(activation, 2);
+
+    let text = object.text_snapshot().get_text(from, to, include_newlines);
+    Ok(AvmString::new(activation.gc(), text).into())
 }
 
 fn get_selected_text<'gc>(
