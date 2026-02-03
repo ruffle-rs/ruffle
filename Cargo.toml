@@ -54,14 +54,14 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 naga = { version = "27.0.3", features = ["wgsl-out"] }
 wgpu = "27.0.1"
 egui = "0.33.3"
-clap = { version = "4.5.54", features = ["derive"] }
+clap = { version = "4.5.56", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
 gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "08e08414249d5914dfc3b402d7eadc133e00ce56" }
 slotmap = "1.1.1"
 async-channel = "2.5.0"
 bitflags = "2.10.0"
-bytemuck = "1.24.0"
+bytemuck = "1.25.0"
 chrono = { version = "0.4.43", default-features = false }
 enum-map = "2.7.3"
 flate2 = "1.1.8"
