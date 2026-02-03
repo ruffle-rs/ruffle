@@ -296,8 +296,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Option<XmlListObject<'gc>> {
+        let multiname = handle_input_multiname(multiname.clone(), activation);
         let mut descendants = Vec::new();
-        self.0.node.get().descendants(multiname, &mut descendants);
+
+        self.0.node.get().descendants(&multiname, &mut descendants);
 
         let list = XmlListObject::new_with_children(activation, descendants, None, None);
         // NOTE: avmplus does not set a target property/object here, but if there was at least one child
@@ -688,7 +690,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     }
 }
 
-fn handle_input_multiname<'gc>(
+pub(super) fn handle_input_multiname<'gc>(
     name: Multiname<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Multiname<'gc> {

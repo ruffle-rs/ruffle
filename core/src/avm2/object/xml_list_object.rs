@@ -21,6 +21,7 @@ use ruffle_wstr::WString;
 use std::cell::{Cell, Ref, RefMut};
 use std::fmt::{self, Debug};
 
+use super::xml_object::handle_input_multiname;
 use super::{ClassObject, XmlObject};
 
 /// A class instance allocator that allocates XMLList objects.
@@ -485,9 +486,11 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Option<XmlListObject<'gc>> {
+        let multiname = handle_input_multiname(multiname.clone(), activation);
         let mut descendants = Vec::new();
+
         for child in self.0.children.borrow().iter() {
-            child.node().descendants(multiname, &mut descendants);
+            child.node().descendants(&multiname, &mut descendants);
         }
 
         // NOTE: The way avmplus implemented this means we do not need to set target_dirty flag.
