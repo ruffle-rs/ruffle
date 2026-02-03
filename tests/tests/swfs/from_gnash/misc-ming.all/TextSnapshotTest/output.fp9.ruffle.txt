@@ -1,18 +1,18 @@
 PASSED: ts instanceof TextSnapshot [TextSnapshotTest.c:128]
 PASSED: ts.getCount()  ==  64 [TextSnapshotTest.c:129]
-FAILED: expected: 'F' obtained: undefined [TextSnapshotTest.c:131] 
-FAILED: expected: 's' obtained: undefined [TextSnapshotTest.c:132] 
-FAILED: expected: 'First' obtained: undefined [TextSnapshotTest.c:133] 
-FAILED: expected: 'Z' obtained: undefined [TextSnapshotTest.c:134] 
-FAILED: expected: 'First textZweites TextfeldSome more static text here... abcdefgh' obtained: undefined [TextSnapshotTest.c:136] 
-FAILED: expected: 'string' obtained: undefined [TextSnapshotTest.c:138] 
-FAILED: expected: 'h' obtained: undefined [TextSnapshotTest.c:139] 
-FAILED: expected: 1 obtained: undefined [TextSnapshotTest.c:140] 
-FAILED: expected: 'First text
+PASSED: ts.getText(0, 1)  ==  'F' [TextSnapshotTest.c:131]
+PASSED: ts.getText(3, 3)  ==  's' [TextSnapshotTest.c:132]
+PASSED: ts.getText(-5, 5)  ==  'First' [TextSnapshotTest.c:133]
+PASSED: ts.getText(10, 6)  ==  'Z' [TextSnapshotTest.c:134]
+PASSED: ts.getText(0, 100)  ==  'First textZweites TextfeldSome more static text here... abcdefgh' [TextSnapshotTest.c:136]
+PASSED: typeof(ss)  ==  'string' [TextSnapshotTest.c:138]
+PASSED: ss  ==  'h' [TextSnapshotTest.c:139]
+PASSED: ss.length  ==  1 [TextSnapshotTest.c:140]
+PASSED: ts.getText(0, 100, true)  ==  'First text
 Zweites Textfeld
-Some more static text here... abcdefgh' obtained: undefined [TextSnapshotTest.c:144] 
-FAILED: expected: 'First text
-Zwei' obtained: undefined [TextSnapshotTest.c:146] 
+Some more static text here... abcdefgh' [TextSnapshotTest.c:144]
+PASSED: ts.getText(0, 14, true)  ==  'First text
+Zwei' [TextSnapshotTest.c:146]
 FAILED: expected: -1 obtained: undefined [TextSnapshotTest.c:148] 
 FAILED: expected: 0 obtained: undefined [TextSnapshotTest.c:149] 
 FAILED: expected: 22 obtained: undefined [TextSnapshotTest.c:150] 
@@ -127,6 +127,6 @@ PASSED: typeof(ts)  ==  'undefined' [TextSnapshotTest.c:295]
 PASSED: typeof(ts)  ==  'object' [TextSnapshotTest.c:298]
 PASSED: typeof(ts)  ==  'object' [TextSnapshotTest.c:303]
 PASSED: typeof(ts)  ==  'object' [TextSnapshotTest.c:306]
-#passed: 18
-#failed: 106
+#passed: 28
+#failed: 96
 #total tests run: 124

@@ -12,7 +12,7 @@ use gc_arena::barrier::unlock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::transform::Transform;
-use ruffle_wstr::WString;
+use ruffle_wstr::{WStr, WString};
 use std::cell::RefCell;
 use std::sync::Arc;
 
@@ -333,6 +333,16 @@ struct TextSnapshotChunk<'gc> {
     global_index: usize,
 }
 
+impl<'gc> TextSnapshotChunk<'gc> {
+    fn sub_string(&self, global_index_start: usize, global_index_end: usize) -> &WStr {
+        let start = global_index_start.saturating_sub(self.global_index);
+        let end = global_index_end
+            .saturating_sub(self.global_index)
+            .min(self.text.len());
+        &self.text[start..end]
+    }
+}
+
 impl<'gc> TextSnapshot<'gc> {
     pub fn new(context: &mut UpdateContext<'gc>, target: MovieClip<'gc>) -> Self {
         let mut chunks = Vec::new();
@@ -356,5 +366,41 @@ impl<'gc> TextSnapshot<'gc> {
 
     pub fn count(self) -> usize {
         self.0.chunks.iter().map(|c| c.text.len()).sum()
+    }
+
+    pub fn get_text(self, from: i32, to: i32, include_newlines: bool) -> WString {
+        let count = self.count();
+        if count == 0 {
+            return WString::new();
+        }
+
+        let start = usize::try_from(from).unwrap_or_default().min(count - 1);
+        let end = usize::try_from(to)
+            .unwrap_or_default()
+            .min(count)
+            .max(start + 1);
+
+        let mut chunks = self
+            .0
+            .chunks
+            .iter()
+            .filter(|c| c.global_index < end)
+            .filter(|c| c.global_index + c.text.len() > start)
+            .map(|c| c.sub_string(start, end));
+
+        let mut ret = WString::new();
+
+        if let Some(chunk) = chunks.next() {
+            ret.push_str(chunk);
+        }
+
+        for chunk in chunks {
+            if include_newlines {
+                ret.push_char('\n');
+            }
+            ret.push_str(chunk);
+        }
+
+        ret
     }
 }
