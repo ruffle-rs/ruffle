@@ -65,7 +65,7 @@ use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode};
-pub use text::Text;
+pub use text::{Text, TextSnapshot};
 pub use video::Video;
 
 use self::loader_display::LoaderDisplayWeak;

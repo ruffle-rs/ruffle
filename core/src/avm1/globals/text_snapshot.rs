@@ -1,10 +1,37 @@
 //! TextSnapshot object
 
+use gc_arena::Collect;
+
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::parameters::ParametersExt;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
-use crate::avm1::{Object, Value};
+use crate::avm1::{NativeObject, Object, Value};
 use crate::avm1_stub;
+use crate::context::UpdateContext;
+use crate::display_object::{MovieClip, TextSnapshot};
+
+#[derive(Clone, Copy, Collect)]
+#[collect(no_drop)]
+pub struct TextSnapshotObject<'gc>(TextSnapshot<'gc>);
+
+impl std::fmt::Debug for TextSnapshotObject<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        f.debug_struct("TextSnapshotObject")
+            .field("text_snapshot", &self.0)
+            .finish()
+    }
+}
+
+impl<'gc> TextSnapshotObject<'gc> {
+    pub fn new(context: &mut UpdateContext<'gc>, target: MovieClip<'gc>) -> Self {
+        Self(TextSnapshot::new(context, target))
+    }
+
+    pub fn text_snapshot(self) -> TextSnapshot<'gc> {
+        self.0
+    }
+}
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "getCount" => method(get_count; VERSION_6);
@@ -28,20 +55,35 @@ pub fn create_class<'gc>(
 }
 
 fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    if args.len() == 1
+        && let Some(target) = args.try_get_object(activation, 0)?
+        && let Some(target) = target.as_display_object()
+        && let Some(target) = target.as_movie_clip()
+    {
+        let object = TextSnapshotObject::new(activation.context, target);
+        this.set_native(activation.gc(), NativeObject::TextSnapshot(object));
+    }
     Ok(Value::Undefined)
 }
 
 fn get_count<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "TextSnapshot", "getCount");
-    Ok(Value::Undefined)
+    let NativeObject::TextSnapshot(object) = this.native() else {
+        return Ok(Value::Undefined);
+    };
+
+    if !args.is_empty() {
+        return Ok(Value::Undefined);
+    }
+
+    Ok(object.text_snapshot().count().into())
 }
 
 fn set_selected<'gc>(

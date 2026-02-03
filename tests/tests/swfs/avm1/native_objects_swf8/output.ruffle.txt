@@ -44,7 +44,7 @@ new TextFormat(): native
 new TextSnapshot(): non-native
 new TextSnapshot(3): non-native
 new TextSnapshot(timelineButton): non-native
-new TextSnapshot(_root): non-native
+new TextSnapshot(_root): native
 new TextSnapshot(_root, 4): non-native
 new TextSnapshot(_root, _root): non-native
 new Video(): non-native

@@ -1,7 +1,7 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::DisplayObjectBase;
+use crate::display_object::{DisplayObjectBase, MovieClip};
 use crate::font::{FontLike, TextRenderSettings};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -304,4 +304,57 @@ struct TextShared {
     bounds: Rectangle<Twips>,
     text_transform: Matrix,
     text_blocks: Vec<swf::TextRecord>,
+}
+
+#[derive(Clone, Collect, Copy)]
+#[collect(no_drop)]
+pub struct TextSnapshot<'gc>(Gc<'gc, TextSnapshotData<'gc>>);
+
+impl fmt::Debug for TextSnapshot<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.debug_struct("TextSnapshot")
+            .field("ptr", &Gc::as_ptr(self.0))
+            .finish()
+    }
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct TextSnapshotData<'gc> {
+    chunks: Vec<TextSnapshotChunk<'gc>>,
+}
+
+#[derive(Collect)]
+#[collect(no_drop)]
+struct TextSnapshotChunk<'gc> {
+    object: Text<'gc>,
+    #[collect(require_static)]
+    text: WString,
+    global_index: usize,
+}
+
+impl<'gc> TextSnapshot<'gc> {
+    pub fn new(context: &mut UpdateContext<'gc>, target: MovieClip<'gc>) -> Self {
+        let mut chunks = Vec::new();
+        let mut index = 0;
+        for child in target.iter_render_list() {
+            if let Some(object) = child.as_text()
+                && let Some(text) = object.text(context)
+            {
+                let len = text.len();
+                chunks.push(TextSnapshotChunk {
+                    object,
+                    text,
+                    global_index: index,
+                });
+                index += len;
+            }
+        }
+
+        Self(Gc::new(context.gc(), TextSnapshotData { chunks }))
+    }
+
+    pub fn count(self) -> usize {
+        self.0.chunks.iter().map(|c| c.text.len()).sum()
+    }
 }

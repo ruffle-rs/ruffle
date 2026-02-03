@@ -67,7 +67,7 @@ pub(crate) mod system_security;
 pub(crate) mod text_field;
 mod text_format;
 mod text_renderer;
-mod text_snapshot;
+pub(crate) mod text_snapshot;
 pub(crate) mod transform;
 mod video;
 pub(crate) mod xml;
