@@ -198,6 +198,8 @@ pub fn exec<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mc = activation.gc();
 
+    let caller_dxns = activation.default_xml_namespace();
+
     let ret = match method.method_kind() {
         MethodKind::Native { native_method, .. } => {
             let caller_domain = activation.caller_domain();
@@ -208,6 +210,7 @@ pub fn exec<'gc>(
                 scope,
                 caller_domain,
                 caller_movie,
+                caller_dxns,
             );
 
             method.resolve_info(&mut activation)?;
@@ -253,6 +256,7 @@ pub fn exec<'gc>(
                 stack_frame,
                 bound_superclass,
                 callee,
+                caller_dxns,
             ) {
                 // If an error is thrown during verification or argument coercion,
                 // we still need to call cleanup to dispose of the stack frame

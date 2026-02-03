@@ -1,7 +1,9 @@
 //! Object representation for XML objects
 
 use crate::avm2::activation::Activation;
-use crate::avm2::e4x::{E4XNamespace, E4XNode, E4XNodeKind, string_to_multiname};
+use crate::avm2::e4x::{
+    E4XNamespace, E4XNode, E4XNodeKind, namespace_for_multiname, string_to_multiname,
+};
 use crate::avm2::error::make_error_1087;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::multiname::NamespaceSet;
@@ -9,7 +11,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, NamespaceObject, Object, TObject, XmlListObject};
 use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
-use crate::avm2::{Error, Multiname};
+use crate::avm2::{Error, Multiname, Namespace};
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
@@ -537,7 +539,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 // 12.b.iii. Create a new XML object y with y.[[Name]] = name, y.[[Class]] = "element" and y.[[Parent]] = x
                 let node = E4XNode::element(
                     activation.gc(),
-                    name.explicit_namespace().map(E4XNamespace::new_uri),
+                    namespace_for_multiname(&name, activation),
                     name.local_name().unwrap(),
                     Some(self_node),
                 );
@@ -704,15 +706,25 @@ fn handle_input_multiname<'gc>(
             .local_name()
             .map(|name| string_to_multiname(activation, name))
         {
-            // Copy the namespaces from the previous name,
-            // but make sure to definitely include the public namespace.
+            // If there's a default XML namespace, use it exclusively for property access.
+            // Otherwise, copy the namespaces from the previous name and include public.
             if !new_name.is_any_namespace() {
-                let mut ns = Vec::new();
-                ns.extend(name.namespace_set());
-                if !name.contains_public_namespace() {
-                    ns.push(activation.avm2().namespaces.public_all());
+                if let Some(uri) = activation.default_xml_namespace() {
+                    let ns = Namespace::package(
+                        uri,
+                        activation.avm2().root_api_version,
+                        activation.strings(),
+                    );
+                    new_name.set_ns(NamespaceSet::single(ns));
+                } else {
+                    let mut ns = name.namespace_set().to_vec();
+
+                    if !name.contains_public_namespace() {
+                        ns.push(activation.avm2().namespaces.public_all());
+                    }
+
+                    new_name.set_ns(NamespaceSet::new(ns, activation.gc()));
                 }
-                new_name.set_ns(NamespaceSet::new(ns, activation.gc()));
             }
 
             return new_name;

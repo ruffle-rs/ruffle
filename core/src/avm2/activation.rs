@@ -84,6 +84,20 @@ pub struct Activation<'a, 'gc: 'a> {
     /// See `MethodData.is_interpreted` for more information.
     is_interpreter: bool,
 
+    /// The default XML namespace for E4X operations within this activation.
+    ///
+    /// Set by the `dxns`/`dxnslate` opcodes. Propagated to child activations:
+    /// native methods always inherit the caller's value, bytecode methods with
+    /// the `SET_DXNS` flag start with `None` (the opcode will set their own),
+    /// and bytecode methods without the flag inherit the caller's value.
+    ///
+    /// NOTE: In avmplus this is more nuanced — the default namespace is a property
+    /// of MethodFrames/MethodEnvs/scopes, and closures capture the dxns value from
+    /// the scope at the time they are created (see `MethodFrame::findDxns`).
+    /// Our per-Activation approach doesn't handle that closure-capture behavior.
+    /// See <https://github.com/ruffle-rs/ruffle/pull/21014> for details.
+    default_xml_namespace: Option<AvmString<'gc>>,
+
     pub context: &'a mut UpdateContext<'gc>,
 }
 
@@ -125,6 +139,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
+            default_xml_namespace: None,
             context,
         }
     }
@@ -148,6 +163,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
+            default_xml_namespace: None,
             context,
         }
     }
@@ -317,6 +333,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         stack_frame: StackFrame<'a, 'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
         callee: Option<FunctionObject<'gc>>,
+        caller_dxns: Option<AvmString<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let body = method
             .body()
@@ -400,6 +417,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // to undefined, so we just have to increase the stack pointer
         self.reset_stack();
 
+        // Inherit the caller's default XML namespace if this method doesn't
+        // set its own via dxns opcodes.
+        if !method.sets_dxns() {
+            self.default_xml_namespace = caller_dxns;
+        }
+
         Ok(())
     }
 
@@ -415,6 +438,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
         caller_movie: Option<Arc<SwfMovie>>,
+        caller_dxns: Option<AvmString<'gc>>,
     ) -> Self {
         Self {
             num_locals: 0,
@@ -425,6 +449,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
+            default_xml_namespace: caller_dxns,
             context,
         }
     }
@@ -461,6 +486,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// to whether the method is being interpreted or JITted.
     pub fn is_interpreter(&self) -> bool {
         self.is_interpreter
+    }
+
+    /// Get the current default XML namespace URI for this activation, if any.
+    pub fn default_xml_namespace(&self) -> Option<AvmString<'gc>> {
+        self.default_xml_namespace
     }
 
     /// Retrieve the outer scope of this activation
@@ -763,7 +793,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::BkptLine { line_num } => self.op_bkpt_line(*line_num),
                 Op::Timestamp => self.op_timestamp(),
                 Op::TypeOf => self.op_type_of(),
-                Op::Dxns { .. } => self.op_dxns(),
+                Op::Dxns { string } => self.op_dxns(*string),
                 Op::DxnsLate => self.op_dxns_late(),
                 Op::EscXAttr => self.op_esc_xattr(),
                 Op::EscXElem => self.op_esc_elem(),
@@ -2574,14 +2604,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Implements `Op::Dxns`
-    fn op_dxns(&mut self) -> Result<(), Error<'gc>> {
-        Err("Unimplemented opcode Dxns.".into())
+    fn op_dxns(&mut self, uri: AvmAtom<'gc>) -> Result<(), Error<'gc>> {
+        self.default_xml_namespace = Some(uri.into());
+        Ok(())
     }
 
     /// Implements `Op::DxnsLate`
     fn op_dxns_late(&mut self) -> Result<(), Error<'gc>> {
-        let _ = self.pop_stack();
-        Err("Unimplemented opcode DxnsLate.".into())
+        let value = self.pop_stack();
+        let uri = value.coerce_to_string(self)?;
+        self.default_xml_namespace = Some(uri);
+        Ok(())
     }
 
     /// Implements `Op::EscXAttr`

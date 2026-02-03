@@ -354,6 +354,12 @@ impl<'gc> Method<'gc> {
         self.method().flags.contains(AbcMethodFlags::NEED_ARGUMENTS)
     }
 
+    /// Check if this method sets the default XML namespace (uses dxns/dxnslate opcodes).
+    /// Methods with this flag are allowed to use the dxns and dxnslate opcodes.
+    pub fn sets_dxns(self) -> bool {
+        self.method().flags.contains(AbcMethodFlags::SET_DXNS)
+    }
+
     pub fn method_kind(&self) -> &MethodKind<'gc> {
         &self.0.method_kind
     }
