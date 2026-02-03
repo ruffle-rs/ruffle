@@ -27,6 +27,21 @@ use std::fmt::{self, Debug};
 
 mod is_xml_name;
 
+/// Gets the E4X namespace for a Multiname, using the default XML namespace
+/// from the current activation if no explicit namespace is specified.
+pub fn namespace_for_multiname<'gc>(
+    name: &Multiname<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Option<E4XNamespace<'gc>> {
+    if let Some(uri) = name.explicit_namespace() {
+        Some(E4XNamespace::new_uri(uri))
+    } else if let Some(uri) = activation.default_xml_namespace() {
+        Some(E4XNamespace::new_uri(uri))
+    } else {
+        None
+    }
+}
+
 pub use is_xml_name::is_xml_name;
 
 /// The underlying XML node data, based on E4XNode in avmplus
@@ -989,7 +1004,23 @@ impl<'gc> E4XNode<'gc> {
             ResolveResult::Unknown(ns) => {
                 return Err(make_unknown_ns_error(activation, &ns, name));
             }
-            ResolveResult::Unbound => None,
+            ResolveResult::Unbound => {
+                // Check if there's an explicit xmlns="" declaration in this element.
+                // quick-xml returns Unbound for xmlns="", but Flash treats it as bound
+                // to the empty namespace. Look for a default namespace declaration
+                // (prefix is empty string) in the namespaces we've collected.
+                if let Some(local_ns) = namespaces.iter().find(|ns| ns.prefix == Some(istr!(""))) {
+                    Some(E4XNamespace {
+                        prefix: None,
+                        uri: local_ns.uri,
+                    })
+                } else if let Some(uri) = activation.default_xml_namespace() {
+                    // Use the default XML namespace set by `default xml namespace = ...`
+                    Some(E4XNamespace { prefix: None, uri })
+                } else {
+                    None
+                }
+            }
         };
 
         let result = E4XNode(Gc::new(
