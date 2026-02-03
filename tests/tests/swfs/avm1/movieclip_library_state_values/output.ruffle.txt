@@ -67,7 +67,7 @@ getRect(mc).xMax = 6710886.35
 getRect(mc).yMin = 6710886.35
 getRect(mc).yMax = 6710886.35
 getSWFVersion() = 10
-getTextSnapshot().getCount() = undefined
+getTextSnapshot().getCount() = 0
 
 Change: Prop _currentframe is "1" on the first, but "0" on the second target.
 Change: Prop _framesloaded is "1" on the first, but "0" on the second target.

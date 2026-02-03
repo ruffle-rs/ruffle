@@ -1,5 +1,5 @@
 PASSED: ts instanceof TextSnapshot [TextSnapshotTest.c:128]
-FAILED: expected: 64 obtained: undefined [TextSnapshotTest.c:129] 
+PASSED: ts.getCount()  ==  64 [TextSnapshotTest.c:129]
 FAILED: expected: 'F' obtained: undefined [TextSnapshotTest.c:131] 
 FAILED: expected: 's' obtained: undefined [TextSnapshotTest.c:132] 
 FAILED: expected: 'First' obtained: undefined [TextSnapshotTest.c:133] 
@@ -46,9 +46,9 @@ PASSED: ts.getSelected(-4)  ==  undefined [TextSnapshotTest.c:179]
 PASSED: ts.getSelected(28)  ==  undefined [TextSnapshotTest.c:180]
 PASSED: ts.getSelected(20)  ==  undefined [TextSnapshotTest.c:181]
 FAILED: expected: '' obtained: undefined [TextSnapshotTest.c:186] 
-FAILED: expected: 64 obtained: undefined [TextSnapshotTest.c:187] 
+PASSED: ts2.getCount()  ==  64 [TextSnapshotTest.c:187]
 FAILED: expected: '' obtained: undefined [TextSnapshotTest.c:188] 
-FAILED: expected: 64 obtained: undefined [TextSnapshotTest.c:190] 
+PASSED: ts2.getCount()  ==  64 [TextSnapshotTest.c:190]
 FAILED: expected: '' obtained: undefined [TextSnapshotTest.c:191] 
 FAILED: expected: 7 obtained: undefined [TextSnapshotTest.c:194] 
 FAILED: expected: 7 obtained: undefined [TextSnapshotTest.c:195] 
@@ -127,6 +127,6 @@ PASSED: typeof(ts)  ==  'undefined' [TextSnapshotTest.c:295]
 PASSED: typeof(ts)  ==  'object' [TextSnapshotTest.c:298]
 PASSED: typeof(ts)  ==  'object' [TextSnapshotTest.c:303]
 PASSED: typeof(ts)  ==  'object' [TextSnapshotTest.c:306]
-#passed: 15
-#failed: 109
+#passed: 18
+#failed: 106
 #total tests run: 124
