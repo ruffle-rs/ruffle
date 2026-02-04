@@ -101,10 +101,15 @@ impl CanvasFontRenderer {
 
     fn render_glyph_internal(&self, character: char) -> Result<Glyph, JsValue> {
         let text = &character.to_string();
-        let width = self.calculate_width(text)?;
+        let metrics = self.ctx.measure_text(text)?;
         let height = self.ascent + self.descent;
 
-        self.ensure_canvas_large_enough(width, height);
+        let bitmap_width = metrics.actual_bounding_box_left() + metrics.actual_bounding_box_right();
+        let bitmap_width = bitmap_width.max(1.0); // TODO Support empty bitmaps.
+        let advance = Twips::from_pixels(metrics.width());
+        let bitmap_tx = -metrics.actual_bounding_box_left();
+
+        self.ensure_canvas_large_enough(bitmap_width, height);
 
         self.ctx.clear_rect(
             0.0,
@@ -112,16 +117,16 @@ impl CanvasFontRenderer {
             self.canvas.width() as f64,
             self.canvas.height() as f64,
         );
-        self.ctx.fill_text(text, 0.0, self.ascent)?;
+        self.ctx.fill_text(text, -bitmap_tx, self.ascent)?;
 
-        let image_data = self.ctx.get_image_data(0.0, 0.0, width, height)?;
+        let image_data = self.ctx.get_image_data(0.0, 0.0, bitmap_width, height)?;
         let width = image_data.width();
         let height = image_data.height();
         let pixels = image_data.data().0;
 
         let bitmap = Bitmap::new(width, height, BitmapFormat::Rgba, pixels);
-        let advance = Twips::from_pixels(width as f64);
-        Ok(Glyph::from_bitmap(character, bitmap, advance, Twips::ZERO))
+        let bitmap_tx = Twips::from_pixels(-metrics.actual_bounding_box_left());
+        Ok(Glyph::from_bitmap(character, bitmap, advance, bitmap_tx))
     }
 
     fn calculate_kerning_internal(&self, left: char, right: char) -> Result<Twips, JsValue> {
