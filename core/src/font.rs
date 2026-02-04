@@ -961,7 +961,7 @@ impl SwfGlyphOrShape {
 #[derive(Clone, Debug)]
 pub enum GlyphRenderData {
     Shape(ShapeHandle),
-    Bitmap(BitmapHandle),
+    Bitmap { handle: BitmapHandle, tx: Twips },
 }
 
 impl GlyphRenderData {
@@ -969,8 +969,11 @@ impl GlyphRenderData {
         Self::Shape(shape_handle)
     }
 
-    pub fn from_bitmap(bitmap_handle: BitmapHandle) -> Self {
-        Self::Bitmap(bitmap_handle)
+    pub fn from_bitmap(bitmap_handle: BitmapHandle, tx: Twips) -> Self {
+        Self::Bitmap {
+            handle: bitmap_handle,
+            tx,
+        }
     }
 }
 
@@ -1023,7 +1026,7 @@ impl GlyphShape {
                 })
                 .ok()
                 .cloned()
-                .map(GlyphRenderData::from_bitmap),
+                .map(|handle| GlyphRenderData::from_bitmap(handle, bitmap.tx)),
             GlyphShape::None => None,
         }
     }
@@ -1033,6 +1036,9 @@ impl GlyphShape {
 struct GlyphBitmap<'a> {
     bitmap: Cell<Option<Bitmap<'a>>>,
     handle: OnceCell<Result<BitmapHandle, Error>>,
+
+    /// Translation in x to be applied before rendering the glyph.
+    tx: Twips,
 }
 
 impl<'a> std::fmt::Debug for GlyphBitmap<'a> {
@@ -1044,10 +1050,11 @@ impl<'a> std::fmt::Debug for GlyphBitmap<'a> {
 }
 
 impl<'a> GlyphBitmap<'a> {
-    pub fn new(bitmap: Bitmap<'a>) -> Self {
+    pub fn new(bitmap: Bitmap<'a>, tx: Twips) -> Self {
         Self {
             bitmap: Cell::new(Some(bitmap)),
             handle: OnceCell::new(),
+            tx,
         }
     }
 
@@ -1084,9 +1091,14 @@ impl Glyph {
         }
     }
 
-    pub fn from_bitmap(character: char, bitmap: Bitmap<'static>, advance: Twips) -> Self {
+    pub fn from_bitmap(
+        character: char,
+        bitmap: Bitmap<'static>,
+        advance: Twips,
+        tx: Twips,
+    ) -> Self {
         Self {
-            shape: GlyphShape::Bitmap(Rc::new(GlyphBitmap::new(bitmap))),
+            shape: GlyphShape::Bitmap(Rc::new(GlyphBitmap::new(bitmap, tx))),
             advance,
             character,
         }
@@ -1132,18 +1144,26 @@ impl Glyph {
             return;
         };
 
-        let transform = context.transform_stack.transform();
         match render_data {
             GlyphRenderData::Shape(shape_handle) => {
-                context.commands.render_shape(shape_handle, transform);
+                context
+                    .commands
+                    .render_shape(shape_handle, context.transform_stack.transform());
             }
-            GlyphRenderData::Bitmap(bitmap_handle) => {
+            GlyphRenderData::Bitmap { handle, tx } => {
+                context.transform_stack.push(&Transform {
+                    matrix: Matrix::translate(tx, Twips::ZERO),
+                    ..Default::default()
+                });
+
                 context.commands.render_bitmap(
-                    bitmap_handle,
-                    transform,
+                    handle,
+                    context.transform_stack.transform(),
                     true,
                     ruffle_render::bitmap::PixelSnapping::Auto,
                 );
+
+                context.transform_stack.pop();
             }
         }
     }
