@@ -765,9 +765,9 @@ impl<'gc> Font<'gc> {
 }
 
 impl<'gc> FontLike<'gc> for Font<'gc> {
-    fn get_glyph_render_data(&self, c: char) -> Option<GlyphRenderData<'_, 'gc>> {
+    fn resolve_glyph(&self, c: char) -> Option<GlyphResolution<'_, 'gc>> {
         self.get_glyph_for_char(c)
-            .map(|glyph| GlyphRenderData::new(glyph, *self))
+            .map(|glyph| GlyphResolution::new(glyph, *self))
     }
 
     fn has_kerning_info(&self) -> bool {
@@ -806,8 +806,11 @@ impl<'gc> FontLike<'gc> for Font<'gc> {
 }
 
 pub trait FontLike<'gc> {
-    /// Returns data required to render a glyph.
-    fn get_glyph_render_data(&self, c: char) -> Option<GlyphRenderData<'_, 'gc>>;
+    /// Resolve a glyph for a char.
+    ///
+    /// The resolution contains information about the glyph and the font that
+    /// provided the glyph.
+    fn resolve_glyph(&self, c: char) -> Option<GlyphResolution<'_, 'gc>>;
 
     /// Returns whether this font contains kerning information.
     fn has_kerning_info(&self) -> bool;
@@ -863,9 +866,9 @@ pub trait FontLike<'gc> {
 
         let mut x = Twips::ZERO;
         while let Some((pos, c)) = char_indices.next() {
-            if let Some(render_data) = self.get_glyph_render_data(c) {
-                let glyph = render_data.glyph;
-                let scale = params.height.get() as f32 / render_data.font.scale();
+            if let Some(resolution) = self.resolve_glyph(c) {
+                let glyph = resolution.glyph;
+                let scale = params.height.get() as f32 / resolution.font.scale();
                 let mut advance = glyph.advance();
                 if kerning_enabled {
                     let next_char = char_indices.peek().map(|(_, ch)| *ch);
@@ -1146,12 +1149,12 @@ impl Glyph {
     }
 }
 
-pub struct GlyphRenderData<'a, 'gc> {
+pub struct GlyphResolution<'a, 'gc> {
     pub glyph: GlyphRef<'a>,
     pub font: Font<'gc>,
 }
 
-impl<'a, 'gc> GlyphRenderData<'a, 'gc> {
+impl<'a, 'gc> GlyphResolution<'a, 'gc> {
     fn new(glyph: GlyphRef<'a>, font: Font<'gc>) -> Self {
         Self { glyph, font }
     }
@@ -1479,14 +1482,14 @@ impl<'gc> FontSet<'gc> {
 }
 
 impl<'gc> FontLike<'gc> for FontSet<'gc> {
-    fn get_glyph_render_data(&self, c: char) -> Option<GlyphRenderData<'_, 'gc>> {
+    fn resolve_glyph(&self, c: char) -> Option<GlyphResolution<'_, 'gc>> {
         if let Some(glyph) = self.0.main_font.get_glyph_for_char(c) {
-            return Some(GlyphRenderData::new(glyph, self.0.main_font));
+            return Some(GlyphResolution::new(glyph, self.0.main_font));
         }
 
         for fallback_font in &self.0.fallback_fonts {
             if let Some(glyph) = fallback_font.get_glyph_for_char(c) {
-                return Some(GlyphRenderData::new(glyph, *fallback_font));
+                return Some(GlyphResolution::new(glyph, *fallback_font));
             }
         }
 
