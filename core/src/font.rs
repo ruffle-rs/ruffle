@@ -602,7 +602,7 @@ impl<'gc> Font<'gc> {
 
                 // Eager-load ASCII characters.
                 if code < 128 {
-                    glyph.glyph_handle(renderer);
+                    glyph.glyph_render_data(renderer);
                 }
 
                 glyph
@@ -959,12 +959,12 @@ impl SwfGlyphOrShape {
 }
 
 #[derive(Clone, Debug)]
-pub enum GlyphHandle {
+pub enum GlyphRenderData {
     Shape(ShapeHandle),
     Bitmap(BitmapHandle),
 }
 
-impl GlyphHandle {
+impl GlyphRenderData {
     pub fn from_shape(shape_handle: ShapeHandle) -> Self {
         Self::Shape(shape_handle)
     }
@@ -1000,7 +1000,7 @@ impl GlyphShape {
         }
     }
 
-    pub fn register(&self, renderer: &mut dyn RenderBackend) -> Option<GlyphHandle> {
+    pub fn register(&self, renderer: &mut dyn RenderBackend) -> Option<GlyphRenderData> {
         match self {
             GlyphShape::Swf(glyph) => {
                 let mut glyph = glyph.borrow_mut();
@@ -1008,11 +1008,11 @@ impl GlyphShape {
                 handle.get_or_insert_with(|| {
                     renderer.register_shape((&*shape).into(), &NullBitmapSource)
                 });
-                handle.clone().map(GlyphHandle::from_shape)
+                handle.clone().map(GlyphRenderData::from_shape)
             }
             GlyphShape::Drawing(drawing) => drawing
                 .register_or_replace(renderer)
-                .map(GlyphHandle::from_shape),
+                .map(GlyphRenderData::from_shape),
             GlyphShape::Bitmap(bitmap) => bitmap
                 .get_handle_or_register(renderer)
                 .as_ref()
@@ -1023,7 +1023,7 @@ impl GlyphShape {
                 })
                 .ok()
                 .cloned()
-                .map(GlyphHandle::from_bitmap),
+                .map(GlyphRenderData::from_bitmap),
             GlyphShape::None => None,
         }
     }
@@ -1092,7 +1092,7 @@ impl Glyph {
         }
     }
 
-    pub fn glyph_handle(&self, renderer: &mut dyn RenderBackend) -> Option<GlyphHandle> {
+    pub fn glyph_render_data(&self, renderer: &mut dyn RenderBackend) -> Option<GlyphRenderData> {
         self.shape.register(renderer)
     }
 
@@ -1122,22 +1122,22 @@ impl Glyph {
     }
 
     pub fn renderable<'gc>(&self, context: &mut RenderContext<'_, 'gc>) -> bool {
-        self.glyph_handle(context.renderer).is_some()
+        self.glyph_render_data(context.renderer).is_some()
     }
 
     pub fn render<'gc>(&self, context: &mut RenderContext<'_, 'gc>) {
         use ruffle_render::commands::CommandHandler;
 
-        let Some(glyph_handle) = self.glyph_handle(context.renderer) else {
+        let Some(render_data) = self.glyph_render_data(context.renderer) else {
             return;
         };
 
         let transform = context.transform_stack.transform();
-        match glyph_handle {
-            GlyphHandle::Shape(shape_handle) => {
+        match render_data {
+            GlyphRenderData::Shape(shape_handle) => {
                 context.commands.render_shape(shape_handle, transform);
             }
-            GlyphHandle::Bitmap(bitmap_handle) => {
+            GlyphRenderData::Bitmap(bitmap_handle) => {
                 context.commands.render_bitmap(
                     bitmap_handle,
                     transform,
