@@ -95,6 +95,7 @@ pub enum NativeObject<'gc> {
     LocalConnection(LocalConnection<'gc>),
     Sound(Sound<'gc>),
     StyleSheet(StyleSheetObject<'gc>),
+    Color(()),
 }
 
 const _: () = assert!(size_of::<NativeObject<'_>>() <= size_of::<[usize; 2]>());

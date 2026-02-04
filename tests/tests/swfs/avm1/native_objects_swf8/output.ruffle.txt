@@ -15,8 +15,8 @@ new Boolean(true): native
 new Button(): non-native
 timelineButton: native
 new Camera(): non-native
-new Color(): non-native
-new Color(_root): non-native
+new Color(): native
+new Color(_root): native
 new ContextMenu(): non-native
 new ContextMenuItem(): non-native
 new ContextMenuItem([...]): non-native
