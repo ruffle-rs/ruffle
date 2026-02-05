@@ -225,7 +225,6 @@ jobs:
       - name: Run llvm-cov for SWF tests
         working-directory: tests
         env:
-          RUFFLE_TEST_OPTS: --ignore-known-failures
           LLVM_COV_EXCLUDE: >
             --exclude ruffle_desktop
             --exclude exporter
