@@ -46,7 +46,7 @@ jobs:
         uses: baptiste0928/cargo-install@v3
         with:
           crate: cargo-edit
-          version: '^0.12'
+          version: '^0.13'
 
       - name: Install cargo-get
         uses: baptiste0928/cargo-install@v3
