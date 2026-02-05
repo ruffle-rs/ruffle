@@ -415,6 +415,10 @@ impl Drawing {
             self.mark_dirty();
         }
     }
+
+    pub fn paths(&self) -> &[DrawingPath] {
+        return self.paths.as_slice();
+    }
 }
 
 impl BitmapSource for Drawing {
@@ -430,21 +434,21 @@ impl BitmapSource for Drawing {
 }
 
 #[derive(Debug, Clone)]
-struct DrawingFill {
-    style: FillStyle,
-    rule: FillRule,
-    commands: Vec<DrawCommand>,
+pub struct DrawingFill {
+    pub style: FillStyle,
+    pub rule: FillRule,
+    pub commands: Vec<DrawCommand>,
 }
 
 #[derive(Debug, Clone)]
-struct DrawingLine {
-    style: LineStyle,
-    commands: Vec<DrawCommand>,
-    is_closed: bool,
+pub struct DrawingLine {
+    pub style: LineStyle,
+    pub commands: Vec<DrawCommand>,
+    pub is_closed: bool,
 }
 
 #[derive(Debug, Clone)]
-enum DrawingPath {
+pub enum DrawingPath {
     Fill(DrawingFill),
     Line(DrawingLine),
 }
