@@ -289,35 +289,12 @@ impl<'gc> EditText<'gc> {
             AutoSizeMode::None
         };
 
-        let font_type = if swf_tag.use_outlines() {
-            FontType::Embedded
-        } else {
-            FontType::Device
-        };
-
-        let is_word_wrap = swf_tag.is_word_wrap();
-        let content_width = if autosize == AutoSizeMode::None || is_word_wrap {
-            Some(swf_tag.bounds().width() - Self::GUTTER * 2)
-        } else {
-            None
-        };
-
-        let layout = html::lower_from_text_spans(
-            &text_spans,
-            context,
-            swf_movie.clone(),
-            content_width,
-            !swf_tag.is_read_only(),
-            is_word_wrap,
-            font_type,
-        );
-
         let variable = if !swf_tag.variable_name().is_empty() {
-            Some(swf_tag.variable_name().decode(encoding))
+            let name = swf_tag.variable_name().decode(encoding);
+            Some(context.strings.intern_wstr(name).into())
         } else {
             None
         };
-        let variable = variable.map(|s| context.strings.intern_wstr(s).into());
 
         // We match the flags from the DefineEditText SWF tag.
         let mut flags = EditTextFlag::from_bits_truncate(swf_tag.flags().bits());
@@ -354,7 +331,7 @@ impl<'gc> EditText<'gc> {
                 background_color: Cell::new(Color::WHITE),
                 border_color: Cell::new(Color::BLACK),
                 object: Lock::new(None),
-                layout: RefLock::new(layout),
+                layout: RefLock::new(Default::default()),
                 bounds: Cell::new(*swf_tag.bounds()),
                 autosize_lazy_bounds: Cell::new(None),
                 autosize: Cell::new(autosize),
@@ -377,11 +354,7 @@ impl<'gc> EditText<'gc> {
                 avm1_text_field_bindings: RefLock::new(Vec::new()),
             },
         ));
-
-        if swf_tag.is_auto_size() {
-            et.relayout(context);
-        }
-
+        et.relayout(context);
         et
     }
 
