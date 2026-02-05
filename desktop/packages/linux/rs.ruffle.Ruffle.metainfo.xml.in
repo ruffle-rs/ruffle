@@ -82,5 +82,8 @@
         <color type="primary" scheme_preference="dark">#2c4270</color>
     </branding>
     <releases>
+        <release version="0.2.0-nightly.2026.2.5" date="2026-02-05">
+            <url>https://github.com/ruffle-rs/ruffle/releases/tag/nightly-2026-02-05</url>
+        </release>
     </releases>
 </component>
