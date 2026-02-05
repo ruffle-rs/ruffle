@@ -764,6 +764,11 @@ impl<'gc> EditText<'gc> {
         unlock!(Gc::write(mc, self.0), EditTextData, bound_display_object).set(value);
     }
 
+    fn device_font_scale_x(self) -> f32 {
+        let m = self.local_to_global_matrix();
+        m.d / m.a
+    }
+
     /// Returns the matrix for transforming from layout
     /// coordinate space into this object's local space.
     fn layout_to_local_matrix(self) -> Matrix {
@@ -778,9 +783,7 @@ impl<'gc> EditText<'gc> {
             // Here we have to make sure the independent x/y scale applied for
             // the local coordinate space is reversed, leaving only y scale
             // and keeping the original aspect ratio in x.
-            let m = self.local_to_global_matrix();
-            let device_font_scale_x = m.d / m.a;
-            matrix * Matrix::scale(device_font_scale_x, 1.0f32)
+            matrix * Matrix::scale(self.device_font_scale_x(), 1.0f32)
         } else {
             matrix
         }
@@ -794,6 +797,24 @@ impl<'gc> EditText<'gc> {
 
     fn local_to_layout(self, local: Point<Twips>) -> Option<Point<Twips>> {
         Some(self.local_to_layout_matrix()? * local)
+    }
+
+    fn local_width_to_layout_width(self, width: Twips) -> Twips {
+        if self.font_type() == FontType::Device {
+            let scale_x = self.device_font_scale_x() as f64;
+            Twips::from_pixels(width.to_pixels() / scale_x)
+        } else {
+            width
+        }
+    }
+
+    fn layout_width_to_local_width(self, width: Twips) -> Twips {
+        if self.font_type() == FontType::Device {
+            let scale_x = self.device_font_scale_x() as f64;
+            Twips::from_pixels(width.to_pixels() * scale_x)
+        } else {
+            width
+        }
     }
 
     pub fn replace_text(
@@ -869,7 +890,7 @@ impl<'gc> EditText<'gc> {
 
         // Determine the internal width available for content layout.
         let content_width = if autosize == AutoSizeMode::None || is_word_wrap {
-            Some(self.0.bounds.get().width() - padding)
+            Some(self.local_width_to_layout_width(self.0.bounds.get().width()) - padding)
         } else {
             None
         };
@@ -896,7 +917,7 @@ impl<'gc> EditText<'gc> {
         if autosize != AutoSizeMode::None {
             if !is_word_wrap {
                 // The edit text's bounds needs to have the padding baked in.
-                let mut width = text_size.width() + padding;
+                let mut width = self.layout_width_to_local_width(text_size.width()) + padding;
                 if !self.0.flags.get().contains(EditTextFlag::READ_ONLY) {
                     // When the field is editable, FP adds 2.5px to add some
                     // space to place the caret.
