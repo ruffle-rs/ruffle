@@ -864,7 +864,7 @@ fn lower_from_text_spans_known_width<'gc>(
 
 /// A `Layout` represents a fully laid-out text field.
 /// It consists of [`LayoutLine`]s.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Debug, Collect, Default)]
 #[collect(no_drop)]
 pub struct Layout<'gc> {
     #[collect(require_static)]
