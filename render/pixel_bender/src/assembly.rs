@@ -113,64 +113,64 @@ impl RegisterSize {
     }
 }
 
-static COMMON_OPCODE_TABLE: LazyLock<HashMap<String, Opcode>> = LazyLock::new(|| {
-    let mut table = HashMap::new();
-    table.insert("abs".to_string(), Opcode::Abs);
-    table.insert("acos".to_string(), Opcode::Acos);
-    table.insert("add".to_string(), Opcode::Add);
-    table.insert("all.b".to_string(), Opcode::BoolAll);
-    table.insert("and".to_string(), Opcode::LogicalAnd);
-    table.insert("any.b".to_string(), Opcode::BoolAny);
-    table.insert("asin".to_string(), Opcode::Asin);
-    table.insert("atan".to_string(), Opcode::Atan);
-    table.insert("atan2".to_string(), Opcode::Atan2);
-    table.insert("b2f".to_string(), Opcode::BoolToFloat);
-    table.insert("b2i".to_string(), Opcode::BoolToInt);
-    table.insert("ceil".to_string(), Opcode::Ceil);
-    table.insert("cos".to_string(), Opcode::Cos);
-    table.insert("cross".to_string(), Opcode::CrossProduct);
-    table.insert("dist".to_string(), Opcode::Distance);
-    table.insert("div".to_string(), Opcode::Div);
-    table.insert("dot".to_string(), Opcode::DotProduct);
-    table.insert("eq.v".to_string(), Opcode::VectorEqual);
-    table.insert("eq".to_string(), Opcode::Equal);
-    table.insert("exp".to_string(), Opcode::Exp);
-    table.insert("exp2".to_string(), Opcode::Exp2);
-    table.insert("f2b".to_string(), Opcode::FloatToBool);
-    table.insert("f2i".to_string(), Opcode::FloatToInt);
-    table.insert("floor".to_string(), Opcode::Floor);
-    table.insert("fract".to_string(), Opcode::Fract);
-    table.insert("i2b".to_string(), Opcode::IntToBool);
-    table.insert("i2f".to_string(), Opcode::IntToFloat);
-    table.insert("le".to_string(), Opcode::LessThanEqual);
-    table.insert("len".to_string(), Opcode::Length);
-    table.insert("log".to_string(), Opcode::Log);
-    table.insert("log2".to_string(), Opcode::Log2);
-    table.insert("lt".to_string(), Opcode::LessThan);
-    table.insert("max".to_string(), Opcode::Max);
-    table.insert("min".to_string(), Opcode::Min);
-    table.insert("mod".to_string(), Opcode::Mod);
-    table.insert("mov".to_string(), Opcode::Mov);
-    table.insert("mul.mm".to_string(), Opcode::MatMatMul);
-    table.insert("mul.mv".to_string(), Opcode::MatVecMul);
-    table.insert("mul.vm".to_string(), Opcode::VecMatMul);
-    table.insert("mul".to_string(), Opcode::Mul);
-    table.insert("neq.v".to_string(), Opcode::VectorNotEqual);
-    table.insert("neq".to_string(), Opcode::NotEqual);
-    table.insert("norm".to_string(), Opcode::Normalize);
-    table.insert("not".to_string(), Opcode::LogicalNot);
-    table.insert("or".to_string(), Opcode::LogicalOr);
-    table.insert("pow".to_string(), Opcode::Pow);
-    table.insert("rcp".to_string(), Opcode::Rcp);
-    table.insert("rsqrt".to_string(), Opcode::RSqrt);
-    table.insert("sign".to_string(), Opcode::Sign);
-    table.insert("sin".to_string(), Opcode::Sin);
-    table.insert("sqrt".to_string(), Opcode::Sqrt);
-    table.insert("step".to_string(), Opcode::Step);
-    table.insert("sub".to_string(), Opcode::Sub);
-    table.insert("tan".to_string(), Opcode::Tan);
-    table.insert("xor".to_string(), Opcode::LogicalXor);
-    table
+static COMMON_OPCODE_TABLE: LazyLock<HashMap<&'static str, Opcode>> = LazyLock::new(|| {
+    HashMap::from_iter([
+        ("abs", Opcode::Abs),
+        ("acos", Opcode::Acos),
+        ("add", Opcode::Add),
+        ("all.b", Opcode::BoolAll),
+        ("and", Opcode::LogicalAnd),
+        ("any.b", Opcode::BoolAny),
+        ("asin", Opcode::Asin),
+        ("atan", Opcode::Atan),
+        ("atan2", Opcode::Atan2),
+        ("b2f", Opcode::BoolToFloat),
+        ("b2i", Opcode::BoolToInt),
+        ("ceil", Opcode::Ceil),
+        ("cos", Opcode::Cos),
+        ("cross", Opcode::CrossProduct),
+        ("dist", Opcode::Distance),
+        ("div", Opcode::Div),
+        ("dot", Opcode::DotProduct),
+        ("eq.v", Opcode::VectorEqual),
+        ("eq", Opcode::Equal),
+        ("exp", Opcode::Exp),
+        ("exp2", Opcode::Exp2),
+        ("f2b", Opcode::FloatToBool),
+        ("f2i", Opcode::FloatToInt),
+        ("floor", Opcode::Floor),
+        ("fract", Opcode::Fract),
+        ("i2b", Opcode::IntToBool),
+        ("i2f", Opcode::IntToFloat),
+        ("le", Opcode::LessThanEqual),
+        ("len", Opcode::Length),
+        ("log", Opcode::Log),
+        ("log2", Opcode::Log2),
+        ("lt", Opcode::LessThan),
+        ("max", Opcode::Max),
+        ("min", Opcode::Min),
+        ("mod", Opcode::Mod),
+        ("mov", Opcode::Mov),
+        ("mul.mm", Opcode::MatMatMul),
+        ("mul.mv", Opcode::MatVecMul),
+        ("mul.vm", Opcode::VecMatMul),
+        ("mul", Opcode::Mul),
+        ("neq.v", Opcode::VectorNotEqual),
+        ("neq", Opcode::NotEqual),
+        ("norm", Opcode::Normalize),
+        ("not", Opcode::LogicalNot),
+        ("or", Opcode::LogicalOr),
+        ("pow", Opcode::Pow),
+        ("rcp", Opcode::Rcp),
+        ("rsqrt", Opcode::RSqrt),
+        ("sign", Opcode::Sign),
+        ("sin", Opcode::Sin),
+        ("sqrt", Opcode::Sqrt),
+        ("step", Opcode::Step),
+        ("sub", Opcode::Sub),
+        ("tan", Opcode::Tan),
+        ("xor", Opcode::LogicalXor),
+    ])
 });
 
 pub struct PixelBenderShaderAssembly<'a> {
