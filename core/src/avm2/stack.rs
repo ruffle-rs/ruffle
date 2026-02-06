@@ -1,6 +1,5 @@
 //! Internal representation of the AVM2 value stack
 
-use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::Method;
 use crate::avm2::value::Value;
 
@@ -148,22 +147,16 @@ impl<'a, 'gc> StackFrame<'a, 'gc> {
     }
 
     #[inline(always)]
-    pub fn get_args(&self, num_args: usize) -> FunctionArgs<'a, 'gc> {
-        let base = self.stack_pointer.get() - num_args;
+    pub fn pop_args(&self, arg_count: u32) -> &'a [Cell<Value<'gc>>] {
+        let arg_count = arg_count as usize;
+        let base = self.stack_pointer.get() - arg_count;
 
-        self.stack_pointer.set(base);
+        self.set_stack_pointer(base);
 
-        FunctionArgs::from_cell_slice(&self.data[base..base + num_args])
+        &self.data[base..base + arg_count]
     }
 
-    pub fn pop_args(&self, arg_count: u32) -> Vec<Value<'gc>> {
-        let mut args = vec![Value::Undefined; arg_count as usize];
-        for arg in args.iter_mut().rev() {
-            *arg = self.pop();
-        }
-        args
-    }
-
+    #[inline(always)]
     pub fn set_stack_pointer(&self, size: usize) {
         self.stack_pointer.set(size);
     }

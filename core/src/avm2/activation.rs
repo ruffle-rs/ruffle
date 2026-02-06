@@ -29,6 +29,7 @@ use crate::string::{AvmAtom, AvmString, HasStringContext, StringContext};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Gc;
 use ruffle_macros::istr;
+use std::cell::Cell;
 use std::cmp::{Ordering, min};
 use std::sync::Arc;
 use swf::avm2::types::MethodFlags as AbcMethodFlags;
@@ -564,11 +565,27 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.stack.pop()
     }
 
+    /// Pops multiple values off the operand stack, collecting them into a collection.
+    #[inline]
+    #[must_use]
+    pub fn pop_stack_args<C>(&self, arg_count: u32) -> C
+    where
+        C: FromIterator<Value<'gc>>,
+    {
+        self.stack
+            .pop_args(arg_count)
+            .iter()
+            .map(Cell::get)
+            .collect()
+    }
+
     /// Pops multiple values off the operand stack.
     #[inline]
     #[must_use]
-    pub fn pop_stack_args(&self, arg_count: u32) -> Vec<Value<'gc>> {
-        self.stack.pop_args(arg_count)
+    pub fn get_args(&self, arg_count: u32) -> FunctionArgs<'a, 'gc> {
+        let slice = self.stack.pop_args(arg_count);
+
+        FunctionArgs::from_cell_slice(slice)
     }
 
     /// Pushes a scope onto the scope stack.
@@ -1031,7 +1048,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_call(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let receiver = self.pop_stack();
         let function = self.pop_stack();
 
@@ -1055,7 +1072,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // However, the optimizer can still generate it.
 
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let receiver = self.pop_stack().null_check(self, None)?;
 
         let value = receiver.call_method_with_args(index, args, self)?;
@@ -1095,7 +1112,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
 
@@ -1111,7 +1128,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
         let function = receiver.get_property(&multiname, self)?;
@@ -1127,7 +1144,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
 
@@ -1137,7 +1154,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_call_static(&mut self, method: Method<'gc>, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let receiver = self.pop_stack();
 
         // Ensure receiver is of the correct type
@@ -1162,7 +1179,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let multiname = multiname.fill_with_runtime_params(self)?;
 
         let bound_superclass_object = self
@@ -1697,7 +1714,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_construct(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let ctor = self.pop_stack();
 
         let object = ctor.construct(self, args)?;
@@ -1712,7 +1729,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let source = self.pop_stack().null_check(self, Some(&multiname))?;
 
@@ -1724,7 +1741,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_construct_slot(&mut self, index: u32, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let source = self
             .pop_stack()
             .null_check(self, None)?
@@ -1740,7 +1757,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_construct_super(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let receiver = self.pop_stack().null_check(self, None)?;
 
         self.super_init(receiver, args)?;
@@ -1837,7 +1854,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_apply_type(&mut self, num_types: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(num_types);
+        let args: Vec<_> = self.pop_stack_args(num_types);
         let base = self
             .pop_stack()
             .as_object()
@@ -1851,8 +1868,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_array(&mut self, num_args: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(num_args);
-        let array = ArrayStorage::from_args(&args[..]);
+        let array = self.pop_stack_args(num_args);
         let array_obj = ArrayObject::from_storage(self.context, array);
 
         self.push_stack(array_obj);
