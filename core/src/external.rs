@@ -365,7 +365,7 @@ pub struct NullExternalInterfaceProvider;
 #[collect(no_drop)]
 pub struct ExternalInterface<'gc> {
     #[collect(require_static)]
-    provider: Option<Rc<Box<dyn ExternalInterfaceProvider>>>,
+    provider: Option<Rc<dyn ExternalInterfaceProvider>>,
     callbacks: BTreeMap<String, Callback<'gc>>,
     #[collect(require_static)]
     fs_commands: Box<dyn FsCommandProvider>,
@@ -377,14 +377,14 @@ impl<'gc> ExternalInterface<'gc> {
         fs_commands: Box<dyn FsCommandProvider>,
     ) -> Self {
         Self {
-            provider: provider.map(Rc::new),
+            provider: provider.map(Rc::from),
             callbacks: Default::default(),
             fs_commands,
         }
     }
 
     pub fn set_provider(&mut self, provider: Option<Box<dyn ExternalInterfaceProvider>>) {
-        self.provider = provider.map(Rc::new);
+        self.provider = provider.map(Rc::from);
     }
 
     pub fn add_callback(&mut self, name: String, callback: Callback<'gc>) {
