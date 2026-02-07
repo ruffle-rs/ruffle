@@ -1,7 +1,8 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::e4x::{
-    E4XNamespace, E4XNode, E4XNodeKind, namespace_for_multiname, string_to_multiname,
+    E4XNamespace, E4XNode, E4XNodeKind, handle_input_multiname, namespace_for_multiname,
+    string_to_multiname,
 };
 use crate::avm2::error::make_error_1089;
 use crate::avm2::function::FunctionArgs;
@@ -21,7 +22,6 @@ use ruffle_wstr::WString;
 use std::cell::{Cell, Ref, RefMut};
 use std::fmt::{self, Debug};
 
-use super::xml_object::handle_input_multiname;
 use super::{ClassObject, XmlObject};
 
 /// A class instance allocator that allocates XMLList objects.
