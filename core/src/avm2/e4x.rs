@@ -3,8 +3,9 @@ use crate::avm2::error::{
     make_xml_error,
 };
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::multiname::NamespaceSet;
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
-use crate::avm2::{Activation, Error, Multiname, Value};
+use crate::avm2::{Activation, Error, Multiname, Namespace, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
 
 use gc_arena::barrier::unlock;
@@ -40,6 +41,50 @@ pub fn namespace_for_multiname<'gc>(
     } else {
         None
     }
+}
+
+pub fn handle_input_multiname<'gc>(
+    name: Multiname<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Multiname<'gc> {
+    // Special case to handle code like: xml["@attr"]
+    // FIXME: Figure out the exact semantics.
+    // NOTE: It is very important the code within the if-statement is not run
+    // when the passed name has the Any namespace. Otherwise, we run the risk of
+    // creating a NamespaceSet::Multiple with an Any namespace in it.
+    if !name.has_explicit_namespace()
+        && !name.is_attribute()
+        && !name.is_any_name()
+        && !name.is_any_namespace()
+        && let Some(mut new_name) = name
+            .local_name()
+            .map(|name| string_to_multiname(activation, name))
+    {
+        // If there's a default XML namespace, use it exclusively for property access.
+        // Otherwise, copy the namespaces from the previous name and include public.
+        if !new_name.is_any_namespace() {
+            if let Some(uri) = activation.default_xml_namespace() {
+                let ns = Namespace::package(
+                    uri,
+                    activation.avm2().root_api_version,
+                    activation.strings(),
+                );
+                new_name.set_ns(NamespaceSet::single(ns));
+            } else {
+                let mut ns = name.namespace_set().to_vec();
+
+                if !name.contains_public_namespace() {
+                    ns.push(activation.avm2().namespaces.public_all());
+                }
+
+                new_name.set_ns(NamespaceSet::new(ns, activation.gc()));
+            }
+        }
+
+        return new_name;
+    }
+
+    name
 }
 
 pub use is_xml_name::is_xml_name;
