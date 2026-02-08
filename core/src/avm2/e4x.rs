@@ -141,16 +141,16 @@ impl<'gc> E4XNamespace<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<NamespaceObject<'gc>, Error<'gc>> {
-        let args = if let Some(prefix) = self.prefix {
-            vec![prefix.into(), self.uri.into()]
+        let args: &[Value<'gc>] = if let Some(prefix) = self.prefix {
+            &[prefix.into(), self.uri.into()]
         } else {
-            vec![self.uri.into()]
+            &[self.uri.into()]
         };
         let obj = activation
             .avm2()
             .classes()
             .namespace
-            .construct(activation, &args)?;
+            .construct(activation, args)?;
 
         Ok(obj
             .as_object()

@@ -785,7 +785,7 @@ impl Player {
                 display_object,
             );
 
-            let params = vec![display_object.object1_or_undef(), Value::Object(item)];
+            let params = [display_object.object1_or_undef(), Value::Object(item)];
 
             let _ = callback.call(
                 "[Context Menu Callback]",
