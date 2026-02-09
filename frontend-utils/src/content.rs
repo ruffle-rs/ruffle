@@ -36,6 +36,20 @@ impl ContentDescriptor {
             root_content_path,
         })
     }
+
+    pub fn describe(&self) -> String {
+        #[cfg(not(feature = "fs"))]
+        {
+            format!("{}", self.url)
+        }
+
+        #[cfg(feature = "fs")]
+        if let Some(dir) = &self.root_content_path {
+            format!("{} within {}", self.url, dir.display())
+        } else {
+            format!("{}", self.url)
+        }
+    }
 }
 
 /// Similar to [`ContentDescriptor`], but represents content that is already
