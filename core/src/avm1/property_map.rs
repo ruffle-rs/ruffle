@@ -7,14 +7,14 @@
 use crate::string::{AvmString, WStr, utils as string_utils};
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
-use gc_arena::collect::Trace;
 use indexmap::{Equivalent, IndexMap};
 use std::hash::{Hash, Hasher};
 
 type FnvIndexMap<K, V> = IndexMap<K, V, FnvBuildHasher>;
 
 /// A map from property names to values.
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct PropertyMap<'gc, V>(FnvIndexMap<PropertyName<'gc>, V>);
 
 impl<'gc, V> PropertyMap<'gc, V> {
@@ -105,15 +105,6 @@ impl<'gc, V> PropertyMap<'gc, V> {
             self.0.shift_remove(&CaseSensitive(key.as_ref()))
         } else {
             self.0.shift_remove(&CaseInsensitive(key.as_ref()))
-        }
-    }
-}
-
-unsafe impl<'gc, V: Collect<'gc>> Collect<'gc> for PropertyMap<'gc, V> {
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (key, value) in &self.0 {
-            cc.trace(key);
-            cc.trace(value);
         }
     }
 }

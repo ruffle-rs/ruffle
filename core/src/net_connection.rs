@@ -12,7 +12,6 @@ use crate::context::UpdateContext;
 use crate::loader::Error;
 use flash_lso::packet::{Header, Message, Packet};
 use flash_lso::types::{AMFVersion, Value as AmfValue};
-use gc_arena::collect::Trace;
 use gc_arena::{Collect, DynamicRoot, Gc, Rootable};
 use slotmap::{SlotMap, new_key_type};
 use std::fmt::{Debug, Formatter};
@@ -112,16 +111,10 @@ impl<'gc> From<Avm1Object<'gc>> for NetConnectionObject<'gc> {
 }
 
 /// Manages the collection of NetConnections.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct NetConnections<'gc> {
     connections: SlotMap<NetConnectionHandle, NetConnection<'gc>>,
-}
-
-unsafe impl<'gc> Collect<'gc> for NetConnections<'gc> {
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (_, connection) in self.connections.iter() {
-            cc.trace(connection);
-        }
-    }
 }
 
 impl Default for NetConnections<'_> {

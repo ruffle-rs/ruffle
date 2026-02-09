@@ -57,7 +57,7 @@ egui = "0.33.3"
 clap = { version = "4.5.57", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
-gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "08e08414249d5914dfc3b402d7eadc133e00ce56" }
+gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["indexmap", "smallvec", "slotmap"] }
 slotmap = "1.1.1"
 async-channel = "2.5.0"
 bitflags = "2.10.0"
@@ -97,7 +97,7 @@ bitstream-io = "4.9.0"
 indicatif = "0.18"
 rayon = "1.11.0"
 sha2 = "0.10.9"
-indexmap = "2.12.0"
+indexmap = "2.13.0"
 fnv = "1.0.7"
 hashbrown = { version = "0.14.5", features = ["raw"] }
 fluent-templates = "0.13.2"

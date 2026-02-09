@@ -10,7 +10,6 @@ use crate::string::AvmString;
 
 use async_channel::{Receiver, Sender, unbounded};
 use gc_arena::Collect;
-use gc_arena::collect::Trace;
 use ruffle_macros::istr;
 use slotmap::{SlotMap, new_key_type};
 use std::{
@@ -62,19 +61,15 @@ pub enum SocketAction {
 }
 
 /// Manages the collection of Sockets.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct Sockets<'gc> {
     sockets: SlotMap<SocketHandle, Socket<'gc>>,
 
+    #[collect(require_static)]
     receiver: Receiver<SocketAction>,
+    #[collect(require_static)]
     sender: Sender<SocketAction>,
-}
-
-unsafe impl<'gc> Collect<'gc> for Sockets<'gc> {
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (_, socket) in self.sockets.iter() {
-            cc.trace(socket);
-        }
-    }
 }
 
 impl<'gc> Sockets<'gc> {
