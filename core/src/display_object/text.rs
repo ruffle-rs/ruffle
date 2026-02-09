@@ -1,7 +1,7 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::{DisplayObjectBase, MovieClip};
+use crate::display_object::{BoundsMode, DisplayObjectBase, MovieClip};
 use crate::font::{FontLike, TextRenderSettings};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -184,7 +184,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         context.transform_stack.pop();
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         self.0.shared.get().bounds
     }
 
@@ -195,7 +195,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
         options: HitTestOptions,
     ) -> bool {
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
-            && self.world_bounds().contains(point)
+            && self.world_bounds(BoundsMode::Engine).contains(point)
         {
             // Texts using the "Advanced text rendering" always hit test using their bounding box.
             if self.0.render_settings.borrow().is_advanced() {

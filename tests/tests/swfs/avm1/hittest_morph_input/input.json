@@ -1,0 +1,15 @@
+[
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [
+      180,
+      160
+    ]
+  },
+  {
+    "type": "Wait"
+  }
+]

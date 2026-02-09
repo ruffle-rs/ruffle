@@ -14,7 +14,7 @@ use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
 use crate::display_object::{
-    DisplayObject, DisplayObjectBase, TDisplayObject, TDisplayObjectContainer,
+    BoundsMode, DisplayObject, DisplayObjectBase, TDisplayObject, TDisplayObjectContainer,
 };
 use crate::events::{ClipEvent, ClipEventResult, MouseButton};
 use crate::string::AvmString;
@@ -684,7 +684,7 @@ pub trait TInteractiveObject<'gc>:
 
     /// Get the bounds of the focus highlight.
     fn highlight_bounds(self) -> Rectangle<Twips> {
-        self.as_displayobject().world_bounds()
+        self.as_displayobject().world_bounds(BoundsMode::Engine)
     }
 
     /// Whether this object is included in tab ordering.

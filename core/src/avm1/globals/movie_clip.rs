@@ -9,7 +9,7 @@ use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{self, ArrayBuilder, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
-use crate::display_object::{Bitmap, EditText, MovieClip, TInteractiveObject};
+use crate::display_object::{Bitmap, BoundsMode, EditText, MovieClip, TInteractiveObject};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -1453,7 +1453,7 @@ fn get_bounds<'gc>(
             }
         }
 
-        let bounds = movie_clip.bounds();
+        let bounds = movie_clip.bounds(BoundsMode::Script);
         let out_bounds = if DisplayObject::ptr_eq(movie_clip.into(), target) {
             // Getting the clips bounds in its own coordinate space; no AABB transform needed.
             bounds

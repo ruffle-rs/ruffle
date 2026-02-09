@@ -1,6 +1,6 @@
 use crate::avm2::object::BitmapDataObject;
 use crate::context::RenderContext;
-use crate::display_object::{DisplayObject, DisplayObjectWeak, TDisplayObject};
+use crate::display_object::{BoundsMode, DisplayObject, DisplayObjectWeak, TDisplayObject};
 use bitflags::bitflags;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, Gc, Mutation};
@@ -957,7 +957,7 @@ impl IBitmapDrawable<'_> {
                 y_min: Twips::ZERO,
                 y_max: Twips::from_pixels(bmd.height() as f64),
             },
-            IBitmapDrawable::DisplayObject(o) => o.bounds(),
+            IBitmapDrawable::DisplayObject(o) => o.bounds(BoundsMode::Engine),
         }
     }
 }

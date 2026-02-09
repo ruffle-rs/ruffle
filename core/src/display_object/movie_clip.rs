@@ -21,8 +21,8 @@ use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{
-    Avm1Button, Avm1TextFieldBinding, Avm2Button, DisplayObjectBase, DisplayObjectPtr, EditText,
-    Graphic, MorphShape, Text, Video,
+    Avm1Button, Avm1TextFieldBinding, Avm2Button, BoundsMode, DisplayObjectBase, DisplayObjectPtr,
+    EditText, Graphic, MorphShape, Text, Video,
 };
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
@@ -2566,7 +2566,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.render_children(context);
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         self.drawing().map(|d| d.self_bounds()).unwrap_or_default()
     }
 
@@ -2587,7 +2587,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             return false;
         }
 
-        if self.world_bounds().contains(point) {
+        if self.world_bounds(BoundsMode::Engine).contains(point) {
             let Some(local_matrix) = self.global_to_local_matrix() else {
                 return false;
             };
@@ -2904,7 +2904,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             // true.
             // InteractiveObject.mouseEnabled:
             // "Any children of this instance on the display list are not affected."
-            if self.mouse_enabled() && self.world_bounds().contains(point) {
+            if self.mouse_enabled() && self.world_bounds(BoundsMode::Engine).contains(point) {
                 // This MovieClip operates in "button mode" if it has a mouse handler,
                 // either via on(..) or via property mc.onRelease, etc.
                 let is_button_mode = self.is_button_mode(context);
@@ -3111,7 +3111,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             }
 
             // Check drawing, because this selects the current clip, it must have mouse enabled
-            if self.world_bounds().contains(point)
+            if self.world_bounds(BoundsMode::Engine).contains(point)
                 && let Some(drawing) = self.drawing()
                 && drawing.hit_test(local_matrix * point, &local_matrix)
             {
