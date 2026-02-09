@@ -1,0 +1,269 @@
+===== Frame 1 (initial) =====
+// hitbox.getBounds(this)
+(x=-0.75, y=-0.75, w=65, h=65)
+// hitbox.getBounds(hitbox)
+(x=-32.75, y=-32.75, w=65, h=65)
+// hitbox.getRect(this)
+(x=-0.75, y=-0.75, w=65, h=65)
+// hitbox.getRect(hitbox)
+(x=-32.75, y=-32.75, w=65, h=65)
+// hitbox.transform.pixelBounds
+(x=0, y=0, w=65, h=65)
+// hitbox.width
+65
+// hitbox.height
+65
+
+===== Width/Height setters =====
+// Original hitbox.width
+65
+// Original hitbox.height
+65
+// Original hitbox.scaleX
+1
+// Original hitbox.scaleY
+1
+// hitbox.width = 200
+// hitbox.width
+200
+// hitbox.scaleX
+3.0769230769230775
+// hitbox.getBounds(this)
+(x=-68.75, y=-0.75, w=200, h=65)
+// hitbox.height = 100
+// hitbox.height
+100
+// hitbox.scaleY
+1.5384615384615388
+// hitbox.getBounds(this)
+(x=-68.75, y=-18.4, w=200, h=100)
+// hitbox.width = 0
+// hitbox.width
+0
+// hitbox.scaleX
+0
+
+===== Frame 2 =====
+// hitbox.getBounds(this)
+(x=-0.75, y=-0.75, w=65, h=65)
+// hitbox.getBounds(hitbox)
+(x=-32.75, y=-32.75, w=65, h=65)
+// hitbox.getRect(this)
+(x=-0.75, y=-0.75, w=65, h=65)
+// hitbox.getRect(hitbox)
+(x=-32.75, y=-32.75, w=65, h=65)
+// hitbox.transform.pixelBounds
+(x=0, y=0, w=65, h=65)
+// hitbox.width
+65
+// hitbox.height
+65
+
+===== Width/Height setters =====
+// Original hitbox.width
+65
+// Original hitbox.height
+65
+// Original hitbox.scaleX
+1
+// Original hitbox.scaleY
+1
+// hitbox.width = 200
+// hitbox.width
+200
+// hitbox.scaleX
+3.0769230769230775
+// hitbox.getBounds(this)
+(x=-68.75, y=-0.75, w=200, h=65)
+// hitbox.height = 100
+// hitbox.height
+100
+// hitbox.scaleY
+1.5384615384615388
+// hitbox.getBounds(this)
+(x=-68.75, y=-18.4, w=200, h=100)
+// hitbox.width = 0
+// hitbox.width
+0
+// hitbox.scaleX
+0
+
+===== Frame 3 =====
+// hitbox.getBounds(this)
+(x=-0.75, y=-0.75, w=65, h=65)
+// hitbox.getBounds(hitbox)
+(x=-32.75, y=-32.75, w=65, h=65)
+// hitbox.getRect(this)
+(x=-0.75, y=-0.75, w=65, h=65)
+// hitbox.getRect(hitbox)
+(x=-32.75, y=-32.75, w=65, h=65)
+// hitbox.transform.pixelBounds
+(x=0, y=0, w=65, h=65)
+// hitbox.width
+65
+// hitbox.height
+65
+
+===== Width/Height setters =====
+// Original hitbox.width
+65
+// Original hitbox.height
+65
+// Original hitbox.scaleX
+1
+// Original hitbox.scaleY
+1
+// hitbox.width = 200
+// hitbox.width
+200
+// hitbox.scaleX
+3.0769230769230775
+// hitbox.getBounds(this)
+(x=-68.75, y=-0.75, w=200, h=65)
+// hitbox.height = 100
+// hitbox.height
+100
+// hitbox.scaleY
+1.5384615384615388
+// hitbox.getBounds(this)
+(x=-68.75, y=-18.4, w=200, h=100)
+// hitbox.width = 0
+// hitbox.width
+0
+// hitbox.scaleX
+0
+
+===== Frame 4 =====
+// hitbox.getBounds(this)
+(x=-0.75, y=-0.75, w=65, h=65)
+// hitbox.getBounds(hitbox)
+(x=-32.75, y=-32.75, w=65, h=65)
+// hitbox.getRect(this)
+(x=-0.75, y=-0.75, w=65, h=65)
+// hitbox.getRect(hitbox)
+(x=-32.75, y=-32.75, w=65, h=65)
+// hitbox.transform.pixelBounds
+(x=0, y=0, w=65, h=65)
+// hitbox.width
+65
+// hitbox.height
+65
+
+===== Width/Height setters =====
+// Original hitbox.width
+65
+// Original hitbox.height
+65
+// Original hitbox.scaleX
+1
+// Original hitbox.scaleY
+1
+// hitbox.width = 200
+// hitbox.width
+200
+// hitbox.scaleX
+3.0769230769230775
+// hitbox.getBounds(this)
+(x=-68.75, y=-0.75, w=200, h=65)
+// hitbox.height = 100
+// hitbox.height
+100
+// hitbox.scaleY
+1.5384615384615388
+// hitbox.getBounds(this)
+(x=-68.75, y=-18.4, w=200, h=100)
+// hitbox.width = 0
+// hitbox.width
+0
+// hitbox.scaleX
+0
+
+===== Frame 5 =====
+// hitbox.getBounds(this)
+(x=-0.75, y=-0.75, w=120, h=65)
+// hitbox.getBounds(hitbox)
+(x=-32.75, y=-32.75, w=120, h=65)
+// hitbox.getRect(this)
+(x=-0.75, y=-0.75, w=120, h=65)
+// hitbox.getRect(hitbox)
+(x=-32.75, y=-32.75, w=120, h=65)
+// hitbox.transform.pixelBounds
+(x=0, y=0, w=120, h=65)
+// hitbox.width
+120
+// hitbox.height
+65
+
+===== Width/Height setters =====
+// Original hitbox.width
+120
+// Original hitbox.height
+65
+// Original hitbox.scaleX
+1
+// Original hitbox.scaleY
+1
+// hitbox.width = 200
+// hitbox.width
+200
+// hitbox.scaleX
+1.666666666666667
+// hitbox.getBounds(this)
+(x=-22.6, y=-0.75, w=200, h=65)
+// hitbox.height = 100
+// hitbox.height
+100
+// hitbox.scaleY
+1.5384615384615388
+// hitbox.getBounds(this)
+(x=-22.6, y=-18.4, w=200, h=100)
+// hitbox.width = 0
+// hitbox.width
+0
+// hitbox.scaleX
+0
+
+===== TextField bounds =====
+// textbox.getBounds(this)
+(x=10, y=190, w=530, h=140)
+// textbox.getBounds(textbox)
+(x=-2, y=-2, w=530, h=140)
+// textbox.getRect(this)
+(x=10, y=190, w=530, h=140)
+// textbox.getRect(textbox)
+(x=-2, y=-2, w=530, h=140)
+// textbox.transform.pixelBounds
+(x=12, y=192, w=0, h=0)
+// textbox.width
+530
+// textbox.height
+140
+
+===== Width/Height setters =====
+// Original hitbox.width
+530
+// Original hitbox.height
+140
+// Original hitbox.scaleX
+1
+// Original hitbox.scaleY
+1
+// hitbox.width = 200
+// hitbox.width
+200
+// hitbox.scaleX
+1
+// hitbox.getBounds(this)
+(x=10, y=190, w=200, h=140)
+// hitbox.height = 100
+// hitbox.height
+100
+// hitbox.scaleY
+1
+// hitbox.getBounds(this)
+(x=10, y=190, w=200, h=100)
+// hitbox.width = 0
+// hitbox.width
+0
+// hitbox.scaleX
+1

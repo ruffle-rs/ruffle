@@ -14,7 +14,7 @@ use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase};
+use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase};
 use crate::events::{
     ClipEvent, ClipEventResult, ImeCursorArea, ImeEvent, ImeNotification, ImePurpose,
     PlayerNotification, TextControlCode,
@@ -2595,19 +2595,19 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
         self.set_object(Some(to.into()), context.gc());
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         self.apply_autosize_bounds();
 
         self.0.bounds.get()
     }
 
-    fn pixel_bounds(self) -> Rectangle<Twips> {
+    fn pixel_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
         // For pixel bounds we can't apply lazy autosize bounds.
         // It's a bit hacky, but it seems that pixelBounds are
         // an exception to the rule that lazy autosize bounds
         // are applied when reading anything related to bounds.
         let old = self.0.autosize_lazy_bounds.take();
-        let bounds = self.world_bounds();
+        let bounds = self.world_bounds(mode);
         self.0.autosize_lazy_bounds.set(old);
         bounds
     }
@@ -2677,7 +2677,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         self.apply_autosize_bounds();
 
-        if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
+        if !context.is_offscreen
+            && !self
+                .world_bounds(BoundsMode::Engine)
+                .intersects(&context.stage.view_bounds())
+        {
             // Off-screen; culled
             return;
         }
@@ -2948,7 +2952,7 @@ impl<'gc> EditText<'gc> {
 
     fn ime_cursor_area(self) -> ImeCursorArea {
         // TODO We should be smarter here and return an area closer to the cursor.
-        let bounds = self.world_bounds();
+        let bounds = self.world_bounds(BoundsMode::Engine);
         ImeCursorArea {
             x: bounds.x_min.to_pixels(),
             y: bounds.y_min.to_pixels(),

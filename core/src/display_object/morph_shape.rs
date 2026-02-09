@@ -1,7 +1,7 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::DisplayObjectBase;
+use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::library::{Library, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
@@ -120,8 +120,14 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
             .render_shape(shape_handle, context.transform_stack.transform());
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
-        let ratio = self.ratio();
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        let ratio = match mode {
+            // For getBounds(), getRect() or hitTestObject(), return start bounds (0)
+            BoundsMode::Script => 0,
+            // otherwise, use the actual interpolated ratio
+            BoundsMode::Engine => self.ratio(),
+        };
+
         let shared = self.0.shared.get();
         let frame = shared.get_frame(ratio);
         frame.bounds
@@ -134,7 +140,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         options: HitTestOptions,
     ) -> bool {
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
-            && self.world_bounds().contains(point)
+            && self.world_bounds(BoundsMode::Engine).contains(point)
         {
             if let Some(frame) = self.0.shared.get().frames.borrow().get(&self.ratio()) {
                 let Some(local_matrix) = self.global_to_local_matrix() else {
