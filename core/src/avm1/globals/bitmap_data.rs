@@ -1211,7 +1211,9 @@ fn threshold<'gc>(
         .get(istr!("y"), activation)?
         .coerce_to_f64(activation)? as i32;
 
-    let operation = ThresholdOperation::from_wstr(&args.get_string(activation, 3)?)
+    let operation = args
+        .get_string(activation, 3)?
+        .parse()
         .unwrap_or(ThresholdOperation::LessThan);
     let threshold = args.get_u32(activation, 4)?;
     let colour = args.get_u32(activation, 5)?;

@@ -262,13 +262,10 @@ fn transform<'gc>(
         }
 
         if let Some(display) = get_style(style_object, "display", activation) {
-            let display = display.coerce_to_string(activation)?;
-            if &display == b"none" {
-                text_format.display = Some(crate::html::TextDisplay::None);
-            } else if &display == b"inline" {
-                text_format.display = Some(crate::html::TextDisplay::Inline);
-            } else {
-                text_format.display = Some(crate::html::TextDisplay::Block);
+            let display = display.coerce_to_string(activation)?.parse().ok();
+
+            if let Some(display) = display {
+                text_format.display = Some(display);
             }
         }
 
@@ -343,15 +340,14 @@ fn transform<'gc>(
         }
 
         if let Some(align) = get_style(style_object, "textAlign", activation) {
-            let align = align.coerce_to_string(activation)?.to_ascii_lowercase();
-            if &align == b"left" {
-                text_format.align = Some(swf::TextAlign::Left);
-            } else if &align == b"center" {
-                text_format.align = Some(swf::TextAlign::Center);
-            } else if &align == b"right" {
-                text_format.align = Some(swf::TextAlign::Right);
-            } else if &align == b"justify" {
-                text_format.align = Some(swf::TextAlign::Justify);
+            let align = align
+                .coerce_to_string(activation)?
+                .to_ascii_lowercase()
+                .parse()
+                .ok();
+
+            if let Some(align) = align {
+                text_format.align = Some(align);
             }
         }
 

@@ -88,17 +88,10 @@ pub fn init<'gc>(
 
     let bitmap_data = args.try_get_object(0).and_then(|o| o.as_bitmap_data());
 
-    let pixel_snapping = args.get_string(activation, 1);
-
-    let pixel_snapping = if &pixel_snapping == b"always" {
-        PixelSnapping::Always
-    } else if &pixel_snapping == b"auto" {
-        PixelSnapping::Auto
-    } else if &pixel_snapping == b"never" {
-        PixelSnapping::Never
-    } else {
-        return Err(make_error_2008(activation, "pixelSnapping"));
-    };
+    let pixel_snapping = args
+        .get_string(activation, 1)
+        .parse()
+        .map_err(|_| make_error_2008(activation, "pixelSnapping"))?;
 
     let smoothing = args.get_bool(2);
 
@@ -189,17 +182,10 @@ pub fn set_pixel_snapping<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bitmap) = this.as_display_object().and_then(|dobj| dobj.as_bitmap()) {
-        let value = args.get_string(activation, 0);
-
-        let pixel_snapping = if &value == b"always" {
-            PixelSnapping::Always
-        } else if &value == b"auto" {
-            PixelSnapping::Auto
-        } else if &value == b"never" {
-            PixelSnapping::Never
-        } else {
-            return Err(make_error_2008(activation, "pixelSnapping"));
-        };
+        let pixel_snapping = args
+            .get_string(activation, 0)
+            .parse()
+            .map_err(|_| make_error_2008(activation, "pixelSnapping"))?;
 
         bitmap.set_pixel_snapping(pixel_snapping);
     }

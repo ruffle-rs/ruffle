@@ -1,6 +1,7 @@
 use crate::bitmap::BitmapHandle;
 use crate::pixel_bender::PixelBenderShaderHandle;
 use crate::pixel_bender_support::PixelBenderShaderArgument;
+use ruffle_wstr::{FromWStr, WStr};
 use std::{any::Any, fmt::Debug};
 use swf::{Color, Rectangle, Twips};
 
@@ -142,6 +143,24 @@ pub enum DisplacementMapFilterMode {
     Ignore,
     #[default]
     Wrap,
+}
+
+impl FromWStr for DisplacementMapFilterMode {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"clamp" {
+            Ok(DisplacementMapFilterMode::Clamp)
+        } else if s == b"color" {
+            Ok(DisplacementMapFilterMode::Color)
+        } else if s == b"ignore" {
+            Ok(DisplacementMapFilterMode::Ignore)
+        } else if s == b"wrap" {
+            Ok(DisplacementMapFilterMode::Wrap)
+        } else {
+            Err(())
+        }
+    }
 }
 
 #[derive(Clone, Debug, Default, PartialEq)]

@@ -349,15 +349,13 @@ fn line_style<'gc>(
             Some(v) if v == b"horizontal" => (false, true),
             _ => (true, true),
         };
-        let cap_style = match args
+
+        let cap_style = args
             .get(5)
             .and_then(|v| v.coerce_to_string(activation).ok())
-            .as_deref()
-        {
-            Some(v) if v == b"square" => LineCapStyle::Square,
-            Some(v) if v == b"none" => LineCapStyle::None,
-            _ => LineCapStyle::Round,
-        };
+            .and_then(|s| s.parse().ok())
+            .unwrap_or(LineCapStyle::Round);
+
         let join_style = match args
             .get(6)
             .and_then(|v| v.coerce_to_string(activation).ok())
@@ -519,28 +517,19 @@ fn build_gradient_records<'gc>(
 }
 
 fn parse_gradient_type(gradient_type: AvmString) -> Option<GradientType> {
-    if &gradient_type == b"linear" {
-        Some(GradientType::Linear)
-    } else if &gradient_type == b"radial" {
-        Some(GradientType::Radial)
-    } else {
-        None
-    }
+    gradient_type.parse().ok()
 }
 
 fn parse_spread_method(spread_method: Option<AvmString>) -> GradientSpread {
-    match spread_method.as_deref() {
-        Some(v) if v == b"reflect" => GradientSpread::Reflect,
-        Some(v) if v == b"repeat" => GradientSpread::Repeat,
-        _ => GradientSpread::Pad,
-    }
+    spread_method
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(GradientSpread::Pad)
 }
 
 fn parse_interpolation_method(interpolation_method: Option<AvmString>) -> GradientInterpolation {
-    match interpolation_method.as_deref() {
-        Some(v) if v == b"linearRGB" => GradientInterpolation::LinearRgb,
-        _ => GradientInterpolation::Rgb,
-    }
+    interpolation_method
+        .and_then(|s| s.parse().ok())
+        .unwrap_or(GradientInterpolation::Rgb)
 }
 
 fn begin_fill<'gc>(

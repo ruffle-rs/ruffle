@@ -22,6 +22,7 @@ use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::{AvmString, WStr};
 use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
+use ruffle_wstr::FromWStr;
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{
     Color, FillStyle, Fixed8, Fixed16, Gradient, GradientInterpolation, GradientRecord,
@@ -225,31 +226,17 @@ fn parse_gradient_type<'gc>(
     activation: &mut Activation<'_, 'gc>,
     gradient_type: AvmString<'gc>,
 ) -> Result<GradientType, Error<'gc>> {
-    if &gradient_type == b"linear" {
-        Ok(GradientType::Linear)
-    } else if &gradient_type == b"radial" {
-        Ok(GradientType::Radial)
-    } else {
-        Err(make_error_2008(activation, "type"))
-    }
+    gradient_type
+        .parse()
+        .map_err(|_| make_error_2008(activation, "type"))
 }
 
 fn parse_interpolation_method(gradient_type: AvmString) -> GradientInterpolation {
-    if &gradient_type == b"linearRGB" {
-        GradientInterpolation::LinearRgb
-    } else {
-        GradientInterpolation::Rgb
-    }
+    gradient_type.parse().unwrap_or(GradientInterpolation::Rgb)
 }
 
 fn parse_spread_method(spread_method: AvmString) -> GradientSpread {
-    if &spread_method == b"repeat" {
-        GradientSpread::Repeat
-    } else if &spread_method == b"reflect" {
-        GradientSpread::Reflect
-    } else {
-        GradientSpread::Pad
-    }
+    spread_method.parse().unwrap_or(GradientSpread::Pad)
 }
 
 /// Implements `Graphics.clear`
@@ -312,17 +299,8 @@ pub fn end_fill<'gc>(
 }
 
 fn caps_to_cap_style(caps: Option<AvmString>) -> LineCapStyle {
-    if let Some(caps) = caps {
-        if &caps == b"none" {
-            LineCapStyle::None
-        } else if &caps == b"square" {
-            LineCapStyle::Square
-        } else {
-            LineCapStyle::Round
-        }
-    } else {
-        LineCapStyle::Round
-    }
+    caps.and_then(|s| s.parse().ok())
+        .unwrap_or(LineCapStyle::Round)
 }
 
 fn joints_to_join_style(joints: Option<AvmString>, miter_limit: f64) -> LineJoinStyle {
@@ -1014,13 +992,9 @@ pub fn draw_path<'gc>(
     let data = args.get_object(activation, 1, "data")?;
     let winding = args.get_string(activation, 2);
 
-    let fill_rule = if winding == WStr::from_units(b"nonZero") {
-        FillRule::NonZero
-    } else if winding == WStr::from_units(b"evenOdd") {
-        FillRule::EvenOdd
-    } else {
-        return Err(make_error_2008(activation, "winding"));
-    };
+    let fill_rule = winding
+        .parse()
+        .map_err(|_| make_error_2008(activation, "winding"))?;
 
     // FIXME - implement fill behavior described in the Flash docs
     // (which is different from just running each command sequentially on `Graphics`)
@@ -1057,11 +1031,10 @@ pub fn draw_triangles<'gc>(
 
             let uvt_data = args.try_get_object(2);
 
-            let culling = {
-                let culling = args.get_string(activation, 3);
-                TriangleCulling::from_string(culling)
-                    .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?
-            };
+            let culling = args
+                .get_string(activation, 3)
+                .parse()
+                .map_err(|_| make_error_2004(activation, Error2004Type::ArgumentError))?;
 
             draw_triangles_internal(
                 activation,
@@ -1084,19 +1057,23 @@ enum TriangleCulling {
     Negative,
 }
 
-impl TriangleCulling {
-    fn from_string(value: AvmString) -> Option<Self> {
-        if &value == b"none" {
-            Some(Self::None)
-        } else if &value == b"positive" {
-            Some(Self::Positive)
-        } else if &value == b"negative" {
-            Some(Self::Negative)
+impl FromWStr for TriangleCulling {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"none" {
+            Ok(Self::None)
+        } else if s == b"positive" {
+            Ok(Self::Positive)
+        } else if s == b"negative" {
+            Ok(Self::Negative)
         } else {
-            None
+            Err(())
         }
     }
+}
 
+impl TriangleCulling {
     fn cull(self, (a, b, c): Triangle) -> bool {
         fn triangle_orientation((a, b, c): Triangle) -> i64 {
             let ax = a.x.get() as i64;
@@ -1494,13 +1471,9 @@ fn handle_igraphics_data<'gc>(
             .get_slot(graphics_path_slots::_WINDING)
             .coerce_to_string(activation)?;
 
-        let fill_rule = if winding == WStr::from_units(b"nonZero") {
-            FillRule::NonZero
-        } else if winding == WStr::from_units(b"evenOdd") {
-            FillRule::EvenOdd
-        } else {
-            unreachable!("AS3 setter guarantees value of winding");
-        };
+        let fill_rule = winding
+            .parse()
+            .expect("AS3 setter guarantees value of winding");
 
         if let (Some(commands), Some(data)) = (commands, data) {
             process_commands(
@@ -1589,14 +1562,11 @@ fn handle_graphics_triangle_path<'gc>(
     drawing: &mut Drawing,
     obj: &Object<'gc>,
 ) -> Result<(), Error<'gc>> {
-    let culling = {
-        let culling = obj
-            .get_slot(graphics_triangle_path_slots::_CULLING)
-            .coerce_to_string(activation)?;
-
-        TriangleCulling::from_string(culling)
-            .ok_or_else(|| make_error_2008(activation, "culling"))?
-    };
+    let culling = obj
+        .get_slot(graphics_triangle_path_slots::_CULLING)
+        .coerce_to_string(activation)?
+        .parse()
+        .map_err(|_| make_error_2008(activation, "culling"))?;
 
     let vertices = obj
         .get_slot(graphics_triangle_path_slots::VERTICES)

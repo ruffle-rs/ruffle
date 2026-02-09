@@ -472,17 +472,8 @@ fn avm2_to_displacement_map_filter<'gc>(
             (0, 0)
         };
     let mode = if let Value::String(mode) = object.get_slot(displacement_map_filter_slots::MODE) {
-        if &mode == b"clamp" {
-            DisplacementMapFilterMode::Clamp
-        } else if &mode == b"ignore" {
-            DisplacementMapFilterMode::Ignore
-        } else if &mode == b"color" {
-            DisplacementMapFilterMode::Color
-        } else if &mode == b"wrap" {
-            DisplacementMapFilterMode::Wrap
-        } else {
-            return Err(make_error_2008(activation, "mode"));
-        }
+        mode.parse()
+            .map_err(|_| make_error_2008(activation, "mode"))?
     } else {
         DisplacementMapFilterMode::Wrap
     };

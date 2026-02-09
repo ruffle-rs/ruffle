@@ -5413,6 +5413,7 @@ dependencies = [
  "lzma-rs",
  "num-derive",
  "num-traits",
+ "ruffle_wstr",
  "simple_asn1",
 ]
 

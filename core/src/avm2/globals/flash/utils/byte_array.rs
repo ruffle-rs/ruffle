@@ -352,14 +352,11 @@ pub fn set_endian<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut bytearray) = this.as_bytearray_mut() {
-        let endian = args.get_string_non_null(activation, 0, "endian")?;
-        if &endian == b"bigEndian" {
-            bytearray.set_endian(Endian::Big);
-        } else if &endian == b"littleEndian" {
-            bytearray.set_endian(Endian::Little);
-        } else {
-            return Err(make_error_2008(activation, "endian"));
-        }
+        let endian = args
+            .get_string_non_null(activation, 0, "endian")?
+            .parse()
+            .map_err(|_| make_error_2008(activation, "endian"))?;
+        bytearray.set_endian(endian);
     }
 
     Ok(Value::Undefined)
