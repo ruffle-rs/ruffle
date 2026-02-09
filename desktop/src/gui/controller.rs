@@ -679,7 +679,7 @@ fn register_family_font(
         }
     };
 
-    tracing::info!("Registering font {name} as {family}");
+    tracing::debug!("Registering font {name} as {family}");
 
     fd.font_data.insert(name.clone(), fontdata.into());
     fd.families.entry(family).or_default().push(name);
