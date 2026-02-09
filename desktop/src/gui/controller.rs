@@ -265,6 +265,8 @@ impl GuiController {
         opt: LaunchOptions,
         content_descriptor: ContentDescriptor,
     ) {
+        tracing::info!("Opening {}", content_descriptor.describe());
+
         self.close_movie(player);
         let movie_view = MovieView::new(
             self.movie_view_renderer.clone(),
