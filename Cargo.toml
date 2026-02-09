@@ -54,7 +54,7 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 naga = { version = "27.0.3", features = ["wgsl-out"] }
 wgpu = "27.0.1"
 egui = "0.33.3"
-clap = { version = "4.5.56", features = ["derive"] }
+clap = { version = "4.5.57", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
 gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "08e08414249d5914dfc3b402d7eadc133e00ce56" }
@@ -64,7 +64,7 @@ bitflags = "2.10.0"
 bytemuck = "1.25.0"
 chrono = { version = "0.4.43", default-features = false }
 enum-map = "2.7.3"
-flate2 = "1.1.8"
+flate2 = "1.1.9"
 futures = "0.3.31"
 image = { version = "0.25.9", default-features = false }
 js-sys = "0.3.85"
@@ -84,7 +84,7 @@ tokio = "1.49.0"
 rfd = { version = "0.17.2", default-features = false, features = ["wayland", "xdg-portal"] }
 memmap2 = "0.9.9"
 libtest-mimic = "0.8.1"
-regex = "1.12.2"
+regex = "1.12.3"
 toml = "0.9.7"
 vfs = "0.12.2"
 smallvec = { version = "1.15.1", features = ["const_new", "union"] }
@@ -102,7 +102,7 @@ fnv = "1.0.7"
 hashbrown = { version = "0.14.5", features = ["raw"] }
 fluent-templates = "0.13.2"
 lzma-rs = "0.3.0"
-tempfile = "3.24.0"
+tempfile = "3.25.0"
 tracing-wasm = "0.2.1"
 
 [workspace.lints.rust]
