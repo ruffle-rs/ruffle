@@ -428,7 +428,7 @@ dependencies = [
 
 [[package]]
 name = "build_playerglobal"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "clap",
  "convert_case",
@@ -1649,7 +1649,7 @@ dependencies = [
 
 [[package]]
 name = "exporter"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "anyhow",
  "clap",
@@ -1664,7 +1664,7 @@ dependencies = [
 
 [[package]]
 name = "exporter_integration_tests"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "anyhow",
  "clap",
@@ -1844,7 +1844,7 @@ dependencies = [
 
 [[package]]
 name = "flv-rs"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "bitflags 2.10.0",
  "thiserror 2.0.18",
@@ -3150,7 +3150,7 @@ dependencies = [
 
 [[package]]
 name = "mocket"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "anyhow",
  "clap",
@@ -3197,7 +3197,7 @@ dependencies = [
 
 [[package]]
 name = "naga-agal"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "bitflags 2.10.0",
  "insta",
@@ -3208,7 +3208,7 @@ dependencies = [
 
 [[package]]
 name = "naga-pixelbender"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "anyhow",
  "naga",
@@ -3925,7 +3925,7 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "pixel_bender"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "byteorder",
  "num-derive",
@@ -3938,7 +3938,7 @@ dependencies = [
 
 [[package]]
 name = "pixel_bender_assembly_tests"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "anyhow",
  "clap",
@@ -4473,7 +4473,7 @@ checksum = "6c20b6793b5c2fa6553b250154b78d6d0db37e72700ae35fad9387a46f487c97"
 
 [[package]]
 name = "ruffle_common"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "fnv",
  "gc-arena",
@@ -4490,7 +4490,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_core"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "async-channel",
  "bitflags 2.10.0",
@@ -4558,7 +4558,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_desktop"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "anyhow",
  "ashpd",
@@ -4612,7 +4612,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_frontend_utils"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "async-channel",
  "async-io",
@@ -4635,7 +4635,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_fs_tests_runner"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "anyhow",
  "libtest-mimic",
@@ -4646,7 +4646,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_input_format"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "bitflags 2.10.0",
  "serde",
@@ -4655,7 +4655,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_macros"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4664,7 +4664,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_render"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "approx",
  "byteorder",
@@ -4694,7 +4694,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_render_canvas"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "js-sys",
  "log",
@@ -4707,7 +4707,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_render_webgl"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "bytemuck",
  "js-sys",
@@ -4722,7 +4722,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_render_wgpu"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "bytemuck",
  "clap",
@@ -4746,7 +4746,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_scanner"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "clap",
  "crossbeam-channel",
@@ -4764,7 +4764,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_socket_format"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "serde",
  "serde_json",
@@ -4772,7 +4772,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_test_framework"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "anyhow",
  "approx",
@@ -4797,7 +4797,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_video"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "ruffle_render",
  "slotmap",
@@ -4807,7 +4807,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_video_external"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "bzip2",
  "hex",
@@ -4831,7 +4831,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_video_software"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "flate2",
  "h263-rs",
@@ -4849,7 +4849,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_web"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "async-channel",
  "base64",
@@ -4886,7 +4886,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_web_common"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "tracing",
  "wasm-bindgen",
@@ -4894,14 +4894,14 @@ dependencies = [
 
 [[package]]
 name = "ruffle_web_safari"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "objc2 0.6.3",
 ]
 
 [[package]]
 name = "ruffle_wstr"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 
 [[package]]
 name = "rustc-demangle"
@@ -5386,7 +5386,7 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "stub-report"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "anyhow",
  "clap",
@@ -5562,7 +5562,7 @@ dependencies = [
 
 [[package]]
 name = "tests"
-version = "0.1.0"
+version = "0.2.0-nightly.2026.2.10"
 dependencies = [
  "anyhow",
  "clap",
