@@ -178,6 +178,13 @@ pub fn run_inner_goto_frame<'gc>(
     *context.frame_phase = old_phase;
 }
 
+/// Broadcast a `enterFrame` event to all `DisplayObject`s.
+pub fn broadcast_frame_entered<'gc>(context: &mut UpdateContext<'gc>) {
+    let enter_frame_evt = EventObject::bare_default_event(context, "enterFrame");
+    let dobject_constr = context.avm2.classes().display_object;
+    Avm2::broadcast_event(context, enter_frame_evt, dobject_constr);
+}
+
 /// Broadcast a `frameConstructed` event to all `DisplayObject`s.
 pub fn broadcast_frame_constructed<'gc>(context: &mut UpdateContext<'gc>) {
     let frame_constructed_evt = EventObject::bare_default_event(context, "frameConstructed");

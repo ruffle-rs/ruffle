@@ -14,6 +14,7 @@ use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObje
 use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::focus_tracker::FocusTracker;
+use crate::frame_lifecycle::broadcast_frame_entered;
 use crate::prelude::*;
 use crate::string::{FromWStr, WStr};
 use crate::tag_utils::SwfMovie;
@@ -848,9 +849,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             child.enter_frame(context);
         }
 
-        let enter_frame_evt = Avm2EventObject::bare_default_event(context, "enterFrame");
-        let dobject_constr = context.avm2.classes().display_object;
-        Avm2::broadcast_event(context, enter_frame_evt, dobject_constr);
+        broadcast_frame_entered(context);
     }
 
     fn construct_frame(self, context: &mut UpdateContext<'gc>) {
