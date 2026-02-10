@@ -5,8 +5,10 @@ pub mod image_comparison;
 pub mod known_failure;
 pub mod player;
 
+use crate::environment::Environment;
 use crate::image_trigger::ImageTrigger;
 use crate::options::approximations::Approximations;
+use crate::options::expression::TestExpression;
 use crate::options::font::{DefaultFontsOptions, FontOptions, FontSortOptions};
 use crate::options::image_comparison::ImageComparison;
 use crate::options::known_failure::KnownFailure;
@@ -71,6 +73,7 @@ pub struct TestOptions {
     pub sleep_to_meet_frame_rate: bool,
     pub image_comparisons: HashMap<String, ImageComparison>,
     pub ignore: bool,
+    pub filter: Option<TestExpression>,
     pub known_failure: KnownFailure,
     pub approximations: Option<Approximations>,
     pub player_options: PlayerOptions,
@@ -92,6 +95,7 @@ impl Default for TestOptions {
             sleep_to_meet_frame_rate: false,
             image_comparisons: Default::default(),
             ignore: false,
+            filter: None,
             known_failure: KnownFailure::None,
             approximations: None,
             player_options: PlayerOptions::default(),
@@ -193,6 +197,15 @@ impl TestOptions {
     pub fn output_path(&self, test_directory: &VfsPath) -> Result<VfsPath> {
         Ok(test_directory.join(&self.output_path)?)
     }
+
+    pub fn can_run(&self, check_renderer: bool, environment: &impl Environment) -> bool {
+        self.required_features.can_run()
+            && self
+                .filter
+                .as_ref()
+                .is_none_or(|f| f.evaluate().expect("invalid 'filter' expression"))
+            && self.player_options.can_run(check_renderer, environment)
+    }
 }
 
 #[derive(Clone, Deserialize, Default)]
@@ -203,7 +216,7 @@ pub struct RequiredFeatures {
 }
 
 impl RequiredFeatures {
-    pub fn can_run(&self) -> bool {
+    fn can_run(&self) -> bool {
         (!self.lzma || cfg!(feature = "lzma")) && (!self.jpegxr || cfg!(feature = "jpegxr"))
     }
 }
