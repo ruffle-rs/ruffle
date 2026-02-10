@@ -49,18 +49,27 @@ scale-mode = Modalità scala
 scale-mode-noscale = Non ridimensionato (100%)
 scale-mode-noscale-tooltip =
     Mostra il film nella sua forma originale, senza zoom.
-
+    
     Corrisponde a StageScaleMode.NO_SCALE
+scale-mode-showall = Ingrandisci per calzare la finestra
 scale-mode-showall-tooltip =
     Ingrandisce il film per riempire il più possibile la finestra senza ritagliarlo, mantenendo le proporzioni.
-
+    
     Corrisponde a StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Allunga per calzare la finestra
 scale-mode-exactfit-tooltip =
     Assicura che il film riempia l'intera finestra, ignorando le proporzioni.
-
+    
     Corrisponde a StageScaleMode.EXACT_FIT
+scale-mode-noborder = Ritaglia per calzare la finestra
+scale-mode-noborder-tooltip =
+    Riempie l'intera finestra mentre mantiene le proporzioni, ritagliando il film se è necessario.
+    
+    Corrisponde a StageScaleMode.NO_BORDER
 scale-mode-force = Forzato
+scale-mode-force-tooltip = Previene il film a cambiare la modalità di scala, bloccandola sulla opzione scelta.
 player-version = Versione riproduttore
+player-runtime = Runtime del lettore
 player-runtime-flash = Flash Player
 player-runtime-air = Adobe AIR
 custom-framerate = Framerate personalizzato

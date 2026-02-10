@@ -1,0 +1,26 @@
+preferences-dialog = Podešavanja Ruffle-a
+preference-locked-by-cli = Samo za čitanje (podešava se pomoću komandne linije)
+graphics-backend = Grafički bekend sistem
+graphics-backend-default = Podrazumevano
+language = Jezik
+audio-output-device = Audio izlazni uređaj
+audio-output-device-default = Sistemska podrazumevana vrednost
+enable-openh264 = Omogući OpenH264
+show-license = Prikaži licencu
+openh264-license = Licenca OpenH264
+log-filename-pattern = Ime datoteke dnevnika
+log-filename-pattern-single-file = Jedna datoteka (ruffle.log)
+log-filename-pattern-with-timestamp = Označeno vremenskom oznakom
+storage-backend = Lokacija za čuvanje datoteke
+storage-backend-disk = Disk
+storage-backend-memory = Pamćenje
+theme = Tema
+theme-system = Sistemska podrazumevana vrednost
+theme-light = Svetla
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode-default = Podrazumevano
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = Metod unosa
+ime-enabled-experimental = (eksperimentalno)
+ime-enabled-tooltip = Metod unosa vam omogućava da unosite znakove koji nisu dostupni na tastaturi, kao što su kineski, japanski ili korejski znakovi.
+ime-enabled-default = Podrazumevano

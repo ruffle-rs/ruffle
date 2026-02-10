@@ -1,6 +1,12 @@
+export-bundle-dialog-title = Vie Ruffle-paketti
+export-bundle-dialog-bundle-name = Paketin nimi:
+export-bundle-dialog-files-description = Valitse paketoitavat tiedostot:
 export-bundle-dialog-files-select-all = Valitse kaikki
 export-bundle-dialog-export = Vie
 export-bundle-dialog-exporting = Viedään...
 export-bundle-dialog-exporting-failed = Vienti epäonnistui.
 export-bundle-dialog-error-user-canceled = Peruutettu käyttäjän toimesta.
 export-bundle-dialog-error-failed-to-show-picker = Tiedostovalitsimen näyttäminen epäonnistui.
+export-bundle-dialog-error-io-error = Virhe pakettia kirjoittaessa.
+export-bundle-dialog-info-title = Mikä on Ruffle-paketti?
+export-bundle-dialog-info-description = Ruffle-paketti (englanniksi bundle) on universaali paketti, joka sisältää kaiken SWF-tiedoston suorittamista varten — kaikki vaaditut tiedostot ja asetukset. Paketin avulla SWF toimii suoraan — ei puuttuvia tiedostoja, ei manuaalista määritystä, ota käyttöön sellaisenaan.

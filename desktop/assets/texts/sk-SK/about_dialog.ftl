@@ -8,3 +8,4 @@ about-ruffle-commit-time = Commit - čas
 about-ruffle-visit-website = Webstránka
 about-ruffle-visit-github = GitHub
 about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Sponzorovať
