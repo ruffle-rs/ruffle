@@ -123,26 +123,28 @@ pub fn connect<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if XmlSocket::cast(this.into()).is_some() {
-        let host = args
-            .get(0)
-            .copied()
-            .unwrap_or_else(|| {
-                let movie = activation.base_clip().movie();
+        let host = args.get(0).copied().unwrap_or(Value::Null);
+        let host = if matches!(host, Value::Null | Value::Undefined) {
+            let movie = activation.base_clip().movie();
 
-                if let Ok(url) = url::Url::parse(movie.url()) {
-                    if url.scheme() == "file" {
-                        istr!("localhost").into()
-                    } else if let Some(domain) = url.domain() {
-                        AvmString::new_utf8(activation.gc(), domain).into()
-                    } else {
-                        // no domain?
-                        istr!("localhost").into()
-                    }
+            if let Ok(url) = url::Url::parse(movie.url()) {
+                if url.scheme() == "file" {
+                    istr!("localhost").into()
+                } else if let Some(domain) = url.domain() {
+                    AvmString::new_utf8(activation.gc(), domain).into()
                 } else {
-                    Value::Undefined
+                    // no domain?
+                    istr!("localhost").into()
                 }
-            })
-            .coerce_to_string(activation)?;
+            } else {
+                tracing::error!("XMLSocket::connect: Unable to parse movie URL");
+                // should we just bail here instead?
+                Value::Undefined
+            }
+        } else {
+            host
+        };
+        let host = host.coerce_to_string(activation)?;
         let port = args
             .get(1)
             .unwrap_or(&Value::Undefined)
