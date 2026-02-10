@@ -213,7 +213,7 @@ PASSED: Math.tan(notanumber).toString() == "NaN" [./Math.as:425]
 PASSED: Math.tan(undefined).toString() == "NaN" [./Math.as:429]
 PASSED: Math.tan().toString() == "NaN" [./Math.as:431]
 PASSED: Math.atan2().toString() == "NaN" [./Math.as:437]
-FAILED: expected: "NaN" obtained: 1.5707963267949 [./Math.as:438]
+PASSED: Math.atan2(1).toString() == "NaN" [./Math.as:438]
 PASSED: Math.atan2(0, 1) == 0 [./Math.as:440]
 PASSED: Math.atan2(1, 1).toString() == pi_4s [./Math.as:441]
 PASSED: Math.atan2(1, 0).toString() == pi_2s [./Math.as:442]
@@ -261,7 +261,7 @@ PASSED: Math.min(0,undefined).toString() == "NaN" [./Math.as:507]
 PASSED: Math.min(0,notanumber).toString() == "NaN" [./Math.as:509]
 PASSED: Math.pow().toString() == "NaN" [./Math.as:515]
 PASSED: Math.pow(0).toString() == "NaN" [./Math.as:516]
-FAILED: expected: 1 obtained: NaN [./Math.as:517]
+PASSED: Math.pow(1) == 1 [./Math.as:517]
 PASSED: Math.pow(2).toString() == "NaN" [./Math.as:518]
 PASSED: Math.pow(plusinf).toString() == "NaN" [./Math.as:519]
 PASSED: Math.pow(minusinf).toString() == "NaN" [./Math.as:520]
@@ -282,6 +282,6 @@ PASSED: Math.pow(-2, -1) == -0.5 [./Math.as:535]
 PASSED: Math.pow(-2, -2) == 0.25 [./Math.as:536]
 PASSED: Math.pow(-2, 0.5).toString() == "NaN" [./Math.as:538]
 PASSED: Math.pow(-2, -0.5).toString() == "NaN" [./Math.as:539]
-#passed: 279
-#failed: 2
+#passed: 281
+#failed: 0
 #total tests run: 281

@@ -1,2 +1,11 @@
 num_frames = 30
 known_failure = true
+
+[subtests.default]
+filter = 'not(os = "macos")'
+
+# Math.* methods return slightly different results on macOS, and the way
+# Gnash tests are structured doesn't allow the use of approximate checks.
+[subtests.macos]
+filter = 'os = "macos"'
+known_failure.ruffle_check = false
