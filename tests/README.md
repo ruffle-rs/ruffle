@@ -58,6 +58,9 @@ log_fetch = false
 # testing from "exact" to "approximate" (when it comes to floating point numbers, at least.)
 [approximations]
 
+# Should output lines solely consisting of a single number be subject to approximations?
+bare_numbers = true
+
 # A list of regex patterns with capture groups to additionally treat as approximate numbers.
 number_patterns = []
 

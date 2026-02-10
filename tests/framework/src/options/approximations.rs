@@ -1,4 +1,4 @@
-use anyhow::anyhow;
+use anyhow::bail;
 use approx::relative_eq;
 use regex::Regex;
 use serde::Deserialize;
@@ -6,9 +6,16 @@ use serde::Deserialize;
 #[derive(Clone, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct Approximations {
+    #[serde(default = "default_for_bare_numbers")]
+    pub bare_numbers: bool,
     number_patterns: Vec<String>,
     epsilon: Option<f64>,
     max_relative: Option<f64>,
+}
+
+// Serde requires defaults to be provided through functions
+fn default_for_bare_numbers() -> bool {
+    true
 }
 
 impl Approximations {
@@ -30,14 +37,26 @@ impl Approximations {
         if result {
             Ok(())
         } else {
-            Err(anyhow!(
+            bail!(
                 "Approximation failed: expected {}, found {}. Epsilon = {:?}, Max Relative = {:?}",
                 expected,
                 actual,
                 self.epsilon,
                 self.max_relative
-            ))
+            )
         }
+    }
+
+    pub(super) fn validate(&self) -> anyhow::Result<()> {
+        if !self.bare_numbers && self.number_patterns.is_empty() {
+            bail!(
+                "approximations with `bare_numbers = false` should have at least one explicit number pattern"
+            )
+        }
+
+        // TODO: consider checking number_pattern regexes too?
+
+        Ok(())
     }
 
     pub fn number_patterns(&self) -> Vec<Regex> {
