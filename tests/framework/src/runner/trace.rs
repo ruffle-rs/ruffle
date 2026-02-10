@@ -95,7 +95,9 @@ fn test(
 
         for (actual, expected) in actual_output.lines().zip(expected_output.lines()) {
             // If these are numbers, compare using approx_eq.
-            if let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>()) {
+            if approx.bare_numbers
+                && let (Ok(actual), Ok(expected)) = (actual.parse::<f64>(), expected.parse::<f64>())
+            {
                 // NaNs should be able to pass in an approx test.
                 if actual.is_nan() && expected.is_nan() {
                     continue;

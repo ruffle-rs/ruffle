@@ -178,6 +178,10 @@ impl TestOptions {
             }
         }
 
+        if let Some(approx) = &self.approximations {
+            approx.validate()?;
+        }
+
         Ok(())
     }
 
