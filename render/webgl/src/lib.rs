@@ -567,12 +567,13 @@ impl WebGlRenderBackend {
         &mut self,
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
+        scale: f32,
     ) -> Result<Vec<Draw>, Error> {
         use ruffle_render::tessellator::DrawType as TessDrawType;
 
-        let lyon_mesh = self
-            .shape_tessellator
-            .tessellate_shape(shape, bitmap_source);
+        let lyon_mesh =
+            self.shape_tessellator
+                .tessellate_shape_with_scale(shape, bitmap_source, scale);
 
         let mut draws = Vec::with_capacity(lyon_mesh.draws.len());
         for draw in lyon_mesh.draws {
@@ -1040,7 +1041,16 @@ impl RenderBackend for WebGlRenderBackend {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
-        let mesh = match self.register_shape_internal(shape, bitmap_source) {
+        self.register_shape_with_scale(shape, bitmap_source, 1.0)
+    }
+
+    fn register_shape_with_scale(
+        &mut self,
+        shape: DistilledShape,
+        bitmap_source: &dyn BitmapSource,
+        scale: f32,
+    ) -> ShapeHandle {
+        let mesh = match self.register_shape_internal(shape, bitmap_source, scale) {
             Ok(draws) => Mesh {
                 draws,
                 gl2: self.gl2.clone(),
