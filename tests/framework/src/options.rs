@@ -38,6 +38,7 @@ fn merge_into_subtest<'a>(
                     merge_into_subtest(vbase, vconfig, path)?;
                     path.truncate(old_path_len);
                 } else {
+                    // No subtest-specific field, use the base value
                     tconfig.insert(k.clone(), vbase.clone());
                 }
             }
@@ -46,11 +47,8 @@ fn merge_into_subtest<'a>(
         (DeValue::Table(_), DeValue::Array(_)) => "cannot merge table into array",
         (DeValue::Array(_), DeValue::Table(_)) => "cannot merge array into table",
         (DeValue::Array(_), DeValue::Array(_)) => "merging arrays isn't supported",
-        // Otherwise, overwrite the whole value.
-        _ => {
-            *config = base.clone();
-            return Ok(());
-        }
+        // Otherwise, the subtest-specific value wins
+        _ => return Ok(()),
     };
 
     Err(toml::de::Error::custom(format_args!(
