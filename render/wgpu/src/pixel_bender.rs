@@ -511,69 +511,68 @@ pub(super) fn run_pixelbender_shader_impl(
 
                 #[derive(Debug)]
                 enum FloatOrInt {
-                    Float(SmallVec<[f32; 4]>),
-                    Int(SmallVec<[i32; 4]>),
+                    Float(SmallVec<[[f32; 4]; 1]>),
+                    Int([i32; 4]),
                 }
 
                 impl FloatOrInt {
-                    fn len(&self) -> usize {
+                    fn vec4_count(&self) -> usize {
                         match self {
                             FloatOrInt::Float(v) => v.len(),
-                            FloatOrInt::Int(v) => v.len(),
+                            FloatOrInt::Int(_) => 1,
                         }
                     }
                 }
 
                 let value_vec = match value {
-                    PixelBenderType::TFloat(f1) => {
-                        FloatOrInt::Float(smallvec_inline![*f1, 0.0, 0.0, 0.0])
+                    &mut PixelBenderType::TFloat(f1) => {
+                        FloatOrInt::Float(smallvec_inline![[f1, 0.0, 0.0, 0.0]])
                     }
-                    PixelBenderType::TFloat2(f1, f2) => {
-                        FloatOrInt::Float(smallvec_inline![*f1, *f2, 0.0, 0.0])
+                    &mut PixelBenderType::TFloat2(f1, f2) => {
+                        FloatOrInt::Float(smallvec_inline![[f1, f2, 0.0, 0.0]])
                     }
-                    PixelBenderType::TFloat3(f1, f2, f3) => {
-                        FloatOrInt::Float(smallvec_inline![*f1, *f2, *f3, 0.0])
+                    &mut PixelBenderType::TFloat3(f1, f2, f3) => {
+                        FloatOrInt::Float(smallvec_inline![[f1, f2, f3, 0.0]])
                     }
-                    PixelBenderType::TFloat4(f1, f2, f3, f4) => {
-                        FloatOrInt::Float(smallvec_inline![*f1, *f2, *f3, *f4])
+                    &mut PixelBenderType::TFloat4(f1, f2, f3, f4) => {
+                        FloatOrInt::Float(smallvec_inline![[f1, f2, f3, f4]])
                     }
-                    PixelBenderType::TInt(i1) | PixelBenderType::TBool(i1) => {
-                        FloatOrInt::Int(smallvec_inline![*i1 as i32, 0, 0, 0])
+                    &mut PixelBenderType::TInt(i1) | &mut PixelBenderType::TBool(i1) => {
+                        FloatOrInt::Int([i1 as i32, 0, 0, 0])
                     }
-                    PixelBenderType::TInt2(i1, i2) | PixelBenderType::TBool2(i1, i2) => {
-                        FloatOrInt::Int(smallvec_inline![*i1 as i32, *i2 as i32, 0, 0])
+                    &mut PixelBenderType::TInt2(i1, i2) | &mut PixelBenderType::TBool2(i1, i2) => {
+                        FloatOrInt::Int([i1 as i32, i2 as i32, 0, 0])
                     }
-                    PixelBenderType::TInt3(i1, i2, i3) | PixelBenderType::TBool3(i1, i2, i3) => {
-                        FloatOrInt::Int(smallvec_inline![*i1 as i32, *i2 as i32, *i3 as i32, 0])
+                    &mut PixelBenderType::TInt3(i1, i2, i3)
+                    | &mut PixelBenderType::TBool3(i1, i2, i3) => {
+                        FloatOrInt::Int([i1 as i32, i2 as i32, i3 as i32, 0])
                     }
-                    PixelBenderType::TInt4(i1, i2, i3, i4)
-                    | PixelBenderType::TBool4(i1, i2, i3, i4) => FloatOrInt::Int(smallvec_inline![
-                        *i1 as i32, *i2 as i32, *i3 as i32, *i4 as i32
-                    ]),
+                    &mut PixelBenderType::TInt4(i1, i2, i3, i4)
+                    | &mut PixelBenderType::TBool4(i1, i2, i3, i4) => {
+                        FloatOrInt::Int([i1 as i32, i2 as i32, i3 as i32, i4 as i32])
+                    }
                     // We treat the input as being in column-major order. Despite what the Flash docs claim,
                     // this seems to be what Flash Player does.
-                    PixelBenderType::TFloat2x2(arr) => FloatOrInt::Float(SmallVec::from(*arr)),
-                    PixelBenderType::TFloat3x3(arr) => {
-                        // Add a zero after every 3 values to created zero-padded vec4s
-                        let mut vec4_arr = SmallVec::with_capacity(16);
-                        for (i, val) in arr.iter().enumerate() {
-                            vec4_arr.push(*val);
-                            if i % 3 == 2 {
-                                vec4_arr.push(0.0);
-                            }
-                        }
-                        FloatOrInt::Float(vec4_arr)
+                    &mut PixelBenderType::TFloat2x2(arr) => {
+                        FloatOrInt::Float(SmallVec::from_buf([arr]))
                     }
-                    PixelBenderType::TFloat4x4(arr) => FloatOrInt::Float(SmallVec::from_slice(arr)),
+                    PixelBenderType::TFloat3x3(arr) => {
+                        // Each column becomes a zero-padded vec4
+                        FloatOrInt::Float(SmallVec::from_slice(&[
+                            [arr[0], arr[1], arr[2], 0.0],
+                            [arr[3], arr[4], arr[5], 0.0],
+                            [arr[6], arr[7], arr[8], 0.0],
+                        ]))
+                    }
+                    PixelBenderType::TFloat4x4(arr) => {
+                        let arr = bytemuck::cast_slice(arr);
+
+                        FloatOrInt::Float(SmallVec::from_slice(arr))
+                    }
                     _ => unreachable!("Unimplemented value {value:?}"),
                 };
 
-                assert_eq!(
-                    value_vec.len() % 4,
-                    0,
-                    "value_vec should represent concatenated vec4fs"
-                );
-                let num_vec4s = value_vec.len() / 4;
+                let num_vec4s = value_vec.vec4_count();
                 // Both float32 and int are 4 bytes
                 let component_size_bytes = 4;
 
@@ -591,7 +590,7 @@ pub(super) fn run_pixelbender_shader_impl(
                     render_command_encoder,
                     buffer,
                     vec4_count as u64 * 4 * component_size_bytes,
-                    NonZeroU64::new(value_vec.len() as u64 * component_size_bytes).unwrap(),
+                    NonZeroU64::new(num_vec4s as u64 * 4 * component_size_bytes).unwrap(),
                     &descriptors.device,
                 );
                 match value_vec {
