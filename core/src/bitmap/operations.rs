@@ -1284,6 +1284,66 @@ pub fn apply_filter<'gc>(
     }
 }
 
+/// Blend a single pixel (src-over, premultiplied alpha, two-lane u32 trick).
+#[inline(always)]
+fn blend_pixel(d: &mut u32, s: u32) {
+    // Color layout is [r, g, b, a] in memory.
+    // On little-endian: u32 bits = 0xAABBGGRR, so alpha is bits 24..31.
+    // On big-endian:    u32 bits = 0xRRGGBBAA, so alpha is bits 0..7.
+    #[cfg(target_endian = "little")]
+    let inv_a = 255 - (s >> 24);
+    #[cfg(target_endian = "big")]
+    let inv_a = 255 - (s & 0xFF);
+
+    let d_val = *d;
+
+    // Split into two lanes: bytes 0,2 and bytes 1,3.
+    let d02 = d_val & 0x00FF_00FF;
+    let d13 = (d_val >> 8) & 0x00FF_00FF;
+
+    // Multiply each lane by inv_alpha.
+    let m02 = d02 * inv_a;
+    let m13 = d13 * inv_a;
+
+    // div255 on both sub-lanes: (x + 1 + (x >> 8)) >> 8
+    let m02 = ((m02 + 0x0001_0001 + ((m02 >> 8) & 0x00FF_00FF)) >> 8) & 0x00FF_00FF;
+    let m13 = ((m13 + 0x0001_0001 + ((m13 >> 8) & 0x00FF_00FF)) >> 8) & 0x00FF_00FF;
+
+    // Add src channels (same lane trick avoids cross-byte carries).
+    let s02 = s & 0x00FF_00FF;
+    let s13 = (s >> 8) & 0x00FF_00FF;
+    let o02 = (m02 + s02) & 0x00FF_00FF;
+    let o13 = ((m13 + s13) & 0x00FF_00FF) << 8;
+
+    *d = o02 | o13;
+}
+
+/// Blend `src` over `dst` in-place (premultiplied alpha, src-over).
+fn blend_row(dst: &mut [Color], src: &[Color]) {
+    debug_assert_eq!(dst.len(), src.len());
+    let dst_u32: &mut [u32] = bytemuck::cast_slice_mut(dst);
+    let src_u32: &[u32] = bytemuck::cast_slice(src);
+
+    let (dst_chunks, dst_remainder) = dst_u32.split_at_mut(dst_u32.len() & !3);
+    let (src_chunks, src_remainder) = src_u32.split_at(src_u32.len() & !3);
+
+    // Process 4 pixels per iteration (unrolled for autovectorization).
+    for (d4, s4) in dst_chunks
+        .chunks_exact_mut(4)
+        .zip(src_chunks.chunks_exact(4))
+    {
+        blend_pixel(&mut d4[0], s4[0]);
+        blend_pixel(&mut d4[1], s4[1]);
+        blend_pixel(&mut d4[2], s4[2]);
+        blend_pixel(&mut d4[3], s4[3]);
+    }
+
+    // Handle remainder (0-3 pixels).
+    for (d, &s) in dst_remainder.iter_mut().zip(src_remainder.iter()) {
+        blend_pixel(d, s);
+    }
+}
+
 fn copy_on_cpu<'gc>(
     context: &Mutation<'gc>,
     renderer: &mut dyn RenderBackend,
@@ -1302,20 +1362,36 @@ fn copy_on_cpu<'gc>(
         return;
     }
 
+    let width = dest_region.width() as usize;
+    let height = dest_region.height() as usize;
+
     if source.ptr_eq(dest) {
         let dest = dest.sync(renderer);
         let mut write = dest.borrow_mut(context);
+        let stride = write.width() as usize;
 
-        for y in 0..dest_region.height() {
-            for x in 0..dest_region.width() {
-                let mut color =
-                    write.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                if blend {
-                    color = write
-                        .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
-                        .blend_over(&color);
-                }
-                write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
+        if blend {
+            // Self-blend: need a temporary copy of source rows to avoid aliasing
+            let mut row_buf = vec![Color::default(); width];
+            for y in 0..height as u32 {
+                let src_start =
+                    (source_region.x_min + (source_region.y_min + y) * stride as u32) as usize;
+                row_buf.copy_from_slice(&write.raw_pixels()[src_start..src_start + width]);
+
+                let dst_start =
+                    (dest_region.x_min + (dest_region.y_min + y) * stride as u32) as usize;
+                let dst_row = &mut write.raw_pixels_mut()[dst_start..dst_start + width];
+                blend_row(dst_row, &row_buf);
+            }
+        } else {
+            // Self-copy without blending: use copy_within per row
+            let pixels = write.raw_pixels_mut();
+            for y in 0..height as u32 {
+                let src_start =
+                    (source_region.x_min + (source_region.y_min + y) * stride as u32) as usize;
+                let dst_start =
+                    (dest_region.x_min + (dest_region.y_min + y) * stride as u32) as usize;
+                pixels.copy_within(src_start..src_start + width, dst_start);
             }
         }
 
@@ -1325,10 +1401,11 @@ fn copy_on_cpu<'gc>(
         let mut dest_write = dest.borrow_mut(context);
         let source_read = source.read_area(source_region, renderer);
 
+        let src_stride = source_read.width() as usize;
+        let dst_stride = dest_write.width() as usize;
+
         if !blend && (dest_write.transparency() || !source_read.transparency()) {
-            // Copying (not blending) anything to a transparent texture,
-            // or copying an opaque texture to an opaque texture,
-            // means we can skip alpha premultiplication
+            // Straight copy (no blending, no alpha fixup needed)
 
             if dest_region == source_region
                 && dest_region.width() == dest_write.width()
@@ -1336,42 +1413,51 @@ fn copy_on_cpu<'gc>(
                 && dest_region.width() == source_read.width()
                 && dest_region.height() == source_read.height()
             {
-                // Copying an entire texture that's the same size and type? Just replace the whole thing
+                // Full-image copy
                 dest_write
                     .raw_pixels_mut()
                     .copy_from_slice(source_read.raw_pixels());
             } else {
-                for y in 0..dest_region.height() {
-                    for x in 0..dest_region.width() {
-                        let color = source_read
-                            .get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                        dest_write.set_pixel32_raw(
-                            dest_region.x_min + x,
-                            dest_region.y_min + y,
-                            color,
-                        );
-                    }
+                // Row-by-row memcpy
+                let src_pixels = source_read.raw_pixels();
+                let dst_pixels = dest_write.raw_pixels_mut();
+                for y in 0..height as u32 {
+                    let src_start = (source_region.x_min
+                        + (source_region.y_min + y) * src_stride as u32)
+                        as usize;
+                    let dst_start =
+                        (dest_region.x_min + (dest_region.y_min + y) * dst_stride as u32) as usize;
+                    dst_pixels[dst_start..dst_start + width]
+                        .copy_from_slice(&src_pixels[src_start..src_start + width]);
                 }
             }
         } else {
-            // Copying (not blending) a transparent texture to an opaque texture,
-            // or blending anything to anything
-
+            // Blending or transparent-to-opaque copy
             let opaque = !dest_write.transparency();
+            let src_pixels = source_read.raw_pixels();
+            let dst_pixels = dest_write.raw_pixels_mut();
 
-            for y in 0..dest_region.height() {
-                for x in 0..dest_region.width() {
-                    let mut color = source_read
-                        .get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                    if blend {
-                        color = dest_write
-                            .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
-                            .blend_over(&color);
-                    }
+            for y in 0..height as u32 {
+                let src_start =
+                    (source_region.x_min + (source_region.y_min + y) * src_stride as u32) as usize;
+                let dst_start =
+                    (dest_region.x_min + (dest_region.y_min + y) * dst_stride as u32) as usize;
+                let src_row = &src_pixels[src_start..src_start + width];
+                let dst_row = &mut dst_pixels[dst_start..dst_start + width];
+
+                if blend {
+                    blend_row(dst_row, src_row);
                     if opaque {
-                        color = color.with_alpha(255);
+                        for d in dst_row.iter_mut() {
+                            *d = d.with_alpha(255);
+                        }
                     }
-                    dest_write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
+                } else {
+                    // transparent-to-opaque: copy and force alpha to 255
+                    dst_row.copy_from_slice(src_row);
+                    for d in dst_row.iter_mut() {
+                        *d = d.with_alpha(255);
+                    }
                 }
             }
         }
