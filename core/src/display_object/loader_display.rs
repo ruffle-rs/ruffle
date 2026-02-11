@@ -3,7 +3,6 @@ use crate::avm2::Activation;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::RenderContext;
 use crate::context::UpdateContext;
-use crate::display_object::InteractiveObject;
 use crate::display_object::TInteractiveObject;
 use crate::display_object::{BoundsMode, DisplayObjectBase, DisplayObjectPtr};
 use crate::events::{ClipEvent, ClipEventResult};
@@ -166,35 +165,6 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         _event: ClipEvent<'gc>,
     ) -> ClipEventResult {
         ClipEventResult::NotHandled
-    }
-
-    fn mouse_pick_avm1(
-        self,
-        context: &mut UpdateContext<'gc>,
-        point: Point<Twips>,
-        require_button_mode: bool,
-    ) -> Option<InteractiveObject<'gc>> {
-        // Don't do anything if run in an AVM2 context.
-        if self.as_displayobject().movie().is_action_script_3() {
-            return None;
-        }
-
-        for child in self.iter_render_list().rev() {
-            if let Some(int) = child.as_interactive() {
-                if int.as_displayobject().movie().is_action_script_3() {
-                    let avm2_result = int.mouse_pick_avm2(context, point, require_button_mode);
-                    if let Avm2MousePick::Hit(result) = avm2_result {
-                        return Some(result);
-                    }
-                } else if let Some(result) =
-                    int.mouse_pick_avm1(context, point, require_button_mode)
-                {
-                    return Some(result);
-                }
-            }
-        }
-
-        None
     }
 
     fn mouse_pick_avm2(
