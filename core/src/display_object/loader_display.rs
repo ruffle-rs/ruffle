@@ -173,11 +173,6 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
         point: Point<Twips>,
         require_button_mode: bool,
     ) -> Avm2MousePick<'gc> {
-        // Don't do anything if run in an AVM1 context.
-        if !self.as_displayobject().movie().is_action_script_3() {
-            return Avm2MousePick::Miss;
-        }
-
         let mut options = HitTestOptions::SKIP_INVISIBLE;
         options.set(HitTestOptions::SKIP_MASK, self.maskee().is_none());
 
