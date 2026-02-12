@@ -160,6 +160,8 @@ impl<'a> Bitmap<'a> {
                     .collect();
             }
             BitmapFormat::Yuva420p => unreachable!("Can't convert YUVA Bitmap to RGB"),
+            BitmapFormat::Rgba16Float => unreachable!("Can't convert Rgba16Float Bitmap to RGB"),
+            BitmapFormat::Bc3RgbaUnorm => unreachable!("Can't convert Bc3RgbaUnorm Bitmap to RGB"),
         }
 
         self.format = BitmapFormat::Rgb;
@@ -206,9 +208,74 @@ impl<'a> Bitmap<'a> {
                     .flat_map(|(rgba, a)| [rgba[0].min(*a), rgba[1].min(*a), rgba[2].min(*a), *a])
                     .collect()
             }
+            BitmapFormat::Rgba16Float => {
+                unreachable!("Can't convert Rgba16Float Bitmap to RGBA")
+            }
+            BitmapFormat::Bc3RgbaUnorm => {
+                unreachable!("Can't convert Bc3RgbaUnorm Bitmap to RGBA")
+            }
         }
 
         self.format = BitmapFormat::Rgba;
+
+        self
+    }
+
+    /// Converts this bitmap to RGBA16 float format.
+    /// This method expects the bitmap to already be in RGBA format.
+    pub fn to_rgba16_float(mut self) -> Self {
+        match self.format {
+            BitmapFormat::Rgba => {
+                // Convert RGBA8 (0-255) to RGBA16Float (0.0-1.0)
+                self.data = self
+                    .data
+                    .iter()
+                    .flat_map(|&byte| half::f16::from_f32(byte as f32 / 255.0).to_le_bytes())
+                    .collect();
+            }
+            BitmapFormat::Rgba16Float => {} // no-op
+            _ => panic!(
+                "Can't convert {:?} Bitmap to Rgba16Float, convert to RGBA first",
+                self.format
+            ),
+        }
+
+        self.format = BitmapFormat::Rgba16Float;
+
+        self
+    }
+
+    /// Converts this bitmap to BC3/DXT5 compressed format.
+    /// This method expects the bitmap to already be in RGBA format.
+    pub fn to_bc3_rgba_unorm(mut self) -> Self {
+        match self.format {
+            BitmapFormat::Rgba => {
+                // Compress RGBA8 to BC3/DXT5
+                let format = texpresso::Format::Bc3;
+                let width = self.width as usize;
+                let height = self.height as usize;
+
+                let compressed_size = format.compressed_size(width, height);
+                let mut buffer = vec![0u8; compressed_size];
+
+                format.compress(
+                    &self.data,
+                    width,
+                    height,
+                    texpresso::Params::default(),
+                    &mut buffer,
+                );
+
+                self.data = Cow::Owned(buffer);
+            }
+            BitmapFormat::Bc3RgbaUnorm => {} // no-op
+            _ => panic!(
+                "Can't convert {:?} Bitmap to Bc3RgbaUnorm, convert to RGBA first",
+                self.format
+            ),
+        }
+
+        self.format = BitmapFormat::Bc3RgbaUnorm;
 
         self
     }
@@ -279,6 +346,12 @@ pub enum BitmapFormat {
 
     /// planar YUV 420, premultiplied with alpha (RGB channels are to be clamped after conversion)
     Yuva420p,
+
+    /// 16-bit float per channel RGBA.
+    Rgba16Float,
+
+    /// BC3/DXT5 compressed RGBA.
+    Bc3RgbaUnorm,
 }
 
 impl BitmapFormat {
@@ -291,6 +364,8 @@ impl BitmapFormat {
             BitmapFormat::Yuva420p => {
                 width * height * 2 + width.div_ceil(2) * height.div_ceil(2) * 2
             }
+            BitmapFormat::Rgba16Float => width * height * 8,
+            BitmapFormat::Bc3RgbaUnorm => width.div_ceil(4) * height.div_ceil(4) * 16,
         }
     }
 }

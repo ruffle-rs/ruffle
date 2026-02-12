@@ -962,8 +962,6 @@ impl Context3D for WgpuContext3D {
             }
             Context3DCommand::CopyBitmapToTexture {
                 source,
-                source_width,
-                source_height,
                 dest,
                 layer,
             } => {
@@ -975,6 +973,23 @@ impl Context3D for WgpuContext3D {
                 // BitmapData's gpu texture might be modified before we actually submit
                 // `buffer_command_encoder` to the device.
                 let dest_format = dest.texture.format();
+                let source_width = source.width();
+                let source_height = source.height();
+
+                let source = match dest_format {
+                    wgpu::TextureFormat::Rgba8Unorm => source,
+                    wgpu::TextureFormat::Rgba16Float => source.to_rgba16_float(),
+                    wgpu::TextureFormat::Bc3RgbaUnorm => source.to_bc3_rgba_unorm(),
+                    _ => {
+                        tracing::warn!(
+                            "Unhandled texture upload: {:?} -> {:?}",
+                            source.format(),
+                            dest_format
+                        );
+                        source
+                    }
+                };
+
                 let src_bytes_per_row = dest_format.block_copy_size(None).unwrap()
                     * (source_width / dest_format.block_dimensions().0);
 
@@ -989,7 +1004,8 @@ impl Context3D for WgpuContext3D {
                     };
                 let dest_size = dest_bytes_per_row as u64 * rows_per_image as u64;
                 assert!(
-                    dest_bytes_per_row >= src_bytes_per_row && dest_size >= source.len() as u64
+                    dest_bytes_per_row >= src_bytes_per_row
+                        && dest_size >= source.data().len() as u64
                 );
 
                 let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
@@ -1002,12 +1018,12 @@ impl Context3D for WgpuContext3D {
                 let mut texture_buffer_view = texture_buffer.slice(..).get_mapped_range_mut();
                 if dest_bytes_per_row == src_bytes_per_row {
                     // No padding, we can copy everything in one go.
-                    texture_buffer_view.copy_from_slice(source);
+                    texture_buffer_view.copy_from_slice(source.data());
                 } else {
                     // Copy row by row.
                     for (dest, src) in texture_buffer_view
                         .chunks_exact_mut(dest_bytes_per_row as usize)
-                        .zip(source.chunks_exact(src_bytes_per_row as usize))
+                        .zip(source.data().chunks_exact(src_bytes_per_row as usize))
                     {
                         let (dest, padding) = dest.split_at_mut(src_bytes_per_row as usize);
                         dest.copy_from_slice(src);
