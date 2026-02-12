@@ -27,6 +27,8 @@ enum-map = { workspace = true }
 serde = { workspace = true, features = ["derive"], optional = true }
 clap = { workspace = true, optional = true }
 h263-rs-yuv = { git = "https://github.com/ruffle-rs/h263-rs", rev = "b3f905511acc7b80861dac45fdc5ca913b6029e5"}
+half = "2.7"
+texpresso = "2.0.2"
 num-traits = { workspace = true }
 num-derive = { workspace = true }
 byteorder = { workspace = true }
