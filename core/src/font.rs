@@ -145,6 +145,8 @@ impl EvalParameters {
 }
 
 pub trait FontRenderer: std::fmt::Debug {
+    fn scale(&self) -> f32;
+
     fn get_font_metrics(&self) -> FontMetrics;
 
     fn has_kerning_info(&self) -> bool;
@@ -373,8 +375,13 @@ pub enum GlyphSource {
         /// Kerning information.
         /// Maps from a pair of unicode code points to horizontal offset value.
         kerning_pairs: fnv::FnvHashMap<(u16, u16), Twips>,
+
+        metrics: FontMetrics,
     },
-    FontFace(FontFace),
+    FontFace {
+        face: FontFace,
+        metrics: FontMetrics,
+    },
     ExternalRenderer {
         /// Maps Unicode code points to glyphs rendered by the renderer.
         glyph_cache: RefCell<fnv::FnvHashMap<u16, Option<Glyph>>>,
@@ -391,7 +398,7 @@ impl GlyphSource {
     pub fn get_by_index(&self, index: usize) -> Option<GlyphRef<'_>> {
         match self {
             GlyphSource::Memory { glyphs, .. } => glyphs.get(index).map(GlyphRef::Direct),
-            GlyphSource::FontFace(_) => None, // Unsupported.
+            GlyphSource::FontFace { .. } => None, // Unsupported.
             GlyphSource::ExternalRenderer { .. } => None, // Unsupported.
             GlyphSource::Empty => None,
         }
@@ -412,7 +419,7 @@ impl GlyphSource {
                     None
                 }
             }
-            GlyphSource::FontFace(face) => face.get_glyph(code_point).map(GlyphRef::Direct),
+            GlyphSource::FontFace { face, .. } => face.get_glyph(code_point).map(GlyphRef::Direct),
             GlyphSource::ExternalRenderer {
                 glyph_cache,
                 font_renderer,
@@ -440,7 +447,7 @@ impl GlyphSource {
     pub fn has_kerning_info(&self) -> bool {
         match self {
             GlyphSource::Memory { kerning_pairs, .. } => !kerning_pairs.is_empty(),
-            GlyphSource::FontFace(face) => face.has_kerning_info(),
+            GlyphSource::FontFace { face, .. } => face.has_kerning_info(),
             GlyphSource::ExternalRenderer { font_renderer, .. } => font_renderer.has_kerning_info(),
             GlyphSource::Empty => false,
         }
@@ -457,7 +464,7 @@ impl GlyphSource {
                     .cloned()
                     .unwrap_or_default()
             }
-            GlyphSource::FontFace(face) => face.get_kerning_offset(left, right),
+            GlyphSource::FontFace { face, .. } => face.get_kerning_offset(left, right),
             GlyphSource::ExternalRenderer {
                 kerning_cache,
                 font_renderer,
@@ -472,6 +479,15 @@ impl GlyphSource {
                     .or_insert_with(|| font_renderer.calculate_kerning(left, right))
             }
             GlyphSource::Empty => Twips::ZERO,
+        }
+    }
+
+    pub fn metrics(&self) -> FontMetrics {
+        match self {
+            GlyphSource::Memory { metrics, .. } => *metrics,
+            GlyphSource::FontFace { metrics, .. } => *metrics,
+            GlyphSource::ExternalRenderer { font_renderer, .. } => font_renderer.get_font_metrics(),
+            GlyphSource::Empty => FontMetrics::ZERO,
         }
     }
 }
@@ -515,6 +531,14 @@ pub struct FontMetrics {
 }
 
 impl FontMetrics {
+    /// Zero metrics, used when e.g. there's no font.
+    pub const ZERO: FontMetrics = Self {
+        scale: 1.0,
+        ascent: 0,
+        descent: 0,
+        leading: 0,
+    };
+
     /// Get the baseline (ascent) from the top of the glyph at a given height.
     #[must_use]
     pub fn ascent(&self, height: Twips) -> Twips {
@@ -547,7 +571,7 @@ pub struct Font<'gc>(Gc<'gc, FontData>);
 struct FontData {
     glyphs: GlyphSource,
 
-    metrics: FontMetrics,
+    scale: f32,
 
     /// The identity of the font.
     #[collect(require_static)]
@@ -575,13 +599,16 @@ impl<'gc> Font<'gc> {
         Ok(Font(Gc::new(
             gc_context,
             FontData {
-                metrics: FontMetrics {
-                    scale: face.scale,
-                    ascent: face.ascender,
-                    descent: face.descender,
-                    leading: face.leading,
+                scale: face.scale,
+                glyphs: GlyphSource::FontFace {
+                    metrics: FontMetrics {
+                        scale: face.scale,
+                        ascent: face.ascender,
+                        descent: face.descender,
+                        leading: face.leading,
+                    },
+                    face,
                 },
-                glyphs: GlyphSource::FontFace(face),
                 descriptor,
                 font_type,
                 has_layout: true,
@@ -643,6 +670,9 @@ impl<'gc> Font<'gc> {
             fnv::FnvHashMap::default()
         };
 
+        // DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
+        // (SWF19 p.164)
+        let scale = if tag.version >= 3 { 20480.0 } else { 1024.0 };
         Font(Gc::new(
             gc_context,
             FontData {
@@ -653,17 +683,15 @@ impl<'gc> Font<'gc> {
                         glyphs,
                         code_point_to_glyph,
                         kerning_pairs,
+                        metrics: FontMetrics {
+                            scale,
+                            ascent,
+                            descent,
+                            leading,
+                        },
                     }
                 },
-
-                metrics: FontMetrics {
-                    // DefineFont3 stores coordinates at 20x the scale of DefineFont1/2.
-                    // (SWF19 p.164)
-                    scale: if tag.version >= 3 { 20480.0 } else { 1024.0 },
-                    ascent,
-                    descent,
-                    leading,
-                },
+                scale,
                 descriptor,
                 font_type,
                 has_layout: tag.layout.is_some(),
@@ -705,7 +733,7 @@ impl<'gc> Font<'gc> {
         descriptor: FontDescriptor,
         font_renderer: Box<dyn FontRenderer>,
     ) -> Self {
-        let metrics = font_renderer.get_font_metrics();
+        let scale = font_renderer.scale();
         Font(Gc::new(
             gc_context,
             FontData {
@@ -714,8 +742,7 @@ impl<'gc> Font<'gc> {
                     kerning_cache: RefCell::new(fnv::FnvHashMap::default()),
                     font_renderer,
                 },
-
-                metrics,
+                scale,
                 descriptor,
                 font_type: FontType::Device,
                 has_layout: true,
@@ -735,13 +762,8 @@ impl<'gc> Font<'gc> {
         Font(Gc::new(
             gc_context,
             FontData {
-                metrics: FontMetrics {
-                    scale: 1.0,
-                    ascent: 0,
-                    descent: 0,
-                    leading: 0,
-                },
                 glyphs: GlyphSource::Empty,
+                scale: 1.0,
                 descriptor,
                 font_type,
                 has_layout: true,
@@ -803,11 +825,11 @@ impl<'gc> FontLike<'gc> for Font<'gc> {
     }
 
     fn metrics(&self) -> FontMetrics {
-        self.0.metrics
+        self.0.glyphs.metrics()
     }
 
     fn scale(&self) -> f32 {
-        self.0.metrics.scale
+        self.0.scale
     }
 
     fn font_type(&self) -> FontType {
