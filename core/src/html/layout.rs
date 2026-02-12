@@ -455,10 +455,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.has_line_break = true;
 
         let font_size = Twips::from_pixels(self.current_line_span.font.size);
-        let font = self.font_set.unwrap();
+        let metrics = self.font_set.unwrap().metrics();
         self.max_font_size = font_size;
-        self.max_ascent = font.get_baseline_for_height(font_size);
-        self.max_descent = font.get_descent_for_height(font_size);
+        self.max_ascent = metrics.ascent(font_size);
+        self.max_descent = metrics.descent(font_size);
         self.max_leading = Twips::from_pixels(span.leading);
     }
 
@@ -490,9 +490,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// Enter a new span.
     fn newspan(&mut self, first_span: &TextSpan) {
         let font_size = Twips::from_pixels(first_span.font.size);
-        let font = self.font_set.unwrap();
-        let ascent = font.get_baseline_for_height(font_size);
-        let descent = font.get_descent_for_height(font_size);
+        let metrics = self.font_set.unwrap().metrics();
+        let ascent = metrics.ascent(font_size);
+        let descent = metrics.descent(font_size);
         let leading = Twips::from_pixels(first_span.leading);
         if self.is_start_of_line() {
             self.current_line_span = first_span.clone();
@@ -679,8 +679,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         let font_set = self.font_set.expect("text fragment requires a font");
         let params = EvalParameters::from_span(span);
-        let ascent = font_set.get_baseline_for_height(params.height());
-        let descent = font_set.get_descent_for_height(params.height());
+        let metrics = font_set.metrics();
+        let ascent = metrics.ascent(params.height());
+        let descent = metrics.descent(params.height());
         let text_width = font_set.measure(text, params);
         let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
@@ -709,8 +710,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         );
 
         let params = EvalParameters::from_span(span);
-        let ascent = bullet_font.get_baseline_for_height(params.height());
-        let descent = bullet_font.get_descent_for_height(params.height());
+        let metrics = bullet_font.metrics();
+        let ascent = metrics.ascent(params.height());
+        let descent = metrics.descent(params.height());
         let bullet = WStr::from_units(&[0x2022u16]);
         let text_width = bullet_font.measure(bullet, params);
         let box_origin = bullet_cursor - (Twips::ZERO, ascent).into();
