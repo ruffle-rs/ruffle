@@ -1275,9 +1275,10 @@ impl<'gc> EditText<'gc> {
         if let Some((text, _tf, font, params, color)) =
             lbox.as_renderable_text(self.0.text_spans.borrow().displayed_text())
         {
-            let baseline = font.get_baseline_for_height(params.height());
-            let descent = font.get_descent_for_height(params.height());
-            let caret_height = baseline + descent;
+            let metrics = font.metrics();
+            let ascent = metrics.ascent(params.height());
+            let descent = metrics.descent(params.height());
+            let caret_height = ascent + descent;
             let mut caret_x = Twips::ZERO;
             font.evaluate(
                 text,
@@ -1321,7 +1322,7 @@ impl<'gc> EditText<'gc> {
             } = lbox.content()
             {
                 // Draw underline
-                let underline_y = baseline + (max_descent / 2);
+                let underline_y = ascent + (max_descent / 2);
                 let underline_width = lbox.bounds().width();
                 self.render_underline(context, underline_width, underline_y, color);
             }
@@ -2252,8 +2253,10 @@ impl<'gc> EditText<'gc> {
         let font_set = first_font_set?;
         let text_format = first_format?;
         let size = Twips::from_pixels(text_format.size?);
-        let ascent = font_set.get_baseline_for_height(size);
-        let descent = font_set.get_descent_for_height(size);
+
+        let metrics = font_set.metrics();
+        let ascent = metrics.ascent(size);
+        let descent = metrics.descent(size);
         let leading = Twips::from_pixels(text_format.leading?);
 
         Some(LayoutMetrics {
