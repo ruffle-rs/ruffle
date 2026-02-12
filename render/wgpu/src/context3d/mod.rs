@@ -1009,8 +1009,6 @@ impl Context3D for WgpuContext3D {
             }
             Context3DCommand::CopyBitmapToTexture {
                 source,
-                source_width,
-                source_height,
                 dest,
                 layer,
             } => {
@@ -1022,6 +1020,23 @@ impl Context3D for WgpuContext3D {
                 // BitmapData's gpu texture might be modified before we actually submit
                 // `buffer_command_encoder` to the device.
                 let dest_format = dest.texture.format();
+                let source_width = source.width();
+                let source_height = source.height();
+
+                let source = match dest_format {
+                    wgpu::TextureFormat::Rgba8Unorm => source,
+                    wgpu::TextureFormat::Rgba16Float => source.to_rgba16_float(),
+                    wgpu::TextureFormat::Bc3RgbaUnorm => source.to_bc3_rgba_unorm(),
+                    _ => {
+                        tracing::warn!(
+                            "Unhandled texture upload: {:?} -> {:?}",
+                            source.format(),
+                            dest_format
+                        );
+                        source
+                    }
+                };
+
                 let src_bytes_per_row = dest_format.block_copy_size(None).unwrap()
                     * (source_width / dest_format.block_dimensions().0);
 
@@ -1029,14 +1044,11 @@ impl Context3D for WgpuContext3D {
 
                 // Wgpu requires us to pad the image rows to a multiple of COPY_BYTES_PER_ROW_ALIGNMENT
                 let dest_bytes_per_row =
-                    if matches!(dest.texture.format(), wgpu::TextureFormat::Rgba8Unorm) {
-                        (source_width * 4).next_multiple_of(COPY_BYTES_PER_ROW_ALIGNMENT)
-                    } else {
-                        src_bytes_per_row
-                    };
+                    src_bytes_per_row.next_multiple_of(COPY_BYTES_PER_ROW_ALIGNMENT);
                 let dest_size = dest_bytes_per_row as u64 * rows_per_image as u64;
                 assert!(
-                    dest_bytes_per_row >= src_bytes_per_row && dest_size >= source.len() as u64
+                    dest_bytes_per_row >= src_bytes_per_row
+                        && dest_size >= source.data().len() as u64
                 );
 
                 let texture_buffer = self.descriptors.device.create_buffer(&BufferDescriptor {
@@ -1052,10 +1064,14 @@ impl Context3D for WgpuContext3D {
                     .expect("Texture buffer must be mappable");
                 if dest_bytes_per_row == src_bytes_per_row {
                     // No padding, we can copy everything in one go.
-                    texture_buffer_view.copy_from_slice(source);
+                    texture_buffer_view.copy_from_slice(source.data());
                 } else {
                     // Copy row by row.
-                    for (row, src) in source.chunks_exact(src_bytes_per_row as usize).enumerate() {
+                    for (row, src) in source
+                        .data()
+                        .chunks_exact(src_bytes_per_row as usize)
+                        .enumerate()
+                    {
                         let row_start = row * dest_bytes_per_row as usize;
                         let (mut dest, mut padding) = texture_buffer_view
                             .slice(row_start..row_start + dest_bytes_per_row as usize)
