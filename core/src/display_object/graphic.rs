@@ -255,8 +255,8 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
             // Calculate the current scale from the transform, to determine if
             // we can reuse a cached tessellation or need to retessellate.
             let matrix = &transform.matrix;
-            let scale_x = f32::abs(matrix.a + matrix.b);
-            let scale_y = f32::abs(matrix.c + matrix.d);
+            let scale_x = f32::abs(matrix.a + matrix.c);
+            let scale_y = f32::abs(matrix.b + matrix.d);
             let current_scale = ((scale_x * scale_x + scale_y * scale_y) / 2.0).sqrt();
 
             let handle = self.get_or_retessellate_handle(context, &base_handle, current_scale);
