@@ -461,10 +461,18 @@ pub fn get_dynamic_property<'gc>(
     }
 
     let Some(local_name) = multiname.local_name() else {
-        // when can this happen?
+        // This happens for wildcard (*) multinames - they have name: `None`.
+        // Flash throws #1081 for wildcards on objects, #1069 for primitives.
+        // `local_values` is always `Some` for object lookups and always `None` for primitive lookups
+        let error_code = if local_values.is_some() {
+            error::ReferenceErrorCode::InvalidNsRead
+        } else {
+            error::ReferenceErrorCode::InvalidRead
+        };
+
         return Err(error::make_reference_error(
             activation,
-            error::ReferenceErrorCode::InvalidRead,
+            error_code,
             multiname,
             instance_class,
         ));
