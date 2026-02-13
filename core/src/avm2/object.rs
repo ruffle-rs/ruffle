@@ -260,7 +260,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
 
         let base = self.base();
         let values = base.values();
-        let value = values.as_hashmap().get(&key);
+        let value = values.get(&key);
         value.map(|v| v.value)
     }
 

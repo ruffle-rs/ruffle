@@ -99,7 +99,7 @@ rayon = "1.11.0"
 sha2 = "0.10.9"
 indexmap = "2.13.0"
 fnv = "1.0.7"
-hashbrown = { version = "0.14.5", features = ["raw"] }
+hashbrown = "0.16.1"
 fluent-templates = "0.13.2"
 lzma-rs = "0.3.0"
 tempfile = "3.25.0"
