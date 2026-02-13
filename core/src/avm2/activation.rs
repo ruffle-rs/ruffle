@@ -1998,8 +1998,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value1 = self.pop_stack();
 
         let sum_value = match (value1, value2) {
-            // note: with not-yet-guaranteed assumption that Integer < 1<<28, this won't overflow.
-            (Value::Integer(n1), Value::Integer(n2)) => (n1 + n2).into(),
+            (Value::Integer(n1), Value::Integer(n2)) => {
+                if let Some(res) = n1.checked_add(n2) {
+                    res.into()
+                } else {
+                    (n1 as f64 + n2 as f64).into()
+                }
+            }
             (Value::Number(n1), Value::Number(n2)) => (n1 + n2).into(),
             (Value::String(s), value2) => Value::String(AvmString::concat(
                 self.gc(),
@@ -2244,8 +2249,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value1 = self.pop_stack();
 
         let sub_value: Value<'gc> = match (value1, value2) {
-            // note: with not-yet-guaranteed assumption that Integer < 1<<28, this won't underflow.
-            (Value::Integer(n1), Value::Integer(n2)) => (n1 - n2).into(),
+            (Value::Integer(n1), Value::Integer(n2)) => {
+                if let Some(res) = n1.checked_sub(n2) {
+                    res.into()
+                } else {
+                    (n1 as f64 - n2 as f64).into()
+                }
+            }
             (Value::Number(n1), Value::Number(n2)) => (n1 - n2).into(),
             _ => {
                 let value2 = value2.coerce_to_number(self)?;
