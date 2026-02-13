@@ -1,0 +1,14 @@
+// circle.png is embedded as a bitmap and bound to the CirclePng class.
+Swf(
+    version: 38,
+    stage: (width: 500.0, height: 375.0),
+    frame_rate: 24.0,
+    tags: [
+        FileAttributes(action_script_3: true),
+        DefineBitsJpeg2(id: 1, data: File("circle.png")),
+        DoAbc(Asc(file: "Test.as", scripts: ["CirclePng.as", "com/adobe/utils/AGALMiniAssembler.as"])),
+        SymbolClass([(character: 1, name: "CirclePng"), (character: 0, name: "Test")]),
+        ShowFrame,
+        End,
+    ],
+)
