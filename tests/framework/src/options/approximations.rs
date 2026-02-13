@@ -6,16 +6,11 @@ use serde::Deserialize;
 #[derive(Clone, Deserialize, Default)]
 #[serde(default, deny_unknown_fields)]
 pub struct Approximations {
-    #[serde(default = "default_for_bare_numbers")]
+    #[serde(default)]
     pub bare_numbers: bool,
     number_patterns: Vec<String>,
     epsilon: Option<f64>,
     max_relative: Option<f64>,
-}
-
-// Serde requires defaults to be provided through functions
-fn default_for_bare_numbers() -> bool {
-    true
 }
 
 impl Approximations {
