@@ -1,0 +1,11 @@
+num_frames = 1
+
+[image_comparisons.output]
+# Higher tolerance because Ruffle uses texpresso for BC3 compression while
+# Flash uses a different BC3 compressor; both produce valid but different
+# reconstructed pixel values inside the circle.
+tolerance = 49
+max_outliers = 100
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
