@@ -19,7 +19,7 @@ gif = "0.14.1"
 png = "0.18.0"
 flate2 = { workspace = true }
 smallvec = { workspace = true }
-lyon = { version = "1.0.1", optional = true }
+lyon = { version = "1.0.16", optional = true }
 lyon_geom = "1.0.6"
 thiserror = { workspace = true }
 wasm-bindgen = { workspace = true, optional = true }
