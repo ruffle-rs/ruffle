@@ -33,6 +33,7 @@ pub fn asnative<'gc>(
         1111 => Some(globals::displacement_map_filter::method),
         2700 => Some(globals::automation_stage_capture::method),
         2800 => Some(globals::automation_action_generator::method),
+        2900 => Some(globals::automation_configuration::method),
         _ => None,
     };
 
