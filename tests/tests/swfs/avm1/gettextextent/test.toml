@@ -1,6 +1,7 @@
 num_frames = 1
 
 [approximations]
+bare_numbers = true
 # TODO: Flash Player breaks single words that are longer than the line, but we don't.
 epsilon = 30.0
 

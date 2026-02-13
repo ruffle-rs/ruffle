@@ -59,7 +59,7 @@ log_fetch = false
 [approximations]
 
 # Should output lines solely consisting of a single number be subject to approximations?
-bare_numbers = true
+bare_numbers = false
 
 # A list of regex patterns with capture groups to additionally treat as approximate numbers.
 number_patterns = []

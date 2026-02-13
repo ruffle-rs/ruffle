@@ -15,7 +15,7 @@ pub struct Approximations {
 
 // Serde requires defaults to be provided through functions
 fn default_for_bare_numbers() -> bool {
-    true
+    false
 }
 
 impl Approximations {
