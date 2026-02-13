@@ -1,5 +1,6 @@
 num_frames = 1
 
 [approximations]
+bare_numbers = true
 # TODO: Discrepancy in wrapping in letterSpacing = 0.1 test.
 epsilon = 12.0
