@@ -1,6 +1,7 @@
 num_frames = 1
 
 [approximations]
+bare_numbers = true
 epsilon = 2.0
 
 [player_options]
