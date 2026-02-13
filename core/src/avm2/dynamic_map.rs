@@ -1,10 +1,9 @@
 use super::{Object, string::AvmString};
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
-use gc_arena::collect::Trace;
 use hashbrown::HashTable;
+use hashbrown::hash_table::Entry;
 use std::cell::Cell;
-use std::fmt::{self, Debug};
 use std::hash::{BuildHasher, Hash};
 
 #[derive(Debug, Collect, Copy, Clone)]
@@ -30,39 +29,18 @@ pub enum DynamicKey<'gc> {
 ///
 /// Uses `HashTable` directly to expose stable bucket indices, which are
 /// needed for correct iteration when entries are added or removed mid-iteration.
-#[derive(Clone)]
+#[derive(Debug, Clone, Collect)]
+#[collect(no_drop)]
 pub struct DynamicMap<K, V> {
     table: HashTable<(K, DynamicProperty<V>)>,
+    #[collect(require_static)]
     hasher: FnvBuildHasher,
+    // The last index that was given back to flash
+    #[collect(require_static)]
     public_index: Cell<usize>,
     // The actual bucket index that represents where an item is in the table
+    #[collect(require_static)]
     real_index: Cell<usize>,
-}
-
-unsafe impl<'gc, K: Collect<'gc>, V: Collect<'gc>> Collect<'gc> for DynamicMap<K, V> {
-    const NEEDS_TRACE: bool = K::NEEDS_TRACE || V::NEEDS_TRACE;
-
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        match (K::NEEDS_TRACE, V::NEEDS_TRACE) {
-            (true, true) => self.table.iter().for_each(|(k, v)| {
-                cc.trace(k);
-                cc.trace(&v.value);
-            }),
-            (true, false) => self.table.iter().for_each(|(k, _)| cc.trace(k)),
-            (false, true) => self.table.iter().for_each(|(_, v)| cc.trace(&v.value)),
-            (false, false) => {}
-        }
-    }
-}
-
-impl<K: Debug, V: Debug> Debug for DynamicMap<K, V> {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("DynamicMap")
-            .field("table", &self.table)
-            .field("public_index", &self.public_index)
-            .field("real_index", &self.real_index)
-            .finish()
-    }
 }
 
 impl<K: Eq + Hash, V> Default for DynamicMap<K, V> {
@@ -137,24 +115,23 @@ impl<K: Eq + Hash, V> DynamicMap<K, V> {
     pub fn insert(&mut self, key: K, new_value: V) {
         let hash = self.hash_key(&key);
 
-        match self.table.find_mut(hash, |(k, _)| *k == key) {
-            Some((_, prop)) => {
+        match self
+            .table
+            .entry(hash, |(k, _)| *k == key, |(k, _)| self.hasher.hash_one(k))
+        {
+            Entry::Occupied(mut occupied) => {
                 // NOTE: When inserting a new value into an already-occupied entry,
                 // the value of the `enumerable` field isn't reset to `true`
-                prop.value = new_value;
+                occupied.get_mut().1.value = new_value;
             }
-            None => {
-                self.table.insert_unique(
-                    hash,
-                    (
-                        key,
-                        DynamicProperty {
-                            value: new_value,
-                            enumerable: true,
-                        },
-                    ),
-                    |(k, _)| self.hasher.hash_one(k),
-                );
+            Entry::Vacant(vacant) => {
+                vacant.insert((
+                    key,
+                    DynamicProperty {
+                        value: new_value,
+                        enumerable: true,
+                    },
+                ));
             }
         }
     }
@@ -168,6 +145,13 @@ impl<K: Eq + Hash, V> DynamicMap<K, V> {
         }
     }
 
+    // NOTE: Per the docs on `HashTable::find_bucket_index`, bucket indices are
+    // "only meaningful as long as the table is not resized and no entries are
+    // added or removed". The current implementation uses tombstones and never
+    // moves elements, so indices of other entries are preserved on removal in
+    // practice, but this is not a guaranteed API contract and should not be
+    // relied on long-term.
+    // https://docs.rs/hashbrown/0.16.1/hashbrown/struct.HashTable.html#method.find_bucket_index
     pub fn next(&self, index: usize) -> Option<usize> {
         // Start iteration from the beginning
         if index == 0 {
