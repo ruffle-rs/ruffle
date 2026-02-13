@@ -26,6 +26,12 @@
     "settings_log_level_info": {
         "message": "Információk"
     },
+    "settings_log_level_debug": {
+        "message": "Hibakeresések"
+    },
+    "settings_log_level_trace": {
+        "message": "Nyomkövetések"
+    },
     "settings_max_execution_duration": {
         "message": "ActionScript futtatás maximális megengedett időtartama (másodpercben)"
     },
@@ -37,6 +43,12 @@
     },
     "settings_preferred_renderer_auto": {
         "message": "Automatikus"
+    },
+    "settings_device_font_renderer": {
+        "message": "Eszközbetűtípus-megjelenítő"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Beágyazott"
     },
     "settings_advanced_options": {
         "message": "Haladó beállítások"

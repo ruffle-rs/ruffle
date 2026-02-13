@@ -44,6 +44,9 @@
     "settings_preferred_renderer_auto": {
         "message": "Automático"
     },
+    "device_font_renderer_embedded": {
+        "message": "Embebido"
+    },
     "settings_advanced_options": {
         "message": "Opciones avanzadas"
     },
