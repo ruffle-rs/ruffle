@@ -57,7 +57,7 @@ egui = "0.33.3"
 clap = { version = "4.5.57", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
-gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["indexmap", "smallvec", "slotmap"] }
+gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["hashbrown", "indexmap", "smallvec", "slotmap"] }
 slotmap = "1.1.1"
 async-channel = "2.5.0"
 bitflags = "2.10.0"
