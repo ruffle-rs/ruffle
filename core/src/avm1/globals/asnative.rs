@@ -32,6 +32,7 @@ pub fn asnative<'gc>(
         1110 => Some(globals::color_matrix_filter::method),
         1111 => Some(globals::displacement_map_filter::method),
         2700 => Some(globals::automation_stage_capture::method),
+        2800 => Some(globals::automation_action_generator::method),
         _ => None,
     };
 

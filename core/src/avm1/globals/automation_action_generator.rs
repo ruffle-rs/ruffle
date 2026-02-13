@@ -5,10 +5,11 @@ use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "generateAction" => method(generate_action);
-    "generateActions" => method(generate_actions);
-    "valueOf" => method(value_of);
-    "toString" => method(to_string);
+    use fn method;
+    "generateAction" => method(GENERATE_ACTION);
+    "generateActions" => method(GENERATE_ACTIONS);
+    "valueOf" => method(VALUE_OF);
+    "toString" => method(TO_STRING);
 };
 
 pub fn create_class<'gc>(
@@ -20,46 +21,29 @@ pub fn create_class<'gc>(
     class
 }
 
-fn generate_action<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(
-        activation,
-        "flash.automation.ActionGenerator",
-        "generateAction"
-    );
-    Ok(Value::Undefined)
+pub mod method {
+    pub const GENERATE_ACTION: u16 = 0;
+    pub const GENERATE_ACTIONS: u16 = 1;
+    pub const VALUE_OF: u16 = 3;
+    pub const TO_STRING: u16 = 4;
 }
 
-fn generate_actions<'gc>(
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(
-        activation,
-        "flash.automation.ActionGenerator",
-        "generateActions"
-    );
-    Ok(Value::Undefined)
-}
+    use method::*;
+    const CNAME: &str = "flash.automation.ActionGenerator";
 
-fn value_of<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "flash.automation.ActionGenerator", "valueOf");
-    Ok(Value::Undefined)
-}
+    match index {
+        GENERATE_ACTION => avm1_stub!(activation, CNAME, "generateAction"),
+        GENERATE_ACTIONS => avm1_stub!(activation, CNAME, "generateActions"),
+        VALUE_OF => avm1_stub!(activation, CNAME, "valueOf"),
+        TO_STRING => avm1_stub!(activation, CNAME, "toString"),
+        _ => (),
+    }
 
-fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "flash.automation.ActionGenerator", "toString");
     Ok(Value::Undefined)
 }
