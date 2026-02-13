@@ -7,17 +7,20 @@ use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "setMode" => method(set_mode; DONT_ENUM | DONT_DELETE);
-    "setQuality" => method(set_quality; DONT_ENUM | DONT_DELETE);
-    "setKeyFrameInterval" => method(set_key_frame_interval; DONT_ENUM | DONT_DELETE);
-    "setMotionLevel" => method(set_motion_level; DONT_ENUM | DONT_DELETE);
-    "setLoopback" => method(set_loopback; DONT_ENUM | DONT_DELETE);
-    "setCursor" => method(set_cursor; DONT_ENUM | DONT_DELETE);
+    use fn method;
+    "setMode" => method(SET_MODE; DONT_ENUM | DONT_DELETE);
+    "setQuality" => method(SET_QUALITY; DONT_ENUM | DONT_DELETE);
+    "setKeyFrameInterval" => method(SET_KEY_FRAME_INTERVAL; DONT_ENUM | DONT_DELETE);
+    "setMotionLevel" => method(SET_MOTION_LEVEL; DONT_ENUM | DONT_DELETE);
+    "setLoopback" => method(SET_LOOPBACK; DONT_ENUM | DONT_DELETE);
+    "setCursor" => method(SET_CURSOR; DONT_ENUM | DONT_DELETE);
 };
 
 const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
-    "get" => method(get);
-    "names" => property(get_names);
+    // In playerglobals.swf, this is a bytecode function delegating to the internal native impl.
+    "get" => function(|a, this, args| method(a, this, args, method::INTERNAL_GET));
+    use fn method;
+    "names" => property(GET_NAMES);
 };
 
 pub fn create_class<'gc>(
@@ -30,78 +33,48 @@ pub fn create_class<'gc>(
     class
 }
 
-fn get<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Camera", "get");
-    // Camera.get() returns null when there's no camera.
-    Ok(Value::Null)
+pub mod method {
+    pub const SET_MODE: u16 = 0;
+    pub const SET_QUALITY: u16 = 1;
+    pub const SET_KEY_FRAME_INTERVAL: u16 = 2;
+    pub const SET_MOTION_LEVEL: u16 = 3;
+    pub const SET_LOOPBACK: u16 = 4;
+    pub const SET_CURSOR: u16 = 5;
+
+    pub const INTERNAL_GET: u16 = 200;
+    pub const GET_NAMES: u16 = 201;
 }
 
-fn get_names<'gc>(
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Camera", "names");
-    activation
-        .prototypes()
-        .array_constructor
-        .construct(activation, &[])
-}
+    use method::*;
+    const CNAME: &str = "Camera";
 
-fn set_mode<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Camera", "setMode");
-    Ok(Value::Undefined)
-}
+    match index {
+        INTERNAL_GET => {
+            avm1_stub!(activation, CNAME, "get");
+            // Camera.get() returns null when there's no camera.
+            return Ok(Value::Null);
+        }
+        GET_NAMES => {
+            avm1_stub!(activation, CNAME, "names");
+            return activation
+                .prototypes()
+                .array_constructor
+                .construct(activation, &[]);
+        }
+        SET_MODE => avm1_stub!(activation, CNAME, "setMode"),
+        SET_QUALITY => avm1_stub!(activation, CNAME, "setQuality"),
+        SET_KEY_FRAME_INTERVAL => avm1_stub!(activation, CNAME, "setKeyFrameInterval"),
+        SET_MOTION_LEVEL => avm1_stub!(activation, CNAME, "setMotionLevel"),
+        SET_LOOPBACK => avm1_stub!(activation, CNAME, "setLoopback"),
+        SET_CURSOR => avm1_stub!(activation, CNAME, "setCursor"),
+        _ => (),
+    }
 
-fn set_quality<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Camera", "setQuality");
-    Ok(Value::Undefined)
-}
-
-fn set_key_frame_interval<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Camera", "setKeyFrameInterval");
-    Ok(Value::Undefined)
-}
-
-fn set_motion_level<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Camera", "setMotionLevel");
-    Ok(Value::Undefined)
-}
-
-fn set_loopback<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Camera", "setLoopback");
-    Ok(Value::Undefined)
-}
-
-fn set_cursor<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Camera", "setCursor");
     Ok(Value::Undefined)
 }
