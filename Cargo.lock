@@ -2044,6 +2044,7 @@ version = "0.5.3"
 source = "git+https://github.com/kyren/gc-arena.git?rev=75671ae03f53718357b741ed4027560f14e90836#75671ae03f53718357b741ed4027560f14e90836"
 dependencies = [
  "gc-arena-derive",
+ "hashbrown 0.16.1",
  "indexmap",
  "slotmap",
  "smallvec",
@@ -2356,16 +2357,6 @@ dependencies = [
  "crunchy",
  "num-traits",
  "zerocopy",
-]
-
-[[package]]
-name = "hashbrown"
-version = "0.14.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e5274423e17b7c9fc20b6e7e208532f9b19825d82dfd615708b70edd83df41f1"
-dependencies = [
- "ahash",
- "allocator-api2",
 ]
 
 [[package]]
@@ -4480,7 +4471,7 @@ version = "0.1.0"
 dependencies = [
  "fnv",
  "gc-arena",
- "hashbrown 0.14.5",
+ "hashbrown 0.16.1",
  "quick-xml",
  "regress",
  "ruffle_macros",
@@ -4518,7 +4509,7 @@ dependencies = [
  "fnv",
  "futures",
  "gc-arena",
- "hashbrown 0.14.5",
+ "hashbrown 0.16.1",
  "id3",
  "image",
  "indexmap",
