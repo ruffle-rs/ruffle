@@ -326,7 +326,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {
                 let key = maybe_int_property(name);
-                return self.values().as_hashmap().get(&key).is_some();
+                return self.values().contains_key(&key);
             }
         }
         false
@@ -361,10 +361,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
 
     pub fn property_is_enumerable(self, name: AvmString<'gc>) -> bool {
         let key = maybe_int_property(name);
-        self.values()
-            .as_hashmap()
-            .get(&key)
-            .is_some_and(|prop| prop.enumerable)
+        self.values().get(&key).is_some_and(|prop| prop.enumerable)
     }
 
     pub fn set_local_property_is_enumerable(
@@ -374,9 +371,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         is_enumerable: bool,
     ) {
         let key = maybe_int_property(name);
-        self.values_mut(mc).entry(key).and_modify(|v| {
-            v.enumerable = is_enumerable;
-        });
+        self.values_mut(mc).set_enumerable(&key, is_enumerable);
     }
 
     /// Install a method into the object.
@@ -483,7 +478,8 @@ pub fn get_dynamic_property<'gc>(
     let key = maybe_int_property(local_name);
 
     if let Some(values) = local_values {
-        let value = values.as_hashmap().get(&key);
+        let value = values.get(&key);
+
         if let Some(value) = value {
             return Ok(Some(value.value));
         }
@@ -495,7 +491,8 @@ pub fn get_dynamic_property<'gc>(
         // First search dynamic properties
         let obj = this_proto.base();
         let values = obj.values();
-        let value = values.as_hashmap().get(&key);
+        let value = values.get(&key);
+
         if let Some(value) = value {
             return Ok(Some(value.value));
         }

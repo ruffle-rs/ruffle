@@ -5,7 +5,7 @@ use super::repr::AvmStringRepr;
 use core::fmt;
 use gc_arena::collect::Trace;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
-use hashbrown::HashSet;
+use hashbrown::HashTable;
 use ruffle_wstr::WStr;
 use std::borrow::Borrow;
 use std::cell::RefCell;
@@ -82,17 +82,17 @@ impl<'gc> AvmStringInterner<'gc> {
         F: FnOnce(S) -> Gc<'gc, AvmStringRepr<'gc>>,
     {
         match self.interned.entry(mc, s.deref()) {
-            (Some(atom), _) => AvmAtom(atom),
-            (None, h) => {
-                let atom = self.interned.insert_fresh(mc, h, f(s));
-                AvmAtom(atom)
-            }
+            Entry::Occupied(occupied) => AvmAtom(occupied.get()),
+            Entry::Vacant(vacant) => AvmAtom(vacant.insert(mc, f(s))),
         }
     }
 
     #[must_use]
     pub(super) fn get(&mut self, mc: &Mutation<'gc>, s: &WStr) -> Option<AvmAtom<'gc>> {
-        self.interned.get(mc, s).map(AvmAtom)
+        match self.interned.entry(mc, s) {
+            Entry::Occupied(occupied) => Some(AvmAtom(occupied.get())),
+            Entry::Vacant(_) => None,
+        }
     }
 
     #[must_use]
@@ -126,11 +126,35 @@ impl<'gc> AvmStringInterner<'gc> {
 /// - upon insertion when the set is at capacity.
 #[derive(Default)]
 struct WeakSet<'gc, T: 'gc> {
-    // Note that `GcWeak<T>` does not implement `Hash`, so the `RawTable`
-    // API is used for lookups and insertions.
+    // Note that `GcWeak<T>` does not implement `Hash`, so `HashTable`
+    // is used for lookups and insertions with explicit hashing.
     // The `RefCell` is only used to get mutable access in `Collect::trace`
-    table: RefCell<HashSet<GcWeak<'gc, T>>>,
+    table: RefCell<HashTable<GcWeak<'gc, T>>>,
     hasher: fnv::FnvBuildHasher,
+}
+
+enum Entry<'a, 'gc, T: 'gc> {
+    Occupied(OccupiedEntry<'gc, T>),
+    Vacant(VacantEntry<'a, 'gc, T>),
+}
+
+struct OccupiedEntry<'gc, T: 'gc>(Gc<'gc, T>);
+
+impl<'gc, T: 'gc> OccupiedEntry<'gc, T> {
+    fn get(&self) -> Gc<'gc, T> {
+        self.0
+    }
+}
+
+struct VacantEntry<'a, 'gc, T: 'gc> {
+    set: &'a mut WeakSet<'gc, T>,
+    hash: u64,
+}
+
+impl<'a, 'gc, T: Hash + 'gc> VacantEntry<'a, 'gc, T> {
+    fn insert(self, mc: &Mutation<'gc>, key: Gc<'gc, T>) -> Gc<'gc, T> {
+        self.set.insert_fresh(mc, self.hash, key)
+    }
 }
 
 impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
@@ -138,69 +162,62 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
         build_hasher.hash_one(key)
     }
 
-    /// Finds the given key in the map.
-    /// This takes `&mut self` to be able to clean dead entries (and to avoid a `RefCell` check).
-    fn get<Q>(&mut self, mc: &Mutation<'gc>, key: &Q) -> Option<Gc<'gc, T>>
-    where
-        T: Borrow<Q>,
-        Q: Hash + Eq + ?Sized,
-    {
-        self.entry(mc, key).0
+    fn weak_hasher<'a>(
+        hasher: &'a fnv::FnvBuildHasher,
+        mc: &'a Mutation<'gc>,
+    ) -> impl Fn(&GcWeak<'gc, T>) -> u64 + 'a {
+        move |w| match w.upgrade(mc) {
+            Some(strong) => Self::hash(hasher, &*strong),
+            None => 0,
+        }
     }
 
-    /// Finds the given key in the map, and return its and its hash.
-    /// This also cleans up stale buckets found along the way.
-    /// TODO: add proper entry API?
-    fn entry<Q>(&mut self, mc: &Mutation<'gc>, key: &Q) -> (Option<Gc<'gc, T>>, u64)
+    fn entry<Q>(&mut self, mc: &Mutation<'gc>, key: &Q) -> Entry<'_, 'gc, T>
     where
         T: Borrow<Q>,
         Q: Hash + Eq + ?Sized,
     {
-        let raw = self.table.get_mut().raw_table_mut();
         let hash = Self::hash(&self.hasher, key);
+        let table = self.table.get_mut();
 
-        // SAFETY: the iterator doesn't outlive the `HashSet`.
-        for bucket in unsafe { raw.iter_hash(hash) } {
-            // SAFETY: `iter_hash` only returns occupied buckets.
-            let weak = unsafe { bucket.as_ref().0 };
-
-            if let Some(strong) = weak.upgrade(mc) {
-                // The entry matches, return it.
-                if (*strong).borrow() == key {
-                    return (Some(strong), hash);
+        loop {
+            match table.find_entry(hash, |weak| {
+                weak.upgrade(mc).is_none_or(|s| (*s).borrow() == key)
+            }) {
+                Ok(occupied) => {
+                    if let Some(strong) = occupied.get().upgrade(mc) {
+                        return Entry::Occupied(OccupiedEntry(strong));
+                    } else {
+                        occupied.remove();
+                    }
                 }
-            } else {
-                // The entry is stale, delete it.
-                // SAFETY: the entry has already been yielded by the iterator.
-                unsafe { raw.erase(bucket) };
+                Err(_) => return Entry::Vacant(VacantEntry { set: self, hash }),
             }
         }
-
-        (None, hash)
     }
 
     /// Inserts a new key in the set.
-    /// The key must not already exist
-    /// TODO: add proper entry API?
+    /// The key must not already exist.
     fn insert_fresh_no_hash(&mut self, mc: &Mutation<'gc>, key: Gc<'gc, T>) -> Gc<'gc, T> {
         let hash = Self::hash(&self.hasher, &key);
+
         self.insert_fresh(mc, hash, key)
     }
 
     /// Inserts a new key in the set.
     /// The key must not already exist, and `hash` must be its hash.
-    /// TODO: add proper entry API?
     fn insert_fresh(&mut self, mc: &Mutation<'gc>, hash: u64, key: Gc<'gc, T>) -> Gc<'gc, T> {
-        let entry = (Gc::downgrade(key), ());
+        let weak = Gc::downgrade(key);
 
-        let raw = self.table.get_mut().raw_table_mut();
+        let table = self.table.get_mut();
 
-        if raw.try_insert_no_grow(hash, entry).is_err() {
+        if table.len() >= table.capacity() {
             self.prune_and_grow(mc);
-            let raw = self.table.get_mut().raw_table_mut();
-            raw.try_insert_no_grow(hash, entry)
-                .expect("failed to grow table");
         }
+
+        self.table
+            .get_mut()
+            .insert_unique(hash, weak, Self::weak_hasher(&self.hasher, mc));
 
         key
     }
@@ -218,12 +235,7 @@ impl<'gc, T: Hash + 'gc> WeakSet<'gc, T> {
         // Only reallocate if few entries were pruned.
         if remaining >= all / 2 {
             let extra = all - remaining + 1;
-            table
-                .raw_table_mut()
-                .reserve(extra, |(weak, _)| match weak.upgrade(mc) {
-                    Some(strong) => Self::hash(&self.hasher, &*strong),
-                    None => unreachable!("unexpected stale entry"),
-                });
+            table.reserve(extra, Self::weak_hasher(&self.hasher, mc));
         }
     }
 }
