@@ -1,0 +1,126 @@
+===== Checking 0, 0
+0
+0
+Infinity
+Infinity
+true
+true
+false
+false
+===== Checking 0, 0
+0
+0
+Infinity
+Infinity
+true
+true
+false
+false
+===== Checking 0, 0
+0
+0
+Infinity
+Infinity
+true
+true
+false
+false
+===== Checking 0, 0
+0
+0
+Infinity
+Infinity
+true
+true
+false
+false
+===== Checking 0, 0
+0
+0
+Infinity
+Infinity
+true
+true
+false
+false
+===== Checking 0, 0
+0
+0
+Infinity
+Infinity
+true
+true
+false
+false
+===== Checking 0, 0
+0
+0
+Infinity
+Infinity
+true
+true
+false
+false
+===== Checking 0, 0
+0
+0
+Infinity
+Infinity
+true
+true
+false
+false
+===== Checking -Infinity, Infinity
+Infinity
+-Infinity
+0
+0
+false
+false
+false
+false
+===== Checking Infinity, -Infinity
+Infinity
+-Infinity
+0
+0
+false
+false
+false
+false
+===== Checking 0, -Infinity
+0
+-Infinity
+Infinity
+0
+true
+false
+false
+false
+===== Checking 0, Infinity
+Infinity
+0
+0
+Infinity
+false
+true
+false
+false
+===== Checking -Infinity, 0
+0
+-Infinity
+Infinity
+0
+true
+false
+false
+false
+===== Checking Infinity, 0
+Infinity
+0
+0
+Infinity
+false
+true
+false
+false
