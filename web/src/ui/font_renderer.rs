@@ -140,9 +140,13 @@ impl CanvasFontRenderer {
 }
 
 impl FontRenderer for CanvasFontRenderer {
+    fn scale(&self) -> f32 {
+        (Self::SIZE_PX * Self::SCALE) as f32
+    }
+
     fn get_font_metrics(&self) -> FontMetrics {
         FontMetrics {
-            scale: (Self::SIZE_PX * Self::SCALE) as f32,
+            scale: self.scale(),
             ascent: (self.ascent * Self::SCALE) as i32,
             descent: (self.descent * Self::SCALE) as i32,
             leading: 0,
