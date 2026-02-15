@@ -119,6 +119,7 @@ unknown_lints = "allow"
 # add a comment explaining why.
 trivially_copy_pass_by_ref = "deny"
 redundant_clone = "deny"
+unused_async = "deny"
 
 # LONG-TERM: These lints are unhelpful.
 manual_map = "allow"             # Less readable: Suggests `opt.map(..)` instead of `if let Some(opt) { .. }`
