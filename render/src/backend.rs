@@ -408,6 +408,44 @@ impl FromWStr for Context3DCompareMode {
 }
 
 #[derive(Copy, Clone, Debug)]
+pub enum Context3DStencilAction {
+    DecrementSaturate,
+    DecrementWrap,
+    IncrementSaturate,
+    IncrementWrap,
+    Invert,
+    Keep,
+    Set,
+    Zero,
+}
+
+impl FromWStr for Context3DStencilAction {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"decrementSaturate" {
+            Ok(Context3DStencilAction::DecrementSaturate)
+        } else if s == b"decrementWrap" {
+            Ok(Context3DStencilAction::DecrementWrap)
+        } else if s == b"incrementSaturate" {
+            Ok(Context3DStencilAction::IncrementSaturate)
+        } else if s == b"incrementWrap" {
+            Ok(Context3DStencilAction::IncrementWrap)
+        } else if s == b"invert" {
+            Ok(Context3DStencilAction::Invert)
+        } else if s == b"keep" {
+            Ok(Context3DStencilAction::Keep)
+        } else if s == b"set" {
+            Ok(Context3DStencilAction::Set)
+        } else if s == b"zero" {
+            Ok(Context3DStencilAction::Zero)
+        } else {
+            Err(())
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
 pub enum Context3DWrapMode {
     Clamp,
     ClampURepeatV,
@@ -565,6 +603,18 @@ pub enum Context3DCommand<'a> {
     },
     SetScissorRectangle {
         rect: Option<Rectangle<Twips>>,
+    },
+    SetStencilActions {
+        triangle_face: Context3DTriangleFace,
+        compare_mode: Context3DCompareMode,
+        on_both_pass: Context3DStencilAction,
+        on_depth_fail: Context3DStencilAction,
+        on_depth_pass_stencil_fail: Context3DStencilAction,
+    },
+    SetStencilReferenceValue {
+        reference_value: u32,
+        read_mask: u32,
+        write_mask: u32,
     },
 }
 
