@@ -182,9 +182,7 @@ package flash.display3D {
             stub_setter("flash.display3D.Context3D", "maxBackBufferHeight");
         }
 
-        public function setStencilReferenceValue(referenceValue:uint, readMask:uint = 255, writeMask:uint = 255):void {
-            stub_method("flash.display3D.Context3D", "setStencilReferenceValue");
-        }
+        public native function setStencilReferenceValue(referenceValue:uint, readMask:uint = 255, writeMask:uint = 255):void;
 
         [API("686")]
         public native function setSamplerStateAt(sampler:int, wrap:String, filter:String, mipfilter:String):void;
@@ -197,15 +195,13 @@ package flash.display3D {
             colorOutputIndex:int = 0
         ):void;
 
-        public function setStencilActions(
+        public native function setStencilActions(
             triangleFace:String = "frontAndBack",
             compareMode:String = "always",
             actionOnBothPass:String = "keep",
             actionOnDepthFail:String = "keep",
             actionOnDepthPassStencilFail:String = "keep"
-        ):void {
-            stub_method("flash.display3D.Context3D", "setStencilActions");
-        }
+        ):void;
 
         public function drawToBitmapData(destination:BitmapData):void {
             stub_method("flash.display3D.Context3D", "drawToBitmapData");

@@ -674,6 +674,51 @@ pub fn set_render_to_texture<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn set_stencil_actions<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(context) = this.as_context_3d() {
+        let triangle_face = args
+            .get_string_non_null(activation, 0, "triangleFace")?
+            .parse()
+            .map_err(|_| make_error_2008(activation, "triangleFace"))?;
+
+        let compare_mode = args
+            .get_string_non_null(activation, 1, "compareMode")?
+            .parse()
+            .map_err(|_| make_error_2008(activation, "compareMode"))?;
+
+        let on_both_pass = args
+            .get_string_non_null(activation, 2, "actionOnBothPass")?
+            .parse()
+            .map_err(|_| make_error_2008(activation, "actionOnBothPass"))?;
+
+        let on_depth_fail = args
+            .get_string_non_null(activation, 3, "actionOnDepthFail")?
+            .parse()
+            .map_err(|_| make_error_2008(activation, "actionOnDepthFail"))?;
+
+        let on_depth_pass_stencil_fail = args
+            .get_string_non_null(activation, 4, "actionOnDepthPassStencilFail")?
+            .parse()
+            .map_err(|_| make_error_2008(activation, "actionOnDepthPassStencilFail"))?;
+
+        context.set_stencil_actions(
+            triangle_face,
+            compare_mode,
+            on_both_pass,
+            on_depth_fail,
+            on_depth_pass_stencil_fail,
+        );
+    }
+
+    Ok(Value::Undefined)
+}
+
 pub fn set_render_to_back_buffer<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -683,6 +728,26 @@ pub fn set_render_to_back_buffer<'gc>(
 
     let context = this.as_context_3d().unwrap();
     context.set_render_to_back_buffer();
+    Ok(Value::Undefined)
+}
+
+// TODO: Add visual tests for setStencilReferenceValue edge cases
+// (e.g. values > 255 for reference/masks on an 8-bit stencil buffer).
+pub fn set_stencil_reference_value<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(context) = this.as_context_3d() {
+        let reference_value = args.get_u32(0);
+        let read_mask = args.get_u32(1);
+        let write_mask = args.get_u32(2);
+
+        context.set_stencil_reference_value(reference_value, read_mask, write_mask);
+    }
+
     Ok(Value::Undefined)
 }
 
