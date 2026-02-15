@@ -860,15 +860,21 @@ impl<'gc> MovieClip<'gc> {
         // Clamp frame number in bounds.
         let frame = frame.max(1);
 
-        // In AS3, no-op gotos have side effects that are visible to user code.
-        // Hence, we have to run them anyway.
-        if frame != self.current_frame() {
-            if self
-                .0
-                .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
-            {
-                // AVM2 does not allow a clip to see while it is executing a frame script.
-                // The goto is instead queued and run once the frame script is completed.
+        // AVM2 does not allow a clip to goto while it is executing a frame script.
+        // The goto is instead queued and run once the frame script is completed.
+        if self
+            .0
+            .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
+        {
+            if self.swf_version() <= 9 && frame == self.current_frame() {
+                // When in SWFv9 and a queued goto is triggered to the current
+                // frame, for some reason, a no-op goto is immediately run.
+                // This results in `skip_next_enter_frame` being set.
+                self.no_op_goto(context);
+            } else {
+                // On all other versions, as well as in SWFv9 for gotos not to
+                // the current frame, the goto is properly queued.
+
                 self.0.queued_goto_frame.set(Some(frame));
 
                 // If we have a frame script on that frame, add ourselves to the
@@ -877,10 +883,33 @@ impl<'gc> MovieClip<'gc> {
                 if self.has_frame_script(frame) {
                     context.frame_script_cleanup_queue.push_back(self);
                 }
-            } else {
-                self.run_goto(context, frame, false);
             }
-        } else if self.movie().is_action_script_3() {
+        } else {
+            // If we're not currently running a frame script, we can just perform
+            // the goto right now.
+            self.goto_frame_now(context, frame)
+        }
+    }
+
+    fn goto_frame_now(self, context: &mut UpdateContext<'gc>, frame: FrameNumber) {
+        // In AS3, no-op gotos have side effects that are visible to user
+        // code. Hence, we have to run them anyway.
+        if frame != self.current_frame() {
+            self.run_goto(context, frame, false);
+        } else {
+            self.no_op_goto(context);
+        }
+    }
+
+    /// Perform a "no-op goto".
+    ///
+    /// In AVM2, this will clear `queued_goto_frame` and
+    /// call `run_inner_goto_frame`; it will not have the effects that a normal
+    /// goto would.
+    ///
+    /// In AVM1, no-op gotos have no effects, so this does nothing.
+    fn no_op_goto(self, context: &mut UpdateContext<'gc>) {
+        if self.movie().is_action_script_3() {
             // Despite not running, the goto still overwrites the currently enqueued frame.
             self.0.queued_goto_frame.set(None);
             // Pretend we actually did a goto, but don't do anything.
@@ -2413,7 +2442,7 @@ impl<'gc> MovieClip<'gc> {
 
         let goto_frame = self.0.queued_goto_frame.take();
         if let Some(frame) = goto_frame {
-            self.run_goto(context, frame, false);
+            self.goto_frame_now(context, frame);
         }
     }
 
