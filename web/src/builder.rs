@@ -360,7 +360,7 @@ impl RuffleInstanceBuilder {
 
     // TODO: This should be split into two methods that either load url or load data
     // Right now, that's done immediately afterwards in TS
-    pub async fn build(&self, parent: HtmlElement, js_player: JavascriptPlayer) -> Promise {
+    pub fn build(&self, parent: HtmlElement, js_player: JavascriptPlayer) -> Promise {
         let copy = self.clone();
         wasm_bindgen_futures::future_to_promise(async move {
             if RUFFLE_GLOBAL_PANIC.is_completed() {
@@ -496,6 +496,7 @@ impl RuffleInstanceBuilder {
         Arc::new(tracing_subscriber::registry().with(layer))
     }
 
+    #[allow(clippy::unused_async)]
     pub async fn create_renderer(
         &self,
     ) -> Result<(Box<dyn RenderBackend>, HtmlCanvasElement), Box<dyn Error>> {
