@@ -726,9 +726,9 @@ impl<'gc> ClassObject<'gc> {
     }
 
     pub fn translation_unit(self) -> TranslationUnit<'gc> {
-        self.init_method()
-            .expect("ClassObject must have init method")
+        self.inner_class_definition()
             .translation_unit()
+            .expect("ClassObject must have init method")
     }
 
     pub fn init_method(self) -> Option<Method<'gc>> {

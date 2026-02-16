@@ -1086,6 +1086,10 @@ impl<'gc> Class<'gc> {
             .expect("Interfaces not yet initialized!")
     }
 
+    pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
+        self.instance_init().map(|m| m.translation_unit())
+    }
+
     /// Determine if this class is sealed (no dynamic properties)
     pub fn is_sealed(self) -> bool {
         self.0.attributes.get().contains(ClassAttributes::SEALED)
