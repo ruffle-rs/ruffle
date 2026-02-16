@@ -1,5 +1,5 @@
 num_frames = 30
-known_failure = true
+log_warnings = false
 
 [image_comparisons.output]
 known_failure = true
