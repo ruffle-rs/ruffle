@@ -77,7 +77,7 @@ impl TestRunner {
 
         let frame_time_duration = Duration::from_millis(frame_time as u64);
 
-        let log = TestLogBackend::default();
+        let log = TestLogBackend::new(test.options.log_warnings);
         let (fs_command_provider, fs_commands) = TestFsCommandProvider::new();
         let navigator = TestNavigatorBackend::new(
             test.root_path.clone(),
