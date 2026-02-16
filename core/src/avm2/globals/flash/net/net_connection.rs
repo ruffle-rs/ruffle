@@ -30,8 +30,10 @@ pub fn connect<'gc>(
     let url = args.try_get_string(0);
 
     if let Some(url) = url {
-        if url.starts_with(WStr::from_units(b"http://"))
-            || url.starts_with(WStr::from_units(b"https://"))
+        let url_lower = url.to_ascii_lowercase();
+
+        if url_lower.starts_with(WStr::from_units(b"http://"))
+            || url_lower.starts_with(WStr::from_units(b"https://"))
         {
             // HTTP(S) is for Flash Remoting, which is just POST requests to the URL.
             NetConnections::connect_to_flash_remoting(
