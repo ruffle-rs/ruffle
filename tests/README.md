@@ -30,6 +30,12 @@ tick_rate = 16.666
 # Necessary for some timer tests.
 sleep_to_meet_frame_rate = false
 
+# If true, log AVM warnings.
+# Warnings are special AVM traces that can be produced by Flash Player (but
+# don't have to) and can provide insight into what AVM does.  This option can be
+# used to disable warnings in case the output does not contain them.
+log_warnings = true
+
 # If true, ignore this test.
 # Please comment why, ideally link to an issue, so we know what's up.
 # Prefer setting `known_failure = true` to ignoring the test.
