@@ -291,6 +291,7 @@ impl<'gc> VTable<'gc> {
         // end of this method, we will append this list to `slot_table`.
         let mut new_slots = Vec::new();
         let mut first_slot_offset = 0;
+        let mut force_auto_assign_slots = false;
 
         if let Some(superclass_vtable) = superclass_vtable {
             resolved_traits = superclass_vtable.resolved_traits().clone();
@@ -312,6 +313,24 @@ impl<'gc> VTable<'gc> {
                         }
                     }
                 }
+            }
+        }
+
+        if let Some(defining_tunit) = defining_class_def.translation_unit() {
+            let mut current_super_class = defining_class_def.super_class();
+            while let Some(super_class) = current_super_class {
+                if let Some(super_tunit) = super_class.translation_unit() {
+                    if !defining_tunit.same_abc(super_tunit) {
+                        if super_class.vtable().slot_count() != 0 {
+                            // If the superclass of this class comes from a
+                            // different ABC, and it has a non-zero slot count,
+                            // the slots for this vtable are auto-assigned.
+                            force_auto_assign_slots = true;
+                            break;
+                        }
+                    }
+                }
+                current_super_class = super_class.super_class();
             }
         }
 
@@ -453,7 +472,7 @@ impl<'gc> VTable<'gc> {
                         default_value,
                     };
 
-                    let new_slot_id = if slot_id == 0 {
+                    let new_slot_id = if slot_id == 0 || force_auto_assign_slots {
                         new_slots.push(Some(slot_info));
                         new_slots.len() - 1
                     } else {

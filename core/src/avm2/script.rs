@@ -148,6 +148,12 @@ impl<'gc> TranslationUnit<'gc> {
         self.0.abc.clone()
     }
 
+    /// Determines whether this `TranslationUnit` and the provided
+    /// `TranslationUnit` come from the same `AbcFile`.
+    pub fn same_abc(self, other: TranslationUnit<'gc>) -> bool {
+        Rc::ptr_eq(&self.0.abc, &other.0.abc)
+    }
+
     pub fn movie(self) -> Arc<SwfMovie> {
         self.0.movie.clone()
     }
