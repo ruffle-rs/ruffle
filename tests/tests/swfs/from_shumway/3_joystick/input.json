@@ -1,5 +1,6 @@
 [
   {"type": "Wait"},
+  {"type": "Wait"},
   {"type": "MouseMove", "pos": [115.1, 116]},
   {"type": "Wait"},
   {"type": "MouseDown", "pos": [115.1, 116], "btn": "Left"},
