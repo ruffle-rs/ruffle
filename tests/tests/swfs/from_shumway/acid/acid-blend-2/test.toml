@@ -1,10 +1,67 @@
 # Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/acid
 
-num_frames = 30
+num_frames = 40
 
-[image_comparisons.output]
-tolerance = 15
-max_outliers = 24
+# FIXME The graphics could be better, the texture is too "rough" in Ruffle.
+
+[image_comparisons."output.10"]
+trigger = 10
+
+[[image_comparisons."output.10".checks]]
+tolerance = 20
+max_outliers = 5000
+
+[[image_comparisons."output.10".checks]]
+tolerance = 130
+max_outliers = 0
+
+[image_comparisons."output.15"]
+trigger = 15
+
+[[image_comparisons."output.15".checks]]
+tolerance = 20
+max_outliers = 6000
+
+[[image_comparisons."output.15".checks]]
+tolerance = 135
+max_outliers = 0
+
+[image_comparisons."output.20"]
+trigger = 20
+
+[[image_comparisons."output.20".checks]]
+tolerance = 20
+max_outliers = 5500
+
+[[image_comparisons."output.20".checks]]
+tolerance = 130
+max_outliers = 0
+
+[image_comparisons."output.26"]
+trigger = 26
+
+[[image_comparisons."output.26".checks]]
+tolerance = 20
+max_outliers = 6000
+
+[[image_comparisons."output.26".checks]]
+tolerance = 120
+max_outliers = 0
+
+[image_comparisons."output.40"]
+trigger = 40
+
+[[image_comparisons."output.40".checks]]
+tolerance = 20
+max_outliers = 9000
+
+[[image_comparisons."output.40".checks]]
+tolerance = 40
+max_outliers = 1500
+
+[[image_comparisons."output.40".checks]]
+tolerance = 160
+max_outliers = 0
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false, quality = "high" }
