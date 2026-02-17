@@ -1,0 +1,4 @@
+num_frames = 2
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
