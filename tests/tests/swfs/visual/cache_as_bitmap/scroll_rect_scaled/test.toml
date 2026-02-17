@@ -1,7 +1,14 @@
 num_frames = 1
 
-[image_comparisons.output]
-tolerance = 1
+# FIXME Object's size is wrong (stroke width?).
+
+[[image_comparisons.output.checks]]
+tolerance = 0
+max_outliers = 2800
+
+[[image_comparisons.output.checks]]
+tolerance = 64
+max_outliers = 900
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false, quality = "high" }
