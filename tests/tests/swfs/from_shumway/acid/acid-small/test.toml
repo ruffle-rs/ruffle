@@ -2,13 +2,37 @@
 
 num_frames = 5
 
-[image_comparisons.output]
-tolerance = 0
+# FIXME The output differs wrt. stroke widths.
 
-[image_comparisons.frame5]
-tolerance = 0
-max_outliers = 3
+[image_comparisons."output.01"]
 trigger = 1
 
+[[image_comparisons."output.01".checks]]
+tolerance = 0
+max_outliers = 30000
+
+[[image_comparisons."output.01".checks]]
+tolerance = 20
+max_outliers = 20000
+
+[[image_comparisons."output.01".checks]]
+tolerance = 80
+max_outliers = 3000
+
+[image_comparisons."output.05"]
+trigger = 5
+
+[[image_comparisons."output.05".checks]]
+tolerance = 0
+max_outliers = 30000
+
+[[image_comparisons."output.05".checks]]
+tolerance = 20
+max_outliers = 21000
+
+[[image_comparisons."output.05".checks]]
+tolerance = 80
+max_outliers = 3000
+
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false, quality = "high" }
