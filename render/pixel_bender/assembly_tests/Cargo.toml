@@ -17,7 +17,6 @@ libtest-mimic = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 toml = { workspace = true }
 anyhow = { workspace = true }
-clap = { workspace = true }
 vfs = { workspace = true }
 
 [[test]]
