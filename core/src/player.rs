@@ -308,8 +308,6 @@ pub struct Player {
     /// Whether we're emulating the release or the debug build.
     player_mode: PlayerMode,
 
-    swf: Arc<SwfMovie>,
-
     run_state: RunState,
     needs_render: bool,
 
@@ -1422,16 +1420,16 @@ impl Player {
             self.needs_render = true;
         }
 
-        if self.should_reset_highlight(event) {
-            self.mutate_with_update_context(|context| {
+        self.mutate_with_update_context(|context| {
+            if Self::should_reset_highlight(context.root_movie().version(), event) {
                 context.focus_tracker.reset_highlight();
-            });
-        }
+            }
+        });
 
         player_event_handled
     }
 
-    fn should_reset_highlight(&self, event: InputEvent) -> bool {
+    fn should_reset_highlight(root_version: u8, event: InputEvent) -> bool {
         if matches!(
             event,
             InputEvent::MouseDown {
@@ -1443,7 +1441,7 @@ impl Player {
             return true;
         }
 
-        if self.swf.version() < 9
+        if root_version < 9
             && matches!(
                 event,
                 InputEvent::MouseDown {
@@ -2995,8 +2993,6 @@ impl PlayerBuilder {
         let language = ui.language();
 
         // Instantiate the player.
-        // Player.swf stays as Arc for external access; a Gc copy is created inside the arena.
-        let fake_movie = Arc::new(SwfMovie::empty(player_version, None));
         let frame_rate = self.frame_rate.unwrap_or(12.0);
         let forced_frame_rate = self.frame_rate.is_some();
         let player = Arc::new_cyclic(|self_ref| {
@@ -3011,7 +3007,6 @@ impl PlayerBuilder {
                 video,
 
                 // SWF info
-                swf: fake_movie.clone(),
                 current_frame: None,
 
                 // Timing
