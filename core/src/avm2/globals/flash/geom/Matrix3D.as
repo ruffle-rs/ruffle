@@ -737,6 +737,14 @@ package flash.geom {
                 + (_rawData[8] * _rawData[13] - _rawData[12] * _rawData[9]) * (_rawData[2] * _rawData[7] - _rawData[6] * _rawData[3]));
         }
 
+        public function interpolateTo(toMat:Matrix3D, percent:Number):void
+        {
+            for (var i:int = 0; i < 16; i++)
+            {
+                _rawData[i] = _rawData[i] + (toMat.rawData[i] - _rawData[i]) * percent;
+            }
+        }
+
     }
 }
 
