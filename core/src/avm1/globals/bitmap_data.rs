@@ -1303,8 +1303,8 @@ fn load_bitmap<'gc>(
     );
 
     let character = library
-        .library_for_movie(movie)
-        .and_then(|l| l.character_by_export_name(name));
+        .library_for_movie_gc(movie, activation.gc())
+        .and_then(|l| l.borrow().character_by_export_name(name));
 
     let Some((_id, Character::Bitmap(bitmap))) = character else {
         return Ok(Value::Undefined);

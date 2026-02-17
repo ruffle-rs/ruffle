@@ -139,7 +139,7 @@ impl<'gc> Avm1<'gc> {
     pub fn run_stack_frame_for_action(
         active_clip: DisplayObject<'gc>,
         name: &str,
-        code: SwfSlice,
+        code: SwfSlice<'gc>,
         context: &mut UpdateContext<'gc>,
     ) {
         if context.avm1.halted {
@@ -215,7 +215,7 @@ impl<'gc> Avm1<'gc> {
     /// This creates a new frame stack.
     pub fn run_stack_frame_for_init_action(
         active_clip: DisplayObject<'gc>,
-        code: SwfSlice,
+        code: SwfSlice<'gc>,
         context: &mut UpdateContext<'gc>,
     ) {
         if context.avm1.halted {

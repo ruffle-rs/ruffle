@@ -1,5 +1,6 @@
 //! `flash.display.Loader` builtin/prototype
 
+use gc_arena::Gc;
 use indexmap::IndexMap;
 
 use crate::avm2::ClassObject;
@@ -17,12 +18,10 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
-use crate::display_object::LoaderDisplay;
-use crate::display_object::MovieClip;
+use crate::display_object::{LoaderDisplay, MovieClip};
 use crate::loader::LoadManager;
 use crate::loader::MovieLoaderVMData;
 use crate::tag_utils::SwfMovie;
-use std::sync::Arc;
 
 pub fn loader_allocator<'gc>(
     class: ClassObject<'gc>,
@@ -30,8 +29,7 @@ pub fn loader_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     // Loader does not have an associated `Character` variant, and can never be
     // instantiated from the timeline.
-    let display_object =
-        LoaderDisplay::empty(activation, activation.context.root_swf.clone()).into();
+    let display_object = LoaderDisplay::empty(activation, activation.context.root_movie()).into();
     let loader = initialize_for_allocator(activation.context, display_object, class);
 
     // Note that the initialization of `_contentLoaderInfo` is intentionally done here,
@@ -41,10 +39,13 @@ pub fn loader_allocator<'gc>(
     // Some LoaderInfo properties (such as 'bytesLoaded' and 'bytesTotal') are always
     // accessible, even before the 'init' event has fired. Using an empty movie gives
     // us the correct value (0) for them.
-    let movie = &activation.context.root_swf;
+    let movie = activation.context.root_movie();
     let loader_info = LoaderInfoObject::not_yet_loaded(
         activation,
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
+        Gc::new(
+            activation.gc(),
+            SwfMovie::empty(movie.version(), Some(movie.url().into())),
+        ),
         Some(loader),
         None,
         false,
@@ -91,19 +92,16 @@ pub fn load<'gc>(
     loader_info.unload(activation.context);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
-    let movie = &activation.context.root_swf;
-    let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
+    let movie = activation.context.root_movie();
+    let empty_movie = Gc::new(
         activation.gc(),
+        SwfMovie::empty(movie.version(), Some(movie.url().into())),
     );
+    let content = MovieClip::new(empty_movie, activation.context);
 
     // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
     loader_info.set_loader_stream(
-        LoaderStream::NotYetLoaded(
-            Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
-            Some(content.into()),
-            false,
-        ),
+        LoaderStream::NotYetLoaded(empty_movie, Some(content.into()), false),
         activation.gc(),
     );
 
@@ -262,10 +260,13 @@ pub fn load_bytes<'gc>(
     loader_info.unload(activation.context);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
-    let movie = &activation.context.root_swf;
+    let movie = activation.context.root_movie();
     let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
-        activation.gc(),
+        Gc::new(
+            activation.gc(),
+            SwfMovie::empty(movie.version(), Some(movie.url().into())),
+        ),
+        activation.context,
     );
 
     let default_domain = activation

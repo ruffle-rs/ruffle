@@ -16,8 +16,8 @@ pub use mp3::{Mp3Decoder, mp3_metadata};
 pub use nellymoser::NellymoserDecoder;
 pub use pcm::PcmDecoder;
 
-use crate::backend::audio::{SoundStreamInfo, SoundStreamWrapping};
-use crate::tag_utils::{ControlFlow, SwfSlice};
+use crate::backend::audio::{AudioSlice, SoundStreamInfo, SoundStreamWrapping};
+use crate::tag_utils::ControlFlow;
 use ruffle_common::buffer::{Slice, Substream, SubstreamChunksIter};
 use std::io::{Cursor, Read};
 use swf::{AudioCompression, SoundFormat, TagCode};
@@ -125,9 +125,13 @@ struct StandardStreamDecoder {
 impl StandardStreamDecoder {
     /// Constructs a new `StandardStreamDecoder.
     /// `swf_data` should be the tag data of the MovieClip that contains the stream.
-    fn new(stream_info: &swf::SoundStreamHead, swf_data: SwfSlice) -> Result<Self, Error> {
+    fn new(
+        stream_info: &swf::SoundStreamHead,
+        swf_data: AudioSlice,
+        version: u8,
+    ) -> Result<Self, Error> {
         // Create a tag reader to get the audio data from SoundStreamBlock tags.
-        let tag_reader = StreamTagReader::new(stream_info, swf_data);
+        let tag_reader = StreamTagReader::new(stream_info, swf_data, version);
         // Wrap the tag reader in the decoder.
         let decoder = make_decoder(&stream_info.stream_format, tag_reader)?;
         Ok(Self { decoder })
@@ -161,14 +165,17 @@ impl Iterator for StandardStreamDecoder {
 pub struct AdpcmStreamDecoder {
     format: SoundFormat,
     tag_reader: StreamTagReader,
-    decoder: AdpcmDecoder<Cursor<SwfSlice>>,
+    decoder: AdpcmDecoder<Cursor<AudioSlice>>,
 }
 
 impl AdpcmStreamDecoder {
-    fn new(stream_info: &swf::SoundStreamHead, swf_data: SwfSlice) -> Result<Self, Error> {
-        let movie = swf_data.movie.clone();
-        let mut tag_reader = StreamTagReader::new(stream_info, swf_data);
-        let audio_data = tag_reader.next().unwrap_or_else(|| SwfSlice::empty(movie));
+    fn new(
+        stream_info: &swf::SoundStreamHead,
+        swf_data: AudioSlice,
+        version: u8,
+    ) -> Result<Self, Error> {
+        let mut tag_reader = StreamTagReader::new(stream_info, swf_data, version);
+        let audio_data = tag_reader.next().unwrap_or_else(AudioSlice::empty);
         let decoder = AdpcmDecoder::new(
             Cursor::new(audio_data),
             stream_info.stream_format.is_stereo,
@@ -222,13 +229,14 @@ impl Iterator for AdpcmStreamDecoder {
 /// Generally this will return a `StandardStreamDecoder`, except for ADPCM streams.
 pub fn make_stream_decoder(
     stream_info: &swf::SoundStreamHead,
-    swf_data: SwfSlice,
+    swf_data: AudioSlice,
+    version: u8,
 ) -> Result<Box<dyn Decoder + Send>, Error> {
     let decoder: Box<dyn Decoder + Send> =
         if stream_info.stream_format.compression == AudioCompression::Adpcm {
-            Box::new(AdpcmStreamDecoder::new(stream_info, swf_data)?)
+            Box::new(AdpcmStreamDecoder::new(stream_info, swf_data, version)?)
         } else {
-            Box::new(StandardStreamDecoder::new(stream_info, swf_data)?)
+            Box::new(StandardStreamDecoder::new(stream_info, swf_data, version)?)
         };
     Ok(decoder)
 }
@@ -255,13 +263,16 @@ pub trait SeekableDecoder: Decoder {
 /// will return consecutive slices of the underlying audio data.
 struct StreamTagReader {
     /// The tag data of the `MovieClip` that contains the streaming audio track.
-    swf_data: SwfSlice,
+    swf_data: AudioSlice,
+
+    /// The SWF version for the tag reader.
+    version: u8,
 
     /// The audio playback position inside `swf_data`.
     pos: usize,
 
     /// The compressed audio data in the most recent `SoundStreamBlock` we've seen, returned by `Iterator::next`.
-    current_audio_data: SwfSlice,
+    current_audio_data: AudioSlice,
 
     /// The compression used by the audio data.
     compression: AudioCompression,
@@ -280,10 +291,11 @@ struct StreamTagReader {
 impl StreamTagReader {
     /// Builds a new `StreamTagReader` from the given SWF data.
     /// `swf_data` should be the tag data of a MovieClip.
-    fn new(stream_info: &swf::SoundStreamHead, swf_data: SwfSlice) -> Self {
-        let current_audio_data = SwfSlice::empty(swf_data.movie.clone());
+    fn new(stream_info: &swf::SoundStreamHead, swf_data: AudioSlice, version: u8) -> Self {
+        let current_audio_data = AudioSlice::empty();
         Self {
             swf_data,
+            version,
             pos: 0,
             compression: stream_info.stream_format.compression,
             current_audio_data,
@@ -294,7 +306,7 @@ impl StreamTagReader {
 }
 
 impl Iterator for StreamTagReader {
-    type Item = SwfSlice;
+    type Item = AudioSlice;
 
     fn next(&mut self) -> Option<Self::Item> {
         let audio_data = &mut self.current_audio_data;
@@ -336,9 +348,10 @@ impl Iterator for StreamTagReader {
                     _ => Ok(ControlFlow::Continue),
                 };
 
-            let mut reader = self.swf_data.read_from(self.pos as u64);
+            let data_slice = &self.swf_data.data()[self.pos..];
+            let mut reader = swf::read::Reader::new(data_slice, self.version);
             let _ = crate::tag_utils::decode_tags(&mut reader, tag_callback);
-            self.pos = reader.get_ref().as_ptr() as usize - swf_data.as_ref().as_ptr() as usize;
+            self.pos = self.swf_data.len() - reader.get_ref().len();
 
             // If we hit a SoundStreamBlock within this frame, return it. Otherwise, the stream should end.
             // The exception is MP3 streaming sounds, which will continue to play even when a few frames
@@ -362,7 +375,7 @@ impl Iterator for StreamTagReader {
 /// audio stream data for `SoundStreamBlock` tags.
 impl Read for StreamTagReader {
     fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
-        while self.current_audio_data.as_ref().is_empty() {
+        while self.current_audio_data.is_empty() {
             self.current_audio_data = if let Some(audio_data) = self.next() {
                 audio_data
             } else {
@@ -370,9 +383,9 @@ impl Read for StreamTagReader {
             }
         }
 
-        let len = std::cmp::min(buf.len(), self.current_audio_data.as_ref().len());
-        buf[..len].copy_from_slice(&self.current_audio_data.as_ref()[..len]);
-        self.current_audio_data.start += len;
+        let len = std::cmp::min(buf.len(), self.current_audio_data.len());
+        buf[..len].copy_from_slice(&self.current_audio_data.data()[..len]);
+        self.current_audio_data.advance(len);
         Ok(len)
     }
 }

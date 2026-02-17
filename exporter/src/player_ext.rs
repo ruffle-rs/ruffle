@@ -26,7 +26,7 @@ impl PlayerExporterExt for Arc<Mutex<Player>> {
     fn header_frames(&self) -> u16 {
         self.lock()
             .unwrap()
-            .mutate_with_update_context(|ctx| ctx.root_swf.num_frames())
+            .mutate_with_update_context(|ctx| ctx.root_movie.num_frames())
     }
 
     fn force_root_clip_play(&self) {

@@ -81,7 +81,7 @@ pub fn configure_back_buffer<'gc>(
         let anti_alias = args.get_u32(2);
         let enable_depth_and_stencil = args.get_bool(3);
 
-        let old_swf = activation.context.root_swf.version() < 30;
+        let old_swf = activation.context.root_movie().version() < 30;
 
         if old_swf && width == 0 && height == 0 && anti_alias == 0 && !enable_depth_and_stencil {
             return Ok(Value::Undefined);

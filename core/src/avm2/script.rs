@@ -15,14 +15,13 @@ use crate::avm2::vtable::VTable;
 use crate::avm2::{Avm2, Multiname, Namespace};
 use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString, StringContext};
-use crate::tag_utils::SwfMovie;
+use crate::tag_utils::SwfMovieGc;
 use gc_arena::barrier::field;
 use gc_arena::lock::OnceLock;
 use gc_arena::{Collect, Gc, Mutation};
 use std::cell::Cell;
 use std::fmt::Debug;
 use std::rc::Rc;
-use std::sync::Arc;
 use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, Multiname as AbcMultiname, Namespace as AbcNamespace,
     Script as AbcScript,
@@ -79,7 +78,7 @@ struct TranslationUnitData<'gc> {
     multinames: Box<[OnceLock<Gc<'gc, Multiname<'gc>>>]>,
 
     /// The movie that this TranslationUnit was loaded from.
-    movie: Arc<SwfMovie>,
+    movie: SwfMovieGc<'gc>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
@@ -89,7 +88,7 @@ impl<'gc> TranslationUnit<'gc> {
         abc: AbcFile,
         domain: Domain<'gc>,
         name: Option<AvmString<'gc>>,
-        movie: Arc<SwfMovie>,
+        movie: SwfMovieGc<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
         use std::iter::repeat_n;
@@ -148,8 +147,8 @@ impl<'gc> TranslationUnit<'gc> {
         self.0.abc.clone()
     }
 
-    pub fn movie(self) -> Arc<SwfMovie> {
-        self.0.movie.clone()
+    pub fn movie(self) -> SwfMovieGc<'gc> {
+        self.0.movie
     }
 
     pub fn api_version(self, avm2: &Avm2<'gc>) -> ApiVersion {

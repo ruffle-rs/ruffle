@@ -9,7 +9,7 @@ use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::api_version::ApiVersion;
 use crate::avm2::{Avm2, LoaderInfoObject, SharedObjectObject, SoundChannelObject};
 use crate::backend::{
-    audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
+    audio::{AudioBackend, AudioManager, AudioSlice, SoundHandle, SoundInstanceHandle},
     log::LogBackend,
     navigator::NavigatorBackend,
     storage::StorageBackend,
@@ -22,7 +22,7 @@ use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::FramePhase;
 use crate::input::InputManager;
-use crate::library::Library;
+use crate::library::{Library, MovieLibrary};
 use crate::loader::LoadManager;
 use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
@@ -36,12 +36,13 @@ use crate::string::HasStringContext;
 use crate::string::{AvmString, StringContext};
 use crate::stub::StubCollection;
 use crate::system_properties::SystemProperties;
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use crate::tag_utils::{SwfMovie, SwfMovieGc, SwfSlice};
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
 use async_channel::Sender;
 use core::fmt;
-use gc_arena::{Collect, Mutation};
+use gc_arena::lock::RefLock;
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::transform::TransformStack;
@@ -87,8 +88,8 @@ pub struct UpdateContext<'gc> {
     /// Requests that the player re-renders after this execution (e.g. due to `updateAfterEvent`).
     pub needs_render: &'gc mut bool,
 
-    /// The root SWF file.
-    pub root_swf: &'gc mut Arc<SwfMovie>,
+    /// The root SWF movie (GC-managed).
+    pub root_movie: &'gc mut SwfMovieGc<'gc>,
 
     /// The audio backend, used by display objects and AVM to play audio.
     pub audio: &'gc mut dyn AudioBackend,
@@ -324,11 +325,12 @@ impl<'gc> UpdateContext<'gc> {
         &mut self,
         movie_clip: MovieClip<'gc>,
         frame: u16,
-        data: SwfSlice,
+        data: AudioSlice,
+        version: u8,
         stream_info: &swf::SoundStreamHead,
     ) -> Option<SoundInstanceHandle> {
         self.audio_manager
-            .start_stream(self.audio, movie_clip, frame, data, stream_info)
+            .start_stream(self.audio, movie_clip, frame, data, version, stream_info)
     }
 
     pub fn set_sound_transforms_dirty(&mut self) {
@@ -353,32 +355,34 @@ impl<'gc> UpdateContext<'gc> {
             self.frame_rate,
         );
 
-        *self.root_swf = Arc::new(movie);
+        *self.root_movie = Gc::new(self.gc(), movie);
         *self.instance_counter = 0;
 
-        if self.root_swf.is_action_script_3() {
+        let root_movie = *self.root_movie;
+        if root_movie.is_action_script_3() {
             self.avm2.root_api_version =
-                ApiVersion::from_swf_version(self.root_swf.version(), self.avm2.player_runtime);
+                ApiVersion::from_swf_version(root_movie.version(), self.avm2.player_runtime);
         }
 
         self.stage.set_movie_size(
-            self.root_swf.width().to_pixels() as u32,
-            self.root_swf.height().to_pixels() as u32,
+            root_movie.width().to_pixels() as u32,
+            root_movie.height().to_pixels() as u32,
         );
-        self.stage.set_movie(self.gc(), self.root_swf.clone());
+        self.stage.set_movie(self.gc(), root_movie);
 
         let stage_domain = self.avm2.stage_domain();
         let mut activation = Avm2Activation::from_domain(self, stage_domain);
 
-        activation
-            .context
-            .library
-            .library_for_movie_mut(activation.context.root_swf.clone())
-            .set_avm2_domain(stage_domain);
         activation.context.ui.set_mouse_visible(true);
 
-        let swf = activation.context.root_swf.clone();
-        let root: DisplayObject = MovieClip::player_root_movie(&mut activation, swf.clone()).into();
+        let swf = *activation.context.root_movie;
+        let lib = Gc::new(activation.gc(), RefLock::new(MovieLibrary::new(swf)));
+        lib.borrow_mut(activation.gc())
+            .set_avm2_domain(stage_domain);
+        let root: DisplayObject = MovieClip::player_root_movie(&mut activation, swf).into();
+        let root_mc = root.as_movie_clip().unwrap();
+        root_mc.set_movie_library(activation.gc(), lib);
+        activation.context.library.register_library(swf, lib);
 
         // The Stage `LoaderInfo` is permanently in the 'not yet loaded' state,
         // and has no associated `Loader` instance.
@@ -394,6 +398,7 @@ impl<'gc> UpdateContext<'gc> {
             .stage
             .set_loader_info(activation.gc(), stage_loader_info);
 
+        #[allow(clippy::drop_non_drop)]
         drop(activation);
 
         root.set_depth(0);
@@ -404,7 +409,7 @@ impl<'gc> UpdateContext<'gc> {
 
         // Set flashvars and the version parameters (AVM1 only)
         if let Some(flashvars) = root.object1() {
-            for (key, value) in self.root_swf.parameters().iter() {
+            for (key, value) in self.root_movie.parameters().iter() {
                 flashvars.define_value(
                     self.gc(),
                     AvmString::new_utf8(self.gc(), key),
@@ -453,6 +458,12 @@ impl<'gc> UpdateContext<'gc> {
     #[inline(always)]
     pub fn gc(&self) -> &'gc Mutation<'gc> {
         self.gc_context
+    }
+
+    /// Convenience method to retrieve the root SWF movie.
+    #[inline(always)]
+    pub fn root_movie(&self) -> SwfMovieGc<'gc> {
+        *self.root_movie
     }
 
     pub fn avm_trace(&self, message: &str) {
@@ -626,15 +637,15 @@ impl<'gc> RenderContext<'_, 'gc> {
 #[collect(no_drop)]
 pub enum ActionType<'gc> {
     /// Normal frame or event actions.
-    Normal { bytecode: SwfSlice },
+    Normal { bytecode: SwfSlice<'gc> },
 
     /// AVM1 initialize clip event.
-    Initialize { bytecode: SwfSlice },
+    Initialize { bytecode: SwfSlice<'gc> },
 
     /// Construct a movie with a custom class or on(construct) events.
     Construct {
         constructor: Option<Avm1Object<'gc>>,
-        events: Vec<SwfSlice>,
+        events: Vec<SwfSlice<'gc>>,
     },
 
     /// An event handler method, e.g. `onEnterFrame`.
