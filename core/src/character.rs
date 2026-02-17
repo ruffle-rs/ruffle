@@ -1,4 +1,4 @@
-use std::cell::OnceCell;
+use std::cell::Cell;
 
 use crate::backend::audio::SoundHandle;
 use crate::binary_data::BinaryData;
@@ -31,24 +31,32 @@ pub enum Character<'gc> {
     BinaryData(BinaryData<'gc>),
 }
 
-#[derive(Collect, Debug)]
+#[derive(Collect)]
 #[collect(no_drop)]
 pub struct BitmapCharacter<'gc> {
     #[collect(require_static)]
     compressed: CompressedBitmap,
-    /// A lazily constructed GPU handle, used when performing fills with this bitmap
+    /// Lazily constructed GPU handle, clearing allows VRAM cleanup on unload.
     #[collect(require_static)]
-    handle: OnceCell<BitmapHandle>,
+    handle: Cell<Option<BitmapHandle>>,
     /// The bitmap class set by `SymbolClass` - this is used when we instantaite
     /// a `Bitmap` displayobject.
     avm2_class: Lock<BitmapClass<'gc>>,
+}
+
+impl std::fmt::Debug for BitmapCharacter<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("BitmapCharacter")
+            .field("compressed", &self.compressed)
+            .finish_non_exhaustive()
+    }
 }
 
 impl<'gc> BitmapCharacter<'gc> {
     pub fn new(compressed: CompressedBitmap) -> Self {
         Self {
             compressed,
-            handle: OnceCell::default(),
+            handle: Cell::new(None),
             avm2_class: Lock::new(BitmapClass::NoSubclass),
         }
     }
@@ -69,15 +77,19 @@ impl<'gc> BitmapCharacter<'gc> {
         &self,
         backend: &mut dyn RenderBackend,
     ) -> Result<BitmapHandle, RenderError> {
-        // FIXME - use `OnceCell::get_or_try_init` when stabilized.
-        if let Some(handle) = self.handle.get() {
-            return Ok(handle.clone());
+        if let Some(handle) = self.handle.take() {
+            self.handle.set(Some(handle.clone()));
+            return Ok(handle);
         }
         let decoded = self.compressed.decode()?;
         let new_handle = backend.register_bitmap(decoded)?;
-        // FIXME - do we ever want to release this handle, to avoid taking up GPU memory?
-        self.handle.set(new_handle.clone()).unwrap();
+        self.handle.set(Some(new_handle.clone()));
         Ok(new_handle)
+    }
+
+    /// Release the GPU handle to free VRAM; it can be re-created from compressed data.
+    pub fn release_gpu_handle(&self) {
+        self.handle.set(None);
     }
 }
 

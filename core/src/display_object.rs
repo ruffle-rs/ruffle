@@ -930,6 +930,18 @@ struct DrawCacheInfo {
     filters: Vec<Filter>,
 }
 
+/// Recursively clear `BitmapCache` to free VRAM; cache rebuilds on next render.
+fn clear_cached_bitmap_recursive<'gc>(obj: DisplayObject<'gc>) {
+    obj.base().cell.borrow_mut().cache = None;
+    if let Some(container) = obj.as_container() {
+        for i in 0..container.num_children() {
+            if let Some(child) = container.child_by_index(i) {
+                clear_cached_bitmap_recursive(child);
+            }
+        }
+    }
+}
+
 pub fn render_base<'gc>(
     this: DisplayObject<'gc>,
     context: &mut RenderContext<'_, 'gc>,
@@ -1874,6 +1886,9 @@ pub trait TDisplayObject<'gc>:
             if let Some(int) = self.as_interactive() {
                 int.drop_focus(context);
             }
+
+            // Clear bitmap caches in subtree to free VRAM (needed due to `no_drop`).
+            clear_cached_bitmap_recursive(self);
 
             self.on_parent_removed(context);
         }
