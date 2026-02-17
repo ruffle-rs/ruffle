@@ -1,8 +1,8 @@
 AB
 CGDA
 null
-null
+B
 null
 AXTD R
-null
-null
+A
+AA
