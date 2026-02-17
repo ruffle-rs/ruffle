@@ -7,6 +7,9 @@ license.workspace = true
 repository.workspace = true
 version.workspace = true
 
+[package.metadata.cargo-machete]
+ignored = ["build_playerglobal"]
+
 [lints]
 workspace = true
 
@@ -32,7 +35,6 @@ num-traits = { workspace = true }
 num-derive = { workspace = true }
 quick-xml = { workspace = true }
 url = { workspace = true }
-weak-table = "0.3.2"
 percent-encoding = { workspace = true }
 thiserror = { workspace = true }
 chrono = { workspace = true, features = ["clock"] }

@@ -77,6 +77,9 @@ LegalCopyright = "Copyright © 2018 Ruffle LLC and Ruffle contributors"
 InternalName = "ruffle_desktop"
 OriginalFilename = "ruffle.exe"
 
+[package.metadata.cargo-machete]
+ignored = ["vergen", "vergen-gitcl", "winresource"]
+
 [features]
 default = ["software_video", "external_video", "lzma", "fontconfig"]
 jpegxr = ["ruffle_core/jpegxr"]
