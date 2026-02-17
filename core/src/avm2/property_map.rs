@@ -144,6 +144,16 @@ impl<'gc, V> PropertyMap<'gc, V> {
         }
     }
 
+    pub fn retain<F>(&mut self, mut f: F)
+    where
+        F: FnMut(&V) -> bool,
+    {
+        self.0.retain(|_, bucket| {
+            bucket.retain(|(_, v)| f(v));
+            !bucket.is_empty()
+        });
+    }
+
     pub fn remove(&mut self, name: QName<'gc>) -> Option<V> {
         let bucket = self.0.get_mut(&name.local_name());
 

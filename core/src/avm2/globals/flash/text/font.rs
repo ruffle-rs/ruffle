@@ -109,11 +109,13 @@ pub fn enumerate_fonts<'gc>(
 
     fonts.append(&mut activation.context.library.global_fonts());
 
+    let caller_movie = activation.caller_movie_or_root();
     if let Some(library) = activation
         .context
         .library
-        .library_for_movie(activation.caller_movie_or_root())
+        .library_for_movie_gc(caller_movie, activation.gc())
     {
+        let library = library.borrow();
         for font in library.embedded_fonts() {
             // TODO: EmbeddedCFF isn't supposed to show until it's been used (some kind of internal initialization method?)
             // Device is only supposed to show when arg0 is true - but that's supposed to be "all known" device fonts, not just loaded ones
@@ -150,17 +152,13 @@ pub fn register_font<'gc>(
     let object = args.get_object(activation, 0, "font")?;
 
     if let Some(class) = object.as_class_object() {
-        if let Some((movie, id)) = activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(class.inner_class_definition())
+        if let Some((id, lib)) = class
+            .inner_class_definition()
+            .symbol_class(activation.context.gc_context)
         {
-            if let Some(lib) = activation.context.library.library_for_movie(movie) {
-                if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                    activation.context.library.register_global_font(font);
-                    return Ok(Value::Undefined);
-                }
+            if let Some(Character::Font(font)) = lib.borrow().character_by_id(id) {
+                activation.context.library.register_global_font(font);
+                return Ok(Value::Undefined);
             }
         }
     }

@@ -17,21 +17,15 @@ pub fn byte_array_allocator<'gc>(
     class: ClassObject<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Object<'gc>, Error<'gc>> {
-    let storage = if let Some((movie, id)) = activation
-        .context
-        .library
-        .avm2_class_registry()
-        .class_symbol(class.inner_class_definition())
+    let storage = if let Some((id, lib)) = class
+        .inner_class_definition()
+        .symbol_class(activation.context.gc_context)
     {
-        if let Some(lib) = activation.context.library.library_for_movie(movie) {
-            if let Some(Character::BinaryData(binary_data)) = lib.character_by_id(id) {
-                Some(ByteArrayStorage::from_vec(
-                    activation.context,
-                    binary_data.to_vec(),
-                ))
-            } else {
-                None
-            }
+        if let Some(Character::BinaryData(binary_data)) = lib.borrow().character_by_id(id) {
+            Some(ByteArrayStorage::from_vec(
+                activation.context,
+                binary_data.to_vec(),
+            ))
         } else {
             None
         }

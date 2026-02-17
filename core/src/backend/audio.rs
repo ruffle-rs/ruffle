@@ -1,4 +1,5 @@
 use std::any::Any;
+use std::sync::Arc;
 
 use crate::{
     avm1::{NativeObject, Object as Avm1Object},
@@ -10,6 +11,104 @@ use crate::{
 use gc_arena::Collect;
 pub use ruffle_common::buffer::Substream;
 use slotmap::{Key, SlotMap, new_key_type};
+
+/// A slice of audio data extracted from an SWF movie.
+///
+/// This type holds `Arc<[u8]>` so it can be `Send + Sync` for use in audio threads,
+/// unlike `SwfSlice` which holds a GC reference.
+#[derive(Debug, Clone)]
+pub struct AudioSlice {
+    data: Arc<[u8]>,
+    start: usize,
+    end: usize,
+}
+
+impl AudioSlice {
+    /// Creates a new `AudioSlice` from the given data.
+    pub fn new(data: Arc<[u8]>) -> Self {
+        let end = data.len();
+        Self {
+            data,
+            start: 0,
+            end,
+        }
+    }
+
+    /// Creates an empty `AudioSlice`.
+    pub fn empty() -> Self {
+        Self {
+            data: Arc::from([]),
+            start: 0,
+            end: 0,
+        }
+    }
+
+    /// Returns the slice of bytes this `AudioSlice` represents.
+    #[inline]
+    pub fn data(&self) -> &[u8] {
+        &self.data[self.start..self.end]
+    }
+
+    /// Returns the length of this slice.
+    #[inline]
+    pub fn len(&self) -> usize {
+        self.end - self.start
+    }
+
+    /// Returns true if this slice is empty.
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.start >= self.end
+    }
+
+    /// Creates a subslice from the given byte slice.
+    /// The slice must be a subslice of this `AudioSlice`'s data.
+    pub fn to_subslice(&self, slice: &[u8]) -> Self {
+        let self_ptr = self.data().as_ptr() as usize;
+        let slice_ptr = slice.as_ptr() as usize;
+
+        if slice_ptr < self_ptr || slice_ptr > self_ptr + self.len() {
+            panic!("AudioSlice::to_subslice: slice is not within this AudioSlice");
+        }
+
+        let start = self.start + (slice_ptr - self_ptr);
+        let end = start + slice.len();
+
+        Self {
+            data: Arc::clone(&self.data),
+            start,
+            end,
+        }
+    }
+
+    /// Creates a subslice with the given start and end offsets relative to this slice.
+    pub fn to_start_and_end(&self, start: usize, end: usize) -> Self {
+        let new_start = self.start + start;
+        let new_end = self.start + end;
+
+        debug_assert!(new_start <= new_end);
+        debug_assert!(new_end <= self.end);
+
+        Self {
+            data: Arc::clone(&self.data),
+            start: new_start,
+            end: new_end,
+        }
+    }
+
+    /// Advances the start of the slice by the given number of bytes.
+    pub fn advance(&mut self, len: usize) {
+        self.start += len;
+        debug_assert!(self.start <= self.end);
+    }
+}
+
+impl AsRef<[u8]> for AudioSlice {
+    #[inline]
+    fn as_ref(&self) -> &[u8] {
+        self.data()
+    }
+}
 
 #[cfg(feature = "audio")]
 pub mod decoders;
@@ -106,7 +205,8 @@ pub trait AudioBackend: Any {
     /// among the frames of a Flash MovieClip.
     fn start_stream(
         &mut self,
-        clip_data: crate::tag_utils::SwfSlice,
+        clip_data: AudioSlice,
+        clip_version: u8,
         handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError>;
 
@@ -268,7 +368,8 @@ impl AudioBackend for NullAudioBackend {
 
     fn start_stream(
         &mut self,
-        _clip_data: crate::tag_utils::SwfSlice,
+        _clip_data: AudioSlice,
+        _clip_version: u8,
         _handle: &swf::SoundStreamHead,
     ) -> Result<SoundInstanceHandle, DecodeError> {
         Ok(SoundInstanceHandle::null())
@@ -583,11 +684,12 @@ impl<'gc> AudioManager<'gc> {
         audio: &mut dyn AudioBackend,
         movie_clip: MovieClip<'gc>,
         clip_frame: u16,
-        data: crate::tag_utils::SwfSlice,
+        data: AudioSlice,
+        version: u8,
         stream_info: &swf::SoundStreamHead,
     ) -> Option<SoundInstanceHandle> {
         if self.sounds.len() < Self::MAX_SOUNDS {
-            let handle = audio.start_stream(data, stream_info).ok()?;
+            let handle = audio.start_stream(data, version, stream_info).ok()?;
             let instance = SoundInstance {
                 sound: None,
                 instance: handle,
@@ -774,7 +876,9 @@ impl<'gc> AudioManager<'gc> {
     ) {
         if let Some(handle) = context
             .library
-            .library_for_movie_mut(display_object.movie())
+            .library_for_movie_gc(display_object.movie(), context.gc())
+            .unwrap()
+            .borrow()
             .get_sound(character_id)
         {
             use swf::SoundEvent;
