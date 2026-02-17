@@ -8,8 +8,10 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2007;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::slots::flash_display_loader as loader_slots;
+use crate::avm2::globals::slots::flash_events_event_dispatcher as dispatch_slots;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::globals::slots::flash_net_url_request_header as url_request_header_slots;
+use crate::avm2::object::DispatchObject;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject as _;
@@ -18,7 +20,9 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
-use crate::display_object::{LoaderDisplay, MovieClip};
+use crate::display_object::{
+    DisplayObject, LoaderDisplay, MovieClip, TDisplayObject, TDisplayObjectContainer,
+};
 use crate::loader::LoadManager;
 use crate::loader::MovieLoaderVMData;
 use crate::tag_utils::SwfMovie;
@@ -291,6 +295,25 @@ pub fn load_bytes<'gc>(
     Ok(Value::Undefined)
 }
 
+pub fn close<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let loader_info = this
+        .get_slot(loader_slots::_CONTENT_LOADER_INFO)
+        .as_object()
+        .unwrap()
+        .as_loader_info_object()
+        .unwrap();
+    activation
+        .context
+        .load_manager
+        .remove_loader_by_loader_info(loader_info);
+    Ok(Value::Undefined)
+}
+
 pub fn unload<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -311,4 +334,57 @@ pub fn unload<'gc>(
     loader_info.unload(activation.context);
 
     Ok(Value::Undefined)
+}
+
+pub fn unload_and_stop<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let loader_info = this
+        .get_slot(loader_slots::_CONTENT_LOADER_INFO)
+        .as_object()
+        .unwrap()
+        .as_loader_info_object()
+        .unwrap();
+
+    // Get content before unloading
+    {
+        let stream = loader_info.loader_stream();
+        if let LoaderStream::Swf(_, root) = &*stream {
+            let root = *root;
+            drop(stream); // Release borrow before mutating
+            // Stop sounds on content tree
+            activation.context.stop_sounds_on_parent_and_children(root);
+            // Stop MovieClips and clear event listeners recursively
+            stop_content_tree(activation, root);
+        }
+    }
+
+    loader_info.unload(activation.context);
+    Ok(Value::Undefined)
+}
+
+fn stop_content_tree<'gc>(activation: &mut Activation<'_, 'gc>, dobj: DisplayObject<'gc>) {
+    // Stop MovieClip playback
+    if let Some(mc) = dobj.as_movie_clip() {
+        mc.stop(activation.context);
+    }
+    // Clear event listeners on the AVM2 object
+    if let Some(stage_obj) = dobj.object2() {
+        let obj: Object<'gc> = stage_obj.into();
+        let empty_dispatch = DispatchObject::empty_list(activation);
+        let _ = obj.set_slot(
+            dispatch_slots::DISPATCH_LIST,
+            empty_dispatch.into(),
+            activation,
+        );
+    }
+    // Recurse into children
+    if let Some(ctr) = dobj.as_container() {
+        for child in ctr.iter_render_list() {
+            stop_content_tree(activation, child);
+        }
+    }
 }
