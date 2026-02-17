@@ -15,7 +15,7 @@ use ruffle_macros::istr;
 use ruffle_render::backend::Context3DWrapMode;
 use ruffle_render::backend::{
     BufferUsage, Context3DBlendFactor, Context3DCompareMode, Context3DTextureFormat,
-    Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
+    Context3DTriangleFace, Context3DVertexBufferFormat,
 };
 use ruffle_render::backend::{Context3DProfile, Context3DTextureFilter};
 use swf::{Rectangle, Twips};
@@ -297,13 +297,9 @@ pub fn set_program_constants_from_matrix<'gc>(
     if let Some(context) = this.as_context_3d() {
         let program_type = args.get_string(activation, 0);
 
-        let is_vertex = if &*program_type == b"vertex" {
-            ProgramType::Vertex
-        } else if &*program_type == b"fragment" {
-            ProgramType::Fragment
-        } else {
-            panic!("Unknown program type {program_type:?}");
-        };
+        let program_type = program_type
+            .parse()
+            .map_err(|_| make_error_2008(activation, "programType"))?;
 
         let first_register = args.get_u32(1);
 
@@ -339,7 +335,7 @@ pub fn set_program_constants_from_matrix<'gc>(
             .map(|val| val.as_f64() as f32)
             .collect::<Vec<f32>>();
 
-        context.set_program_constants_from_matrix(is_vertex, first_register, matrix_raw_data);
+        context.set_program_constants_from_matrix(program_type, first_register, matrix_raw_data);
     }
     Ok(Value::Undefined)
 }
@@ -354,13 +350,9 @@ pub fn set_program_constants_from_vector<'gc>(
     if let Some(context) = this.as_context_3d() {
         let program_type = args.get_string(activation, 0);
 
-        let program_type = if &*program_type == b"vertex" {
-            ProgramType::Vertex
-        } else if &*program_type == b"fragment" {
-            ProgramType::Fragment
-        } else {
-            panic!("Unknown program type {program_type:?}");
-        };
+        let program_type = program_type
+            .parse()
+            .map_err(|_| make_error_2008(activation, "programType"))?;
 
         let first_register = args.get_u32(1);
 
@@ -371,8 +363,13 @@ pub fn set_program_constants_from_vector<'gc>(
 
         let to_take = if num_registers != -1 {
             // Each register requires 4 floating-point values
-            // FIXME - throw an error if 'vector' is too small
-            num_registers as usize * 4
+            let required = num_registers as usize * 4;
+
+            if vector.length() < required {
+                return Err(make_error_3669(activation));
+            }
+
+            required
         } else {
             vector.length()
         };
@@ -385,6 +382,56 @@ pub fn set_program_constants_from_vector<'gc>(
 
         context.set_program_constants_from_matrix(program_type, first_register, raw_data);
     }
+    Ok(Value::Undefined)
+}
+
+pub fn set_program_constants_from_byte_array<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(context) = this.as_context_3d() {
+        let program_type = args.get_string(activation, 0);
+
+        let program_type = program_type
+            .parse()
+            .map_err(|_| make_error_2008(activation, "programType"))?;
+
+        let first_register = args.get_u32(1);
+        let num_registers = args.get_i32(2);
+
+        let data = args.get_object(activation, 3, "data")?;
+        let data = data.as_bytearray().expect("Parameter must be a ByteArray");
+
+        let byte_offset = args.get_u32(4) as usize;
+
+        // Negative numRegisters is invalid for ByteArray (unlike Vector which treats -1 as "use all")
+        let num_registers =
+            usize::try_from(num_registers).map_err(|_| make_error_3669(activation))?;
+
+        let required_bytes = num_registers * 16;
+        let data_len = data.len();
+
+        if byte_offset >= data_len || data_len - byte_offset < required_bytes {
+            return Err(make_error_3669(activation));
+        }
+
+        let num_floats = num_registers * 4;
+        let mut raw_data = Vec::with_capacity(num_floats);
+
+        for i in 0..num_floats {
+            let float_offset = byte_offset + i * 4;
+            let value = data
+                .read_float_at(float_offset)
+                .expect("Already validated bounds");
+            raw_data.push(value);
+        }
+
+        context.set_program_constants_from_matrix(program_type, first_register, raw_data);
+    }
+
     Ok(Value::Undefined)
 }
 
