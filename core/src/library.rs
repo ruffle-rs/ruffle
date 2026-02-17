@@ -275,6 +275,17 @@ impl<'gc> MovieLibrary<'gc> {
     pub fn try_avm2_domain(&self) -> Option<Avm2Domain<'gc>> {
         self.avm2_domain
     }
+
+    /// Release GPU handles for bitmaps/fonts to free VRAM before GC (due to `no_drop`).
+    pub fn release_gpu_handles(&self) {
+        for character in self.characters.values() {
+            match character {
+                Character::Bitmap(bitmap) => bitmap.release_gpu_handle(),
+                Character::Font(font) => font.release_glyph_gpu_handles(),
+                _ => {}
+            }
+        }
+    }
 }
 
 pub struct MovieLibrarySource<'a, 'gc> {

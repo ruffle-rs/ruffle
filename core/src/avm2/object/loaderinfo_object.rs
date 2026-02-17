@@ -263,6 +263,19 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     pub fn unload(self, context: &mut UpdateContext<'gc>) {
+        // Release GPU handles before dropping ref, as `no_drop` prevents auto-cleanup.
+        {
+            let stream = self.loader_stream();
+            if let LoaderStream::Swf(movie, _) = &*stream {
+                let movie = *movie;
+                drop(stream); // Release borrow before accessing library
+                if let Some(library_gc) = context.library.library_for_movie_gc(movie, context.gc())
+                {
+                    library_gc.borrow().release_gpu_handles();
+                }
+            }
+        }
+
         // With GC-managed SwfMovie, cleanup happens automatically when unreachable.
         // Just reset properties to empty state.
         let movie = context.root_movie();
