@@ -8,6 +8,7 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
+use crate::library::MovieLibraryGc;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
@@ -1876,7 +1877,14 @@ pub trait TDisplayObject<'gc>:
                 int.drop_focus(context);
             }
 
+            // GC types use `#[collect(no_drop)]`, so Drop cannot free GPU handles.
+            // Manually clear bitmap caches in the subtree to release VRAM.
+            clear_cached_bitmap_recursive(self);
+
             self.on_parent_removed(context);
+        } else if !had_parent && parent.is_some() {
+            // Restore bitmap caches that were cleared on removal.
+            restore_cache_as_bitmap_recursive(self);
         }
     }
 
@@ -2366,11 +2374,7 @@ pub trait TDisplayObject<'gc>:
             if let Some(child) = self.object2()
                 && let Some(name) = self.name()
             {
-                let domain = context
-                    .library
-                    .library_for_movie(self.movie())
-                    .unwrap()
-                    .avm2_domain();
+                let domain = self.library().borrow().avm2_domain();
 
                 let mut activation = Avm2Activation::from_domain(context, domain);
                 let multiname = Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
@@ -2618,6 +2622,8 @@ pub trait TDisplayObject<'gc>:
 
     /// Return the SWF that defines this display object.
     fn movie(self) -> Arc<SwfMovie>;
+
+    fn library(self) -> MovieLibraryGc<'gc>;
 
     fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         None
@@ -3220,6 +3226,36 @@ impl<'gc> DisplayObjectWeak<'gc> {
             DisplayObjectWeak::MovieClip(movie) => movie.upgrade(mc).map(|m| m.into()),
             DisplayObjectWeak::LoaderDisplay(ld) => ld.upgrade(mc).map(|ld| ld.into()),
             DisplayObjectWeak::Bitmap(b) => b.upgrade(mc).map(|ld| ld.into()),
+        }
+    }
+}
+
+/// Recursively clear cached bitmaps and video frames to free VRAM.
+pub fn clear_cached_bitmap_recursive<'gc>(dobj: DisplayObject<'gc>) {
+    {
+        let base = dobj.base();
+        let mut cache = base.bitmap_cache_mut();
+        *cache = None;
+    }
+
+    if let Some(video) = dobj.as_video() {
+        video.clear_decoded_frame();
+    }
+
+    if let Some(container) = dobj.as_container() {
+        for child in container.iter_render_list() {
+            clear_cached_bitmap_recursive(child);
+        }
+    }
+}
+
+/// Restore bitmap caches cleared on removal for re-parented display objects with filters.
+fn restore_cache_as_bitmap_recursive<'gc>(dobj: DisplayObject<'gc>) {
+    dobj.base().recheck_cache_as_bitmap();
+
+    if let Some(container) = dobj.as_container() {
+        for child in container.iter_render_list() {
+            restore_cache_as_bitmap_recursive(child);
         }
     }
 }

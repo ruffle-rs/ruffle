@@ -1145,7 +1145,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         }
                     } else {
                         let level = self.get_or_create_level(level_id);
-                        let future = self.context.load_manager.load_movie_into_clip(
+                        let (future, _handle) = self.context.load_manager.load_movie_into_clip(
                             self.context.player_handle(),
                             level,
                             Request::get(url.to_string()),
@@ -1267,7 +1267,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         url,
                         NavigationMethod::from_send_vars_method(action.send_vars_method()),
                     );
-                    let future = self.context.load_manager.load_movie_into_clip(
+                    let (future, _handle) = self.context.load_manager.load_movie_into_clip(
                         self.context.player_handle(),
                         clip_target,
                         request,
@@ -1295,7 +1295,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                         mc.avm1_unload_movie(self.context);
                     }
                 } else {
-                    let future = self.context.load_manager.load_movie_into_clip(
+                    let (future, _handle) = self.context.load_manager.load_movie_into_clip(
                         self.context.player_handle(),
                         clip_target,
                         Request::get(url.to_utf8_lossy().into_owned()),
@@ -2798,8 +2798,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(level) = self.get_level(level_id) {
             level
         } else {
-            let level: DisplayObject<'_> =
-                MovieClip::new(self.base_clip().movie(), self.gc()).into();
+            let movie = self.base_clip().movie();
+            let library = self
+                .context
+                .library
+                .library_for_movie_mut(movie, self.context.gc_context);
+            let level: DisplayObject<'_> = MovieClip::new(library, self.gc()).into();
 
             level.set_depth(level_id);
             level.set_default_root_name(self.context);

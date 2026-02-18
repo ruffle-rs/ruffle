@@ -4,6 +4,7 @@ use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase, RenderOptions};
+use crate::library::MovieLibraryGc;
 use crate::prelude::*;
 use crate::streams::NetStream;
 use crate::tag_utils::{SwfMovie, SwfSlice};
@@ -67,8 +68,8 @@ pub struct VideoData<'gc> {
     /// treated as a keyframe regardless of it being flagged as one.
     keyframes: RefCell<BTreeSet<u32>>,
 
-    /// The movie whose tagstream or code created the Video object.
-    movie: Arc<SwfMovie>,
+    library: MovieLibraryGc<'gc>,
+
     /// The last decoded frame in the video stream.
     ///
     /// NOTE: This is only used for SWF-source video streams.
@@ -127,7 +128,7 @@ pub struct SwfVideoSource {
 impl<'gc> Video<'gc> {
     /// Construct a Video object that is tied to a SWF file's video stream.
     pub fn from_swf_tag(
-        movie: Arc<SwfMovie>,
+        library: MovieLibraryGc<'gc>,
         streamdef: DefineVideoStream,
         mc: &Mutation<'gc>,
     ) -> Self {
@@ -149,7 +150,7 @@ impl<'gc> Video<'gc> {
                 stream: Cell::new(VideoStream::Uninstantiated(0)),
                 object: Lock::new(None),
                 keyframes: RefCell::new(BTreeSet::new()),
-                movie,
+                library,
                 size: Cell::new(size),
                 decoded_frame: RefCell::new(None),
             },
@@ -158,7 +159,7 @@ impl<'gc> Video<'gc> {
 
     pub fn new(
         mc: &Mutation<'gc>,
-        movie: Arc<SwfMovie>,
+        library: MovieLibraryGc<'gc>,
         width: i32,
         height: i32,
         object: Option<AvmObject<'gc>>,
@@ -172,7 +173,7 @@ impl<'gc> Video<'gc> {
                 stream: Cell::new(VideoStream::Uninstantiated(0)),
                 object: Lock::new(object),
                 keyframes: RefCell::new(BTreeSet::new()),
-                movie,
+                library,
                 size: Cell::new((width, height)),
                 decoded_frame: RefCell::new(None),
             },
@@ -193,6 +194,10 @@ impl<'gc> Video<'gc> {
         self.0.size.set((width, height));
     }
 
+    pub fn clear_decoded_frame(self) {
+        self.0.decoded_frame.replace(None);
+    }
+
     /// Convert this Video into a NetStream sourced video.
     ///
     /// Existing video state related to the old video stream will be dropped.
@@ -207,7 +212,7 @@ impl<'gc> Video<'gc> {
     /// This function yields an error if this video player is not playing an
     /// embedded SWF video.
     pub fn preload_swf_frame(self, tag: VideoFrame) {
-        let movie = self.0.movie.clone();
+        let movie = self.movie();
 
         match self.0.source.get() {
             VideoSource::Swf(swf_source) => {
@@ -312,9 +317,10 @@ impl<'gc> Video<'gc> {
         let res = match self.0.source.get() {
             VideoSource::Swf(swf_source) => match swf_source.frames.borrow().get(&frame_id) {
                 Some((slice_start, slice_end)) => {
+                    let movie = self.movie();
                     let encframe = EncodedFrame {
                         codec: swf_source.streamdef.codec,
-                        data: &self.0.movie.data()[*slice_start..*slice_end],
+                        data: &movie.data()[*slice_start..*slice_end],
                         frame_id,
                     };
                     context
@@ -364,7 +370,7 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             self.set_default_instance_name(context);
         }
 
-        let movie = self.0.movie.clone();
+        let movie = self.movie();
 
         let (stream, keyframes) = match self.0.source.get() {
             VideoSource::Swf(swf_source) => {
@@ -500,14 +506,14 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
             VideoSource::Swf(swf_source) => (
                 swf_source.streamdef.is_smoothed,
                 Some(swf_source.frames.borrow().len()),
-                self.0.movie.version(),
+                self.movie().version(),
                 self.0.decoded_frame.borrow().clone().map(|df| df.1),
                 Some(swf_source.streamdef.codec),
             ),
             VideoSource::NetStream { stream, .. } => (
                 false,
                 None,
-                self.0.movie.version(),
+                self.movie().version(),
                 stream.last_decoded_bitmap(),
                 None,
             ),
@@ -546,7 +552,11 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
     }
 
     fn movie(self) -> Arc<SwfMovie> {
-        self.0.movie.clone()
+        self.0.library.borrow().movie()
+    }
+
+    fn library(self) -> MovieLibraryGc<'gc> {
+        self.0.library
     }
 
     fn object1(self) -> Option<Avm1Object<'gc>> {

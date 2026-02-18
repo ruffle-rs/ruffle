@@ -6,7 +6,7 @@ use crate::avm2::{
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::drawing::Drawing;
-use crate::library::MovieLibrarySource;
+use crate::library::{MovieLibraryGc, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
@@ -17,7 +17,7 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
 use ruffle_render::commands::CommandHandler;
-use std::cell::{OnceCell, RefCell, RefMut};
+use std::cell::{Cell, OnceCell, RefCell, RefMut};
 use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
@@ -38,6 +38,7 @@ impl fmt::Debug for Graphic<'_> {
 pub struct GraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
     shared: Lock<Gc<'gc, GraphicShared>>,
+    library: MovieLibraryGc<'gc>,
     class: Lock<Option<Avm2ClassObject<'gc>>>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
     /// This is lazily allocated on demand, to make `GraphicData` smaller in the common case.
@@ -50,26 +51,28 @@ impl<'gc> Graphic<'gc> {
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
         swf_shape: swf::Shape,
-        movie: Arc<SwfMovie>,
+        library: MovieLibraryGc<'gc>,
     ) -> Self {
-        let library = context.library.library_for_movie(movie.clone()).unwrap();
+        let lib_guard = library.borrow();
         let shared = GraphicShared {
             id: swf_shape.id,
             bounds: swf_shape.shape_bounds,
-            render_handle: Some(
-                context
-                    .renderer
-                    .register_shape((&swf_shape).into(), &MovieLibrarySource { library }),
-            ),
+            render_handle: Cell::new(Some(context.renderer.register_shape(
+                (&swf_shape).into(),
+                &MovieLibrarySource {
+                    library: &lib_guard,
+                },
+            ))),
             shape: swf_shape,
-            movie,
         };
+        drop(lib_guard);
 
         Graphic(Gc::new(
             context.gc(),
             GraphicData {
                 base: Default::default(),
                 shared: Lock::new(Gc::new(context.gc(), shared)),
+                library,
                 class: Lock::new(None),
                 avm2_object: Lock::new(None),
                 drawing: OnceCell::new(),
@@ -79,10 +82,13 @@ impl<'gc> Graphic<'gc> {
 
     /// Construct an empty `Graphic`.
     pub fn empty(context: &mut UpdateContext<'gc>) -> Self {
+        let library = context
+            .library
+            .library_for_movie_mut(context.root_swf.clone(), context.gc_context);
         let shared = GraphicShared {
             id: 0,
             bounds: Default::default(),
-            render_handle: None,
+            render_handle: Cell::new(None),
             shape: swf::Shape {
                 version: 32,
                 id: 0,
@@ -95,7 +101,6 @@ impl<'gc> Graphic<'gc> {
                 },
                 shape: Vec::new(),
             },
-            movie: context.root_swf.clone(),
         };
 
         Graphic(Gc::new(
@@ -103,6 +108,7 @@ impl<'gc> Graphic<'gc> {
             GraphicData {
                 base: Default::default(),
                 shared: Lock::new(Gc::new(context.gc(), shared)),
+                library,
                 class: Lock::new(None),
                 avm2_object: Lock::new(None),
                 drawing: OnceCell::new(),
@@ -116,6 +122,10 @@ impl<'gc> Graphic<'gc> {
 
     pub fn set_avm2_class(self, mc: &Mutation<'gc>, class: Avm2ClassObject<'gc>) {
         unlock!(Gc::write(mc, self.0), GraphicData, class).set(Some(class));
+    }
+
+    pub fn release_shape_handle(self) {
+        self.0.shared.get().release_shape_handle();
     }
 
     fn set_shared(self, mc: &Mutation<'gc>, shared: Gc<'gc, GraphicShared>) {
@@ -177,11 +187,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         // Static assets like Graphics can replace themselves via a PlaceObject tag with PlaceObjectAction::Replace.
         // This does not create a new instance, but instead swaps out the underlying static data to point to the new art.
-        if let Some(new_graphic) = context
-            .library
-            .library_for_movie_mut(self.movie())
-            .get_graphic(id)
-        {
+        if let Some(new_graphic) = self.0.library.borrow().get_graphic(id) {
             self.set_shared(context.gc(), new_graphic.0.shared.get());
         } else {
             tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
@@ -201,10 +207,21 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 
         if let Some(drawing) = self.0.drawing.get() {
             drawing.borrow().render(context);
-        } else if let Some(render_handle) = self.0.shared.get().render_handle.clone() {
+        } else {
+            let shared = self.0.shared.get();
+            let handle = shared.render_handle.take().unwrap_or_else(|| {
+                let lib_guard = self.0.library.borrow();
+                context.renderer.register_shape(
+                    (&shared.shape).into(),
+                    &MovieLibrarySource {
+                        library: &lib_guard,
+                    },
+                )
+            });
+            shared.render_handle.set(Some(handle.clone()));
             context
                 .commands
-                .render_shape(render_handle, context.transform_stack.transform())
+                .render_shape(handle, context.transform_stack.transform());
         }
     }
 
@@ -248,7 +265,11 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     }
 
     fn movie(self) -> Arc<SwfMovie> {
-        self.0.shared.get().movie.clone()
+        self.0.library.borrow().movie()
+    }
+
+    fn library(self) -> MovieLibraryGc<'gc> {
+        self.0.library
     }
 
     fn object1(self) -> Option<Avm1Object<'gc>> {
@@ -275,7 +296,13 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
 struct GraphicShared {
     id: CharacterId,
     shape: swf::Shape,
-    render_handle: Option<ShapeHandle>,
+    /// Lazily registered GPU shape handle; re-registered from `shape` on next render if cleared.
+    render_handle: Cell<Option<ShapeHandle>>,
     bounds: Rectangle<Twips>,
-    movie: Arc<SwfMovie>,
+}
+
+impl GraphicShared {
+    fn release_shape_handle(&self) {
+        self.render_handle.set(None);
+    }
 }

@@ -6,7 +6,7 @@ use crate::avm2::object::{EventObject, Object, StageObject, TObject};
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
-use crate::loader::ContentType;
+use crate::loader::{ContentType, LoaderHandle};
 use crate::tag_utils::SwfMovie;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -98,6 +98,10 @@ pub struct LoaderInfoObjectData<'gc> {
     expose_content: Cell<bool>,
 
     errored: Cell<bool>,
+
+    /// LoadManager handle for this in-progress load, used by Loader.close() to cancel.
+    #[collect(require_static)]
+    loader_handle: Cell<Option<LoaderHandle>>,
 }
 
 impl<'gc> LoaderInfoObject<'gc> {
@@ -142,6 +146,7 @@ impl<'gc> LoaderInfoObject<'gc> {
                 content_type: Cell::new(ContentType::Unknown),
                 expose_content: Cell::new(false),
                 errored: Cell::new(false),
+                loader_handle: Cell::new(None),
             },
         ));
 
@@ -158,6 +163,14 @@ impl<'gc> LoaderInfoObject<'gc> {
 
     pub fn uncaught_error_events(self) -> Object<'gc> {
         self.0.uncaught_error_events
+    }
+
+    pub fn set_loader_handle(self, handle: Option<LoaderHandle>) {
+        self.0.loader_handle.set(handle);
+    }
+
+    pub fn loader_handle(self) -> Option<LoaderHandle> {
+        self.0.loader_handle.get()
     }
 
     /// Gets the `ContentType`, 'hiding' it by returning `ContentType::Unknown`
@@ -264,14 +277,6 @@ impl<'gc> LoaderInfoObject<'gc> {
     }
 
     pub fn unload(self, context: &mut UpdateContext<'gc>) {
-        // Reset properties
-        let movie = &context.root_swf;
-        let empty_swf = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
-        let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
-        self.set_loader_stream(loader_stream, context.gc());
-        self.set_errored(false);
-        self.reset_init_and_complete_events();
-
         let mut loader = self
             .0
             .loader
@@ -279,6 +284,44 @@ impl<'gc> LoaderInfoObject<'gc> {
             .display_object()
             .as_container()
             .unwrap();
+
+        let has_content = matches!(&*self.0.loaded_stream.borrow(), LoaderStream::Swf(_, _));
+
+        if has_content {
+            let loaded_movie = {
+                let stream = self.0.loaded_stream.borrow();
+                stream.movie().clone()
+            };
+            if let Some(lib) = context
+                .library
+                .library_for_movie(&loaded_movie, context.gc())
+            {
+                lib.borrow().release_gpu_handles();
+            }
+
+            if let Some(child) = loader.child_by_index(0) {
+                if let Some(mc) = child.as_movie_clip() {
+                    mc.stop(context);
+                }
+                crate::display_object::clear_cached_bitmap_recursive(child);
+            }
+
+            let unload_evt = EventObject::bare_default_event(context, "unload");
+            Avm2::dispatch_event(context, unload_evt, self.into());
+
+            // Unregister library so it can be GC-collected when unreachable.
+            context
+                .library
+                .unregister_movie_library(&loaded_movie, context.gc());
+        }
+
+        // Reset properties
+        let movie = &context.root_swf;
+        let empty_swf = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
+        let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
+        self.set_loader_stream(loader_stream, context.gc());
+        self.set_errored(false);
+        self.reset_init_and_complete_events();
 
         // Remove the Loader's content element if it exists.
         if let Some(child) = loader.child_by_index(0) {

@@ -37,12 +37,18 @@ pub fn add_event_listener<'gc>(
     let listener = args.get_function(activation, 1, "listener")?;
     let use_capture = args.get_bool(2);
     let priority = args.get_i32(3);
+    let use_weak_reference = args.get_bool(4);
 
-    //TODO: If we ever get weak GC references, we should respect `useWeakReference`.
     dispatch_list
         .as_dispatch_mut(activation.gc())
         .expect("Internal properties should have what I put in them")
-        .add_event_listener(event_type, priority, listener, use_capture);
+        .add_event_listener(
+            event_type,
+            priority,
+            listener,
+            use_capture,
+            use_weak_reference,
+        );
 
     Avm2::register_broadcast_listener(activation.context, this, event_type);
 

@@ -25,6 +25,7 @@ use crate::html::StyleSheet;
 use crate::html::{
     FormatSpans, Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, Position, TextFormat,
 };
+use crate::library::MovieLibraryGc;
 use crate::prelude::*;
 use crate::string::{AvmString, SwfStrExt as _, WStr, WString, utils as string_utils};
 use crate::tag_utils::SwfMovie;
@@ -90,6 +91,8 @@ pub struct EditTextData<'gc> {
 
     /// Data shared among all instances of this `EditText`.
     shared: Gc<'gc, EditTextShared>,
+
+    library: MovieLibraryGc<'gc>,
 
     /// The AVM1 object handle
     object: Lock<Option<AvmObject<'gc>>>,
@@ -232,7 +235,7 @@ impl EditTextData<'_> {
             self.style_sheet.get().style_sheet(),
             self.flags.get().contains(EditTextFlag::MULTILINE),
             self.flags.get().contains(EditTextFlag::CONDENSE_WHITE),
-            self.shared.swf.version(),
+            self.library.borrow().movie().version(),
         ));
         self.original_html_text
             .replace(if self.style_sheet.get().is_some() {
@@ -259,9 +262,10 @@ impl<'gc> EditText<'gc> {
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
+        library: MovieLibraryGc<'gc>,
         swf_tag: swf::EditText,
     ) -> Self {
+        let swf_movie = library.borrow().movie();
         let default_format = TextFormat::from_swf_tag(swf_tag.clone(), swf_movie.clone(), context);
         let encoding = swf_movie.encoding();
         let text = swf_tag.initial_text().unwrap_or_default().decode(encoding);
@@ -320,13 +324,13 @@ impl<'gc> EditText<'gc> {
                 shared: Gc::new(
                     context.gc(),
                     EditTextShared {
-                        swf: swf_movie,
                         id: swf_tag.id(),
                         initial_text: swf_tag
                             .initial_text()
                             .map(|s| s.decode(encoding).into_owned()),
                     },
                 ),
+                library,
                 flags: Cell::new(flags),
                 background_color: Cell::new(Color::WHITE),
                 border_color: Cell::new(Color::BLACK),
@@ -361,7 +365,7 @@ impl<'gc> EditText<'gc> {
     /// Create a new, dynamic `EditText`.
     pub fn new(
         context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
+        library: MovieLibraryGc<'gc>,
         x: f64,
         y: f64,
         width: f64,
@@ -379,7 +383,7 @@ impl<'gc> EditText<'gc> {
             .with_layout(Some(Default::default()))
             .with_is_read_only(true)
             .with_is_selectable(true);
-        let text_field = Self::from_swf_tag(context, swf_movie, swf_tag);
+        let text_field = Self::from_swf_tag(context, library, swf_tag);
 
         // Set position.
         {
@@ -396,13 +400,13 @@ impl<'gc> EditText<'gc> {
     /// Create a new, dynamic `EditText` representing an AVM2 TextLine.
     pub fn new_fte(
         context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
+        library: MovieLibraryGc<'gc>,
         x: f64,
         y: f64,
         width: f64,
         height: f64,
     ) -> Self {
-        let text = Self::new(context, swf_movie, x, y, width, height);
+        let text = Self::new(context, library, x, y, width, height);
         text.set_is_fte(true);
         text.set_selectable(false);
 
@@ -876,7 +880,7 @@ impl<'gc> EditText<'gc> {
     pub fn relayout(self, context: &mut UpdateContext<'gc>) {
         let autosize = self.0.autosize.get();
         let is_word_wrap = self.0.flags.get().contains(EditTextFlag::WORD_WRAP);
-        let movie = self.0.shared.swf.clone();
+        let movie = self.0.library.borrow().movie();
         let padding = Self::GUTTER * 2;
 
         let mut text_spans = self.0.text_spans.borrow_mut();
@@ -2558,7 +2562,11 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
     }
 
     fn movie(self) -> Arc<SwfMovie> {
-        self.0.shared.swf.clone()
+        self.0.library.borrow().movie()
+    }
+
+    fn library(self) -> MovieLibraryGc<'gc> {
+        self.0.library
     }
 
     /// Construct objects placed on this frame.
@@ -3215,7 +3223,6 @@ bitflags::bitflags! {
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
 struct EditTextShared {
-    swf: Arc<SwfMovie>,
     id: CharacterId,
     initial_text: Option<WString>,
 }

@@ -7,8 +7,10 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_2007;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
 use crate::avm2::globals::slots::flash_display_loader as loader_slots;
+use crate::avm2::globals::slots::flash_events_event_dispatcher as dispatch_slots;
 use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::globals::slots::flash_net_url_request_header as url_request_header_slots;
+use crate::avm2::object::DispatchObject;
 use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::object::TObject as _;
@@ -17,8 +19,9 @@ use crate::avm2::value::Value;
 use crate::avm2::{Error, Object};
 use crate::avm2_stub_method;
 use crate::backend::navigator::{NavigationMethod, Request};
-use crate::display_object::LoaderDisplay;
-use crate::display_object::MovieClip;
+use crate::display_object::{
+    DisplayObject, LoaderDisplay, MovieClip, TDisplayObject, TDisplayObjectContainer,
+};
 use crate::loader::LoadManager;
 use crate::loader::MovieLoaderVMData;
 use crate::tag_utils::SwfMovie;
@@ -30,8 +33,11 @@ pub fn loader_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     // Loader does not have an associated `Character` variant, and can never be
     // instantiated from the timeline.
-    let display_object =
-        LoaderDisplay::empty(activation, activation.context.root_swf.clone()).into();
+    let library = activation.context.library.library_for_movie_mut(
+        activation.context.root_swf.clone(),
+        activation.context.gc_context,
+    );
+    let display_object = LoaderDisplay::empty(activation, library).into();
     let loader = initialize_for_allocator(activation.context, display_object, class);
 
     // Note that the initialization of `_contentLoaderInfo` is intentionally done here,
@@ -92,10 +98,12 @@ pub fn load<'gc>(
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let movie = &activation.context.root_swf;
-    let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
-        activation.gc(),
-    );
+    let empty_movie = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
+    let library = activation
+        .context
+        .library
+        .library_for_movie_mut(empty_movie, activation.context.gc_context);
+    let content = MovieClip::new(library, activation.gc());
 
     // Update the LoaderStream - we still have a fake SwfMovie, but we now have the real target clip.
     loader_info.set_loader_stream(
@@ -110,7 +118,7 @@ pub fn load<'gc>(
     let request = request_from_url_request(activation, url_request)?;
 
     let url = request.url().to_string();
-    let future = activation.context.load_manager.load_movie_into_clip(
+    let (future, handle) = activation.context.load_manager.load_movie_into_clip(
         activation.context.player_handle(),
         content.into(),
         request,
@@ -123,6 +131,7 @@ pub fn load<'gc>(
                 .expect("Missing caller domain in Loader.load"),
         },
     );
+    loader_info.set_loader_handle(handle);
     activation.context.navigator.spawn_future(future);
 
     Ok(Value::Undefined)
@@ -263,10 +272,12 @@ pub fn load_bytes<'gc>(
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let movie = &activation.context.root_swf;
-    let content = MovieClip::new(
-        Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into()))),
-        activation.gc(),
-    );
+    let empty_movie = Arc::new(SwfMovie::empty(movie.version(), Some(movie.url().into())));
+    let library = activation
+        .context
+        .library
+        .library_for_movie_mut(empty_movie, activation.context.gc_context);
+    let content = MovieClip::new(library, activation.gc());
 
     let default_domain = activation
         .caller_domain()
@@ -286,6 +297,8 @@ pub fn load_bytes<'gc>(
             format!("Error in Loader.loadBytes: {e:?}").into(),
         ));
     }
+    // loadBytes completes synchronously so the handle isn't useful for
+    // cancellation, but callers may use it for status tracking.
 
     Ok(Value::Undefined)
 }
@@ -297,9 +310,6 @@ pub fn unload<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    // TODO: Broadcast an "unload" event on the LoaderInfo
-    avm2_stub_method!(activation, "flash.display.Loader", "unload");
-
     let loader_info = this
         .get_slot(loader_slots::_CONTENT_LOADER_INFO)
         .as_object()
@@ -310,4 +320,107 @@ pub fn unload<'gc>(
     loader_info.unload(activation.context);
 
     Ok(Value::Undefined)
+}
+
+pub fn close<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let loader_info = this
+        .get_slot(loader_slots::_CONTENT_LOADER_INFO)
+        .as_object()
+        .unwrap();
+
+    let loader_info = loader_info.as_loader_info_object().unwrap();
+
+    // Cancel the load; Flash's close() cancels silently without IOError.
+    if let Some(handle) = loader_info.loader_handle() {
+        activation.context.load_manager.remove_loader(handle);
+        loader_info.set_loader_handle(None);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn unload_and_stop<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let loader_info = this
+        .get_slot(loader_slots::_CONTENT_LOADER_INFO)
+        .as_object()
+        .unwrap();
+
+    let loader_info = loader_info.as_loader_info_object().unwrap();
+
+    let gc = args.get_bool(0);
+
+    // Cancel any pending load
+    if let Some(handle) = loader_info.loader_handle() {
+        activation.context.load_manager.remove_loader(handle);
+        loader_info.set_loader_handle(None);
+    }
+
+    // If gc is true, stop all sounds from the loaded content
+    if gc {
+        let stream = loader_info.loader_stream();
+        let content = match &*stream {
+            LoaderStream::Swf(_, root) => Some(*root),
+            LoaderStream::NotYetLoaded(_, root, _) => *root,
+        };
+        drop(stream);
+
+        if let Some(content) = content {
+            activation
+                .context
+                .stop_sounds_on_parent_and_children(content);
+            // Stop MovieClips and clear event listeners recursively
+            stop_content_tree(activation, content);
+        }
+    }
+
+    // Perform the standard unload (dispatches unload event, stops clips,
+    // releases GPU handles, removes content)
+    loader_info.unload(activation.context);
+
+    Ok(Value::Undefined)
+}
+
+/// Recursively stop MovieClip playback, dispose BitmapData, and clear event
+/// listeners throughout a content display tree. Used by `unloadAndStop()`.
+fn stop_content_tree<'gc>(activation: &mut Activation<'_, 'gc>, dobj: DisplayObject<'gc>) {
+    // Stop MovieClip playback
+    if let Some(mc) = dobj.as_movie_clip() {
+        mc.stop(activation.context);
+    }
+    // Dispose BitmapData on Bitmap display objects to free GPU textures.
+    // This matches Flash's unloadAndStop(gc=true) behavior.
+    if let Some(bitmap) = dobj.as_bitmap() {
+        let bd = bitmap.bitmap_data();
+        if !bd.disposed() {
+            bd.dispose(activation.gc());
+        }
+    }
+    // Clear event listeners on the AVM2 object
+    if let Some(stage_obj) = dobj.object2() {
+        let obj: Object<'gc> = stage_obj.into();
+        let empty_dispatch = DispatchObject::empty_list(activation);
+        let _ = obj.set_slot(
+            dispatch_slots::DISPATCH_LIST,
+            empty_dispatch.into(),
+            activation,
+        );
+    }
+    // Recurse into children
+    if let Some(ctr) = dobj.as_container() {
+        for child in ctr.iter_render_list() {
+            stop_content_tree(activation, child);
+        }
+    }
 }

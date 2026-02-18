@@ -14,6 +14,7 @@ use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Avm2, Multiname, Namespace};
 use crate::context::UpdateContext;
+use crate::library::MovieLibraryGc;
 use crate::string::{AvmAtom, AvmString, StringContext};
 use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::field;
@@ -78,8 +79,7 @@ struct TranslationUnitData<'gc> {
     /// Make sure to check for that before using them.
     multinames: Box<[OnceLock<Gc<'gc, Multiname<'gc>>>]>,
 
-    /// The movie that this TranslationUnit was loaded from.
-    movie: Arc<SwfMovie>,
+    library: MovieLibraryGc<'gc>,
 }
 
 impl<'gc> TranslationUnit<'gc> {
@@ -89,7 +89,7 @@ impl<'gc> TranslationUnit<'gc> {
         abc: AbcFile,
         domain: Domain<'gc>,
         name: Option<AvmString<'gc>>,
-        movie: Arc<SwfMovie>,
+        library: MovieLibraryGc<'gc>,
         mc: &Mutation<'gc>,
     ) -> Self {
         use std::iter::repeat_n;
@@ -102,7 +102,7 @@ impl<'gc> TranslationUnit<'gc> {
             strings: repeat_n(OnceLock::new(), abc.constant_pool.strings.len() + 1).collect(),
             namespaces: repeat_n(OnceLock::new(), abc.constant_pool.namespaces.len() + 1).collect(),
             multinames: repeat_n(OnceLock::new(), abc.constant_pool.multinames.len() + 1).collect(),
-            movie,
+            library,
             abc: Rc::new(abc),
         };
 
@@ -149,7 +149,11 @@ impl<'gc> TranslationUnit<'gc> {
     }
 
     pub fn movie(self) -> Arc<SwfMovie> {
-        self.0.movie.clone()
+        self.0.library.borrow().movie()
+    }
+
+    pub fn library(self) -> MovieLibraryGc<'gc> {
+        self.0.library
     }
 
     pub fn api_version(self, avm2: &Avm2<'gc>) -> ApiVersion {

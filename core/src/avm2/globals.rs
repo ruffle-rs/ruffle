@@ -828,7 +828,11 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'
             .expect("playerglobal.swf should be valid"),
     );
 
-    let slice = SwfSlice::from(movie.clone());
+    let library = context
+        .library
+        .library_for_movie_mut(movie.clone(), context.gc_context);
+
+    let slice = SwfSlice::from(movie);
 
     let mut reader = slice.read_from(0);
 
@@ -837,7 +841,7 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'
             let do_abc = reader
                 .read_do_abc_2()
                 .expect("playerglobal.swf should be valid");
-            Avm2::load_builtin_abc(context, do_abc.data, domain, movie.clone());
+            Avm2::load_builtin_abc(context, do_abc.data, domain, library);
         } else if tag_code != TagCode::End {
             panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")
         }

@@ -3,6 +3,7 @@ use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{BoundsMode, DisplayObjectBase, MovieClip};
 use crate::font::{FontLike, TextRenderSettings};
+use crate::library::MovieLibraryGc;
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
@@ -35,6 +36,7 @@ impl fmt::Debug for Text<'_> {
 pub struct TextData<'gc> {
     base: DisplayObjectBase<'gc>,
     shared: Lock<Gc<'gc, TextShared>>,
+    library: MovieLibraryGc<'gc>,
     render_settings: RefCell<TextRenderSettings>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
 }
@@ -42,17 +44,17 @@ pub struct TextData<'gc> {
 impl<'gc> Text<'gc> {
     pub fn from_swf_tag(
         context: &mut UpdateContext<'gc>,
-        swf: Arc<SwfMovie>,
+        library: MovieLibraryGc<'gc>,
         tag: &swf::Text,
     ) -> Self {
         Text(Gc::new(
             context.gc(),
             TextData {
                 base: Default::default(),
+                library,
                 shared: Lock::new(Gc::new(
                     context.gc(),
                     TextShared {
-                        swf,
                         id: tag.id,
                         bounds: tag.bounds,
                         text_transform: tag.matrix.into(),
@@ -75,7 +77,7 @@ impl<'gc> Text<'gc> {
         self.invalidate_cached_bitmap();
     }
 
-    pub fn text(self, context: &mut UpdateContext<'gc>) -> Option<WString> {
+    pub fn text(self, _context: &mut UpdateContext<'gc>) -> Option<WString> {
         let mut ret = WString::new();
 
         let mut font_id = None;
@@ -85,11 +87,7 @@ impl<'gc> Text<'gc> {
                 font_id = block.font_id;
             }
 
-            let font = context
-                .library
-                .library_for_movie(self.movie())
-                .unwrap()
-                .get_font(font_id?)?;
+            let font = self.0.library.borrow().get_font(font_id?)?;
 
             for glyph in &block.glyphs {
                 if let Some(g) = font.get_glyph(glyph.index as usize) {
@@ -116,15 +114,15 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
     }
 
     fn movie(self) -> Arc<SwfMovie> {
-        self.0.shared.get().swf.clone()
+        self.0.library.borrow().movie()
+    }
+
+    fn library(self) -> MovieLibraryGc<'gc> {
+        self.0.library
     }
 
     fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
-        if let Some(new_text) = context
-            .library
-            .library_for_movie_mut(self.movie())
-            .get_text(id)
-        {
+        if let Some(new_text) = self.0.library.borrow().get_text(id) {
             self.set_shared(context, new_text.0.shared.get());
         } else {
             tracing::warn!("PlaceObject: expected text at character ID {}", id);
@@ -158,12 +156,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
             color = block.color.unwrap_or(color);
             font_id = block.font_id.unwrap_or(font_id);
             height = block.height.unwrap_or(height);
-            if let Some(font) = context
-                .library
-                .library_for_movie(self.movie())
-                .unwrap()
-                .get_font(font_id)
-            {
+            if let Some(font) = self.0.library.borrow().get_font(font_id) {
                 let scale = (height.get() as f32) / font.scale();
                 transform.matrix.a = scale;
                 transform.matrix.d = scale;
@@ -190,7 +183,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 
     fn hit_test_shape(
         self,
-        context: &mut UpdateContext<'gc>,
+        _context: &mut UpdateContext<'gc>,
         mut point: Point<Twips>,
         options: HitTestOptions,
     ) -> bool {
@@ -226,12 +219,7 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
                 font_id = block.font_id.unwrap_or(font_id);
                 height = block.height.unwrap_or(height);
 
-                if let Some(font) = context
-                    .library
-                    .library_for_movie(self.movie())
-                    .unwrap()
-                    .get_font(font_id)
-                {
+                if let Some(font) = self.0.library.borrow().get_font(font_id) {
                     let scale = (height.get() as f32) / font.scale();
                     glyph_matrix.a = scale;
                     glyph_matrix.d = scale;
@@ -300,7 +288,6 @@ impl<'gc> TDisplayObject<'gc> for Text<'gc> {
 #[derive(Debug, Clone, Collect)]
 #[collect(require_static)]
 struct TextShared {
-    swf: Arc<SwfMovie>,
     id: CharacterId,
     bounds: Rectangle<Twips>,
     text_transform: Matrix,

@@ -365,20 +365,25 @@ impl<'gc> UpdateContext<'gc> {
             self.root_swf.width().to_pixels() as u32,
             self.root_swf.height().to_pixels() as u32,
         );
-        self.stage.set_movie(self.gc(), self.root_swf.clone());
+        let root_lib = self
+            .library
+            .library_for_movie_mut(self.root_swf.clone(), self.gc_context);
+        self.stage.set_library(self.gc(), root_lib);
 
         let stage_domain = self.avm2.stage_domain();
         let mut activation = Avm2Activation::from_domain(self, stage_domain);
 
-        activation
-            .context
-            .library
-            .library_for_movie_mut(activation.context.root_swf.clone())
+        let lib = activation.context.library.library_for_movie_mut(
+            activation.context.root_swf.clone(),
+            activation.context.gc_context,
+        );
+        lib.borrow_mut(activation.context.gc_context)
             .set_avm2_domain(stage_domain);
         activation.context.ui.set_mouse_visible(true);
 
         let swf = activation.context.root_swf.clone();
-        let root: DisplayObject = MovieClip::player_root_movie(&mut activation, swf.clone()).into();
+        let root: DisplayObject =
+            MovieClip::player_root_movie(&mut activation, swf.clone(), lib).into();
 
         // The Stage `LoaderInfo` is permanently in the 'not yet loaded' state,
         // and has no associated `Loader` instance.

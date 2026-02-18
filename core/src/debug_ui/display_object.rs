@@ -1505,15 +1505,15 @@ impl DisplayObjectWindow {
 
                 ui.label("Character");
                 let id = object.id();
-                if let Some(name) =
-                    context
-                        .library
-                        .library_for_movie(object.movie())
-                        .and_then(|l| {
-                            l.export_characters()
-                                .iter()
-                                .find_map(|(k, v)| if *v == id { Some(k) } else { None })
-                        })
+                if let Some(name) = context
+                    .library
+                    .library_for_movie(&object.movie(), context.gc_context)
+                    .and_then(|l| {
+                        let lib = l.borrow();
+                        lib.export_characters()
+                            .iter()
+                            .find_map(|(k, v)| if *v == id { Some(k) } else { None })
+                    })
                 {
                     ui.label(format!("{id} {name}"));
                 } else {

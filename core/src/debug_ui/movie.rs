@@ -88,7 +88,7 @@ impl MovieListWindow {
                         });
                     })
                     .body(|mut body| {
-                        let movies = context.library.known_movies();
+                        let movies = context.library.known_movies(context.gc_context);
 
                         for movie in movies {
                             let url_lower = movie.url().to_ascii_lowercase();
@@ -157,8 +157,10 @@ impl MovieWindow {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Information, "Information");
 
-                    if let Some(library) = context.library.library_for_movie(movie.clone())
-                        && !library.characters().is_empty()
+                    if let Some(library) = context
+                        .library
+                        .library_for_movie(&movie, context.gc_context)
+                        && !library.borrow().characters().is_empty()
                     {
                         ui.selectable_value(&mut self.open_panel, Panel::Characters, "Characters");
                     }
@@ -177,8 +179,11 @@ impl MovieWindow {
         // Cloned up here so we can still use context afterwards
         let (characters, export_characters) = context
             .library
-            .library_for_movie(movie.clone())
-            .map(|l| (l.characters().clone(), l.export_characters().clone()))
+            .library_for_movie(movie, context.gc_context)
+            .map(|l| {
+                let lib = l.borrow();
+                (lib.characters().clone(), lib.export_characters().clone())
+            })
             .unwrap_or_default();
 
         TextEdit::singleline(&mut self.character_search)

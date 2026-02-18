@@ -2,7 +2,7 @@ use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{BoundsMode, DisplayObjectBase};
-use crate::library::{Library, MovieLibrarySource};
+use crate::library::{MovieLibraryGc, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
@@ -35,6 +35,7 @@ impl fmt::Debug for MorphShape<'_> {
 pub struct MorphShapeData<'gc> {
     base: DisplayObjectBase<'gc>,
     shared: Lock<Gc<'gc, MorphShapeShared>>,
+    library: MovieLibraryGc<'gc>,
     /// The AVM2 representation of this MorphShape.
     object: Lock<Option<Avm2StageObject<'gc>>>,
 }
@@ -43,17 +44,22 @@ impl<'gc> MorphShape<'gc> {
     pub fn from_swf_tag(
         gc_context: &Mutation<'gc>,
         tag: swf::DefineMorphShape,
-        movie: Arc<SwfMovie>,
+        library: MovieLibraryGc<'gc>,
     ) -> Self {
-        let shared = MorphShapeShared::from_swf_tag(&tag, movie);
+        let shared = MorphShapeShared::from_swf_tag(&tag);
         MorphShape(Gc::new(
             gc_context,
             MorphShapeData {
                 base: Default::default(),
                 shared: Lock::new(Gc::new(gc_context, shared)),
+                library,
                 object: Lock::new(None),
             },
         ))
+    }
+
+    pub fn clear_frame_cache(self) {
+        self.0.shared.get().clear_frame_cache();
     }
 }
 
@@ -71,11 +77,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
-        if let Some(new_morph_shape) = context
-            .library
-            .library_for_movie_mut(self.movie())
-            .get_morph_shape(id)
-        {
+        if let Some(new_morph_shape) = self.0.library.borrow().get_morph_shape(id) {
             unlock!(Gc::write(context.gc(), self.0), MorphShapeData, shared)
                 .set(new_morph_shape.0.shared.get())
         } else {
@@ -111,10 +113,10 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         }
     }
 
-    fn render_self(self, context: &mut RenderContext) {
+    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         let ratio = self.ratio();
         let shared = self.0.shared.get();
-        let shape_handle = shared.get_shape(context, context.library, ratio);
+        let shape_handle = shared.get_shape(context, self.0.library, ratio);
         context
             .commands
             .render_shape(shape_handle, context.transform_stack.transform());
@@ -172,7 +174,11 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn movie(self) -> Arc<SwfMovie> {
-        self.0.shared.get().movie.clone()
+        self.0.library.borrow().movie()
+    }
+
+    fn library(self) -> MovieLibraryGc<'gc> {
+        self.0.library
     }
 }
 
@@ -191,18 +197,21 @@ pub struct MorphShapeShared {
     start: swf::MorphShape,
     end: swf::MorphShape,
     frames: RefCell<fnv::FnvHashMap<u16, Frame>>,
-    movie: Arc<SwfMovie>,
 }
 
 impl MorphShapeShared {
-    pub fn from_swf_tag(swf_tag: &swf::DefineMorphShape, movie: Arc<SwfMovie>) -> Self {
+    pub fn from_swf_tag(swf_tag: &swf::DefineMorphShape) -> Self {
         Self {
             id: swf_tag.id,
             start: swf_tag.start.clone(),
             end: swf_tag.end.clone(),
             frames: RefCell::new(fnv::FnvHashMap::default()),
-            movie,
         }
+    }
+
+    /// Clear all cached frames, releasing their GPU ShapeHandles.
+    pub fn clear_frame_cache(&self) {
+        self.frames.borrow_mut().clear();
     }
 
     /// Retrieves the `Frame` for the given ratio.
@@ -221,17 +230,20 @@ impl MorphShapeShared {
     fn get_shape<'gc>(
         &self,
         context: &mut RenderContext<'_, 'gc>,
-        library: &Library<'gc>,
+        library: MovieLibraryGc<'gc>,
         ratio: u16,
     ) -> ShapeHandle {
         let mut frame = self.get_frame(ratio);
         if let Some(handle) = frame.shape_handle.clone() {
             handle
         } else {
-            let library = library.library_for_movie(self.movie.clone()).unwrap();
+            let lib_guard = library.borrow();
+            let source = MovieLibrarySource {
+                library: &lib_guard,
+            };
             let handle = context
                 .renderer
-                .register_shape((&frame.shape).into(), &MovieLibrarySource { library });
+                .register_shape((&frame.shape).into(), &source);
             frame.shape_handle = Some(handle.clone());
             handle
         }

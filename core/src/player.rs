@@ -2910,6 +2910,9 @@ impl PlayerBuilder {
             )
         };
 
+        let mut library = Library::empty();
+        let fake_library = library.library_for_movie_mut(fake_movie, gc_context);
+
         let data = GcRootData {
             audio_manager: AudioManager::new(),
             action_queue: ActionQueue::new(),
@@ -2922,7 +2925,7 @@ impl PlayerBuilder {
                 external_interface_provider,
                 fs_command_provider,
             ),
-            library: Library::empty(),
+            library,
             load_manager: LoadManager::new(),
             mouse_data: MouseData {
                 hovered: None,
@@ -2932,7 +2935,7 @@ impl PlayerBuilder {
             },
             avm1_shared_objects: HashMap::new(),
             avm2_shared_objects: HashMap::new(),
-            stage: Stage::empty(gc_context, fullscreen, fake_movie),
+            stage: Stage::empty(gc_context, fullscreen, fake_library),
             timers: Timers::new(),
             unbound_text_fields: Vec::new(),
             stream_manager: StreamManager::new(),
