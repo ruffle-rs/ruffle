@@ -548,6 +548,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     span.style.bold,
                     span.style.italic,
                     Some(self.movie.clone()),
+                    context.gc(),
                 )
                 .filter(|f| f.has_glyphs())
         {

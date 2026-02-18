@@ -155,8 +155,12 @@ impl TextFormat {
     ) -> Self {
         let encoding = swf_movie.encoding();
         let swf_version = swf_movie.version();
-        let movie_library = context.library.library_for_movie_mut(swf_movie);
-        let font = et.font_id().and_then(|fid| movie_library.get_font(fid));
+        let movie_library = context
+            .library
+            .library_for_movie_mut(swf_movie, context.gc_context);
+        let font = et
+            .font_id()
+            .and_then(|fid| movie_library.borrow().get_font(fid));
         let font_class = et
             .font_class()
             .map(|s| s.decode(encoding).into_owned())
