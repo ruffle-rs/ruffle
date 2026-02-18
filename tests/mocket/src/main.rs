@@ -1,12 +1,12 @@
-use anyhow::Error;
+use anyhow::{Error, anyhow};
 use clap::Parser;
 use ruffle_socket_format::SocketEvent;
-use std::{
-    io::{Read, Write},
-    net::TcpListener,
-    path::PathBuf,
-};
+use std::io::{BufRead, BufReader, ErrorKind, Read, Write};
+use std::net::TcpListener;
+use std::path::PathBuf;
 use tracing_subscriber::filter::{EnvFilter, LevelFilter};
+
+static POLICY_REQUEST: &[u8] = b"<policy-file-request/>\0";
 
 static POLICY: &[u8] = b"<?xml version=\"1.0\"?>
 <!DOCTYPE cross-domain-policy SYSTEM \"http://www.adobe.com/xml/dtds/cross-domain-policy.dtd\">
@@ -39,45 +39,35 @@ fn main() -> Result<(), Error> {
 
     let listener = TcpListener::bind("0.0.0.0:8001")?;
     tracing::info!("Listening on {}", listener.local_addr()?);
-    let (mut stream, addr) = listener.accept()?;
+    let (stream, addr) = listener.accept()?;
     tracing::info!("Incoming connection from {}", addr);
 
+    let mut writer = stream.try_clone()?;
+    let mut reader = BufReader::new(stream);
+
     // Handle socket policy stuff. (Required as Flash Player wont want to connect otherwise.)
-    let mut buffer = [0; 4096];
-    let _ = stream.read(&mut buffer);
-    stream.write_all(POLICY)?;
+    let mut buffer: Vec<u8> = Vec::new();
+    reader.read_until(0, &mut buffer)?;
+    if &buffer[..] != POLICY_REQUEST {
+        return Err(anyhow!("No policy request, received: {buffer:?}"));
+    }
+    writer.write_all(POLICY)?;
     tracing::info!("Policy sent successfully!");
 
     // Now we listen again as flash reopens socket connection.
-    let (mut stream, addr) = listener.accept()?;
+    let (stream, addr) = listener.accept()?;
     tracing::info!("Incoming connection from {}", addr);
+
+    let mut writer = stream.try_clone()?;
+    let mut reader = BufReader::new(stream);
 
     for (index, event) in events.into_iter().enumerate() {
         tracing::info!("Running step {}/{}", index + 1, event_count);
 
         match event {
             SocketEvent::Receive { expected } => {
-                let mut output = vec![];
-
-                loop {
-                    let mut buffer = [0; 4096];
-
-                    match stream.read(&mut buffer) {
-                        Err(_) | Ok(0) => {
-                            tracing::error!("Expected data, but socket was closed.");
-                            return Ok(());
-                        }
-                        Ok(read) => {
-                            if read == 4096 {
-                                output.extend(buffer);
-                            } else {
-                                let data = buffer.into_iter().take(read).collect::<Vec<_>>();
-                                output.extend(data);
-                                break;
-                            }
-                        }
-                    }
-                }
+                let mut output: Vec<u8> = Vec::new();
+                reader.read_until(0, &mut output)?;
 
                 if output != expected {
                     tracing::error!(
@@ -87,27 +77,18 @@ fn main() -> Result<(), Error> {
                     );
                 }
             }
-            SocketEvent::Send { mut payload } => {
-                while !payload.is_empty() {
-                    match stream.write(&payload) {
-                        Err(_) | Ok(0) => {
-                            tracing::error!("Socket was closed in middle of writing.");
-                            return Ok(());
-                        }
-                        Ok(written) => {
-                            let _ = payload.drain(..written);
-                        }
-                    }
-                }
+            SocketEvent::Send { payload } => {
+                writer.write_all(&payload)?;
             }
             SocketEvent::WaitForDisconnect => {
-                let mut buffer = [0; 4096];
+                let mut buffer = [0; 1];
 
-                match stream.read(&mut buffer) {
-                    Err(_) | Ok(0) => {
+                match reader.read_exact(&mut buffer) {
+                    Err(e) if e.kind() == ErrorKind::UnexpectedEof => {
                         tracing::info!("Client has closed the connection!");
                         return Ok(());
                     }
+                    e @ Err(_) => e?,
                     Ok(_) => {
                         tracing::error!(
                             "Expected client to close connection, but data was sent instead."
@@ -117,7 +98,6 @@ fn main() -> Result<(), Error> {
             }
             SocketEvent::Disconnect => {
                 tracing::info!("Disconnecting client.");
-                drop(stream);
                 break;
             }
         }
