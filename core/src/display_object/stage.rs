@@ -15,6 +15,7 @@ use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::broadcast_frame_entered;
+use crate::library::MovieLibraryGc;
 use crate::prelude::*;
 use crate::string::{FromWStr, WStr};
 use crate::tag_utils::SwfMovie;
@@ -29,7 +30,7 @@ use ruffle_render::commands::CommandHandler;
 use ruffle_render::perspective_projection::PerspectiveProjection;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
-use std::cell::{Cell, Ref, RefCell, RefMut};
+use std::cell::{Cell, Ref, RefMut};
 use std::fmt::{self, Display, Formatter};
 use std::str::FromStr;
 use std::sync::Arc;
@@ -76,8 +77,7 @@ pub struct StageData<'gc> {
     /// A tracker for the current keyboard focused element
     focus_tracker: FocusTracker<'gc>,
 
-    /// The swf that registered this stage
-    movie: RefCell<Arc<SwfMovie>>,
+    library: Lock<MovieLibraryGc<'gc>>,
 
     /// The dimensions of the SWF file.
     movie_size: Cell<(u32, u32)>,
@@ -154,7 +154,12 @@ pub struct StageData<'gc> {
 }
 
 impl<'gc> Stage<'gc> {
-    pub fn empty(gc_context: &Mutation<'gc>, fullscreen: bool, movie: Arc<SwfMovie>) -> Stage<'gc> {
+    pub fn empty(
+        gc_context: &Mutation<'gc>,
+        fullscreen: bool,
+        library: MovieLibraryGc<'gc>,
+    ) -> Stage<'gc> {
+        let movie = library.borrow().movie();
         let stage = Self(Gc::new(
             gc_context,
             StageData {
@@ -186,7 +191,7 @@ impl<'gc> Stage<'gc> {
                 avm2_object: Lock::new(None),
                 loader_info: Lock::new(None),
                 stage3ds: RefLock::new(vec![]),
-                movie: RefCell::new(movie),
+                library: Lock::new(library),
                 viewport_matrix: Cell::new(Matrix::IDENTITY),
                 letterbox_matrix: Cell::new(Matrix::IDENTITY),
                 focus_tracker: FocusTracker::new(gc_context),
@@ -235,12 +240,12 @@ impl<'gc> Stage<'gc> {
         self.0.movie_size.set((width, height));
     }
 
-    pub fn set_movie(self, gc_context: &Mutation<'gc>, movie: Arc<SwfMovie>) {
+    pub fn set_library(self, gc_context: &Mutation<'gc>, library: MovieLibraryGc<'gc>) {
         // Stage is the only DO that has a fake movie set and then gets the real movie set.
         // NOTE: Make sure to NOT reset any state here, AVM1 depends on it.
 
-        let is_action_script_3 = movie.is_action_script_3();
-        self.0.movie.replace(movie);
+        let is_action_script_3 = library.borrow().movie().is_action_script_3();
+        unlock!(Gc::write(gc_context, self.0), StageData, library).set(library);
         unlock!(Gc::write(gc_context, self.0), StageData, child)
             .borrow_mut()
             .set_is_action_script_3(is_action_script_3);
@@ -885,7 +890,11 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn movie(self) -> Arc<SwfMovie> {
-        self.0.movie.borrow().clone()
+        self.0.library.get().borrow().movie()
+    }
+
+    fn library(self) -> MovieLibraryGc<'gc> {
+        self.0.library.get()
     }
 }
 

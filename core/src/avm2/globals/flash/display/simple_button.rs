@@ -29,7 +29,12 @@ pub fn simple_button_allocator<'gc>(
     let orig_class = class;
     while let Some(class) = class_def {
         if class == simplebutton_cls {
-            let button = Avm2Button::empty_button(activation.context);
+            let movie = activation.context.root_swf.clone();
+            let library = activation
+                .context
+                .library
+                .library_for_movie_mut(movie, activation.context.gc_context);
+            let button = Avm2Button::empty_button(activation.context, library);
             // [NA] Buttons specifically need to PO'd
             button.post_instantiation(activation.context, None, Instantiator::Avm2, false);
             let display_object = button.into();
@@ -38,17 +43,10 @@ pub fn simple_button_allocator<'gc>(
             return Ok(obj.into());
         }
 
-        if let Some((movie, symbol)) = activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(class)
-        {
-            let child = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
-                .instantiate_by_id(symbol, activation.context.gc_context);
+        if let Some((lib, symbol)) = class.symbol_class_link(activation.gc()) {
+            let child = lib
+                .borrow()
+                .instantiate_by_id(symbol, activation.context.gc_context, lib);
 
             if let Some(child) = child {
                 return Ok(initialize_for_allocator(activation.context, child, orig_class).into());

@@ -11,6 +11,7 @@ use crate::display_object::interactive::{
 };
 use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase};
 use crate::events::{ClipEvent, ClipEventResult};
+use crate::library::MovieLibraryGc;
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::{SwfMovie, SwfSlice};
@@ -46,6 +47,7 @@ pub struct Avm1ButtonData<'gc> {
     base: InteractiveObjectBase<'gc>,
     cell: RefLock<Avm1ButtonDataMut<'gc>>,
     shared: Gc<'gc, ButtonShared>,
+    library: MovieLibraryGc<'gc>,
     object: Lock<Option<Object<'gc>>>,
     state: Cell<ButtonState>,
     tracking: Cell<ButtonTracking>,
@@ -63,7 +65,12 @@ struct Avm1ButtonDataMut<'gc> {
 }
 
 impl<'gc> Avm1Button<'gc> {
-    pub fn from_swf_tag(button: &swf::Button, source_movie: &SwfSlice, mc: &Mutation<'gc>) -> Self {
+    pub fn from_swf_tag(
+        button: &swf::Button,
+        source_movie: &SwfSlice,
+        mc: &Mutation<'gc>,
+        library: MovieLibraryGc<'gc>,
+    ) -> Self {
         let actions = button
             .actions
             .iter()
@@ -86,7 +93,6 @@ impl<'gc> Avm1Button<'gc> {
                 shared: Gc::new(
                     mc,
                     ButtonShared {
-                        swf: source_movie.movie.clone(),
                         id: button.id,
                         actions,
                         cell: RefCell::new(ButtonSharedMut {
@@ -98,6 +104,7 @@ impl<'gc> Avm1Button<'gc> {
                         }),
                     },
                 ),
+                library,
                 state: Cell::new(ButtonState::Up),
                 initialized: Cell::new(false),
                 object: Lock::new(None),
@@ -138,7 +145,6 @@ impl<'gc> Avm1Button<'gc> {
         let mut removed_depths: fnv::FnvHashSet<_> =
             self.iter_render_list().map(|o| o.depth()).collect();
 
-        let movie = self.movie();
         self.0.state.set(state);
 
         // Create any new children that exist in this state, and remove children
@@ -158,10 +164,10 @@ impl<'gc> Avm1Button<'gc> {
 
                     // Instantiate new child.
                     _ => {
-                        if let Some(child) = context
-                            .library
-                            .library_for_movie_mut(movie.clone())
-                            .instantiate_by_id(record.id, context.gc_context)
+                        let lib = self.0.library;
+                        if let Some(child) =
+                            lib.borrow()
+                                .instantiate_by_id(record.id, context.gc_context, lib)
                         {
                             // New child that did not previously exist, create it.
                             child.set_parent(context, Some(self.into()));
@@ -262,6 +268,10 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.0.movie()
     }
 
+    fn library(self) -> MovieLibraryGc<'gc> {
+        self.0.library
+    }
+
     fn post_instantiation(
         self,
         context: &mut UpdateContext<'gc>,
@@ -289,10 +299,10 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
 
             for record in &self.0.shared.cell.borrow().records {
                 if record.states.contains(swf::ButtonState::HIT_TEST) {
-                    match context
-                        .library
-                        .library_for_movie_mut(self.0.movie())
-                        .instantiate_by_id(record.id, context.gc_context)
+                    let lib = self.0.library;
+                    match lib
+                        .borrow()
+                        .instantiate_by_id(record.id, context.gc_context, lib)
                     {
                         Some(child) => {
                             child.set_matrix(record.matrix.into());
@@ -616,7 +626,7 @@ impl<'gc> Avm1ButtonData<'gc> {
     }
 
     fn movie(&self) -> Arc<SwfMovie> {
-        self.shared.swf.clone()
+        self.library.borrow().movie()
     }
 }
 
@@ -654,7 +664,6 @@ pub enum ButtonTracking {
 #[derive(Collect, Debug)]
 #[collect(require_static)]
 struct ButtonShared {
-    swf: Arc<SwfMovie>,
     id: CharacterId,
     actions: Vec<ButtonAction>,
     cell: RefCell<ButtonSharedMut>,

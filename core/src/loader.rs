@@ -265,7 +265,7 @@ impl<'gc> LoadManager<'gc> {
         request: Request,
         loader_url: Option<String>,
         vm_data: MovieLoaderVMData<'gc>,
-    ) -> OwnedFuture<(), Error> {
+    ) -> (OwnedFuture<(), Error>, Option<LoaderHandle>) {
         // When an AVM2 movie loads an AVM1 movie, that AVM1 movie cannot load
         // another movie over itself, as in loadMovie(..., _root). Attempts to
         // do so will be silently ignored.
@@ -282,7 +282,7 @@ impl<'gc> LoadManager<'gc> {
                 .is_some()
             {
                 // Return a future that does nothing
-                return Box::pin(async move { Ok(()) });
+                return (Box::pin(async move { Ok(()) }), None);
             }
         }
 
@@ -296,7 +296,8 @@ impl<'gc> LoadManager<'gc> {
         };
         let handle = self.add_loader(loader);
         let loader = self.get_loader_mut(handle).unwrap();
-        loader.movie_loader(player, request, loader_url)
+        let future = loader.movie_loader(player, request, loader_url);
+        (future, Some(handle))
     }
 
     pub fn load_asset_movie(
@@ -323,15 +324,21 @@ impl<'gc> LoadManager<'gc> {
 
                             player.lock().unwrap().mutate_with_update_context(|uc| {
                                 let importer_movie = importer_movie.fetch(uc);
-                                let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
+                                let library = uc
+                                    .library
+                                    .library_for_movie_mut(movie.clone(), uc.gc_context);
+                                let clip = MovieClip::new_import_assets(
+                                    uc,
+                                    movie,
+                                    importer_movie,
+                                    library,
+                                );
 
                                 clip.set_cur_preload_frame(0);
                                 let mut execution_limit = ExecutionLimit::none();
 
                                 tracing::debug!("Preloading swf to run exports {:?}", url);
 
-                                // Create library for exports before preloading
-                                uc.library.library_for_movie_mut(clip.movie());
                                 let res = clip.preload(uc, &mut execution_limit);
                                 tracing::debug!(
                                     "Preloaded swf to run exports result {:?} {}",
@@ -367,7 +374,7 @@ impl<'gc> LoadManager<'gc> {
         target_clip: DisplayObject<'gc>,
         bytes: Vec<u8>,
         vm_data: MovieLoaderVMData<'gc>,
-    ) -> Result<(), Error> {
+    ) -> Result<LoaderHandle, Error> {
         let loader = MovieLoader {
             self_handle: None,
             target_clip,
@@ -377,7 +384,8 @@ impl<'gc> LoadManager<'gc> {
             from_bytes: true,
         };
         let handle = context.load_manager.add_loader(loader);
-        MovieLoader::movie_loader_bytes(handle, context, bytes)
+        MovieLoader::movie_loader_bytes(handle, context, bytes)?;
+        Ok(handle)
     }
 
     /// Fires the `onLoad` listener event for every MovieClip that has been
@@ -1630,9 +1638,11 @@ impl<'gc> MovieLoader<'gc> {
 
         match sniffed_type {
             ContentType::Swf => {
-                let library = uc.library.library_for_movie_mut(movie.clone());
+                let library = uc
+                    .library
+                    .library_for_movie_mut(movie.clone(), uc.gc_context);
 
-                library.set_avm2_domain(domain);
+                library.borrow_mut(uc.gc_context).set_avm2_domain(domain);
 
                 if let Some(mc) = clip.as_movie_clip() {
                     let loader_info = if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
@@ -1714,9 +1724,14 @@ impl<'gc> MovieLoader<'gc> {
             ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
                 let mut activation = Avm2Activation::from_nothing(uc);
 
-                let library = activation.context.library.library_for_movie_mut(movie);
+                let library = activation
+                    .context
+                    .library
+                    .library_for_movie_mut(movie, activation.context.gc_context);
 
-                library.set_avm2_domain(domain);
+                library
+                    .borrow_mut(activation.context.gc_context)
+                    .set_avm2_domain(domain);
 
                 // This will construct AVM2-side objects even under AVM1, but it doesn't matter,
                 // since Bitmap and BitmapData never have AVM1-side objects.

@@ -397,6 +397,7 @@ impl<'gc> AudioManager<'gc> {
                 {
                     sound.set_position(pos.round() as u32);
                 }
+
                 true
             } else {
                 // Sound ended.
@@ -772,11 +773,10 @@ impl<'gc> AudioManager<'gc> {
         character_id: CharacterId,
         sound_info: &SoundInfo,
     ) {
-        if let Some(handle) = context
+        let lib = context
             .library
-            .library_for_movie_mut(display_object.movie())
-            .get_sound(character_id)
-        {
+            .library_for_movie_mut(display_object.movie(), context.gc_context);
+        if let Some(handle) = lib.borrow().get_sound(character_id) {
             use swf::SoundEvent;
             // The sound event type is controlled by the "Sync" setting in the Flash IDE.
             match sound_info.event {

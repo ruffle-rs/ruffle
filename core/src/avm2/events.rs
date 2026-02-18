@@ -4,11 +4,11 @@ use crate::avm2::Avm2;
 use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::slots::flash_events_event_dispatcher as slots;
-use crate::avm2::object::{EventObject, FunctionObject, Object, TObject as _};
+use crate::avm2::object::{EventObject, FunctionObject, FunctionObjectWeak, Object, TObject as _};
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use fnv::FnvHashMap;
-use gc_arena::Collect;
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use std::collections::BTreeMap;
 use std::hash::{Hash, Hasher};
 
@@ -214,14 +214,19 @@ impl<'gc> DispatchList<'gc> {
     /// more than one priority (since we can't enforce that with clever-er data
     /// structure selection). If an event handler already exists, it will not
     /// be added again, and this function will silently fail.
+    ///
+    /// If `use_weak_reference` is true, the handler is stored as a weak GC
+    /// reference. It will be automatically skipped and removed during dispatch
+    /// if the function object has been collected.
     pub fn add_event_listener(
         &mut self,
         event: AvmString<'gc>,
         priority: i32,
         handler: FunctionObject<'gc>,
         use_capture: bool,
+        use_weak_reference: bool,
     ) {
-        let new_handler = EventHandler::new(handler, use_capture);
+        let new_handler = EventHandler::new(handler, use_capture, use_weak_reference);
 
         if let Some(event_sheaf) = self.get_event(event) {
             for (_other_prio, other_set) in event_sheaf.iter() {
@@ -245,7 +250,7 @@ impl<'gc> DispatchList<'gc> {
         handler: FunctionObject<'gc>,
         use_capture: bool,
     ) {
-        let old_handler = EventHandler::new(handler, use_capture);
+        let old_handler = EventHandler::new(handler, use_capture, false);
 
         for (_prio, set) in self.get_event_mut(event).iter_mut() {
             if let Some(pos) = set.iter().position(|h| *h == old_handler) {
@@ -270,7 +275,8 @@ impl<'gc> DispatchList<'gc> {
     /// Yield the event handlers on this dispatch list for a given event.
     ///
     /// Event handlers will be yielded in the order they are intended to be
-    /// executed.
+    /// executed. Weak handlers whose function objects have been collected
+    /// are skipped.
     ///
     /// `use_capture` indicates if you want handlers that execute during the
     /// capture phase, or handlers that execute during the bubble and target
@@ -279,13 +285,20 @@ impl<'gc> DispatchList<'gc> {
         &'a mut self,
         event: AvmString<'gc>,
         use_capture: bool,
+        mc: &'a Mutation<'gc>,
     ) -> impl 'a + Iterator<Item = FunctionObject<'gc>> {
+        // Prune dead weak handlers. This is O(n) per event name but keeps
+        // handler lists compact; weak listeners are rare in practice.
+        for (_prio, set) in self.get_event_mut(event).iter_mut() {
+            set.retain(|eh| eh.is_alive(mc));
+        }
+
         self.get_event_mut(event)
             .iter()
             .rev()
             .flat_map(|(_p, v)| v.iter())
             .filter(move |eh| eh.use_capture == use_capture)
-            .map(|eh| eh.handler)
+            .filter_map(|eh| eh.handler(mc))
     }
 }
 
@@ -295,12 +308,48 @@ impl Default for DispatchList<'_> {
     }
 }
 
+/// The stored reference to a handler function, either strong or weak.
+#[derive(Clone, Collect)]
+#[collect(no_drop)]
+enum HandlerRef<'gc> {
+    /// Strong reference — keeps the handler alive.
+    Strong(FunctionObject<'gc>),
+    /// Weak reference — does not prevent GC collection.
+    Weak(FunctionObjectWeak<'gc>),
+}
+
+impl<'gc> HandlerRef<'gc> {
+    /// Get the handler if still alive.
+    fn upgrade(&self, mc: &Mutation<'gc>) -> Option<FunctionObject<'gc>> {
+        match self {
+            HandlerRef::Strong(h) => Some(*h),
+            HandlerRef::Weak(w) => {
+                let inner = w.0.upgrade(mc)?;
+                Some(FunctionObject(inner))
+            }
+        }
+    }
+
+    /// Check if the handler is still alive.
+    fn is_alive(&self, mc: &Mutation<'gc>) -> bool {
+        self.upgrade(mc).is_some()
+    }
+
+    /// Get the raw pointer for identity comparison.
+    fn as_ptr(&self) -> *const () {
+        match self {
+            HandlerRef::Strong(h) => Gc::as_ptr(h.0) as *const (),
+            HandlerRef::Weak(w) => GcWeak::as_ptr(w.0) as *const (),
+        }
+    }
+}
+
 /// A single instance of an event handler.
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 struct EventHandler<'gc> {
-    /// The event handler to call.
-    handler: FunctionObject<'gc>,
+    /// The event handler to call (strong or weak reference).
+    handler_ref: HandlerRef<'gc>,
 
     /// Indicates if this handler should only be called for capturing events
     /// (when `true`), or if it should only be called for bubbling and
@@ -309,18 +358,33 @@ struct EventHandler<'gc> {
 }
 
 impl<'gc> EventHandler<'gc> {
-    fn new(handler: FunctionObject<'gc>, use_capture: bool) -> Self {
+    fn new(handler: FunctionObject<'gc>, use_capture: bool, use_weak_reference: bool) -> Self {
+        let handler_ref = if use_weak_reference {
+            HandlerRef::Weak(FunctionObjectWeak(Gc::downgrade(handler.0)))
+        } else {
+            HandlerRef::Strong(handler)
+        };
         Self {
-            handler,
+            handler_ref,
             use_capture,
         }
+    }
+
+    /// Get the handler function if still alive.
+    fn handler(&self, mc: &Mutation<'gc>) -> Option<FunctionObject<'gc>> {
+        self.handler_ref.upgrade(mc)
+    }
+
+    /// Check if the handler is still alive.
+    fn is_alive(&self, mc: &Mutation<'gc>) -> bool {
+        self.handler_ref.is_alive(mc)
     }
 }
 
 impl PartialEq for EventHandler<'_> {
     fn eq(&self, rhs: &Self) -> bool {
         self.use_capture == rhs.use_capture
-            && std::ptr::eq(self.handler.as_ptr(), rhs.handler.as_ptr())
+            && std::ptr::eq(self.handler_ref.as_ptr(), rhs.handler_ref.as_ptr())
     }
 }
 
@@ -329,7 +393,7 @@ impl Eq for EventHandler<'_> {}
 impl Hash for EventHandler<'_> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.use_capture.hash(state);
-        self.handler.as_ptr().hash(state);
+        self.handler_ref.as_ptr().hash(state);
     }
 }
 
@@ -387,7 +451,7 @@ fn dispatch_event_to_target<'gc>(
     let handlers: Vec<FunctionObject<'gc>> = dispatch_list
         .as_dispatch_mut(activation.gc())
         .expect("Internal dispatch list is missing during dispatch!")
-        .iter_event_handlers(name, use_capture)
+        .iter_event_handlers(name, use_capture, activation.gc())
         .collect();
 
     if !handlers.is_empty() {

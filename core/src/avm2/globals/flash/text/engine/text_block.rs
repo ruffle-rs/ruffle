@@ -68,10 +68,14 @@ pub fn create_text_line<'gc>(
 
     let class = activation.avm2().classes().textline;
     let movie = activation.caller_movie_or_root();
+    let library = activation
+        .context
+        .library
+        .library_for_movie_mut(movie, activation.context.gc_context);
 
     // FIXME: TextLine should be its own DisplayObject
     let display_object: EditText =
-        EditText::new_fte(activation.context, movie, 0.0, 0.0, width, 15.0);
+        EditText::new_fte(activation.context, library, 0.0, 0.0, width, 15.0);
 
     display_object.set_text(text.as_wstr(), activation.context);
 

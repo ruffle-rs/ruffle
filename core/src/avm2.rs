@@ -25,13 +25,12 @@ use crate::avm2::stack::Stack;
 use crate::character::Character;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
+use crate::library::MovieLibraryGc;
 use crate::string::{AvmString, StringContext};
-use crate::tag_utils::SwfMovie;
 
 use fnv::FnvHashMap;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, Gc, Mutation};
-use std::sync::Arc;
 use swf::DoAbc2Flag;
 use swf::avm2::read::Reader;
 
@@ -472,8 +471,11 @@ impl<'gc> Avm2<'gc> {
 
         let class = class_object.inner_class_definition();
 
-        let library = activation.context.library.library_for_movie_mut(movie);
-        let character = library.character_by_id(id);
+        let library = activation
+            .context
+            .library
+            .library_for_movie_mut(movie, activation.context.gc_context);
+        let character = library.borrow().character_by_id(id);
 
         if let Some(character) = character {
             if matches!(
@@ -509,7 +511,7 @@ impl<'gc> Avm2<'gc> {
         name: Option<AvmString<'gc>>,
         flags: DoAbc2Flag,
         domain: Domain<'gc>,
-        movie: Arc<SwfMovie>,
+        library: MovieLibraryGc<'gc>,
     ) -> Result<Option<Script<'gc>>, Error<'gc>> {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
@@ -530,7 +532,7 @@ impl<'gc> Avm2<'gc> {
         }
 
         let num_scripts = abc.scripts.len();
-        let tunit = TranslationUnit::from_abc(abc, domain, name, movie, activation.gc());
+        let tunit = TranslationUnit::from_abc(abc, domain, name, library, activation.gc());
         tunit.load_classes(&mut activation)?;
         for i in 0..num_scripts {
             tunit.load_script(i as u32, &mut activation)?;
@@ -547,7 +549,7 @@ impl<'gc> Avm2<'gc> {
         context: &mut UpdateContext<'gc>,
         data: &[u8],
         domain: Domain<'gc>,
-        movie: Arc<SwfMovie>,
+        library: MovieLibraryGc<'gc>,
     ) {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
@@ -560,7 +562,7 @@ impl<'gc> Avm2<'gc> {
         // domain using `activation.domain()`
         activation.set_outer(ScopeChain::new(domain));
 
-        let tunit = TranslationUnit::from_abc(abc, domain, None, movie, activation.gc());
+        let tunit = TranslationUnit::from_abc(abc, domain, None, library, activation.gc());
 
         globals::init_early_classes(&mut activation, tunit).expect("Early classes should load");
 

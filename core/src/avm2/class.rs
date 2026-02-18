@@ -16,12 +16,14 @@ use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::context::UpdateContext;
+use crate::library::MovieLibraryGc;
 use crate::string::{AvmString, WString};
 use bitflags::bitflags;
 use fnv::FnvHashMap;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::{OnceLock, RefLock};
-use gc_arena::{Collect, Gc, Lock, Mutation};
+use gc_arena::{Collect, Gc, GcWeak, Lock, Mutation};
+use swf::CharacterId;
 use swf::avm2::types::Trait as AbcTrait;
 
 use std::cell::{Cell, Ref};
@@ -94,6 +96,20 @@ enum ClassLink<'gc> {
     Unlinked,
     LinkToInstance(Class<'gc>),
     LinkToClass(Class<'gc>),
+}
+
+/// A link from an AVM2 class to its defining library symbol.
+///
+/// When a `SymbolClass` tag associates a class with a character ID, the class
+/// stores a weak reference to the library that contains the character. This
+/// replaces the old `Avm2ClassRegistry` approach of using a separate
+/// `WeakValueHashMap`. When the library is collected by GC, the weak ref
+/// becomes dead and the class is no longer associated with any symbol.
+#[derive(Collect, Clone, Copy)]
+#[collect(no_drop)]
+pub struct SymbolClassLink<'gc> {
+    library: GcWeak<'gc, gc_arena::lock::RefLock<crate::library::MovieLibrary<'gc>>>,
+    symbol_id: CharacterId,
 }
 
 #[derive(Collect, Clone, Copy)]
@@ -175,6 +191,11 @@ pub struct ClassData<'gc> {
     #[collect(require_static)]
     builtin_type: Cell<Option<BuiltinType>>,
 
+    /// Link to the library symbol (movie + character ID) that this class is
+    /// associated with via a `SymbolClass` tag. `None` for classes that are
+    /// not associated with any library symbol.
+    symbol_class_link: Lock<Option<SymbolClassLink<'gc>>>,
+
     cell: RefLock<ClassDataMut<'gc>>,
 }
 
@@ -232,6 +253,7 @@ impl<'gc> ClassData<'gc> {
             custom_constructor: None,
             linked_class: Lock::new(ClassLink::Unlinked),
             builtin_type: Cell::new(None),
+            symbol_class_link: Lock::new(None),
             cell: RefLock::new(ClassDataMut {
                 applications: FnvHashMap::default(),
                 class_objects: Vec::new(),
@@ -243,6 +265,43 @@ impl<'gc> ClassData<'gc> {
 impl<'gc> Class<'gc> {
     pub fn as_ptr(self) -> *const () {
         Gc::as_ptr(self.0).cast()
+    }
+
+    /// Returns the library symbol (library + character ID) associated with this
+    /// class via a `SymbolClass` tag, if any. Returns `None` if:
+    /// - No symbol was ever associated, or
+    /// - The library has been collected by GC (weak ref is dead).
+    pub fn symbol_class_link(
+        self,
+        mc: &Mutation<'gc>,
+    ) -> Option<(MovieLibraryGc<'gc>, CharacterId)> {
+        let link = self.0.symbol_class_link.get()?;
+        let library = link.library.upgrade(mc)?;
+        Some((library, link.symbol_id))
+    }
+
+    /// Associates this class with a library symbol. First registration wins:
+    /// if the class already has an active (non-collected) link, this is a no-op.
+    /// If the previous library was GC-collected, the class can be re-linked to
+    /// a new library (e.g. after `Loader.unload` + reload).
+    pub fn set_symbol_class_link(
+        self,
+        mc: &Mutation<'gc>,
+        library: MovieLibraryGc<'gc>,
+        symbol_id: CharacterId,
+    ) {
+        // Check if already set and still alive
+        if let Some(existing) = self.0.symbol_class_link.get() {
+            if existing.library.upgrade(mc).is_some() {
+                // Already linked to a live library — first registration wins.
+                return;
+            }
+        }
+        let link = SymbolClassLink {
+            library: Gc::downgrade(library),
+            symbol_id,
+        };
+        unlock!(Gc::write(mc, self.0), ClassData, symbol_class_link).set(Some(link));
     }
 
     /// Create an unlinked class from its name, superclass, and traits.

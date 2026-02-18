@@ -286,13 +286,12 @@ fn attach_bitmap<'gc>(
             .as_bool(activation.swf_version());
 
         //TODO: do attached BitmapDatas have character ids?
-        let display_object = Bitmap::new_with_bitmap_data(
-            activation.gc(),
-            0,
-            bitmap_data,
-            smoothing,
-            &movie_clip.movie(),
-        );
+        let library = activation
+            .context
+            .library
+            .library_for_movie_mut(movie_clip.movie(), activation.gc());
+        let display_object =
+            Bitmap::new_with_bitmap_data(activation.gc(), 0, bitmap_data, smoothing, library);
         movie_clip.replace_at_depth(activation.context, display_object.into(), depth);
         display_object.post_instantiation(activation.context, None, Instantiator::Avm1, true);
     }
@@ -789,8 +788,11 @@ fn attach_movie<'gc>(
     if let Some(new_clip) = activation
         .context
         .library
-        .library_for_movie(movie_clip.movie())
-        .and_then(|l| l.instantiate_by_export_name(export_name, activation.gc()))
+        .library_for_movie(&movie_clip.movie(), activation.gc())
+        .and_then(|l| {
+            l.borrow()
+                .instantiate_by_export_name(export_name, activation.gc(), l)
+        })
     {
         new_clip.set_placed_by_avm1_script(true);
         // Set name and attach to parent.
@@ -833,7 +835,11 @@ fn create_empty_movie_clip<'gc>(
 
     // Create empty movie clip.
     let swf_movie = movie_clip.movie();
-    let new_clip = MovieClip::new(swf_movie, activation.gc());
+    let library = activation
+        .context
+        .library
+        .library_for_movie_mut(swf_movie, activation.context.gc_context);
+    let new_clip = MovieClip::new(library, activation.gc());
     new_clip.set_placed_by_avm1_script(true);
 
     // Set name and attach to parent.
@@ -850,6 +856,10 @@ fn create_text_field<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let movie = activation.base_clip().movie();
+    let library = activation
+        .context
+        .library
+        .library_for_movie_mut(movie, activation.context.gc_context);
     let instance_name = args.get(0).cloned().unwrap_or(Value::Undefined);
     let depth = args
         .get(1)
@@ -880,7 +890,7 @@ fn create_text_field<'gc>(
         .coerce_to_i32(activation)? as f64;
 
     let text_field: DisplayObject<'gc> =
-        EditText::new(activation.context, movie, x, y, width, height).into();
+        EditText::new(activation.context, library, x, y, width, height).into();
     text_field.set_name(activation.gc(), instance_name.coerce_to_string(activation)?);
     movie_clip.replace_at_depth(
         activation.context,
@@ -968,20 +978,27 @@ pub fn clone_sprite<'gc>(
     }
 
     let movie = parent.movie();
+    let library = context
+        .library
+        .library_for_movie_mut(movie.clone(), context.gc_context);
     let cloned_sprite = if sprite.id() != 0 {
         // Clip from SWF; instantiate a new copy.
-        let library = context.library.library_for_movie(movie).unwrap();
+        let library = context
+            .library
+            .library_for_movie(&movie, context.gc_context)
+            .unwrap();
         library
-            .instantiate_by_id(sprite.id(), context.gc())
+            .borrow()
+            .instantiate_by_id(sprite.id(), context.gc(), library)
             .unwrap()
     } else if sprite.as_movie_clip().is_some() {
         // Dynamically created MovieClip; create a new empty movie clip.
-        MovieClip::new(movie, context.gc()).as_displayobject()
+        MovieClip::new(library, context.gc()).as_displayobject()
     } else if let Some(et) = sprite.as_edit_text() {
         // Dynamically created TextField; create a new text field.
         EditText::new(
             context,
-            movie,
+            library,
             et.x().to_pixels(),
             et.y().to_pixels(),
             0.0,
@@ -1621,7 +1638,7 @@ fn load_movie<'gc>(
     let method = NavigationMethod::from_method_str(&method.coerce_to_string(activation)?);
     let target_obj = target.object1_or_bare(activation.gc());
     let request = activation.object_into_request(target_obj, url, method);
-    let future = activation.context.load_manager.load_movie_into_clip(
+    let (future, _handle) = activation.context.load_manager.load_movie_into_clip(
         activation.context.player_handle(),
         DisplayObject::MovieClip(target),
         request,

@@ -7,7 +7,6 @@ use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
 use ruffle_render::bitmap::{Bitmap, BitmapHandle};
-use ruffle_render::error::Error;
 use ruffle_render::shape_utils::{DrawCommand, FillRule};
 use ruffle_render::transform::Transform;
 
@@ -474,6 +473,23 @@ impl GlyphSource {
             GlyphSource::Empty => Twips::ZERO,
         }
     }
+
+    /// Release all glyph GPU handles. Only safe if font is permanently discarded.
+    pub fn release_gpu_handles(&self) {
+        match self {
+            GlyphSource::Memory { glyphs, .. } => {
+                for glyph in glyphs {
+                    glyph.release_gpu_handle();
+                }
+            }
+            GlyphSource::ExternalRenderer { glyph_cache, .. } => {
+                for glyph in glyph_cache.borrow().values().flatten() {
+                    glyph.release_gpu_handle();
+                }
+            }
+            _ => {}
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Collect, Hash)]
@@ -762,6 +778,10 @@ impl<'gc> Font<'gc> {
     pub fn has_layout(self) -> bool {
         self.0.has_layout
     }
+
+    pub fn release_glyph_gpu_handles(&self) {
+        self.0.glyphs.release_gpu_handles();
+    }
 }
 
 impl<'gc> FontLike<'gc> for Font<'gc> {
@@ -1018,16 +1038,14 @@ impl GlyphShape {
                 .map(GlyphRenderData::from_shape),
             GlyphShape::Bitmap(bitmap) => bitmap
                 .get_handle_or_register(renderer)
-                .as_ref()
-                .inspect_err(|err| {
-                    tracing::error!(
-                        "Failed to register glyph as a bitmap: {err}, glyphs will be missing"
-                    )
-                })
-                .ok()
-                .cloned()
                 .map(|handle| GlyphRenderData::from_bitmap(handle, bitmap.tx)),
             GlyphShape::None => None,
+        }
+    }
+
+    fn release_gpu_handle(&self) {
+        if let GlyphShape::Bitmap(bitmap) = self {
+            bitmap.release_gpu_handle();
         }
     }
 }
@@ -1035,7 +1053,8 @@ impl GlyphShape {
 /// A Bitmap that can be registered to a RenderBackend.
 struct GlyphBitmap<'a> {
     bitmap: Cell<Option<Bitmap<'a>>>,
-    handle: OnceCell<Result<BitmapHandle, Error>>,
+    /// Lazily registered GPU handle. Clearing this is irreversible as source data is consumed.
+    handle: Cell<Option<BitmapHandle>>,
 
     /// Translation in x to be applied before rendering the glyph.
     tx: Twips,
@@ -1043,9 +1062,7 @@ struct GlyphBitmap<'a> {
 
 impl<'a> std::fmt::Debug for GlyphBitmap<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("GlyphBitmap")
-            .field("handle", &self.handle)
-            .finish()
+        f.debug_struct("GlyphBitmap").finish_non_exhaustive()
     }
 }
 
@@ -1053,22 +1070,40 @@ impl<'a> GlyphBitmap<'a> {
     pub fn new(bitmap: Bitmap<'a>, tx: Twips) -> Self {
         Self {
             bitmap: Cell::new(Some(bitmap)),
-            handle: OnceCell::new(),
+            handle: Cell::new(None),
             tx,
         }
     }
 
-    pub fn get_handle_or_register(
-        &self,
-        renderer: &mut dyn RenderBackend,
-    ) -> &Result<BitmapHandle, Error> {
-        self.handle.get_or_init(|| {
-            renderer.register_bitmap(
-                self.bitmap
-                    .take()
-                    .expect("Bitmap should be available before registering"),
-            )
-        })
+    pub fn get_handle_or_register(&self, renderer: &mut dyn RenderBackend) -> Option<BitmapHandle> {
+        let existing = self.handle.take();
+        if let Some(handle) = existing {
+            self.handle.set(Some(handle.clone()));
+            return Some(handle);
+        }
+        if let Some(bitmap) = self.bitmap.take() {
+            match renderer.register_bitmap(bitmap) {
+                Ok(handle) => {
+                    self.handle.set(Some(handle.clone()));
+                    Some(handle)
+                }
+                Err(err) => {
+                    tracing::error!(
+                        "Failed to register glyph as a bitmap: {err}, glyphs will be missing"
+                    );
+                    None
+                }
+            }
+        } else {
+            // Both bitmap source and handle are gone — either never registered,
+            // or the handle was released via `release_gpu_handle()`.
+            None
+        }
+    }
+
+    /// Release the GPU handle. Only safe if font is permanently discarded.
+    pub fn release_gpu_handle(&self) {
+        self.handle.set(None);
     }
 }
 
@@ -1131,6 +1166,10 @@ impl Glyph {
             GlyphShape::Bitmap(_) => false,
             GlyphShape::None => false,
         }
+    }
+
+    fn release_gpu_handle(&self) {
+        self.shape.release_gpu_handle();
     }
 
     pub fn renderable<'gc>(&self, context: &mut RenderContext<'_, 'gc>) -> bool {

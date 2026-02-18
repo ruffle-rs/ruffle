@@ -95,18 +95,10 @@ pub fn init<'gc>(
     // We set the underlying BitmapData instance - we start out with a dummy BitmapData,
     // which makes custom classes see a disposed BitmapData before they call super()
     let name = this.instance_class().name();
-    let character = activation
-        .context
-        .library
-        .avm2_class_registry()
-        .class_symbol(this.instance_class())
-        .and_then(|(movie, chara_id)| {
-            activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
-                .character_by_id(chara_id)
-        });
+    let character = this
+        .instance_class()
+        .symbol_class_link(activation.gc())
+        .and_then(|(lib, chara_id)| lib.borrow().character_by_id(chara_id));
 
     let new_bitmap_data = if let Some(Character::Bitmap(bitmap)) = character {
         // Instantiating BitmapData from an Animate-style bitmap asset

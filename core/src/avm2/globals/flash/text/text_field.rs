@@ -20,7 +20,11 @@ pub fn text_field_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     // Creating a TextField from AS ignores SymbolClass linkage.
     let movie = activation.caller_movie_or_root();
-    let display_object = EditText::new(activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
+    let library = activation
+        .context
+        .library
+        .library_for_movie_mut(movie, activation.context.gc_context);
+    let display_object = EditText::new(activation.context, library, 0.0, 0.0, 100.0, 100.0).into();
 
     Ok(initialize_for_allocator(activation.context, display_object, class).into())
 }

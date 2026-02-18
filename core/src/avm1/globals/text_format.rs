@@ -513,6 +513,10 @@ fn get_text_extent<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let movie = activation.base_clip().movie();
+    let library = activation
+        .context
+        .library
+        .library_for_movie_mut(movie, activation.context.gc_context);
     let text = args
         .get(0)
         .cloned()
@@ -526,7 +530,7 @@ fn get_text_extent<'gc>(
 
     let temp_edittext = EditText::new(
         activation.context,
-        movie,
+        library,
         0.0,
         0.0,
         width.unwrap_or(0.0),

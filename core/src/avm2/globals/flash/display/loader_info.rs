@@ -48,11 +48,11 @@ pub fn get_application_domain<'gc>(
     if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
             LoaderStream::NotYetLoaded(movie, _, _) => {
-                let domain = activation
+                let lib = activation
                     .context
                     .library
-                    .library_for_movie_mut(movie.clone())
-                    .try_avm2_domain();
+                    .library_for_movie_mut(movie.clone(), activation.context.gc_context);
+                let domain = lib.borrow().try_avm2_domain();
 
                 if let Some(domain) = domain {
                     return Ok(DomainObject::from_domain(activation, domain).into());
@@ -63,11 +63,11 @@ pub fn get_application_domain<'gc>(
 
             // A loaded SWF will always have an AVM2 domain present.
             LoaderStream::Swf(movie, _) => {
-                let domain = activation
+                let lib = activation
                     .context
                     .library
-                    .library_for_movie_mut(movie.clone())
-                    .avm2_domain();
+                    .library_for_movie_mut(movie.clone(), activation.context.gc_context);
+                let domain = lib.borrow().avm2_domain();
                 return Ok(DomainObject::from_domain(activation, domain).into());
             }
         }
