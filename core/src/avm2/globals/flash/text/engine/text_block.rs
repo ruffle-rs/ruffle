@@ -170,6 +170,7 @@ fn apply_format<'gc>(
 
     let measured_text = display_object.measure_text(activation.context);
 
+    display_object.set_width(activation.context, measured_text.0.to_pixels());
     display_object.set_height(activation.context, measured_text.1.to_pixels());
 
     Ok(())
