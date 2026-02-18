@@ -294,9 +294,6 @@ fn optimize_png(image: &[u8]) -> anyhow::Result<Vec<u8>> {
     // Remove metadata that won't affect image display.
     options.strip = oxipng::StripChunks::Safe;
 
-    // Use Zopfli for better compression.
-    options.deflater = oxipng::Deflater::Zopfli(oxipng::ZopfliOptions::default());
-
     oxipng::optimize_from_memory(image, &options)
         .map_err(|e| anyhow::anyhow!("oxipng optimization failed: {}", e))
 }
