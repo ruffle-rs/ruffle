@@ -24,24 +24,22 @@ pub fn sprite_allocator<'gc>(
         if class == sprite_cls {
             let movie = activation.caller_movie_or_root();
             let display_object = MovieClip::new(movie, activation.context).into();
-            return Ok(initialize_for_allocator(
-                activation.context,
-                display_object,
-                orig_class,
-            ));
+            return Ok(
+                initialize_for_allocator(activation.context, display_object, orig_class).into(),
+            );
         }
 
         if let Some((symbol, lib)) = class.symbol_class(activation.context.gc_context) {
             let lib_ref = lib.borrow();
-            let child =
-                lib_ref.instantiate_by_id(symbol, activation.context.gc_context, lib_ref.movie());
+            let child = lib_ref.instantiate_by_id(
+                symbol,
+                activation.context.gc_context,
+                lib_ref.movie(),
+                lib,
+            );
 
             if let Some(child) = child {
-                return Ok(initialize_for_allocator(
-                    activation.context,
-                    child,
-                    orig_class,
-                ));
+                return Ok(initialize_for_allocator(activation.context, child, orig_class).into());
             } else {
                 return Err(make_error_2136(activation));
             }

@@ -1,6 +1,5 @@
 //! Classes that store formatting options
 
-use crate::context::UpdateContext;
 use crate::html::iterators::TextSpanIter;
 use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
@@ -150,16 +149,14 @@ impl TextFormat {
     pub fn from_swf_tag<'gc>(
         et: swf::EditText<'_>,
         swf_movie: Gc<'gc, SwfMovie>,
-        context: &mut UpdateContext<'gc>,
+        library: Option<Gc<'gc, gc_arena::lock::RefLock<crate::library::MovieLibrary<'gc>>>>,
     ) -> Self {
         let encoding = swf_movie.encoding();
         let swf_version = swf_movie.version();
-        let movie_library = context
-            .library
-            .library_for_movie_gc(swf_movie, context.gc())
-            .unwrap();
-        let movie_library = movie_library.borrow();
-        let font = et.font_id().and_then(|fid| movie_library.get_font(fid));
+        let movie_library = library.map(|l| l.borrow());
+        let font = movie_library
+            .as_ref()
+            .and_then(|lib| et.font_id().and_then(|fid| lib.get_font(fid)));
         let font_class = et
             .font_class()
             .map(|s| s.decode(encoding).into_owned())

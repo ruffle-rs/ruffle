@@ -1,10 +1,10 @@
+use super::{Object, string::AvmString};
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
-use hashbrown::hash_map::Entry;
-use hashbrown::raw::RawTable;
-use std::{cell::Cell, hash::Hash};
-
-use super::{Object, string::AvmString};
+use hashbrown::HashTable;
+use hashbrown::hash_table::Entry;
+use std::cell::Cell;
+use std::hash::{BuildHasher, Hash};
 
 #[derive(Debug, Collect, Copy, Clone)]
 #[collect(no_drop)]
@@ -26,101 +26,132 @@ pub enum DynamicKey<'gc> {
 }
 
 /// A HashMap designed for dynamic properties on an object.
-#[derive(Debug, Clone)]
+///
+/// Uses `HashTable` directly to expose stable bucket indices, which are
+/// needed for correct iteration when entries are added or removed mid-iteration.
+#[derive(Debug, Clone, Collect)]
+#[collect(no_drop)]
 pub struct DynamicMap<K, V> {
-    values: hashbrown::HashMap<K, DynamicProperty<V>, FnvBuildHasher>,
+    table: HashTable<(K, DynamicProperty<V>)>,
+    #[collect(require_static)]
+    hasher: FnvBuildHasher,
     // The last index that was given back to flash
+    #[collect(require_static)]
     public_index: Cell<usize>,
-    // The actual index that represents where an item is in the HashMap
+    // The actual bucket index that represents where an item is in the table
+    #[collect(require_static)]
     real_index: Cell<usize>,
 }
 
-// `gc-arena` doesn't provide a `Collect` impl for the version of `hashbrown` we use.
-unsafe impl<'gc, K: Collect<'gc>, V: Collect<'gc>> Collect<'gc> for DynamicMap<K, V> {
-    const NEEDS_TRACE: bool = K::NEEDS_TRACE || V::NEEDS_TRACE;
-
-    fn trace<T: gc_arena::collect::Trace<'gc>>(&self, cc: &mut T) {
-        for (k, v) in &self.values {
-            cc.trace(k);
-            cc.trace(v);
-        }
-    }
-}
-
-impl<K: Eq + PartialEq + Hash, V> Default for DynamicMap<K, V> {
+impl<K: Eq + Hash, V> Default for DynamicMap<K, V> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
+impl<K: Eq + Hash, V> DynamicMap<K, V> {
+    fn hash_key(&self, key: &K) -> u64 {
+        self.hasher.hash_one(key)
+    }
+
     pub fn new() -> Self {
         Self {
-            values: hashbrown::HashMap::default(),
+            table: HashTable::new(),
+            hasher: FnvBuildHasher::default(),
             public_index: Cell::new(0),
             real_index: Cell::new(0),
         }
     }
 
-    pub fn as_hashmap(&self) -> &hashbrown::HashMap<K, DynamicProperty<V>, FnvBuildHasher> {
-        &self.values
+    pub fn get(&self, key: &K) -> Option<&DynamicProperty<V>> {
+        let hash = self.hash_key(key);
+
+        self.table.find(hash, |(k, _)| k == key).map(|(_, v)| v)
     }
 
-    pub fn entry(&mut self, key: K) -> Entry<'_, K, DynamicProperty<V>, FnvBuildHasher> {
-        self.values.entry(key)
+    pub fn contains_key(&self, key: &K) -> bool {
+        let hash = self.hash_key(key);
+
+        self.table.find(hash, |(k, _)| k == key).is_some()
     }
 
-    /// Gets the real index from the current public index, returns false if real index is out of bounds
+    pub fn iter(&self) -> impl Iterator<Item = (&K, &DynamicProperty<V>)> {
+        self.table.iter().map(|(k, v)| (k, v))
+    }
+
+    pub fn keys(&self) -> impl Iterator<Item = &K> {
+        self.table.iter().map(|(k, _)| k)
+    }
+
+    pub fn len(&self) -> usize {
+        self.table.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.table.is_empty()
+    }
+
+    /// Gets the bucket index from the current public index.
+    /// Returns `None` if the index is out of bounds.
     fn public_to_real_index(&self, index: usize) -> Option<usize> {
         let mut count = 0;
-        let raw = self.raw();
-        if raw.is_empty() {
-            return None;
-        }
-        for i in 0..raw.buckets() {
-            unsafe {
-                // SAFETY: It is impossible for i to be greater than the total buckets.
-                if raw.is_bucket_full(i) {
-                    // SAFETY: We know that this bucket is safe to access because we just checked
-                    // that it is full.
-                    let bucket = raw.bucket(i).as_ref();
-                    if bucket.1.enumerable {
-                        count += 1;
-                        if count >= index {
-                            return Some(i);
-                        }
+        let num_buckets = self.table.num_buckets();
+
+        for i in 0..num_buckets {
+            if let Some((_, v)) = self.table.get_bucket(i) {
+                if v.enumerable {
+                    count += 1;
+
+                    if count >= index {
+                        return Some(i);
                     }
                 }
             }
         }
+
         None
     }
 
-    fn raw(&self) -> &RawTable<(K, DynamicProperty<V>)> {
-        self.values.raw_table()
-    }
-
     pub fn insert(&mut self, key: K, new_value: V) {
-        match self.entry(key) {
+        let hash = self.hash_key(&key);
+
+        match self
+            .table
+            .entry(hash, |(k, _)| *k == key, |(k, _)| self.hasher.hash_one(k))
+        {
             Entry::Occupied(mut occupied) => {
                 // NOTE: When inserting a new value into an already-occupied entry,
                 // the value of the `enumerable` field isn't reset to `true`
-                let DynamicProperty { value, .. } = occupied.get_mut();
-                *value = new_value;
+                occupied.get_mut().1.value = new_value;
             }
             Entry::Vacant(vacant) => {
-                vacant.insert(DynamicProperty {
-                    value: new_value,
-                    enumerable: true,
-                });
+                vacant.insert((
+                    key,
+                    DynamicProperty {
+                        value: new_value,
+                        enumerable: true,
+                    },
+                ));
             }
         }
     }
 
     pub fn remove(&mut self, key: &K) -> Option<DynamicProperty<V>> {
-        self.values.remove(key)
+        let hash = self.hash_key(key);
+
+        match self.table.find_entry(hash, |(k, _)| k == key) {
+            Ok(occupied) => Some(occupied.remove().0.1),
+            Err(_) => None,
+        }
     }
 
+    // NOTE: Per the docs on `HashTable::find_bucket_index`, bucket indices are
+    // "only meaningful as long as the table is not resized and no entries are
+    // added or removed". The current implementation uses tombstones and never
+    // moves elements, so indices of other entries are preserved on removal in
+    // practice, but this is not a guaranteed API contract and should not be
+    // relied on long-term.
+    // https://docs.rs/hashbrown/0.16.1/hashbrown/struct.HashTable.html#method.find_bucket_index
     pub fn next(&self, index: usize) -> Option<usize> {
         // Start iteration from the beginning
         if index == 0 {
@@ -152,25 +183,20 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
         }
 
         let real = self.real_index.get() + 1;
-        let raw = self.raw();
-        let total_buckets = raw.buckets();
-        if !raw.is_empty() && real < total_buckets {
-            for i in real..total_buckets {
-                unsafe {
-                    // SAFETY: It is impossible for i to be greater than the total buckets.
-                    if raw.is_bucket_full(i) {
-                        // SAFETY: We know that this bucket is safe to access because we just checked
-                        // that it is full.
-                        let bucket = raw.bucket(i).as_ref();
-                        if bucket.1.enumerable {
-                            self.real_index.set(i);
-                            self.public_index.set(self.public_index.get() + 1);
-                            return Some(self.public_index.get());
-                        }
+        let num_buckets = self.table.num_buckets();
+
+        if !self.table.is_empty() && real < num_buckets {
+            for i in real..num_buckets {
+                if let Some((_, v)) = self.table.get_bucket(i) {
+                    if v.enumerable {
+                        self.real_index.set(i);
+                        self.public_index.set(self.public_index.get() + 1);
+                        return Some(self.public_index.get());
                     }
                 }
             }
         }
+
         None
     }
 
@@ -180,21 +206,24 @@ impl<K: Eq + PartialEq + Hash, V> DynamicMap<K, V> {
         } else {
             self.real_index.get()
         };
-        if !self.values.is_empty() && real_index < self.raw().buckets() {
-            unsafe {
-                let bucket = self.raw().bucket(real_index);
-                return Some(bucket.as_ref());
-            }
-        }
-        None
+
+        self.table.get_bucket(real_index)
     }
 
     pub fn key_at(&self, index: usize) -> Option<&K> {
-        self.pair_at(index).map(|p| &p.0)
+        self.pair_at(index).map(|(k, _)| k)
     }
 
     pub fn value_at(&self, index: usize) -> Option<&V> {
-        self.pair_at(index).map(|p| &p.1.value)
+        self.pair_at(index).map(|(_, p)| &p.value)
+    }
+
+    pub fn set_enumerable(&mut self, key: &K, enumerable: bool) {
+        let hash = self.hash_key(key);
+
+        if let Some((_, prop)) = self.table.find_mut(hash, |(k, _)| k == key) {
+            prop.enumerable = enumerable;
+        }
     }
 }
 

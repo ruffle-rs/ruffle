@@ -58,7 +58,7 @@ gloo-net =  { version = "0.6.0", default-features = false, features = ["websocke
 rfd = { workspace = true, features = ["file-handle-inner"] }
 wasm-streams = "0.5.0"
 futures = { workspace = true }
-zip = { version = "7.2.0", default-features = false }
+zip = { version = "8.0.0", default-features = false }
 
 [dependencies.ruffle_core]
 path = "../core"

@@ -1194,10 +1194,10 @@ pub fn apply_filter<'gc>(
         let dest_point = (
             dest_point
                 .get_slot(point_slots::X)
-                .coerce_to_u32(activation)?,
+                .coerce_to_i32(activation)?,
             dest_point
                 .get_slot(point_slots::Y)
-                .coerce_to_u32(activation)?,
+                .coerce_to_i32(activation)?,
         );
 
         operations::apply_filter(

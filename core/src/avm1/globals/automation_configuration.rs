@@ -5,11 +5,12 @@ use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
-    "getTestAutomationConfiguration" => method(get_test_automation_configuration);
-    "getDeviceConfiguration" => method(get_device_configuration);
-    "setDeviceConfiguration" => method(set_device_configuration);
-    "valueOf" => method(value_of);
-    "toString" => method(to_string);
+    use fn method;
+    "getTestAutomationConfiguration" => method(GET_TEST_AUTOMATION_CONFIGURATION);
+    "getDeviceConfiguration" => method(GET_DEVICE_CONFIGURATION);
+    "setDeviceConfiguration" => method(SET_DEVICE_CONFIGURATION);
+    "valueOf" => method(VALUE_OF);
+    "toString" => method(TO_STRING);
 };
 
 pub fn create_class<'gc>(
@@ -21,59 +22,33 @@ pub fn create_class<'gc>(
     class
 }
 
-fn get_test_automation_configuration<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(
-        activation,
-        "flash.automation.Configuration",
-        "getTestAutomationConfiguration"
-    );
-    Ok(Value::Undefined)
+pub mod method {
+    pub const GET_TEST_AUTOMATION_CONFIGURATION: u16 = 0;
+    pub const GET_DEVICE_CONFIGURATION: u16 = 1;
+    pub const SET_DEVICE_CONFIGURATION: u16 = 2;
+    pub const VALUE_OF: u16 = 4;
+    pub const TO_STRING: u16 = 5;
 }
 
-fn get_device_configuration<'gc>(
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
+    index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(
-        activation,
-        "flash.automation.Configuration",
-        "getDeviceConfiguration"
-    );
-    Ok(Value::Undefined)
-}
+    use method::*;
+    const CNAME: &str = "flash.automation.Configuration";
 
-fn set_device_configuration<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(
-        activation,
-        "flash.automation.Configuration",
-        "setDeviceConfiguration"
-    );
-    Ok(Value::Undefined)
-}
+    match index {
+        GET_TEST_AUTOMATION_CONFIGURATION => {
+            avm1_stub!(activation, CNAME, "getTestAutomationConfiguration")
+        }
+        GET_DEVICE_CONFIGURATION => avm1_stub!(activation, CNAME, "getDeviceConfiguration"),
+        SET_DEVICE_CONFIGURATION => avm1_stub!(activation, CNAME, "setDeviceConfiguration"),
+        VALUE_OF => avm1_stub!(activation, CNAME, "valueOf"),
+        TO_STRING => avm1_stub!(activation, CNAME, "toString"),
+        _ => (),
+    }
 
-fn value_of<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "flash.automation.Configuration", "valueOf");
-    Ok(Value::Undefined)
-}
-
-fn to_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "flash.automation.Configuration", "toString");
     Ok(Value::Undefined)
 }

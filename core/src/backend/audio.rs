@@ -874,9 +874,8 @@ impl<'gc> AudioManager<'gc> {
         character_id: CharacterId,
         sound_info: &SoundInfo,
     ) {
-        if let Some(handle) = context
-            .library
-            .library_for_movie_gc(display_object.movie(), context.gc())
+        if let Some(handle) = display_object
+            .library()
             .unwrap()
             .borrow()
             .get_sound(character_id)

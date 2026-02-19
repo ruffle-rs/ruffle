@@ -1192,6 +1192,7 @@ Testing __proto__()
 testing _global.MovieClip(function)
 Trying to construct _global.MovieClip
 Object was constructed
+Testing getTextSnapshot()
 Testing createTextField()
 Testing beginBitmapFill()
 Testing lineGradientStyle()

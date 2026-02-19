@@ -12,7 +12,7 @@ use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
 use crate::bitmap::bitmap_data::{ChannelOptions, ThresholdOperation};
 use crate::bitmap::{is_size_valid, operations};
 use crate::character::Character;
-use crate::display_object::DisplayObject;
+use crate::display_object::TDisplayObject;
 use crate::swf::BlendMode;
 use crate::{avm_error, avm1_stub};
 use ruffle_macros::istr;
@@ -619,10 +619,10 @@ fn apply_filter<'gc>(
 
     let dest_x = dest_point
         .get(istr!("x"), activation)?
-        .coerce_to_f64(activation)? as u32;
+        .coerce_to_f64(activation)? as i32;
     let dest_y = dest_point
         .get(istr!("y"), activation)?
-        .coerce_to_f64(activation)? as u32;
+        .coerce_to_f64(activation)? as i32;
 
     let filter_object = args
         .get(3)
@@ -1296,14 +1296,10 @@ fn load_bitmap<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
 
-    let library = &*activation.context.library;
+    let target = activation.target_clip_or_root();
 
-    let movie = <DisplayObject as crate::display_object::TDisplayObject>::movie(
-        activation.target_clip_or_root(),
-    );
-
-    let character = library
-        .library_for_movie_gc(movie, activation.gc())
+    let character = target
+        .library()
         .and_then(|l| l.borrow().character_by_export_name(name));
 
     let Some((_id, Character::Bitmap(bitmap))) = character else {

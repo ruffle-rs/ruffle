@@ -283,6 +283,17 @@ where
 {
     let mut buffer = vec![];
     image.write_to(&mut Cursor::new(&mut buffer), ImageFormat::Png)?;
-    write_bytes(path, &buffer)?;
+    write_bytes(path, &optimize_png(&buffer)?)?;
     Ok(())
+}
+
+fn optimize_png(image: &[u8]) -> anyhow::Result<Vec<u8>> {
+    // Use oxipng to optimize the PNG.
+    let mut options = oxipng::Options::max_compression();
+
+    // Remove metadata that won't affect image display.
+    options.strip = oxipng::StripChunks::Safe;
+
+    oxipng::optimize_from_memory(image, &options)
+        .map_err(|e| anyhow::anyhow!("oxipng optimization failed: {}", e))
 }

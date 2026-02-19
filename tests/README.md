@@ -55,10 +55,13 @@ log_fetch = false
 
 # Sometimes floating point math doesn't exactly 100% match between Flash and Rust.
 # If you encounter this in a test, the following section will change the output
-# testing from "exact" to "approximate" (when it comes to floating point numbers, at least.)
+# testing from "exact" to "approximate" (when it comes to floating point numbers, at least).
 [approximations]
 
-# A list of regex patterns with capture groups to additionally treat as approximate numbers.
+# Should output lines solely consisting of a single number be subject to approximations?
+bare_numbers = false
+
+# A list of regex patterns with capture groups to treat as approximate numbers.
 number_patterns = []
 
 # The upper bound of any rounding errors.

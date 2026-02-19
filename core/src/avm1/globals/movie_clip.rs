@@ -9,7 +9,7 @@ use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{self, ArrayBuilder, Object, Value};
 use crate::backend::navigator::NavigationMethod;
 use crate::context::UpdateContext;
-use crate::display_object::{Bitmap, EditText, MovieClip, TInteractiveObject};
+use crate::display_object::{Bitmap, BoundsMode, EditText, MovieClip, TInteractiveObject};
 use crate::ecma_conversions::f64_to_wrapping_i32;
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -117,6 +117,7 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "lineGradientStyle" => method(mc_method!(line_gradient_style); DONT_ENUM | DONT_DELETE | VERSION_8);
     "beginBitmapFill" => method(mc_method!(begin_bitmap_fill); DONT_ENUM | DONT_DELETE | VERSION_8);
     "createTextField" => method(mc_method!(create_text_field); DONT_ENUM | DONT_DELETE);
+    "getTextSnapshot" => method(get_text_snapshot; DONT_ENUM | DONT_DELETE);
     // NOTE: `focusEnabled` is not a built-in property of MovieClip.
     // NOTE: `tabEnabled` is not a built-in property of MovieClip.
     // NOTE: `tabChildren` is not a built-in property of MovieClip.
@@ -785,15 +786,10 @@ fn attach_movie<'gc>(
         return Ok(Value::Undefined);
     }
 
-    if let Some(new_clip) = activation
-        .context
-        .library
-        .library_for_movie_gc(movie_clip.movie(), activation.gc())
-        .and_then(|l| {
-            l.borrow()
-                .instantiate_by_export_name(export_name, activation.gc(), movie_clip.movie())
-        })
-    {
+    if let Some(new_clip) = movie_clip.library().and_then(|l| {
+        l.borrow()
+            .instantiate_by_export_name(export_name, activation.gc(), movie_clip.movie(), l)
+    }) {
         new_clip.set_placed_by_avm1_script(true);
         // Set name and attach to parent.
         new_clip.set_name(activation.gc(), new_instance_name);
@@ -883,6 +879,9 @@ fn create_text_field<'gc>(
 
     let text_field: DisplayObject<'gc> =
         EditText::new(activation.context, movie, x, y, width, height).into();
+    if let Some(lib) = movie_clip.library() {
+        text_field.set_library(activation.gc(), lib);
+    }
     text_field.set_name(activation.gc(), instance_name.coerce_to_string(activation)?);
     movie_clip.replace_at_depth(
         activation.context,
@@ -972,20 +971,21 @@ pub fn clone_sprite<'gc>(
     let movie = parent.movie();
     let cloned_sprite = if sprite.id() != 0 {
         // Clip from SWF; instantiate a new copy.
-        let library = context
-            .library
-            .library_for_movie_gc(movie, context.gc())
-            .unwrap();
+        let library = sprite.library().unwrap();
         library
             .borrow()
-            .instantiate_by_id(sprite.id(), context.gc(), movie)
+            .instantiate_by_id(sprite.id(), context.gc(), movie, library)
             .unwrap()
     } else if sprite.as_movie_clip().is_some() {
         // Dynamically created MovieClip; create a new empty movie clip.
-        MovieClip::new(movie, context).as_displayobject()
+        let mc = MovieClip::new(movie, context).as_displayobject();
+        if let Some(lib) = sprite.library() {
+            mc.set_library(context.gc(), lib);
+        }
+        mc
     } else if let Some(et) = sprite.as_edit_text() {
         // Dynamically created TextField; create a new text field.
-        EditText::new(
+        let tf = EditText::new(
             context,
             movie,
             et.x().to_pixels(),
@@ -993,7 +993,11 @@ pub fn clone_sprite<'gc>(
             0.0,
             0.0,
         )
-        .as_displayobject()
+        .as_displayobject();
+        if let Some(lib) = sprite.library() {
+            tf.set_library(context.gc(), lib);
+        }
+        tf
     } else {
         return None;
     };
@@ -1459,7 +1463,7 @@ fn get_bounds<'gc>(
             }
         }
 
-        let bounds = movie_clip.bounds();
+        let bounds = movie_clip.bounds(BoundsMode::Script);
         let out_bounds = if DisplayObject::ptr_eq(movie_clip.into(), target) {
             // Getting the clips bounds in its own coordinate space; no AABB transform needed.
             bounds
@@ -1847,4 +1851,14 @@ fn set_tab_index<'gc>(
     };
     this.set_tab_index(value);
     Ok(())
+}
+
+fn get_text_snapshot<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let text_snapshot_class: Value<'gc> = activation.resolve(istr!("TextSnapshot"))?.into();
+    let text_snapshot_class = text_snapshot_class.coerce_to_object_or_bare(activation)?;
+    text_snapshot_class.construct(activation, &[this.into()])
 }

@@ -21,8 +21,8 @@ use crate::display_object::interactive::{
     InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
 use crate::display_object::{
-    Avm1Button, Avm1TextFieldBinding, Avm2Button, DisplayObjectBase, DisplayObjectPtr, EditText,
-    Graphic, MorphShape, Text, Video,
+    Avm1Button, Avm1TextFieldBinding, Avm2Button, BoundsMode, DisplayObjectBase, DisplayObjectPtr,
+    EditText, Graphic, MorphShape, Text, Video,
 };
 use crate::drawing::Drawing;
 use crate::events::{ButtonKeyCode, ClipEvent, ClipEventResult};
@@ -336,7 +336,7 @@ impl<'gc> MovieClip<'gc> {
         let data = MovieClipData::new(shared);
         data.flags.set(MovieClipFlags::PLAYING);
         let movie_clip = MovieClip(Gc::new(mc, data));
-        context.library.register_library(movie, lib);
+        movie_clip.set_library(mc, lib);
         movie_clip
     }
 
@@ -410,7 +410,6 @@ impl<'gc> MovieClip<'gc> {
         );
 
         let lib = Gc::new(context.gc(), RefLock::new(MovieLibrary::new(movie)));
-        context.library.register_library(movie, lib);
 
         write.base.base.reset_for_movie_load();
         write.base.base.set_is_root(is_root);
@@ -425,6 +424,8 @@ impl<'gc> MovieClip<'gc> {
         write.flags.set(MovieClipFlags::PLAYING);
         write.current_frame.set(0);
         write.audio_stream.take();
+
+        self.set_library(context.gc(), lib);
     }
 
     pub fn movie_library(self) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
@@ -434,6 +435,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn set_movie_library(self, mc: &Mutation<'gc>, lib: Gc<'gc, RefLock<MovieLibrary<'gc>>>) {
         let shared_write = Gc::write(mc, self.0.shared.get());
         unlock!(shared_write, MovieClipShared, library).set(Some(lib));
+        self.set_library(mc, lib);
     }
 
     pub fn set_initialized(self) {
@@ -714,6 +716,7 @@ impl<'gc> MovieClip<'gc> {
                 swf::DoAbc2Flag::empty(),
                 domain,
                 self.movie(),
+                self.movie_library(),
             ) {
                 Ok(res) => return Ok(res),
                 Err(err) => {
@@ -757,6 +760,7 @@ impl<'gc> MovieClip<'gc> {
                 do_abc.flags,
                 domain,
                 self.movie(),
+                self.movie_library(),
             ) {
                 Ok(res) => return Ok(res),
                 Err(err) => {
@@ -834,6 +838,22 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn set_drop_target(self, mc: &Mutation<'gc>, drop_target: Option<DisplayObject<'gc>>) {
         unlock!(Gc::write(mc, self.0), MovieClipData, drop_target).set(drop_target);
+    }
+
+    pub fn has_pending_script(self) -> bool {
+        self.0.has_pending_script.get()
+    }
+
+    pub fn set_has_pending_script(self, value: bool) {
+        self.0.has_pending_script.set(value);
+    }
+
+    pub fn last_queued_script_frame(self) -> Option<FrameNumber> {
+        self.0.last_queued_script_frame.get()
+    }
+
+    pub fn set_last_queued_script_frame(self, frame: Option<FrameNumber>) {
+        self.0.last_queued_script_frame.set(frame);
     }
 
     pub fn set_programmatically_played(self) {
@@ -1069,7 +1089,7 @@ impl<'gc> MovieClip<'gc> {
             .map(|(frame, label)| (label.clone(), *frame))
             .collect();
 
-        values.sort_unstable_by(|(_, framea), (_, frameb)| framea.cmp(frameb));
+        values.sort_unstable_by_key(|(_, frame)| *frame);
 
         values
     }
@@ -1453,11 +1473,11 @@ impl<'gc> MovieClip<'gc> {
         }
 
         self.0.queued_script_frame.set(self.0.current_frame.get());
-        if self.0.last_queued_script_frame.get() != Some(self.0.current_frame.get()) {
+        if self.last_queued_script_frame() != Some(self.0.current_frame.get()) {
             // We explicitly clear this variable since AS3 may later GOTO back
             // to the already-ran frame. Since the frame number *has* changed
             // in the meantime, it should absolutely run again.
-            self.0.last_queued_script_frame.set(None);
+            self.set_last_queued_script_frame(None);
         }
     }
 
@@ -1475,11 +1495,11 @@ impl<'gc> MovieClip<'gc> {
         }
 
         let movie = self.movie();
-        match self.movie_library().unwrap().borrow().instantiate_by_id(
-            id,
-            context.gc_context,
-            movie,
-        ) {
+        let library = self.movie_library().unwrap();
+        match library
+            .borrow()
+            .instantiate_by_id(id, context.gc_context, movie, library)
+        {
             Some(child) => {
                 // Remove previous child from children list,
                 // and add new child onto front of the list.
@@ -2124,12 +2144,10 @@ impl<'gc> MovieClip<'gc> {
         callable: Option<Avm2Object<'gc>>,
         context: &mut UpdateContext<'gc>,
     ) {
-        let write = Gc::write(context.gc(), self.0);
-        let current_frame = write.current_frame();
-        let mut frame_scripts =
-            RefMut::map(unlock!(write, MovieClipData, cell).borrow_mut(), |r| {
-                &mut r.frame_scripts
-            });
+        let current_frame = self.current_frame();
+
+        let write = unlock!(Gc::write(context.gc(), self.0), MovieClipData, cell);
+        let mut frame_scripts = RefMut::map(write.borrow_mut(), |r| &mut r.frame_scripts);
 
         let index = frame_id as usize;
         if let Some(callable) = callable {
@@ -2143,8 +2161,8 @@ impl<'gc> MovieClip<'gc> {
                 } else {
                     // Ensure newly registered frame scripts are executed,
                     // even if the frame is repeated due to goto.
-                    write.last_queued_script_frame.set(None);
-                    write.has_pending_script.set(true);
+                    self.set_last_queued_script_frame(None);
+                    self.set_has_pending_script(true);
                 }
             }
         } else if frame_scripts.len() > index {
@@ -2401,19 +2419,11 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
-    pub fn run_frame_script_cleanup(context: &mut UpdateContext<'gc>) {
-        while let Some(clip) = context.frame_script_cleanup_queue.pop_front() {
-            clip.0.has_pending_script.set(true);
-            clip.0.last_queued_script_frame.set(None);
-            clip.run_local_frame_scripts(context);
-        }
-    }
-
-    fn run_local_frame_scripts(self, context: &mut UpdateContext<'gc>) {
+    pub fn run_local_frame_scripts(self, context: &mut UpdateContext<'gc>) {
         let avm2_object = self.0.object2.get();
 
         if let Some(avm2_object) = avm2_object
-            && self.0.has_pending_script.get()
+            && self.has_pending_script()
         {
             let frame_id = self.0.queued_script_frame.get();
             // If we are already executing frame scripts, then we shouldn't
@@ -2426,13 +2436,13 @@ impl<'gc> MovieClip<'gc> {
                 .0
                 .contains_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT)
             {
-                let is_fresh_frame = self.0.last_queued_script_frame.get() != Some(frame_id);
+                let is_fresh_frame = self.last_queued_script_frame() != Some(frame_id);
 
                 if is_fresh_frame && let Some(callable) = self.frame_script(frame_id) {
                     let callable = Avm2Value::from(callable);
 
-                    self.0.last_queued_script_frame.set(Some(frame_id));
-                    self.0.has_pending_script.set(false);
+                    self.set_last_queued_script_frame(Some(frame_id));
+                    self.set_has_pending_script(false);
                     self.0
                         .set_flag(MovieClipFlags::EXECUTING_AVM2_FRAME_SCRIPT, true);
 
@@ -2467,7 +2477,7 @@ impl<'gc> MovieClip<'gc> {
 
     fn check_has_pending_script(self) {
         let has_pending_script = self.has_frame_script(self.0.current_frame.get());
-        self.0.has_pending_script.set(has_pending_script);
+        self.set_has_pending_script(has_pending_script);
     }
 }
 
@@ -2620,7 +2630,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
         self.render_children(context);
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         self.drawing().map(|d| d.self_bounds()).unwrap_or_default()
     }
 
@@ -2641,7 +2651,7 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             return false;
         }
 
-        if self.world_bounds().contains(point) {
+        if self.world_bounds(BoundsMode::Engine).contains(point) {
             let Some(local_matrix) = self.global_to_local_matrix() else {
                 return false;
             };
@@ -2958,7 +2968,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             // true.
             // InteractiveObject.mouseEnabled:
             // "Any children of this instance on the display list are not affected."
-            if self.mouse_enabled() && self.world_bounds().contains(point) {
+            if self.mouse_enabled() && self.world_bounds(BoundsMode::Engine).contains(point) {
                 // This MovieClip operates in "button mode" if it has a mouse handler,
                 // either via on(..) or via property mc.onRelease, etc.
                 let is_button_mode = self.is_button_mode(context);
@@ -3165,7 +3175,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
             }
 
             // Check drawing, because this selects the current clip, it must have mouse enabled
-            if self.world_bounds().contains(point)
+            if self.world_bounds(BoundsMode::Engine).contains(point)
                 && let Some(drawing) = self.drawing()
                 && drawing.hit_test(local_matrix * point, &local_matrix)
             {
@@ -3450,10 +3460,9 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         let swf_shape = reader.read_define_shape(version)?;
         let id = swf_shape.id;
-        let graphic = Graphic::from_swf_tag(context, swf_shape, self.movie());
-        self.library()
-            .unwrap()
-            .borrow_mut(context.gc())
+        let lib = self.library().unwrap();
+        let graphic = Graphic::from_swf_tag(context, swf_shape, self.movie(), lib);
+        lib.borrow_mut(context.gc())
             .register_character(id, Character::Graphic(graphic));
         Ok(())
     }
@@ -3725,9 +3734,9 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
         let swf_edit_text = reader.read_define_edit_text()?;
-        let edit_text = EditText::from_swf_tag(context, self.movie(), swf_edit_text);
-        self.library()
-            .unwrap()
+        let lib = self.library();
+        let edit_text = EditText::from_swf_tag(context, self.movie(), swf_edit_text, lib);
+        lib.unwrap()
             .borrow_mut(context.gc())
             .register_character(edit_text.id(), Character::EditText(edit_text));
         Ok(())
@@ -4091,9 +4100,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     fn scene_and_frame_labels(&self, reader: &mut SwfStream<'_>) -> Result<(), Error> {
         let mut shared = self.cell.borrow_mut();
         let mut sfl_data = reader.read_define_scene_and_frame_label_data()?;
-        sfl_data
-            .scenes
-            .sort_unstable_by(|s1, s2| s1.frame_num.cmp(&s2.frame_num));
+        sfl_data.scenes.sort_unstable_by_key(|s| s.frame_num);
 
         for (i, FrameLabelData { frame_num, label }) in sfl_data.scenes.iter().enumerate() {
             let start = *frame_num as u16 + 1;
@@ -4792,27 +4799,13 @@ impl<'a> GotoPlaceObject<'a> {
         version: u8,
     ) -> Self {
         if is_rewind && let swf::PlaceObjectAction::Place(_) = place_object.action {
-            if place_object.matrix.is_none() {
-                place_object.matrix = Some(Default::default());
-            }
-            if place_object.color_transform.is_none() {
-                place_object.color_transform = Some(Default::default());
-            }
-            if place_object.ratio.is_none() {
-                place_object.ratio = Some(Default::default());
-            }
-            if place_object.blend_mode.is_none() {
-                place_object.blend_mode = Some(Default::default());
-            }
-            if place_object.is_bitmap_cached.is_none() {
-                place_object.is_bitmap_cached = Some(Default::default());
-            }
-            if place_object.background_color.is_none() {
-                place_object.background_color = Some(Color::from_rgba(0));
-            }
-            if place_object.filters.is_none() {
-                place_object.filters = Some(Default::default());
-            }
+            place_object.matrix.get_or_insert_default();
+            place_object.color_transform.get_or_insert_default();
+            place_object.ratio.get_or_insert_default();
+            place_object.blend_mode.get_or_insert_default();
+            place_object.is_bitmap_cached.get_or_insert_default();
+            place_object.background_color.get_or_insert_default();
+            place_object.filters.get_or_insert_default();
             // Purposely omitted properties:
             // name, clip_depth, clip_actions, amf_data
             // These properties are only set on initial placement in `MovieClip::instantiate_child`

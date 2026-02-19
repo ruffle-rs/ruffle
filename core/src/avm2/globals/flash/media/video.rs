@@ -16,20 +16,20 @@ pub fn video_allocator<'gc>(
         if target == video_class {
             let movie = activation.caller_movie_or_root();
             let new_do = Video::new(activation.gc(), movie, 0, 0, None);
-            return Ok(initialize_for_allocator(
-                activation.context,
-                new_do.into(),
-                class,
-            ));
+            return Ok(initialize_for_allocator(activation.context, new_do.into(), class).into());
         }
 
         if let Some((symbol, lib)) = target.symbol_class(activation.context.gc_context) {
             let lib_ref = lib.borrow();
-            let child =
-                lib_ref.instantiate_by_id(symbol, activation.context.gc_context, lib_ref.movie());
+            let child = lib_ref.instantiate_by_id(
+                symbol,
+                activation.context.gc_context,
+                lib_ref.movie(),
+                lib,
+            );
 
             if let Some(child) = child {
-                return Ok(initialize_for_allocator(activation.context, child, class));
+                return Ok(initialize_for_allocator(activation.context, child, class).into());
             } else {
                 return Err(make_error_2136(activation));
             }

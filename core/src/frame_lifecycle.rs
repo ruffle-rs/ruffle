@@ -96,7 +96,7 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
         orphan.run_frame_scripts(context);
     });
     stage.run_frame_scripts(context);
-    MovieClip::run_frame_script_cleanup(context);
+    run_frame_script_cleanup(context);
 
     *context.frame_phase = FramePhase::Exit;
     broadcast_frame_exited(context);
@@ -178,6 +178,13 @@ pub fn run_inner_goto_frame<'gc>(
     *context.frame_phase = old_phase;
 }
 
+/// Broadcast a `enterFrame` event to all `DisplayObject`s.
+pub fn broadcast_frame_entered<'gc>(context: &mut UpdateContext<'gc>) {
+    let enter_frame_evt = EventObject::bare_default_event(context, "enterFrame");
+    let dobject_constr = context.avm2.classes().display_object;
+    Avm2::broadcast_event(context, enter_frame_evt, dobject_constr);
+}
+
 /// Broadcast a `frameConstructed` event to all `DisplayObject`s.
 pub fn broadcast_frame_constructed<'gc>(context: &mut UpdateContext<'gc>) {
     let frame_constructed_evt = EventObject::bare_default_event(context, "frameConstructed");
@@ -192,6 +199,16 @@ pub fn broadcast_frame_exited<'gc>(context: &mut UpdateContext<'gc>) {
     Avm2::broadcast_event(context, exit_frame_evt, dobject_constr);
 
     LoadManager::run_exit_frame(context);
+}
+
+/// Empty the `context.frame_script_cleanup_queue` by running frame scripts for
+/// each clip in the queue.
+fn run_frame_script_cleanup<'gc>(context: &mut UpdateContext<'gc>) {
+    while let Some(clip) = context.frame_script_cleanup_queue.pop_front() {
+        clip.set_has_pending_script(true);
+        clip.set_last_queued_script_frame(None);
+        clip.run_local_frame_scripts(context);
+    }
 }
 
 /// Run all previously-executed frame phases on a newly-constructed display

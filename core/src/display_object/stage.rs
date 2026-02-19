@@ -9,11 +9,12 @@ use crate::avm2::{
 use crate::backend::ui::MouseCursor;
 use crate::config::Letterbox;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::DisplayObjectBase;
 use crate::display_object::container::ChildContainer;
 use crate::display_object::interactive::{InteractiveObjectBase, TInteractiveObject};
+use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::focus_tracker::FocusTracker;
+use crate::frame_lifecycle::broadcast_frame_entered;
 use crate::prelude::*;
 use crate::string::{FromWStr, WStr};
 use crate::tag_utils::SwfMovie;
@@ -838,7 +839,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
         u16::MAX
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         Default::default()
     }
 
@@ -851,9 +852,7 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
             child.enter_frame(context);
         }
 
-        let enter_frame_evt = Avm2EventObject::bare_default_event(context, "enterFrame");
-        let dobject_constr = context.avm2.classes().display_object;
-        Avm2::broadcast_event(context, enter_frame_evt, dobject_constr);
+        broadcast_frame_entered(context);
     }
 
     fn construct_frame(self, context: &mut UpdateContext<'gc>) {
@@ -871,10 +870,8 @@ impl<'gc> TDisplayObject<'gc> for Stage<'gc> {
     }
 
     fn set_perspective_projection(self, mut perspective_projection: Option<PerspectiveProjection>) {
-        if perspective_projection.is_none() {
-            // `stage` doesn't allow null PerspectiveProjection.
-            perspective_projection = Some(Default::default());
-        }
+        // `stage` doesn't allow null PerspectiveProjection.
+        perspective_projection.get_or_insert_default();
         if self
             .base()
             .set_perspective_projection(perspective_projection)

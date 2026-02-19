@@ -10,9 +10,9 @@ use crate::debug_ui::Message;
 use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::movie::open_movie_button;
 use crate::display_object::{
-    AutoSizeMode, Avm2Button, Bitmap, ButtonState, DisplayObject, EditText, InteractiveObject,
-    LayoutDebugBoxesFlag, MovieClip, RenderMask, Stage, TDisplayObject, TDisplayObjectContainer,
-    TInteractiveObject,
+    AutoSizeMode, Avm2Button, Bitmap, BoundsMode, ButtonState, DisplayObject, EditText,
+    InteractiveObject, LayoutDebugBoxesFlag, MovieClip, RenderMask, Stage, TDisplayObject,
+    TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
 use crate::font::{FontDescriptor, FontLike};
@@ -766,9 +766,9 @@ impl DisplayObjectWindow {
                                             .text_style(egui::TextStyle::Monospace),
                                     );
                                     ui.label(format!("{ch}"));
-                                    if let Some(glyph_data) = font_set.get_glyph_render_data(ch) {
+                                    if let Some(resolution) = font_set.resolve_glyph(ch) {
                                         ui.label(format_font_descriptor(
-                                            glyph_data.font.descriptor(),
+                                            resolution.font.descriptor(),
                                         ));
                                     } else {
                                         ui.weak("None");
@@ -1505,16 +1505,12 @@ impl DisplayObjectWindow {
 
                 ui.label("Character");
                 let id = object.id();
-                if let Some(name) = context
-                    .library
-                    .library_for_movie_gc(object.movie(), context.gc())
-                    .and_then(|l| {
-                        let l = l.borrow();
-                        l.export_characters()
-                            .iter()
-                            .find_map(|(k, v)| if *v == id { Some(k) } else { None })
-                    })
-                {
+                if let Some(name) = object.library().and_then(|l| {
+                    let l = l.borrow();
+                    l.export_characters()
+                        .iter()
+                        .find_map(|(k, v)| if *v == id { Some(k) } else { None })
+                }) {
                     ui.label(format!("{id} {name}"));
                 } else {
                     ui.label(id.to_string());
@@ -1538,7 +1534,7 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("Self Bounds");
-                bounds_label(ui, object.self_bounds(), &mut None);
+                bounds_label(ui, object.self_bounds(BoundsMode::Engine), &mut None);
                 ui.end_row();
 
                 ui.label("Scroll Rect");
@@ -1574,7 +1570,7 @@ impl DisplayObjectWindow {
                 let no_hover = &mut None;
                 bounds_label(
                     ui,
-                    object.bounds_with_transform(matrix),
+                    object.bounds_with_transform(matrix, BoundsMode::Engine),
                     if hoverable_bounds {
                         &mut self.hovered_bounds
                     } else {

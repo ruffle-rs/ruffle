@@ -8,8 +8,6 @@ use crate::avm2::object::{ClassObject, ErrorObject};
 use crate::avm2::value::Value;
 use crate::string::{AvmString, WString};
 
-use quick_xml::errors::{Error as XmlError, SyntaxError as XmlSyntaxError};
-use quick_xml::events::attributes::AttrError as XmlAttrError;
 use ruffle_macros::istr;
 use std::fmt::{Debug, Display};
 use std::mem::size_of;
@@ -179,49 +177,61 @@ pub fn make_reference_error<'gc>(
     make_error!(error_constructor(activation, class, &msg, code as u32))
 }
 
+pub enum XmlErrorCode {
+    /// Error #1090: XML parser failure: element is malformed.
+    ElementMalformed = 1090,
+    /// Error #1091: XML parser failure: Unterminated CDATA section.
+    UnterminatedCData = 1091,
+    /// Error #1092: XML parser failure: Unterminated XML declaration.
+    #[allow(unused)]
+    UnterminatedXmlDecl = 1092,
+    /// Error #1093: XML parser failure: Unterminated DOCTYPE declaration.
+    UnterminatedDoctype = 1093,
+    /// Error #1094: XML parser failure: Unterminated comment.
+    UnterminatedComment = 1094,
+    /// Error #1095: XML parser failure: Unterminated attribute value.
+    #[allow(unused)]
+    UnterminatedAttribute = 1095,
+    /// Error #1096: XML parser failure: Unterminated element.
+    #[allow(unused)]
+    UnterminatedElement = 1096,
+    /// Error #1097: XML parser failure: Unterminated processing instruction.
+    UnterminatedProcessingInstruction = 1097,
+    /// Error #1104: Attribute was already specified for element.
+    DuplicateAttribute = 1104,
+}
+
 #[inline(never)]
 #[cold]
-pub fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, err: XmlError) -> Error<'gc> {
-    make_error!(match err {
-        XmlError::InvalidAttr(XmlAttrError::Duplicated(_, _)) => type_error(
-            activation,
-            "Error #1104: Attribute was already specified for element.",
-            1104,
-        ),
-
-        XmlError::Syntax(syntax_error) => match syntax_error {
-            XmlSyntaxError::UnclosedCData => type_error(
-                activation,
-                "Error #1091: XML parser failure: Unterminated CDATA section.",
-                1091,
-            ),
-            XmlSyntaxError::UnclosedDoctype => type_error(
-                activation,
-                "Error #1093: XML parser failure: Unterminated DOCTYPE declaration.",
-                1093,
-            ),
-            XmlSyntaxError::UnclosedComment => type_error(
-                activation,
-                "Error #1094: XML parser failure: Unterminated comment.",
-                1094,
-            ),
-            XmlSyntaxError::UnclosedPIOrXmlDecl => type_error(
-                activation,
-                "Error #1097: XML parser failure: Unterminated processing instruction.",
-                1097,
-            ),
-            _ => type_error(
-                activation,
-                "Error #1090: XML parser failure: element is malformed.",
-                1090,
-            ),
-        },
-        _ => type_error(
-            activation,
-            "Error #1090: XML parser failure: element is malformed.",
-            1090,
-        ),
-    })
+pub fn make_xml_error<'gc>(activation: &mut Activation<'_, 'gc>, code: XmlErrorCode) -> Error<'gc> {
+    let msg = match code {
+        XmlErrorCode::ElementMalformed => "Error #1090: XML parser failure: element is malformed.",
+        XmlErrorCode::UnterminatedCData => {
+            "Error #1091: XML parser failure: Unterminated CDATA section."
+        }
+        XmlErrorCode::UnterminatedXmlDecl => {
+            "Error #1092: XML parser failure: Unterminated XML declaration."
+        }
+        XmlErrorCode::UnterminatedDoctype => {
+            "Error #1093: XML parser failure: Unterminated DOCTYPE declaration."
+        }
+        XmlErrorCode::UnterminatedComment => {
+            "Error #1094: XML parser failure: Unterminated comment"
+        }
+        XmlErrorCode::UnterminatedAttribute => {
+            "Error #1095: XML parser failure: Unterminated attribute value."
+        }
+        XmlErrorCode::UnterminatedElement => {
+            "Error #1096: XML parser failure: Unterminated element."
+        }
+        XmlErrorCode::UnterminatedProcessingInstruction => {
+            "Error #1097: XML parser failure: Unterminated processing instruction."
+        }
+        XmlErrorCode::DuplicateAttribute => {
+            "Error #1104: Attribute was already specified for element."
+        }
+    };
+    make_error!(type_error(activation, msg, code as u32))
 }
 
 #[inline(never)]
@@ -1005,6 +1015,16 @@ pub fn make_error_1113<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         activation,
         "Error #1113: OP_newactivation used in method without NEED_ACTIVATION flag.",
         1113,
+    ))
+}
+
+#[inline(never)]
+#[cold]
+pub fn make_error_1114<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        "Error #1114: Illegal default xml namespace.",
+        1114,
     ))
 }
 

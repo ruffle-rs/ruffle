@@ -1,16 +1,111 @@
-num_frames = 3
+num_frames = 7
 
-[image_comparisons.frame1]
-tolerance = 1
+# FIXME Wrong stroke width.
+
+[image_comparisons."output.01"]
 trigger = 1
 
-[image_comparisons.frame2]
-tolerance = 1
+[[image_comparisons."output.01".checks]]
+tolerance = 10
+max_outliers = 3200
+
+[[image_comparisons."output.01".checks]]
+tolerance = 64
+max_outliers = 350
+
+[[image_comparisons."output.01".checks]]
+tolerance = 128
+max_outliers = 0
+
+[image_comparisons."output.02"]
 trigger = 2
 
-[image_comparisons.frame3]
-tolerance = 1
+[[image_comparisons."output.02".checks]]
+tolerance = 10
+max_outliers = 3200
+
+[[image_comparisons."output.02".checks]]
+tolerance = 64
+max_outliers = 350
+
+[[image_comparisons."output.02".checks]]
+tolerance = 128
+max_outliers = 0
+
+[image_comparisons."output.03"]
 trigger = 3
 
+[[image_comparisons."output.03".checks]]
+tolerance = 10
+max_outliers = 3200
+
+[[image_comparisons."output.03".checks]]
+tolerance = 64
+max_outliers = 350
+
+[[image_comparisons."output.03".checks]]
+tolerance = 128
+max_outliers = 0
+
+[image_comparisons."output.04"]
+trigger = 4
+
+[[image_comparisons."output.04".checks]]
+tolerance = 10
+max_outliers = 3200
+
+[[image_comparisons."output.04".checks]]
+tolerance = 64
+max_outliers = 350
+
+[[image_comparisons."output.04".checks]]
+tolerance = 128
+max_outliers = 0
+
+[image_comparisons."output.05"]
+trigger = 5
+
+[[image_comparisons."output.05".checks]]
+tolerance = 10
+max_outliers = 3200
+
+[[image_comparisons."output.05".checks]]
+tolerance = 64
+max_outliers = 350
+
+[[image_comparisons."output.05".checks]]
+tolerance = 128
+max_outliers = 0
+
+[image_comparisons."output.06"]
+trigger = 6
+
+[[image_comparisons."output.06".checks]]
+tolerance = 10
+max_outliers = 3200
+
+[[image_comparisons."output.06".checks]]
+tolerance = 64
+max_outliers = 350
+
+[[image_comparisons."output.06".checks]]
+tolerance = 128
+max_outliers = 0
+
+[image_comparisons."output.07"]
+trigger = 7
+
+[[image_comparisons."output.07".checks]]
+tolerance = 10
+max_outliers = 3200
+
+[[image_comparisons."output.07".checks]]
+tolerance = 64
+max_outliers = 350
+
+[[image_comparisons."output.07".checks]]
+tolerance = 128
+max_outliers = 0
+
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false, quality = "high" }

@@ -308,7 +308,10 @@ pub struct Player {
     /// Whether we're emulating the release or the debug build.
     player_mode: PlayerMode,
 
-    swf: Arc<SwfMovie>,
+    /// SWF version of the root movie. Synced from the GC root after each
+    /// `mutate_with_update_context` call. Used outside the arena (e.g. in
+    /// `should_reset_highlight`) where GC access is unavailable.
+    swf_version: u8,
 
     run_state: RunState,
     needs_render: bool,
@@ -790,7 +793,7 @@ impl Player {
                 display_object,
             );
 
-            let params = vec![display_object.object1_or_undef(), Value::Object(item)];
+            let params = [display_object.object1_or_undef(), Value::Object(item)];
 
             let _ = callback.call(
                 "[Context Menu Callback]",
@@ -1443,7 +1446,7 @@ impl Player {
             return true;
         }
 
-        if self.swf.version() < 9
+        if self.swf_version < 9
             && matches!(
                 event,
                 InputEvent::MouseDown {
@@ -2337,6 +2340,7 @@ impl Player {
                     .set_frame_rate(*update_context.frame_rate);
             }
 
+            this.swf_version = update_context.root_swf.version();
             this.current_frame = update_context
                 .stage
                 .root_clip()
@@ -2995,8 +2999,6 @@ impl PlayerBuilder {
         let language = ui.language();
 
         // Instantiate the player.
-        // Player.swf stays as Arc for external access; a Gc copy is created inside the arena.
-        let fake_movie = Arc::new(SwfMovie::empty(player_version, None));
         let frame_rate = self.frame_rate.unwrap_or(12.0);
         let forced_frame_rate = self.frame_rate.is_some();
         let player = Arc::new_cyclic(|self_ref| {
@@ -3011,7 +3013,7 @@ impl PlayerBuilder {
                 video,
 
                 // SWF info
-                swf: fake_movie.clone(),
+                swf_version: player_version,
                 current_frame: None,
 
                 // Timing

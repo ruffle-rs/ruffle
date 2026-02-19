@@ -109,12 +109,7 @@ pub fn enumerate_fonts<'gc>(
 
     fonts.append(&mut activation.context.library.global_fonts());
 
-    let caller_movie = activation.caller_movie_or_root();
-    if let Some(library) = activation
-        .context
-        .library
-        .library_for_movie_gc(caller_movie, activation.gc())
-    {
+    if let Some(library) = activation.caller_library() {
         let library = library.borrow();
         for font in library.embedded_fonts() {
             // TODO: EmbeddedCFF isn't supposed to show until it's been used (some kind of internal initialization method?)

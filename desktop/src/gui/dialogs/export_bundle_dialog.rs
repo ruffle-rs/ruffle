@@ -311,14 +311,13 @@ impl ExportBundleDialog {
                 player_options,
                 movie_url,
                 local_files,
-            )
-            .await;
+            );
             export_status.set(status);
         });
         ExportStatus::Exporting
     }
 
-    async fn perform_export(
+    fn perform_export(
         selected_file: Option<FileHandle>,
         bundle_name: String,
         player_options: PlayerOptions,

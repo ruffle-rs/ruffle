@@ -9,7 +9,7 @@ use crate::display_object::container::{
 use crate::display_object::interactive::{
     Avm2MousePick, InteractiveObject, InteractiveObjectBase, TInteractiveObject,
 };
-use crate::display_object::{Avm1TextFieldBinding, DisplayObjectBase};
+use crate::display_object::{Avm1TextFieldBinding, BoundsMode, DisplayObjectBase};
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -161,13 +161,13 @@ impl<'gc> Avm1Button<'gc> {
 
                     // Instantiate new child.
                     _ => {
-                        if let Some(child) = context
-                            .library
-                            .library_for_movie_gc(movie, context.gc())
-                            .unwrap()
-                            .borrow()
-                            .instantiate_by_id(record.id, context.gc_context, movie)
-                        {
+                        let library = self.library().unwrap();
+                        if let Some(child) = library.borrow().instantiate_by_id(
+                            record.id,
+                            context.gc_context,
+                            movie,
+                            library,
+                        ) {
                             // New child that did not previously exist, create it.
                             child.set_parent(context, Some(self.into()));
                             child.set_depth(record.depth.into());
@@ -295,13 +295,13 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             let movie = self.0.movie();
             for record in &self.0.shared.cell.borrow().records {
                 if record.states.contains(swf::ButtonState::HIT_TEST) {
-                    match context
-                        .library
-                        .library_for_movie_gc(movie, context.gc())
-                        .unwrap()
-                        .borrow()
-                        .instantiate_by_id(record.id, context.gc_context, movie)
-                    {
+                    let library = self.library().unwrap();
+                    match library.borrow().instantiate_by_id(
+                        record.id,
+                        context.gc_context,
+                        movie,
+                        library,
+                    ) {
                         Some(child) => {
                             child.set_matrix(record.matrix.into());
                             child.set_parent(context, Some(self.into()));
@@ -324,7 +324,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
             for (child, depth) in new_children {
                 child.post_instantiation(context, None, Instantiator::Movie, false);
                 write.borrow_mut().hit_area.insert(depth, child);
-                hit_bounds = hit_bounds.union(&child.local_bounds());
+                hit_bounds = hit_bounds.union(&child.local_bounds(BoundsMode::Engine));
             }
             write.borrow_mut().hit_bounds = hit_bounds;
         }
@@ -334,7 +334,7 @@ impl<'gc> TDisplayObject<'gc> for Avm1Button<'gc> {
         self.render_children(context);
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         // No inherent bounds; contains child DisplayObjects.
         Default::default()
     }

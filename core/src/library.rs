@@ -3,14 +3,13 @@ use crate::avm2::Domain as Avm2Domain;
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
 
-use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
+use crate::display_object::{Bitmap, Graphic, MorphShape, TDisplayObject, Text};
 use crate::font::{Font, FontDescriptor, FontLike, FontQuery, FontType};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
-use gc_arena::collect::Trace;
 use gc_arena::lock::RefLock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
@@ -128,9 +127,10 @@ impl<'gc> MovieLibrary<'gc> {
         id: CharacterId,
         mc: &Mutation<'gc>,
         movie: Gc<'gc, SwfMovie>,
+        library: Gc<'gc, RefLock<MovieLibrary<'gc>>>,
     ) -> Option<DisplayObject<'gc>> {
         if let Some(&character) = self.characters.get(&id) {
-            self.instantiate_display_object(id, character, mc, movie)
+            self.instantiate_display_object(id, character, mc, movie, library)
         } else {
             tracing::error!("Tried to instantiate non-registered character ID {}", id);
             None
@@ -144,9 +144,10 @@ impl<'gc> MovieLibrary<'gc> {
         export_name: AvmString<'gc>,
         mc: &Mutation<'gc>,
         movie: Gc<'gc, SwfMovie>,
+        library: Gc<'gc, RefLock<MovieLibrary<'gc>>>,
     ) -> Option<DisplayObject<'gc>> {
         if let Some((id, character)) = self.character_by_export_name(export_name) {
-            self.instantiate_display_object(id, character, mc, movie)
+            self.instantiate_display_object(id, character, mc, movie, library)
         } else {
             tracing::error!(
                 "Tried to instantiate non-registered character {}",
@@ -164,8 +165,9 @@ impl<'gc> MovieLibrary<'gc> {
         character: Character<'gc>,
         mc: &Mutation<'gc>,
         movie: Gc<'gc, SwfMovie>,
+        library: Gc<'gc, RefLock<MovieLibrary<'gc>>>,
     ) -> Option<DisplayObject<'gc>> {
-        match character {
+        let obj = match character {
             Character::Bitmap(bitmap) => {
                 let avm2_class = bitmap.avm2_class();
                 let bitmap = bitmap.compressed().decode().unwrap();
@@ -185,7 +187,11 @@ impl<'gc> MovieLibrary<'gc> {
                 // Cannot instantiate non-display object
                 None
             }
+        };
+        if let Some(obj) = obj {
+            obj.set_library(mc, library);
         }
+        obj
     }
 
     pub fn get_font(&self, id: CharacterId) -> Option<Font<'gc>> {
@@ -305,35 +311,10 @@ impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
     }
 }
 
-/// Maps from movie pointer → `GcWeak<RefLock<MovieLibrary>>`.
-/// Uses `GcWeak` so the map doesn't keep libraries alive — a library is only alive
-/// while MovieClips that reference it are alive. Uses raw pointers as keys since
-/// `Gc<SwfMovie>` pointers are stable within the arena.
-#[derive(Default)]
-struct MovieLibraryMap<'gc>(HashMap<*const SwfMovie, GcWeak<'gc, RefLock<MovieLibrary<'gc>>>>);
-
-unsafe impl<'gc> Collect<'gc> for MovieLibraryMap<'gc> {
-    #[inline]
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for val in self.0.values() {
-            cc.trace(val);
-        }
-    }
-}
-
-impl<'gc> MovieLibraryMap<'gc> {
-    fn new() -> Self {
-        Self(HashMap::new())
-    }
-}
-
 /// Symbol library for multiple movies.
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct Library<'gc> {
-    /// Reverse lookup: Gc<'gc, SwfMovie> → GcWeak<MovieLibrary>.
-    movie_libraries: MovieLibraryMap<'gc>,
-
     /// A cache of seen device fonts.
     // TODO: Descriptors shouldn't be stored in fonts. Fonts should be a list that we iterate and ask "do you match". A font can have zero or many names.
     device_fonts: FontMap<'gc>,
@@ -359,7 +340,6 @@ pub struct Library<'gc> {
 impl<'gc> Library<'gc> {
     pub fn empty() -> Self {
         Self {
-            movie_libraries: MovieLibraryMap::new(),
             device_fonts: Default::default(),
             global_fonts: Default::default(),
             font_lookup_cache: Default::default(),
@@ -367,40 +347,6 @@ impl<'gc> Library<'gc> {
             default_font_names: Default::default(),
             default_font_cache: Default::default(),
         }
-    }
-
-    /// Register a library for a given movie.
-    /// Stores a `GcWeak` so the map doesn't keep libraries alive.
-    pub fn register_library(
-        &mut self,
-        movie: Gc<'gc, SwfMovie>,
-        library: Gc<'gc, RefLock<MovieLibrary<'gc>>>,
-    ) {
-        self.movie_libraries
-            .0
-            .insert(Gc::as_ptr(movie), Gc::downgrade(library));
-    }
-
-    /// Get the MovieLibrary Gc for a given movie, via the reverse-lookup map.
-    pub fn library_for_movie_gc(
-        &self,
-        movie: Gc<'gc, SwfMovie>,
-        mc: &Mutation<'gc>,
-    ) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
-        self.movie_libraries
-            .0
-            .get(&Gc::as_ptr(movie))
-            .and_then(|weak| weak.upgrade(mc))
-    }
-
-    /// Returns all known movies. Note: this includes movies whose libraries may have been collected.
-    pub fn known_movies(&self, mc: &Mutation<'gc>) -> Vec<Gc<'gc, SwfMovie>> {
-        self.movie_libraries
-            .0
-            .iter()
-            .filter_map(|(_, weak)| weak.upgrade(mc))
-            .map(|lib| lib.borrow().movie())
-            .collect()
     }
 
     /// Returns the default Font implementations behind the built in names (ie `_sans`)
@@ -629,16 +575,14 @@ impl<'gc> Library<'gc> {
         font_type: FontType,
         is_bold: bool,
         is_italic: bool,
-        movie: Option<Gc<'gc, SwfMovie>>,
-        mc: &Mutation<'gc>,
+        library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
     ) -> Option<Font<'gc>> {
         let query = FontQuery::new(font_type, name.to_owned(), is_bold, is_italic);
         if let Some(font) = self.global_fonts.find(&query) {
             return Some(font);
         }
-        if let Some(movie) = movie
-            && let Some(library_gc) = self.library_for_movie_gc(movie, mc)
-            && let Some(font) = library_gc.borrow().fonts.find(&query)
+        if let Some(library) = library
+            && let Some(font) = library.borrow().fonts.find(&query)
         {
             return Some(font);
         }

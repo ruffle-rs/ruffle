@@ -17,6 +17,7 @@ use crate::avm1::globals::netconnection::NetConnection;
 use crate::avm1::globals::shared_object::SharedObject;
 use crate::avm1::globals::sound::Sound;
 use crate::avm1::globals::style_sheet::StyleSheetObject;
+use crate::avm1::globals::text_snapshot::TextSnapshotObject;
 use crate::avm1::globals::transform::TransformObject;
 use crate::avm1::globals::xml::Xml;
 use crate::avm1::globals::xml_socket::XmlSocket;
@@ -95,6 +96,7 @@ pub enum NativeObject<'gc> {
     LocalConnection(LocalConnection<'gc>),
     Sound(Sound<'gc>),
     StyleSheet(StyleSheetObject<'gc>),
+    TextSnapshot(TextSnapshotObject<'gc>),
 }
 
 const _: () = assert!(size_of::<NativeObject<'_>>() <= size_of::<[usize; 2]>());

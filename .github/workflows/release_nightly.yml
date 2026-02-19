@@ -46,7 +46,7 @@ jobs:
         uses: baptiste0928/cargo-install@v3
         with:
           crate: cargo-edit
-          version: '^0.12'
+          version: '^0.13'
 
       - name: Install cargo-get
         uses: baptiste0928/cargo-install@v3
@@ -396,7 +396,7 @@ jobs:
         uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
-          tag: version_124
+          tag: version_126
           name: wasm-opt
 
       - name: Install node packages

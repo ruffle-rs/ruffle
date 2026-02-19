@@ -532,6 +532,9 @@ fn get_text_extent<'gc>(
         width.unwrap_or(0.0),
         0.0,
     );
+    if let Some(lib) = activation.base_clip().library() {
+        temp_edittext.set_library(activation.gc(), lib);
+    }
 
     temp_edittext.set_autosize(AutoSizeMode::Left, activation.context);
     temp_edittext.set_word_wrap(width.is_some(), activation.context);

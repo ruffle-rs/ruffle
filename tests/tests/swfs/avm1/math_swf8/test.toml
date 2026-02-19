@@ -1,0 +1,7 @@
+num_frames = 1
+known_failure = true
+
+[approximations]
+epsilon = 1e-14 # roughly 50 ulps
+# We only want to apply approximations to non-integers.
+number_patterns = ["(\\d+\\.\\d+)"]

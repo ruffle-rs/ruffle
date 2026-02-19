@@ -2,12 +2,49 @@ use crate::character::Character;
 use crate::context::UpdateContext;
 use crate::debug_ui::handle::MovieHandle;
 use crate::debug_ui::{ItemToSave, Message};
+use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
+use crate::library::MovieLibrary;
 use crate::tag_utils::SwfMovie;
 use egui::{Align, Button, CollapsingHeader, Grid, Id, Layout, TextEdit, Ui, Window};
 use egui_extras::{Column, TableBuilder};
 use gc_arena::Gc;
+use gc_arena::lock::RefLock;
+use std::collections::HashSet;
 use swf::CharacterId;
 use url::Url;
+
+/// Collect all unique movies from the display tree by walking from the stage.
+fn collect_known_movies<'gc>(context: &UpdateContext<'gc>) -> Vec<Gc<'gc, SwfMovie>> {
+    let mut movies = Vec::new();
+    let mut seen = HashSet::new();
+    fn walk<'gc>(
+        obj: DisplayObject<'gc>,
+        movies: &mut Vec<Gc<'gc, SwfMovie>>,
+        seen: &mut HashSet<*const SwfMovie>,
+    ) {
+        let movie = obj.movie();
+        if seen.insert(Gc::as_ptr(movie)) {
+            movies.push(movie);
+        }
+        if let Some(container) = obj.as_container() {
+            for i in 0..container.num_children() {
+                if let Some(child) = container.child_by_index(i) {
+                    walk(child, movies, seen);
+                }
+            }
+        }
+    }
+    walk(context.stage.into(), &mut movies, &mut seen);
+    movies
+}
+
+/// Find the library for a given movie by searching the display tree.
+fn find_library_for_movie<'gc>(
+    context: &UpdateContext<'gc>,
+    movie: Gc<'gc, SwfMovie>,
+) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
+    context.library_for_movie(movie)
+}
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
 enum Panel {
@@ -30,8 +67,8 @@ impl MovieListWindow {
     ) -> bool {
         let mut keep_open = true;
 
-        // Pre-collect movies before entering egui closures
-        let movies = context.library.known_movies(context.gc());
+        // Pre-collect movies by walking the display tree
+        let movies = collect_known_movies(context);
 
         Window::new("Known Movie List")
             .open(&mut keep_open)
@@ -159,7 +196,7 @@ impl MovieWindow {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Information, "Information");
 
-                    if let Some(library) = context.library.library_for_movie_gc(movie, context.gc())
+                    if let Some(library) = find_library_for_movie(context, movie)
                         && !library.borrow().characters().is_empty()
                     {
                         ui.selectable_value(&mut self.open_panel, Panel::Characters, "Characters");
@@ -182,9 +219,7 @@ impl MovieWindow {
         movie: Gc<'gc, SwfMovie>,
     ) {
         // Cloned up here so we can still use context afterwards
-        let (characters, export_characters) = context
-            .library
-            .library_for_movie_gc(movie, context.gc())
+        let (characters, export_characters) = find_library_for_movie(context, movie)
             .map(|l| {
                 let l = l.borrow();
                 (l.characters().clone(), l.export_characters().clone())

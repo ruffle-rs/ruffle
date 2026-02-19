@@ -1,10 +1,11 @@
 use crate::avm2::error::{
-    make_error_1010, make_error_1085, make_error_1088, make_error_1118, make_unknown_ns_error,
-    make_xml_error,
+    XmlErrorCode, make_error_1010, make_error_1085, make_error_1088, make_error_1118,
+    make_unknown_ns_error, make_xml_error,
 };
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::multiname::NamespaceSet;
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
-use crate::avm2::{Activation, Error, Multiname, Value};
+use crate::avm2::{Activation, Error, Multiname, Namespace, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
 
 use gc_arena::barrier::unlock;
@@ -15,17 +16,76 @@ use gc_arena::{
 
 use quick_xml::{
     Error as XmlError, NsReader,
-    errors::IllFormedError,
-    events::{BytesStart, Event},
+    errors::{IllFormedError, SyntaxError as XmlSyntaxError},
+    events::{BytesStart, Event, attributes::AttrError as XmlAttrError},
     name::ResolveResult,
 };
-use ruffle_common::xml::custom_unescape;
+use ruffle_common::xml::avm2_unescape;
 use ruffle_macros::istr;
 
 use std::cell::{Ref, RefMut};
 use std::fmt::{self, Debug};
 
 mod is_xml_name;
+
+/// Gets the E4X namespace for a Multiname, using the default XML namespace
+/// from the current activation if no explicit namespace is specified.
+pub fn namespace_for_multiname<'gc>(
+    name: &Multiname<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Option<E4XNamespace<'gc>> {
+    if let Some(uri) = name.explicit_namespace() {
+        Some(E4XNamespace::new_uri(uri))
+    } else if let Some(uri) = activation.default_xml_namespace() {
+        Some(E4XNamespace::new_uri(uri))
+    } else {
+        None
+    }
+}
+
+pub fn handle_input_multiname<'gc>(
+    name: Multiname<'gc>,
+    activation: &mut Activation<'_, 'gc>,
+) -> Multiname<'gc> {
+    // Special case to handle code like: xml["@attr"]
+    // FIXME: Figure out the exact semantics.
+    // NOTE: It is very important the code within the if-statement is not run
+    // when the passed name has the Any namespace. Otherwise, we run the risk of
+    // creating a NamespaceSet::Multiple with an Any namespace in it.
+    if !name.has_explicit_namespace()
+        && !name.is_attribute()
+        && !name.is_any_name()
+        && !name.is_any_namespace()
+        && let Some(mut new_name) = name
+            .local_name()
+            .map(|name| string_to_multiname(activation, name))
+    {
+        // If there's a default XML namespace, use it exclusively for property access.
+        // Otherwise, copy the namespaces from the previous name and include public.
+        if !new_name.is_any_namespace() {
+            if let Some(uri) = activation.default_xml_namespace() {
+                let ns = Namespace::package(
+                    uri,
+                    activation.avm2().root_api_version,
+                    activation.strings(),
+                );
+                new_name.set_ns(NamespaceSet::single(ns));
+            } else {
+                let mut ns = name.namespace_set().to_vec();
+
+                if !name.contains_public_namespace() {
+                    ns.push(activation.avm2().namespaces.public_all());
+                }
+
+                new_name.set_ns(NamespaceSet::new(ns, activation.gc()));
+            }
+        }
+
+        return new_name;
+    }
+
+    name
+}
 
 pub use is_xml_name::is_xml_name;
 
@@ -81,16 +141,16 @@ impl<'gc> E4XNamespace<'gc> {
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<NamespaceObject<'gc>, Error<'gc>> {
-        let args = if let Some(prefix) = self.prefix {
-            vec![prefix.into(), self.uri.into()]
+        let args: &[Value<'gc>] = if let Some(prefix) = self.prefix {
+            &[prefix.into(), self.uri.into()]
         } else {
-            vec![self.uri.into()]
+            &[self.uri.into()]
         };
         let obj = activation
             .avm2()
             .classes()
             .namespace
-            .construct(activation, &args)?;
+            .construct(activation, args)?;
 
         Ok(obj
             .as_object()
@@ -784,13 +844,31 @@ impl<'gc> E4XNode<'gc> {
                 {
                     return Err(make_error_1088(activation));
                 }
-                Err(err) => return Err(make_xml_error(activation, err)),
+                Err(XmlError::InvalidAttr(XmlAttrError::Duplicated(_, _))) => {
+                    return Err(make_xml_error(activation, XmlErrorCode::DuplicateAttribute));
+                }
+                Err(XmlError::Syntax(syntax_error)) => {
+                    let code = match syntax_error {
+                        XmlSyntaxError::UnclosedPIOrXmlDecl => {
+                            XmlErrorCode::UnterminatedProcessingInstruction
+                        }
+                        XmlSyntaxError::UnclosedComment => XmlErrorCode::UnterminatedComment,
+                        XmlSyntaxError::UnclosedDoctype => XmlErrorCode::UnterminatedDoctype,
+                        XmlSyntaxError::UnclosedCData => XmlErrorCode::UnterminatedCData,
+                        XmlSyntaxError::UnclosedTag => XmlErrorCode::ElementMalformed,
+                        // TODO: handle other errors properly
+                        _ => XmlErrorCode::ElementMalformed,
+                    };
+
+                    return Err(make_xml_error(activation, code));
+                }
+                // TODO: handle other errors properly
+                _ => return Err(make_xml_error(activation, XmlErrorCode::ElementMalformed)),
             };
 
             match &event {
                 Event::Start(bs) => {
-                    let child =
-                        E4XNode::from_start_event(activation, &parser, bs, parser.decoder())?;
+                    let child = E4XNode::from_start_event(activation, &parser, bs)?;
 
                     if let Some(current_tag) = open_tags.last_mut() {
                         current_tag.append_child(activation.gc(), child);
@@ -798,8 +876,7 @@ impl<'gc> E4XNode<'gc> {
                     open_tags.push(child);
                 }
                 Event::Empty(bs) => {
-                    let node =
-                        E4XNode::from_start_event(activation, &parser, bs, parser.decoder())?;
+                    let node = E4XNode::from_start_event(activation, &parser, bs)?;
                     push_childless_node(node, &mut open_tags, &mut top_level, activation);
                 }
                 Event::End(_) => {
@@ -810,8 +887,10 @@ impl<'gc> E4XNode<'gc> {
                 }
                 Event::Text(bt) => {
                     handle_text_cdata(
-                        custom_unescape(bt, parser.decoder())
-                            .map_err(|e| make_xml_error(activation, e))?
+                        avm2_unescape(bt)
+                            .map_err(|_| {
+                                make_xml_error(activation, XmlErrorCode::ElementMalformed)
+                            })?
                             .as_bytes(),
                         ignore_white,
                         &mut open_tags,
@@ -836,9 +915,11 @@ impl<'gc> E4XNode<'gc> {
                     if ignore_comments {
                         continue;
                     }
-                    let text = custom_unescape(bt, parser.decoder())
-                        .map_err(|e| make_xml_error(activation, e))?;
-                    let text = AvmString::new_utf8_bytes(activation.gc(), text.as_bytes());
+
+                    let text = avm2_unescape(bt)
+                        .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
+                    let text = AvmString::new_utf8(activation.gc(), text);
+
                     let node = E4XNode(Gc::new(
                         activation.gc(),
                         E4XNodeData {
@@ -856,8 +937,10 @@ impl<'gc> E4XNode<'gc> {
                     if ignore_processing_instructions {
                         continue;
                     }
-                    let text = custom_unescape(bt, parser.decoder())
-                        .map_err(|e| make_xml_error(activation, e))?;
+
+                    let text = avm2_unescape(bt)
+                        .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
+
                     let (name, value) = if let Some((name, value)) = text.split_once(' ') {
                         (
                             AvmString::new_utf8_bytes(activation.gc(), name.as_bytes()),
@@ -910,18 +993,26 @@ impl<'gc> E4XNode<'gc> {
         activation: &mut Activation<'_, 'gc>,
         parser: &NsReader<&[u8]>,
         bs: &BytesStart<'_>,
-        decoder: quick_xml::Decoder,
     ) -> Result<Self, Error<'gc>> {
         let mut attribute_nodes = Vec::new();
         let mut namespaces = Vec::new();
 
-        let attributes: Result<Vec<_>, _> = bs.attributes().collect();
-        for attribute in
-            attributes.map_err(|e| make_xml_error(activation, XmlError::InvalidAttr(e)))?
-        {
-            let value_str = custom_unescape(&attribute.value, decoder)
-                .map_err(|e| make_xml_error(activation, e))?;
-            let value = AvmString::new_utf8_bytes(activation.gc(), value_str.as_bytes());
+        let attributes = bs
+            .attributes()
+            .collect::<Result<Vec<_>, XmlAttrError>>()
+            .map_err(|e| {
+                let code = match e {
+                    XmlAttrError::Duplicated(_, _) => XmlErrorCode::DuplicateAttribute,
+                    _ => XmlErrorCode::ElementMalformed,
+                };
+
+                make_xml_error(activation, code)
+            })?;
+
+        for attribute in attributes {
+            let value_str = avm2_unescape(&attribute.value)
+                .map_err(|_| make_xml_error(activation, XmlErrorCode::ElementMalformed))?;
+            let value = AvmString::new_utf8(activation.gc(), value_str);
 
             let (ns, local_name) = parser.resolve_attribute(attribute.key);
 
@@ -989,7 +1080,23 @@ impl<'gc> E4XNode<'gc> {
             ResolveResult::Unknown(ns) => {
                 return Err(make_unknown_ns_error(activation, &ns, name));
             }
-            ResolveResult::Unbound => None,
+            ResolveResult::Unbound => {
+                // Check if there's an explicit xmlns="" declaration in this element.
+                // quick-xml returns Unbound for xmlns="", but Flash treats it as bound
+                // to the empty namespace. Look for a default namespace declaration
+                // (prefix is empty string) in the namespaces we've collected.
+                if let Some(local_ns) = namespaces.iter().find(|ns| ns.prefix == Some(istr!(""))) {
+                    Some(E4XNamespace {
+                        prefix: None,
+                        uri: local_ns.uri,
+                    })
+                } else if let Some(uri) = activation.default_xml_namespace() {
+                    // Use the default XML namespace set by `default xml namespace = ...`
+                    Some(E4XNamespace { prefix: None, uri })
+                } else {
+                    None
+                }
+            }
         };
 
         let result = E4XNode(Gc::new(

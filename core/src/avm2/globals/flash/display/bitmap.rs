@@ -14,6 +14,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::character::Character;
 use crate::display_object::Bitmap;
+use crate::display_object::TDisplayObject;
 
 pub fn bitmap_allocator<'gc>(
     class: ClassObject<'gc>,
@@ -34,11 +35,9 @@ pub fn bitmap_allocator<'gc>(
                 activation.caller_movie_or_root(),
             )
             .into();
-            return Ok(initialize_for_allocator(
-                activation.context,
-                display_object,
-                orig_class,
-            ));
+            return Ok(
+                initialize_for_allocator(activation.context, display_object, orig_class).into(),
+            );
         }
 
         if let Some((symbol, lib)) = class.symbol_class(activation.context.gc_context) {
@@ -55,12 +54,11 @@ pub fn bitmap_allocator<'gc>(
                     false,
                     activation.caller_movie_or_root(),
                 );
+                child.set_library(activation.gc(), lib);
 
-                return Ok(initialize_for_allocator(
-                    activation.context,
-                    child.into(),
-                    orig_class,
-                ));
+                return Ok(
+                    initialize_for_allocator(activation.context, child.into(), orig_class).into(),
+                );
             }
         }
         class_def = class.super_class();

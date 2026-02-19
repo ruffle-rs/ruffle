@@ -247,6 +247,13 @@ impl<'gc> Method<'gc> {
         self.0.txunit.movie()
     }
 
+    /// Get the library associated with this method's translation unit.
+    pub fn owner_library(
+        self,
+    ) -> Option<Gc<'gc, gc_arena::lock::RefLock<crate::library::MovieLibrary<'gc>>>> {
+        self.0.txunit.library()
+    }
+
     /// Get a reference to the ABC method body entry this refers to.
     ///
     /// Some methods do not have bodies; this returns `None` in that case.
@@ -351,6 +358,12 @@ impl<'gc> Method<'gc> {
     /// Check if this method needs `arguments`.
     pub fn needs_arguments_object(self) -> bool {
         self.method().flags.contains(AbcMethodFlags::NEED_ARGUMENTS)
+    }
+
+    /// Check if this method sets the default XML namespace (uses dxns/dxnslate opcodes).
+    /// Methods with this flag are allowed to use the dxns and dxnslate opcodes.
+    pub fn sets_dxns(self) -> bool {
+        self.method().flags.contains(AbcMethodFlags::SET_DXNS)
     }
 
     pub fn method_kind(&self) -> &MethodKind<'gc> {

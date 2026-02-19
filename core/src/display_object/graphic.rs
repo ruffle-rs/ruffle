@@ -4,15 +4,16 @@ use crate::avm2::{
     StageObject as Avm2StageObject,
 };
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::DisplayObjectBase;
+use crate::display_object::{BoundsMode, DisplayObjectBase};
 use crate::drawing::Drawing;
-use crate::library::MovieLibrarySource;
+use crate::library::{MovieLibrary, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
+use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
@@ -50,11 +51,8 @@ impl<'gc> Graphic<'gc> {
         context: &mut UpdateContext<'gc>,
         swf_shape: swf::Shape,
         movie: Gc<'gc, SwfMovie>,
+        library: Gc<'gc, RefLock<MovieLibrary<'gc>>>,
     ) -> Self {
-        let library = context
-            .library
-            .library_for_movie_gc(movie, context.gc())
-            .unwrap();
         let library = library.borrow();
         let shared = GraphicShared {
             id: swf_shape.id,
@@ -138,7 +136,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.0.shared.get().id
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
         if let Some(drawing) = self.0.drawing.get() {
             drawing.borrow().self_bounds()
         } else {
@@ -179,13 +177,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
         // Static assets like Graphics can replace themselves via a PlaceObject tag with PlaceObjectAction::Replace.
         // This does not create a new instance, but instead swaps out the underlying static data to point to the new art.
-        if let Some(new_graphic) = context
-            .library
-            .library_for_movie_gc(self.movie(), context.gc())
-            .unwrap()
-            .borrow()
-            .get_graphic(id)
-        {
+        if let Some(new_graphic) = self.library().unwrap().borrow().get_graphic(id) {
             self.set_shared(context.gc(), new_graphic.0.shared.get());
         } else {
             tracing::warn!("PlaceObject: expected Graphic at character ID {}", id);
@@ -193,8 +185,12 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
         self.invalidate_cached_bitmap();
     }
 
-    fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
-        if !context.is_offscreen && !self.world_bounds().intersects(&context.stage.view_bounds()) {
+    fn render_self(self, context: &mut RenderContext) {
+        if !context.is_offscreen
+            && !self
+                .world_bounds(BoundsMode::Engine)
+                .intersects(&context.stage.view_bounds())
+        {
             // Off-screen; culled
             return;
         }
@@ -216,7 +212,7 @@ impl<'gc> TDisplayObject<'gc> for Graphic<'gc> {
     ) -> bool {
         // Transform point to local coordinates and test.
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
-            && self.world_bounds().contains(point)
+            && self.world_bounds(BoundsMode::Engine).contains(point)
         {
             let Some(local_matrix) = self.global_to_local_matrix() else {
                 return false;

@@ -461,7 +461,7 @@ impl<'gc> Avm2<'gc> {
         name: AvmString<'gc>,
         id: u16,
     ) -> Result<ClassObject<'gc>, Error<'gc>> {
-        let movie = movie_clip.movie();
+        let _movie = movie_clip.movie();
 
         let class_object = domain
             .get_defined_value_handling_vector(activation, name)?
@@ -471,11 +471,7 @@ impl<'gc> Avm2<'gc> {
 
         let class = class_object.inner_class_definition();
 
-        let library = activation
-            .context
-            .library
-            .library_for_movie_gc(movie, activation.gc())
-            .unwrap();
+        let library = movie_clip.library().unwrap();
         let character = library.borrow().character_by_id(id);
 
         if let Some(character) = character {
@@ -513,6 +509,7 @@ impl<'gc> Avm2<'gc> {
         flags: DoAbc2Flag,
         domain: Domain<'gc>,
         movie: Gc<'gc, SwfMovie>,
+        library: Option<Gc<'gc, gc_arena::lock::RefLock<crate::library::MovieLibrary<'gc>>>>,
     ) -> Result<Option<Script<'gc>>, Error<'gc>> {
         let mut reader = Reader::new(data);
         let abc = match reader.read() {
@@ -533,7 +530,7 @@ impl<'gc> Avm2<'gc> {
         }
 
         let num_scripts = abc.scripts.len();
-        let tunit = TranslationUnit::from_abc(abc, domain, name, movie, activation.gc());
+        let tunit = TranslationUnit::from_abc(abc, domain, name, movie, library, activation.gc());
         tunit.load_classes(&mut activation)?;
         for i in 0..num_scripts {
             tunit.load_script(i as u32, &mut activation)?;
@@ -563,7 +560,7 @@ impl<'gc> Avm2<'gc> {
         // domain using `activation.domain()`
         activation.set_outer(ScopeChain::new(domain));
 
-        let tunit = TranslationUnit::from_abc(abc, domain, None, movie, activation.gc());
+        let tunit = TranslationUnit::from_abc(abc, domain, None, movie, None, activation.gc());
 
         globals::init_early_classes(&mut activation, tunit).expect("Early classes should load");
 

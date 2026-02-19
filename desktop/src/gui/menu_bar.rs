@@ -330,7 +330,7 @@ impl MenuBar {
         ui.menu_button(text(locale, "view-menu"), |ui| {
             ui.add_enabled_ui(player.is_some(), |ui| {
                 ui.menu_button(text(locale, "scale-mode"), |ui| {
-                    let items = vec![
+                    let items = [
                         (
                             "scale-mode-noscale",
                             "scale-mode-noscale-tooltip",
@@ -414,7 +414,7 @@ impl MenuBar {
                 ui.separator();
 
                 ui.menu_button(text(locale, "quality"), |ui| {
-                    let items = vec![
+                    let items = [
                         ("quality-low", StageQuality::Low),
                         ("quality-medium", StageQuality::Medium),
                         ("quality-high", StageQuality::High),

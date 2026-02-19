@@ -193,6 +193,7 @@ impl Eq for DomainHandle {}
 // Movie
 
 #[derive(Clone)]
+#[expect(clippy::type_complexity)]
 pub struct MovieHandle {
     root: DynamicRoot<Rootable![Gc<'_, crate::tag_utils::SwfMovie>]>,
     ptr: *const crate::tag_utils::SwfMovie,

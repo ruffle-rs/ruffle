@@ -51,12 +51,14 @@ pub fn loader_allocator<'gc>(
         None,
         false,
     )?;
+
     loader.set_slot(
         loader_slots::_CONTENT_LOADER_INFO,
         loader_info.into(),
         activation,
     )?;
-    Ok(loader)
+
+    Ok(loader.into())
 }
 
 pub fn load<'gc>(
@@ -88,7 +90,7 @@ pub fn load<'gc>(
     }
 
     // Unload the loader, in case something was already loaded.
-    loader_info.unload(activation);
+    loader_info.unload(activation.context);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let movie = *activation.context.root_swf;
@@ -256,7 +258,7 @@ pub fn load_bytes<'gc>(
     }
 
     // Unload the loader, in case something was already loaded.
-    loader_info.unload(activation);
+    loader_info.unload(activation.context);
 
     // This is a dummy MovieClip, which will get overwritten in `Loader`
     let movie = *activation.context.root_swf;
@@ -307,7 +309,7 @@ pub fn unload<'gc>(
 
     let loader_info = loader_info.as_loader_info_object().unwrap();
 
-    loader_info.unload(activation);
+    loader_info.unload(activation.context);
 
     Ok(Value::Undefined)
 }

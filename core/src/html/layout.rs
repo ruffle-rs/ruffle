@@ -6,8 +6,10 @@ use crate::font::{DefaultFont, EvalParameters, Font, FontLike, FontSet, FontType
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::html::wrap_line;
+use crate::library::MovieLibrary;
 use crate::string::WStr;
 use crate::tag_utils::SwfMovie;
+use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc};
 use std::cmp::{Ordering, max, min};
 use std::fmt::{Debug, Formatter};
@@ -20,6 +22,9 @@ use swf::{Rectangle, Twips};
 pub struct LayoutContext<'a, 'gc> {
     /// The movie this layout context is pulling fonts from.
     movie: Gc<'gc, SwfMovie>,
+
+    /// The movie library for font lookups.
+    library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
 
     /// Whether user input is allowed.
     is_input: bool,
@@ -103,6 +108,7 @@ pub struct LayoutContext<'a, 'gc> {
 impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn new(
         movie: Gc<'gc, SwfMovie>,
+        library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
         max_bounds: Twips,
         text: &'a WStr,
         is_input: bool,
@@ -111,6 +117,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ) -> Self {
         Self {
             movie,
+            library,
             cursor: Default::default(),
             font_set: None,
             text,
@@ -454,10 +461,10 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.has_line_break = true;
 
         let font_size = Twips::from_pixels(self.current_line_span.font.size);
-        let font = self.font_set.unwrap();
+        let metrics = self.font_set.unwrap().metrics();
         self.max_font_size = font_size;
-        self.max_ascent = font.get_baseline_for_height(font_size);
-        self.max_descent = font.get_descent_for_height(font_size);
+        self.max_ascent = metrics.ascent(font_size);
+        self.max_descent = metrics.descent(font_size);
         self.max_leading = Twips::from_pixels(span.leading);
     }
 
@@ -489,9 +496,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// Enter a new span.
     fn newspan(&mut self, first_span: &TextSpan) {
         let font_size = Twips::from_pixels(first_span.font.size);
-        let font = self.font_set.unwrap();
-        let ascent = font.get_baseline_for_height(font_size);
-        let descent = font.get_descent_for_height(font_size);
+        let metrics = self.font_set.unwrap().metrics();
+        let ascent = metrics.ascent(font_size);
+        let descent = metrics.descent(font_size);
         let leading = Twips::from_pixels(first_span.leading);
         if self.is_start_of_line() {
             self.current_line_span = first_span.clone();
@@ -546,8 +553,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     self.font_type,
                     span.style.bold,
                     span.style.italic,
-                    Some(self.movie),
-                    context.gc(),
+                    self.library,
                 )
                 .filter(|f| f.has_glyphs())
         {
@@ -679,8 +685,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         let font_set = self.font_set.expect("text fragment requires a font");
         let params = EvalParameters::from_span(span);
-        let ascent = font_set.get_baseline_for_height(params.height());
-        let descent = font_set.get_descent_for_height(params.height());
+        let metrics = font_set.metrics();
+        let ascent = metrics.ascent(params.height());
+        let descent = metrics.descent(params.height());
         let text_width = font_set.measure(text, params);
         let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
@@ -709,8 +716,9 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         );
 
         let params = EvalParameters::from_span(span);
-        let ascent = bullet_font.get_baseline_for_height(params.height());
-        let descent = bullet_font.get_descent_for_height(params.height());
+        let metrics = bullet_font.metrics();
+        let ascent = metrics.ascent(params.height());
+        let descent = metrics.descent(params.height());
         let bullet = WStr::from_units(&[0x2022u16]);
         let text_width = bullet_font.measure(bullet, params);
         let box_origin = bullet_cursor - (Twips::ZERO, ascent).into();
@@ -799,10 +807,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 }
 
 /// Construct a new layout from text spans.
+#[expect(clippy::too_many_arguments)]
 pub fn lower_from_text_spans<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
     movie: Gc<'gc, SwfMovie>,
+    library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
     requested_width: Option<Twips>,
     is_input: bool,
     is_word_wrap: bool,
@@ -816,6 +826,7 @@ pub fn lower_from_text_spans<'gc>(
             fs,
             context,
             movie,
+            library,
             Twips::ZERO,
             is_input,
             false,
@@ -832,6 +843,7 @@ pub fn lower_from_text_spans<'gc>(
         fs,
         context,
         movie,
+        library,
         requested_width,
         is_input,
         is_word_wrap,
@@ -839,10 +851,12 @@ pub fn lower_from_text_spans<'gc>(
     )
 }
 
+#[expect(clippy::too_many_arguments)]
 fn lower_from_text_spans_known_width<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
     movie: Gc<'gc, SwfMovie>,
+    library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
     bounds: Twips,
     is_input: bool,
     is_word_wrap: bool,
@@ -850,6 +864,7 @@ fn lower_from_text_spans_known_width<'gc>(
 ) -> Layout<'gc> {
     let mut layout_context = LayoutContext::new(
         movie,
+        library,
         bounds,
         fs.displayed_text(),
         is_input,
@@ -864,7 +879,7 @@ fn lower_from_text_spans_known_width<'gc>(
 
 /// A `Layout` represents a fully laid-out text field.
 /// It consists of [`LayoutLine`]s.
-#[derive(Clone, Debug, Collect)]
+#[derive(Clone, Debug, Collect, Default)]
 #[collect(no_drop)]
 pub struct Layout<'gc> {
     #[collect(require_static)]

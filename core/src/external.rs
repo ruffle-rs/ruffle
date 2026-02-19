@@ -10,6 +10,7 @@ use crate::avm2::object::{
 };
 use crate::avm2::{Avm2, FunctionArgs, Value as Avm2Value};
 use crate::context::UpdateContext;
+use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::BTreeMap;
@@ -307,8 +308,10 @@ impl<'gc> Callback<'gc> {
             }
             Callback::Avm2 { method } => {
                 let domain = context
-                    .library
-                    .library_for_movie_gc(*context.root_swf, context.gc())
+                    .stage
+                    .root_clip()
+                    .unwrap()
+                    .library()
                     .unwrap()
                     .borrow()
                     .avm2_domain();
@@ -366,7 +369,7 @@ pub struct NullExternalInterfaceProvider;
 #[collect(no_drop)]
 pub struct ExternalInterface<'gc> {
     #[collect(require_static)]
-    provider: Option<Rc<Box<dyn ExternalInterfaceProvider>>>,
+    provider: Option<Rc<dyn ExternalInterfaceProvider>>,
     callbacks: BTreeMap<String, Callback<'gc>>,
     #[collect(require_static)]
     fs_commands: Box<dyn FsCommandProvider>,
@@ -378,14 +381,14 @@ impl<'gc> ExternalInterface<'gc> {
         fs_commands: Box<dyn FsCommandProvider>,
     ) -> Self {
         Self {
-            provider: provider.map(Rc::new),
+            provider: provider.map(Rc::from),
             callbacks: Default::default(),
             fs_commands,
         }
     }
 
     pub fn set_provider(&mut self, provider: Option<Box<dyn ExternalInterfaceProvider>>) {
-        self.provider = provider.map(Rc::new);
+        self.provider = provider.map(Rc::from);
     }
 
     pub fn add_callback(&mut self, name: String, callback: Callback<'gc>) {

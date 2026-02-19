@@ -413,7 +413,7 @@ mod tests {
         ));
     }
 
-    async fn perform_export(
+    fn perform_export(
         output: &Path,
         bundle_name: String,
         player_options: PlayerOptions,
@@ -444,8 +444,7 @@ mod tests {
             player_options.clone(),
             movie_url.clone(),
             Vec::new(),
-        )
-        .await;
+        );
         assert!(result.is_ok());
 
         let bundle = open_bundle(&output_path);
@@ -474,8 +473,7 @@ mod tests {
             PlayerOptions::default(),
             url_from_path(&movie_path),
             Vec::new(),
-        )
-        .await;
+        );
         assert!(result.is_err());
 
         assert!(
@@ -500,9 +498,8 @@ mod tests {
             bundle_name.clone(),
             player_options.clone(),
             url_from_path(&movie_path),
-            vec![movie_path.clone()],
-        )
-        .await;
+            vec![movie_path],
+        );
         assert!(result.is_ok());
 
         let bundle = open_bundle(&output_path);
@@ -536,14 +533,8 @@ mod tests {
             "multiple_files".to_owned(),
             PlayerOptions::default(),
             url_from_path(&movie_path),
-            vec![
-                movie_path.clone(),
-                file_a.clone(),
-                file_c.clone(),
-                file_b.clone(),
-            ],
-        )
-        .await;
+            vec![movie_path, file_a, file_c, file_b],
+        );
         assert!(result.is_ok());
 
         let bundle = open_bundle(&output_path);
@@ -579,9 +570,8 @@ mod tests {
             "root_swf_in_subdir".to_owned(),
             PlayerOptions::default(),
             url_from_path(&movie_path),
-            vec![movie_path.clone(), file_other.clone()],
-        )
-        .await;
+            vec![movie_path, file_other],
+        );
         assert!(result.is_ok());
 
         let bundle = open_bundle(&output_path);
@@ -617,8 +607,7 @@ mod tests {
             PlayerOptions::default(),
             url_from_path(&movie_path),
             vec![movie_path],
-        )
-        .await;
+        );
         assert!(result.is_err());
 
         assert!(
@@ -646,8 +635,7 @@ mod tests {
             player_options.clone(),
             url("http://example.com"),
             Vec::new(),
-        )
-        .await;
+        );
         assert!(result.is_ok());
 
         let bundle = open_bundle(&output_path);

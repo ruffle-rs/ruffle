@@ -1,10 +1,12 @@
 //! Object representation for XML objects
 
 use crate::avm2::activation::Activation;
-use crate::avm2::e4x::{E4XNamespace, E4XNode, E4XNodeKind, string_to_multiname};
+use crate::avm2::e4x::{
+    E4XNamespace, E4XNode, E4XNodeKind, handle_input_multiname, namespace_for_multiname,
+    string_to_multiname,
+};
 use crate::avm2::error::make_error_1087;
 use crate::avm2::function::FunctionArgs;
-use crate::avm2::multiname::NamespaceSet;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, NamespaceObject, Object, TObject, XmlListObject};
 use crate::avm2::string::AvmString;
@@ -294,8 +296,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
         multiname: &Multiname<'gc>,
     ) -> Option<XmlListObject<'gc>> {
+        let multiname = handle_input_multiname(multiname.clone(), activation);
         let mut descendants = Vec::new();
-        self.0.node.get().descendants(multiname, &mut descendants);
+
+        self.0.node.get().descendants(&multiname, &mut descendants);
 
         let list = XmlListObject::new_with_children(activation, descendants, None, None);
         // NOTE: avmplus does not set a target property/object here, but if there was at least one child
@@ -537,7 +541,7 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 // 12.b.iii. Create a new XML object y with y.[[Name]] = name, y.[[Class]] = "element" and y.[[Parent]] = x
                 let node = E4XNode::element(
                     activation.gc(),
-                    name.explicit_namespace().map(E4XNamespace::new_uri),
+                    namespace_for_multiname(&name, activation),
                     name.local_name().unwrap(),
                     Some(self_node),
                 );
@@ -684,40 +688,4 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         // 7. Return true.
         Ok(true)
     }
-}
-
-fn handle_input_multiname<'gc>(
-    name: Multiname<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Multiname<'gc> {
-    // Special case to handle code like: xml["@attr"]
-    // FIXME: Figure out the exact semantics.
-    // NOTE: It is very important the code within the if-statement is not run
-    // when the passed name has the Any namespace. Otherwise, we run the risk of
-    // creating a NamespaceSet::Multiple with an Any namespace in it.
-    if !name.has_explicit_namespace()
-        && !name.is_attribute()
-        && !name.is_any_name()
-        && !name.is_any_namespace()
-    {
-        if let Some(mut new_name) = name
-            .local_name()
-            .map(|name| string_to_multiname(activation, name))
-        {
-            // Copy the namespaces from the previous name,
-            // but make sure to definitely include the public namespace.
-            if !new_name.is_any_namespace() {
-                let mut ns = Vec::new();
-                ns.extend(name.namespace_set());
-                if !name.contains_public_namespace() {
-                    ns.push(activation.avm2().namespaces.public_all());
-                }
-                new_name.set_ns(NamespaceSet::new(ns, activation.gc()));
-            }
-
-            return new_name;
-        }
-    }
-
-    name
 }

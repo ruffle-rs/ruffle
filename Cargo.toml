@@ -54,18 +54,18 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 naga = { version = "27.0.3", features = ["wgsl-out"] }
 wgpu = "27.0.1"
 egui = "0.33.3"
-clap = { version = "4.5.54", features = ["derive"] }
+clap = { version = "4.5.58", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
-gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "08e08414249d5914dfc3b402d7eadc133e00ce56" }
+gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["hashbrown", "indexmap", "smallvec", "slotmap"] }
 slotmap = "1.1.1"
 async-channel = "2.5.0"
-bitflags = "2.10.0"
-bytemuck = "1.24.0"
+bitflags = "2.11.0"
+bytemuck = "1.25.0"
 chrono = { version = "0.4.43", default-features = false }
 enum-map = "2.7.3"
-flate2 = "1.1.8"
-futures = "0.3.31"
+flate2 = "1.1.9"
+futures = "0.3.32"
 image = { version = "0.25.9", default-features = false }
 js-sys = "0.3.85"
 web-sys = "0.3.85"
@@ -81,11 +81,10 @@ regress = { git = "https://github.com/ruffle-rs/regras3", rev = "5fcb02513c5ab4e
 wasm-bindgen = "=0.2.108"
 walkdir = "2.5.0"
 tokio = "1.49.0"
-# Switching from the `async-std` to the `tokio` runtime, which we depend on anyway.
-rfd = { version = "0.16.0", default-features = false, features = ["tokio", "wayland", "xdg-portal"] }
-memmap2 = "0.9.9"
+rfd = { version = "0.17.2", default-features = false, features = ["wayland", "xdg-portal"] }
+memmap2 = "0.9.10"
 libtest-mimic = "0.8.1"
-regex = "1.12.2"
+regex = "1.12.3"
 toml = "0.9.7"
 vfs = "0.12.2"
 smallvec = { version = "1.15.1", features = ["const_new", "union"] }
@@ -98,12 +97,12 @@ bitstream-io = "4.9.0"
 indicatif = "0.18"
 rayon = "1.11.0"
 sha2 = "0.10.9"
-indexmap = "2.12.0"
+indexmap = "2.13.0"
 fnv = "1.0.7"
-hashbrown = { version = "0.14.5", features = ["raw"] }
+hashbrown = "0.16.1"
 fluent-templates = "0.13.2"
 lzma-rs = "0.3.0"
-tempfile = "3.24.0"
+tempfile = "3.25.0"
 tracing-wasm = "0.2.1"
 
 [workspace.lints.rust]
@@ -120,6 +119,7 @@ unknown_lints = "allow"
 # add a comment explaining why.
 trivially_copy_pass_by_ref = "deny"
 redundant_clone = "deny"
+unused_async = "deny"
 
 # LONG-TERM: These lints are unhelpful.
 manual_map = "allow"             # Less readable: Suggests `opt.map(..)` instead of `if let Some(opt) { .. }`

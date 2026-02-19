@@ -52,7 +52,7 @@ PASSED: mcl.loadClip( MEDIA(vars.txt), 'loadtarget' ) [./MovieClipLoader.as:351]
 PASSED: arguments.length == 1 [./MovieClipLoader.as:234]
 PASSED: target+"" != "" [./MovieClipLoader.as:238]
 PASSED: target == expected.target [./MovieClipLoader.as:239]
-onLoadStart(_level0.loadtarget, file:///C|/Users/dinnerbone/shared/testsuite/actionscript.all/vars.txt) called
+onLoadStart(_level0.loadtarget, file:///vars.txt) called
 PASSED: arguments.length == 3 [./MovieClipLoader.as:249]
 PASSED: target == expected.target [./MovieClipLoader.as:250]
 PASSED: state.onLoadStartCalls == 1 [./MovieClipLoader.as:251]
@@ -83,14 +83,14 @@ PASSED: prog.bytesTotal == bytesTotal [./MovieClipLoader.as:265]
 PASSED: progcount == 2 [./MovieClipLoader.as:268]
 PASSED: progcopy.bytesLoaded == bytesLoaded [./MovieClipLoader.as:269]
 PASSED: progcopy.bytesTotal == bytesTotal [./MovieClipLoader.as:270]
-onLoadComplete(_level0.loadtarget, file:///C|/Users/dinnerbone/shared/testsuite/actionscript.all/vars.txt) called
+onLoadComplete(_level0.loadtarget, file:///vars.txt) called
 PASSED: arguments.length == 2 [./MovieClipLoader.as:280]
 PASSED: target == expected.target [./MovieClipLoader.as:281]
 PASSED: state.onLoadStartCalls == 1 [./MovieClipLoader.as:282]
 PASSED: state.onLoadProgressCalls > 0 [./MovieClipLoader.as:283]
 PASSED: typeof(n) == 'number' [./MovieClipLoader.as:284]
 onLoadComplete second arg is 0 (number)
-onLoadInit(_level0.loadtarget, file:///C|/Users/dinnerbone/shared/testsuite/actionscript.all/vars.txt) called
+onLoadInit(_level0.loadtarget, file:///vars.txt) called
 PASSED: arguments.length == 1 [./MovieClipLoader.as:293]
 PASSED: target == expected.target [./MovieClipLoader.as:294]
 PASSED: state.onLoadStartCalls == 1 [./MovieClipLoader.as:295]
@@ -105,7 +105,7 @@ PASSED: mcl.loadClip( MEDIA(green.jpg), 'loadtarget' ) [./MovieClipLoader.as:393
 PASSED: arguments.length == 1 [./MovieClipLoader.as:234]
 PASSED: target+"" != "" [./MovieClipLoader.as:238]
 PASSED: target == expected.target [./MovieClipLoader.as:239]
-onLoadStart(_level0.loadtarget, file:///C|/Users/dinnerbone/shared/testsuite/actionscript.all/green.jpg) called
+onLoadStart(_level0.loadtarget, file:///green.jpg) called
 PASSED: arguments.length == 3 [./MovieClipLoader.as:249]
 PASSED: target == expected.target [./MovieClipLoader.as:250]
 PASSED: state.onLoadStartCalls == 1 [./MovieClipLoader.as:251]
@@ -136,14 +136,14 @@ PASSED: prog.bytesTotal == bytesTotal [./MovieClipLoader.as:265]
 PASSED: progcount == 2 [./MovieClipLoader.as:268]
 PASSED: progcopy.bytesLoaded == bytesLoaded [./MovieClipLoader.as:269]
 PASSED: progcopy.bytesTotal == bytesTotal [./MovieClipLoader.as:270]
-onLoadComplete(_level0.loadtarget, file:///C|/Users/dinnerbone/shared/testsuite/actionscript.all/green.jpg) called
+onLoadComplete(_level0.loadtarget, file:///green.jpg) called
 PASSED: arguments.length == 2 [./MovieClipLoader.as:280]
 PASSED: target == expected.target [./MovieClipLoader.as:281]
 PASSED: state.onLoadStartCalls == 1 [./MovieClipLoader.as:282]
 PASSED: state.onLoadProgressCalls > 0 [./MovieClipLoader.as:283]
 PASSED: typeof(n) == 'number' [./MovieClipLoader.as:284]
 onLoadComplete second arg is 0 (number)
-onLoadInit(_level0.loadtarget, file:///C|/Users/dinnerbone/shared/testsuite/actionscript.all/green.jpg) called
+onLoadInit(_level0.loadtarget, file:///green.jpg) called
 PASSED: arguments.length == 1 [./MovieClipLoader.as:293]
 PASSED: target == expected.target [./MovieClipLoader.as:294]
 PASSED: state.onLoadStartCalls == 1 [./MovieClipLoader.as:295]

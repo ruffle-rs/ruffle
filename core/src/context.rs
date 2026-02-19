@@ -16,7 +16,7 @@ use crate::backend::{
     ui::UiBackend,
 };
 use crate::context_menu::ContextMenuState;
-use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
+use crate::display_object::{EditText, MovieClip, SoundTransform, Stage, TDisplayObject};
 use crate::events::PlayerNotification;
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
@@ -382,7 +382,6 @@ impl<'gc> UpdateContext<'gc> {
         let root: DisplayObject = MovieClip::player_root_movie(&mut activation, swf).into();
         let root_mc = root.as_movie_clip().unwrap();
         root_mc.set_movie_library(activation.gc(), lib);
-        activation.context.library.register_library(swf, lib);
 
         // The Stage `LoaderInfo` is permanently in the 'not yet loaded' state,
         // and has no associated `Loader` instance.
@@ -460,7 +459,6 @@ impl<'gc> UpdateContext<'gc> {
         self.gc_context
     }
 
-
     pub fn avm_trace(&self, message: &str) {
         self.log.avm_trace(&message.replace('\r', "\n"));
     }
@@ -474,6 +472,34 @@ impl<'gc> UpdateContext<'gc> {
         self.player
             .upgrade()
             .expect("Could not upgrade weak reference to player")
+    }
+
+    /// Find the `MovieLibrary` for a given `SwfMovie` by walking the display tree.
+    pub fn library_for_movie(
+        &self,
+        movie: Gc<'gc, SwfMovie>,
+    ) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
+        use crate::display_object::TDisplayObjectContainer;
+
+        fn walk<'gc>(
+            obj: DisplayObject<'gc>,
+            movie: Gc<'gc, SwfMovie>,
+        ) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
+            if Gc::ptr_eq(obj.movie(), movie) && obj.base().library().is_some() {
+                return obj.base().library();
+            }
+            if let Some(container) = obj.as_container() {
+                for i in 0..container.num_children() {
+                    if let Some(child) = container.child_by_index(i)
+                        && let Some(lib) = walk(child, movie)
+                    {
+                        return Some(lib);
+                    }
+                }
+            }
+            None
+        }
+        walk(self.stage.into(), movie)
     }
 }
 

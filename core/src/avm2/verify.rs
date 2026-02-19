@@ -3,7 +3,7 @@ use crate::avm2::error::{
     Error1014Type, make_error_1011, make_error_1014, make_error_1019, make_error_1020,
     make_error_1021, make_error_1025, make_error_1026, make_error_1032, make_error_1043,
     make_error_1051, make_error_1054, make_error_1072, make_error_1078, make_error_1107,
-    make_error_1113, make_error_1124,
+    make_error_1113, make_error_1114, make_error_1124,
 };
 use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
@@ -788,6 +788,10 @@ fn translate_op<'gc>(
             if index == 0 {
                 return Err(make_error_1026(activation, 0, None, None));
             }
+        }
+
+        AbcOp::Dxns { .. } | AbcOp::DxnsLate if !method.sets_dxns() => {
+            return Err(make_error_1114(activation));
         }
 
         _ => {}

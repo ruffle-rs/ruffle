@@ -1,0 +1,288 @@
+Word wrap, device=false, scaleX=1, scaleY=1
+  0: (x=2, y=2, w=8, h=10)
+  1: (x=10, y=2, w=8, h=10)
+  2: (x=18, y=2, w=8, h=10)
+  3: (x=26, y=2, w=8, h=10)
+  4: (x=34, y=2, w=8, h=10)
+  5: (x=42, y=2, w=8, h=10)
+  6: (x=50, y=2, w=8, h=10)
+  7: (x=2, y=12, w=8, h=10)
+Word wrap, device=false, scaleX=2, scaleY=1
+  0: (x=2, y=2, w=8, h=10)
+  1: (x=10, y=2, w=8, h=10)
+  2: (x=18, y=2, w=8, h=10)
+  3: (x=26, y=2, w=8, h=10)
+  4: (x=34, y=2, w=8, h=10)
+  5: (x=42, y=2, w=8, h=10)
+  6: (x=50, y=2, w=8, h=10)
+  7: (x=2, y=12, w=8, h=10)
+Word wrap, device=false, scaleX=1, scaleY=2
+  0: (x=2, y=2, w=8, h=10)
+  1: (x=10, y=2, w=8, h=10)
+  2: (x=18, y=2, w=8, h=10)
+  3: (x=26, y=2, w=8, h=10)
+  4: (x=34, y=2, w=8, h=10)
+  5: (x=42, y=2, w=8, h=10)
+  6: (x=50, y=2, w=8, h=10)
+  7: (x=2, y=12, w=8, h=10)
+Word wrap, device=false, scaleX=2, scaleY=2
+  0: (x=2, y=2, w=8, h=10)
+  1: (x=10, y=2, w=8, h=10)
+  2: (x=18, y=2, w=8, h=10)
+  3: (x=26, y=2, w=8, h=10)
+  4: (x=34, y=2, w=8, h=10)
+  5: (x=42, y=2, w=8, h=10)
+  6: (x=50, y=2, w=8, h=10)
+  7: (x=2, y=12, w=8, h=10)
+Word wrap, device=true, scaleX=1, scaleY=1
+  0: (x=2, y=2, w=8, h=10)
+  1: (x=10, y=2, w=8, h=10)
+  2: (x=18, y=2, w=8, h=10)
+  3: (x=26, y=2, w=8, h=10)
+  4: (x=34, y=2, w=8, h=10)
+  5: (x=42, y=2, w=8, h=10)
+  6: (x=50, y=2, w=8, h=10)
+  7: (x=2, y=12, w=8, h=10)
+Word wrap, device=true, scaleX=2, scaleY=1
+  0: (x=2, y=2, w=4, h=10)
+  1: (x=6, y=2, w=4, h=10)
+  2: (x=10, y=2, w=4, h=10)
+  3: (x=14, y=2, w=4, h=10)
+  4: (x=18, y=2, w=4, h=10)
+  5: (x=22, y=2, w=4, h=10)
+  6: (x=26, y=2, w=4, h=10)
+  7: (x=30, y=2, w=4, h=10)
+Word wrap, device=true, scaleX=1, scaleY=2
+  0: (x=2, y=2, w=16, h=10)
+  1: (x=18, y=2, w=16, h=10)
+  2: (x=34, y=2, w=16, h=10)
+  3: (x=2, y=12, w=16, h=10)
+  4: (x=18, y=12, w=16, h=10)
+  5: (x=34, y=12, w=16, h=10)
+  6: (x=2, y=22, w=16, h=10)
+  7: (x=18, y=22, w=16, h=10)
+Word wrap, device=true, scaleX=2, scaleY=2
+  0: (x=2, y=2, w=8, h=10)
+  1: (x=10, y=2, w=8, h=10)
+  2: (x=18, y=2, w=8, h=10)
+  3: (x=26, y=2, w=8, h=10)
+  4: (x=34, y=2, w=8, h=10)
+  5: (x=42, y=2, w=8, h=10)
+  6: (x=50, y=2, w=8, h=10)
+  7: (x=2, y=12, w=8, h=10)
+Text align, align=center, device=false, scaleX=1, scaleY=1
+  0: (x=22, y=2, w=8, h=10)
+  1: (x=30, y=2, w=8, h=10)
+Text align, align=center, device=false, scaleX=2, scaleY=1
+  0: (x=22, y=2, w=8, h=10)
+  1: (x=30, y=2, w=8, h=10)
+Text align, align=center, device=false, scaleX=1, scaleY=2
+  0: (x=22, y=2, w=8, h=10)
+  1: (x=30, y=2, w=8, h=10)
+Text align, align=center, device=false, scaleX=2, scaleY=2
+  0: (x=22, y=2, w=8, h=10)
+  1: (x=30, y=2, w=8, h=10)
+Text align, align=center, device=true, scaleX=1, scaleY=1
+  0: (x=22, y=2, w=8, h=10)
+  1: (x=30, y=2, w=8, h=10)
+Text align, align=center, device=true, scaleX=2, scaleY=1
+  0: (x=12, y=2, w=4, h=10)
+  1: (x=16, y=2, w=4, h=10)
+Text align, align=center, device=true, scaleX=1, scaleY=2
+  0: (x=42, y=2, w=16, h=10)
+  1: (x=58, y=2, w=16, h=10)
+Text align, align=center, device=true, scaleX=2, scaleY=2
+  0: (x=22, y=2, w=8, h=10)
+  1: (x=30, y=2, w=8, h=10)
+Text align, align=right, device=false, scaleX=1, scaleY=1
+  0: (x=42, y=2, w=8, h=10)
+  1: (x=50, y=2, w=8, h=10)
+Text align, align=right, device=false, scaleX=2, scaleY=1
+  0: (x=42, y=2, w=8, h=10)
+  1: (x=50, y=2, w=8, h=10)
+Text align, align=right, device=false, scaleX=1, scaleY=2
+  0: (x=42, y=2, w=8, h=10)
+  1: (x=50, y=2, w=8, h=10)
+Text align, align=right, device=false, scaleX=2, scaleY=2
+  0: (x=42, y=2, w=8, h=10)
+  1: (x=50, y=2, w=8, h=10)
+Text align, align=right, device=true, scaleX=1, scaleY=1
+  0: (x=42, y=2, w=8, h=10)
+  1: (x=50, y=2, w=8, h=10)
+Text align, align=right, device=true, scaleX=2, scaleY=1
+  0: (x=22, y=2, w=4, h=10)
+  1: (x=26, y=2, w=4, h=10)
+Text align, align=right, device=true, scaleX=1, scaleY=2
+  0: (x=82, y=2, w=16, h=10)
+  1: (x=98, y=2, w=16, h=10)
+Text align, align=right, device=true, scaleX=2, scaleY=2
+  0: (x=42, y=2, w=8, h=10)
+  1: (x=50, y=2, w=8, h=10)
+Auto size, autoSize=left, device=false, scaleX=1, scaleY=1
+  x: 0
+  y: 0
+  width: 20
+  height: 14
+  0: (x=2, y=2, w=8, h=10)
+  1: (x=10, y=2, w=8, h=10)
+Auto size, autoSize=left, device=false, scaleX=2, scaleY=1
+  x: 0
+  y: 0
+  width: 40
+  height: 14
+  0: (x=2, y=2, w=8, h=10)
+  1: (x=10, y=2, w=8, h=10)
+Auto size, autoSize=left, device=false, scaleX=1, scaleY=2
+  x: 0
+  y: 0
+  width: 20
+  height: 28
+  0: (x=2, y=2, w=8, h=10)
+  1: (x=10, y=2, w=8, h=10)
+Auto size, autoSize=left, device=false, scaleX=2, scaleY=2
+  x: 0
+  y: 0
+  width: 40
+  height: 28
+  0: (x=2, y=2, w=8, h=10)
+  1: (x=10, y=2, w=8, h=10)
+Auto size, autoSize=left, device=true, scaleX=1, scaleY=1
+  x: 0
+  y: 0
+  width: 20
+  height: 14
+  0: (x=2, y=2, w=8, h=10)
+  1: (x=10, y=2, w=8, h=10)
+Auto size, autoSize=left, device=true, scaleX=2, scaleY=1
+  x: 0
+  y: 0
+  width: 24
+  height: 14
+  0: (x=2, y=2, w=4, h=10)
+  1: (x=6, y=2, w=4, h=10)
+Auto size, autoSize=left, device=true, scaleX=1, scaleY=2
+  x: 0
+  y: 0
+  width: 36
+  height: 28
+  0: (x=2, y=2, w=16, h=10)
+  1: (x=18, y=2, w=16, h=10)
+Auto size, autoSize=left, device=true, scaleX=2, scaleY=2
+  x: 0
+  y: 0
+  width: 40
+  height: 28
+  0: (x=2, y=2, w=8, h=10)
+  1: (x=10, y=2, w=8, h=10)
+Auto size, autoSize=center, device=false, scaleX=1, scaleY=1
+  x: 20
+  y: 0
+  width: 20
+  height: 14
+  0: (x=22, y=2, w=8, h=10)
+  1: (x=30, y=2, w=8, h=10)
+Auto size, autoSize=center, device=false, scaleX=2, scaleY=1
+  x: 40
+  y: 0
+  width: 40
+  height: 14
+  0: (x=22, y=2, w=8, h=10)
+  1: (x=30, y=2, w=8, h=10)
+Auto size, autoSize=center, device=false, scaleX=1, scaleY=2
+  x: 20
+  y: 0
+  width: 20
+  height: 28
+  0: (x=22, y=2, w=8, h=10)
+  1: (x=30, y=2, w=8, h=10)
+Auto size, autoSize=center, device=false, scaleX=2, scaleY=2
+  x: 40
+  y: 0
+  width: 40
+  height: 28
+  0: (x=22, y=2, w=8, h=10)
+  1: (x=30, y=2, w=8, h=10)
+Auto size, autoSize=center, device=true, scaleX=1, scaleY=1
+  x: 20
+  y: 0
+  width: 20
+  height: 14
+  0: (x=22, y=2, w=8, h=10)
+  1: (x=30, y=2, w=8, h=10)
+Auto size, autoSize=center, device=true, scaleX=2, scaleY=1
+  x: 48
+  y: 0
+  width: 24
+  height: 14
+  0: (x=26, y=2, w=4, h=10)
+  1: (x=30, y=2, w=4, h=10)
+Auto size, autoSize=center, device=true, scaleX=1, scaleY=2
+  x: 12
+  y: 0
+  width: 36
+  height: 28
+  0: (x=14, y=2, w=16, h=10)
+  1: (x=30, y=2, w=16, h=10)
+Auto size, autoSize=center, device=true, scaleX=2, scaleY=2
+  x: 40
+  y: 0
+  width: 40
+  height: 28
+  0: (x=22, y=2, w=8, h=10)
+  1: (x=30, y=2, w=8, h=10)
+Auto size, autoSize=right, device=false, scaleX=1, scaleY=1
+  x: 40
+  y: 0
+  width: 20
+  height: 14
+  0: (x=42, y=2, w=8, h=10)
+  1: (x=50, y=2, w=8, h=10)
+Auto size, autoSize=right, device=false, scaleX=2, scaleY=1
+  x: 80
+  y: 0
+  width: 40
+  height: 14
+  0: (x=42, y=2, w=8, h=10)
+  1: (x=50, y=2, w=8, h=10)
+Auto size, autoSize=right, device=false, scaleX=1, scaleY=2
+  x: 40
+  y: 0
+  width: 20
+  height: 28
+  0: (x=42, y=2, w=8, h=10)
+  1: (x=50, y=2, w=8, h=10)
+Auto size, autoSize=right, device=false, scaleX=2, scaleY=2
+  x: 80
+  y: 0
+  width: 40
+  height: 28
+  0: (x=42, y=2, w=8, h=10)
+  1: (x=50, y=2, w=8, h=10)
+Auto size, autoSize=right, device=true, scaleX=1, scaleY=1
+  x: 40
+  y: 0
+  width: 20
+  height: 14
+  0: (x=42, y=2, w=8, h=10)
+  1: (x=50, y=2, w=8, h=10)
+Auto size, autoSize=right, device=true, scaleX=2, scaleY=1
+  x: 96
+  y: 0
+  width: 24
+  height: 14
+  0: (x=50, y=2, w=4, h=10)
+  1: (x=54, y=2, w=4, h=10)
+Auto size, autoSize=right, device=true, scaleX=1, scaleY=2
+  x: 24
+  y: 0
+  width: 36
+  height: 28
+  0: (x=26, y=2, w=16, h=10)
+  1: (x=42, y=2, w=16, h=10)
+Auto size, autoSize=right, device=true, scaleX=2, scaleY=2
+  x: 80
+  y: 0
+  width: 40
+  height: 28
+  0: (x=42, y=2, w=8, h=10)
+  1: (x=50, y=2, w=8, h=10)

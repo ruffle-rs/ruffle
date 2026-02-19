@@ -16,6 +16,7 @@ use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage};
 use crate::avm2::{ClassObject, Error};
 use crate::context::UpdateContext;
+use crate::display_object::BoundsMode;
 use crate::ecma_conversions::round_to_even;
 use crate::prelude::*;
 use crate::string::AvmString;
@@ -33,7 +34,7 @@ pub fn initialize_for_allocator<'gc>(
     context: &mut UpdateContext<'gc>,
     dobj: DisplayObject<'gc>,
     class: ClassObject<'gc>,
-) -> Object<'gc> {
+) -> StageObject<'gc> {
     let obj = StageObject::for_display_object(context.gc(), dobj, class);
     dobj.set_placed_by_avm2_script(true);
     dobj.set_object2(context, obj);
@@ -50,7 +51,7 @@ pub fn initialize_for_allocator<'gc>(
     dobj.base().set_skip_next_enter_frame(true);
     dobj.on_construction_complete(context);
 
-    obj.into()
+    obj
 }
 
 /// Implements `alpha`'s getter.
@@ -1011,7 +1012,7 @@ pub fn get_bounds<'gc>(
             .try_get_object(0)
             .and_then(|o| o.as_display_object())
             .unwrap_or(dobj);
-        let bounds = dobj.bounds();
+        let bounds = dobj.bounds(BoundsMode::Script);
         let mut out_bounds = if DisplayObject::ptr_eq(dobj, target) {
             // Getting the clips bounds in its own coordinate space; no AABB transform needed.
             bounds

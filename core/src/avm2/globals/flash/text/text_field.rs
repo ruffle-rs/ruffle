@@ -7,7 +7,7 @@ use crate::avm2::object::{ClassObject, Object, TextFormatObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::avm2::{ArrayObject, ArrayStorage, Error};
-use crate::display_object::{AutoSizeMode, EditText, TextSelection};
+use crate::display_object::{AutoSizeMode, EditText, TDisplayObject, TextSelection};
 use crate::html::TextFormat;
 use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_setter};
@@ -20,13 +20,13 @@ pub fn text_field_allocator<'gc>(
 ) -> Result<Object<'gc>, Error<'gc>> {
     // Creating a TextField from AS ignores SymbolClass linkage.
     let movie = activation.caller_movie_or_root();
-    let display_object = EditText::new(activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
+    let display_object: crate::display_object::DisplayObject<'gc> =
+        EditText::new(activation.context, movie, 0.0, 0.0, 100.0, 100.0).into();
+    if let Some(lib) = activation.context.library_for_movie(movie) {
+        display_object.set_library(activation.gc(), lib);
+    }
 
-    Ok(initialize_for_allocator(
-        activation.context,
-        display_object,
-        class,
-    ))
+    Ok(initialize_for_allocator(activation.context, display_object, class).into())
 }
 
 pub fn get_always_show_selection<'gc>(

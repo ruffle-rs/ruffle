@@ -1,5 +1,6 @@
 num_frames = 1
 
 [approximations]
+bare_numbers = true
 # TODO: Discrepancy in float formatting.
 epsilon = 0.0

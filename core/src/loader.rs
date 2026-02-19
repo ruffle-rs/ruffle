@@ -41,7 +41,6 @@ use chardetng::EncodingDetector;
 use encoding_rs::{UTF_8, WINDOWS_1252};
 use gc_arena::Collect;
 use gc_arena::Gc;
-use gc_arena::collect::Trace;
 use gc_arena::lock::RefLock;
 use indexmap::IndexMap;
 use ruffle_macros::istr;
@@ -50,7 +49,7 @@ use slotmap::{SlotMap, new_key_type};
 use std::borrow::Borrow;
 use std::fmt;
 use std::str::FromStr;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 use std::time::Duration;
 use swf::read::{extract_swz, read_compression_type};
 use thiserror::Error;
@@ -217,15 +216,9 @@ impl From<crate::avm1::Error<'_>> for Error {
 }
 
 /// Holds all in-progress loads for the player.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct LoadManager<'gc>(SlotMap<LoaderHandle, MovieLoader<'gc>>);
-
-unsafe impl<'gc> Collect<'gc> for LoadManager<'gc> {
-    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (_, loader) in self.0.iter() {
-            cc.trace(loader);
-        }
-    }
-}
 
 impl<'gc> LoadManager<'gc> {
     /// Construct a new `LoadManager`.
@@ -557,6 +550,13 @@ pub struct MovieLoader<'gc> {
 }
 
 impl<'gc> MovieLoader<'gc> {
+    fn replace_root_movie(&mut self, new_root: DisplayObject<'gc>) {
+        self.target_clip = new_root;
+        if let MovieLoaderVMData::Avm1 { base_clip, .. } = &mut self.vm_data {
+            *base_clip = new_root;
+        }
+    }
+
     /// Process tags on a loaded movie.
     ///
     /// Is only callable on Movie loaders, panics otherwise. Will
@@ -686,92 +686,137 @@ impl<'gc> MovieLoader<'gc> {
                 MovieLoader::movie_loader_start(handle, uc)
             })?;
 
-            match wait_for_full_response(fetch).await {
-                Ok((body, url, _status, _redirected)) if replacing_root_movie => {
-                    ContentType::sniff(&body).expect(ContentType::Swf)?;
-
-                    let movie = SwfMovie::from_data(&body, url, loader_url)?;
-                    player.lock().unwrap().mutate_with_update_context(|uc| {
-                        // Make a copy of the properties on the root, so we can put them back after replacing it
-                        let mut root_properties: IndexMap<AvmString, Value> = IndexMap::new();
-                        if let Some(root) = uc.stage.root_clip()
-                            && let Some(root_object) = root.object1()
-                        {
-                            let mut activation = Activation::from_nothing(
-                                uc,
-                                ActivationIdentifier::root("unknown"),
-                                root,
-                            );
-                            for key in root_object.get_keys(&mut activation, true) {
-                                let val = root_object
-                                    .get_stored(key, &mut activation)
-                                    .unwrap_or(Value::Undefined);
-                                root_properties.insert(key, val);
-                            }
-                        }
-
-                        uc.replace_root_movie(movie);
-
-                        // Add the copied properties back onto the new root
-                        if !root_properties.is_empty()
-                            && let Some(root) = uc.stage.root_clip()
-                            && let Some(clip_object) = root.object1()
-                        {
-                            let mut activation = Activation::from_nothing(
-                                uc,
-                                ActivationIdentifier::root("unknown"),
-                                root,
-                            );
-                            for (key, val) in root_properties {
-                                let _ = clip_object.set(key, val, &mut activation);
-                            }
-                        }
-                    });
-                    return Ok(());
+            let response = wait_for_full_response(fetch).await;
+            let player = player.lock().unwrap();
+            match response {
+                Ok((body, url, status, redirected)) if replacing_root_movie => {
+                    Self::on_success_root_movie(
+                        player, handle, loader_url, body, url, status, redirected,
+                    )?;
                 }
                 Ok((body, url, status, redirected)) => {
-                    player.lock().unwrap().mutate_with_update_context(|uc| {
-                        MovieLoader::movie_loader_data(
-                            handle,
-                            uc,
-                            &body,
-                            url.to_string(),
-                            status,
-                            redirected,
-                            loader_url,
-                        )
-                    })?;
+                    Self::on_success(player, handle, loader_url, body, url, status, redirected)?;
                 }
                 Err(response) => {
-                    tracing::error!(
-                        "Error during movie loading of {:?}: {:?}",
-                        response.url,
-                        response.error
-                    );
-                    player.lock().unwrap().update(|uc| -> Result<(), Error> {
-                        // FIXME - match Flash's error message
-
-                        let (status_code, redirected) =
-                            if let Error::HttpNotOk(_, status_code, redirected, _) = response.error
-                            {
-                                (status_code, redirected)
-                            } else {
-                                (0, false)
-                            };
-                        MovieLoader::movie_loader_error(
-                            handle,
-                            uc,
-                            "Movie loader error",
-                            status_code,
-                            redirected,
-                            response.url,
-                        )
-                    })?;
+                    Self::on_error(player, handle, response)?;
                 }
             }
 
             Ok(())
         })
+    }
+
+    fn on_success_root_movie(
+        mut player: MutexGuard<'_, Player>,
+        handle: LoaderHandle,
+        loader_url: Option<String>,
+        body: Vec<u8>,
+        url: String,
+        status: u16,
+        redirected: bool,
+    ) -> Result<(), Error> {
+        ContentType::sniff(&body).expect(ContentType::Swf)?;
+
+        let movie = SwfMovie::from_data(&body, url, loader_url)?;
+        player.mutate_with_update_context(|uc| {
+            // Make a copy of the properties on the root, so we can put them back after replacing it
+            let mut root_properties: IndexMap<AvmString, Value> = IndexMap::new();
+            if let Some(root) = uc.stage.root_clip()
+                && let Some(root_object) = root.object1()
+            {
+                let mut activation =
+                    Activation::from_nothing(uc, ActivationIdentifier::root("unknown"), root);
+                for key in root_object.get_keys(&mut activation, true) {
+                    let val = root_object
+                        .get_stored(key, &mut activation)
+                        .unwrap_or(Value::Undefined);
+                    root_properties.insert(key, val);
+                }
+            }
+
+            uc.replace_root_movie(movie);
+
+            if let Some(root_clip) = uc.stage.root_clip()
+                && let Some(ml) = uc.load_manager.get_loader_mut(handle)
+            {
+                // Further AVM1 events are dispatched in relation to the new root.
+                // TODO Maybe we could use a MCR here?
+                ml.replace_root_movie(root_clip);
+            }
+
+            // Add the copied properties back onto the new root
+            if !root_properties.is_empty()
+                && let Some(root) = uc.stage.root_clip()
+                && let Some(clip_object) = root.object1()
+            {
+                let mut activation =
+                    Activation::from_nothing(uc, ActivationIdentifier::root("unknown"), root);
+                for (key, val) in root_properties {
+                    let _ = clip_object.set(key, val, &mut activation);
+                }
+            }
+
+            // For some reason, progress event is dispatched twice here.
+            MovieLoader::movie_loader_progress(handle, uc, body.len(), body.len())?;
+            MovieLoader::movie_loader_progress(handle, uc, body.len(), body.len())?;
+
+            MovieLoader::movie_loader_complete(handle, uc, None, status, redirected)
+        })?;
+        Ok(())
+    }
+
+    fn on_success(
+        mut player: MutexGuard<'_, Player>,
+        handle: LoaderHandle,
+        loader_url: Option<String>,
+        body: Vec<u8>,
+        url: String,
+        status: u16,
+        redirected: bool,
+    ) -> Result<(), Error> {
+        player.mutate_with_update_context(|uc| {
+            MovieLoader::movie_loader_data(
+                handle,
+                uc,
+                &body,
+                url.to_string(),
+                status,
+                redirected,
+                loader_url,
+            )
+        })?;
+        Ok(())
+    }
+
+    fn on_error(
+        mut player: MutexGuard<'_, Player>,
+        handle: LoaderHandle,
+        response: ErrorResponse,
+    ) -> Result<(), Error> {
+        tracing::error!(
+            "Error during movie loading of {:?}: {:?}",
+            response.url,
+            response.error
+        );
+        player.update(|uc| -> Result<(), Error> {
+            // FIXME - match Flash's error message
+
+            let (status_code, redirected) =
+                if let Error::HttpNotOk(_, status_code, redirected, _) = response.error {
+                    (status_code, redirected)
+                } else {
+                    (0, false)
+                };
+            MovieLoader::movie_loader_error(
+                handle,
+                uc,
+                "Movie loader error",
+                status_code,
+                redirected,
+                response.url,
+            )
+        })?;
+        Ok(())
     }
 
     pub fn movie_loader_bytes(
@@ -1677,8 +1722,6 @@ impl<'gc> MovieLoader<'gc> {
                 // Image loads don't have a root MovieClip, so register a standalone library.
                 let lib = Gc::new(activation.gc(), RefLock::new(MovieLibrary::new(movie)));
                 lib.borrow_mut(activation.gc()).set_avm2_domain(domain);
-                activation.context.library.register_library(movie, lib);
-
                 // This will construct AVM2-side objects even under AVM1, but it doesn't matter,
                 // since Bitmap and BitmapData never have AVM1-side objects.
                 let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
@@ -1705,6 +1748,7 @@ impl<'gc> MovieLoader<'gc> {
                     .unwrap();
 
                 let bitmap_dobj = bitmap_avm2.as_display_object().unwrap();
+                bitmap_dobj.set_library(activation.gc(), lib);
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
                     let fake_movie = Gc::new(
@@ -1939,8 +1983,7 @@ impl<'gc> MovieLoader<'gc> {
             let mut loader = loader_info
                 .loader()
                 .expect("Loader should be Some")
-                .as_display_object()
-                .unwrap()
+                .display_object()
                 .as_container()
                 .unwrap();
 
@@ -2110,31 +2153,26 @@ impl<'gc> MovieLoader<'gc> {
                 MovieLoader::load_error_swf(mc, uc, request_url.to_string());
             }
             Ok(url) => {
-                // If the loaded SWF is a local file, the initial loading state equals the error state.
-                if url.scheme() == "file" {
-                    MovieLoader::load_error_swf(mc, uc, url.to_string());
-                } else {
-                    // Replacing the movie sets total_frames and frames_loaded correctly.
-                    // The movie just needs to be the default empty movie with the correct URL.
-                    // In this loading state, the URL is the URL of the parent movie / doesn't change.
+                // Replacing the movie sets total_frames and frames_loaded correctly.
+                // The movie just needs to be the default empty movie with the correct URL.
 
-                    let current_movie = mc.movie();
-                    let current_version = current_movie.version();
-                    let current_url = current_movie.url();
-                    let mut initial_loading_movie = SwfMovie::empty(current_version, None);
-                    initial_loading_movie.set_url(current_url.to_string());
+                let current_movie = mc.movie();
+                let current_version = current_movie.version();
+                let mut initial_loading_movie = SwfMovie::empty(current_version, None);
+                initial_loading_movie.set_url(url.to_string());
 
-                    mc.replace_with_movie(
-                        uc,
-                        Some(Gc::new(uc.gc(), initial_loading_movie)),
-                        true,
-                        None,
-                    );
+                mc.replace_with_movie(
+                    uc,
+                    Some(Gc::new(uc.gc(), initial_loading_movie)),
+                    true,
+                    None,
+                );
 
-                    // Maybe this (keeping the current URL) should be the default behaviour
-                    // of replace_with_movie?
-                    // TODO: See where it gets invoked without a movie as well and what the
-                    // correct URL result is in these cases.
+                if let Some(root) = uc.stage.root_clip()
+                    && DisplayObject::ptr_eq(mc.into(), root)
+                {
+                    // Looks like replacing the root movie also resets its name here.
+                    mc.set_default_root_name(uc);
                 }
             }
         }

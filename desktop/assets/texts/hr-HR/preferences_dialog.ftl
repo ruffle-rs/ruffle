@@ -17,6 +17,7 @@ log-filename-pattern-with-timestamp = S vremenskom oznakom
 storage-backend = Mjesto spremanja datoteke
 storage-backend-disk = Disk
 storage-backend-memory = Memorija
+recent-limit = Ograničenje nedavnih datoteka
 recent-clear = Očisti
 theme = Tema
 theme-system = Zadano sustav

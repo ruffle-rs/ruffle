@@ -8,6 +8,7 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
+use crate::library::MovieLibrary;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
@@ -16,6 +17,7 @@ use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::Lock;
+use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::perspective_projection::PerspectiveProjection;
@@ -64,7 +66,7 @@ use ruffle_render::blend::ExtendedBlendMode;
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode};
-pub use text::Text;
+pub use text::{Text, TextSnapshot};
 pub use video::Video;
 
 use self::loader_display::LoaderDisplayWeak;
@@ -281,6 +283,9 @@ pub struct DisplayObjectBase<'gc> {
     /// The sound transform of sounds playing via this display object.
     sound_transform: Cell<SoundTransform>,
 
+    /// The movie library for the SWF that defines this display object.
+    library: Lock<Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>>,
+
     /// The display object that we are being masked by.
     masker: Lock<Option<DisplayObject<'gc>>>,
 
@@ -349,6 +354,7 @@ impl Default for DisplayObjectBase<'_> {
             scale_x: Cell::new(Percent::from_unit(1.0)),
             scale_y: Cell::new(Percent::from_unit(1.0)),
             skew: Cell::new(0.0),
+            library: Lock::new(None),
             masker: Lock::new(None),
             maskee: Lock::new(None),
             meta_data: Lock::new(None),
@@ -841,9 +847,9 @@ impl<'gc> DisplayObjectBase<'gc> {
     fn recheck_cache_as_bitmap(&self) {
         let mut write = self.cell.borrow_mut();
         let should_cache = self.is_bitmap_cached_preference() || !write.filters.is_empty();
-        if should_cache && write.cache.is_none() {
-            write.cache = Some(Default::default());
-        } else if !should_cache && write.cache.is_some() {
+        if should_cache {
+            write.cache.get_or_insert_default();
+        } else {
             write.cache = None;
         }
     }
@@ -870,6 +876,14 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_has_explicit_name(&self, value: bool) {
         self.set_flag(DisplayObjectFlags::HAS_EXPLICIT_NAME, value);
+    }
+
+    pub(crate) fn library(&self) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
+        self.library.get()
+    }
+
+    fn set_library(this: &Write<Self>, lib: Gc<'gc, RefLock<MovieLibrary<'gc>>>) {
+        unlock!(this, Self, library).set(Some(lib));
     }
 
     fn masker(&self) -> Option<DisplayObject<'gc>> {
@@ -903,6 +917,22 @@ impl<'gc> DisplayObjectBase<'gc> {
     pub fn set_has_matrix3d_stub(&self, value: bool) {
         self.set_flag(DisplayObjectFlags::HAS_MATRIX3D_STUB, value)
     }
+}
+
+/// Indicates which kind of bounds should be returned by `self_bounds`.
+/// In most cases `BoundsMode::Engine` should be used.
+#[derive(Copy, Clone, Debug)]
+pub enum BoundsMode {
+    /// The bounds visible on the stage (e.g. takes MorphShape ratio into
+    /// account). Used for hit testing and rendering.
+    Engine,
+
+    /// The bounds returned by ActionScript (e.g. doesn't take MorphShape
+    /// ratio into account - always uses ratio 0 AKA start shape).
+    /// This is used in AVM1 in MovieClip::getBounds(), getRect(), _width, _height, hitTest (object)
+    /// Used in AVM2 in DO::getBounds(), getRect(), width, height, hitTestObject()
+    /// Used in both AVM1 and AVM2 for Transform.pixelBounds.
+    Script,
 }
 
 struct DrawCacheInfo {
@@ -1295,32 +1325,37 @@ pub trait TDisplayObject<'gc>:
     /// These bounds do **not** include child DisplayObjects.
     /// To get the bounds including children, use `bounds`, `local_bounds`, or `world_bounds`.
     ///
+    /// The `mode` parameter indicates which kind of bounds to return:
+    /// - `BoundsMode::Engine`: Actual visual bounds (for hit testing, rendering)
+    /// - `BoundsMode::Script`: Bounds as reported by ActionScript (some objects like MorphShape
+    ///   always return the start shape's bounds)
+    ///
     /// Implementors must override this method.
     /// Leaf DisplayObjects should return their bounds.
-    /// Composite DisplayObjects that only contain children should return `&Default::default()`
-    fn self_bounds(self) -> Rectangle<Twips>;
+    /// Composite DisplayObjects that only contain children should return `Default::default()`
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips>;
 
     /// The untransformed bounding box of this object including children.
     #[no_dynamic]
-    fn bounds(self) -> Rectangle<Twips> {
-        self.bounds_with_transform(&Matrix::default())
+    fn bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        self.bounds_with_transform(&Matrix::default(), mode)
     }
 
     /// The local bounding box of this object including children, in its parent's coordinate system.
     #[no_dynamic]
-    fn local_bounds(self) -> Rectangle<Twips> {
-        self.bounds_with_transform(&self.base().matrix())
+    fn local_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        self.bounds_with_transform(&self.base().matrix(), mode)
     }
 
     /// The world bounding box of this object including children, relative to the stage.
     #[no_dynamic]
-    fn world_bounds(self) -> Rectangle<Twips> {
-        self.bounds_with_transform(&self.local_to_global_matrix())
+    fn world_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        self.bounds_with_transform(&self.local_to_global_matrix(), mode)
     }
 
     /// The world bounding box of this object, as reported by `Transform.pixelBounds`.
-    fn pixel_bounds(self) -> Rectangle<Twips> {
-        self.world_bounds()
+    fn pixel_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        self.world_bounds(mode)
     }
 
     /// Bounds used for drawing debug rects and picking objects.
@@ -1332,14 +1367,17 @@ pub trait TDisplayObject<'gc>:
             .as_interactive()
             .map(|int| int.highlight_bounds())
             .unwrap_or_default();
-        self.world_bounds().union(&highlight_bounds)
+        self.world_bounds(BoundsMode::Engine)
+            .union(&highlight_bounds)
     }
 
     /// Gets the bounds of this object and all children, transformed by a given matrix.
     /// This function recurses down and transforms the AABB each child before adding
     /// it to the bounding box. This gives a tighter AABB then if we simply transformed
     /// the overall AABB.
-    fn bounds_with_transform(self, matrix: &Matrix) -> Rectangle<Twips> {
+    ///
+    /// The `mode` parameter indicates which kind of bounds to return.
+    fn bounds_with_transform(self, matrix: &Matrix, mode: BoundsMode) -> Rectangle<Twips> {
         // A scroll rect completely overrides an object's bounds,
         // and can even grow the bounding box to be larger than the actual content
         if let Some(scroll_rect) = self.scroll_rect() {
@@ -1352,12 +1390,12 @@ pub trait TDisplayObject<'gc>:
                 };
         }
 
-        let mut bounds = *matrix * self.self_bounds();
+        let mut bounds = *matrix * self.self_bounds(mode);
 
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
                 let matrix = *matrix * child.base().matrix();
-                bounds = bounds.union(&child.bounds_with_transform(&matrix));
+                bounds = bounds.union(&child.bounds_with_transform(&matrix, mode));
             }
         }
 
@@ -1368,13 +1406,15 @@ pub trait TDisplayObject<'gc>:
     /// This differs from the bounds that are exposed to Flash, in two main ways:
     /// - It may be larger if filters are applied which will increase the size of what's shown
     /// - It does not respect scroll rects
+    ///
+    /// Uses `BoundsMode::Engine` as this is for rendering purposes.
     fn render_bounds_with_transform(
         self,
         matrix: &Matrix,
         include_own_filters: bool,
         view_matrix: &Matrix,
     ) -> Rectangle<Twips> {
-        let mut bounds = *matrix * self.self_bounds();
+        let mut bounds = *matrix * self.self_bounds(BoundsMode::Engine);
 
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
@@ -1622,7 +1662,7 @@ pub trait TDisplayObject<'gc>:
     /// Gets the pixel width of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_width`/`width` properties.
     fn width(self) -> f64 {
-        self.local_bounds().width().to_pixels()
+        self.local_bounds(BoundsMode::Script).width().to_pixels()
     }
 
     /// Sets the pixel width of this display object in local space.
@@ -1630,7 +1670,7 @@ pub trait TDisplayObject<'gc>:
     /// Set by the ActionScript `_width`/`width` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_width(self, _context: &mut UpdateContext<'gc>, value: f64) {
-        let object_bounds = self.bounds();
+        let object_bounds = self.bounds(BoundsMode::Script);
         let object_width = object_bounds.width().to_pixels();
         let object_height = object_bounds.height().to_pixels();
         let aspect_ratio = object_height / object_width;
@@ -1670,14 +1710,14 @@ pub trait TDisplayObject<'gc>:
     /// Gets the pixel height of the AABB containing this display object in local space.
     /// Returned by the ActionScript `_height`/`height` properties.
     fn height(self) -> f64 {
-        self.local_bounds().height().to_pixels()
+        self.local_bounds(BoundsMode::Script).height().to_pixels()
     }
 
     /// Sets the pixel height of this display object in local space.
     /// Set by the ActionScript `_height`/`height` properties.
     /// This does odd things on rotated clips to match the behavior of Flash.
     fn set_height(self, _context: &mut UpdateContext<'gc>, value: f64) {
-        let object_bounds = self.bounds();
+        let object_bounds = self.bounds(BoundsMode::Script);
         let object_width = object_bounds.width().to_pixels();
         let object_height = object_bounds.height().to_pixels();
         let aspect_ratio = object_width / object_height;
@@ -1877,6 +1917,18 @@ pub trait TDisplayObject<'gc>:
     #[no_dynamic]
     fn avm2_parent(self) -> Option<DisplayObject<'gc>> {
         self.parent().filter(|p| p.as_container().is_some())
+    }
+
+    #[no_dynamic]
+    fn library(self) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
+        self.base()
+            .library()
+            .or_else(|| self.parent().and_then(|p| p.library()))
+    }
+
+    #[no_dynamic]
+    fn set_library(self, mc: &Mutation<'gc>, lib: Gc<'gc, RefLock<MovieLibrary<'gc>>>) {
+        DisplayObjectBase::set_library(Gc::write(mc, self.base()), lib);
     }
 
     #[no_dynamic]
@@ -2339,12 +2391,7 @@ pub trait TDisplayObject<'gc>:
             if let Some(child) = self.object2()
                 && let Some(name) = self.name()
             {
-                let domain = context
-                    .library
-                    .library_for_movie_gc(self.movie(), context.gc())
-                    .unwrap()
-                    .borrow()
-                    .avm2_domain();
+                let domain = self.library().unwrap().borrow().avm2_domain();
 
                 let mut activation = Avm2Activation::from_domain(context, domain);
                 let multiname = Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
@@ -2405,7 +2452,7 @@ pub trait TDisplayObject<'gc>:
             self_str = &self_str[..end_char];
         }
 
-        let bounds = self.world_bounds();
+        let bounds = self.world_bounds(BoundsMode::Engine);
 
         let mut classname = "".to_string();
         if let Some(o) = self.object2() {
@@ -2551,14 +2598,16 @@ pub trait TDisplayObject<'gc>:
     /// Tests if a given stage position point intersects with the world bounds of this object.
     #[no_dynamic]
     fn hit_test_bounds(self, point: Point<Twips>) -> bool {
-        self.world_bounds().contains(point)
+        self.world_bounds(BoundsMode::Engine).contains(point)
     }
 
     /// Tests if a given object's world bounds intersects with the world bounds
     /// of this object.
     #[no_dynamic]
     fn hit_test_object(self, other: DisplayObject<'gc>) -> bool {
-        self.world_bounds().intersects(&other.world_bounds())
+        // This is only used in ActionScript so it gets a BoundsMode::Script.
+        self.world_bounds(BoundsMode::Script)
+            .intersects(&other.world_bounds(BoundsMode::Script))
     }
 
     /// Tests if a given stage position point intersects within this object, considering the art.

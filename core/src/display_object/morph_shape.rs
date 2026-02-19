@@ -1,14 +1,15 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::context::{RenderContext, UpdateContext};
-use crate::display_object::DisplayObjectBase;
-use crate::library::{Library, MovieLibrarySource};
+use crate::display_object::{BoundsMode, DisplayObjectBase};
+use crate::library::{MovieLibrary, MovieLibrarySource};
 use crate::prelude::*;
 use crate::tag_utils::SwfMovie;
 use crate::vminterface::Instantiator;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
+use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::ShapeHandle;
@@ -70,13 +71,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     }
 
     fn replace_with(self, context: &mut UpdateContext<'gc>, id: CharacterId) {
-        if let Some(new_morph_shape) = context
-            .library
-            .library_for_movie_gc(self.movie(), context.gc())
-            .unwrap()
-            .borrow()
-            .get_morph_shape(id)
-        {
+        if let Some(new_morph_shape) = self.library().unwrap().borrow().get_morph_shape(id) {
             unlock!(Gc::write(context.gc(), self.0), MorphShapeData, shared)
                 .set(new_morph_shape.0.shared.get())
         } else {
@@ -115,14 +110,20 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
         let ratio = self.ratio();
         let shared = self.0.shared.get();
-        let shape_handle = shared.get_shape(context, context.library, context.gc_context, ratio);
+        let shape_handle = shared.get_shape(context, self.library().unwrap(), ratio);
         context
             .commands
             .render_shape(shape_handle, context.transform_stack.transform());
     }
 
-    fn self_bounds(self) -> Rectangle<Twips> {
-        let ratio = self.ratio();
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
+        let ratio = match mode {
+            // For getBounds(), getRect() or hitTestObject(), return start bounds (0)
+            BoundsMode::Script => 0,
+            // otherwise, use the actual interpolated ratio
+            BoundsMode::Engine => self.ratio(),
+        };
+
         let shared = self.0.shared.get();
         let frame = shared.get_frame(ratio);
         frame.bounds
@@ -135,7 +136,7 @@ impl<'gc> TDisplayObject<'gc> for MorphShape<'gc> {
         options: HitTestOptions,
     ) -> bool {
         if (!options.contains(HitTestOptions::SKIP_INVISIBLE) || self.visible())
-            && self.world_bounds().contains(point)
+            && self.world_bounds(BoundsMode::Engine).contains(point)
         {
             if let Some(frame) = self.0.shared.get().frames.borrow().get(&self.ratio()) {
                 let Some(local_matrix) = self.global_to_local_matrix() else {
@@ -220,15 +221,13 @@ impl<'gc> MorphShapeShared<'gc> {
     fn get_shape(
         &self,
         context: &mut RenderContext<'_, 'gc>,
-        library: &Library<'gc>,
-        mc: &Mutation<'gc>,
+        library: Gc<'gc, RefLock<MovieLibrary<'gc>>>,
         ratio: u16,
     ) -> ShapeHandle {
         let mut frame = self.get_frame(ratio);
         if let Some(handle) = frame.shape_handle.clone() {
             handle
         } else {
-            let library = library.library_for_movie_gc(self.movie, mc).unwrap();
             let library = library.borrow();
             let handle = context.renderer.register_shape(
                 (&frame.shape).into(),

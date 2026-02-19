@@ -2,18 +2,15 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{EventObject, Object, TObject};
-use crate::avm2::{Avm2, Error, Value};
+use crate::avm2::object::{EventObject, Object, StageObject, TObject};
+use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
-use crate::display_object::DisplayObject;
+use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::loader::ContentType;
 use crate::tag_utils::SwfMovie;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{
-    Collect, Gc, GcWeak, Mutation,
-    lock::{Lock, RefLock},
-};
+use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, Ref};
 
@@ -80,7 +77,7 @@ pub struct LoaderInfoObjectData<'gc> {
     /// The loaded stream that this gets its info from.
     loaded_stream: RefLock<LoaderStream<'gc>>,
 
-    loader: Option<Object<'gc>>,
+    loader: Option<StageObject<'gc>>,
 
     /// Whether or not we've fired our 'init' event
     init_event_fired: Cell<bool>,
@@ -94,8 +91,6 @@ pub struct LoaderInfoObjectData<'gc> {
     shared_events: Object<'gc>,
 
     uncaught_error_events: Object<'gc>,
-
-    cached_avm1movie: Lock<Option<Object<'gc>>>,
 
     content_type: Cell<ContentType>,
 
@@ -112,7 +107,7 @@ impl<'gc> LoaderInfoObject<'gc> {
     pub fn not_yet_loaded(
         activation: &mut Activation<'_, 'gc>,
         movie: Gc<'gc, SwfMovie>,
-        loader: Option<Object<'gc>>,
+        loader: Option<StageObject<'gc>>,
         root_clip: Option<DisplayObject<'gc>>,
         is_stage: bool,
     ) -> Result<Self, Error<'gc>> {
@@ -143,7 +138,6 @@ impl<'gc> LoaderInfoObject<'gc> {
                     .construct(activation, &[])?
                     .as_object()
                     .unwrap(),
-                cached_avm1movie: Lock::new(None),
                 content_type: Cell::new(ContentType::Unknown),
                 expose_content: Cell::new(false),
                 errored: Cell::new(false),
@@ -153,7 +147,7 @@ impl<'gc> LoaderInfoObject<'gc> {
         Ok(object)
     }
 
-    pub fn loader(self) -> Option<Object<'gc>> {
+    pub fn loader(self) -> Option<StageObject<'gc>> {
         self.0.loader
     }
 
@@ -268,31 +262,30 @@ impl<'gc> LoaderInfoObject<'gc> {
         self.0.content_type.set(content_type);
     }
 
-    pub fn unload(self, activation: &mut Activation<'_, 'gc>) {
-        // With GC-managed SwfMovie, cleanup happens automatically when unreachable.
-        // Just reset properties to empty state.
-        let movie = *activation.context.root_swf;
+    pub fn unload(self, context: &mut UpdateContext<'gc>) {
+        // Reset properties
+        let movie = *context.root_swf;
         let empty_swf = Gc::new(
-            activation.gc(),
+            context.gc(),
             SwfMovie::empty(movie.version(), Some(movie.url().into())),
         );
         let loader_stream = LoaderStream::NotYetLoaded(empty_swf, None, false);
-        self.set_loader_stream(loader_stream, activation.gc());
+        self.set_loader_stream(loader_stream, context.gc());
         self.set_errored(false);
         self.reset_init_and_complete_events();
 
-        let loader = self
+        let mut loader = self
             .0
             .loader
-            .expect("LoaderInfo must have been created by Loader");
+            .expect("LoaderInfo must have been created by Loader")
+            .display_object()
+            .as_container()
+            .unwrap();
 
-        // Remove the Loader's content element, and ignore the resulting
-        // error if the loader hadn't loaded it.
-        let _ = crate::avm2::globals::flash::display::display_object_container::remove_child_at(
-            activation,
-            Value::Object(loader),
-            &[0.into()],
-        );
+        // Remove the Loader's content element if it exists.
+        if let Some(child) = loader.child_by_index(0) {
+            loader.remove_child(context, child);
+        }
     }
 }
 

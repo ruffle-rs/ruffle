@@ -25,10 +25,13 @@ use crate::avm2::stack::StackFrame;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
+use crate::library::MovieLibrary;
 use crate::string::{AvmAtom, AvmString, HasStringContext, StringContext};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Gc;
+use gc_arena::lock::RefLock;
 use ruffle_macros::istr;
+use std::cell::Cell;
 use std::cmp::{Ordering, min};
 use swf::avm2::types::MethodFlags as AbcMethodFlags;
 
@@ -52,10 +55,10 @@ pub struct Activation<'a, 'gc: 'a> {
     /// current domain instead.
     caller_domain: Option<Domain<'gc>>,
 
-    /// The movie that called this builtin method.
-    /// This is intended to be used only for builtin methods- if this activation's method
-    /// is a bytecode method, the movie will instead be the movie that the bytecode method came from.
-    caller_movie: Option<Gc<'gc, SwfMovie>>,
+    /// The library of the caller's translation unit.
+    /// For bytecode methods, this is the library of the method's TU.
+    /// For builtin methods, this is inherited from the calling activation.
+    caller_library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
 
     /// The superclass of the class that yielded the currently executing method.
     ///
@@ -82,6 +85,20 @@ pub struct Activation<'a, 'gc: 'a> {
     /// whether the current method would be interpreted or JITted in this flag.
     /// See `MethodData.is_interpreted` for more information.
     is_interpreter: bool,
+
+    /// The default XML namespace for E4X operations within this activation.
+    ///
+    /// Set by the `dxns`/`dxnslate` opcodes. Propagated to child activations:
+    /// native methods always inherit the caller's value, bytecode methods with
+    /// the `SET_DXNS` flag start with `None` (the opcode will set their own),
+    /// and bytecode methods without the flag inherit the caller's value.
+    ///
+    /// NOTE: In avmplus this is more nuanced — the default namespace is a property
+    /// of MethodFrames/MethodEnvs/scopes, and closures capture the dxns value from
+    /// the scope at the time they are created (see `MethodFrame::findDxns`).
+    /// Our per-Activation approach doesn't handle that closure-capture behavior.
+    /// See <https://github.com/ruffle-rs/ruffle/pull/21014> for details.
+    default_xml_namespace: Option<AvmString<'gc>>,
 
     pub context: &'a mut UpdateContext<'gc>,
 }
@@ -119,11 +136,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: None,
-            caller_movie: None,
+            caller_library: None,
             bound_superclass_object: None,
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
+            default_xml_namespace: None,
             context,
         }
     }
@@ -142,11 +160,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: Some(domain),
-            caller_movie: None,
+            caller_library: None,
             bound_superclass_object: None,
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
+            default_xml_namespace: None,
             context,
         }
     }
@@ -316,6 +335,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         stack_frame: StackFrame<'a, 'gc>,
         bound_superclass_object: Option<ClassObject<'gc>>,
         callee: Option<FunctionObject<'gc>>,
+        caller_dxns: Option<AvmString<'gc>>,
     ) -> Result<(), Error<'gc>> {
         let body = method
             .body()
@@ -331,7 +351,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.num_locals = num_locals;
         self.outer = outer;
         self.caller_domain = Some(outer.domain());
-        self.caller_movie = Some(method.owner_movie());
+        self.caller_library = method.owner_library();
         self.bound_superclass_object = bound_superclass_object;
         self.stack = stack_frame;
         self.scope_depth = self.context.avm2.scope_stack.len();
@@ -399,6 +419,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // to undefined, so we just have to increase the stack pointer
         self.reset_stack();
 
+        // Inherit the caller's default XML namespace if this method doesn't
+        // set its own via dxns opcodes.
+        if !method.sets_dxns() {
+            self.default_xml_namespace = caller_dxns;
+        }
+
         Ok(())
     }
 
@@ -413,17 +439,19 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         bound_superclass_object: Option<ClassObject<'gc>>,
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
-        caller_movie: Option<Gc<'gc, SwfMovie>>,
+        caller_library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
+        caller_dxns: Option<AvmString<'gc>>,
     ) -> Self {
         Self {
             num_locals: 0,
             outer,
             caller_domain,
-            caller_movie,
+            caller_library,
             bound_superclass_object,
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
             is_interpreter: false,
+            default_xml_namespace: caller_dxns,
             context,
         }
     }
@@ -462,6 +490,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.is_interpreter
     }
 
+    /// Get the current default XML namespace URI for this activation, if any.
+    pub fn default_xml_namespace(&self) -> Option<AvmString<'gc>> {
+        self.default_xml_namespace
+    }
+
     /// Retrieve the outer scope of this activation
     pub fn outer(&self) -> ScopeChain<'gc> {
         self.outer
@@ -484,10 +517,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.caller_domain
     }
 
-    /// Returns the movie of the original AS3 caller. This will be `None`
-    /// if this activation was constructed with `from_nothing`
+    /// Returns the library of the caller's translation unit.
+    pub fn caller_library(&self) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
+        self.caller_library
+    }
+
+    /// Returns the movie of the original AS3 caller, derived from the caller's library.
+    /// This will be `None` if this activation was constructed with `from_nothing`.
     pub fn caller_movie(&self) -> Option<Gc<'gc, SwfMovie>> {
-        self.caller_movie
+        self.caller_library.map(|lib| lib.borrow().movie())
     }
 
     /// Like `caller_movie()`, but returns the root movie if `caller_movie`
@@ -533,11 +571,27 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.stack.pop()
     }
 
+    /// Pops multiple values off the operand stack, collecting them into a collection.
+    #[inline]
+    #[must_use]
+    pub fn pop_stack_args<C>(&self, arg_count: u32) -> C
+    where
+        C: FromIterator<Value<'gc>>,
+    {
+        self.stack
+            .pop_args(arg_count)
+            .iter()
+            .map(Cell::get)
+            .collect()
+    }
+
     /// Pops multiple values off the operand stack.
     #[inline]
     #[must_use]
-    pub fn pop_stack_args(&self, arg_count: u32) -> Vec<Value<'gc>> {
-        self.stack.pop_args(arg_count)
+    pub fn get_args(&self, arg_count: u32) -> FunctionArgs<'a, 'gc> {
+        let slice = self.stack.pop_args(arg_count);
+
+        FunctionArgs::from_cell_slice(slice)
     }
 
     /// Pushes a scope onto the scope stack.
@@ -762,7 +816,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::BkptLine { line_num } => self.op_bkpt_line(*line_num),
                 Op::Timestamp => self.op_timestamp(),
                 Op::TypeOf => self.op_type_of(),
-                Op::Dxns { .. } => self.op_dxns(),
+                Op::Dxns { string } => self.op_dxns(*string),
                 Op::DxnsLate => self.op_dxns_late(),
                 Op::EscXAttr => self.op_esc_xattr(),
                 Op::EscXElem => self.op_esc_elem(),
@@ -1000,7 +1054,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_call(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let receiver = self.pop_stack();
         let function = self.pop_stack();
 
@@ -1024,7 +1078,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // However, the optimizer can still generate it.
 
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let receiver = self.pop_stack().null_check(self, None)?;
 
         let value = receiver.call_method_with_args(index, args, self)?;
@@ -1064,7 +1118,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
 
@@ -1080,7 +1134,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
         let function = receiver.get_property(&multiname, self)?;
@@ -1096,7 +1150,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let receiver = self.pop_stack().null_check(self, Some(&multiname))?;
 
@@ -1106,7 +1160,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_call_static(&mut self, method: Method<'gc>, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let receiver = self.pop_stack();
 
         // Ensure receiver is of the correct type
@@ -1131,7 +1185,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let multiname = multiname.fill_with_runtime_params(self)?;
 
         let bound_superclass_object = self
@@ -1666,7 +1720,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_construct(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let ctor = self.pop_stack();
 
         let object = ctor.construct(self, args)?;
@@ -1681,7 +1735,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
         arg_count: u32,
     ) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let multiname = multiname.fill_with_runtime_params(self)?;
         let source = self.pop_stack().null_check(self, Some(&multiname))?;
 
@@ -1693,7 +1747,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_construct_slot(&mut self, index: u32, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let source = self
             .pop_stack()
             .null_check(self, None)?
@@ -1709,7 +1763,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_construct_super(&mut self, arg_count: u32) -> Result<(), Error<'gc>> {
-        let args = self.stack.get_args(arg_count as usize);
+        let args = self.get_args(arg_count);
         let receiver = self.pop_stack().null_check(self, None)?;
 
         self.super_init(receiver, args)?;
@@ -1806,7 +1860,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_apply_type(&mut self, num_types: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(num_types);
+        let args: Vec<_> = self.pop_stack_args(num_types);
         let base = self
             .pop_stack()
             .as_object()
@@ -1820,8 +1874,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_new_array(&mut self, num_args: u32) -> Result<(), Error<'gc>> {
-        let args = self.pop_stack_args(num_args);
-        let array = ArrayStorage::from_args(&args[..]);
+        let array = self.pop_stack_args(num_args);
         let array_obj = ArrayObject::from_storage(self.context, array);
 
         self.push_stack(array_obj);
@@ -2573,14 +2626,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     /// Implements `Op::Dxns`
-    fn op_dxns(&mut self) -> Result<(), Error<'gc>> {
-        Err("Unimplemented opcode Dxns.".into())
+    fn op_dxns(&mut self, uri: AvmAtom<'gc>) -> Result<(), Error<'gc>> {
+        self.default_xml_namespace = Some(uri.into());
+        Ok(())
     }
 
     /// Implements `Op::DxnsLate`
     fn op_dxns_late(&mut self) -> Result<(), Error<'gc>> {
-        let _ = self.pop_stack();
-        Err("Unimplemented opcode DxnsLate.".into())
+        let value = self.pop_stack();
+        let uri = value.coerce_to_string(self)?;
+        self.default_xml_namespace = Some(uri);
+        Ok(())
     }
 
     /// Implements `Op::EscXAttr`
