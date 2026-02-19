@@ -1,5 +1,6 @@
 use crate::avm2::class::Class;
 pub use crate::avm2::globals::flash::utils::get_qualified_class_name;
+pub use crate::avm2::globals::flash::utils::get_qualified_superclass_name;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
 use crate::avm2::object::{ArrayObject, ScriptObject, TObject as _};
