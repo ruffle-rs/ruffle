@@ -1,0 +1,7 @@
+/*.substvars
+/.debhelper/
+/debhelper-build-stamp
+/files
+/ruffle/
+/ruffle.debhelper.log
+/tmp/

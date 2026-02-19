@@ -4,6 +4,7 @@ import os
 import subprocess
 import sys
 from datetime import datetime
+from email import utils
 import xml.etree.ElementTree as xml
 import json
 
@@ -112,6 +113,19 @@ def gh_get_last_nightly_tag():
     return next(gh_list_nightly_tags(16), None)
 
 
+def deb_changelog(version, revision, date, fullname='ruffle', email='ruffle@ruffle.rs', suite='unstable'):
+    orig = ''
+    changes = ''
+    rfc2822date = utils.format_datetime(date)
+    if os.path.exists(f'{REPO_DIR}/.github/changelog.entries'):
+        with open(f'{REPO_DIR}/.github/changelog.entries', 'r') as changelog:
+            changes = changelog.read()
+    with open(f'{REPO_DIR}/desktop/packages/linux/debian/changelog', 'r') as original:
+        orig = original.read()
+    with open(f'{REPO_DIR}/desktop/packages/linux/debian/changelog', 'w') as modified:
+        modified.write(f'ruffle ({version}-{revision}) {suite}; urgency=medium\n\n{changes}\n\n -- {fullname} <{email}>  {rfc2822date}\n\n{orig}')
+
+
 # ===== Commands ===========================================
 
 def bump():
@@ -120,6 +134,7 @@ def bump():
     """
 
     current_version = cargo_get_version()
+    current_day_id = get_current_day_id()
     log(f'Current version: {current_version}')
 
     log('Bumping minor version to get the next planned version')
@@ -135,7 +150,7 @@ def bump():
     cargo_set_version([nightly_version])
 
     version = cargo_get_version()
-    version4 = f'{next_planned_version}.{get_current_day_id()}'
+    version4 = f'{next_planned_version}.{current_day_id}'
 
     npm_dir = f'{REPO_DIR}/web'
     run_command(['npm', 'install', 'workspace-version'], cwd=npm_dir)
@@ -145,6 +160,8 @@ def bump():
     github_output('current-version', current_version)
     github_output('version', version)
     github_output('version4', version4)
+
+    deb_changelog(version, current_day_id, datetime.now())
 
 
 def metainfo():
