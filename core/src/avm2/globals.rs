@@ -800,6 +800,7 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
                 graphicstrianglepath
             ),
             ("flash.display", "GraphicsSolidFill", graphicssolidfill),
+            ("flash.display", "GraphicsShaderFill", graphicsshaderfill),
             ("flash.display", "GraphicsStroke", graphicsstroke),
             ("flash.display", "Sprite", sprite),
             ("flash.display3D.textures", "CubeTexture", cubetexture),
