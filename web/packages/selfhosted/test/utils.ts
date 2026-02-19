@@ -22,6 +22,15 @@ export async function isRuffleLoaded(browser: WebdriverIO.Browser) {
     );
 }
 
+export async function isRuffleInitialized(browser: WebdriverIO.Browser) {
+    return await browser.execute(
+        () =>
+            window !== undefined &&
+            window.RufflePlayer !== undefined &&
+            window.RufflePlayer.initialized,
+    );
+}
+
 export async function isRufflePlayerLoaded(
     browser: WebdriverIO.Browser,
     player: ChainablePromiseElement,
@@ -39,6 +48,15 @@ export async function isRufflePlayerLoaded(
 export async function waitForRuffle(browser: WebdriverIO.Browser) {
     await browser.waitUntil(async () => await isRuffleLoaded(browser), {
         timeoutMsg: "Expected Ruffle to load",
+    });
+    await throwIfError(browser);
+}
+
+export async function waitForRuffleInitialization(
+    browser: WebdriverIO.Browser,
+) {
+    await browser.waitUntil(async () => await isRuffleInitialized(browser), {
+        timeoutMsg: "Expected Ruffle to initialize",
     });
     await throwIfError(browser);
 }
@@ -182,6 +200,13 @@ export async function assertNoMoreTraceOutput(
 export async function injectRuffleAndWait(browser: WebdriverIO.Browser) {
     await injectRuffle(browser);
     await waitForRuffle(browser);
+}
+
+export async function injectRuffleAndWaitForInitialization(
+    browser: WebdriverIO.Browser,
+) {
+    await injectRuffle(browser);
+    await waitForRuffleInitialization(browser);
 }
 
 export async function waitForPlayerToLoad(
