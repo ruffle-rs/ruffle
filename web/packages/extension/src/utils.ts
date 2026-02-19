@@ -8,6 +8,7 @@ const DEFAULT_OPTIONS: Required<Options> = {
     autostart: false,
     showReloadButton: false,
     swfTakeover: true,
+    customConfig: "",
 };
 
 // TODO: Once https://crbug.com/798169 is addressed, just use browser.
@@ -104,6 +105,17 @@ export async function getExplicitOptions(): Promise<Options> {
     // This value is specific to the internal extension pages, and is always "default"
     if ("responseHeadersUnsupported" in options) {
         delete options["responseHeadersUnsupported"];
+    }
+
+    // Handle customConfig JSON
+    if (options.customConfig) {
+        try {
+            const extra = JSON.parse(options.customConfig);
+            Object.assign(options, extra);
+        } catch (e) {
+            console.warn("Invalid custom_config JSON:", e);
+        }
+        delete options.customConfig;
     }
 
     return options;

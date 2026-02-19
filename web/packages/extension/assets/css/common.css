@@ -157,3 +157,19 @@ button {
     height: 20px;
     margin: auto;
 }
+
+/* Textarea input */
+.option.textarea {
+    flex-direction: column;
+}
+
+.option.textarea label {
+    color: var(--ruffle-orange);
+    font-size: 20px;
+    margin: 8px auto;
+    padding: 0;
+}
+
+.option.textarea textarea {
+    width: 100%;
+}
