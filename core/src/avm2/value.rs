@@ -85,13 +85,18 @@ where
 
 impl From<f64> for Value<'_> {
     fn from(value: f64) -> Self {
-        Value::Number(value)
+        let value_i = value as i32;
+        if value.to_bits() == (value_i as f64).to_bits() {
+            Value::Integer(value_i)
+        } else {
+            Value::Number(value)
+        }
     }
 }
 
 impl From<f32> for Value<'_> {
     fn from(value: f32) -> Self {
-        Value::Number(f64::from(value))
+        f64::from(value).into()
     }
 }
 
