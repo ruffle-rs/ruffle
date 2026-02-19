@@ -61,6 +61,7 @@ use async_channel::Sender;
 use enumset::EnumSet;
 use gc_arena::lock::GcRefLock;
 use gc_arena::{Collect, DynamicRootSet, Mutation, Rootable};
+use ruffle_common::duration::FloatDuration;
 use ruffle_macros::istr;
 use ruffle_render::backend::{RenderBackend, ViewportDimensions, null::NullRenderer};
 use ruffle_render::commands::CommandList;
@@ -334,7 +335,7 @@ pub struct Player {
     /// Gained by passage of time between host frames, spent by executing SWF frames.
     /// This is how we support custom SWF framerates
     /// and compensate for small lags by "catching up" (up to MAX_FRAMES_PER_TICK).
-    frame_accumulator: f64,
+    frame_accumulator: FloatDuration,
     recent_run_frame_timings: VecDeque<f64>,
 
     /// Faked time passage for fooling hand-written busy-loop FPS limiters.
@@ -513,32 +514,37 @@ impl Player {
         }
     }
 
-    pub fn tick(&mut self, dt: f64) {
+    /// Returns the duration of a single frame.
+    fn frame_duration(&self) -> FloatDuration {
+        FloatDuration::from_millis(self.frame_time(1000.0))
+    }
+
+    pub fn tick(&mut self, dt: FloatDuration) {
         if !self.is_playing() {
             return;
         }
 
         self.frame_accumulator += dt;
-        let frame_time = self.frame_time(1000.0);
+        let frame_duration = self.frame_duration();
 
         let max_frames_per_tick = self.max_frames_per_tick();
         let mut frame = 0;
 
-        while frame < max_frames_per_tick && self.frame_accumulator >= frame_time {
+        while frame < max_frames_per_tick && self.frame_accumulator >= frame_duration {
             let timer = Instant::now();
             self.run_frame();
             let elapsed = timer.elapsed().as_millis() as f64;
 
             self.add_frame_timing(elapsed);
 
-            self.frame_accumulator -= frame_time;
+            self.frame_accumulator -= frame_duration;
             frame += 1;
             // The script probably tried implementing an FPS limiter with a busy loop.
             // We fooled the busy loop by pretending that more time has passed that actually did.
             // Then we need to actually pass this time, by decreasing frame_accumulator
             // to delay the future frame.
             if self.time_offset > 0 {
-                self.frame_accumulator -= self.time_offset as f64;
+                self.frame_accumulator -= FloatDuration::from_millis(self.time_offset as f64);
             }
 
             // If we are stepping a single frame, immediately suspend ourselves.
@@ -559,18 +565,18 @@ impl Player {
 
         // Sanity: If we had too many frames to tick, just reset the accumulator
         // to prevent running at turbo speed.
-        if self.frame_accumulator >= frame_time {
-            self.frame_accumulator = 0.0;
+        if self.frame_accumulator >= frame_duration {
+            self.frame_accumulator = FloatDuration::ZERO;
         }
 
         // Adjust playback speed for next frame to stay in sync with timeline audio tracks ("stream" sounds).
-        let cur_frame_offset = self.frame_accumulator;
-        self.frame_accumulator += self.mutate_with_update_context(|context| {
+        let cur_frame_offset = self.frame_accumulator.as_millis();
+        let audio_skew = self.mutate_with_update_context(|context| {
             context
                 .audio_manager
                 .audio_skew_time(context.audio, cur_frame_offset)
-                * 1000.0
         });
+        self.frame_accumulator += FloatDuration::from_secs(audio_skew);
 
         self.update_sockets();
         self.update_net_connections();
@@ -587,23 +593,21 @@ impl Player {
 
     /// Returns the approximate duration of time until the next frame is due to run.
     /// This is only an approximation to be used for sleep durations.
-    pub fn time_til_next_frame(&self) -> std::time::Duration {
-        let frame_time = self.frame_time(1000.0);
-        let mut dt = if self.frame_accumulator <= 0.0 {
-            frame_time
-        } else if self.frame_accumulator >= frame_time {
-            0.0
+    pub fn time_til_next_frame(&self) -> Duration {
+        let frame_duration = self.frame_duration();
+        let mut time_til_next = if self.frame_accumulator.as_millis() <= 0.0 {
+            frame_duration
+        } else if self.frame_accumulator >= frame_duration {
+            FloatDuration::ZERO
         } else {
-            frame_time - self.frame_accumulator
+            frame_duration - self.frame_accumulator
         };
 
         if let Some(time_til_next_timer) = self.time_til_next_timer {
-            dt = dt.min(time_til_next_timer)
+            time_til_next = time_til_next.min(FloatDuration::from_millis(time_til_next_timer));
         }
 
-        dt = dt.max(0.0);
-
-        std::time::Duration::from_micros(dt as u64 * 1000)
+        time_til_next.max(FloatDuration::ZERO).to_std()
     }
 
     pub fn is_playing(&self) -> bool {
@@ -2417,7 +2421,7 @@ impl Player {
 
     /// Update all AVM-based timers (such as created via setInterval).
     /// Returns the approximate amount of time until the next timer tick.
-    pub fn update_timers(&mut self, dt: f64) {
+    pub fn update_timers(&mut self, dt: FloatDuration) {
         self.time_til_next_timer =
             self.mutate_with_update_context(|context| Timers::update_timers(context, dt));
     }
@@ -3006,7 +3010,7 @@ impl PlayerBuilder {
                 frame_rate,
                 forced_frame_rate,
                 frame_phase: Default::default(),
-                frame_accumulator: 0.0,
+                frame_accumulator: FloatDuration::ZERO,
                 recent_run_frame_timings: VecDeque::with_capacity(10),
                 start_time: Instant::now(),
                 time_offset: 0,
