@@ -2606,6 +2606,7 @@ pub struct PlayerBuilder {
     avm2_optimizer_enabled: bool,
     #[cfg(feature = "default_font")]
     default_font: bool,
+    custom_version_string: Option<String>,
 }
 
 impl PlayerBuilder {
@@ -2662,6 +2663,7 @@ impl PlayerBuilder {
             avm2_optimizer_enabled: true,
             #[cfg(feature = "default_font")]
             default_font: true,
+            custom_version_string: None,
         }
     }
 
@@ -2889,6 +2891,13 @@ impl PlayerBuilder {
         self
     }
 
+    /// Override the version string reported by `Capabilities.version`/`$version`, to this custom one.
+    /// SWFs normally expect a string in the format of "1,2,3,4", and by default Ruffle reports `(player_version),0,0,0` (e.g. `32,0,0,0`)
+    pub fn with_custom_version_string(mut self, value: Option<String>) -> Self {
+        self.custom_version_string = value;
+        self
+    }
+
     fn create_gc_root<'gc>(
         gc_context: &'gc Mutation<'gc>,
         player_version: u8,
@@ -3025,7 +3034,11 @@ impl PlayerBuilder {
                 // TODO: AVM1 and AVM2 use separate RNGs (though algorithm is same), so this is technically incorrect.
                 // See: https://github.com/ruffle-rs/ruffle/issues/20244
                 rng: AvmRng::default(),
-                system: SystemProperties::new(language),
+                system: SystemProperties::new(
+                    self.player_runtime,
+                    language,
+                    self.custom_version_string,
+                ),
                 page_url: self.page_url.clone(),
                 transform_stack: TransformStack::new(),
                 instance_counter: 0,

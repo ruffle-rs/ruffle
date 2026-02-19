@@ -53,6 +53,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) log_level: tracing::Level,
     pub(crate) max_execution_duration: Duration,
     pub(crate) player_version: Option<u8>,
+    pub(crate) custom_player_version_string: Option<String>,
     pub(crate) preferred_renderer: Option<String>, // TODO: Enumify?
     pub(crate) open_url_mode: OpenUrlMode,
     pub(crate) allow_networking: NetworkingAccessMode,
@@ -93,6 +94,7 @@ impl Default for RuffleInstanceBuilder {
             log_level: tracing::Level::ERROR,
             max_execution_duration: Duration::from_secs_f64(15.0),
             player_version: None,
+            custom_player_version_string: None,
             preferred_renderer: None,
             open_url_mode: OpenUrlMode::Allow,
             allow_networking: NetworkingAccessMode::All,
@@ -246,6 +248,11 @@ impl RuffleInstanceBuilder {
     #[wasm_bindgen(js_name = "setPlayerVersion")]
     pub fn set_player_version(&mut self, value: Option<u8>) {
         self.player_version = value;
+    }
+
+    #[wasm_bindgen(js_name = "setCustomPlayerVersionString")]
+    pub fn set_custom_player_version_string(&mut self, value: Option<String>) {
+        self.custom_player_version_string = value;
     }
 
     #[wasm_bindgen(js_name = "setPreferredRenderer")]
@@ -706,6 +713,7 @@ impl RuffleInstanceBuilder {
             .with_letterbox(self.letterbox)
             .with_max_execution_duration(self.max_execution_duration)
             .with_player_version(self.player_version)
+            .with_custom_version_string(self.custom_player_version_string.clone())
             .with_player_runtime(self.player_runtime)
             .with_compatibility_rules(self.compatibility_rules.clone())
             .with_quality(self.quality)
