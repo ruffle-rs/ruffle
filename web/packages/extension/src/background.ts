@@ -1,5 +1,6 @@
 import * as utils from "./utils";
 import { isMessage } from "./messages";
+import { Options } from "./common";
 
 async function contentScriptRegistered() {
     const matchingScripts = await utils.scripting.getRegisteredContentScripts({
@@ -61,11 +62,11 @@ async function isHeaderConditionSupported() {
     }
 }
 
-async function enableSWFTakeover() {
+async function enableSWFTakeover(opt: Options | null = null) {
+    const options = opt || (await utils.getOptions());
     // Checks if the responseHeaders condition is supported and not behind a disabled flag.
     if (utils.declarativeNetRequest && (await isHeaderConditionSupported())) {
-        const { ruffleEnable } = await utils.getOptions();
-        if (ruffleEnable) {
+        if (options.ruffleEnable) {
             const playerPage = utils.runtime.getURL("/player.html");
             const rules = [
                 {
@@ -163,10 +164,10 @@ async function disableSWFTakeover() {
     }
 }
 
-async function enable() {
-    const { swfTakeover } = await utils.getOptions();
-    if (swfTakeover) {
-        await enableSWFTakeover();
+async function enable(opt: Options | null = null) {
+    const options = opt || (await utils.getOptions());
+    if (options.swfTakeover) {
+        await enableSWFTakeover(options);
     }
     if (
         !utils.scripting ||
@@ -261,9 +262,9 @@ function onMessage(
 }
 
 (async () => {
-    const { ruffleEnable } = await utils.getOptions();
-    if (ruffleEnable) {
-        await enable();
+    const options = await utils.getOptions();
+    if (options.ruffleEnable) {
+        await enable(options);
     }
 })();
 
