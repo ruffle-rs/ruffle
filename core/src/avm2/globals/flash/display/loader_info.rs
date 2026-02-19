@@ -10,7 +10,7 @@ use crate::display_object::TDisplayObject;
 use crate::loader::ContentType;
 use crate::string::AvmString;
 use crate::{avm2_stub_getter, avm2_stub_method};
-use std::sync::Arc;
+use gc_arena::Gc;
 use swf::{Compression, write_swf};
 use url::Url;
 
@@ -47,12 +47,10 @@ pub fn get_application_domain<'gc>(
 
     if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
-            LoaderStream::NotYetLoaded(movie, _, _) => {
-                let domain = activation
-                    .context
-                    .library
-                    .library_for_movie_mut(movie.clone())
-                    .try_avm2_domain();
+            LoaderStream::NotYetLoaded(_, root, _) => {
+                let domain = root
+                    .and_then(|r| r.library())
+                    .and_then(|l| l.borrow().try_avm2_domain());
 
                 if let Some(domain) = domain {
                     return Ok(DomainObject::from_domain(activation, domain).into());
@@ -62,13 +60,11 @@ pub fn get_application_domain<'gc>(
             }
 
             // A loaded SWF will always have an AVM2 domain present.
-            LoaderStream::Swf(movie, _) => {
-                let domain = activation
-                    .context
-                    .library
-                    .library_for_movie_mut(movie.clone())
-                    .avm2_domain();
-                return Ok(DomainObject::from_domain(activation, domain).into());
+            LoaderStream::Swf(_, root) => {
+                if let Some(library) = root.library() {
+                    let domain = library.borrow().avm2_domain();
+                    return Ok(DomainObject::from_domain(activation, domain).into());
+                }
             }
         }
     }
@@ -280,7 +276,7 @@ pub fn get_child_allows_parent<'gc>(
                 // Only the root movie is LoaderStream::Swf but missing a loader.
                 // In that case, return true.
                 assert!(
-                    Arc::ptr_eq(root, activation.context.root_swf)
+                    Gc::ptr_eq(*root, *activation.context.root_swf)
                         && dobj.as_movie_clip().is_some()
                 );
                 Ok(true.into())
@@ -320,7 +316,7 @@ pub fn get_parent_allows_child<'gc>(
             } else {
                 // See comment on childAllowsParent
                 assert!(
-                    Arc::ptr_eq(root, activation.context.root_swf)
+                    Gc::ptr_eq(*root, *activation.context.root_swf)
                         && dobj.as_movie_clip().is_some()
                 );
                 Ok(true.into())

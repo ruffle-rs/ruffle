@@ -25,13 +25,14 @@ use crate::avm2::stack::StackFrame;
 use crate::avm2::value::Value;
 use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
+use crate::library::MovieLibrary;
 use crate::string::{AvmAtom, AvmString, HasStringContext, StringContext};
 use crate::tag_utils::SwfMovie;
 use gc_arena::Gc;
+use gc_arena::lock::RefLock;
 use ruffle_macros::istr;
 use std::cell::Cell;
 use std::cmp::{Ordering, min};
-use std::sync::Arc;
 use swf::avm2::types::MethodFlags as AbcMethodFlags;
 
 /// Represents a single activation of a given AVM2 function or keyframe.
@@ -54,10 +55,10 @@ pub struct Activation<'a, 'gc: 'a> {
     /// current domain instead.
     caller_domain: Option<Domain<'gc>>,
 
-    /// The movie that called this builtin method.
-    /// This is intended to be used only for builtin methods- if this activation's method
-    /// is a bytecode method, the movie will instead be the movie that the bytecode method came from.
-    caller_movie: Option<Arc<SwfMovie>>,
+    /// The library of the caller's translation unit.
+    /// For bytecode methods, this is the library of the method's TU.
+    /// For builtin methods, this is inherited from the calling activation.
+    caller_library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
 
     /// The superclass of the class that yielded the currently executing method.
     ///
@@ -135,7 +136,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: None,
-            caller_movie: None,
+            caller_library: None,
             bound_superclass_object: None,
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
@@ -159,7 +160,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: Some(domain),
-            caller_movie: None,
+            caller_library: None,
             bound_superclass_object: None,
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
@@ -350,7 +351,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.num_locals = num_locals;
         self.outer = outer;
         self.caller_domain = Some(outer.domain());
-        self.caller_movie = Some(method.owner_movie());
+        self.caller_library = method.owner_library();
         self.bound_superclass_object = bound_superclass_object;
         self.stack = stack_frame;
         self.scope_depth = self.context.avm2.scope_stack.len();
@@ -438,14 +439,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         bound_superclass_object: Option<ClassObject<'gc>>,
         outer: ScopeChain<'gc>,
         caller_domain: Option<Domain<'gc>>,
-        caller_movie: Option<Arc<SwfMovie>>,
+        caller_library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
         caller_dxns: Option<AvmString<'gc>>,
     ) -> Self {
         Self {
             num_locals: 0,
             outer,
             caller_domain,
-            caller_movie,
+            caller_library,
             bound_superclass_object,
             stack: StackFrame::empty(),
             scope_depth: context.avm2.scope_stack.len(),
@@ -516,16 +517,21 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         self.caller_domain
     }
 
-    /// Returns the movie of the original AS3 caller. This will be `None`
-    /// if this activation was constructed with `from_nothing`
-    pub fn caller_movie(&self) -> Option<Arc<SwfMovie>> {
-        self.caller_movie.clone()
+    /// Returns the library of the caller's translation unit.
+    pub fn caller_library(&self) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
+        self.caller_library
+    }
+
+    /// Returns the movie of the original AS3 caller, derived from the caller's library.
+    /// This will be `None` if this activation was constructed with `from_nothing`.
+    pub fn caller_movie(&self) -> Option<Gc<'gc, SwfMovie>> {
+        self.caller_library.map(|lib| lib.borrow().movie())
     }
 
     /// Like `caller_movie()`, but returns the root movie if `caller_movie`
     /// is `None`. This matches what FP does in most cases.
-    pub fn caller_movie_or_root(&self) -> Arc<SwfMovie> {
-        self.caller_movie().unwrap_or(self.context.root_swf.clone())
+    pub fn caller_movie_or_root(&self) -> Gc<'gc, SwfMovie> {
+        self.caller_movie().unwrap_or(*self.context.root_swf)
     }
 
     /// Returns the global scope of this activation.

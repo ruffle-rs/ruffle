@@ -10,6 +10,7 @@ use crate::avm2::object::{
 };
 use crate::avm2::{Avm2, FunctionArgs, Value as Avm2Value};
 use crate::context::UpdateContext;
+use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use gc_arena::Collect;
 use std::collections::BTreeMap;
@@ -307,9 +308,12 @@ impl<'gc> Callback<'gc> {
             }
             Callback::Avm2 { method } => {
                 let domain = context
-                    .library
-                    .library_for_movie(context.root_swf.clone())
+                    .stage
+                    .root_clip()
                     .unwrap()
+                    .library()
+                    .unwrap()
+                    .borrow()
                     .avm2_domain();
                 let mut activation = Avm2Activation::from_domain(context, domain);
                 let args: Vec<Avm2Value> = args

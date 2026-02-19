@@ -51,7 +51,7 @@ pub fn get_local<'gc>(
         return Ok(Value::Null);
     }
 
-    let mut movie_url = if let Ok(url) = url::Url::parse(activation.context.root_swf.url()) {
+    let mut movie_url = if let Ok(url) = url::Url::parse((*activation.context.root_swf).url()) {
         url
     } else {
         tracing::error!("SharedObject::get_local: Unable to parse movie URL");

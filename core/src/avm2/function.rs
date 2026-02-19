@@ -203,13 +203,13 @@ pub fn exec<'gc>(
     let ret = match method.method_kind() {
         MethodKind::Native { native_method, .. } => {
             let caller_domain = activation.caller_domain();
-            let caller_movie = activation.caller_movie();
+            let caller_library = activation.caller_library();
             let mut activation = Activation::from_builtin(
                 activation.context,
                 bound_superclass,
                 scope,
                 caller_domain,
-                caller_movie,
+                caller_library,
                 caller_dxns,
             );
 

@@ -60,7 +60,7 @@ use crate::vminterface::Instantiator;
 use async_channel::Sender;
 use enumset::EnumSet;
 use gc_arena::lock::GcRefLock;
-use gc_arena::{Collect, DynamicRootSet, Mutation, Rootable};
+use gc_arena::{Collect, DynamicRootSet, Gc, Mutation, Rootable};
 use ruffle_macros::istr;
 use ruffle_render::backend::{RenderBackend, ViewportDimensions, null::NullRenderer};
 use ruffle_render::commands::CommandList;
@@ -143,6 +143,9 @@ impl<'gc> MouseData<'gc> {
 #[derive(Collect)]
 #[collect(no_drop)]
 struct GcRootData<'gc> {
+    /// The root SWF movie (GC-managed copy).
+    root_swf: Gc<'gc, SwfMovie>,
+
     library: Library<'gc>,
 
     /// The root of the display object hierarchy.
@@ -222,6 +225,7 @@ impl<'gc> GcRootData<'gc> {
         &mut self,
     ) -> (
         Stage<'gc>,
+        &mut Gc<'gc, SwfMovie>,
         &mut Library<'gc>,
         &mut ActionQueue<'gc>,
         &mut AvmStringInterner<'gc>,
@@ -247,6 +251,7 @@ impl<'gc> GcRootData<'gc> {
     ) {
         (
             self.stage,
+            &mut self.root_swf,
             &mut self.library,
             &mut self.action_queue,
             &mut self.interner,
@@ -303,7 +308,10 @@ pub struct Player {
     /// Whether we're emulating the release or the debug build.
     player_mode: PlayerMode,
 
-    swf: Arc<SwfMovie>,
+    /// SWF version of the root movie. Synced from the GC root after each
+    /// `mutate_with_update_context` call. Used outside the arena (e.g. in
+    /// `should_reset_highlight`) where GC access is unavailable.
+    swf_version: u8,
 
     run_state: RunState,
     needs_render: bool,
@@ -1438,7 +1446,7 @@ impl Player {
             return true;
         }
 
-        if self.swf.version() < 9
+        if self.swf_version < 9
             && matches!(
                 event,
                 InputEvent::MouseDown {
@@ -1916,10 +1924,13 @@ impl Player {
     }
 
     //Checks if two displayObjects have the same depth and id and accur in the same movie.s
-    fn check_display_object_equality(object1: DisplayObject, object2: DisplayObject) -> bool {
+    fn check_display_object_equality<'gc>(
+        object1: DisplayObject<'gc>,
+        object2: DisplayObject<'gc>,
+    ) -> bool {
         object1.depth() == object2.depth()
             && object1.id() == object2.id()
-            && Arc::ptr_eq(&object1.movie(), &object2.movie())
+            && Gc::ptr_eq(object1.movie(), object2.movie())
     }
     ///This searches for a display object by it's id.
     ///When a button is being held down but the mouse stops hovering over the object
@@ -2234,6 +2245,7 @@ impl Player {
             #[allow(unused_variables)]
             let (
                 stage,
+                root_swf,
                 library,
                 action_queue,
                 interner,
@@ -2261,7 +2273,7 @@ impl Player {
             let mut update_context = UpdateContext {
                 player_version: this.player_version,
                 player_mode: this.player_mode,
-                root_swf: &mut this.swf,
+                root_swf,
                 library,
                 rng: &mut this.rng,
                 renderer: this.renderer.deref_mut(),
@@ -2328,6 +2340,7 @@ impl Player {
                     .set_frame_rate(*update_context.frame_rate);
             }
 
+            this.swf_version = update_context.root_swf.version();
             this.current_frame = update_context
                 .stage
                 .root_clip()
@@ -2894,10 +2907,11 @@ impl PlayerBuilder {
         player_version: u8,
         player_runtime: PlayerRuntime,
         fullscreen: bool,
-        fake_movie: Arc<SwfMovie>,
         external_interface_provider: Option<Box<dyn ExternalInterfaceProvider>>,
         fs_command_provider: Box<dyn FsCommandProvider>,
     ) -> GcRoot<'gc> {
+        // Create the Gc<SwfMovie> inside the arena
+        let fake_movie = Gc::new(gc_context, SwfMovie::empty(player_version, None));
         let mut interner = AvmStringInterner::new(gc_context);
         let (avm1, avm2) = {
             // SAFETY: Extending this borrow to `'gc` is sound, as the result of this
@@ -2911,6 +2925,7 @@ impl PlayerBuilder {
         };
 
         let data = GcRootData {
+            root_swf: fake_movie,
             audio_manager: AudioManager::new(),
             action_queue: ActionQueue::new(),
             avm1,
@@ -2984,7 +2999,6 @@ impl PlayerBuilder {
         let language = ui.language();
 
         // Instantiate the player.
-        let fake_movie = Arc::new(SwfMovie::empty(player_version, None));
         let frame_rate = self.frame_rate.unwrap_or(12.0);
         let forced_frame_rate = self.frame_rate.is_some();
         let player = Arc::new_cyclic(|self_ref| {
@@ -2999,7 +3013,7 @@ impl PlayerBuilder {
                 video,
 
                 // SWF info
-                swf: fake_movie.clone(),
+                swf_version: player_version,
                 current_frame: None,
 
                 // Timing
@@ -3054,7 +3068,6 @@ impl PlayerBuilder {
                         player_version,
                         self.player_runtime,
                         self.fullscreen,
-                        fake_movie.clone(),
                         self.external_interface_provider,
                         self.fs_command_provider,
                     )

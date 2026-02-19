@@ -30,6 +30,7 @@ use crate::display_object::{
 };
 use crate::events::ClipEvent;
 use crate::frame_lifecycle::catchup_display_object_to_frame;
+use crate::library::MovieLibrary;
 use crate::limits::ExecutionLimit;
 use crate::player::{Player, PostFrameCallback};
 use crate::streams::{NetStream, NetStreamHandle};
@@ -39,6 +40,8 @@ use crate::vminterface::Instantiator;
 use chardetng::EncodingDetector;
 use encoding_rs::{UTF_8, WINDOWS_1252};
 use gc_arena::Collect;
+use gc_arena::Gc;
+use gc_arena::lock::RefLock;
 use indexmap::IndexMap;
 use ruffle_macros::istr;
 use ruffle_render::utils::{JpegTagFormat, determine_jpeg_tag_format};
@@ -319,9 +322,8 @@ impl<'gc> LoadManager<'gc> {
                             let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))
                                 .expect("Could not load movie");
 
-                            let movie = Arc::new(movie);
-
                             player.lock().unwrap().mutate_with_update_context(|uc| {
+                                let movie = Gc::new(uc.gc(), movie);
                                 let importer_movie = importer_movie.fetch(uc);
                                 let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
 
@@ -330,8 +332,6 @@ impl<'gc> LoadManager<'gc> {
 
                                 tracing::debug!("Preloading swf to run exports {:?}", url);
 
-                                // Create library for exports before preloading
-                                uc.library.library_for_movie_mut(clip.movie());
                                 let res = clip.preload(uc, &mut execution_limit);
                                 tracing::debug!(
                                     "Preloaded swf to run exports result {:?} {}",
@@ -543,7 +543,7 @@ pub struct MovieLoader<'gc> {
     /// This is only available if the asynchronous loader path has
     /// completed and we expect the Player to periodically tick preload
     /// until loading completes.
-    movie: Option<Arc<SwfMovie>>,
+    movie: Option<Gc<'gc, SwfMovie>>,
 
     /// Whether or not this was loaded as a result of a `Loader.loadBytes` call
     from_bytes: bool,
@@ -842,7 +842,7 @@ impl<'gc> MovieLoader<'gc> {
             mc.replace_with_movie(uc, None, false, None);
         }
 
-        let loader_url = Some(uc.root_swf.url().to_string());
+        let loader_url = Some((*uc.root_swf).url().to_string());
 
         if replacing_root_movie {
             ContentType::sniff(&bytes).expect(ContentType::Swf)?;
@@ -961,7 +961,7 @@ pub fn load_form_into_object<'gc>(
                 // Convert the text into UTF-8
                 utf8_string = encoding.decode(&body).0;
                 utf8_string.as_bytes()
-            } else if activation.context.root_swf.version() <= 5 {
+            } else if (*activation.context.root_swf).version() <= 5 {
                 utf8_string = WINDOWS_1252.decode(&body).0;
                 utf8_string.as_bytes()
             } else {
@@ -1577,13 +1577,14 @@ impl<'gc> MovieLoader<'gc> {
         };
 
         let movie = match sniffed_type {
-            ContentType::Swf => {
-                Arc::new(SwfMovie::from_data(data, url.clone(), loader_url.clone())?)
-            }
+            ContentType::Swf => Gc::new(
+                uc.gc(),
+                SwfMovie::from_data(data, url.clone(), loader_url.clone())?,
+            ),
             ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
-                Arc::new(SwfMovie::from_loaded_image(url.clone(), length))
+                Gc::new(uc.gc(), SwfMovie::from_loaded_image(url.clone(), length))
             }
-            ContentType::Unknown => Arc::new(SwfMovie::error_movie(url.clone())),
+            ContentType::Unknown => Gc::new(uc.gc(), SwfMovie::error_movie(url.clone())),
         };
 
         match uc.load_manager.get_loader_mut(handle) {
@@ -1593,18 +1594,21 @@ impl<'gc> MovieLoader<'gc> {
                 ..
             }) => {
                 *loader_status = LoaderStatus::Parsing;
-                *old = Some(movie.clone())
+                *old = Some(movie)
             }
             _ => unreachable!(),
         };
 
         if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
             loader_info.set_content_type(sniffed_type);
-            let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
-                uc.root_swf.version(),
-                loader_url.clone(),
-                data.len(),
-            ));
+            let fake_movie = Gc::new(
+                uc.gc(),
+                SwfMovie::fake_with_compressed_len(
+                    (*uc.root_swf).version(),
+                    loader_url.clone(),
+                    data.len(),
+                ),
+            );
 
             // Expose 'bytesTotal' (via the fake movie) during the first 'progress' event,
             // but nothing else (in particular, the `parameters` and `url` properties are not set
@@ -1623,17 +1627,13 @@ impl<'gc> MovieLoader<'gc> {
             // This is intentionally set *after* the first 'progress' event, to match Flash's behavior
             // (`LoaderInfo.parameters` is always empty during the first 'progress' event)
             loader_info.set_loader_stream(
-                LoaderStream::NotYetLoaded(movie.clone(), Some(clip), false),
+                LoaderStream::NotYetLoaded(movie, Some(clip), false),
                 uc.gc(),
             );
         }
 
         match sniffed_type {
             ContentType::Swf => {
-                let library = uc.library.library_for_movie_mut(movie.clone());
-
-                library.set_avm2_domain(domain);
-
                 if let Some(mc) = clip.as_movie_clip() {
                     let loader_info = if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
                         Some(loader_info)
@@ -1644,7 +1644,12 @@ impl<'gc> MovieLoader<'gc> {
                     // Store our downloaded `SwfMovie` into our target `MovieClip`,
                     // and initialize it.
 
-                    mc.replace_with_movie(uc, Some(movie.clone()), true, loader_info);
+                    mc.replace_with_movie(uc, Some(movie), true, loader_info);
+                    // Dual-write: also set domain on the clip's own library
+                    mc.movie_library()
+                        .unwrap()
+                        .borrow_mut(uc.gc())
+                        .set_avm2_domain(domain);
 
                     // Update the MovieClip's script object prototype to match the new movie's version.
                     // This is needed because the level clip may have been created by a loader with
@@ -1714,10 +1719,9 @@ impl<'gc> MovieLoader<'gc> {
             ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
                 let mut activation = Avm2Activation::from_nothing(uc);
 
-                let library = activation.context.library.library_for_movie_mut(movie);
-
-                library.set_avm2_domain(domain);
-
+                // Image loads don't have a root MovieClip, so register a standalone library.
+                let lib = Gc::new(activation.gc(), RefLock::new(MovieLibrary::new(movie)));
+                lib.borrow_mut(activation.gc()).set_avm2_domain(domain);
                 // This will construct AVM2-side objects even under AVM1, but it doesn't matter,
                 // since Bitmap and BitmapData never have AVM1-side objects.
                 let bitmap = ruffle_render::utils::decode_define_bits_jpeg(data, None)?;
@@ -1744,13 +1748,17 @@ impl<'gc> MovieLoader<'gc> {
                     .unwrap();
 
                 let bitmap_dobj = bitmap_avm2.as_display_object().unwrap();
+                bitmap_dobj.set_library(activation.gc(), lib);
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
-                    let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
-                        activation.context.root_swf.version(),
-                        loader_url.clone(),
-                        data.len(),
-                    ));
+                    let fake_movie = Gc::new(
+                        activation.gc(),
+                        SwfMovie::fake_with_compressed_len(
+                            (*activation.context.root_swf).version(),
+                            loader_url.clone(),
+                            data.len(),
+                        ),
+                    );
 
                     loader_info.set_loader_stream(
                         LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj), false),
@@ -1761,11 +1769,14 @@ impl<'gc> MovieLoader<'gc> {
                 MovieLoader::movie_loader_progress(handle, activation.context, length, length)?;
 
                 if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
-                    let fake_movie = Arc::new(SwfMovie::fake_with_compressed_data(
-                        activation.context.root_swf.version(),
-                        loader_url,
-                        data.to_vec(),
-                    ));
+                    let fake_movie = Gc::new(
+                        activation.gc(),
+                        SwfMovie::fake_with_compressed_data(
+                            (*activation.context.root_swf).version(),
+                            loader_url,
+                            data.to_vec(),
+                        ),
+                    );
 
                     loader_info.set_loader_stream(
                         LoaderStream::NotYetLoaded(fake_movie, Some(bitmap_dobj), false),
@@ -1817,11 +1828,14 @@ impl<'gc> MovieLoader<'gc> {
                         MovieLoader::movie_loader_complete(handle, uc, None, status, redirected)?;
                     }
                     MovieLoaderVMData::Avm2 { loader_info, .. } => {
-                        let fake_movie = Arc::new(SwfMovie::fake_with_compressed_len(
-                            uc.root_swf.version(),
-                            loader_url,
-                            data.len(),
-                        ));
+                        let fake_movie = Gc::new(
+                            uc.gc(),
+                            SwfMovie::fake_with_compressed_len(
+                                (*uc.root_swf).version(),
+                                loader_url,
+                                data.len(),
+                            ),
+                        );
 
                         loader_info.set_errored(true);
 
@@ -1917,7 +1931,7 @@ impl<'gc> MovieLoader<'gc> {
                 movie,
                 vm_data,
                 ..
-            }) => (*target_clip, *vm_data, movie.clone()),
+            }) => (*target_clip, *vm_data, *movie),
             None => return Err(Error::Cancelled),
         };
 
@@ -1935,7 +1949,7 @@ impl<'gc> MovieLoader<'gc> {
             // the actual MovieClip display object has not run its first
             // frame yet.
             loader_info.set_loader_stream(
-                LoaderStream::NotYetLoaded(movie.clone().unwrap(), Some(dobj.unwrap()), false),
+                LoaderStream::NotYetLoaded(movie.unwrap(), Some(dobj.unwrap()), false),
                 uc.gc(),
             );
         }
@@ -2033,7 +2047,7 @@ impl<'gc> MovieLoader<'gc> {
             // This is fired after we process the movie's first frame,
             // in `MovieClip.on_exit_frame`
             MovieLoaderVMData::Avm2 { loader_info, .. } => {
-                let current_movie = { loader_info.loader_stream().movie().clone() };
+                let current_movie = loader_info.loader_stream().movie();
                 loader_info
                     .set_loader_stream(LoaderStream::Swf(current_movie, dobj.unwrap()), uc.gc());
 
@@ -2147,7 +2161,12 @@ impl<'gc> MovieLoader<'gc> {
                 let mut initial_loading_movie = SwfMovie::empty(current_version, None);
                 initial_loading_movie.set_url(url.to_string());
 
-                mc.replace_with_movie(uc, Some(Arc::new(initial_loading_movie)), true, None);
+                mc.replace_with_movie(
+                    uc,
+                    Some(Gc::new(uc.gc(), initial_loading_movie)),
+                    true,
+                    None,
+                );
 
                 if let Some(root) = uc.stage.root_clip()
                     && DisplayObject::ptr_eq(mc.into(), root)
@@ -2180,7 +2199,7 @@ impl<'gc> MovieLoader<'gc> {
 
         let error_movie = SwfMovie::error_movie(swf_url);
         // This also sets total_frames correctly
-        mc.replace_with_movie(uc, Some(Arc::new(error_movie)), true, None);
+        mc.replace_with_movie(uc, Some(Gc::new(uc.gc(), error_movie)), true, None);
         mc.set_cur_preload_frame(0);
     }
 

@@ -1,12 +1,50 @@
 use crate::character::Character;
 use crate::context::UpdateContext;
+use crate::debug_ui::handle::MovieHandle;
 use crate::debug_ui::{ItemToSave, Message};
+use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
+use crate::library::MovieLibrary;
 use crate::tag_utils::SwfMovie;
 use egui::{Align, Button, CollapsingHeader, Grid, Id, Layout, TextEdit, Ui, Window};
 use egui_extras::{Column, TableBuilder};
-use std::sync::Arc;
+use gc_arena::Gc;
+use gc_arena::lock::RefLock;
+use std::collections::HashSet;
 use swf::CharacterId;
 use url::Url;
+
+/// Collect all unique movies from the display tree by walking from the stage.
+fn collect_known_movies<'gc>(context: &UpdateContext<'gc>) -> Vec<Gc<'gc, SwfMovie>> {
+    let mut movies = Vec::new();
+    let mut seen = HashSet::new();
+    fn walk<'gc>(
+        obj: DisplayObject<'gc>,
+        movies: &mut Vec<Gc<'gc, SwfMovie>>,
+        seen: &mut HashSet<*const SwfMovie>,
+    ) {
+        let movie = obj.movie();
+        if seen.insert(Gc::as_ptr(movie)) {
+            movies.push(movie);
+        }
+        if let Some(container) = obj.as_container() {
+            for i in 0..container.num_children() {
+                if let Some(child) = container.child_by_index(i) {
+                    walk(child, movies, seen);
+                }
+            }
+        }
+    }
+    walk(context.stage.into(), &mut movies, &mut seen);
+    movies
+}
+
+/// Find the library for a given movie by searching the display tree.
+fn find_library_for_movie<'gc>(
+    context: &UpdateContext<'gc>,
+    movie: Gc<'gc, SwfMovie>,
+) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
+    context.library_for_movie(movie)
+}
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
 enum Panel {
@@ -28,6 +66,9 @@ impl MovieListWindow {
         messages: &mut Vec<Message>,
     ) -> bool {
         let mut keep_open = true;
+
+        // Pre-collect movies by walking the display tree
+        let movies = collect_known_movies(context);
 
         Window::new("Known Movie List")
             .open(&mut keep_open)
@@ -88,9 +129,7 @@ impl MovieListWindow {
                         });
                     })
                     .body(|mut body| {
-                        let movies = context.library.known_movies();
-
-                        for movie in movies {
+                        for movie in &movies {
                             let url_lower = movie.url().to_ascii_lowercase();
 
                             if !search.is_empty() && !url_lower.contains(&search) {
@@ -99,7 +138,7 @@ impl MovieListWindow {
 
                             body.row(18.0, |mut row| {
                                 row.col(|ui| {
-                                    open_movie_button(ui, &movie, messages);
+                                    open_movie_button(ui, context, *movie, messages);
                                 });
 
                                 row.col(|ui| {
@@ -122,7 +161,7 @@ impl MovieListWindow {
                                     if movie.data().is_empty() {
                                         ui.weak("(Empty)");
                                     } else if ui.button("Save File...").clicked() {
-                                        save_swf(&movie, messages);
+                                        save_swf(movie, messages);
                                     }
                                 });
                             });
@@ -140,25 +179,25 @@ pub struct MovieWindow {
 }
 
 impl MovieWindow {
-    pub fn show(
+    pub fn show<'gc>(
         &mut self,
         egui_ctx: &egui::Context,
-        context: &mut UpdateContext,
-        movie: Arc<SwfMovie>,
+        context: &mut UpdateContext<'gc>,
+        movie: Gc<'gc, SwfMovie>,
         messages: &mut Vec<Message>,
     ) -> bool {
         let mut keep_open = true;
 
-        Window::new(movie_name(&movie))
-            .id(Id::new(Arc::as_ptr(&movie)))
+        Window::new(movie_name(movie))
+            .id(Id::new(Gc::as_ptr(movie)))
             .open(&mut keep_open)
             .scroll([true, true])
             .show(egui_ctx, |ui| {
                 ui.horizontal(|ui| {
                     ui.selectable_value(&mut self.open_panel, Panel::Information, "Information");
 
-                    if let Some(library) = context.library.library_for_movie(movie.clone())
-                        && !library.characters().is_empty()
+                    if let Some(library) = find_library_for_movie(context, movie)
+                        && !library.borrow().characters().is_empty()
                     {
                         ui.selectable_value(&mut self.open_panel, Panel::Characters, "Characters");
                     }
@@ -166,19 +205,25 @@ impl MovieWindow {
                 ui.separator();
 
                 match self.open_panel {
-                    Panel::Information => self.show_information(ui, &movie, messages),
-                    Panel::Characters => self.show_characters(ui, context, &movie),
+                    Panel::Information => self.show_information(ui, movie, messages),
+                    Panel::Characters => self.show_characters(ui, context, movie),
                 }
             });
         keep_open
     }
 
-    fn show_characters(&mut self, ui: &mut Ui, context: &mut UpdateContext, movie: &Arc<SwfMovie>) {
+    fn show_characters<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        context: &mut UpdateContext<'gc>,
+        movie: Gc<'gc, SwfMovie>,
+    ) {
         // Cloned up here so we can still use context afterwards
-        let (characters, export_characters) = context
-            .library
-            .library_for_movie(movie.clone())
-            .map(|l| (l.characters().clone(), l.export_characters().clone()))
+        let (characters, export_characters) = find_library_for_movie(context, movie)
+            .map(|l| {
+                let l = l.borrow();
+                (l.characters().clone(), l.export_characters().clone())
+            })
             .unwrap_or_default();
 
         TextEdit::singleline(&mut self.character_search)
@@ -218,14 +263,14 @@ impl MovieWindow {
             });
     }
 
-    fn show_information(
+    fn show_information<'gc>(
         &mut self,
         ui: &mut Ui,
-        movie: &Arc<SwfMovie>,
+        movie: Gc<'gc, SwfMovie>,
         messages: &mut Vec<Message>,
     ) {
         if !movie.data().is_empty() && ui.button("Save File...").clicked() {
-            save_swf(movie, messages);
+            save_swf(&movie, messages);
         }
 
         Grid::new(ui.id().with("information"))
@@ -313,13 +358,19 @@ impl MovieWindow {
     }
 }
 
-pub fn movie_name(movie: &Arc<SwfMovie>) -> String {
-    format!("SWF {:p}", Arc::as_ptr(movie))
+pub fn movie_name(movie: Gc<'_, SwfMovie>) -> String {
+    format!("SWF {:p}", Gc::as_ptr(movie))
 }
 
-pub fn open_movie_button(ui: &mut Ui, movie: &Arc<SwfMovie>, messages: &mut Vec<Message>) {
+pub fn open_movie_button<'gc>(
+    ui: &mut Ui,
+    context: &mut UpdateContext<'gc>,
+    movie: Gc<'gc, SwfMovie>,
+    messages: &mut Vec<Message>,
+) {
     if ui.button(movie_name(movie)).clicked() {
-        messages.push(Message::TrackMovie(movie.clone()));
+        let handle = MovieHandle::new(context, movie);
+        messages.push(Message::TrackMovie(handle));
     }
 }
 
@@ -341,7 +392,7 @@ pub fn open_character_button(ui: &mut Ui, character: Character) {
     ui.label(name);
 }
 
-fn save_swf(movie: &Arc<SwfMovie>, messages: &mut Vec<Message>) {
+fn save_swf(movie: &Gc<'_, SwfMovie>, messages: &mut Vec<Message>) {
     let suggested_name = if let Ok(url) = Url::parse(movie.url()) {
         url.path_segments()
             .and_then(|mut segments| segments.next_back())
@@ -357,7 +408,7 @@ fn save_swf(movie: &Arc<SwfMovie>, messages: &mut Vec<Message>) {
     } else {
         messages.push(Message::SaveFile(ItemToSave {
             suggested_name: suggested_name
-                .unwrap_or_else(|| format!("{:p}.swf", Arc::as_ptr(movie))),
+                .unwrap_or_else(|| format!("{:p}.swf", Gc::as_ptr(*movie))),
             data,
         }));
     }

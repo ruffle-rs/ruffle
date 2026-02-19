@@ -6,21 +6,25 @@ use crate::font::{DefaultFont, EvalParameters, Font, FontLike, FontSet, FontType
 use crate::html::dimensions::{BoxBounds, Position, Size};
 use crate::html::text_format::{FormatSpans, TextFormat, TextSpan};
 use crate::html::wrap_line;
+use crate::library::MovieLibrary;
 use crate::string::WStr;
 use crate::tag_utils::SwfMovie;
-use gc_arena::Collect;
+use gc_arena::lock::RefLock;
+use gc_arena::{Collect, Gc};
 use std::cmp::{Ordering, max, min};
 use std::fmt::{Debug, Formatter};
 use std::mem;
 use std::ops::Range;
 use std::slice::Iter;
-use std::sync::Arc;
 use swf::{Rectangle, Twips};
 
 /// Contains information relating to the current layout operation.
 pub struct LayoutContext<'a, 'gc> {
     /// The movie this layout context is pulling fonts from.
-    movie: Arc<SwfMovie>,
+    movie: Gc<'gc, SwfMovie>,
+
+    /// The movie library for font lookups.
+    library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
 
     /// Whether user input is allowed.
     is_input: bool,
@@ -103,7 +107,8 @@ pub struct LayoutContext<'a, 'gc> {
 
 impl<'a, 'gc> LayoutContext<'a, 'gc> {
     fn new(
-        movie: Arc<SwfMovie>,
+        movie: Gc<'gc, SwfMovie>,
+        library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
         max_bounds: Twips,
         text: &'a WStr,
         is_input: bool,
@@ -112,6 +117,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     ) -> Self {
         Self {
             movie,
+            library,
             cursor: Default::default(),
             font_set: None,
             text,
@@ -547,7 +553,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
                     self.font_type,
                     span.style.bold,
                     span.style.italic,
-                    Some(self.movie.clone()),
+                    self.library,
                 )
                 .filter(|f| f.has_glyphs())
         {
@@ -801,10 +807,12 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 }
 
 /// Construct a new layout from text spans.
+#[expect(clippy::too_many_arguments)]
 pub fn lower_from_text_spans<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
-    movie: Arc<SwfMovie>,
+    movie: Gc<'gc, SwfMovie>,
+    library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
     requested_width: Option<Twips>,
     is_input: bool,
     is_word_wrap: bool,
@@ -817,7 +825,8 @@ pub fn lower_from_text_spans<'gc>(
         let layout = lower_from_text_spans_known_width(
             fs,
             context,
-            movie.clone(),
+            movie,
+            library,
             Twips::ZERO,
             is_input,
             false,
@@ -834,6 +843,7 @@ pub fn lower_from_text_spans<'gc>(
         fs,
         context,
         movie,
+        library,
         requested_width,
         is_input,
         is_word_wrap,
@@ -841,10 +851,12 @@ pub fn lower_from_text_spans<'gc>(
     )
 }
 
+#[expect(clippy::too_many_arguments)]
 fn lower_from_text_spans_known_width<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
-    movie: Arc<SwfMovie>,
+    movie: Gc<'gc, SwfMovie>,
+    library: Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>,
     bounds: Twips,
     is_input: bool,
     is_word_wrap: bool,
@@ -852,6 +864,7 @@ fn lower_from_text_spans_known_width<'gc>(
 ) -> Layout<'gc> {
     let mut layout_context = LayoutContext::new(
         movie,
+        library,
         bounds,
         fs.displayed_text(),
         is_input,

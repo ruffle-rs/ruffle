@@ -19,7 +19,6 @@ use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::bitmap::{BitmapFormat, PixelSnapping};
 use std::cell::Cell;
-use std::sync::Arc;
 
 #[derive(Clone, Debug, Collect, Copy)]
 #[collect(no_drop)]
@@ -101,7 +100,7 @@ impl fmt::Debug for Bitmap<'_> {
 #[repr(C, align(8))]
 pub struct BitmapGraphicData<'gc> {
     base: DisplayObjectBase<'gc>,
-    movie: Arc<SwfMovie>,
+    movie: Gc<'gc, SwfMovie>,
 
     /// The AVM2 side of this object.
     ///
@@ -143,7 +142,7 @@ impl<'gc> Bitmap<'gc> {
         id: CharacterId,
         bitmap_data: BitmapData<'gc>,
         smoothing: bool,
-        movie: &Arc<SwfMovie>,
+        movie: Gc<'gc, SwfMovie>,
     ) -> Self {
         // NOTE: We do *not* solicit a handle from the `bitmap_data` at this
         // time due to mutable borrowing issues.
@@ -163,7 +162,7 @@ impl<'gc> Bitmap<'gc> {
                 pixel_snapping: Cell::new(PixelSnapping::Auto),
                 avm2_object: Lock::new(None),
                 avm2_bitmap_class: Lock::new(BitmapClass::NoSubclass),
-                movie: movie.clone(),
+                movie,
             },
         ));
 
@@ -177,7 +176,7 @@ impl<'gc> Bitmap<'gc> {
         mc: &Mutation<'gc>,
         id: CharacterId,
         bitmap: ruffle_render::bitmap::Bitmap,
-        movie: Arc<SwfMovie>,
+        movie: Gc<'gc, SwfMovie>,
     ) -> Self {
         let width = bitmap.width();
         let height = bitmap.height();
@@ -195,7 +194,7 @@ impl<'gc> Bitmap<'gc> {
         let bitmap_data = BitmapData::new_with_pixels(mc, width, height, transparency, pixels);
 
         let smoothing = true;
-        Self::new_with_bitmap_data(mc, id, bitmap_data, smoothing, &movie)
+        Self::new_with_bitmap_data(mc, id, bitmap_data, smoothing, movie)
     }
 
     // Important - we read 'width' and 'height' from the cached
@@ -417,7 +416,7 @@ impl<'gc> TDisplayObject<'gc> for Bitmap<'gc> {
         self.set_avm2_object(context.gc(), Some(to));
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
-        self.0.movie.clone()
+    fn movie(self) -> Gc<'gc, SwfMovie> {
+        self.0.movie
     }
 }

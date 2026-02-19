@@ -8,6 +8,7 @@ use crate::avm2::{
 };
 use crate::context::{RenderContext, UpdateContext};
 use crate::drawing::Drawing;
+use crate::library::MovieLibrary;
 use crate::prelude::*;
 use crate::string::{AvmString, WString};
 use crate::tag_utils::SwfMovie;
@@ -16,6 +17,7 @@ use crate::vminterface::Instantiator;
 use bitflags::bitflags;
 use gc_arena::barrier::{Write, unlock};
 use gc_arena::lock::Lock;
+use gc_arena::lock::RefLock;
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_macros::{enum_trait_object, istr};
 use ruffle_render::perspective_projection::PerspectiveProjection;
@@ -25,7 +27,6 @@ use std::cell::{Cell, Ref, RefCell, RefMut};
 use std::fmt::Debug;
 use std::hash::Hash;
 use std::num::NonZero;
-use std::sync::Arc;
 use swf::{ColorTransform, Fixed8};
 
 mod avm1_button;
@@ -282,6 +283,9 @@ pub struct DisplayObjectBase<'gc> {
     /// The sound transform of sounds playing via this display object.
     sound_transform: Cell<SoundTransform>,
 
+    /// The movie library for the SWF that defines this display object.
+    library: Lock<Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>>>,
+
     /// The display object that we are being masked by.
     masker: Lock<Option<DisplayObject<'gc>>>,
 
@@ -350,6 +354,7 @@ impl Default for DisplayObjectBase<'_> {
             scale_x: Cell::new(Percent::from_unit(1.0)),
             scale_y: Cell::new(Percent::from_unit(1.0)),
             skew: Cell::new(0.0),
+            library: Lock::new(None),
             masker: Lock::new(None),
             maskee: Lock::new(None),
             meta_data: Lock::new(None),
@@ -871,6 +876,14 @@ impl<'gc> DisplayObjectBase<'gc> {
 
     fn set_has_explicit_name(&self, value: bool) {
         self.set_flag(DisplayObjectFlags::HAS_EXPLICIT_NAME, value);
+    }
+
+    pub(crate) fn library(&self) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
+        self.library.get()
+    }
+
+    fn set_library(this: &Write<Self>, lib: Gc<'gc, RefLock<MovieLibrary<'gc>>>) {
+        unlock!(this, Self, library).set(Some(lib));
     }
 
     fn masker(&self) -> Option<DisplayObject<'gc>> {
@@ -1907,6 +1920,18 @@ pub trait TDisplayObject<'gc>:
     }
 
     #[no_dynamic]
+    fn library(self) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
+        self.base()
+            .library()
+            .or_else(|| self.parent().and_then(|p| p.library()))
+    }
+
+    #[no_dynamic]
+    fn set_library(self, mc: &Mutation<'gc>, lib: Gc<'gc, RefLock<MovieLibrary<'gc>>>) {
+        DisplayObjectBase::set_library(Gc::write(mc, self.base()), lib);
+    }
+
+    #[no_dynamic]
     fn masker(self) -> Option<DisplayObject<'gc>> {
         self.base().masker()
     }
@@ -2366,11 +2391,7 @@ pub trait TDisplayObject<'gc>:
             if let Some(child) = self.object2()
                 && let Some(name) = self.name()
             {
-                let domain = context
-                    .library
-                    .library_for_movie(self.movie())
-                    .unwrap()
-                    .avm2_domain();
+                let domain = self.library().unwrap().borrow().avm2_domain();
 
                 let mut activation = Avm2Activation::from_domain(context, domain);
                 let multiname = Avm2Multiname::new(activation.avm2().find_public_namespace(), name);
@@ -2617,7 +2638,7 @@ pub trait TDisplayObject<'gc>:
     }
 
     /// Return the SWF that defines this display object.
-    fn movie(self) -> Arc<SwfMovie>;
+    fn movie(self) -> Gc<'gc, SwfMovie>;
 
     fn loader_info(self) -> Option<LoaderInfoObject<'gc>> {
         None
