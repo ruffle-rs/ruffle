@@ -464,7 +464,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                         )
                     } else {
                         // Slots are 1-indexed!
-                        let slot_id = slot_id - 1;
+                        let slot_id = slot_id as usize - 1;
 
                         let (trait_name, const_name) =
                             rust_path_and_trait_name(&abc, trait_, parent);
@@ -475,7 +475,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             .entry(trait_name)
                             .or_default()
                             .push(quote! {
-                                pub const #const_name: u32 = #slot_id;
+                                pub const #const_name: usize = #slot_id;
                             });
                     }
                 }
@@ -495,6 +495,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                         // add 1 if it's a class method, or subtract 2 if it's
                         // an instance method.
                         let disp_id = if is_class { disp_id + 1 } else { disp_id - 2 };
+                        let disp_id = disp_id as usize;
 
                         let (trait_name, const_name) =
                             rust_path_and_trait_name(&abc, trait_, parent);
@@ -511,7 +512,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             .entry(trait_name)
                             .or_default()
                             .push(quote! {
-                                pub const #const_name: u32 = #disp_id;
+                                pub const #const_name: usize = #disp_id;
                             });
                     }
                 }

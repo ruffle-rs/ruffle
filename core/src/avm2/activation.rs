@@ -1061,7 +1061,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_method(
         &mut self,
-        index: u32,
+        index: usize,
         arg_count: u32,
         push_return_value: bool,
     ) -> Result<(), Error<'gc>> {
@@ -1657,7 +1657,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_get_slot(&mut self, index: u32) -> Result<(), Error<'gc>> {
+    fn op_get_slot(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let stack_top = self.stack.stack_top();
 
         let object = stack_top
@@ -1676,7 +1676,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_set_slot(&mut self, index: u32) -> Result<(), Error<'gc>> {
+    fn op_set_slot(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
         let object = self
             .pop_stack()
@@ -1689,7 +1689,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_set_slot_no_coerce(&mut self, index: u32) -> Result<(), Error<'gc>> {
+    fn op_set_slot_no_coerce(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
         let object = self
             .pop_stack()
@@ -1702,7 +1702,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_set_global_slot(&mut self, index: u32) -> Result<(), Error<'gc>> {
+    fn op_set_global_slot(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
 
         self.global_scope()
@@ -1740,7 +1740,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_construct_slot(&mut self, index: u32, arg_count: u32) -> Result<(), Error<'gc>> {
+    fn op_construct_slot(&mut self, index: usize, arg_count: u32) -> Result<(), Error<'gc>> {
         let args = self.get_args(arg_count);
         let source = self
             .pop_stack()

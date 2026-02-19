@@ -1,4 +1,5 @@
 use crate::avm2::activation::Activation;
+use crate::avm2::error::{Error, make_error_1107};
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
 use crate::avm2::object::{ClassObject, FunctionObject};
@@ -7,7 +8,7 @@ use crate::avm2::property_map::PropertyMap;
 use crate::avm2::scope::ScopeChain;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
-use crate::avm2::{Class, Error, Multiname, Namespace, QName};
+use crate::avm2::{Class, Multiname, Namespace, QName};
 use crate::context::UpdateContext;
 use crate::string::{AvmString, StringContext};
 use gc_arena::barrier::{field, unlock};
@@ -29,24 +30,28 @@ struct VTableData<'gc> {
     resolved_traits: PropertyMap<'gc, Property>,
 
     /// Use hashmaps for the metadata tables because metadata will rarely be present on traits
-    slot_metadata_table: HashMap<u32, Box<[Metadata<'gc>]>>,
+    slot_metadata_table: HashMap<usize, Box<[Metadata<'gc>]>>,
 
-    disp_metadata_table: HashMap<u32, Box<[Metadata<'gc>]>>,
+    disp_metadata_table: HashMap<usize, Box<[Metadata<'gc>]>>,
 
-    /// Stores the `PropertyClass` for each slot,
-    /// indexed by `slot_id`
-    slot_classes: Box<[Lock<PropertyClass<'gc>>]>,
+    /// slot_table is indexed by `slot_id`
+    slot_table: Box<[SlotInfo<'gc>]>,
 
     /// method_table is indexed by `disp_id`
     method_table: Box<[ClassBoundMethod<'gc>]>,
-
-    default_slots: Box<[Option<Value<'gc>>]>,
 }
 
 impl PartialEq for VTable<'_> {
     fn eq(&self, other: &Self) -> bool {
         Gc::ptr_eq(self.0, other.0)
     }
+}
+
+#[derive(Collect, Clone)]
+#[collect(no_drop)]
+pub struct SlotInfo<'gc> {
+    property_class: Lock<PropertyClass<'gc>>,
+    pub default_value: Value<'gc>,
 }
 
 // TODO: it would be nice to remove the Option-ness from `scope` field for this
@@ -78,14 +83,14 @@ impl<'gc> VTable<'gc> {
         scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
         mc: &Mutation<'gc>,
-    ) -> Self {
+    ) -> Result<Self, VTableInitError> {
         let this = Self::init_vtable(
             defining_class_def,
             super_class_obj,
             scope,
             superclass_vtable,
-        );
-        VTable(Gc::new(mc, this))
+        )?;
+        Ok(VTable(Gc::new(mc, this)))
     }
 
     /// Like `VTable::new`, but also copies properties from the defining class' interfaces.
@@ -95,40 +100,46 @@ impl<'gc> VTable<'gc> {
         scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
         context: &UpdateContext<'gc>,
-    ) -> Self {
+    ) -> Result<Self, VTableInitError> {
         let mut this = Self::init_vtable(
             defining_class_def,
             super_class_obj,
             scope,
             superclass_vtable,
-        );
+        )?;
         Self::copy_interface_properties(&mut this, defining_class_def, context);
-        VTable(Gc::new(context.gc(), this))
+
+        Ok(VTable(Gc::new(context.gc(), this)))
     }
 
     pub fn resolved_traits(self) -> &'gc PropertyMap<'gc, Property> {
         &Gc::as_ref(self.0).resolved_traits
     }
 
-    pub fn get_metadata_for_slot(self, slot_id: u32) -> Option<&'gc [Metadata<'gc>]> {
+    pub fn get_metadata_for_slot(self, slot_id: usize) -> Option<&'gc [Metadata<'gc>]> {
         Gc::as_ref(self.0)
             .slot_metadata_table
             .get(&slot_id)
             .map(|v| &**v)
     }
 
-    pub fn get_metadata_for_disp(self, disp_id: u32) -> Option<&'gc [Metadata<'gc>]> {
+    pub fn get_metadata_for_disp(self, disp_id: usize) -> Option<&'gc [Metadata<'gc>]> {
         Gc::as_ref(self.0)
             .disp_metadata_table
             .get(&disp_id)
             .map(|v| &**v)
     }
 
-    pub fn slot_class_name(self, context: &mut StringContext<'gc>, slot_id: u32) -> AvmString<'gc> {
+    pub fn slot_class_name(
+        self,
+        context: &mut StringContext<'gc>,
+        slot_id: usize,
+    ) -> AvmString<'gc> {
         self.0
-            .slot_classes
-            .get(slot_id as usize)
+            .slot_table
+            .get(slot_id)
             .expect("Invalid slot ID")
+            .property_class
             .get()
             .get_name(context)
     }
@@ -154,21 +165,18 @@ impl<'gc> VTable<'gc> {
     /// Coerces `value` to the type of the slot with id `slot_id`
     pub fn coerce_trait_value(
         self,
-        slot_id: u32,
+        slot_id: usize,
         value: Value<'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        let slot_id = slot_id as usize;
-        let mut slot_class = self.0.slot_classes[slot_id].get();
+        let mut slot_class = self.0.slot_table[slot_id].property_class.get();
 
         let (value, changed) = slot_class.coerce(activation, value)?;
 
         // Calling coerce modified `PropertyClass` to cache the class lookup,
         // so store the new value back in the vtable.
         if changed {
-            let write = Gc::write(activation.gc(), self.0);
-            let slots = field!(write, VTableData, slot_classes).as_deref();
-            slots[slot_id].unlock().set(slot_class);
+            self.set_slot_class(activation.gc(), slot_id, slot_class);
         }
         Ok(value)
     }
@@ -177,29 +185,35 @@ impl<'gc> VTable<'gc> {
         self.resolved_traits().get_for_multiname(name).is_some()
     }
 
-    pub fn get_method(self, disp_id: u32) -> Option<Method<'gc>> {
+    pub fn get_method(self, disp_id: usize) -> Option<Method<'gc>> {
+        self.0.method_table.get(disp_id).cloned().map(|x| x.method)
+    }
+
+    pub fn get_full_method(self, disp_id: usize) -> Option<&'gc ClassBoundMethod<'gc>> {
+        Gc::as_ref(self.0).method_table.get(disp_id)
+    }
+
+    pub fn slot_count(self) -> usize {
+        self.0.slot_table.len()
+    }
+
+    pub fn slot_table(&self) -> &[SlotInfo<'gc>] {
+        &self.0.slot_table
+    }
+
+    pub fn slot_class(self, slot_id: usize) -> Option<PropertyClass<'gc>> {
         self.0
-            .method_table
-            .get(disp_id as usize)
-            .cloned()
-            .map(|x| x.method)
+            .slot_table
+            .get(slot_id)
+            .map(|e| e.property_class.get())
     }
 
-    pub fn get_full_method(self, disp_id: u32) -> Option<&'gc ClassBoundMethod<'gc>> {
-        Gc::as_ref(self.0).method_table.get(disp_id as usize)
-    }
+    pub fn set_slot_class(self, mc: &Mutation<'gc>, slot_id: usize, value: PropertyClass<'gc>) {
+        let slots = field!(Gc::write(mc, self.0), VTableData, slot_table).as_deref();
+        let slot = &slots[slot_id];
+        let slot = unlock!(slot, SlotInfo, property_class);
 
-    pub fn default_slots(&self) -> &[Option<Value<'gc>>] {
-        &self.0.default_slots
-    }
-
-    pub fn slot_class(self, slot_id: u32) -> Option<PropertyClass<'gc>> {
-        self.0.slot_classes.get(slot_id as usize).map(Lock::get)
-    }
-
-    pub fn set_slot_class(self, mc: &Mutation<'gc>, slot_id: u32, value: PropertyClass<'gc>) {
-        let slots = field!(Gc::write(mc, self.0), VTableData, slot_classes).as_deref();
-        slots[slot_id as usize].unlock().set(value);
+        slot.set(value);
     }
 
     pub fn replace_scopes_with(self, mc: &Mutation<'gc>, new_scope: ScopeChain<'gc>) {
@@ -214,7 +228,7 @@ impl<'gc> VTable<'gc> {
         super_class_obj: Option<ClassObject<'gc>>,
         scope: Option<ScopeChain<'gc>>,
         superclass_vtable: Option<Self>,
-    ) -> VTableData<'gc> {
+    ) -> Result<VTableData<'gc>, VTableInitError> {
         // Let's talk about slot_ids and disp_ids.
         // Specification is one thing, but reality is another.
 
@@ -269,17 +283,24 @@ impl<'gc> VTable<'gc> {
         let mut resolved_traits = PropertyMap::new();
         let mut slot_metadata_table = HashMap::new();
         let mut disp_metadata_table = HashMap::new();
+        let mut slot_table = Vec::new();
         let mut method_table = Vec::new();
-        let mut default_slots = Vec::new();
-        let mut slot_classes = Vec::new();
+
+        // Subclasses cannot "override" slots in superclasses, so we only
+        // maintain the list of slots that were declared by the subclass. At the
+        // end of this method, we will append this list to `slot_table`.
+        let mut new_slots = Vec::new();
+        let mut first_slot_offset = 0;
+        let mut force_auto_assign_slots = false;
 
         if let Some(superclass_vtable) = superclass_vtable {
             resolved_traits = superclass_vtable.resolved_traits().clone();
             slot_metadata_table = superclass_vtable.0.slot_metadata_table.clone();
             disp_metadata_table = superclass_vtable.0.disp_metadata_table.clone();
-            slot_classes.extend_from_slice(&superclass_vtable.0.slot_classes);
+            slot_table.extend_from_slice(&superclass_vtable.0.slot_table);
             method_table.extend_from_slice(&superclass_vtable.0.method_table);
-            default_slots.extend_from_slice(&superclass_vtable.0.default_slots);
+
+            first_slot_offset = superclass_vtable.slot_count();
 
             if let Some(protected_namespace) = defining_class_def.protected_namespace() {
                 if let Some(super_protected_namespace) = superclass_vtable.0.protected_namespace {
@@ -292,6 +313,24 @@ impl<'gc> VTable<'gc> {
                         }
                     }
                 }
+            }
+        }
+
+        if let Some(defining_tunit) = defining_class_def.translation_unit() {
+            let mut current_super_class = defining_class_def.super_class();
+            while let Some(super_class) = current_super_class {
+                if let Some(super_tunit) = super_class.translation_unit() {
+                    if !defining_tunit.same_abc(super_tunit) {
+                        if super_class.vtable().slot_count() != 0 {
+                            // If the superclass of this class comes from a
+                            // different ABC, and it has a non-zero slot count,
+                            // the slots for this vtable are auto-assigned.
+                            force_auto_assign_slots = true;
+                            break;
+                        }
+                    }
+                }
+                current_super_class = super_class.super_class();
             }
         }
 
@@ -309,12 +348,12 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(*disp_id, metadata);
                             }
 
-                            method_table[*disp_id as usize] = entry;
+                            method_table[*disp_id] = entry;
                         }
                         // note: ideally overwriting other property types
                         // should be a VerifyError
-                        _ => {
-                            let disp_id = method_table.len() as u32;
+                        None => {
+                            let disp_id = method_table.len();
                             method_table.push(entry);
                             resolved_traits
                                 .insert(trait_data.name(), Property::new_method(disp_id));
@@ -323,6 +362,9 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(disp_id, metadata);
                             }
                         }
+                        _ => unreachable!(
+                            "`Class::validate_class` ensures overridden trait is correct"
+                        ),
                     }
                 }
                 TraitKind::Getter { method, .. } => {
@@ -339,10 +381,10 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(*disp_id, metadata);
                             }
 
-                            method_table[*disp_id as usize] = entry;
+                            method_table[*disp_id] = entry;
                         }
                         Some(Property::Virtual { get, .. }) => {
-                            let disp_id = method_table.len() as u32;
+                            let disp_id = method_table.len();
                             *get = Some(disp_id);
                             method_table.push(entry);
 
@@ -350,8 +392,8 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(disp_id, metadata);
                             }
                         }
-                        _ => {
-                            let disp_id = method_table.len() as u32;
+                        None => {
+                            let disp_id = method_table.len();
                             method_table.push(entry);
                             resolved_traits
                                 .insert(trait_data.name(), Property::new_getter(disp_id));
@@ -360,6 +402,9 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(disp_id, metadata);
                             }
                         }
+                        _ => unreachable!(
+                            "`Class::validate_class` ensures overridden trait is correct"
+                        ),
                     }
                 }
                 TraitKind::Setter { method, .. } => {
@@ -376,10 +421,10 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(*disp_id, metadata);
                             }
 
-                            method_table[*disp_id as usize] = entry;
+                            method_table[*disp_id] = entry;
                         }
                         Some(Property::Virtual { set, .. }) => {
-                            let disp_id = method_table.len() as u32;
+                            let disp_id = method_table.len();
                             method_table.push(entry);
                             *set = Some(disp_id);
 
@@ -387,8 +432,8 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(disp_id, metadata);
                             }
                         }
-                        _ => {
-                            let disp_id = method_table.len() as u32;
+                        None => {
+                            let disp_id = method_table.len();
                             method_table.push(entry);
                             resolved_traits
                                 .insert(trait_data.name(), Property::new_setter(disp_id));
@@ -397,6 +442,9 @@ impl<'gc> VTable<'gc> {
                                 disp_metadata_table.insert(disp_id, metadata);
                             }
                         }
+                        _ => unreachable!(
+                            "`Class::validate_class` ensures overridden trait is correct"
+                        ),
                     }
                 }
                 TraitKind::Slot { slot_id, .. }
@@ -404,78 +452,95 @@ impl<'gc> VTable<'gc> {
                 | TraitKind::Class { slot_id, .. } => {
                     let slot_id = *slot_id;
 
-                    let value = trait_to_default_value(trait_data);
-                    let value = Some(value);
+                    let default_value = trait_to_default_value(trait_data);
 
-                    let new_slot_id = if slot_id == 0 {
-                        default_slots.push(value);
-                        default_slots.len() as u32 - 1
-                    } else {
-                        // it's non-zero, so let's turn it from 1-based to 0-based.
-                        let slot_id = slot_id - 1;
-                        if let Some(Some(_)) = default_slots.get(slot_id as usize) {
-                            // slot_id conflict
-                            default_slots.push(value);
-                            default_slots.len() as u32 - 1
-                        } else {
-                            if slot_id as usize >= default_slots.len() {
-                                default_slots.resize_with(slot_id as usize + 1, Default::default);
-                            }
-                            default_slots[slot_id as usize] = value;
-                            slot_id
-                        }
-                    };
-
-                    if new_slot_id as usize >= slot_classes.len() {
-                        // We will overwrite `PropertyClass::Any` when we process the slots
-                        // with the ids that we just skipped over.
-                        slot_classes
-                            .resize(new_slot_id as usize + 1, Lock::new(PropertyClass::Any));
-                    }
-
-                    let (new_prop, new_class) = match trait_data.kind() {
+                    let prop_class = match trait_data.kind() {
                         TraitKind::Slot {
                             type_name, domain, ..
-                        } => (
-                            Property::new_slot(new_slot_id),
-                            PropertyClass::name(*type_name, *domain),
-                        ),
-                        TraitKind::Const {
+                        }
+                        | TraitKind::Const {
                             type_name, domain, ..
-                        } => (
-                            Property::new_const_slot(new_slot_id),
-                            PropertyClass::name(*type_name, *domain),
-                        ),
-                        TraitKind::Class { class, .. } => (
-                            Property::new_const_slot(new_slot_id),
-                            PropertyClass::Class(
-                                class.c_class().expect("Trait should hold an i_class"),
-                            ),
+                        } => PropertyClass::name(*type_name, *domain),
+                        TraitKind::Class { class, .. } => PropertyClass::Class(
+                            class.c_class().expect("Trait should hold an i_class"),
                         ),
                         _ => unreachable!(),
                     };
 
-                    resolved_traits.insert(trait_data.name(), new_prop);
+                    let slot_info = SlotInfo {
+                        property_class: Lock::new(prop_class),
+                        default_value,
+                    };
+
+                    let new_slot_id = if slot_id == 0 || force_auto_assign_slots {
+                        new_slots.push(Some(slot_info));
+                        new_slots.len() - 1
+                    } else {
+                        // it's non-zero, so let's turn it from 1-based to 0-based.
+                        let slot_id = slot_id - 1;
+                        if slot_id < first_slot_offset {
+                            // Conflict: subclass attempted to use slot id of
+                            // slot in superclass
+                            return Err(VTableInitError::SlotConflict);
+                        }
+
+                        // now make the slot id relative to the start of this
+                        // subclass's slots
+                        let slot_id = slot_id - first_slot_offset;
+
+                        if let Some(Some(_)) = new_slots.get(slot_id) {
+                            // Conflict: subclass attempted to use slot id that
+                            // it already used
+                            return Err(VTableInitError::SlotConflict);
+                        } else {
+                            if slot_id >= new_slots.len() {
+                                new_slots.resize(slot_id + 1, None);
+                            }
+                            new_slots[slot_id] = Some(slot_info);
+
+                            slot_id
+                        }
+                    };
+
+                    // Convert new_slot_id to an absolute slot id
+                    let new_slot_id = new_slot_id + first_slot_offset;
 
                     if let Some(metadata) = trait_data.metadata() {
                         slot_metadata_table.insert(new_slot_id, metadata);
                     }
 
-                    slot_classes[new_slot_id as usize] = Lock::new(new_class);
+                    let property = match trait_data.kind() {
+                        TraitKind::Slot { .. } => Property::new_slot(new_slot_id),
+                        TraitKind::Const { .. } | TraitKind::Class { .. } => {
+                            Property::new_const_slot(new_slot_id)
+                        }
+                        _ => unreachable!(),
+                    };
+
+                    resolved_traits.insert(trait_data.name(), property);
                 }
             }
         }
 
-        VTableData {
+        // Append the new slots to the slot table now
+        for slot in new_slots {
+            if let Some(slot) = slot {
+                slot_table.push(slot);
+            } else {
+                // Holes in the slot table throw an error in Flash Player
+                return Err(VTableInitError::SlotHole);
+            }
+        }
+
+        Ok(VTableData {
             scope,
             protected_namespace: defining_class_def.protected_namespace(),
             resolved_traits,
             slot_metadata_table,
             disp_metadata_table,
+            slot_table: slot_table.into_boxed_slice(),
             method_table: method_table.into_boxed_slice(),
-            default_slots: default_slots.into_boxed_slice(),
-            slot_classes: slot_classes.into_boxed_slice(),
-        }
+        })
     }
 
     fn copy_interface_properties(
@@ -518,7 +583,7 @@ impl<'gc> VTable<'gc> {
         self,
         context: &mut UpdateContext<'gc>,
         receiver: Value<'gc>,
-        disp_id: u32,
+        disp_id: usize,
     ) -> Option<FunctionObject<'gc>> {
         self.get_full_method(disp_id)
             .map(|method| Self::bind_method(context, receiver, method))
@@ -547,6 +612,22 @@ impl<'gc> VTable<'gc> {
             .iter()
             .filter(|(_, ns, _)| ns.is_public())
             .map(|(name, _, prop)| (name, *prop))
+    }
+}
+
+#[derive(Debug)]
+pub enum VTableInitError {
+    SlotConflict,
+    SlotHole,
+}
+
+impl VTableInitError {
+    pub fn into_avm<'gc>(self, activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+        match self {
+            VTableInitError::SlotConflict | VTableInitError::SlotHole => {
+                make_error_1107(activation)
+            }
+        }
     }
 }
 
