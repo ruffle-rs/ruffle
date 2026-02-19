@@ -1,4 +1,8 @@
-import { copyElement, RufflePlayerElement } from "./ruffle-player-element";
+import {
+    copyElement,
+    hasOptOut,
+    RufflePlayerElement,
+} from "./ruffle-player-element";
 import {
     getPolyfillOptions,
     isFallbackElement,
@@ -117,6 +121,11 @@ export class RuffleEmbedElement extends RufflePlayerElement {
 
         // Don't polyfill if the element is inside a specific node.
         if (isFallbackElement(elem)) {
+            return false;
+        }
+
+        // Don't polyfill if the element or its ancestor has data-ruffle-optout.
+        if (hasOptOut(elem)) {
             return false;
         }
 
