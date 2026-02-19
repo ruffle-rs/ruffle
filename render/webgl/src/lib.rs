@@ -1076,6 +1076,7 @@ impl RenderBackend for WebGlRenderBackend {
         let (format, bitmap) = match bitmap.format() {
             BitmapFormat::Rgb | BitmapFormat::Yuv420p => (Gl::RGB, bitmap.to_rgb()),
             BitmapFormat::Rgba | BitmapFormat::Yuva420p => (Gl::RGBA, bitmap.to_rgba()),
+            _ => panic!("Unsupported bitmap format for WebGL: {:?}", bitmap.format()),
         };
 
         let texture = self
@@ -1129,6 +1130,7 @@ impl RenderBackend for WebGlRenderBackend {
         let (format, bitmap) = match bitmap.format() {
             BitmapFormat::Rgb | BitmapFormat::Yuv420p => (Gl::RGB, bitmap.to_rgb()),
             BitmapFormat::Rgba | BitmapFormat::Yuva420p => (Gl::RGBA, bitmap.to_rgba()),
+            _ => panic!("Unsupported bitmap format for WebGL: {:?}", bitmap.format()),
         };
 
         self.gl
