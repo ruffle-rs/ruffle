@@ -9,7 +9,7 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Datoteka
-file-menu-open-advanced = Otvori napredno...
+file-menu-open-advanced = Otvori Napredno...
 file-menu-close = Zatvori
 file-menu-reload = Ponovo učitaj
 file-menu-recents = Nedavno
@@ -38,4 +38,5 @@ debug-menu-open-movie = Pogledajte film
 debug-menu-open-movie-list = Prikaži poznate filmove
 debug-menu-open-domain-list = Prikaži domene
 debug-menu-search-display-objects = Tražite prikazne objekte...
+view-menu = Prikaz
 view-menu-fullscreen = Ceo ekran

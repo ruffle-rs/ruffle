@@ -1,6 +1,10 @@
 file-picker-title-open-file = Apri un file singolo
+file-picker-title-open-directory = Apri una cartella
 file-picker-filter-supported = Tutti i file supportati
 file-picker-filter-swf = SWF (*.swf)
 file-picker-filter-spl = FutureSplash Animator (*.spl)
 file-picker-filter-ruf = Pacchetto Ruffle (*.ruf)
 file-picker-filter-all = Tutti i file
+file-picker-select-root-movie-title = Seleziona filmato di radice
+file-picker-select-root-movie-message = Seleziona il filmato di radice dalla cartella aperta.
+file-picker-select-root-movie-select = Seleziona
