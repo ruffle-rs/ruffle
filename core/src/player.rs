@@ -828,7 +828,7 @@ impl Player {
     pub fn set_fullscreen(&mut self, is_fullscreen: bool) {
         self.mutate_with_update_context(|context| {
             let display_state = if is_fullscreen {
-                StageDisplayState::FullScreen
+                StageDisplayState::FullScreenInteractive
             } else {
                 StageDisplayState::Normal
             };
