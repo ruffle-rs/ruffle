@@ -101,7 +101,7 @@ pub enum Op<'gc> {
     ConvertO,
     ConvertS,
     Debug {
-        is_local_register: bool,
+        register_kind: RegisterKind,
         register_name: AvmAtom<'gc>,
         register: u8,
     },
@@ -418,6 +418,13 @@ impl Op<'_> {
 pub struct LookupSwitch {
     pub default_offset: Cell<usize>,
     pub case_offsets: Box<[Cell<usize>]>,
+}
+
+#[derive(Copy, Clone, Collect, Debug)]
+#[collect(require_static)]
+pub enum RegisterKind {
+    Local { out_of_bounds: bool },
+    Unknown,
 }
 
 #[cfg(target_pointer_width = "64")]

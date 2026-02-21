@@ -18,7 +18,7 @@ use crate::avm2::object::{
     XmlListObject,
 };
 use crate::avm2::object::{Object, TObject};
-use crate::avm2::op::{LookupSwitch, Op};
+use crate::avm2::op::{LookupSwitch, Op, RegisterKind};
 use crate::avm2::scope::{Scope, ScopeChain, search_scope_stack};
 use crate::avm2::script::Script;
 use crate::avm2::stack::StackFrame;
@@ -36,9 +36,6 @@ use swf::avm2::types::MethodFlags as AbcMethodFlags;
 
 /// Represents a single activation of a given AVM2 function or keyframe.
 pub struct Activation<'a, 'gc: 'a> {
-    /// The number of locals this method uses.
-    num_locals: usize,
-
     /// This represents the outer scope of the method that is executing.
     ///
     /// The outer scope gives an activation access to the "outer world", including
@@ -132,7 +129,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// `Activation`.
     pub fn from_nothing(context: &'a mut UpdateContext<'gc>) -> Self {
         Self {
-            num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: None,
             caller_movie: None,
@@ -156,7 +152,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// `SwfMovie` associated with the `MovieClip` being processed.
     pub fn from_domain(context: &'a mut UpdateContext<'gc>, domain: Domain<'gc>) -> Self {
         Self {
-            num_locals: 0,
             outer: ScopeChain::new(context.avm2.stage_domain),
             caller_domain: Some(domain),
             caller_movie: None,
@@ -347,7 +342,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             assert!(this.is_of_type(bound_class));
         }
 
-        self.num_locals = num_locals;
         self.outer = outer;
         self.caller_domain = Some(outer.domain());
         self.caller_movie = Some(method.owner_movie());
@@ -416,7 +410,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // `Stack::get_stack_frame` already initializes all values on the frame
         // to undefined, so we just have to increase the stack pointer
-        self.reset_stack();
+        self.stack.set_stack_pointer(num_locals);
 
         // Inherit the caller's default XML namespace if this method doesn't
         // set its own via dxns opcodes.
@@ -442,7 +436,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         caller_dxns: Option<AvmString<'gc>>,
     ) -> Self {
         Self {
-            num_locals: 0,
             outer,
             caller_domain,
             caller_movie,
@@ -613,17 +606,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let stack = self.context.avm2.stack;
         stack.dispose_stack_frame(self.stack.take());
-    }
-
-    /// Clears the operand stack used by this activation.
-    ///
-    /// This is called `reset_stack` because it sets the stack pointer to the
-    /// first stack entry, which also makes it useful for initializing the stack.
-    #[inline]
-    fn reset_stack(&self) {
-        // This sets the stack pointer to the first stack entry, which is right
-        // after all the entries for local registers
-        self.stack.set_stack_pointer(self.num_locals);
     }
 
     /// Clears the scope stack used by this activation.
@@ -800,10 +782,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::AsTypeLate => self.op_as_type_late(),
                 Op::InstanceOf => self.op_instance_of(),
                 Op::Debug {
-                    is_local_register,
+                    register_kind,
                     register_name,
                     register,
-                } => self.op_debug(*is_local_register, *register_name, *register),
+                } => self.op_debug(*register_kind, *register_name, *register),
                 Op::DebugFile { file_name } => self.op_debug_file(*file_name),
                 Op::DebugLine { line_num } => self.op_debug_line(*line_num),
                 Op::Bkpt => self.op_bkpt(),
@@ -926,9 +908,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     #[cfg(feature = "avm_debug")]
                     tracing::info!(target: "avm_caught", "Caught exception: {:?}", original_error);
 
-                    self.reset_stack();
-                    self.push_stack(error);
+                    // Reset stack pointer to the first stack entry.
+                    let num_locals = method.body().unwrap().num_locals as usize;
+                    self.stack.set_stack_pointer(num_locals);
 
+                    self.push_stack(error);
                     self.clear_scope();
                     return Ok(e.target_offset);
                 }
@@ -2901,23 +2885,27 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[cfg(feature = "avm_debug")]
     fn op_debug(
         &mut self,
-        is_local_register: bool,
+        register_kind: RegisterKind,
         register_name: AvmAtom<'gc>,
         register: u8,
     ) -> Result<(), Error<'gc>> {
-        if is_local_register {
-            if (register as usize) < self.num_locals {
+        #[cfg(feature = "avm_debug")]
+        match register_kind {
+            RegisterKind::Local {
+                out_of_bounds: false,
+            } => {
                 let value = self.local_register(register as u32);
-
                 avm_debug!(self.avm2(), "Debug: {register_name} = {value:?}");
-            } else {
+            }
+            RegisterKind::Local {
+                out_of_bounds: true,
+            } => {
                 avm_debug!(
                     self.avm2(),
                     "Debug: {register_name} = <out-of-bounds register #{register}>",
                 );
             }
-        } else {
-            avm_debug!(self.avm2(), "Unknown debugging mode!");
+            RegisterKind::Unknown => avm_debug!(self.avm2(), "Unknown debugging mode!"),
         }
 
         Ok(())
@@ -2926,7 +2914,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     #[cfg(not(feature = "avm_debug"))]
     fn op_debug(
         &mut self,
-        _is_local_register: bool,
+        _register_kind: RegisterKind,
         _register_name: AvmAtom<'gc>,
         _register: u8,
     ) -> Result<(), Error<'gc>> {
