@@ -36,6 +36,16 @@ pub trait RenderBackend: Any {
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle;
 
+    fn register_shape_with_scale(
+        &mut self,
+        shape: DistilledShape,
+        bitmap_source: &dyn BitmapSource,
+        _scale: f32,
+    ) -> ShapeHandle {
+        // Default implementation ignores scale
+        self.register_shape(shape, bitmap_source)
+    }
+
     fn render_offscreen(
         &mut self,
         handle: BitmapHandle,
