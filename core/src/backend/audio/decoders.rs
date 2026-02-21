@@ -3,6 +3,7 @@
 #[cfg(feature = "aac")]
 mod aac;
 mod adpcm;
+mod g711;
 #[cfg(feature = "mp3")]
 mod mp3;
 #[cfg(feature = "nellymoser")]
@@ -10,6 +11,7 @@ mod nellymoser;
 mod pcm;
 
 pub use adpcm::AdpcmDecoder;
+pub use g711::{G711ALawDecoder, G711MuLawDecoder};
 #[cfg(feature = "mp3")]
 pub use mp3::{Mp3Decoder, mp3_metadata};
 #[cfg(feature = "nellymoser")]
@@ -86,6 +88,8 @@ pub fn make_decoder<R: 'static + Read + Send + Sync>(
         AudioCompression::Nellymoser => {
             Box::new(NellymoserDecoder::new(data, format.sample_rate.into()))
         }
+        AudioCompression::G711ALawPCM => Box::new(G711ALawDecoder::new(data)),
+        AudioCompression::G711MuLawPCM => Box::new(G711MuLawDecoder::new(data)),
         _ => return Err(Error::UnhandledCompression(format.compression)),
     };
     Ok(decoder)
