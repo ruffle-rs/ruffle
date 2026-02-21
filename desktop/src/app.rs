@@ -8,6 +8,7 @@ use crate::util::{
 };
 use anyhow::Error;
 use gilrs::{Event, EventType, Gilrs};
+use ruffle_core::FloatDuration;
 use ruffle_core::PlayerEvent;
 use ruffle_core::events::{ImeEvent, ImeNotification, PlayerNotification};
 use ruffle_core::swf::HeaderExt;
@@ -366,11 +367,11 @@ impl MainWindow {
         // We should look at changing our tick to happen somewhere else if we see any behavioural problems.
         if matches!(self.loaded, LoadingState::Loaded) {
             let new_time = Instant::now();
-            let dt = new_time.duration_since(self.time).as_nanos();
-            if dt > 0 {
+            let dt = FloatDuration::from_std(new_time.duration_since(self.time));
+            if dt.as_millis() > 0.0 {
                 self.time = new_time;
                 self.next_frame_time = self.player.get().map(|mut player| {
-                    player.tick(dt as f64 / 1_000_000.0);
+                    player.tick(dt);
                     new_time + player.time_til_next_frame()
                 });
                 self.check_redraw();

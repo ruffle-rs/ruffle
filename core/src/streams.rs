@@ -28,6 +28,7 @@ use flv_rs::{
 use gc_arena::barrier::unlock;
 use gc_arena::{Collect, DynamicRoot, Gc, Lock, Mutation, Rootable};
 use ruffle_common::buffer::{Buffer, Slice, Substream, SubstreamError};
+use ruffle_common::duration::FloatDuration;
 use ruffle_macros::istr;
 use ruffle_render::bitmap::BitmapInfo;
 use ruffle_video::VideoStreamHandle;
@@ -127,7 +128,7 @@ impl<'gc> StreamManager<'gc> {
     /// support video framerates separate from the Stage frame rate.
     ///
     /// This does not borrow `&mut self` as we need the `UpdateContext`, too.
-    pub fn tick(context: &mut UpdateContext<'gc>, dt: f64) {
+    pub fn tick(context: &mut UpdateContext<'gc>, dt: FloatDuration) {
         let streams = context.stream_manager.active_streams.clone();
         for stream in streams {
             stream.tick(context, dt)
@@ -1166,8 +1167,8 @@ impl<'gc> NetStream<'gc> {
 
     /// Process stream data.
     ///
-    /// `dt` is in milliseconds.
-    pub fn tick(self, context: &mut UpdateContext<'gc>, dt: f64) {
+    /// `dt` is the elapsed time since the last tick.
+    pub fn tick(self, context: &mut UpdateContext<'gc>, dt: FloatDuration) {
         let source = self.source();
         let seek_offset = source.queued_seek_time.take();
         if let Some(offset) = seek_offset {
@@ -1189,7 +1190,7 @@ impl<'gc> NetStream<'gc> {
         let slice = source.buffer.borrow().to_full_slice();
         let buffer = slice.data();
 
-        let max_time = source.stream_time.get() + dt;
+        let max_time = source.stream_time.get() + dt.as_millis();
         let mut buffer_underrun = false;
         let mut error = false;
         let mut max_lookahead_audio_tags = 5;

@@ -2,6 +2,7 @@
 
 pub mod avm_string;
 pub mod buffer;
+pub mod duration;
 pub mod sandbox;
 pub mod tag_utils;
 pub mod utils;
