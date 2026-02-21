@@ -1,6 +1,6 @@
 use ruffle_render::backend::{
-    Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode, Context3DProfile,
-    Context3DTextureFormat, Context3DVertexBufferFormat, IndexBuffer, ProgramType, VertexBuffer,
+    Context3D, Context3DBlendFactor, Context3DCommand, Context3DProfile, Context3DTextureFormat,
+    Context3DVertexBufferFormat, IndexBuffer, ProgramType, VertexBuffer,
 };
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error;
@@ -17,7 +17,7 @@ use wgpu::{
 use wgpu::{CommandEncoder, Extent3d, RenderPass};
 
 use crate::Texture;
-use crate::context3d::current_pipeline::{AGAL_FLOATS_PER_REGISTER, BoundTextureData};
+use crate::context3d::current_pipeline::{AGAL_FLOATS_PER_REGISTER, BoundTextureData, IntoWgpu};
 use crate::descriptors::Descriptors;
 use crate::utils::supported_sample_count;
 
@@ -284,6 +284,8 @@ impl WgpuContext3D {
                 );
             }
         }
+
+        pass.set_stencil_reference(self.current_pipeline.stencil_ref_value());
 
         let mut seen = Vec::new();
 
@@ -1089,17 +1091,8 @@ impl Context3D for WgpuContext3D {
                 depth_mask,
                 pass_compare_mode,
             } => {
-                let function = match pass_compare_mode {
-                    Context3DCompareMode::Always => wgpu::CompareFunction::Always,
-                    Context3DCompareMode::Equal => wgpu::CompareFunction::Equal,
-                    Context3DCompareMode::Greater => wgpu::CompareFunction::Greater,
-                    Context3DCompareMode::GreaterEqual => wgpu::CompareFunction::GreaterEqual,
-                    Context3DCompareMode::Less => wgpu::CompareFunction::Less,
-                    Context3DCompareMode::LessEqual => wgpu::CompareFunction::LessEqual,
-                    Context3DCompareMode::Never => wgpu::CompareFunction::Never,
-                    Context3DCompareMode::NotEqual => wgpu::CompareFunction::NotEqual,
-                };
-                self.current_pipeline.update_depth(depth_mask, function);
+                self.current_pipeline
+                    .update_depth(depth_mask, pass_compare_mode.into_wgpu());
             }
             Context3DCommand::SetBlendFactors {
                 source_factor,
@@ -1174,6 +1167,32 @@ impl Context3D for WgpuContext3D {
             }
             Context3DCommand::SetScissorRectangle { rect } => {
                 self.scissor_rectangle = rect;
+            }
+            Context3DCommand::SetStencilActions {
+                triangle_face,
+                compare_mode,
+                on_both_pass,
+                on_depth_fail,
+                on_depth_pass_stencil_fail,
+            } => {
+                self.current_pipeline.update_stencil_actions(
+                    triangle_face,
+                    compare_mode,
+                    on_both_pass,
+                    on_depth_fail,
+                    on_depth_pass_stencil_fail,
+                );
+            }
+            Context3DCommand::SetStencilReferenceValue {
+                reference_value,
+                read_mask,
+                write_mask,
+            } => {
+                self.current_pipeline.update_stencil_reference_value(
+                    reference_value,
+                    read_mask,
+                    write_mask,
+                );
             }
         }
     }
