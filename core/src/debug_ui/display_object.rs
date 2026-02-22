@@ -569,7 +569,7 @@ impl DisplayObjectWindow {
                     if ui.button(format!("{:p}", style_sheet.as_ptr())).clicked() {
                         messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(
                             context,
-                            crate::avm2::Object::StyleSheetObject(style_sheet),
+                            style_sheet.into(),
                         )));
                     }
                 } else {

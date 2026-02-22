@@ -431,8 +431,8 @@ impl<'gc> XmlOrXmlListObject<'gc> {
 
     pub fn as_object(&self) -> Object<'gc> {
         match self {
-            XmlOrXmlListObject::Xml(x) => Object::XmlObject(*x),
-            XmlOrXmlListObject::XmlList(x) => Object::XmlListObject(*x),
+            XmlOrXmlListObject::Xml(x) => (*x).into(),
+            XmlOrXmlListObject::XmlList(x) => (*x).into(),
         }
     }
 

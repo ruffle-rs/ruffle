@@ -1746,7 +1746,7 @@ pub fn get_style_sheet<'gc>(
     };
 
     Ok(match this.style_sheet_avm2() {
-        Some(style_sheet) => Value::Object(Object::StyleSheetObject(style_sheet)),
+        Some(style_sheet) => Value::Object(style_sheet.into()),
         None => Value::Null,
     })
 }

@@ -10,7 +10,7 @@ use crate::avm2::object::{
 };
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::string::AvmString;
-use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Multiname, Object, Value};
+use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Multiname, Value};
 use crate::avm2_stub_method;
 
 pub fn init<'gc>(
@@ -245,7 +245,10 @@ pub fn set_name<'gc>(
 
     let name = match args.get_value(0) {
         // 2. If (Type(name) is Object) and (name.[[Class]] == "QName") and (name.uri == null)
-        Value::Object(Object::QNameObject(qname)) if qname.is_any_namespace() => {
+        Value::Object(o)
+            if let Some(qname) = o.as_qname_object()
+                && qname.is_any_namespace() =>
+        {
             // a. Let name = name.localName
             qname.local_name(activation.strings()).into()
         }
