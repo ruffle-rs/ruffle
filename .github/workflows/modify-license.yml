@@ -1,0 +1,61 @@
+name: Update LICENSE.md
+
+on:
+  # Run Sunday night
+  schedule:
+    - cron: "0 0 * * 0"
+
+  # Allow for manual dispatch on GitHub
+  workflow_dispatch:
+
+jobs:
+  update-license:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Set up Rust
+        uses: actions/setup-rust@v1
+        with:
+          rust-version: stable
+
+      - name: Install cargo-attribution
+        run: cargo install cargo-attribution
+
+      - name: Run update_license.sh
+        run: ./core/attribute/update_license.sh
+
+      - name: Check for changes
+        id: git-diff
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add LICENSE.md
+          if git diff --cached --quiet; then
+            echo "No changes to commit."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Changes detected."
+            git commit -m "chore: update LICENSE.md [automated]"
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create Pull Request
+        if: steps.git-diff.outputs.changed == 'true'
+        uses: peter-evans/create-pull-request@v6
+        with:
+          commit-message: "chore: Update LICENSE.md [automated]"
+          branch: chore/update-license-md
+          title: Update LICENSE.md (automated)
+          body: |
+            This PR updates `LICENSE.md` using `core/attribute/update_license.sh` and `cargo-attribution`.
+            Triggered automatically on a weekly schedule.
+          base: master
