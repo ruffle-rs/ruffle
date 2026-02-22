@@ -82,7 +82,9 @@ pub trait ParametersExt<'gc> {
     fn try_get_function(&self, index: usize) -> Option<FunctionObject<'gc>> {
         match self.get_value(index) {
             Value::Null => None,
-            Value::Object(Object::FunctionObject(f)) => Some(f),
+            Value::Object(o) if let Some(function_object) = o.as_function_object() => {
+                Some(function_object)
+            }
             _ => panic!("Expected FunctionObject or null as parameter"),
         }
     }

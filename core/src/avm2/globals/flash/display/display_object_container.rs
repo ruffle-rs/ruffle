@@ -526,7 +526,7 @@ pub fn get_objects_under_point<'gc>(
     while let Some(child) = children.pop() {
         let obj = child.object2();
         if let Some(obj) = obj {
-            let obj = Object::StageObject(obj);
+            let obj: Object<'gc> = obj.into();
 
             if obj != thisobj && child.hit_test_shape(activation.context, point, options) {
                 under_point.push(Some(obj.into()));
