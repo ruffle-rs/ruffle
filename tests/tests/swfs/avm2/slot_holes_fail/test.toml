@@ -1,0 +1,5 @@
+# NOTE: This test intentionally has an empty expected output. If the ABC were to
+# load successfully, the script initializer would run and print something. TODO:
+# expand the test framework to be able to compare error output so we can ensure
+# an uncaught VerifyError is properly being thrown.
+num_frames = 1
