@@ -109,7 +109,7 @@ impl<'gc> Namespace<'gc> {
             | AbcNamespace::Private(idx) => idx,
         };
 
-        let mut namespace_name = translation_unit.pool_string(index.0, activation.strings())?;
+        let mut namespace_name = translation_unit.pool_string(*index, activation.strings())?;
 
         // Private namespaces don't get any of the namespace version checks
         if let AbcNamespace::Private(_) = abc_namespace {

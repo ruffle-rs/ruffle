@@ -5,7 +5,7 @@ use crate::PlayerRuntime;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
-use crate::avm2::error::Error;
+use crate::avm2::error::{Error, make_error_1032};
 use crate::avm2::globals::global_scope;
 use crate::avm2::method::{Method, MethodAssociation};
 use crate::avm2::object::{Object, ScriptObject, TObject};
@@ -251,13 +251,29 @@ impl<'gc> TranslationUnit<'gc> {
     /// are free to interpret as the context demands.
     pub fn pool_string_option(
         self,
-        string_index: u32,
+        string_index: Index<String>,
         context: &mut StringContext<'gc>,
     ) -> Result<Option<AvmAtom<'gc>>, Error<'gc>> {
-        if string_index == 0 {
+        if string_index.0 == 0 {
             Ok(None)
         } else {
             self.pool_string(string_index, context).map(Some)
+        }
+    }
+
+    /// Load a string from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such string index exists, or if
+    /// string index zero was passed.
+    pub fn pool_string_or_err(
+        self,
+        string_index: Index<String>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Result<AvmAtom<'gc>, Error<'gc>> {
+        if string_index.0 == 0 {
+            Err(make_error_1032(activation, 0))
+        } else {
+            self.pool_string(string_index, activation.strings())
         }
     }
 
@@ -269,15 +285,15 @@ impl<'gc> TranslationUnit<'gc> {
     /// something else, then please use `pool_string_option`.
     pub fn pool_string(
         self,
-        string_index: u32,
+        string_index: Index<String>,
         context: &mut StringContext<'gc>,
     ) -> Result<AvmAtom<'gc>, Error<'gc>> {
-        let idx = string_index as usize;
+        let idx = string_index.0 as usize;
         if let Some(atom) = self.0.strings.get(idx).and_then(|a| a.get()) {
             return Ok(*atom);
         }
 
-        let raw = if string_index == 0 {
+        let raw = if idx == 0 {
             &[]
         } else {
             self.0
@@ -285,7 +301,7 @@ impl<'gc> TranslationUnit<'gc> {
                 .constant_pool
                 .strings
                 .get(idx - 1)
-                .ok_or_else(|| format!("Unknown string constant {string_index}"))?
+                .ok_or_else(|| format!("Unknown string constant {}", string_index.0))?
                 .as_slice()
         };
 

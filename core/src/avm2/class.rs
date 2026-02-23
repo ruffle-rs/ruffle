@@ -913,7 +913,7 @@ impl<'gc> Class<'gc> {
         method: &AbcMethod,
         body: &AbcMethodBody,
     ) -> Result<Class<'gc>, Error<'gc>> {
-        let name = translation_unit.pool_string(method.name.as_u30(), activation.strings())?;
+        let name = translation_unit.pool_string(method.name, activation.strings())?;
 
         let load_trait = |trait_entry| -> Result<Trait<'gc>, Error<'gc>> {
             let loaded_trait = Trait::from_abc_trait(translation_unit, trait_entry, activation)?;
