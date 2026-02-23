@@ -9,7 +9,7 @@ use crate::avm2::method::Method;
 use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, QName};
-use crate::string::{AvmAtom, AvmString};
+use crate::string::AvmString;
 
 use gc_arena::{Collect, Gc};
 use std::cell::Cell;
@@ -640,18 +640,6 @@ fn pool_double<'gc>(
         .ok_or_else(|| make_error_1032(activation, index.0))
 }
 
-fn pool_string<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    translation_unit: TranslationUnit<'gc>,
-    index: Index<String>,
-) -> Result<AvmAtom<'gc>, Error<'gc>> {
-    if index.0 == 0 {
-        return Err(make_error_1032(activation, 0));
-    }
-
-    translation_unit.pool_string(index.0, activation.strings())
-}
-
 fn lookup_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     translation_unit: TranslationUnit<'gc>,
@@ -784,7 +772,7 @@ fn translate_op<'gc>(
         AbcOp::PushNull => Op::PushNull,
         AbcOp::PushShort { value } => Op::PushShort { value },
         AbcOp::PushString { value } => {
-            let string = pool_string(activation, translation_unit, value)?;
+            let string = translation_unit.pool_string_or_err(value, activation)?;
 
             Op::PushString { string }
         }
@@ -1226,7 +1214,7 @@ fn translate_op<'gc>(
             register_name,
             register,
         } => {
-            let register_name = pool_string(activation, translation_unit, register_name)?;
+            let register_name = translation_unit.pool_string_or_err(register_name, activation)?;
 
             Op::Debug {
                 is_local_register,
@@ -1235,7 +1223,7 @@ fn translate_op<'gc>(
             }
         }
         AbcOp::DebugFile { file_name } => {
-            let file_name = pool_string(activation, translation_unit, file_name)?;
+            let file_name = translation_unit.pool_string_or_err(file_name, activation)?;
 
             Op::DebugFile { file_name }
         }
@@ -1247,7 +1235,7 @@ fn translate_op<'gc>(
         AbcOp::EscXAttr => Op::EscXAttr,
         AbcOp::EscXElem => Op::EscXElem,
         AbcOp::Dxns { index } => {
-            let string = pool_string(activation, translation_unit, index)?;
+            let string = translation_unit.pool_string_or_err(index, activation)?;
 
             Op::Dxns { string }
         }

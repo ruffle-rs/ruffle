@@ -521,7 +521,7 @@ pub fn abc_default_value<'gc>(
         AbcDefaultValue::Uint(u) => abc_uint(translation_unit, u).map(|v| v.into()),
         AbcDefaultValue::Double(d) => abc_double(translation_unit, d).map(|v| v.into()),
         AbcDefaultValue::String(s) => translation_unit
-            .pool_string(s.0, activation.strings())
+            .pool_string(s, activation.strings())
             .map(Into::into),
         AbcDefaultValue::True => Ok(true.into()),
         AbcDefaultValue::False => Ok(false.into()),

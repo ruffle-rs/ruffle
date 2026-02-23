@@ -220,7 +220,7 @@ impl<'gc> Multiname<'gc> {
                         translation_unit.pool_namespace(activation, *namespace)?,
                     ),
                     name: translation_unit
-                        .pool_string_option(name.0, activation.strings())?
+                        .pool_string_option(*name, activation.strings())?
                         .map(|v| v.into()),
                     param: None,
                     flags: MultinameFlags::IS_QNAME,
@@ -229,7 +229,7 @@ impl<'gc> Multiname<'gc> {
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => Self {
                 ns: NamespaceSet::multiple(vec![], mc),
                 name: translation_unit
-                    .pool_string_option(name.0, activation.strings())?
+                    .pool_string_option(*name, activation.strings())?
                     .map(|v| v.into()),
                 param: None,
                 flags: MultinameFlags::HAS_LAZY_NS | MultinameFlags::IS_QNAME,
@@ -252,7 +252,7 @@ impl<'gc> Multiname<'gc> {
             } => Self {
                 ns: Self::abc_namespace_set(activation, translation_unit, *namespace_set)?,
                 name: translation_unit
-                    .pool_string_option(name.0, activation.strings())?
+                    .pool_string_option(*name, activation.strings())?
                     .map(|v| v.into()),
                 param: None,
                 flags: MultinameFlags::HAS_MULTIPLE_NS,
