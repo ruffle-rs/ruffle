@@ -1,3 +1,4 @@
+use crate::avm2::error::make_error_1107;
 use crate::avm2::object::{ArrayObject, Object, ScriptObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error};
@@ -39,10 +40,13 @@ impl<'gc> Metadata<'gc> {
         let mut trait_metadata_list = vec![];
         for single_metadata in metadata.iter() {
             // Lookup the Index<Metadata> to convert it into a Metadata.
+            // FP throws error 1107 for metadata index out of bounds
+            // TODO: FP seems to throw the error earlier, and as a top-level
+            // verify-error
             let single_metadata = abc
                 .metadata
                 .get(single_metadata.0 as usize)
-                .ok_or_else(|| format!("Unknown metadata {}", single_metadata.0))?;
+                .ok_or_else(|| make_error_1107(activation))?;
 
             // Pooling of `name` uses `pool_string_or_err`, but pooling of `key`
             // and `value` uses `pool_string`.
