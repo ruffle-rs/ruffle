@@ -387,6 +387,49 @@ impl<'gc> TranslationUnit<'gc> {
                 .map(Some)
         }
     }
+
+    /// Load an integer from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such integer index exists, or if
+    /// index zero was passed.
+    pub fn pool_int_or_err(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        int_index: Index<i32>,
+    ) -> Result<i32, Error<'gc>> {
+        if int_index.0 == 0 {
+            Err(make_error_1032(activation, 0))
+        } else {
+            self.pool_int(activation, int_index)
+        }
+    }
+
+    /// Load an integer from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such integer index exists.
+    ///
+    /// Integer index 0 is always 0.
+    pub fn pool_int(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        int_index: Index<i32>,
+    ) -> Result<i32, Error<'gc>> {
+        let idx = int_index.0 as usize;
+
+        if idx == 0 {
+            Ok(0)
+        } else {
+            let int = self
+                .0
+                .abc
+                .constant_pool
+                .ints
+                .get(idx - 1)
+                .ok_or_else(|| make_error_1032(activation, int_index.0))?;
+
+            Ok(*int)
+        }
+    }
 }
 
 /// A loaded Script from an ABC file.

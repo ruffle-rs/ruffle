@@ -459,24 +459,7 @@ pub fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64>
     Some(result)
 }
 
-pub fn abc_int<'gc>(
-    translation_unit: TranslationUnit<'gc>,
-    index: Index<i32>,
-) -> Result<i32, Error<'gc>> {
-    if index.0 == 0 {
-        return Ok(0);
-    }
-
-    translation_unit
-        .abc()
-        .constant_pool
-        .ints
-        .get(index.0 as usize - 1)
-        .cloned()
-        .ok_or_else(|| format!("Unknown int constant {}", index.0).into())
-}
-
-pub fn abc_uint<'gc>(
+fn abc_uint<'gc>(
     translation_unit: TranslationUnit<'gc>,
     index: Index<u32>,
 ) -> Result<u32, Error<'gc>> {
@@ -493,7 +476,7 @@ pub fn abc_uint<'gc>(
         .ok_or_else(|| format!("Unknown uint constant {}", index.0).into())
 }
 
-pub fn abc_double<'gc>(
+fn abc_double<'gc>(
     translation_unit: TranslationUnit<'gc>,
     index: Index<f64>,
 ) -> Result<f64, Error<'gc>> {
@@ -517,7 +500,7 @@ pub fn abc_default_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     match default {
-        AbcDefaultValue::Int(i) => abc_int(translation_unit, i).map(|v| v.into()),
+        AbcDefaultValue::Int(i) => translation_unit.pool_int(activation, i).map(|v| v.into()),
         AbcDefaultValue::Uint(u) => abc_uint(translation_unit, u).map(|v| v.into()),
         AbcDefaultValue::Double(d) => abc_double(translation_unit, d).map(|v| v.into()),
         AbcDefaultValue::String(s) => translation_unit
