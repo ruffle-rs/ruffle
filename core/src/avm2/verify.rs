@@ -586,24 +586,6 @@ fn op_can_throw_error(op: &AbcOp) -> bool {
     )
 }
 
-fn pool_int<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    translation_unit: TranslationUnit<'gc>,
-    index: Index<i32>,
-) -> Result<i32, Error<'gc>> {
-    if index.0 == 0 {
-        return Err(make_error_1032(activation, 0));
-    }
-
-    translation_unit
-        .abc()
-        .constant_pool
-        .ints
-        .get(index.0 as usize - 1)
-        .cloned()
-        .ok_or_else(|| make_error_1032(activation, index.0))
-}
-
 fn pool_uint<'gc>(
     activation: &mut Activation<'_, 'gc>,
     translation_unit: TranslationUnit<'gc>,
@@ -759,7 +741,7 @@ fn translate_op<'gc>(
         }
         AbcOp::PushFalse => Op::PushFalse,
         AbcOp::PushInt { value } => {
-            let value = pool_int(activation, translation_unit, value)?;
+            let value = translation_unit.pool_int_or_err(activation, value)?;
 
             Op::PushInt { value }
         }
