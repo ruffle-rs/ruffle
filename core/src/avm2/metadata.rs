@@ -44,7 +44,9 @@ impl<'gc> Metadata<'gc> {
                 .get(single_metadata.0 as usize)
                 .ok_or_else(|| format!("Unknown metadata {}", single_metadata.0))?;
 
-            let name = translation_unit.pool_string(single_metadata.name, activation.strings())?;
+            // Pooling of `name` uses `pool_string_or_err`, but pooling of `key`
+            // and `value` uses `pool_string`.
+            let name = translation_unit.pool_string_or_err(single_metadata.name, activation)?;
 
             let mut current_metadata_items = vec![];
             for metadata_item in single_metadata.items.iter() {
