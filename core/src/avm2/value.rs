@@ -19,7 +19,7 @@ use num_bigint::BigInt;
 use num_traits::{ToPrimitive, Zero};
 use ruffle_macros::istr;
 use std::mem::size_of;
-use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
+use swf::avm2::types::DefaultValue as AbcDefaultValue;
 
 use super::class::Class;
 use super::e4x::E4XNode;
@@ -459,23 +459,6 @@ pub fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64>
     Some(result)
 }
 
-fn abc_double<'gc>(
-    translation_unit: TranslationUnit<'gc>,
-    index: Index<f64>,
-) -> Result<f64, Error<'gc>> {
-    if index.0 == 0 {
-        return Ok(f64::NAN);
-    }
-
-    translation_unit
-        .abc()
-        .constant_pool
-        .doubles
-        .get(index.0 as usize - 1)
-        .cloned()
-        .ok_or_else(|| format!("Unknown double constant {}", index.0).into())
-}
-
 /// Retrieve a default value as an AVM2 `Value`.
 pub fn abc_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
@@ -485,7 +468,9 @@ pub fn abc_default_value<'gc>(
     match default {
         AbcDefaultValue::Int(i) => translation_unit.pool_int(activation, i).map(|v| v.into()),
         AbcDefaultValue::Uint(u) => translation_unit.pool_uint(activation, u).map(|v| v.into()),
-        AbcDefaultValue::Double(d) => abc_double(translation_unit, d).map(|v| v.into()),
+        AbcDefaultValue::Double(d) => translation_unit
+            .pool_double(activation, d)
+            .map(|v| v.into()),
         AbcDefaultValue::String(s) => translation_unit
             .pool_string(s, activation.strings())
             .map(Into::into),
