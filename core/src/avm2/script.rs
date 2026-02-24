@@ -14,7 +14,7 @@ use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Avm2, Multiname, Namespace};
 use crate::context::UpdateContext;
-use crate::string::{AvmAtom, AvmString, StringContext};
+use crate::string::{AvmAtom, AvmString};
 use crate::tag_utils::SwfMovie;
 use gc_arena::barrier::field;
 use gc_arena::lock::OnceLock;
@@ -252,12 +252,12 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_string_option(
         self,
         string_index: Index<String>,
-        context: &mut StringContext<'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<AvmAtom<'gc>>, Error<'gc>> {
         if string_index.0 == 0 {
             Ok(None)
         } else {
-            self.pool_string(string_index, context).map(Some)
+            self.pool_string(string_index, activation).map(Some)
         }
     }
 
@@ -273,7 +273,7 @@ impl<'gc> TranslationUnit<'gc> {
         if string_index.0 == 0 {
             Err(make_error_1032(activation, 0))
         } else {
-            self.pool_string(string_index, activation.strings())
+            self.pool_string(string_index, activation)
         }
     }
 
@@ -286,7 +286,7 @@ impl<'gc> TranslationUnit<'gc> {
     pub fn pool_string(
         self,
         string_index: Index<String>,
-        context: &mut StringContext<'gc>,
+        activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmAtom<'gc>, Error<'gc>> {
         let idx = string_index.0 as usize;
         if let Some(atom) = self.0.strings.get(idx).and_then(|a| a.get()) {
@@ -301,13 +301,15 @@ impl<'gc> TranslationUnit<'gc> {
                 .constant_pool
                 .strings
                 .get(idx - 1)
-                .ok_or_else(|| format!("Unknown string constant {}", string_index.0))?
+                .ok_or_else(|| make_error_1032(activation, string_index.0))?
                 .as_slice()
         };
 
-        let atom = context.intern_wstr(ruffle_wstr::from_utf8_bytes(raw));
+        let atom = activation
+            .strings()
+            .intern_wstr(ruffle_wstr::from_utf8_bytes(raw));
 
-        let write = Gc::write(context.gc(), self.0);
+        let write = Gc::write(activation.gc(), self.0);
         let strings = field!(write, TranslationUnitData, strings).as_deref();
         strings[idx].unlock().set(atom).unwrap();
         Ok(atom)

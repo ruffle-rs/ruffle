@@ -472,8 +472,8 @@ pub fn abc_default_value<'gc>(
             .pool_double(activation, d)
             .map(|v| v.into()),
         AbcDefaultValue::String(s) => translation_unit
-            .pool_string(s, activation.strings())
-            .map(Into::into),
+            .pool_string(s, activation)
+            .map(|v| v.into()),
         AbcDefaultValue::True => Ok(true.into()),
         AbcDefaultValue::False => Ok(false.into()),
         AbcDefaultValue::Null => Ok(Value::Null),

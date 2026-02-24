@@ -54,10 +54,9 @@ impl<'gc> Metadata<'gc> {
 
             let mut current_metadata_items = vec![];
             for metadata_item in single_metadata.items.iter() {
-                let key = translation_unit.pool_string(metadata_item.key, activation.strings())?;
+                let key = translation_unit.pool_string(metadata_item.key, activation)?;
 
-                let value =
-                    translation_unit.pool_string(metadata_item.value, activation.strings())?;
+                let value = translation_unit.pool_string(metadata_item.value, activation)?;
 
                 let item = MetadataItem {
                     key: key.into(),
