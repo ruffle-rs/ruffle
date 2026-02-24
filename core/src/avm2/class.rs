@@ -6,8 +6,8 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{
-    Error1014Type, make_error_1014, make_error_1053, make_error_1059, make_error_1103,
-    make_error_1107, make_error_1110, make_error_1111,
+    Error1014Type, make_error_1014, make_error_1053, make_error_1059, make_error_1060,
+    make_error_1103, make_error_1107, make_error_1110, make_error_1111,
 };
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::{ClassObject, Object, scriptobject_allocator};
@@ -393,7 +393,7 @@ impl<'gc> Class<'gc> {
         let abc_instance = abc
             .instances
             .get(class_index as usize)
-            .ok_or("LoadError: Instance index not valid")?;
+            .ok_or_else(|| make_error_1060(activation, class_index))?;
 
         let name = QName::from_abc_multiname(activation, unit, abc_instance.name)?;
 
@@ -500,12 +500,12 @@ impl<'gc> Class<'gc> {
         let abc_instance = abc
             .instances
             .get(class_index as usize)
-            .ok_or("LoadError: Instance index not valid")?;
+            .ok_or_else(|| make_error_1060(activation, class_index))?;
 
         let abc_class = abc
             .classes
             .get(class_index as usize)
-            .ok_or("LoadError: Class index not valid")?;
+            .ok_or_else(|| make_error_1060(activation, class_index))?;
 
         // FIXME loading name again is a little wasteful
         let name = QName::from_abc_multiname(activation, unit, abc_instance.name)?;
@@ -569,7 +569,7 @@ impl<'gc> Class<'gc> {
         let abc_instance = abc
             .instances
             .get(class_index as usize)
-            .ok_or("LoadError: Instance index not valid")?;
+            .ok_or_else(|| make_error_1060(activation, class_index))?;
         self.load_abc_traits(activation, unit, &abc_instance.traits)
     }
 
@@ -584,7 +584,7 @@ impl<'gc> Class<'gc> {
         let abc_class = abc
             .classes
             .get(class_index as usize)
-            .ok_or("LoadError: Class index not valid")?;
+            .ok_or_else(|| make_error_1060(activation, class_index))?;
         self.load_abc_traits(activation, unit, &abc_class.traits)
     }
 

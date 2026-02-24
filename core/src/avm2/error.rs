@@ -697,6 +697,16 @@ pub fn make_error_1059<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
+pub fn make_error_1060<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
+    make_error!(verify_error(
+        activation,
+        format!("Error #1060: ClassInfo {index} exceeds class_count"),
+        1060,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_1063<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
