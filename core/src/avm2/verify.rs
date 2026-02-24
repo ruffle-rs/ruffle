@@ -1,9 +1,9 @@
 use crate::avm2::class::Class;
 use crate::avm2::error::{
     Error1014Type, make_error_1011, make_error_1014, make_error_1019, make_error_1020,
-    make_error_1021, make_error_1025, make_error_1026, make_error_1032, make_error_1043,
-    make_error_1051, make_error_1054, make_error_1072, make_error_1078, make_error_1107,
-    make_error_1113, make_error_1114, make_error_1124,
+    make_error_1021, make_error_1025, make_error_1026, make_error_1043, make_error_1051,
+    make_error_1054, make_error_1072, make_error_1078, make_error_1107, make_error_1113,
+    make_error_1114, make_error_1124,
 };
 use crate::avm2::method::Method;
 use crate::avm2::op::{LookupSwitch, Op};
@@ -586,24 +586,6 @@ fn op_can_throw_error(op: &AbcOp) -> bool {
     )
 }
 
-fn pool_double<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    translation_unit: TranslationUnit<'gc>,
-    index: Index<f64>,
-) -> Result<f64, Error<'gc>> {
-    if index.0 == 0 {
-        return Err(make_error_1032(activation, 0));
-    }
-
-    translation_unit
-        .abc()
-        .constant_pool
-        .doubles
-        .get(index.0 as usize - 1)
-        .cloned()
-        .ok_or_else(|| make_error_1032(activation, index.0))
-}
-
 fn lookup_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
     translation_unit: TranslationUnit<'gc>,
@@ -717,7 +699,7 @@ fn translate_op<'gc>(
             value: value as i8 as i16,
         },
         AbcOp::PushDouble { value } => {
-            let value = pool_double(activation, translation_unit, value)?;
+            let value = translation_unit.pool_double_or_err(activation, value)?;
 
             Op::PushDouble { value }
         }

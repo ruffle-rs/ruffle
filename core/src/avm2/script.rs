@@ -473,6 +473,49 @@ impl<'gc> TranslationUnit<'gc> {
             Ok(*uint)
         }
     }
+
+    /// Load a double from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such double index exists, or if
+    /// index zero was passed.
+    pub fn pool_double_or_err(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        double_index: Index<f64>,
+    ) -> Result<f64, Error<'gc>> {
+        if double_index.0 == 0 {
+            Err(make_error_1032(activation, 0))
+        } else {
+            self.pool_double(activation, double_index)
+        }
+    }
+
+    /// Load a double from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such double index exists.
+    ///
+    /// Double index 0 is always NaN.
+    pub fn pool_double(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        double_index: Index<f64>,
+    ) -> Result<f64, Error<'gc>> {
+        let idx = double_index.0 as usize;
+
+        if idx == 0 {
+            Ok(f64::NAN)
+        } else {
+            let double = self
+                .0
+                .abc
+                .constant_pool
+                .doubles
+                .get(idx - 1)
+                .ok_or_else(|| make_error_1032(activation, double_index.0))?;
+
+            Ok(*double)
+        }
+    }
 }
 
 /// A loaded Script from an ABC file.
