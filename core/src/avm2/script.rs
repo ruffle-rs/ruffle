@@ -430,6 +430,49 @@ impl<'gc> TranslationUnit<'gc> {
             Ok(*int)
         }
     }
+
+    /// Load an unsigned integer from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such unsigned integer index exists,
+    /// or if index zero was passed.
+    pub fn pool_uint_or_err(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        uint_index: Index<u32>,
+    ) -> Result<u32, Error<'gc>> {
+        if uint_index.0 == 0 {
+            Err(make_error_1032(activation, 0))
+        } else {
+            self.pool_uint(activation, uint_index)
+        }
+    }
+
+    /// Load an unsigned integer from the ABC's constant pool.
+    ///
+    /// This function yields an error if no such unsigned integer index exists.
+    ///
+    /// Unsigned integer index 0 is always 0.
+    pub fn pool_uint(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        uint_index: Index<u32>,
+    ) -> Result<u32, Error<'gc>> {
+        let idx = uint_index.0 as usize;
+
+        if idx == 0 {
+            Ok(0)
+        } else {
+            let uint = self
+                .0
+                .abc
+                .constant_pool
+                .uints
+                .get(idx - 1)
+                .ok_or_else(|| make_error_1032(activation, uint_index.0))?;
+
+            Ok(*uint)
+        }
+    }
 }
 
 /// A loaded Script from an ABC file.
