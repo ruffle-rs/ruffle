@@ -3,9 +3,7 @@ use naga::{
     StructMember, Type, TypeInner,
 };
 
-use crate::{Error, ShaderType, builder::NagaBuilder};
-
-pub type Result<T> = std::result::Result<T, Error>;
+use crate::{ShaderType, builder::NagaBuilder};
 
 #[derive(Default)]
 pub struct VaryingRegisters {
@@ -23,7 +21,7 @@ pub struct VaryingRegister {
 }
 
 impl NagaBuilder<'_> {
-    pub fn get_varying_pointer(&mut self, index: usize) -> Result<Handle<Expression>> {
+    pub fn get_varying_pointer(&mut self, index: usize) -> Handle<Expression> {
         if index >= self.varying_registers.varying_pointers.len() {
             self.varying_registers
                 .varying_pointers
@@ -103,14 +101,14 @@ impl NagaBuilder<'_> {
             };
         };
 
-        Ok(self.varying_registers.varying_pointers[index]
+        self.varying_registers.varying_pointers[index]
             .unwrap()
-            .expr_local_variable)
+            .expr_local_variable
     }
 
     /// Builds the final output struct expression, using the 'main' output (a position or color)
     /// and any varying registers that were written to (if this is a vertex shader)
-    pub fn build_output_expr(&mut self, return_ty: Handle<Type>) -> Result<Handle<Expression>> {
+    pub fn build_output_expr(&mut self, return_ty: Handle<Type>) -> Handle<Expression> {
         // Load the 'main' output (a position or color) from our temporary location.
         let dest_load = self.evaluate_expr(Expression::Load { pointer: self.dest });
         let mut components = vec![Some(dest_load)];
@@ -126,16 +124,16 @@ impl NagaBuilder<'_> {
                     if component_index >= components.len() {
                         components.resize(component_index + 1, None);
                     }
-                    components[component_index] = Some(self.emit_varying_load(i)?);
+                    components[component_index] = Some(self.emit_varying_load(i));
                 }
             }
         }
 
         let components = components.into_iter().map(|c| c.unwrap()).collect();
 
-        Ok(self.evaluate_expr(Expression::Compose {
+        self.evaluate_expr(Expression::Compose {
             ty: return_ty,
             components,
-        }))
+        })
     }
 }
