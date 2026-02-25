@@ -388,40 +388,16 @@ impl SwfSlice {
         }
     }
 
-    /// Construct a new SwfSlice from a Reader and a size.
+    /// Construct a new SwfSlice from a SwfStream.
     ///
     /// This is intended to allow constructing references to the contents of a
-    /// given SWF tag. You just need the current reader and the size of the tag
-    /// you want to reference.
+    /// given SWF tag.
     ///
-    /// The returned slice may or may not be a subslice of the current slice.
-    /// If the resulting slice would be outside the bounds of the underlying
-    /// movie, or the given reader refers to a different underlying movie, this
+    /// If the reader references a slice outside the bounds of the current
+    /// slice, or the given reader refers to a different underlying movie, this
     /// function returns an empty slice.
-    pub fn resize_to_reader(&self, reader: &mut SwfStream<'_>, size: usize) -> Self {
-        if self.movie.data().as_ptr() as usize <= reader.get_ref().as_ptr() as usize
-            && (reader.get_ref().as_ptr() as usize)
-                < self.movie.data().as_ptr() as usize + self.movie.data().len()
-        {
-            let outer_offset =
-                reader.get_ref().as_ptr() as usize - self.movie.data().as_ptr() as usize;
-            let new_start = outer_offset;
-            let new_end = outer_offset + size;
-
-            let len = self.movie.data().len();
-
-            if new_start < len && new_end < len {
-                Self {
-                    movie: self.movie.clone(),
-                    start: new_start,
-                    end: new_end,
-                }
-            } else {
-                self.copy_empty()
-            }
-        } else {
-            self.copy_empty()
-        }
+    pub fn resize_to_reader(&self, reader: &SwfStream<'_>) -> Self {
+        self.to_subslice(reader.get_ref())
     }
 
     /// Construct a new SwfSlice from a start and an end.
