@@ -56,7 +56,7 @@ pub enum ControlFlow {
 /// irregular decoding will be signalled by returning false.
 pub fn decode_tags<'a, F>(reader: &mut SwfStream<'a>, mut tag_callback: F) -> Result<bool, Error>
 where
-    F: for<'b> FnMut(&'b mut SwfStream<'a>, TagCode, usize) -> Result<ControlFlow, Error>,
+    F: for<'b> FnMut(&'b mut SwfStream<'a>, TagCode) -> Result<ControlFlow, Error>,
 {
     loop {
         let (tag_code, tag_len) = reader.read_tag_code_and_length()?;
@@ -70,7 +70,7 @@ where
         let end_slice = &reader.get_ref()[tag_len..];
         if let Some(tag) = TagCode::from_u16(tag_code) {
             *reader.get_mut() = tag_slice;
-            let result = tag_callback(reader, tag, tag_len);
+            let result = tag_callback(reader, tag);
 
             match result {
                 Err(e) => {
