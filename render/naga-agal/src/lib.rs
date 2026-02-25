@@ -21,31 +21,102 @@ pub enum VertexAttributeFormat {
 }
 
 #[derive(Debug)]
-pub enum Error {
+pub enum AgalError {
+    EmptyProgram,
+    FragmentRegisterAsSource {
+        operand: u8,
+        token: usize,
+        shader_type: ShaderType,
+    },
+    IndirectNotAllowed {
+        operand: u8,
+        token: usize,
+        shader_type: ShaderType,
+    },
+    IndirectOnlyIntoConstants {
+        operand: u8,
+        token: usize,
+        shader_type: ShaderType,
+    },
     InvalidHeader,
-    InvalidShaderType(u8),
-    MissingVertexAttributeData(usize),
-    Unimplemented(String),
-    ReadError(std::io::Error),
-    InvalidOpcode(u32),
-    InvalidVersion(u32),
+    InvalidOpcode {
+        value: u32,
+        token: usize,
+        shader_type: ShaderType,
+    },
+    InvalidShaderType,
+    InvalidVersion,
+    ReadError,
+    ReadOutputRegister {
+        operand: u8,
+        token: usize,
+        shader_type: ShaderType,
+    },
     SamplerConfigMismatch {
-        texture: usize,
-        old: SamplerConfig,
-        new: SamplerConfig,
+        token: usize,
+        shader_type: ShaderType,
+    },
+    SamplerRegisterAsSource {
+        operand: u8,
+        token: usize,
+        shader_type: ShaderType,
+    },
+    WriteAttributeRegister {
+        token: usize,
+        shader_type: ShaderType,
+    },
+    WriteConstantRegister {
+        token: usize,
+        shader_type: ShaderType,
+    },
+    WriteFragmentRegister {
+        token: usize,
+        shader_type: ShaderType,
+    },
+    WriteSamplerRegister {
+        token: usize,
+        shader_type: ShaderType,
     },
 }
 
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Error::ReadError(err)
+impl From<std::io::Error> for AgalError {
+    fn from(_value: std::io::Error) -> Self {
+        AgalError::ReadError
     }
 }
 
 #[derive(Debug)]
+pub enum Error {
+    Agal(AgalError),
+    MissingVertexAttributeData,
+    Unimplemented(String),
+}
+
+impl From<AgalError> for Error {
+    fn from(value: AgalError) -> Self {
+        Error::Agal(value)
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(value: std::io::Error) -> Self {
+        Error::Agal(AgalError::from(value))
+    }
+}
+
+#[derive(Clone, Debug)]
 pub enum ShaderType {
     Vertex,
     Fragment,
+}
+
+impl ShaderType {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ShaderType::Vertex => "vertex",
+            ShaderType::Fragment => "fragment",
+        }
+    }
 }
 
 pub use builder::{TEXTURE_SAMPLER_START_BIND_INDEX, TEXTURE_START_BIND_INDEX};
@@ -102,6 +173,6 @@ pub fn agal_to_naga(
 
 pub fn extract_sampler_configs(
     agal: &[u8],
-) -> Result<[Option<SamplerConfig>; MAX_TEXTURES], Error> {
+) -> Result<[Option<SamplerConfig>; MAX_TEXTURES], AgalError> {
     NagaBuilder::extract_sampler_configs(agal)
 }

@@ -1,4 +1,4 @@
-use crate::Error;
+use crate::AgalError;
 use num_derive::FromPrimitive;
 use num_traits::FromPrimitive;
 
@@ -71,7 +71,7 @@ pub struct DestField {
 }
 
 impl DestField {
-    pub fn parse(val: u32) -> Result<DestField, Error> {
+    pub fn parse(val: u32) -> Result<DestField, AgalError> {
         let reg_num = (val & 0xFFFF) as u16;
         let write_mask = Mask::from_bits(((val >> 16) & 0xF) as u8).unwrap();
         let reg_type = RegisterType::from_u16(((val >> 24) & 0xF) as u16).unwrap();
@@ -105,7 +105,7 @@ bitflags::bitflags! {
 }
 
 impl SourceField {
-    pub fn parse(val: u64) -> Result<SourceField, Error> {
+    pub fn parse(val: u64) -> Result<SourceField, AgalError> {
         // FIXME - check that all the other bits are 0
         let reg_num = (val & 0xFFFF) as u16;
         let indirect_offset = ((val >> 16) & 0xFF) as u8;
@@ -163,7 +163,7 @@ pub struct Special {
 }
 
 impl Special {
-    pub fn parse(val: u8) -> Result<Special, Error> {
+    pub fn parse(val: u8) -> Result<Special, AgalError> {
         Ok(Special {
             ignore_sampler: (val & 0x4) != 0,
         })
@@ -202,7 +202,7 @@ impl Default for SamplerConfig {
 }
 
 impl SamplerField {
-    pub fn parse(val: u64) -> Result<SamplerField, Error> {
+    pub fn parse(val: u64) -> Result<SamplerField, AgalError> {
         let reg_num = (val & 0xFFFF) as u16;
         let load_bias = ((val >> 16) & 0xFF) as i8;
         let reg_type = RegisterType::from_u64((val >> 32) & 0xF).unwrap();
