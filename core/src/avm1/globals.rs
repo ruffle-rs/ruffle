@@ -530,9 +530,12 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
 
     let mut reader = slice.read_from(0);
 
-    let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
+    let tag_callback = |reader: &mut SwfStream<'_>, tag_code| {
         if tag_code == TagCode::DoAction {
-            Avm1::run_stack_frame_for_globals(slice.resize_to_reader(reader, tag_len), context);
+            Avm1::run_stack_frame_for_globals(
+                slice.resize_to_reader(reader, reader.get_ref().len()),
+                context,
+            );
         }
         Ok(ControlFlow::Continue)
     };
