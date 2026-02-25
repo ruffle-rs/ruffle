@@ -15,7 +15,7 @@ use num_traits::FromPrimitive;
 
 use crate::varying::VaryingRegisters;
 use crate::{
-    Error, MAX_TEXTURES, MAX_VERTEX_ATTRIBUTES, SHADER_ENTRY_POINT, ShaderType,
+    AgalError, Error, MAX_TEXTURES, MAX_VERTEX_ATTRIBUTES, SHADER_ENTRY_POINT, ShaderType,
     VertexAttributeFormat, types::*,
 };
 
@@ -25,7 +25,7 @@ const FRAGMENT_PROGRAM_CONSTANTS: u64 = 28;
 pub const TEXTURE_SAMPLER_START_BIND_INDEX: u32 = 2;
 pub const TEXTURE_START_BIND_INDEX: u32 = 10;
 
-pub type Result<T> = std::result::Result<T, Error>;
+pub type Result<T, E = Error> = std::result::Result<T, E>;
 
 const SWIZZLE_XYZW: u8 = 0b11100100;
 
@@ -263,41 +263,51 @@ struct ParsedBytecode {
 }
 
 impl<'a> NagaBuilder<'a> {
-    fn parse_bytecode(mut agal: &[u8]) -> Result<ParsedBytecode> {
+    fn parse_bytecode(mut agal: &[u8]) -> Result<ParsedBytecode, AgalError> {
         let data = &mut agal;
+
+        if data.is_empty() {
+            return Err(AgalError::EmptyProgram);
+        }
 
         let mut header = [0; 7];
         data.read_exact(&mut header)?;
 
         if header[0] != 0xa0 {
-            return Err(Error::InvalidHeader);
+            return Err(AgalError::InvalidHeader);
         }
         let version = u32::from_le_bytes([header[1], header[2], header[3], header[4]]);
 
         let version = match version {
             1 => AgalVersion::Agal1,
             2 => AgalVersion::Agal2,
-            _ => return Err(Error::InvalidVersion(version)),
+            _ => return Err(AgalError::InvalidVersion),
         };
 
         if header[5] != 0xa1 {
-            return Err(Error::InvalidHeader);
+            return Err(AgalError::InvalidHeader);
         }
 
         let shader_type = match header[6] {
             0x00 => ShaderType::Vertex,
             0x01 => ShaderType::Fragment,
-            _ => return Err(Error::InvalidShaderType(header[6])),
+            _ => return Err(AgalError::InvalidShaderType),
         };
 
         let mut operations = Vec::new();
+        let mut token_index: usize = 0;
 
         while !data.is_empty() {
             let mut token = [0; 24];
             data.read_exact(&mut token)?;
+            token_index += 1;
             let raw_opcode = u32::from_le_bytes(token[0..4].try_into().unwrap());
 
-            let opcode = Opcode::from_u32(raw_opcode).ok_or(Error::InvalidOpcode(raw_opcode))?;
+            let opcode = Opcode::from_u32(raw_opcode).ok_or(AgalError::InvalidOpcode {
+                value: raw_opcode,
+                token: token_index,
+                shader_type: shader_type.clone(),
+            })?;
 
             let dest = DestField::parse(u32::from_le_bytes(token[4..8].try_into().unwrap()))?;
             let source1 = SourceField::parse(u64::from_le_bytes(token[8..16].try_into().unwrap()))?;
@@ -311,8 +321,112 @@ impl<'a> NagaBuilder<'a> {
                     token[16..24].try_into().unwrap(),
                 ))?)
             };
+
+            // Control flow opcodes don't use dest/source fields — their
+            // token bytes are typically zeroed, so skip validation for them.
+            let has_dest = !matches!(
+                opcode,
+                Opcode::Kil
+                    | Opcode::Ife
+                    | Opcode::Ine
+                    | Opcode::Ifg
+                    | Opcode::Ifl
+                    | Opcode::Els
+                    | Opcode::Eif
+            );
+
+            if has_dest {
+                match dest.register_type {
+                    RegisterType::Output | RegisterType::Varying | RegisterType::Temporary => {}
+                    RegisterType::Constant => {
+                        return Err(AgalError::WriteConstantRegister {
+                            token: token_index,
+                            shader_type,
+                        });
+                    }
+                    RegisterType::Attribute => {
+                        return Err(AgalError::WriteAttributeRegister {
+                            token: token_index,
+                            shader_type,
+                        });
+                    }
+                    RegisterType::Sampler => {
+                        return Err(AgalError::WriteSamplerRegister {
+                            token: token_index,
+                            shader_type,
+                        });
+                    }
+                    RegisterType::FragmentRegister => {
+                        return Err(AgalError::WriteFragmentRegister {
+                            token: token_index,
+                            shader_type,
+                        });
+                    }
+                }
+            }
+
+            let has_sources = !matches!(opcode, Opcode::Els | Opcode::Eif);
+
+            if has_sources {
+                let sources: &[(&SourceField, u8)] = match &source2 {
+                    Source2::SourceField(s2) if !matches!(opcode, Opcode::Kil) => {
+                        &[(&source1, 1), (s2, 2)]
+                    }
+                    _ => &[(&source1, 1)],
+                };
+
+                for &(source, operand) in sources {
+                    match source.register_type {
+                        RegisterType::Attribute
+                        | RegisterType::Constant
+                        | RegisterType::Temporary
+                        | RegisterType::Varying => {}
+                        RegisterType::Output => {
+                            return Err(AgalError::ReadOutputRegister {
+                                operand,
+                                token: token_index,
+                                shader_type,
+                            });
+                        }
+                        RegisterType::Sampler => {
+                            return Err(AgalError::SamplerRegisterAsSource {
+                                operand,
+                                token: token_index,
+                                shader_type,
+                            });
+                        }
+                        RegisterType::FragmentRegister => {
+                            return Err(AgalError::FragmentRegisterAsSource {
+                                operand,
+                                token: token_index,
+                                shader_type,
+                            });
+                        }
+                    }
+
+                    if matches!(source.direct_mode, DirectMode::Indirect) {
+                        if matches!(shader_type, ShaderType::Fragment) {
+                            return Err(AgalError::IndirectNotAllowed {
+                                operand,
+                                token: token_index,
+                                shader_type,
+                            });
+                        }
+
+                        if !matches!(source.register_type, RegisterType::Constant) {
+                            return Err(AgalError::IndirectOnlyIntoConstants {
+                                operand,
+                                token: token_index,
+                                shader_type,
+                            });
+                        }
+                    }
+                }
+            }
+
             operations.push((opcode, dest, source1, source2))
         }
+
         Ok(ParsedBytecode {
             version,
             shader_type,
@@ -320,10 +434,12 @@ impl<'a> NagaBuilder<'a> {
         })
     }
 
-    pub fn extract_sampler_configs(agal: &[u8]) -> Result<[Option<SamplerConfig>; MAX_TEXTURES]> {
+    pub fn extract_sampler_configs(
+        agal: &[u8],
+    ) -> Result<[Option<SamplerConfig>; MAX_TEXTURES], AgalError> {
         let parsed = Self::parse_bytecode(agal)?;
         let mut sampler_configs = [None; MAX_TEXTURES];
-        for (_opcode, _dest, _source1, source2) in parsed.operations {
+        for (i, (_opcode, _dest, _source1, source2)) in parsed.operations.iter().enumerate() {
             if let Source2::Sampler(sampler_field) = source2 {
                 // When the 'ignore_sampler' field is set, we do not update the sampler config.
                 // The existing sampler value will end up getting used
@@ -342,10 +458,9 @@ impl<'a> NagaBuilder<'a> {
                 if sampler_configs[index].is_none() {
                     sampler_configs[index] = Some(sampler_config);
                 } else if sampler_configs[index] != Some(sampler_config) {
-                    return Err(Error::SamplerConfigMismatch {
-                        texture: index,
-                        old: sampler_configs[index].unwrap(),
-                        new: sampler_config,
+                    return Err(AgalError::SamplerConfigMismatch {
+                        token: i + 1,
+                        shader_type: parsed.shader_type.clone(),
                     });
                 }
             }
@@ -632,7 +747,7 @@ impl<'a> NagaBuilder<'a> {
         if self.vertex_input_expressions[index].is_none() {
             let ty = self.shader_config.vertex_attributes[index]
                 .as_ref()
-                .ok_or(Error::MissingVertexAttributeData(index))?
+                .ok_or(Error::MissingVertexAttributeData)?
                 .to_naga_type(&mut self.module);
 
             // Function arguments might not be in the same order as the
@@ -724,11 +839,7 @@ impl<'a> NagaBuilder<'a> {
         }
     }
 
-    fn emit_texture_load(
-        &mut self,
-        index: usize,
-        dimension: Dimension,
-    ) -> TextureBindingData {
+    fn emit_texture_load(&mut self, index: usize, dimension: Dimension) -> TextureBindingData {
         if self.texture_bindings[index].is_none() {
             let global_var = self.module.global_variables.append(
                 GlobalVariable {
@@ -805,7 +916,7 @@ impl<'a> NagaBuilder<'a> {
                 RegisterType::Attribute => Ok((
                     self.get_vertex_input(reg_num)?,
                     self.shader_config.vertex_attributes[reg_num]
-                        .ok_or(Error::MissingVertexAttributeData(reg_num))?,
+                        .ok_or(Error::MissingVertexAttributeData)?,
                 )),
                 RegisterType::Varying => Ok((
                     self.emit_varying_load(reg_num),
