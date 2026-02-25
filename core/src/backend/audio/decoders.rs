@@ -470,15 +470,9 @@ impl Read for SubstreamTagReader {
             return Ok(0);
         }
 
-        let chunk = self.current_audio_data.as_mut().unwrap();
-        let data = chunk.data();
-
         //At this point, current_audio_data should be full
-        let len = std::cmp::min(buf.len(), data.len());
-        buf[..len].copy_from_slice(&data[..len]);
-
-        drop(data);
-        *chunk = chunk.to_start_and_end(len, chunk.len());
+        let chunk = self.current_audio_data.as_mut().unwrap();
+        let len = chunk.read(buf)?;
 
         if chunk.is_empty() {
             self.current_audio_data = None;

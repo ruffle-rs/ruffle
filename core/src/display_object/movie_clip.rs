@@ -4420,10 +4420,8 @@ impl<'gc, 'a> MovieClip<'gc> {
             let read = self.0.shared_cell();
             if let (Some(stream_info), None) = (&read.audio_stream_info, self.0.audio_stream.get())
             {
-                let slice = self.0.shared.get().swf.to_start_and_end(
-                    self.0.tag_stream_pos.get() as usize,
-                    self.0.tag_stream_len(),
-                );
+                let mut slice = self.0.shared.get().swf.clone();
+                slice.start = self.0.tag_stream_pos.get() as usize;
                 Some(context.start_stream(self, self.0.current_frame(), slice, stream_info))
             } else {
                 None

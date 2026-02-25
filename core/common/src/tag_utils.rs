@@ -400,27 +400,6 @@ impl SwfSlice {
         self.to_subslice(reader.get_ref())
     }
 
-    /// Construct a new SwfSlice from a start and an end.
-    ///
-    /// The start and end values will be relative to the current slice.
-    /// Furthermore, this function will yield an empty slice if the calculated slice
-    /// would be invalid (e.g. negative length) or would extend past the end of
-    /// the current slice.
-    pub fn to_start_and_end(&self, start: usize, end: usize) -> Self {
-        let new_start = self.start + start;
-        let new_end = self.start + end;
-
-        if new_start <= new_end {
-            if let Some(result) = self.movie.data().get(new_start..new_end) {
-                self.to_subslice(result)
-            } else {
-                self.copy_empty()
-            }
-        } else {
-            self.copy_empty()
-        }
-    }
-
     /// Convert the SwfSlice into a standard data slice.
     pub fn data(&self) -> &[u8] {
         &self.movie.data()[self.start..self.end]

@@ -163,27 +163,6 @@ impl Slice {
         }
     }
 
-    /// Construct a new Slice from a start and an end.
-    ///
-    /// The start and end values will be relative to the current slice.
-    /// Furthermore, this function will yield an empty slice if the calculated
-    /// slice would be invalid (e.g. negative length) or would extend past the
-    /// end of the current slice.
-    pub fn to_start_and_end(&self, start: usize, end: usize) -> Self {
-        let new_start = self.start + start;
-        let new_end = self.start + end;
-
-        if new_start <= new_end && new_end < self.end {
-            if let Some(result) = self.buf.get(new_start..new_end) {
-                result
-            } else {
-                self.buf.to_empty_slice()
-            }
-        } else {
-            self.buf.to_empty_slice()
-        }
-    }
-
     /// Get a subslice of this slice.
     ///
     /// Normal subslicing bounds rules will be respected.
