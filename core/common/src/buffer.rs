@@ -163,30 +163,6 @@ impl Slice {
         }
     }
 
-    /// Create a subslice of this buffer slice, without bounds checking.
-    ///
-    /// The parameter `slice` must be derived from the same buffer this slice
-    /// was, otherwise the returned slice will be empty
-    ///
-    /// This emulates "unbounded reads" in file formats that don't bounds-check
-    /// things properly.
-    pub fn to_unbounded_subslice(&self, slice: &[u8]) -> Self {
-        let self_guard = self.buf.0.read().expect("unlock read");
-        let self_pval = self_guard.as_ptr() as usize;
-        let self_len = self.buf.len();
-        let slice_pval = slice.as_ptr() as usize;
-
-        if self_pval <= slice_pval && slice_pval < (self_pval + self_len) {
-            Slice {
-                buf: self.buf.clone(),
-                start: slice_pval - self_pval,
-                end: (slice_pval - self_pval) + slice.len(),
-            }
-        } else {
-            self.buf.to_empty_slice()
-        }
-    }
-
     /// Construct a new Slice from a start and an end.
     ///
     /// The start and end values will be relative to the current slice.
@@ -210,8 +186,7 @@ impl Slice {
 
     /// Get a subslice of this slice.
     ///
-    /// Normal subslicing bounds rules will be respected. If you want to get a
-    /// slice outside the bounds of this one, use `to_unbounded_subslice`.
+    /// Normal subslicing bounds rules will be respected.
     pub fn get<T: RangeBounds<usize>>(&self, range: T) -> Option<Slice> {
         let s = self.buf.0.read().expect("unlock read");
 
