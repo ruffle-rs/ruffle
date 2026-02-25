@@ -21,7 +21,8 @@ pub struct VaryingRegister {
 }
 
 impl NagaBuilder<'_> {
-    pub fn get_varying_pointer(&mut self, index: usize) -> Handle<Expression> {
+    pub fn get_varying_pointer(&mut self, index: u16) -> Handle<Expression> {
+        let index = index as usize;
         if index >= self.varying_registers.varying_pointers.len() {
             self.varying_registers
                 .varying_pointers
@@ -124,7 +125,7 @@ impl NagaBuilder<'_> {
                     if component_index >= components.len() {
                         components.resize(component_index + 1, None);
                     }
-                    components[component_index] = Some(self.emit_varying_load(i));
+                    components[component_index] = Some(self.emit_varying_load(i as u16));
                 }
             }
         }

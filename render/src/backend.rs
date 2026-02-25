@@ -299,6 +299,13 @@ pub trait Context3D: Any {
         streaming_levels: u32,
     ) -> Result<Rc<dyn Texture>, Error>;
 
+    fn upload_shaders(
+        &mut self,
+        module: &RefCell<Option<Rc<dyn ShaderModule>>>,
+        vertex_shader_agal: Vec<u8>,
+        fragment_shader_agal: Vec<u8>,
+    ) -> Result<(), naga_agal::AgalError>;
+
     fn process_command(&mut self, command: Context3DCommand<'_>);
 
     fn present(&mut self);
@@ -551,12 +558,6 @@ pub enum Context3DCommand<'a> {
         index: u32,
         buffer: Option<(Rc<dyn VertexBuffer>, Context3DVertexBufferFormat)>,
         buffer_offset: u32,
-    },
-
-    UploadShaders {
-        module: &'a RefCell<Option<Rc<dyn ShaderModule>>>,
-        vertex_shader_agal: Vec<u8>,
-        fragment_shader_agal: Vec<u8>,
     },
 
     SetShaders {
