@@ -9,6 +9,7 @@ use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapRawData;
 use crate::context::RenderContext;
 use gc_arena::{Collect, Gc, GcWeak};
+use naga_agal::AgalError;
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::{
     BufferUsage, Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
@@ -203,14 +204,14 @@ impl<'gc> Context3DObject<'gc> {
         program: Program3DObject<'gc>,
         vertex_shader_agal: Vec<u8>,
         fragment_shader_agal: Vec<u8>,
-    ) {
+    ) -> Result<(), AgalError> {
         self.with_context_3d(|ctx| {
-            ctx.process_command(Context3DCommand::UploadShaders {
-                module: program.shader_module_handle(),
+            ctx.upload_shaders(
+                program.shader_module_handle(),
                 vertex_shader_agal,
                 fragment_shader_agal,
-            })
-        });
+            )
+        })
     }
 
     pub fn set_program(self, program: Option<Program3DObject<'gc>>) {

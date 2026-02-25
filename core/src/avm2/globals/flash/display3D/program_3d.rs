@@ -1,5 +1,6 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::error::make_agal_upload_error;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 
@@ -24,7 +25,8 @@ pub fn upload<'gc>(
         let fragment_agal = fragment_agal.bytes().to_vec();
 
         this.context3d()
-            .upload_shaders(this, vertex_agal, fragment_agal);
+            .upload_shaders(this, vertex_agal, fragment_agal)
+            .map_err(|e| make_agal_upload_error(activation, e))?;
     }
     Ok(Value::Undefined)
 }

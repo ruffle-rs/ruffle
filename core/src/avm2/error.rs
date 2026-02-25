@@ -8,6 +8,7 @@ use crate::avm2::object::{ClassObject, ErrorObject};
 use crate::avm2::value::Value;
 use crate::string::{AvmString, WString};
 
+use naga_agal::AgalError;
 use ruffle_macros::istr;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display};
@@ -1763,6 +1764,140 @@ pub fn make_error_3783<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
         "Error #3783: A Stage object cannot be added as the child of another object.",
         3783,
     ))
+}
+
+pub fn make_agal_upload_error<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    e: AgalError,
+) -> Error<'gc> {
+    make_error!(match e {
+        AgalError::EmptyProgram => argument_error(
+            activation,
+            "Error #3615: AGAL validation failed: Program size below minimum length for  program.",
+            3615
+        ),
+        AgalError::InvalidHeader => argument_error(
+            activation,
+            "Error #3612: Programs must be in little endian format.",
+            3612
+        ),
+        AgalError::ReadError => argument_error(
+            activation,
+            "Error #3612: Programs must be in little endian format.",
+            3612
+        ),
+        AgalError::InvalidVersion => error(
+            activation,
+            "Error #3615: AGAL validation failed: Program size below minimum length for fragment program.",
+            3615
+        ),
+        AgalError::InvalidShaderType => error(
+            activation,
+            "Error #3615: AGAL validation failed: Program size below minimum length for fragment program.",
+            3615
+        ),
+        AgalError::InvalidOpcode {
+            value,
+            token,
+            shader_type,
+        } => error(
+            activation,
+            format!(
+                "Error #3620: AGAL validation failed: Invalid opcode, value out of range: {value} at token {token} of {shader_type} program."
+            ),
+            3620
+        ),
+        AgalError::ReadOutputRegister {
+            operand,
+            token,
+            shader_type,
+        } => error(
+            activation,
+            format!(
+                "Error #3646: AGAL validation failed: Can not read from output register for source operand {operand} at token {token} of {shader_type} program."
+            ),
+            3646
+        ),
+        AgalError::SamplerRegisterAsSource {
+            operand,
+            token,
+            shader_type,
+        } => error(
+            activation,
+            format!(
+                "Error #3638: AGAL validation failed: Sampler register only allowed as second operand in texture instructions for source operand {operand} at token {token} of {shader_type} program."
+            ),
+            3638
+        ),
+        AgalError::WriteConstantRegister { token, shader_type } => error(
+            activation,
+            format!(
+                "Error #3652: AGAL validation failed: Constant registers can not be written to for destination operand at token {token} of {shader_type} program."
+            ),
+            3652
+        ),
+        AgalError::WriteAttributeRegister { token, shader_type } => error(
+            activation,
+            format!(
+                "Error #3651: AGAL validation failed: Attribute registers can not be written to for destination operand at token {token} of {shader_type} program."
+            ),
+            3651
+        ),
+        AgalError::WriteSamplerRegister { token, shader_type } => error(
+            activation,
+            format!(
+                "Error #3649: AGAL validation failed: Sampler registers can not be written to for destination operand at token {token} of {shader_type} program."
+            ),
+            3649
+        ),
+        AgalError::WriteFragmentRegister { token, shader_type } => error(
+            activation,
+            format!(
+                "Error #3749: AGAL validation failed: Depth output register index out of bounds for destination operand at token {token} of {shader_type} program."
+            ),
+            3749
+        ),
+        AgalError::FragmentRegisterAsSource {
+            operand,
+            token,
+            shader_type,
+        } => error(
+            activation,
+            format!(
+                "Error #3749: AGAL validation failed: Depth output register index out of bounds for source operand {operand} at token {token} of {shader_type} program."
+            ),
+            3749
+        ),
+        AgalError::IndirectNotAllowed {
+            operand,
+            token,
+            shader_type,
+        } => error(
+            activation,
+            format!(
+                "Error #3639: AGAL validation failed: Indirect addressing only allowed in vertex programs for source operand {operand} at token {token} of {shader_type} program."
+            ),
+            3639
+        ),
+        AgalError::IndirectOnlyIntoConstants {
+            operand,
+            token,
+            shader_type,
+        } => error(
+            activation,
+            format!(
+                "Error #3640: AGAL validation failed: Indirect addressing only allowed into constant registers for source operand {operand} at token {token} of {shader_type} program."
+            ),
+            3640
+        ),
+        AgalError::SamplerConfigMismatch { token, shader_type } => error(
+            activation,
+            format!(
+                "Error #3696: AGAL validation failed: Second use of sampler register needs to specify the exact same properties. At token {token} of {shader_type} program."
+            ),
+            3696
+        ),
+    })
 }
 
 #[inline(never)]

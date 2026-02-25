@@ -22,6 +22,7 @@ indexmap = { workspace = true }
 tracing = { workspace = true }
 ruffle_common = { path = "common" }
 ruffle_macros = { path = "macros" }
+naga-agal = { path = "../render/naga-agal" }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
 ruffle_wstr = { path = "../wstr" }

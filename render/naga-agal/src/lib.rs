@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use naga::Module;
 
 mod builder;
@@ -104,22 +106,22 @@ impl From<std::io::Error> for Error {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub enum ShaderType {
     Vertex,
     Fragment,
 }
 
-impl ShaderType {
-    pub fn as_str(&self) -> &'static str {
+impl Display for ShaderType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ShaderType::Vertex => "vertex",
-            ShaderType::Fragment => "fragment",
+            ShaderType::Vertex => f.write_str("vertex"),
+            ShaderType::Fragment => f.write_str("fragment"),
         }
     }
 }
 
-pub use builder::{TEXTURE_SAMPLER_START_BIND_INDEX, TEXTURE_START_BIND_INDEX};
+pub use builder::{ParsedBytecode, TEXTURE_SAMPLER_START_BIND_INDEX, TEXTURE_START_BIND_INDEX};
 pub use types::{Filter, Mipmap, SamplerConfig, Wrapping};
 
 /// Compiles an Adobe AGAL shader to a Naga Module.
@@ -163,16 +165,20 @@ pub use types::{Filter, Mipmap, SamplerConfig, Wrapping};
 ///
 /// * Program constants - An AGAL fragment shader has access to 28 program constants.
 ///   These are mapped to a single Naga uniform buffer, with a binding id of 1.
+pub fn parse_bytecode(agal: &[u8]) -> Result<ParsedBytecode, AgalError> {
+    NagaBuilder::parse_bytecode(agal)
+}
+
 pub fn agal_to_naga(
-    agal: &[u8],
+    parsed: &ParsedBytecode,
     vertex_attributes: &[Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
     sampler_configs: &[SamplerConfig; MAX_TEXTURES],
 ) -> Result<Module, Error> {
-    NagaBuilder::build_module(agal, vertex_attributes, sampler_configs)
+    NagaBuilder::build_module(parsed, vertex_attributes, sampler_configs)
 }
 
 pub fn extract_sampler_configs(
-    agal: &[u8],
+    parsed: &ParsedBytecode,
 ) -> Result<[Option<SamplerConfig>; MAX_TEXTURES], AgalError> {
-    NagaBuilder::extract_sampler_configs(agal)
+    NagaBuilder::extract_sampler_configs(parsed)
 }

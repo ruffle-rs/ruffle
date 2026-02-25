@@ -1,11 +1,12 @@
+use naga_agal::AgalError;
 use ruffle_render::backend::{
     Context3D, Context3DBlendFactor, Context3DCommand, Context3DProfile, Context3DTextureFormat,
-    Context3DVertexBufferFormat, IndexBuffer, ProgramType, VertexBuffer,
+    Context3DVertexBufferFormat, IndexBuffer, ProgramType, ShaderModule, VertexBuffer,
 };
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error;
 use std::any::Any;
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
 use swf::{Rectangle, Twips};
 
 use wgpu::util::StagingBelt;
@@ -479,6 +480,19 @@ impl Context3D for WgpuContext3D {
         Ok(Rc::new(TextureWrapper { texture }))
     }
 
+    fn upload_shaders(
+        &mut self,
+        module: &RefCell<Option<Rc<dyn ShaderModule>>>,
+        vertex_shader_agal: Vec<u8>,
+        fragment_shader_agal: Vec<u8>,
+    ) -> Result<(), AgalError> {
+        let shader_pair = ShaderPairAgal::new(vertex_shader_agal, fragment_shader_agal)?;
+
+        *module.borrow_mut() = Some(Rc::new(shader_pair));
+
+        Ok(())
+    }
+
     fn process_command(&mut self, command: Context3DCommand<'_>) {
         match command {
             Context3DCommand::Clear {
@@ -906,17 +920,6 @@ impl Context3D for WgpuContext3D {
                 self.vertex_attributes[index as usize] = info;
                 self.current_pipeline
                     .update_vertex_buffer_at(index as usize);
-            }
-
-            Context3DCommand::UploadShaders {
-                module,
-                vertex_shader_agal,
-                fragment_shader_agal,
-            } => {
-                *module.borrow_mut() = Some(Rc::new(ShaderPairAgal::new(
-                    vertex_shader_agal,
-                    fragment_shader_agal,
-                )));
             }
 
             Context3DCommand::SetShaders { module } => {

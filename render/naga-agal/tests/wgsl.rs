@@ -2,7 +2,7 @@ use naga::{
     Module,
     valid::{Capabilities, ValidationFlags, Validator},
 };
-use naga_agal::{VertexAttributeFormat, agal_to_naga};
+use naga_agal::{VertexAttributeFormat, agal_to_naga, parse_bytecode};
 
 pub fn to_wgsl(module: &Module) -> String {
     let mut out = String::new();
@@ -22,7 +22,8 @@ pub fn to_wgsl(module: &Module) -> String {
 // Making this a macro gives us a better span in 'inta'
 macro_rules! test_shader {
     ($shader:expr, $attrs:expr, $shader_type:expr $(,)?) => {
-        let module = agal_to_naga(&$shader, $attrs, &[Default::default(); 8]).unwrap();
+        let parsed = parse_bytecode(&$shader).unwrap();
+        let module = agal_to_naga(&parsed, $attrs, &[Default::default(); 8]).unwrap();
         let output = to_wgsl(&module);
         insta::assert_snapshot!(output);
     };

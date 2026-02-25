@@ -250,20 +250,20 @@ pub struct ShaderConfig<'a> {
     pub version: AgalVersion,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 pub enum AgalVersion {
     Agal1,
     Agal2,
 }
 
-struct ParsedBytecode {
+pub struct ParsedBytecode {
     version: AgalVersion,
     shader_type: ShaderType,
     operations: Vec<(Opcode, DestField, SourceField, Source2)>,
 }
 
 impl<'a> NagaBuilder<'a> {
-    fn parse_bytecode(mut agal: &[u8]) -> Result<ParsedBytecode, AgalError> {
+    pub fn parse_bytecode(mut agal: &[u8]) -> Result<ParsedBytecode, AgalError> {
         let data = &mut agal;
 
         if data.is_empty() {
@@ -306,7 +306,7 @@ impl<'a> NagaBuilder<'a> {
             let opcode = Opcode::from_u32(raw_opcode).ok_or(AgalError::InvalidOpcode {
                 value: raw_opcode,
                 token: token_index,
-                shader_type: shader_type.clone(),
+                shader_type,
             })?;
 
             let dest = DestField::parse(u32::from_le_bytes(token[4..8].try_into().unwrap()))?;
@@ -435,9 +435,8 @@ impl<'a> NagaBuilder<'a> {
     }
 
     pub fn extract_sampler_configs(
-        agal: &[u8],
+        parsed: &ParsedBytecode,
     ) -> Result<[Option<SamplerConfig>; MAX_TEXTURES], AgalError> {
-        let parsed = Self::parse_bytecode(agal)?;
         let mut sampler_configs = [None; MAX_TEXTURES];
         for (i, (_opcode, _dest, _source1, source2)) in parsed.operations.iter().enumerate() {
             if let Source2::Sampler(sampler_field) = source2 {
@@ -460,7 +459,7 @@ impl<'a> NagaBuilder<'a> {
                 } else if sampler_configs[index] != Some(sampler_config) {
                     return Err(AgalError::SamplerConfigMismatch {
                         token: i + 1,
-                        shader_type: parsed.shader_type.clone(),
+                        shader_type: parsed.shader_type,
                     });
                 }
             }
@@ -472,11 +471,10 @@ impl<'a> NagaBuilder<'a> {
     // We're passing the reference along anyway.
     #[allow(clippy::trivially_copy_pass_by_ref)]
     pub fn build_module(
-        agal: &[u8],
+        parsed: &ParsedBytecode,
         vertex_attributes: &[Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
         sampler_configs: &[SamplerConfig; 8],
     ) -> Result<Module> {
-        let parsed = Self::parse_bytecode(agal)?;
         let mut builder = NagaBuilder::new(ShaderConfig {
             shader_type: parsed.shader_type,
             vertex_attributes,
@@ -484,8 +482,8 @@ impl<'a> NagaBuilder<'a> {
             version: parsed.version,
         });
 
-        for (opcode, dest, source1, source2) in parsed.operations {
-            builder.process_opcode(&opcode, &dest, &source1, &source2)?;
+        for (opcode, dest, source1, source2) in &parsed.operations {
+            builder.process_opcode(opcode, dest, source1, source2)?;
         }
         builder.finish()
     }
@@ -739,7 +737,8 @@ impl<'a> NagaBuilder<'a> {
         }
     }
 
-    fn get_vertex_input(&mut self, index: usize) -> Result<Handle<Expression>> {
+    fn get_vertex_input(&mut self, index: u16) -> Result<Handle<Expression>> {
+        let index = index as usize;
         if index >= self.vertex_input_expressions.len() {
             self.vertex_input_expressions.resize(index + 1, None);
         }
@@ -777,7 +776,8 @@ impl<'a> NagaBuilder<'a> {
         Ok(self.vertex_input_expressions[index].unwrap())
     }
 
-    fn get_temporary_register(&mut self, index: usize) -> Handle<Expression> {
+    fn get_temporary_register(&mut self, index: u16) -> Handle<Expression> {
+        let index = index as usize;
         if self.temporary_registers[index].is_none() {
             let local = self.func.local_variables.append(
                 LocalVariable {
@@ -797,7 +797,7 @@ impl<'a> NagaBuilder<'a> {
         self.temporary_registers[index].unwrap()
     }
 
-    fn emit_const_register_load(&mut self, index: usize) -> Handle<Expression> {
+    fn emit_const_register_load(&mut self, index: u16) -> Handle<Expression> {
         let const_value_expr = self.module.global_expressions.append(
             Expression::Literal(Literal::U32(index as u32)),
             Span::UNDEFINED,
@@ -828,7 +828,7 @@ impl<'a> NagaBuilder<'a> {
         })
     }
 
-    pub(crate) fn emit_varying_load(&mut self, index: usize) -> Handle<Expression> {
+    pub(crate) fn emit_varying_load(&mut self, index: u16) -> Handle<Expression> {
         // A LocalVariable evaluates to a pointer, so we need to load it
         let varying_expr = self.get_varying_pointer(index);
         match self.shader_config.shader_type {
@@ -839,7 +839,8 @@ impl<'a> NagaBuilder<'a> {
         }
     }
 
-    fn emit_texture_load(&mut self, index: usize, dimension: Dimension) -> TextureBindingData {
+    fn emit_texture_load(&mut self, index: u16, dimension: Dimension) -> TextureBindingData {
+        let index = index as usize;
         if self.texture_bindings[index].is_none() {
             let global_var = self.module.global_variables.append(
                 GlobalVariable {
@@ -909,13 +910,13 @@ impl<'a> NagaBuilder<'a> {
         extend_to_vec4: bool,
         output: VectorSize,
     ) -> Result<Handle<Expression>> {
-        let mut load_register = |register_type: &RegisterType, reg_num| {
+        let mut load_register = |register_type: &RegisterType, reg_num: u16| {
             match register_type {
                 // We can use a function argument directly - we don't need
                 // a separate Expression::Load
                 RegisterType::Attribute => Ok((
                     self.get_vertex_input(reg_num)?,
-                    self.shader_config.vertex_attributes[reg_num]
+                    self.shader_config.vertex_attributes[reg_num as usize]
                         .ok_or(Error::MissingVertexAttributeData)?,
                 )),
                 RegisterType::Varying => Ok((
@@ -942,7 +943,7 @@ impl<'a> NagaBuilder<'a> {
         };
 
         let (mut base_expr, source_type) = match source.direct_mode {
-            DirectMode::Direct => load_register(&source.register_type, source.reg_num as usize)?,
+            DirectMode::Direct => load_register(&source.register_type, source.reg_num)?,
             DirectMode::Indirect => {
                 // Handle an indirect register load, e.g. `vc[va0.x + offset]`
                 // Indirect loads allow loading from a dynamically computed register index.
@@ -956,7 +957,7 @@ impl<'a> NagaBuilder<'a> {
                         // Load the index register (e.g. 'va0') as normal, and access the component
                         // given by 'index_select' (e.g. 'x'). This is 'va0.x' in the above example.
                         let (base_index, format) =
-                            load_register(&source.index_type, source.reg_num as usize)?;
+                            load_register(&source.index_type, source.reg_num)?;
 
                         // If the index register is a scalar (Float1), use it directly.
                         // Otherwise, extract the component given by 'index_select'.
@@ -1061,8 +1062,8 @@ impl<'a> NagaBuilder<'a> {
     fn emit_dest_store(&mut self, dest: &DestField, expr: Handle<Expression>) -> Result<()> {
         let base_expr = match dest.register_type {
             RegisterType::Output => self.dest,
-            RegisterType::Varying => self.get_varying_pointer(dest.reg_num as usize),
-            RegisterType::Temporary => self.get_temporary_register(dest.reg_num as usize),
+            RegisterType::Varying => self.get_varying_pointer(dest.reg_num),
+            RegisterType::Temporary => self.get_temporary_register(dest.reg_num),
             _ => {
                 return Err(Error::Unimplemented(format!(
                     "Unimplemented dest reg type: {dest:?}",
@@ -1302,8 +1303,7 @@ impl<'a> NagaBuilder<'a> {
                     }
                 };
 
-                let texture_binding =
-                    self.emit_texture_load(texture_id as usize, sampler_field.dimension);
+                let texture_binding = self.emit_texture_load(texture_id, sampler_field.dimension);
                 let tex = self.evaluate_expr(Expression::ImageSample {
                     image: texture_binding.texture_global_var,
                     sampler: texture_binding.sampler_global_var,
