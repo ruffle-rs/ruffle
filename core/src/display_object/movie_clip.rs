@@ -495,7 +495,8 @@ impl<'gc> MovieClip<'gc> {
         }
 
         let mut end_tag_found = false;
-        let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
+        let tag_callback = |reader: &mut SwfStream<'_>, tag_code| {
+            let tag_len = reader.get_ref().len();
             match tag_code {
                 TagCode::CsmTextSettings => shared.csm_text_settings(context, reader),
                 TagCode::DefineBits => shared.define_bits(context, reader),
@@ -1249,7 +1250,7 @@ impl<'gc> MovieClip<'gc> {
             let shared = self.0.shared.get();
             let mut reader = shared.swf.read_from(0);
             while cur_frame <= frame && !reader.get_ref().is_empty() {
-                let tag_callback = |reader: &mut Reader<'_>, tag_code, tag_len| {
+                let tag_callback = |reader: &mut Reader<'_>, tag_code| {
                     match tag_code {
                         TagCode::ShowFrame => {
                             cur_frame += 1;
@@ -1257,7 +1258,7 @@ impl<'gc> MovieClip<'gc> {
                         }
                         TagCode::DoAction if cur_frame == frame => {
                             // On the target frame, add any DoAction tags to the array.
-                            let slice = shared.swf.resize_to_reader(reader, tag_len);
+                            let slice = shared.swf.resize_to_reader(reader, reader.get_ref().len());
                             if !slice.is_empty() {
                                 actions.push(slice);
                             }
@@ -1324,9 +1325,9 @@ impl<'gc> MovieClip<'gc> {
         let data = shared.swf.clone();
         let mut reader = data.read_from(self.0.tag_stream_pos.get());
 
-        let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
+        let tag_callback = |reader: &mut SwfStream<'_>, tag_code| {
             match tag_code {
-                TagCode::DoAction => self.do_action(context, reader, tag_len),
+                TagCode::DoAction => self.do_action(context, reader, reader.get_ref().len()),
                 TagCode::PlaceObject if run_display_actions && !is_action_script_3 => {
                     self.place_object(context, reader, 1)
                 }
@@ -1634,7 +1635,7 @@ impl<'gc> MovieClip<'gc> {
             self.0.increment_current_frame();
             frame_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
 
-            let tag_callback = |reader: &mut _, tag_code, _tag_len| {
+            let tag_callback = |reader: &mut _, tag_code| {
                 enum Action {
                     Place(u8),
                     Remove(u8),

@@ -833,7 +833,7 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'
 
     let mut reader = slice.read_from(0);
 
-    let tag_callback = |reader: &mut SwfStream<'_>, tag_code, _tag_len| {
+    let tag_callback = |reader: &mut SwfStream<'_>, tag_code| {
         if tag_code == TagCode::DoAbc2 {
             let do_abc = reader
                 .read_do_abc_2()

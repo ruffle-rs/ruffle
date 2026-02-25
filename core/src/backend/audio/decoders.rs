@@ -297,47 +297,43 @@ impl Iterator for StreamTagReader {
     type Item = SwfSlice;
 
     fn next(&mut self) -> Option<Self::Item> {
-        let audio_data = &mut self.current_audio_data;
         let compression = self.compression;
         let mut found = false;
 
         let swf_data = &self.swf_data;
         loop {
-            let tag_callback =
-                |reader: &mut swf::read::Reader<'_>, tag_code, tag_len| match tag_code {
-                    TagCode::SoundStreamBlock if !found => {
-                        found = true;
-                        let mut audio_block = &reader.get_ref()[..tag_len];
-                        // MP3 audio blocks start with a header indicating sample count + seek offset (SWF19 p.184).
-                        if compression == AudioCompression::Mp3 && audio_block.len() >= 4 {
-                            // MP3s deliver audio in frames of 576 samples, which means we may have SoundStreamBlocks with
-                            // lots of extra samples, followed by a block with 0 samples. Worse, there may be frames without
-                            // blocks at all despite SWF19 saying this shouldn't happen. This may or may not indicate a gap
-                            // in the audio depending on the number of empty frames.
-                            // Keep a tally of the # of samples we've seen compared to the number of samples that will be
-                            // played in each timeline frame. Only stop an MP3 sound if we've exhausted all of the samples.
-                            // RESEARCHME: How does Flash Player actually determine when there is an audio gap or not?
-                            // If an MP3 audio track has gaps, Flash Player will often play it out of sync (too early).
-                            // Seems closely related to `stream_info.num_samples_per_block`.
-                            let num_samples = u16::from_le_bytes(
-                                audio_block[..2].try_into().expect("2 bytes fit into a u16"),
-                            );
-                            self.mp3_samples_buffered += i32::from(num_samples);
-                            audio_block = &audio_block[4..];
-                        }
-                        *audio_data = swf_data.to_subslice(audio_block);
-                        Ok(ControlFlow::Continue)
-                    }
-                    TagCode::ShowFrame if compression == AudioCompression::Mp3 => {
-                        self.mp3_samples_buffered -= i32::from(self.mp3_samples_per_block);
-                        Ok(ControlFlow::Exit)
-                    }
-                    TagCode::ShowFrame => Ok(ControlFlow::Exit),
-                    _ => Ok(ControlFlow::Continue),
-                };
-
             let mut reader = self.swf_data.read_from(self.pos as u64);
-            let _ = crate::tag_utils::decode_tags(&mut reader, tag_callback);
+            let _ = crate::tag_utils::decode_tags(&mut reader, |reader, tag_code| match tag_code {
+                TagCode::SoundStreamBlock if !found => {
+                    found = true;
+                    let mut audio_block = reader.get_ref();
+                    // MP3 audio blocks start with a header indicating sample count + seek offset (SWF19 p.184).
+                    if compression == AudioCompression::Mp3
+                        && let [b0, b1, _, _, ref block_data @ ..] = *audio_block
+                    {
+                        // MP3s deliver audio in frames of 576 samples, which means we may have SoundStreamBlocks with
+                        // lots of extra samples, followed by a block with 0 samples. Worse, there may be frames without
+                        // blocks at all despite SWF19 saying this shouldn't happen. This may or may not indicate a gap
+                        // in the audio depending on the number of empty frames.
+                        // Keep a tally of the # of samples we've seen compared to the number of samples that will be
+                        // played in each timeline frame. Only stop an MP3 sound if we've exhausted all of the samples.
+                        // RESEARCHME: How does Flash Player actually determine when there is an audio gap or not?
+                        // If an MP3 audio track has gaps, Flash Player will often play it out of sync (too early).
+                        // Seems closely related to `stream_info.num_samples_per_block`.
+                        let num_samples = u16::from_le_bytes([b0, b1]);
+                        self.mp3_samples_buffered += i32::from(num_samples);
+                        audio_block = block_data;
+                    }
+                    self.current_audio_data = swf_data.to_subslice(audio_block);
+                    Ok(ControlFlow::Continue)
+                }
+                TagCode::ShowFrame if compression == AudioCompression::Mp3 => {
+                    self.mp3_samples_buffered -= i32::from(self.mp3_samples_per_block);
+                    Ok(ControlFlow::Exit)
+                }
+                TagCode::ShowFrame => Ok(ControlFlow::Exit),
+                _ => Ok(ControlFlow::Continue),
+            });
             self.pos = reader.get_ref().as_ptr() as usize - swf_data.as_ref().as_ptr() as usize;
 
             // If we hit a SoundStreamBlock within this frame, return it. Otherwise, the stream should end.
