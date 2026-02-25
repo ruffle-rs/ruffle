@@ -662,7 +662,7 @@ impl<'a> NagaBuilder<'a> {
         Ok(self.vertex_input_expressions[index].unwrap())
     }
 
-    fn get_temporary_register(&mut self, index: usize) -> Result<Handle<Expression>> {
+    fn get_temporary_register(&mut self, index: usize) -> Handle<Expression> {
         if self.temporary_registers[index].is_none() {
             let local = self.func.local_variables.append(
                 LocalVariable {
@@ -679,10 +679,10 @@ impl<'a> NagaBuilder<'a> {
                 .append(Expression::LocalVariable(local), Span::UNDEFINED);
             self.temporary_registers[index] = Some(expr);
         }
-        Ok(self.temporary_registers[index].unwrap())
+        self.temporary_registers[index].unwrap()
     }
 
-    fn emit_const_register_load(&mut self, index: usize) -> Result<Handle<Expression>> {
+    fn emit_const_register_load(&mut self, index: usize) -> Handle<Expression> {
         let const_value_expr = self.module.global_expressions.append(
             Expression::Literal(Literal::U32(index as u32)),
             Span::UNDEFINED,
@@ -708,27 +708,27 @@ impl<'a> NagaBuilder<'a> {
             Span::UNDEFINED,
         );
 
-        Ok(self.evaluate_expr(Expression::Load {
+        self.evaluate_expr(Expression::Load {
             pointer: register_pointer,
-        }))
+        })
     }
 
-    pub(crate) fn emit_varying_load(&mut self, index: usize) -> Result<Handle<Expression>> {
+    pub(crate) fn emit_varying_load(&mut self, index: usize) -> Handle<Expression> {
         // A LocalVariable evaluates to a pointer, so we need to load it
-        let varying_expr = self.get_varying_pointer(index)?;
-        Ok(match self.shader_config.shader_type {
+        let varying_expr = self.get_varying_pointer(index);
+        match self.shader_config.shader_type {
             ShaderType::Vertex => self.evaluate_expr(Expression::Load {
                 pointer: varying_expr,
             }),
             ShaderType::Fragment => varying_expr,
-        })
+        }
     }
 
     fn emit_texture_load(
         &mut self,
         index: usize,
         dimension: Dimension,
-    ) -> Result<TextureBindingData> {
+    ) -> TextureBindingData {
         if self.texture_bindings[index].is_none() {
             let global_var = self.module.global_variables.append(
                 GlobalVariable {
@@ -781,7 +781,7 @@ impl<'a> NagaBuilder<'a> {
             });
         }
         let data = self.texture_bindings[index].as_ref().unwrap();
-        Ok(*data)
+        *data
     }
 
     fn emit_source_field_load(
@@ -808,16 +808,16 @@ impl<'a> NagaBuilder<'a> {
                         .ok_or(Error::MissingVertexAttributeData(reg_num))?,
                 )),
                 RegisterType::Varying => Ok((
-                    self.emit_varying_load(reg_num)?,
+                    self.emit_varying_load(reg_num),
                     VertexAttributeFormat::Float4,
                 )),
                 RegisterType::Constant => Ok((
-                    self.emit_const_register_load(reg_num)?,
+                    self.emit_const_register_load(reg_num),
                     // Constants are always a vec4<f32>
                     VertexAttributeFormat::Float4,
                 )),
                 RegisterType::Temporary => Ok({
-                    let temp = self.get_temporary_register(reg_num)?;
+                    let temp = self.get_temporary_register(reg_num);
                     (
                         self.evaluate_expr(Expression::Load { pointer: temp }),
                         VertexAttributeFormat::Float4,
@@ -950,8 +950,8 @@ impl<'a> NagaBuilder<'a> {
     fn emit_dest_store(&mut self, dest: &DestField, expr: Handle<Expression>) -> Result<()> {
         let base_expr = match dest.register_type {
             RegisterType::Output => self.dest,
-            RegisterType::Varying => self.get_varying_pointer(dest.reg_num as usize)?,
-            RegisterType::Temporary => self.get_temporary_register(dest.reg_num as usize)?,
+            RegisterType::Varying => self.get_varying_pointer(dest.reg_num as usize),
+            RegisterType::Temporary => self.get_temporary_register(dest.reg_num as usize),
             _ => {
                 return Err(Error::Unimplemented(format!(
                     "Unimplemented dest reg type: {dest:?}",
@@ -1192,7 +1192,7 @@ impl<'a> NagaBuilder<'a> {
                 };
 
                 let texture_binding =
-                    self.emit_texture_load(texture_id as usize, sampler_field.dimension)?;
+                    self.emit_texture_load(texture_id as usize, sampler_field.dimension);
                 let tex = self.evaluate_expr(Expression::ImageSample {
                     image: texture_binding.texture_global_var,
                     sampler: texture_binding.sampler_global_var,
@@ -1654,7 +1654,7 @@ impl<'a> NagaBuilder<'a> {
             binding: None,
         });
 
-        let return_expr = self.build_output_expr(return_ty)?;
+        let return_expr = self.build_output_expr(return_ty);
         self.push_statement(Statement::Return {
             value: Some(return_expr),
         });
