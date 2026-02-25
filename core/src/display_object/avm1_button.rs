@@ -68,7 +68,7 @@ impl<'gc> Avm1Button<'gc> {
             .actions
             .iter()
             .map(|action| ButtonAction {
-                action_data: source_movie.to_unbounded_subslice(action.action_data),
+                action_data: source_movie.to_subslice(action.action_data),
                 conditions: action.conditions,
             })
             .collect();
