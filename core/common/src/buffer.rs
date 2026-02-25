@@ -242,13 +242,13 @@ impl Slice {
     pub fn buffer(&self) -> &Buffer {
         &self.buf
     }
+}
 
-    /// Create a readable cursor into the `Slice`.
-    pub fn as_cursor(&self) -> SliceCursor {
-        SliceCursor {
-            slice: self.clone(),
-            pos: 0,
-        }
+impl Read for Slice {
+    fn read(&mut self, data: &mut [u8]) -> IoResult<usize> {
+        let len = <&[u8] as Read>::read(&mut self.data().as_ref(), data)?;
+        self.start += len;
+        Ok(len)
     }
 }
 
@@ -261,27 +261,6 @@ impl LowerHex for Slice {
 impl UpperHex for Slice {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         UpperHex::fmt(&self.data(), f)
-    }
-}
-
-/// A readable cursor into a buffer slice.
-pub struct SliceCursor {
-    slice: Slice,
-    pos: usize,
-}
-
-impl Read for SliceCursor {
-    fn read(&mut self, data: &mut [u8]) -> IoResult<usize> {
-        let copy_count = min(data.len(), self.slice.len() - self.pos);
-        let slice = self
-            .slice
-            .get(self.pos..self.pos + copy_count)
-            .expect("Slice offsets are always valid");
-        let slice_data = slice.data();
-
-        data[..copy_count].copy_from_slice(&slice_data);
-        self.pos += copy_count;
-        Ok(copy_count)
     }
 }
 
@@ -579,12 +558,12 @@ mod test {
     }
 
     #[test]
-    fn slice_cursor_read() {
+    fn slice_read() {
         let buf = Buffer::from(vec![
             38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
         ]);
         let slice = buf.to_full_slice();
-        let mut cursor = slice.as_cursor();
+        let mut cursor = slice.clone();
         let refdata = slice.data();
 
         let mut data = vec![0; 1];
@@ -597,12 +576,12 @@ mod test {
     }
 
     #[test]
-    fn slice_cursor_read_all() {
+    fn slice_read_all() {
         let buf = Buffer::from(vec![
             38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
         ]);
         let slice = buf.to_full_slice();
-        let mut cursor = slice.as_cursor();
+        let mut cursor = slice.clone();
         let refdata = slice.data();
 
         let mut data = vec![0; slice.len() + 32];
