@@ -145,3 +145,59 @@ impl<R: AsRef<[u8]> + Send + Sync> SeekableDecoder for G711MuLawDecoder<Cursor<R
         self.reader.set_position(pos);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::io::Cursor;
+
+    #[test]
+    fn alaw_reset() {
+        let data: Vec<u8> = (0..10).collect();
+        let mut decoder = G711ALawDecoder::new(Cursor::new(data));
+
+        let first = decoder.next().unwrap();
+        decoder.next();
+        decoder.reset();
+        assert_eq!(decoder.next().unwrap(), first);
+    }
+
+    #[test]
+    fn alaw_seek() {
+        let data: Vec<u8> = (0..10).collect();
+        let mut decoder = G711ALawDecoder::new(Cursor::new(data.clone()));
+
+        // Read all samples sequentially
+        let samples: Vec<_> = decoder.by_ref().collect();
+
+        // Seeking to frame N should produce the same sample as index N
+        for i in 0..data.len() as u32 {
+            decoder.seek_to_sample_frame(i);
+            assert_eq!(decoder.next().unwrap(), samples[i as usize]);
+        }
+    }
+
+    #[test]
+    fn mulaw_reset() {
+        let data: Vec<u8> = (0..10).collect();
+        let mut decoder = G711MuLawDecoder::new(Cursor::new(data));
+
+        let first = decoder.next().unwrap();
+        decoder.next();
+        decoder.reset();
+        assert_eq!(decoder.next().unwrap(), first);
+    }
+
+    #[test]
+    fn mulaw_seek() {
+        let data: Vec<u8> = (0..10).collect();
+        let mut decoder = G711MuLawDecoder::new(Cursor::new(data.clone()));
+
+        let samples: Vec<_> = decoder.by_ref().collect();
+
+        for i in 0..data.len() as u32 {
+            decoder.seek_to_sample_frame(i);
+            assert_eq!(decoder.next().unwrap(), samples[i as usize]);
+        }
+    }
+}
