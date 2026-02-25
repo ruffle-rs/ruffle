@@ -4887,11 +4887,10 @@ impl ClipEventHandler {
         } else {
             ButtonKeyCode::Unknown
         };
-        let action_data = SwfSlice::from(movie).to_unbounded_subslice(other.action_data);
         Self {
             events: other.events,
             key_code,
-            action_data,
+            action_data: SwfSlice::from(movie).to_subslice(other.action_data),
         }
     }
 }
