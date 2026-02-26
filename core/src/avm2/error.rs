@@ -528,10 +528,18 @@ pub fn make_error_1031<'gc>(
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1032<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
+pub fn make_error_1032<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    index: usize,
+    length: usize,
+) -> Error<'gc> {
+    // Constant pools have an implicit entry at index 0 in addition to the
+    // user-provided entries, so we need to increase the length by 1
+    let length = length + 1;
+
     make_error!(verify_error(
         activation,
-        format!("Error #1032: Cpool index {index} is out of range."),
+        format!("Error #1032: Cpool index {index} is out of range {length}."),
         1032,
     ))
 }
@@ -697,10 +705,14 @@ pub fn make_error_1059<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1060<'gc>(activation: &mut Activation<'_, 'gc>, index: u32) -> Error<'gc> {
+pub fn make_error_1060<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    index: u32,
+    length: usize,
+) -> Error<'gc> {
     make_error!(verify_error(
         activation,
-        format!("Error #1060: ClassInfo {index} exceeds class_count"),
+        format!("Error #1060: ClassInfo {index} exceeds class_count={length}."),
         1060,
     ))
 }

@@ -1,6 +1,6 @@
-VerifyError 1032
-VerifyError 1032
-VerifyError 1032
-VerifyError 1032
-VerifyError 1032
-VerifyError 1032
+VerifyError Error #1032: Cpool index 0 is out of range 4.
+VerifyError Error #1032: Cpool index 0 is out of range 5.
+VerifyError Error #1032: Cpool index 0 is out of range 3.
+VerifyError Error #1032: Cpool index 32 is out of range 4.
+VerifyError Error #1032: Cpool index 32 is out of range 5.
+VerifyError Error #1032: Cpool index 32 is out of range 3.

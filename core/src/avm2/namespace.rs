@@ -91,13 +91,11 @@ impl<'gc> Namespace<'gc> {
 
         let mc = activation.gc();
 
-        let actual_index = namespace_index.0 as usize - 1;
-        let abc = translation_unit.abc();
-        let abc_namespace = abc
-            .constant_pool
-            .namespaces
-            .get(actual_index)
-            .ok_or_else(|| make_error_1032(activation, namespace_index.0))?;
+        let idx = namespace_index.0 as usize;
+        let namespaces = &translation_unit.abc().constant_pool.namespaces;
+        let abc_namespace = namespaces
+            .get(idx - 1)
+            .ok_or_else(|| make_error_1032(activation, idx, namespaces.len()))?;
 
         let index = match abc_namespace {
             AbcNamespace::Namespace(idx)
