@@ -123,31 +123,12 @@ impl<'a> Bitmap<'a> {
     where
         D: Into<Cow<'a, [u8]>>,
     {
-        Self::new_impl(width, height, format, data.into())
-    }
+        let mut data = data.into();
 
-    fn new_impl(width: u32, height: u32, format: BitmapFormat, mut data: Cow<'a, [u8]>) -> Self {
         // If the size is incorrect, either we screwed up or the decoder screwed up.
         let expected_len = format.length_for_size(width as usize, height as usize);
         if data.len() != expected_len {
-            tracing::warn!(
-                "Incorrect bitmap data size, expected {} bytes, got {}",
-                expected_len,
-                data.len(),
-            );
-
-            // Truncate or zero-pad to the expected size.
-            if let Cow::Borrowed(slice) = &data {
-                // Allocate the owned buffer ourselves instead of using `Cow::to_mut`, to avoid
-                // a reallocation if the buffer needs to be padded.
-                let mut vec = Vec::with_capacity(expected_len);
-                vec.extend_from_slice(&slice[..expected_len]);
-                data = Cow::Owned(vec);
-            }
-            match &mut data {
-                Cow::Owned(data) => data.resize(expected_len, 0),
-                Cow::Borrowed(_) => unreachable!(),
-            }
+            Self::resize_data(&mut data, expected_len);
         }
 
         Self {
@@ -155,6 +136,32 @@ impl<'a> Bitmap<'a> {
             height,
             format,
             data,
+        }
+    }
+
+    #[inline(never)]
+    #[cold]
+    fn resize_data(data: &mut Cow<'_, [u8]>, expected_len: usize) {
+        let len = data.len();
+        tracing::warn!("Incorrect bitmap data size, expected {expected_len} bytes, got {len}");
+
+        match (&mut *data, expected_len.checked_sub(len)) {
+            (Cow::Borrowed(slice), Some(_)) => {
+                // Allocate the owned buffer ourselves instead of using `Cow::to_mut`, to avoid
+                // a reallocation if the buffer needs to be padded.
+                let mut vec = Vec::with_capacity(expected_len);
+                vec.extend_from_slice(slice);
+                *data = Cow::Owned(vec);
+            }
+            // Remove excess data.
+            (Cow::Borrowed(slice), None) => *slice = &slice[..expected_len],
+            // Make sure Vec's amortization logic doesn't allocate too much.
+            (Cow::Owned(buf), Some(extra)) => buf.reserve_exact(extra),
+            (Cow::Owned(_), None) => (),
+        }
+
+        if let Cow::Owned(buf) = data {
+            buf.resize(expected_len, 0);
         }
     }
 
