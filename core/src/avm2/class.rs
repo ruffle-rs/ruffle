@@ -393,7 +393,7 @@ impl<'gc> Class<'gc> {
         let abc_instance = abc
             .instances
             .get(class_index as usize)
-            .ok_or_else(|| make_error_1060(activation, class_index))?;
+            .ok_or_else(|| make_error_1060(activation, class_index, abc.instances.len()))?;
 
         let name = QName::from_abc_multiname(activation, unit, abc_instance.name)?;
 
@@ -500,12 +500,12 @@ impl<'gc> Class<'gc> {
         let abc_instance = abc
             .instances
             .get(class_index as usize)
-            .ok_or_else(|| make_error_1060(activation, class_index))?;
+            .ok_or_else(|| make_error_1060(activation, class_index, abc.instances.len()))?;
 
         let abc_class = abc
             .classes
             .get(class_index as usize)
-            .ok_or_else(|| make_error_1060(activation, class_index))?;
+            .ok_or_else(|| make_error_1060(activation, class_index, abc.classes.len()))?;
 
         // FIXME loading name again is a little wasteful
         let name = QName::from_abc_multiname(activation, unit, abc_instance.name)?;
@@ -569,7 +569,7 @@ impl<'gc> Class<'gc> {
         let abc_instance = abc
             .instances
             .get(class_index as usize)
-            .ok_or_else(|| make_error_1060(activation, class_index))?;
+            .ok_or_else(|| make_error_1060(activation, class_index, abc.instances.len()))?;
         self.load_abc_traits(activation, unit, &abc_instance.traits)
     }
 
@@ -584,7 +584,7 @@ impl<'gc> Class<'gc> {
         let abc_class = abc
             .classes
             .get(class_index as usize)
-            .ok_or_else(|| make_error_1060(activation, class_index))?;
+            .ok_or_else(|| make_error_1060(activation, class_index, abc.classes.len()))?;
         self.load_abc_traits(activation, unit, &abc_class.traits)
     }
 

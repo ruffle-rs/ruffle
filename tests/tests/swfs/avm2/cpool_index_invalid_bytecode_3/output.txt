@@ -1,1 +1,1 @@
-VerifyError - 1060
+VerifyError - Error #1060: ClassInfo 40 exceeds class_count=1.

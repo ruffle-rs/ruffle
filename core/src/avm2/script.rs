@@ -271,7 +271,9 @@ impl<'gc> TranslationUnit<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<AvmAtom<'gc>, Error<'gc>> {
         if string_index.0 == 0 {
-            Err(make_error_1032(activation, 0))
+            let strings = &self.0.abc.constant_pool.strings;
+
+            Err(make_error_1032(activation, 0, strings.len()))
         } else {
             self.pool_string(string_index, activation)
         }
@@ -296,12 +298,11 @@ impl<'gc> TranslationUnit<'gc> {
         let raw = if idx == 0 {
             &[]
         } else {
-            self.0
-                .abc
-                .constant_pool
-                .strings
+            let strings = &self.0.abc.constant_pool.strings;
+
+            strings
                 .get(idx - 1)
-                .ok_or_else(|| make_error_1032(activation, string_index.0))?
+                .ok_or_else(|| make_error_1032(activation, idx, strings.len()))?
                 .as_slice()
         };
 
@@ -400,7 +401,9 @@ impl<'gc> TranslationUnit<'gc> {
         int_index: Index<i32>,
     ) -> Result<i32, Error<'gc>> {
         if int_index.0 == 0 {
-            Err(make_error_1032(activation, 0))
+            let ints = &self.0.abc.constant_pool.ints;
+
+            Err(make_error_1032(activation, 0, ints.len()))
         } else {
             self.pool_int(activation, int_index)
         }
@@ -421,13 +424,11 @@ impl<'gc> TranslationUnit<'gc> {
         if idx == 0 {
             Ok(0)
         } else {
-            let int = self
-                .0
-                .abc
-                .constant_pool
-                .ints
+            let ints = &self.0.abc.constant_pool.ints;
+
+            let int = ints
                 .get(idx - 1)
-                .ok_or_else(|| make_error_1032(activation, int_index.0))?;
+                .ok_or_else(|| make_error_1032(activation, idx, ints.len()))?;
 
             Ok(*int)
         }
@@ -443,7 +444,9 @@ impl<'gc> TranslationUnit<'gc> {
         uint_index: Index<u32>,
     ) -> Result<u32, Error<'gc>> {
         if uint_index.0 == 0 {
-            Err(make_error_1032(activation, 0))
+            let uints = &self.0.abc.constant_pool.uints;
+
+            Err(make_error_1032(activation, 0, uints.len()))
         } else {
             self.pool_uint(activation, uint_index)
         }
@@ -464,13 +467,11 @@ impl<'gc> TranslationUnit<'gc> {
         if idx == 0 {
             Ok(0)
         } else {
-            let uint = self
-                .0
-                .abc
-                .constant_pool
-                .uints
+            let uints = &self.0.abc.constant_pool.uints;
+
+            let uint = uints
                 .get(idx - 1)
-                .ok_or_else(|| make_error_1032(activation, uint_index.0))?;
+                .ok_or_else(|| make_error_1032(activation, idx, uints.len()))?;
 
             Ok(*uint)
         }
@@ -486,7 +487,9 @@ impl<'gc> TranslationUnit<'gc> {
         double_index: Index<f64>,
     ) -> Result<f64, Error<'gc>> {
         if double_index.0 == 0 {
-            Err(make_error_1032(activation, 0))
+            let doubles = &self.0.abc.constant_pool.doubles;
+
+            Err(make_error_1032(activation, 0, doubles.len()))
         } else {
             self.pool_double(activation, double_index)
         }
@@ -507,13 +510,11 @@ impl<'gc> TranslationUnit<'gc> {
         if idx == 0 {
             Ok(f64::NAN)
         } else {
-            let double = self
-                .0
-                .abc
-                .constant_pool
-                .doubles
+            let doubles = &self.0.abc.constant_pool.doubles;
+
+            let double = doubles
                 .get(idx - 1)
-                .ok_or_else(|| make_error_1032(activation, double_index.0))?;
+                .ok_or_else(|| make_error_1032(activation, idx, doubles.len()))?;
 
             Ok(*double)
         }
