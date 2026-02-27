@@ -1,4 +1,5 @@
 use std::cell::RefCell;
+use std::mem;
 use std::rc::Rc;
 use std::sync::Arc;
 
@@ -54,7 +55,7 @@ pub struct H264Decoder {
     ///
     /// This in itself results in one frame of delay (because we can't block decode_frame
     /// until the callback is invoked), but it shouldn't matter in practice.
-    last_frame: Rc<RefCell<Option<DecodedFrame<'static>>>>,
+    last_frame: Rc<RefCell<Result<DecodedFrame<'static>, Error>>>,
 
     // Simply keeping these objects alive, as they are used by the JS side.
     // See: https://rustwasm.github.io/wasm-bindgen/examples/closures.html
@@ -70,48 +71,53 @@ impl H264Decoder {
     ///
     /// The log_subscriber is needed so that we have proper logging from within the callbacks.
     pub fn new(log_subscriber: Arc<Layered<WASMLayer, Registry>>) -> Result<Self, Error> {
-        let last_frame = Rc::new(RefCell::new(None));
+        let last_frame: Result<DecodedFrame<'_>, _> = Err(Error::DecoderNoOutputFrame);
+        let last_frame = Rc::new(RefCell::new(last_frame));
         let lf = last_frame.clone();
 
         let log_subscriber_for_output = log_subscriber.clone();
         let output = move |output: &VideoFrame| {
             let _subscriber = tracing::subscriber::set_default(log_subscriber_for_output.clone());
             let visible_rect = output.visible_rect().unwrap();
+            let (width, height) = (visible_rect.width(), visible_rect.height());
 
-            match output.format().unwrap() {
-                VideoPixelFormat::I420 => {
-                    let mut data: Vec<u8> =
-                        vec![
-                            0;
-                            visible_rect.width() as usize * visible_rect.height() as usize * 3 / 2
-                        ];
-                    let _ = output.copy_to_with_u8_slice(&mut data);
-                    last_frame.replace(Some(DecodedFrame::new(
-                        visible_rect.width() as u32,
-                        visible_rect.height() as u32,
-                        BitmapFormat::Yuv420p,
-                        data,
-                    )));
-                }
-                VideoPixelFormat::Bgrx => {
-                    let mut data: Vec<u8> =
-                        vec![0; visible_rect.width() as usize * visible_rect.height() as usize * 4];
-                    let _ = output.copy_to_with_u8_slice(&mut data);
-                    for pixel in data.chunks_mut(4) {
-                        pixel.swap(0, 2);
-                        pixel[3] = 0xff;
-                    }
-                    last_frame.replace(Some(DecodedFrame::new(
-                        visible_rect.width() as u32,
-                        visible_rect.height() as u32,
-                        BitmapFormat::Rgba,
-                        data,
-                    )));
-                }
+            let mut frame = last_frame.borrow_mut();
+            let mut data = match mem::replace(&mut *frame, Err(Error::DecoderNoOutputFrame)) {
+                Ok(f) => f.into_buf().into_owned(),
+                Err(_) => Vec::new(),
+            };
+
+            let src_format = output.format().unwrap();
+            let dst_format = match src_format {
+                VideoPixelFormat::I420 => BitmapFormat::Yuv420p,
+                VideoPixelFormat::Bgrx => BitmapFormat::Rgba,
                 other_format => {
-                    error!("Unsupported pixel format: {:?}", other_format);
+                    *frame = Err(Error::DecoderError(
+                        format!("Unsupported pixel format: {:?}", other_format).into(),
+                    ));
+                    return;
                 }
             };
+
+            let size_in_bytes = dst_format.length_for_size(width as usize, height as usize);
+            data.reserve_exact(size_in_bytes);
+            data.resize(size_in_bytes, 0);
+            let _ = output.copy_to_with_u8_slice(&mut data);
+
+            if src_format == VideoPixelFormat::Bgrx {
+                // change Bgrx into Rgba
+                for pixel in data.chunks_mut(4) {
+                    pixel.swap(0, 2);
+                    pixel[3] = 0xff;
+                }
+            }
+
+            *frame = Ok(DecodedFrame::new(
+                width as u32,
+                height as u32,
+                dst_format,
+                data,
+            ));
         };
 
         let log_subscriber_for_error = log_subscriber.clone();
@@ -281,14 +287,12 @@ impl VideoDecoder for H264Decoder {
             trace!("decoder state: {:?}", self.decoder.state());
         }
 
-        match self.last_frame.borrow_mut().take() {
-            Some(frame) => {
-                callback(frame);
+        match &mut *self.last_frame.borrow_mut() {
+            Ok(frame) => {
+                callback(frame.reborrow());
                 Ok(())
             }
-            None => Err(Error::DecoderError(
-                "No output frame produced by the decoder".into(),
-            )),
+            Err(err) => Err(mem::replace(err, Error::DecoderNoOutputFrame)),
         }
     }
 }
