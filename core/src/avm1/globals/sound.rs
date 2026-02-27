@@ -399,7 +399,7 @@ fn attach_sound<'gc>(
                     .context
                     .audio
                     .get_sound_duration(sound_handle)
-                    .map(|d| d.round() as u32),
+                    .map(|d| d.as_millis().round() as u32),
             );
             sound.set_position(0);
         } else {

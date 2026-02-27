@@ -1334,7 +1334,7 @@ pub fn load_sound_avm1<'gc>(
                         .context
                         .audio
                         .get_sound_duration(handle)
-                        .map(|d| d.round() as u32);
+                        .map(|d| d.as_millis().round() as u32);
                     sound.set_duration(duration);
                     Ok(())
                 })

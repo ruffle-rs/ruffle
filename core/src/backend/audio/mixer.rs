@@ -3,6 +3,7 @@ use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
 use crate::tag_utils::SwfSlice;
 use ruffle_common::buffer::Substream;
+use ruffle_common::duration::FloatDuration;
 use slotmap::SlotMap;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
@@ -663,16 +664,16 @@ impl AudioMixer {
         sound_instances.get(instance).map(|instance| instance.peak)
     }
 
-    /// Returns the duration of a registered sound in milliseconds.
+    /// Returns the duration of a registered sound.
     ///
     /// Returns `None` if the sound is not registered or invalid.
-    pub fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64> {
+    pub fn get_sound_duration(&self, sound: SoundHandle) -> Option<FloatDuration> {
         if let Some(sound) = self.sounds.get(sound) {
             // AS duration does not subtract `skip_sample_frames`.
             let num_sample_frames: f64 = sound.num_sample_frames.into();
             let sample_rate: f64 = sound.format.sample_rate.into();
             let ms = num_sample_frames * 1000.0 / sample_rate;
-            Some(ms)
+            Some(FloatDuration::from_millis(ms))
         } else {
             None
         }
@@ -1121,7 +1122,7 @@ macro_rules! impl_audio_mixer_backend {
         }
 
         #[inline]
-        fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64> {
+        fn get_sound_duration(&self, sound: SoundHandle) -> Option<$crate::FloatDuration> {
             self.$mixer.get_sound_duration(sound)
         }
 
