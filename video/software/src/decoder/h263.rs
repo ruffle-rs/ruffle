@@ -57,7 +57,11 @@ impl VideoDecoder for H263Decoder {
         }
     }
 
-    fn decode_frame(&mut self, encoded_frame: EncodedFrame<'_>) -> Result<DecodedFrame, Error> {
+    fn decode_frame_dyn(
+        &mut self,
+        encoded_frame: EncodedFrame<'_>,
+        callback: &mut dyn FnMut(DecodedFrame<'_>),
+    ) -> Result<(), Error> {
         let mut reader = H263Reader::from_source(encoded_frame.data());
 
         self.0
@@ -94,25 +98,26 @@ impl VideoDecoder for H263Decoder {
             data.extend_from_slice(&b);
             data.extend_from_slice(&r);
 
-            Ok(DecodedFrame::new(
+            callback(DecodedFrame::new(
                 width as u32,
                 height as u32,
                 BitmapFormat::Yuv420p,
                 data,
-            ))
+            ));
         } else {
             let mut data = Vec::with_capacity(y.len() + b.len() + r.len());
             data.extend_from_slice(y);
             data.extend_from_slice(b);
             data.extend_from_slice(r);
 
-            Ok(DecodedFrame::new(
+            callback(DecodedFrame::new(
                 width as u32,
                 height as u32,
                 BitmapFormat::Yuv420p,
                 data,
-            ))
+            ));
         }
+        Ok(())
     }
 }
 
