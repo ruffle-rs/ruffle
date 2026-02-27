@@ -117,6 +117,17 @@ pub struct Bitmap<'a> {
 }
 
 impl<'a> Bitmap<'a> {
+    // Produces an zero-sized image with the given format.
+    #[inline]
+    pub fn empty(format: BitmapFormat) -> Self {
+        Self {
+            width: 0,
+            height: 0,
+            format,
+            data: Cow::Borrowed(&[]),
+        }
+    }
+
     /// Ensures that `data` is the correct size for the given `width` and `height`.
     #[inline]
     pub fn new<D>(width: u32, height: u32, format: BitmapFormat, data: D) -> Self
@@ -168,6 +179,21 @@ impl<'a> Bitmap<'a> {
         if let Cow::Owned(buf) = data {
             buf.resize(expected_len, 0);
         }
+    }
+
+    #[inline]
+    pub fn reborrow(&self) -> Bitmap<'_> {
+        Bitmap {
+            width: self.width,
+            height: self.height,
+            format: self.format,
+            data: Cow::Borrowed(&self.data),
+        }
+    }
+
+    #[inline]
+    pub fn into_buf(self) -> Cow<'a, [u8]> {
+        self.data
     }
 
     pub fn to_rgb(mut self) -> Self {
