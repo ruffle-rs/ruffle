@@ -2383,8 +2383,6 @@ version = "0.15.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9229cfe53dfd69f0609a49f65461bd93001ea1ef889cd5529dd176593f5338a1"
 dependencies = [
- "allocator-api2",
- "equivalent",
  "foldhash 0.1.5",
 ]
 
@@ -4416,9 +4414,9 @@ checksum = "7a2d987857b319362043e95f5353c0535c1f58eec5336fdfcf626430af7def58"
 [[package]]
 name = "regress"
 version = "0.10.3"
-source = "git+https://github.com/ruffle-rs/regras3?rev=5fcb02513c5ab4e00df4346459f5a8d0521d8fed#5fcb02513c5ab4e00df4346459f5a8d0521d8fed"
+source = "git+https://github.com/ruffle-rs/regras3?rev=6d48179d6bd448f2cc66b76352c9f048dde968d1#6d48179d6bd448f2cc66b76352c9f048dde968d1"
 dependencies = [
- "hashbrown 0.15.5",
+ "hashbrown 0.16.1",
  "memchr",
 ]
 
