@@ -165,6 +165,21 @@ impl<'a> Bitmap<'a> {
         }
     }
 
+    #[inline]
+    pub fn reborrow(&self) -> Bitmap<'_> {
+        Bitmap {
+            width: self.width,
+            height: self.height,
+            format: self.format,
+            data: Cow::Borrowed(&self.data),
+        }
+    }
+
+    #[inline]
+    pub fn into_buf(self) -> Cow<'a, [u8]> {
+        self.data
+    }
+
     pub fn to_rgb(mut self) -> Self {
         // Converts this bitmap to RGB, if it is not already.
         match self.format {
