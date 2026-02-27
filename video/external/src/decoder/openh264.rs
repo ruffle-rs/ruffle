@@ -199,6 +199,8 @@ pub struct H264Decoder {
 
     openh264: Arc<OpenH264>,
     decoder: *mut ISVCDecoder,
+
+    scratch: Vec<u8>,
 }
 
 struct OpenH264Data {
@@ -225,6 +227,7 @@ impl H264Decoder {
                 length_size: 0,
                 openh264,
                 decoder,
+                scratch: Vec::new(),
             }
         }
     }
@@ -259,7 +262,8 @@ impl VideoDecoder for H264Decoder {
             let decoder_vtbl = (*self.decoder).as_ref().unwrap();
 
             //input: encoded bitstream start position; should include start code prefix
-            let mut buffer: Vec<c_uchar> = Vec::new();
+            self.scratch.clear();
+            let buffer: &mut Vec<c_uchar> = &mut self.scratch;
 
             // Converting from AVCC to Annex B (stream-like) format,
             // putting the PPS and SPS into a NALU.
@@ -329,7 +333,9 @@ impl VideoDecoder for H264Decoder {
             // input: encoded bitstream start position; should include start code prefix
             // converting from AVCC (file-like) to Annex B (stream-like) format
             // Thankfully the start code emulation prevention is there in both.
-            let mut buffer: Vec<c_uchar> = Vec::with_capacity(encoded_frame.data.len());
+            self.scratch.clear();
+            let buffer: &mut Vec<c_uchar> = &mut self.scratch;
+            buffer.reserve(encoded_frame.data.len());
 
             let mut i = 0;
             while i < encoded_frame.data.len() {
@@ -361,9 +367,7 @@ impl VideoDecoder for H264Decoder {
                 ));
             }
             if dest_buf_info.iBufferStatus != 1 {
-                return Err(Error::DecoderError(
-                    "No output frame produced by the decoder".into(),
-                ));
+                return Err(Error::DecoderNoOutputFrame);
             }
             let buffer_info = dest_buf_info.UsrData.sSystemBuffer;
             if buffer_info.iFormat != videoFormatI420 as c_int {
@@ -372,8 +376,11 @@ impl VideoDecoder for H264Decoder {
                 ));
             }
 
-            let mut yuv: Vec<u8> = Vec::with_capacity(
-                buffer_info.iWidth as usize * buffer_info.iHeight as usize * 3 / 2,
+            self.scratch.clear();
+            let yuv: &mut Vec<u8> = &mut self.scratch;
+            yuv.reserve_exact(
+                BitmapFormat::Yuv420p
+                    .length_for_size(buffer_info.iWidth as usize, buffer_info.iHeight as usize),
             );
 
             // Copying Y
@@ -408,7 +415,7 @@ impl VideoDecoder for H264Decoder {
                 buffer_info.iWidth as u32,
                 buffer_info.iHeight as u32,
                 BitmapFormat::Yuv420p,
-                yuv,
+                yuv.as_slice(),
             ));
             Ok(())
         }
