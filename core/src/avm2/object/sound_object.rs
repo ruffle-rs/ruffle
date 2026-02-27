@@ -274,11 +274,11 @@ fn play_queued<'gc>(
     context: &mut UpdateContext<'gc>,
 ) -> bool {
     if let Some(duration) = context.audio.get_sound_duration(sound) {
-        if queued.position > duration {
+        if queued.position > duration.as_millis() {
             tracing::error!(
                 "Sound.play: position={} is greater than duration={}",
                 queued.position,
-                duration
+                duration.as_millis()
             );
             return false;
         }

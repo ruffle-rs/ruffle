@@ -14,6 +14,7 @@ use crate::runner::image_test::capture_and_compare_image;
 use crate::runner::trace::compare_trace_output;
 use crate::test::Test;
 use anyhow::{Result, anyhow};
+use ruffle_core::FloatDuration;
 use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
@@ -42,7 +43,7 @@ pub struct TestRunner {
     player: Arc<Mutex<Player>>,
     injector: InputInjector,
     executor: NullExecutor,
-    frame_time: f64,
+    frame_time: FloatDuration,
     frame_time_duration: Duration,
     log: TestLogBackend,
     fs_commands: mpsc::Receiver<FsCommand>,
@@ -70,12 +71,14 @@ impl TestRunner {
         }
 
         let executor = NullExecutor::new();
-        let mut frame_time = 1000.0 / movie.frame_rate().to_f64();
-        if let Some(tr) = test.options.tick_rate {
-            frame_time = tr;
-        }
 
-        let frame_time_duration = Duration::from_millis(frame_time as u64);
+        let frame_time_millis = if let Some(tick_rate) = test.options.tick_rate {
+            tick_rate
+        } else {
+            1000.0 / movie.frame_rate().to_f64()
+        };
+        let frame_time = FloatDuration::from_millis(frame_time_millis);
+        let frame_time_duration = Duration::from_millis(frame_time_millis as u64);
 
         let log = TestLogBackend::new(test.options.log_warnings);
         let (fs_command_provider, fs_commands) = TestFsCommandProvider::new();

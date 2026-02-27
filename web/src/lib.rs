@@ -19,7 +19,7 @@ use ruffle_core::context::UpdateContext;
 use ruffle_core::context_menu::ContextMenuCallback;
 use ruffle_core::events::{GamepadButton, MouseButton, MouseWheelDelta, TextControlCode};
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{Player, PlayerEvent, StaticCallstack, ViewportDimensions};
+use ruffle_core::{FloatDuration, Player, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
 use serde::Serialize;
 use slotmap::{SlotMap, new_key_type};
@@ -1206,7 +1206,7 @@ impl RuffleHandle {
                 });
             }
 
-            core.tick(dt);
+            core.tick(FloatDuration::from_millis(dt));
 
             // Render if the core signals a new frame, or if we resized.
             if core.needs_render() || new_dimensions.is_some() {

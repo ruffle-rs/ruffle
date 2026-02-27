@@ -132,7 +132,7 @@ pub fn get_length<'gc>(
     if let Some(sound) = this.as_sound_object() {
         if let Some(sound_handle) = sound.sound_handle() {
             if let Some(duration) = activation.context.audio.get_sound_duration(sound_handle) {
-                return Ok((duration).into());
+                return Ok((duration.as_millis()).into());
             }
         }
         return Ok(0.into());
