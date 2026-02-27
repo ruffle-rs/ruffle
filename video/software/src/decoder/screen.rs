@@ -148,7 +148,11 @@ impl VideoDecoder for ScreenVideoDecoder {
         }
     }
 
-    fn decode_frame(&mut self, encoded_frame: EncodedFrame<'_>) -> Result<DecodedFrame, Error> {
+    fn decode_frame_dyn(
+        &mut self,
+        encoded_frame: EncodedFrame<'_>,
+        callback: &mut dyn FnMut(DecodedFrame<'_>),
+    ) -> Result<(), Error> {
         let is_keyframe = encoded_frame.data[0] >> 4 == 1;
 
         if !is_keyframe && self.last_frame.is_none() {
@@ -204,12 +208,13 @@ impl VideoDecoder for ScreenVideoDecoder {
 
         self.last_frame = Some(data);
 
-        Ok(DecodedFrame::new(
+        callback(DecodedFrame::new(
             w as u32,
             h as u32,
             BitmapFormat::Rgb,
             rgb,
-        ))
+        ));
+        Ok(())
     }
 }
 

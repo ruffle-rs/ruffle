@@ -54,7 +54,7 @@ pub struct H264Decoder {
     ///
     /// This in itself results in one frame of delay (because we can't block decode_frame
     /// until the callback is invoked), but it shouldn't matter in practice.
-    last_frame: Rc<RefCell<Option<DecodedFrame>>>,
+    last_frame: Rc<RefCell<Option<DecodedFrame<'static>>>>,
 
     // Simply keeping these objects alive, as they are used by the JS side.
     // See: https://rustwasm.github.io/wasm-bindgen/examples/closures.html
@@ -242,7 +242,11 @@ impl VideoDecoder for H264Decoder {
         Ok(FrameDependency::Past)
     }
 
-    fn decode_frame(&mut self, encoded_frame: EncodedFrame<'_>) -> Result<DecodedFrame, Error> {
+    fn decode_frame_dyn(
+        &mut self,
+        encoded_frame: EncodedFrame<'_>,
+        callback: &mut dyn FnMut(DecodedFrame<'_>),
+    ) -> Result<(), Error> {
         debug!("decoding frame {}", encoded_frame.frame_id);
         trace!("decoder state: {:?}", self.decoder.state());
         trace!("queue size: {}", self.decoder.decode_queue_size());
@@ -278,7 +282,10 @@ impl VideoDecoder for H264Decoder {
         }
 
         match self.last_frame.borrow_mut().take() {
-            Some(frame) => Ok(frame),
+            Some(frame) => {
+                callback(frame);
+                Ok(())
+            }
             None => Err(Error::DecoderError(
                 "No output frame produced by the decoder".into(),
             )),

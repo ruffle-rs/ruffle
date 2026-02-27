@@ -112,7 +112,11 @@ impl VideoDecoder for Vp6Decoder {
         )
     }
 
-    fn decode_frame(&mut self, encoded_frame: EncodedFrame<'_>) -> Result<DecodedFrame, Error> {
+    fn decode_frame_dyn(
+        &mut self,
+        encoded_frame: EncodedFrame<'_>,
+        callback: &mut dyn FnMut(DecodedFrame<'_>),
+    ) -> Result<(), Error> {
         // If this is the first frame, the decoder needs to be initialized.
 
         if !self.init_called {
@@ -245,24 +249,25 @@ impl VideoDecoder for Vp6Decoder {
             data.extend(v);
             data.extend(a);
 
-            Ok(DecodedFrame::new(
+            callback(DecodedFrame::new(
                 width as u32,
                 height as u32,
                 BitmapFormat::Yuva420p,
                 data,
-            ))
+            ));
         } else {
             let mut data = y.to_vec();
             data.extend(u);
             data.extend(v);
 
-            Ok(DecodedFrame::new(
+            callback(DecodedFrame::new(
                 width as u32,
                 height as u32,
                 BitmapFormat::Yuv420p,
                 data,
-            ))
+            ));
         }
+        Ok(())
     }
 }
 

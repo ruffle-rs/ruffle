@@ -317,7 +317,11 @@ impl VideoDecoder for H264Decoder {
         }
     }
 
-    fn decode_frame(&mut self, encoded_frame: EncodedFrame<'_>) -> Result<DecodedFrame, Error> {
+    fn decode_frame_dyn(
+        &mut self,
+        encoded_frame: EncodedFrame<'_>,
+        callback: &mut dyn FnMut(DecodedFrame<'_>),
+    ) -> Result<(), Error> {
         assert!(self.length_size > 0, "Decoder not configured");
         unsafe {
             let decoder_vtbl = (*self.decoder).as_ref().unwrap();
@@ -400,12 +404,13 @@ impl VideoDecoder for H264Decoder {
             // when encoded image size doesn't match declared video tag size.
             // NOTE: This will always use the BT.601 coefficients, which may or may
             // not be correct. So far I haven't seen anything to the contrary in FP.
-            Ok(DecodedFrame::new(
+            callback(DecodedFrame::new(
                 buffer_info.iWidth as u32,
                 buffer_info.iHeight as u32,
                 BitmapFormat::Yuv420p,
                 yuv,
-            ))
+            ));
+            Ok(())
         }
     }
 }
