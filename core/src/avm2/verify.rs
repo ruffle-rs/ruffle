@@ -8,7 +8,7 @@ use crate::avm2::error::{
 use crate::avm2::method::Method;
 use crate::avm2::multiname::Multiname;
 use crate::avm2::namespace::Namespace;
-use crate::avm2::op::{LookupSwitch, Op};
+use crate::avm2::op::{LookupSwitch, Op, RegisterKind};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error, QName};
 use crate::string::{AvmAtom, AvmString};
@@ -1249,7 +1249,12 @@ fn translate_op<'gc>(
             let register_name = pool_string(activation, translation_unit, register_name)?;
 
             Op::Debug {
-                is_local_register,
+                register_kind: if is_local_register {
+                    let out_of_bounds = u32::from(register) >= max_locals;
+                    RegisterKind::Local { out_of_bounds }
+                } else {
+                    RegisterKind::Unknown
+                },
                 register_name,
                 register,
             }
