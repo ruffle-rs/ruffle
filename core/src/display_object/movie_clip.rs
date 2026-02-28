@@ -2443,6 +2443,16 @@ impl<'gc> MovieClip<'gc> {
         let goto_frame = self.0.queued_goto_frame.take();
         if let Some(frame) = goto_frame {
             self.goto_frame_now(context, frame);
+
+            // In SWFv10+, the `goto_frame_now` above will trigger an inner goto
+            // frame, which will call `construct_frame`. However, this is not
+            // the case in SWFv9, where inner goto frames are no-ops, so we need
+            // to manually run `construct_frame` to ensure that children are
+            // constructed. This prevents situations such as a frame script
+            // queued to run on this frame seeing not-yet-constructed children.
+            if self.swf_version() <= 9 {
+                self.construct_frame(context);
+            }
         }
     }
 
