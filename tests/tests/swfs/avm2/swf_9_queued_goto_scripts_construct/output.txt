@@ -1,0 +1,28 @@
+Test constructor complete
+frameConstructed dispatched
+Number of root children: 0
+placed theSprite: null
+theSprite: null
+frame 2 framescript: On frame 2
+frame 2 framescript: Ran gotoAndStop(3) from frame 2
+Start of TheSprite ctor
+End of TheSprite ctor
+frame 3 framescript: On frame 3
+frame 3 framescript: placed theSprite is [object TheSprite]
+frame 3 framescript: Ran gotoAndStop(3) from frame 3
+exitFrame dispatched
+Number of root children: 1
+placed theSprite: [object TheSprite]
+theSprite: [object TheSprite]
+enterFrame dispatched
+Number of root children: 1
+placed theSprite: [object TheSprite]
+theSprite: [object TheSprite]
+frameConstructed dispatched
+Number of root children: 1
+placed theSprite: [object TheSprite]
+theSprite: [object TheSprite]
+exitFrame dispatched
+Number of root children: 1
+placed theSprite: [object TheSprite]
+theSprite: [object TheSprite]
