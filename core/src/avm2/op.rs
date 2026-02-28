@@ -309,6 +309,10 @@ pub enum Op<'gc> {
         // note: 0-indexed, as opposed to FP.
         index: usize,
     },
+    SetSlotCoerceI {
+        // note: 0-indexed, as opposed to FP.
+        index: usize,
+    },
     SetSlotNoCoerce {
         // note: 0-indexed, as opposed to FP.
         index: usize,
