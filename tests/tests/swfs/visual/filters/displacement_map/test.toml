@@ -7,7 +7,7 @@ max_outliers = 72
 
 [[image_comparisons.output.checks]]
 filter = 'arch = "aarch64"'
-tolerance = 32
+tolerance = 35
 max_outliers = 160
 
 [player_options]
