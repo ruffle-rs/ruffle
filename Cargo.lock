@@ -4744,6 +4744,7 @@ dependencies = [
  "flate2",
  "gif",
  "h263-rs-yuv",
+ "half",
  "indexmap",
  "jpeg-decoder",
  "lyon",
@@ -4757,6 +4758,7 @@ dependencies = [
  "serde",
  "smallvec",
  "swf",
+ "texpresso",
  "thiserror 2.0.18",
  "tracing",
  "wasm-bindgen",
@@ -5664,6 +5666,15 @@ dependencies = [
  "ruffle_test_framework",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "texpresso"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "8550677e2259d675a7841cb1403db35f330cc9e58674c8c5caa12dd12c51dc71"
+dependencies = [
+ "libm",
 ]
 
 [[package]]

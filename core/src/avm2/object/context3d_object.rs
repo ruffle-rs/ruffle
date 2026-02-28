@@ -15,6 +15,7 @@ use ruffle_render::backend::{
     Context3DStencilAction, Context3DTextureFormat, Context3DTriangleFace,
     Context3DVertexBufferFormat, ProgramType, Texture,
 };
+use ruffle_render::bitmap::{Bitmap, BitmapFormat};
 use ruffle_render::commands::CommandHandler;
 use std::cell::Cell;
 use std::rc::Rc;
@@ -360,9 +361,12 @@ impl<'gc> Context3DObject<'gc> {
 
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::CopyBitmapToTexture {
-                source: source.pixels_rgba(),
-                source_width: source.width(),
-                source_height: source.height(),
+                source: Bitmap::new(
+                    source.width(),
+                    source.height(),
+                    BitmapFormat::Rgba,
+                    source.pixels_rgba(),
+                ),
                 dest,
                 layer,
             })
@@ -370,12 +374,15 @@ impl<'gc> Context3DObject<'gc> {
     }
 
     #[cfg_attr(not(feature = "jpegxr"), allow(unused))]
-    pub(crate) fn copy_pixels_to_texture(self, source: Vec<u8>, dest: Rc<dyn Texture>, layer: u32) {
+    pub(crate) fn copy_pixels_to_texture(
+        self,
+        source: Bitmap<'_>,
+        dest: Rc<dyn Texture>,
+        layer: u32,
+    ) {
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::CopyBitmapToTexture {
-                source: &source,
-                source_width: dest.width(),
-                source_height: dest.height(),
+                source,
                 dest,
                 layer,
             })
