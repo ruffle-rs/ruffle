@@ -1,0 +1,17 @@
+=== Test 1: Two refs same path ===
+100
+100
+200
+200
+=== Test 2: Re-launder after overwrite ===
+10
+20
+30
+30
+=== Test 3: toString and typeof ===
+_level0.mc
+_level0.mc
+_level0.mc
+movieclip
+movieclip
+true
