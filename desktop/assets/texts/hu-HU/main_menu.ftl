@@ -9,6 +9,8 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Fájl
+file-menu-open-file = Fájl megnyitása...
+file-menu-open-directory = Könyvtár megnyitása...
 file-menu-open-advanced = Haladó megnyitás...
 file-menu-close = Bezárás
 file-menu-reload = Újratöltés
@@ -16,6 +18,7 @@ file-menu-recents = Legutóbbiak
 file-menu-recents-empty = Nincsenek legutóbbi bejegyzések
 file-menu-preferences = Beállítások...
 file-menu-exit = Kilépés
+file-menu-export = Exportálás...
 controls-menu = Vezérlők
 controls-menu-suspend = Felfüggesztés
 controls-menu-resume = Folytatás
@@ -32,6 +35,7 @@ bookmarks-menu-add = Hozzáadás...
 bookmarks-menu-manage = Könyvjelzők kezelése...
 debug-menu = Hibakereső eszközök
 debug-menu-open-stage = Színpadinformációk megtekintése
+debug-menu-open-root-movie-clip = Gyökéranimáció megtekintése
 debug-menu-open-movie = Animáció vizsgálata
 debug-menu-open-movie-list = Ismert animációk listája
 debug-menu-open-domain-list = Domainek listája

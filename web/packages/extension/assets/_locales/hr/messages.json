@@ -26,6 +26,9 @@
     "settings_log_level_info": {
         "message": "Informacije"
     },
+    "settings_log_level_debug": {
+        "message": "Debug"
+    },
     "settings_log_level_trace": {
         "message": "Trag"
     },
@@ -103,6 +106,12 @@
     },
     "save_settings": {
         "message": "Spremi postavke"
+    },
+    "settings_saved": {
+        "message": "Spremljene postavke"
+    },
+    "onboarding_page": {
+        "message": "Stranica za uvođenje u posao"
     },
     "permissions_grant": {
         "message": "Dozvoli Ruffleu pristup mojim podacima na svim web-lokacijama"
