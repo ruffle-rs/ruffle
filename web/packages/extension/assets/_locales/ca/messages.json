@@ -94,5 +94,20 @@
     },
     "settings_saved": {
         "message": "S'ha desat la configuració"
+    },
+    "onboarding_page": {
+        "message": "Pàgina d'incorporació"
+    },
+    "permissions_grant": {
+        "message": "Permetre a Ruffle l'accés a les meves dades en totes les pàgines web"
+    },
+    "permissions_not_granted": {
+        "message": "Necessitareu clicar a la icona de Ruffle cada cop que vulgueu utilitzar-lo"
+    },
+    "grant_single_site_permission": {
+        "message": "Permetre permanentment en aquest web"
+    },
+    "permissions_explanation": {
+        "message": "L'extensió de Ruffle treballa millor amb l'habilitat d'accedir a les dades en totes les pàgines web. Això permet executar-lo quan qualsevol web el carrega primer; a més de permetre, per conveniència, que detecti immediatament Flash Player a la resta de pàgines, i permeti executar contingut Flash. Això també dona l'habilitat de carregar fitxers SWF en el reproductor intern des d'altres llocs a la web, i permeti carregar automàticament enllaços SWF directes de la pàgina. Si no doneu aquest permís, necessitareu habilitar Ruffle manualment en cada web on desitgeu utilitzar-lo clicant a la icona de l'extensió, i habilitant-la en aquesta pàgina web."
     }
 }

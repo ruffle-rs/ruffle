@@ -1,0 +1,12 @@
+context-menu-play = Spill av
+context-menu-rewind = Spol tilbake
+context-menu-forward = Spole fremover
+context-menu-back = Tilbake
+context-menu-quality-low = Lav kvalitet
+context-menu-quality-medium = Medium kvalitet
+context-menu-quality-high = Høy kvalitet
+context-menu-cut = Kutt
+context-menu-copy = Kopier
+context-menu-paste = Lim inn
+context-menu-delete = Slett
+context-menu-select-all = Marker alt

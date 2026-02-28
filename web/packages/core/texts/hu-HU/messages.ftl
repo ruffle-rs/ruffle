@@ -1,6 +1,9 @@
 message-cant-embed =
     A Ruffle nem tudta futtatni az oldalba ágyazott Flash tartalmat.
     A probléma kikerüléséhez megpróbálhatod megnyitni a fájlt egy külön lapon.
+message-restored-from-bfcache =
+    A böngésző ezt a Flash tartalmat egy korábbi munkamenetből állította vissza.
+    A tiszta induláshoz frissítse az oldalt.
 panic-title = Valami baj történt :(
 more-info = További információ
 run-anyway = Futtatás mégis

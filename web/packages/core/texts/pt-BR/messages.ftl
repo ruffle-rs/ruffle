@@ -39,7 +39,7 @@ error-javascript-config =
 error-wasm-not-found =
     Ruffle falhou ao carregar o componente de arquivo ".wasm" necessário.
     Se você é o administrador do servidor, por favor, certifique-se de que o arquivo foi carregado corretamente.
-    Se o problema persistir, você pode precisar usar a configuração "publicPath": por favor consulte a wiki do Ruffle para obter ajuda.
+    Se o problema persistir, você pode precisar usar a configuração "publicPath": por favor consulte o guia oficial do Ruffle para obter ajuda.
 error-wasm-mime-type =
     Ruffle encontrou um grande problema ao tentar inicializar.
     Este servidor de web não está servindo ".wasm" arquivos com o tipo MIME correto.
@@ -52,17 +52,17 @@ error-swf-fetch =
     A razão provável é que o arquivo não existe mais, então não há nada para o Ruffle carregar.
     Tente contatar o administrador do site para obter ajuda.
 error-swf-cors =
-    Ruffle falhou ao carregar o arquivo Flash SWF.
-    O acesso para fetch provavelmente foi bloqueado pela política CORS.
-    Se você for o administrador do servidor, consulte o wiki do Ruffle para obter ajuda.
+    O Ruffle não conseguiu carregar o arquivo SWF do Flash.
+    O acesso à requisição provavelmente foi bloqueado pela política de CORS.
+    Se você for o administrador do servidor, consulte o guia oficial do Ruffle para obter ajuda.
 error-wasm-cors =
-    Ruffle falhou ao carregar o componente de arquivo ".wasm" necessário.
-    O acesso para fetch foi provavelmente bloqueado pela política CORS.
-    Se você é o administrador do servidor, por favor consulte a wiki do Ruffle para obter ajuda.
+    O Ruffle não conseguiu carregar o componente obrigatório do arquivo “.wasm”.
+    O acesso à busca provavelmente foi bloqueado pela política de CORS.
+    Se você é o administrador do servidor, consulte o guia oficial do Ruffle para obter ajuda.
 error-wasm-invalid =
-    Ruffle encontrou um grande problema ao tentar inicializar.
-    Parece que esta página tem arquivos ausentes ou inválidos para executar o Ruffle.
-    Se você for o administrador do servidor, consulte o wiki do Ruffle para obter ajuda.
+    O Ruffle encontrou um erro grave ao tentar iniciar.
+    Parece que esta página possui arquivos ausentes ou inválidos para executar o Ruffle.
+    Se você é o administrador do servidor, consulte o guia oficial do Ruffle para obter assistência.
 error-wasm-download =
     O Ruffle encontrou um grande problema ao tentar inicializar.
     Muitas vezes isso pode se resolver sozinho, então você pode tentar recarregar a página.
@@ -73,18 +73,18 @@ error-wasm-disabled-on-edge =
     Isso permitirá que seu navegador carregue os arquivos ".wasm" necessários.
     Se o problema persistir, talvez seja necessário usar um navegador diferente.
 error-wasm-unsupported-browser =
-    O navegador que você está usando não suporta as extensões WebAssembly necessárias para o Ruffle.
-    Por favor, utilize um navegador compatível.
-    Você pode encontrar uma lista de navegadores suportados no wiki.
+    O navegador que você está usando não oferece suporte às extensões WebAssembly necessárias para o Ruffle funcionar.
+    Por favor, mude para um navegador compatível.
+    Você pode encontrar uma lista de navegadores compatíveis no guia oficial.
 error-javascript-conflict =
     Ruffle encontrou um grande problema ao tentar inicializar.
     Parece que esta página usa código JavaScript que entra em conflito com o Ruffle.
     Se você for o administrador do servidor, convidamos você a tentar carregar o arquivo em uma página em branco.
 error-javascript-conflict-outdated = Você também pode tentar fazer o upload de uma versão mais recente do Ruffle que pode contornar o problema (a compilação atual está desatualizada: { $buildDate }).
 error-csp-conflict =
-    Ruffle encontrou um grande problema ao tentar inicializar.
-    A política de segurança de conteúdo deste servidor da web não permite a execução do componente ".wasm" necessário.
-    Se você for o administrador do servidor, consulte o wiki do Ruffle para obter ajuda.
+    O Ruffle encontrou um problema grave ao tentar iniciar.
+    A Política de Segurança de Conteúdo deste servidor não permite a execução do componente “.wasm” necessário.
+    Se você for o administrador do servidor, consulte o guia oficial do Ruffle para obter ajuda.
 error-unknown =
     O Ruffle encontrou um grande problema enquanto tentava exibir este conteúdo em Flash.
     { $outdated ->

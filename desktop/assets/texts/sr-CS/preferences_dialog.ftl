@@ -2,6 +2,9 @@ preferences-dialog = Podešavanja Ruffle-a
 preference-locked-by-cli = Samo za čitanje (podešava se pomoću komandne linije)
 graphics-backend = Grafički bekend sistem
 graphics-backend-default = Podrazumevano
+graphics-power = Preferencija snage
+graphics-power-low = Nisko (npr. iGPU)
+graphics-power-high = Visoko (npr. GPU)
 language = Jezik
 audio-output-device = Audio izlazni uređaj
 audio-output-device-default = Sistemska podrazumevana vrednost
@@ -14,11 +17,18 @@ log-filename-pattern-with-timestamp = Označeno vremenskom oznakom
 storage-backend = Lokacija za čuvanje datoteke
 storage-backend-disk = Disk
 storage-backend-memory = Pamćenje
+recent-limit = Nedavna ograničenja
 theme = Tema
 theme-system = Sistemska podrazumevana vrednost
 theme-light = Svetla
+theme-dark = Tamno
 # See for context https://github.com/FeralInteractive/gamemode
+gamemode = Režim igre
+gamemode-tooltip =
+    Režim igre (GameMode) privremeno primenjuje skup optimizacija na vaš računar i/ili Ruffle.
+    Ruffle zahteva režim igre (GameMode) samo prilikom reprodukcije filma.
 gamemode-default = Podrazumevano
+gamemode-default-tooltip = Režim igre će biti omogućen samo kada je podešavanje napajanja podešeno na visoko.
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Metod unosa
 ime-enabled-experimental = (eksperimentalno)

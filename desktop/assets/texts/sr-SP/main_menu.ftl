@@ -38,4 +38,5 @@ debug-menu-open-movie = Погледајте филм
 debug-menu-open-movie-list = Прикажи познате филмове
 debug-menu-open-domain-list = Прикажи домене
 debug-menu-search-display-objects = Тражите приказне објекте...
+view-menu = Приказ
 view-menu-fullscreen = Цео екран
