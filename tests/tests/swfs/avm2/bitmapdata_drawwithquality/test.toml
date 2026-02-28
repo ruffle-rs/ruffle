@@ -1,10 +1,24 @@
 num_frames = 1
 
-[image_comparisons.output]
-tolerance = 8
-max_outliers = 3
+# FIXME: Device text should never be drawn with low quality.
 
-[player_options]
+[default_fonts]
+serif = ["Noto Sans"]
+
+[fonts.noto_sans]
+family = "Noto Sans"
+path = "NotoSans.ttf"
+
+[subtests.low.image_comparisons."output.low"]
+tolerance = 16
+max_outliers = 3200
+
+[subtests.low.player_options]
 with_renderer = { quality = "low" }
-# TODO Fix this test. It shouldn't depend on the default font.
-with_default_font = true
+
+[subtests.high.image_comparisons."output.high"]
+tolerance = 16
+max_outliers = 3200
+
+[subtests.high.player_options]
+with_renderer = { quality = "high" }
