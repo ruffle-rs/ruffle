@@ -495,7 +495,8 @@ impl<'gc> MovieClip<'gc> {
         }
 
         let mut end_tag_found = false;
-        let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
+        let tag_callback = |reader: &mut SwfStream<'_>, tag_code| {
+            let tag_len = reader.get_ref().len();
             match tag_code {
                 TagCode::CsmTextSettings => shared.csm_text_settings(context, reader),
                 TagCode::DefineBits => shared.define_bits(context, reader),
@@ -523,16 +524,16 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DefineSound => shared.define_sound(context, reader),
                 TagCode::DefineVideoStream => shared.define_video_stream(context, reader),
                 TagCode::DefineSprite => {
-                    return shared.define_sprite(context, reader, tag_len, chunk_limit);
+                    return shared.define_sprite(context, reader, chunk_limit);
                 }
                 TagCode::DefineText => shared.define_text(context, reader, 1),
                 TagCode::DefineText2 => shared.define_text(context, reader, 2),
-                TagCode::DoInitAction => self.do_init_action(context, reader, tag_len),
+                TagCode::DoInitAction => self.do_init_action(context, reader),
                 TagCode::DefineSceneAndFrameLabelData => shared.scene_and_frame_labels(reader),
                 TagCode::ExportAssets => shared.export_assets(context, reader),
                 TagCode::FrameLabel => shared.frame_label(reader),
                 TagCode::JpegTables => shared.jpeg_tables(context, reader),
-                TagCode::ShowFrame => shared.show_frame(reader, tag_len),
+                TagCode::ShowFrame => shared.show_frame(reader),
                 TagCode::ScriptLimits => shared.script_limits(reader, context.avm1),
                 TagCode::SoundStreamHead => shared.sound_stream_head(reader, 1),
                 TagCode::SoundStreamHead2 => shared.sound_stream_head(reader, 2),
@@ -577,7 +578,7 @@ impl<'gc> MovieClip<'gc> {
             if progress.cur_preload_frame.get() == 1 {
                 // If this clip did not have any show frame tags,
                 // treat the end-of-clip as a ShowFrame
-                shared.show_frame(reader, 0).unwrap();
+                shared.show_frame(reader).unwrap();
             }
             // Flag the movie as fully preloaded when we hit the end of the tag stream.
             progress.next_preload_chunk.set(u64::MAX);
@@ -604,7 +605,6 @@ impl<'gc> MovieClip<'gc> {
         self,
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'_>,
-        tag_len: usize,
     ) -> Result<(), Error> {
         let mut target = self;
         loop {
@@ -622,22 +622,14 @@ impl<'gc> MovieClip<'gc> {
             target = parent;
         }
 
-        let start = reader.as_slice();
-
         // TODO: Init actions are supposed to be executed once, and it gives a
         // sprite ID... how does that work?
         // TODO: what happens with `DoInitAction` blocks nested in a `DefineSprite`?
         // The SWF spec forbids this, but Ruffle will currently execute them in the context
         // of the character itself, which is probably nonsense.
         let _sprite_id = reader.read_u16()?;
-        let num_read = reader.pos(start);
 
-        let slice = self
-            .0
-            .shared
-            .get()
-            .swf
-            .resize_to_reader(reader, tag_len - num_read);
+        let slice = self.0.shared.get().swf.resize_to_reader(reader);
 
         if !slice.is_empty() {
             Avm1::run_stack_frame_for_init_action(target.into(), slice, context);
@@ -1249,7 +1241,7 @@ impl<'gc> MovieClip<'gc> {
             let shared = self.0.shared.get();
             let mut reader = shared.swf.read_from(0);
             while cur_frame <= frame && !reader.get_ref().is_empty() {
-                let tag_callback = |reader: &mut Reader<'_>, tag_code, tag_len| {
+                let tag_callback = |reader: &mut Reader<'_>, tag_code| {
                     match tag_code {
                         TagCode::ShowFrame => {
                             cur_frame += 1;
@@ -1257,7 +1249,7 @@ impl<'gc> MovieClip<'gc> {
                         }
                         TagCode::DoAction if cur_frame == frame => {
                             // On the target frame, add any DoAction tags to the array.
-                            let slice = shared.swf.resize_to_reader(reader, tag_len);
+                            let slice = shared.swf.resize_to_reader(reader);
                             if !slice.is_empty() {
                                 actions.push(slice);
                             }
@@ -1324,9 +1316,9 @@ impl<'gc> MovieClip<'gc> {
         let data = shared.swf.clone();
         let mut reader = data.read_from(self.0.tag_stream_pos.get());
 
-        let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
+        let tag_callback = |reader: &mut SwfStream<'_>, tag_code| {
             match tag_code {
-                TagCode::DoAction => self.do_action(context, reader, tag_len),
+                TagCode::DoAction => self.do_action(context, reader),
                 TagCode::PlaceObject if run_display_actions && !is_action_script_3 => {
                     self.place_object(context, reader, 1)
                 }
@@ -1634,7 +1626,7 @@ impl<'gc> MovieClip<'gc> {
             self.0.increment_current_frame();
             frame_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
 
-            let tag_callback = |reader: &mut _, tag_code, _tag_len| {
+            let tag_callback = |reader: &mut _, tag_code| {
                 enum Action {
                     Place(u8),
                     Remove(u8),
@@ -3777,18 +3769,15 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         &self,
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'a>,
-        tag_len: usize,
         chunk_limit: &mut ExecutionLimit,
     ) -> Result<ControlFlow, Error> {
-        let start = reader.as_slice();
         let id = reader.read_character_id()?;
         let num_frames = reader.read_u16()?;
-        let num_read = reader.pos(start);
 
         let movie_clip = MovieClip::new_with_data(
             context.gc(),
             id,
-            self.swf.resize_to_reader(reader, tag_len - num_read),
+            self.swf.resize_to_reader(reader),
             num_frames,
         );
 
@@ -4041,31 +4030,24 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     }
 
     #[inline]
-    fn show_frame(
-        &self,
-        #[allow(unused)] reader: &mut SwfStream<'a>,
-        #[allow(unused)] tag_len: usize,
-    ) -> Result<(), Error> {
+    fn show_frame(&self, #[allow(unused)] reader: &mut SwfStream<'a>) -> Result<(), Error> {
         let progress = &self.preload_progress;
 
         #[cfg(feature = "timeline_debug")]
         {
-            let tag_stream_start = self.swf.as_ref().as_ptr() as u64;
-            let end_pos = reader.get_ref().as_ptr() as u64 - tag_stream_start;
+            let tag_stream_start = self.swf.as_ref().as_ptr().addr();
+            // We grab the *end* of the SomeFrame tag. Strictly speaking ShowFrame should not have
+            // tag data, but who *knows* what weird obfuscation hacks people have done with it.
+            let tag_show_end = reader.get_ref().as_ptr_range().end.addr();
+            let end_pos = (tag_show_end - tag_stream_start) as u64;
 
-            // We add tag_len because the reader position doesn't take it into
-            // account. Strictly speaking ShowFrame should not have tag data, but
-            // who *knows* what weird obfuscation hacks people have done with it.
             self.cell.borrow_mut().tag_frame_boundaries.insert(
                 progress.cur_preload_frame.get(),
-                (progress.start_pos.get(), end_pos + tag_len as u64),
+                (progress.start_pos.replace(end_pos), end_pos),
             );
-
-            progress.start_pos.set(end_pos);
         }
 
-        let cur = &progress.cur_preload_frame;
-        cur.set(cur.get() + 1);
+        progress.cur_preload_frame.update(|f| f + 1);
 
         Ok(())
     }
@@ -4079,9 +4061,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     ) -> Result<(), Error> {
         let cur_frame = self.preload_progress.cur_preload_frame.get() - 1;
         let abc = match tag_code {
-            TagCode::DoAbc | TagCode::DoAbc2 => {
-                self.swf.resize_to_reader(reader, reader.as_slice().len())
-            }
+            TagCode::DoAbc | TagCode::DoAbc2 => self.swf.resize_to_reader(reader),
             _ => unreachable!(),
         };
 
@@ -4124,7 +4104,6 @@ impl<'gc, 'a> MovieClip<'gc> {
         self,
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'a>,
-        tag_len: usize,
     ) -> Result<(), Error> {
         if self.movie().is_action_script_3() {
             tracing::warn!("DoAction tag in AVM2 movie");
@@ -4132,7 +4111,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         }
 
         // Queue the actions.
-        let slice = self.0.shared.get().swf.resize_to_reader(reader, tag_len);
+        let slice = self.0.shared.get().swf.resize_to_reader(reader);
         if !slice.is_empty() {
             context.action_queue.queue_action(
                 self.into(),
@@ -4441,10 +4420,8 @@ impl<'gc, 'a> MovieClip<'gc> {
             let read = self.0.shared_cell();
             if let (Some(stream_info), None) = (&read.audio_stream_info, self.0.audio_stream.get())
             {
-                let slice = self.0.shared.get().swf.to_start_and_end(
-                    self.0.tag_stream_pos.get() as usize,
-                    self.0.tag_stream_len(),
-                );
+                let mut slice = self.0.shared.get().swf.clone();
+                slice.start = self.0.tag_stream_pos.get() as usize;
                 Some(context.start_stream(self, self.0.current_frame(), slice, stream_info))
             } else {
                 None
@@ -4887,11 +4864,10 @@ impl ClipEventHandler {
         } else {
             ButtonKeyCode::Unknown
         };
-        let action_data = SwfSlice::from(movie).to_unbounded_subslice(other.action_data);
         Self {
             events: other.events,
             key_code,
-            action_data,
+            action_data: SwfSlice::from(movie).to_subslice(other.action_data),
         }
     }
 }

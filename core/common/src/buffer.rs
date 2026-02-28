@@ -163,55 +163,9 @@ impl Slice {
         }
     }
 
-    /// Create a subslice of this buffer slice, without bounds checking.
-    ///
-    /// The parameter `slice` must be derived from the same buffer this slice
-    /// was, otherwise the returned slice will be empty
-    ///
-    /// This emulates "unbounded reads" in file formats that don't bounds-check
-    /// things properly.
-    pub fn to_unbounded_subslice(&self, slice: &[u8]) -> Self {
-        let self_guard = self.buf.0.read().expect("unlock read");
-        let self_pval = self_guard.as_ptr() as usize;
-        let self_len = self.buf.len();
-        let slice_pval = slice.as_ptr() as usize;
-
-        if self_pval <= slice_pval && slice_pval < (self_pval + self_len) {
-            Slice {
-                buf: self.buf.clone(),
-                start: slice_pval - self_pval,
-                end: (slice_pval - self_pval) + slice.len(),
-            }
-        } else {
-            self.buf.to_empty_slice()
-        }
-    }
-
-    /// Construct a new Slice from a start and an end.
-    ///
-    /// The start and end values will be relative to the current slice.
-    /// Furthermore, this function will yield an empty slice if the calculated
-    /// slice would be invalid (e.g. negative length) or would extend past the
-    /// end of the current slice.
-    pub fn to_start_and_end(&self, start: usize, end: usize) -> Self {
-        let new_start = self.start + start;
-        let new_end = self.start + end;
-
-        if new_start <= new_end && new_end < self.end {
-            if let Some(result) = self.buf.get(new_start..new_end) {
-                result
-            } else {
-                self.buf.to_empty_slice()
-            }
-        } else {
-            self.buf.to_empty_slice()
-        }
-    }
-
     /// Get a subslice of this slice.
     ///
-    /// Normal subslicing bounds rules will be respected. If you want to get a
-    /// slice outside the bounds of this one, use `to_unbounded_subslice`.
+    /// Normal subslicing bounds rules will be respected.
     pub fn get<T: RangeBounds<usize>>(&self, range: T) -> Option<Slice> {
         let s = self.buf.0.read().expect("unlock read");
 
@@ -267,13 +221,13 @@ impl Slice {
     pub fn buffer(&self) -> &Buffer {
         &self.buf
     }
+}
 
-    /// Create a readable cursor into the `Slice`.
-    pub fn as_cursor(&self) -> SliceCursor {
-        SliceCursor {
-            slice: self.clone(),
-            pos: 0,
-        }
+impl Read for Slice {
+    fn read(&mut self, data: &mut [u8]) -> IoResult<usize> {
+        let len = <&[u8] as Read>::read(&mut self.data().as_ref(), data)?;
+        self.start += len;
+        Ok(len)
     }
 }
 
@@ -286,27 +240,6 @@ impl LowerHex for Slice {
 impl UpperHex for Slice {
     fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
         UpperHex::fmt(&self.data(), f)
-    }
-}
-
-/// A readable cursor into a buffer slice.
-pub struct SliceCursor {
-    slice: Slice,
-    pos: usize,
-}
-
-impl Read for SliceCursor {
-    fn read(&mut self, data: &mut [u8]) -> IoResult<usize> {
-        let copy_count = min(data.len(), self.slice.len() - self.pos);
-        let slice = self
-            .slice
-            .get(self.pos..self.pos + copy_count)
-            .expect("Slice offsets are always valid");
-        let slice_data = slice.data();
-
-        data[..copy_count].copy_from_slice(&slice_data);
-        self.pos += copy_count;
-        Ok(copy_count)
     }
 }
 
@@ -604,12 +537,12 @@ mod test {
     }
 
     #[test]
-    fn slice_cursor_read() {
+    fn slice_read() {
         let buf = Buffer::from(vec![
             38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
         ]);
         let slice = buf.to_full_slice();
-        let mut cursor = slice.as_cursor();
+        let mut cursor = slice.clone();
         let refdata = slice.data();
 
         let mut data = vec![0; 1];
@@ -622,12 +555,12 @@ mod test {
     }
 
     #[test]
-    fn slice_cursor_read_all() {
+    fn slice_read_all() {
         let buf = Buffer::from(vec![
             38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
         ]);
         let slice = buf.to_full_slice();
-        let mut cursor = slice.as_cursor();
+        let mut cursor = slice.clone();
         let refdata = slice.data();
 
         let mut data = vec![0; slice.len() + 32];

@@ -1,6 +1,6 @@
 use super::{Decoder, SeekableDecoder, SoundStreamInfo, Substream, SubstreamTagReader};
 use bitstream_io::{BigEndian, BitRead, BitReader};
-use ruffle_common::buffer::SliceCursor;
+use ruffle_common::buffer::Slice;
 use std::io::{Cursor, Read};
 use swf::SoundFormat;
 use thiserror::Error;
@@ -191,7 +191,7 @@ impl<R: AsRef<[u8]> + Default + Send + Sync> SeekableDecoder for AdpcmDecoder<Cu
 pub struct AdpcmSubstreamDecoder {
     format: SoundFormat,
     tag_reader: SubstreamTagReader,
-    decoder: AdpcmDecoder<SliceCursor>,
+    decoder: AdpcmDecoder<Slice>,
 }
 
 impl AdpcmSubstreamDecoder {
@@ -200,7 +200,7 @@ impl AdpcmSubstreamDecoder {
         let mut tag_reader = SubstreamTagReader::new(stream_info, data_stream);
         let audio_data = tag_reader.next().unwrap_or(empty_buffer);
         let decoder = AdpcmDecoder::new(
-            audio_data.as_cursor(),
+            audio_data,
             stream_info.stream_format.is_stereo,
             stream_info.stream_format.sample_rate,
         )?;
@@ -234,12 +234,9 @@ impl Iterator for AdpcmSubstreamDecoder {
             // We've reached the end of the sound stream block tag, so
             // read the next one and recreate the decoder.
             // `AdpcmDecoder` read the ADPCM header when it is created.
-            self.decoder = AdpcmDecoder::new(
-                audio_data.as_cursor(),
-                self.format.is_stereo,
-                self.format.sample_rate,
-            )
-            .ok()?;
+            self.decoder =
+                AdpcmDecoder::new(audio_data, self.format.is_stereo, self.format.sample_rate)
+                    .ok()?;
             self.decoder.next()
         } else {
             // No more SoundStreamBlock tags.
