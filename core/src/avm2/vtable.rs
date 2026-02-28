@@ -522,10 +522,40 @@ impl<'gc> VTable<'gc> {
             }
         }
 
+        // Collect method disp_ids from the ABC to determine which
+        // positions in the combined slot_id/disp_id numbering space
+        // are occupied by methods. In AVM2, slot_id and disp_id share
+        // the same numbering space; a "hole" in the slot table that
+        // corresponds to a method's disp_id is valid.
+        let mut method_disp_ids = std::collections::HashSet::new();
+        if !force_auto_assign_slots {
+            for trait_data in defining_class_def.traits() {
+                let disp_id = match trait_data.kind() {
+                    TraitKind::Method { disp_id, .. }
+                    | TraitKind::Getter { disp_id, .. }
+                    | TraitKind::Setter { disp_id, .. } => *disp_id,
+                    _ => continue,
+                };
+                if disp_id > 0 {
+                    let disp_id = disp_id - 1;
+                    if disp_id >= first_slot_offset {
+                        method_disp_ids.insert(disp_id - first_slot_offset);
+                    }
+                }
+            }
+        }
+
         // Append the new slots to the slot table now
-        for slot in new_slots {
+        for (index, slot) in new_slots.into_iter().enumerate() {
             if let Some(slot) = slot {
                 slot_table.push(slot);
+            } else if method_disp_ids.contains(&index) {
+                // This position is occupied by a method trait's disp_id,
+                // not a real slot hole.
+                slot_table.push(SlotInfo {
+                    property_class: Lock::new(PropertyClass::Any),
+                    default_value: Value::Undefined,
+                });
             } else {
                 // Holes in the slot table throw an error in Flash Player
                 return Err(VTableInitError::SlotHole);
