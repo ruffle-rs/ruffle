@@ -307,6 +307,7 @@ pub struct Player {
 
     run_state: RunState,
     needs_render: bool,
+    needs_gc: bool,
 
     renderer: Box<dyn RenderBackend>,
     audio: Box<dyn AudioBackend>,
@@ -2290,6 +2291,7 @@ impl Player {
                 timers,
                 current_context_menu,
                 needs_render: &mut this.needs_render,
+                needs_gc: &mut this.needs_gc,
                 avm1,
                 avm2,
                 external_interface,
@@ -2381,7 +2383,12 @@ impl Player {
         self.update_mouse_state(EnumSet::empty(), false, &mut false);
 
         // GC
-        self.gc_arena.borrow_mut().collect_debt();
+        if self.needs_gc {
+            self.gc_arena.borrow_mut().finish_cycle();
+        } else {
+            self.gc_arena.borrow_mut().collect_debt();
+        }
+        self.needs_gc = false;
 
         rval
     }
@@ -3038,6 +3045,7 @@ impl PlayerBuilder {
                     RunState::Suspended
                 },
                 needs_render: true,
+                needs_gc: false,
                 self_reference: self_ref.clone(),
                 load_behavior: self.load_behavior,
                 spoofed_url: self.spoofed_url.clone(),
