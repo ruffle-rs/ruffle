@@ -20,6 +20,8 @@ pub struct ShapeTessellator {
     is_stroke: bool,
 }
 
+const TESSELLATION_EPSILON: f32 = 0.0000001;
+
 impl ShapeTessellator {
     pub fn new() -> Self {
         Self {
@@ -38,6 +40,16 @@ impl ShapeTessellator {
         &mut self,
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
+    ) -> Mesh {
+        self.tessellate_shape_with_scale(shape, bitmap_source, 1.0)
+    }
+
+    #[instrument(level = "debug", skip_all)]
+    pub fn tessellate_shape_with_scale(
+        &mut self,
+        shape: DistilledShape,
+        bitmap_source: &dyn BitmapSource,
+        scale: f32,
     ) -> Mesh {
         self.mesh = Vec::new();
         self.gradients = IndexSet::new();
@@ -151,16 +163,33 @@ impl ShapeTessellator {
             let mut buffers_builder =
                 BuffersBuilder::new(&mut self.lyon_mesh, RuffleVertexCtor { color });
             let result = match path {
-                DrawPath::Fill { winding_rule, .. } => self.fill_tess.tessellate_path(
-                    &lyon_path,
-                    &FillOptions::default().with_fill_rule(winding_rule.into()),
-                    &mut buffers_builder,
-                ),
+                DrawPath::Fill { winding_rule, .. } => {
+                    // Larger scales require more precise tessellation to avoid artifacts
+                    let tolerance = FillOptions::DEFAULT_TOLERANCE / scale;
+                    self.fill_tess.tessellate_path(
+                        &lyon_path,
+                        &FillOptions::default()
+                            .with_fill_rule(winding_rule.into())
+                            .with_tolerance(tolerance),
+                        &mut buffers_builder,
+                    )
+                }
                 DrawPath::Stroke { style, .. } => {
-                    // TODO(Herschel): 0 width indicates "hairline".
-                    let width = (style.width().to_pixels() as f32).max(1.0);
+                    // This calculation ensures that hairline strokes are rendered with
+                    // a minimum width of 1 pixel, while still allowing for proper scaling
+                    let width = style.width().to_pixels() as f32;
+                    let min_screen_width = if f32::abs(scale) > TESSELLATION_EPSILON {
+                        1.0 / scale
+                    } else {
+                        1.0
+                    };
+                    let width = width.max(min_screen_width);
+
+                    // Larger scales require more precise tessellation to avoid artifacts
+                    let tolerance = StrokeOptions::DEFAULT_TOLERANCE / scale;
                     let mut stroke_options = StrokeOptions::default()
                         .with_line_width(width)
+                        .with_tolerance(tolerance)
                         .with_start_cap(match style.start_cap() {
                             swf::LineCapStyle::None => tessellation::LineCap::Butt,
                             swf::LineCapStyle::Round => tessellation::LineCap::Round,
