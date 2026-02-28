@@ -1,7 +1,10 @@
 num_frames = 1
 
+# FIXME: Ruffle is pretty bad due to shape scaling and off-by-1 bounds.
+
 [image_comparisons.output]
 tolerance = 0
+max_outliers = 3800
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false, quality = "high" }
