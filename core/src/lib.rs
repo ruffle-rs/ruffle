@@ -4,6 +4,9 @@
 // This lint is good in theory, but in AVMs we often need to do `let x = args.get(0); let y = args.get(1);` etc.
 // It'd make those much less readable and consistent.
 #![allow(clippy::get_first)]
+// This enables the core::arch::aarch64::__jcvt() intrinsic, which is used to convert a f64 into an
+// i32 the JavaScript way on ARMv8.3+.
+#![feature(stdarch_aarch64_jscvt)]
 
 #[macro_use]
 mod display_object;
