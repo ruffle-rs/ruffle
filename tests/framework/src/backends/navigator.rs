@@ -326,4 +326,24 @@ impl NavigatorBackend for TestNavigatorBackend {
             }));
         }
     }
+
+    fn estimate_file_length(&self, request: &Request) -> Option<u32> {
+        let url = request.url();
+
+        let mut resolved_url = self.resolve_url(url).ok()?;
+        if resolved_url.scheme() != "file" {
+            return None;
+        }
+
+        let path_base: VfsPath = self.relative_base_path.clone();
+
+        resolved_url.set_query(None);
+
+        let decoded = percent_decode_str(resolved_url.path()).decode_utf8().ok()?;
+
+        let path = path_base.join(decoded.as_ref()).ok()?;
+
+        let metadata = path.metadata().ok()?;
+        Some(metadata.len as u32)
+    }
 }

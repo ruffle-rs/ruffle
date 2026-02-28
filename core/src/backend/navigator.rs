@@ -298,6 +298,11 @@ pub trait NavigatorBackend: Any {
     /// URL (generally only if configured to do so by the user).
     fn pre_process_url(&self, url: Url) -> Url;
 
+    /// Estimate the length of a local file for a given request.
+    fn estimate_file_length(&self, _request: &Request) -> Option<u32> {
+        None
+    }
+
     /// Handle any Socket connection request
     ///
     /// Use [SocketAction::Connect] to notify AVM that the connection failed or succeeded.
