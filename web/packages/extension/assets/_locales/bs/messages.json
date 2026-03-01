@@ -95,8 +95,11 @@
     "save_settings": {
         "message": "Sačuvaj postavke"
     },
+    "onboarding_page": {
+        "message": "Stranica za uvođenje u posao"
+    },
     "permissions_grant": {
-        "message": "Dozvoli Ruffleu pristup mojim podacima na svim web stranicama"
+        "message": "Dozvoli Ruffle-u pristup mojim podacima na svim web stranicama"
     },
     "permissions_not_granted": {
         "message": "Morat ćete kliknuti na ikonu Ruffle na svakoj web stranici na kojoj želite koristiti Ruffle"

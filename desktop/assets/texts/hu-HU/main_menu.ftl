@@ -18,6 +18,7 @@ file-menu-recents = Legutóbbiak
 file-menu-recents-empty = Nincsenek legutóbbi bejegyzések
 file-menu-preferences = Beállítások...
 file-menu-exit = Kilépés
+file-menu-export = Exportálás...
 controls-menu = Vezérlők
 controls-menu-suspend = Felfüggesztés
 controls-menu-resume = Folytatás
