@@ -1,5 +1,6 @@
 use crate::matrix::Matrix;
 use enum_map::Enum;
+use ruffle_wstr::{FromWStr, WStr};
 use smallvec::SmallVec;
 use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
 
@@ -17,6 +18,20 @@ pub enum GradientType {
     Linear,
     Radial,
     Focal,
+}
+
+impl FromWStr for FillRule {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"evenOdd" {
+            Ok(FillRule::EvenOdd)
+        } else if s == b"nonZero" {
+            Ok(FillRule::NonZero)
+        } else {
+            Err(())
+        }
+    }
 }
 
 #[cfg(feature = "tessellator")]

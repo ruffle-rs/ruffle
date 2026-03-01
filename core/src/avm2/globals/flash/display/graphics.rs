@@ -1012,15 +1012,10 @@ pub fn draw_path<'gc>(
     let mut drawing = this.as_drawing().unwrap();
     let commands = args.get_object(activation, 0, "commands")?;
     let data = args.get_object(activation, 1, "data")?;
-    let winding = args.get_string(activation, 2);
-
-    let fill_rule = if winding == WStr::from_units(b"nonZero") {
-        FillRule::NonZero
-    } else if winding == WStr::from_units(b"evenOdd") {
-        FillRule::EvenOdd
-    } else {
-        return Err(make_error_2008(activation, "winding"));
-    };
+    let fill_rule = args
+        .get_string(activation, 2)
+        .parse()
+        .map_err(|_| make_error_2008(activation, "winding"))?;
 
     // FIXME - implement fill behavior described in the Flash docs
     // (which is different from just running each command sequentially on `Graphics`)
@@ -1490,17 +1485,11 @@ fn handle_igraphics_data<'gc>(
 
         let data = obj.get_slot(graphics_path_slots::DATA).as_object();
 
-        let winding = obj
+        let fill_rule = obj
             .get_slot(graphics_path_slots::_WINDING)
-            .coerce_to_string(activation)?;
-
-        let fill_rule = if winding == WStr::from_units(b"nonZero") {
-            FillRule::NonZero
-        } else if winding == WStr::from_units(b"evenOdd") {
-            FillRule::EvenOdd
-        } else {
-            unreachable!("AS3 setter guarantees value of winding");
-        };
+            .coerce_to_string(activation)?
+            .parse()
+            .expect("AS3 setter guarantees value of winding");
 
         if let (Some(commands), Some(data)) = (commands, data) {
             process_commands(
