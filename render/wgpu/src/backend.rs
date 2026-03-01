@@ -592,6 +592,10 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                     &mut self.active_frame.command_encoder,
                 );
             }
+            // Periodically flush GPU work to prevent OOM when many cache entries
+            // accumulate (e.g. when a large container's cacheAsBitmap is skipped
+            // but its hundreds of children each have their own bitmap caches).
+            self.active_frame.maybe_flush(&self.descriptors);
         }
 
         self.surface.draw_commands_and_copy_to(
