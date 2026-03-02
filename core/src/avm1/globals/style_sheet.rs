@@ -196,7 +196,6 @@ fn transform<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let mut text_format = TextFormat {
-        display: Some(crate::html::TextDisplay::Block),
         kerning: Some(false),
         ..Default::default()
     };
