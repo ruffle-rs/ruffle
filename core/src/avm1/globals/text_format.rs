@@ -635,7 +635,6 @@ fn constructor<'gc>(
     text_format.right_margin = get_arg_as_i32(activation, args.get(10))?;
     text_format.indent = get_arg_as_i32(activation, args.get(11))?;
     text_format.leading = get_arg_as_i32(activation, args.get(12))?;
-    text_format.display = Some(crate::html::TextDisplay::Block);
     this.set_native(
         activation.gc(),
         NativeObject::TextFormat(Gc::new(activation.gc(), text_format.into())),

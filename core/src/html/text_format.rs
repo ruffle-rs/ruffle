@@ -119,7 +119,7 @@ pub enum TextDisplay {
 /// means that multiple regions of text apply. When setting the format of a
 /// particular region of text, `None` means that the existing setting for that
 /// property will be retained.
-#[derive(Clone, Debug, Collect, Default)]
+#[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 pub struct TextFormat {
     pub font: Option<WString>,
@@ -143,7 +143,40 @@ pub struct TextFormat {
     pub display: Option<TextDisplay>,
 }
 
+impl Default for TextFormat {
+    fn default() -> Self {
+        Self {
+            display: Some(TextDisplay::Block),
+            ..Self::empty()
+        }
+    }
+}
+
 impl TextFormat {
+    pub fn empty() -> Self {
+        Self {
+            font: None,
+            size: None,
+            color: None,
+            align: None,
+            bold: None,
+            italic: None,
+            underline: None,
+            left_margin: None,
+            right_margin: None,
+            indent: None,
+            block_indent: None,
+            kerning: None,
+            leading: None,
+            letter_spacing: None,
+            tab_stops: None,
+            bullet: None,
+            url: None,
+            target: None,
+            display: None,
+        }
+    }
+
     /// Construct a `TextFormat` from an `EditText`'s SWF tag.
     ///
     /// This requires an `UpdateContext` as we will need to retrieve some font
