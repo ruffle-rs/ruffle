@@ -102,7 +102,7 @@ fnv = "1.0.7"
 hashbrown = "0.16.1"
 fluent-templates = "0.13.3"
 lzma-rs = "0.3.0"
-tempfile = "3.25.0"
+tempfile = "3.26.0"
 tracing-wasm = "0.2.1"
 
 [workspace.lints.rust]
