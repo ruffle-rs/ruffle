@@ -13,4 +13,4 @@ publish = false # This crate is useless unless packaged into an appex bundle
 workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
-objc2 = "0.6.3"
+objc2 = "0.6.4"
