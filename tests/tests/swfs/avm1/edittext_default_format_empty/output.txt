@@ -5,6 +5,7 @@ text.getNewTextFormat()
   bold = false;
   bullet = false;
   color = 0;
+  display = block;
   font = Times New Roman;
   indent = 0;
   italic = false;
@@ -24,6 +25,7 @@ text.getTextFormat()
   bold = null;
   bullet = null;
   color = null;
+  display = block;
   font = null;
   indent = null;
   italic = null;
@@ -43,6 +45,7 @@ text.getTextFormat()
   bold = false;
   bullet = false;
   color = 0;
+  display = block;
   font = Times New Roman;
   indent = 0;
   italic = false;
@@ -62,6 +65,7 @@ text.getTextFormat(0,0)
   bold = null;
   bullet = null;
   color = null;
+  display = block;
   font = null;
   indent = null;
   italic = null;
@@ -81,6 +85,7 @@ text.getTextFormat()
   bold = null;
   bullet = null;
   color = null;
+  display = block;
   font = null;
   indent = null;
   italic = null;

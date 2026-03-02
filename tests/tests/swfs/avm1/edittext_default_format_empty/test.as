@@ -5,6 +5,7 @@ function printTextFormat(tf) {
     trace("  bold = " + tf.bold + ";");
     trace("  bullet = " + tf.bullet + ";");
     trace("  color = " + tf.color + ";");
+    trace("  display = " + tf.display + ";");
     trace("  font = " + tf.font + ";");
     trace("  indent = " + tf.indent + ";");
     trace("  italic = " + tf.italic + ";");
