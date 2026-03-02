@@ -522,7 +522,8 @@ fn get_text_extent<'gc>(
         .get(1)
         .cloned()
         .map(|v| v.coerce_to_f64(activation))
-        .transpose()?;
+        .transpose()?
+        .filter(|w| w.is_finite());
 
     let temp_edittext = EditText::new(
         activation.context,
