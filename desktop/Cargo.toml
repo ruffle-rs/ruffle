@@ -28,7 +28,7 @@ ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal", "fs", 
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.4"
-winit = "0.30.12"
+winit = "0.30.13"
 webbrowser = "1.1.0"
 url = { workspace = true }
 dirs = "6.0"
