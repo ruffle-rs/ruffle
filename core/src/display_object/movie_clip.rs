@@ -609,7 +609,7 @@ impl<'gc> MovieClip<'gc> {
         let mut target = self;
         loop {
             let shared = target.0.shared.get();
-            if shared.movie().is_action_script_3() {
+            if shared.movie().is_declared_action_script_3() {
                 tracing::warn!("DoInitAction tag in AVM2 movie");
                 return Ok(());
             }
@@ -652,8 +652,8 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<Option<Script<'gc>>, Error> {
-        if !context.root_swf.is_action_script_3() {
-            tracing::warn!("DoABC tag with non-AVM2 root");
+        if !self.movie().is_action_script_3() {
+            tracing::warn!("DoABC tag in AVM1 movie");
             return Ok(None);
         }
 
@@ -696,8 +696,8 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<Option<Script<'gc>>, Error> {
-        if !context.root_swf.is_action_script_3() {
-            tracing::warn!("DoABC2 tag with non-AVM2 root");
+        if !self.movie().is_action_script_3() {
+            tracing::warn!("DoABC2 tag in AVM1 movie");
             return Ok(None);
         }
 
@@ -4165,7 +4165,7 @@ impl<'gc, 'a> MovieClip<'gc> {
         reader: &mut SwfStream<'a>,
         tag_len: usize,
     ) -> Result<(), Error> {
-        if self.movie().is_action_script_3() {
+        if self.movie().is_declared_action_script_3() {
             tracing::warn!("DoAction tag in AVM2 movie");
             return Ok(());
         }
