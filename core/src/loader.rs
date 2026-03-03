@@ -1578,7 +1578,15 @@ impl<'gc> MovieLoader<'gc> {
 
         let movie = match sniffed_type {
             ContentType::Swf => {
-                Arc::new(SwfMovie::from_data(data, url.clone(), loader_url.clone())?)
+                let mut movie = SwfMovie::from_data(data, url.clone(), loader_url.clone())?;
+
+                if matches!(vm_data, MovieLoaderVMData::Avm1 { .. }) {
+                    // If AVM1 loads a SWF, that SWF is always interpreted as
+                    // AVM1, regardless of what it declares in its header.
+                    movie.set_force_avm1();
+                }
+
+                Arc::new(movie)
             }
             ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
                 Arc::new(SwfMovie::from_loaded_image(url.clone(), length))
