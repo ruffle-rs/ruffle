@@ -652,10 +652,8 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<Option<Script<'gc>>, Error> {
-        if !self.movie().is_action_script_3() {
-            tracing::warn!("DoABC tag in AVM1 movie");
-            return Ok(None);
-        }
+        // This is unreachable if this `MovieClip`'s movie is AVM1, as
+        // `preload_bytecode_tag` returns early if the movie is AVM1
 
         let data = reader.read_slice_to_end();
         if !data.is_empty() {
@@ -696,10 +694,8 @@ impl<'gc> MovieClip<'gc> {
         context: &mut UpdateContext<'gc>,
         reader: &mut SwfStream<'_>,
     ) -> Result<Option<Script<'gc>>, Error> {
-        if !self.movie().is_action_script_3() {
-            tracing::warn!("DoABC2 tag in AVM1 movie");
-            return Ok(None);
-        }
+        // This is unreachable if this `MovieClip`'s movie is AVM1, as
+        // `preload_bytecode_tag` returns early if the movie is AVM1
 
         let do_abc = reader.read_do_abc_2()?;
         if !do_abc.data.is_empty() {
@@ -4116,6 +4112,16 @@ impl<'gc, 'a> MovieClipShared<'gc> {
         tag_code: TagCode,
         reader: &mut SwfStream<'a>,
     ) -> Result<(), Error> {
+        if !self.movie().is_action_script_3() {
+            match tag_code {
+                TagCode::DoAbc => tracing::warn!("DoABC tag in AVM1 movie"),
+                TagCode::DoAbc2 => tracing::warn!("DoABC2 tag in AVM1 movie"),
+                _ => unreachable!(),
+            }
+
+            return Ok(());
+        }
+
         let cur_frame = self.preload_progress.cur_preload_frame.get() - 1;
         let abc = match tag_code {
             TagCode::DoAbc | TagCode::DoAbc2 => {
