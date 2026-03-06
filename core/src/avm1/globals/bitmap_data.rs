@@ -3,6 +3,7 @@
 use super::matrix::object_to_matrix;
 use crate::avm1::globals::bitmap_filter;
 use crate::avm1::globals::color_transform::ColorTransformObject;
+use crate::avm1::globals::movie_clip::object_to_rectangle;
 use crate::avm1::object::NativeObject;
 use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
@@ -530,9 +531,12 @@ fn draw<'gc>(
         }
     }
 
-    if args.get(4).is_some() {
-        avm1_stub!(activation, "BitmapData", "draw", "with clip rect");
-    }
+    let clip_rect = args
+        .get(4)
+        .and_then(|o| o.coerce_to_object_or_bare(activation).ok())
+        .and_then(|o| object_to_rectangle(activation, o).ok())
+        .unwrap_or_default();
+
     let smoothing = args
         .get(5)
         .unwrap_or(&false.into())
@@ -564,7 +568,7 @@ fn draw<'gc>(
         },
         smoothing,
         blend_mode,
-        None,
+        clip_rect,
         quality,
     ) {
         Ok(()) => {}
