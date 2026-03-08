@@ -247,8 +247,23 @@ impl<'gc> FocusTracker<'gc> {
     ) -> bool {
         let target = target
             .map(|int| int.as_displayobject())
-            .unwrap_or_else(|| context.stage.as_displayobject())
-            .object2();
+            .or_else(|| {
+                // The current focus as the stage is only used
+                // if the interactive object is AVM2.
+                //
+                // TODO: Clicking a non-interactive AVM1 object should
+                // fire the focus event with the related object
+                // as the root LoaderDisplay.
+                if related_object
+                    .is_none_or(|ro| ro.as_displayobject().movie().is_action_script_3())
+                {
+                    Some(context.stage.as_displayobject())
+                } else {
+                    None
+                }
+            })
+            .and_then(|t| t.object2());
+
         let Some(target) = target else {
             return false;
         };

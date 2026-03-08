@@ -1,0 +1,9 @@
+mouse [object TextField]
+mouse null
+mouse null
+mouse [object TextField]
+mouse null
+mouse [object MovieClip]
+mouse [object TextField]
+key [object TextField]
+key null
