@@ -2,7 +2,7 @@ Test constructor complete
 frameConstructed dispatched
 Number of root children: 0
 placed theSprite: null
-theSprite: null
+theSprite global variable: null
 frame 2 framescript: On frame 2
 frame 2 framescript: Ran gotoAndStop(3) from frame 2
 Start of TheSprite ctor
@@ -13,16 +13,16 @@ frame 3 framescript: Ran gotoAndStop(3) from frame 3
 exitFrame dispatched
 Number of root children: 1
 placed theSprite: [object TheSprite]
-theSprite: [object TheSprite]
+theSprite global variable: [object TheSprite]
 enterFrame dispatched
 Number of root children: 1
 placed theSprite: [object TheSprite]
-theSprite: [object TheSprite]
+theSprite global variable: [object TheSprite]
 frameConstructed dispatched
 Number of root children: 1
 placed theSprite: [object TheSprite]
-theSprite: [object TheSprite]
+theSprite global variable: [object TheSprite]
 exitFrame dispatched
 Number of root children: 1
 placed theSprite: [object TheSprite]
-theSprite: [object TheSprite]
+theSprite global variable: [object TheSprite]
