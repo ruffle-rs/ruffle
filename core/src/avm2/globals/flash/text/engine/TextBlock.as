@@ -145,28 +145,13 @@ package flash.text.engine {
             fitSomething:Boolean = false
         ):TextLine;
 
-        public function recreateTextLine(
+        public native function recreateTextLine(
             textLine:TextLine,
             previousLine:TextLine = null,
             width:Number = 1000000,
             lineOffset:Number = 0,
             fitSomething:Boolean = false
-        ):TextLine {
-            if (textLine == null) {
-                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
-            }
-
-            if (previousLine) {
-                return null;
-            }
-
-            stub_method("flash.text.engine.TextBlock", "recreateTextLine");
-
-            // FIXME: Properly recalculate new properties of new TextLine. Text layout
-            // modules often depend on this returning the same textLine, so we can't
-            // call `createTextLine` again.
-            return textLine;
-        }
+        ):TextLine;
 
         public function get textLineCreationResult():String {
             return this._textLineCreationResult;

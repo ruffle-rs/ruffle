@@ -25,6 +25,9 @@ package flash.text.engine {
         [Ruffle(NativeAccessible)]
         private var _rawTextLength:int = 0;
 
+        [Ruffle(NativeAccessible)]
+        private var _textBlockBeginIndex:int = 0;
+
         internal var _validity:String = "valid";
 
         public static const MAX_LINE_WIDTH:int = 1000000;
@@ -36,8 +39,7 @@ package flash.text.engine {
         }
 
         public function get textBlockBeginIndex():int {
-            stub_getter("flash.text.engine.TextLine", "textBlockBeginIndex");
-            return 0;
+            return this._textBlockBeginIndex;
         }
 
         public function get specifiedWidth():Number {
