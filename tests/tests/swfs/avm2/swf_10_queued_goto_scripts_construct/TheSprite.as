@@ -5,7 +5,7 @@ package {
         public function TheSprite() {
             trace("Start of TheSprite ctor");
             super();
-            theSprite = this;
+            theSpriteGlobalVar = this;
             trace("End of TheSprite ctor");
         }
     }
