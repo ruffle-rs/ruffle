@@ -96,21 +96,18 @@ pub fn perform_automated_event(evt: &AutomatedEvent, player: &mut Player) {
         AutomatedEvent::Wait | AutomatedEvent::SetClipboardText { .. } => unreachable!(),
     });
 
-    #[expect(clippy::single_match)]
     match evt {
         AutomatedEvent::MouseDown {
             assert_handled: Some(assert_handled),
             ..
-        } => {
-            if handled != assert_handled.value {
-                panic!(
-                    "Event handled status assertion failed: \n\
-                            \x20   expected to be handled: {}\n\
-                            \x20   was handled: {}\n\
-                            \x20   message: {}",
-                    assert_handled.value, handled, assert_handled.message
-                );
-            }
+        } if handled != assert_handled.value => {
+            panic!(
+                "Event handled status assertion failed: \n\
+                        \x20   expected to be handled: {}\n\
+                        \x20   was handled: {}\n\
+                        \x20   message: {}",
+                assert_handled.value, handled, assert_handled.message
+            );
         }
         _ => {}
     }

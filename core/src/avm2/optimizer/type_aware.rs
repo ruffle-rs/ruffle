@@ -2279,6 +2279,7 @@ fn optimize_call_property<'gc>(
                 let return_type = method.resolved_return_type();
                 return Ok(Some((result_op, return_type)));
             }
+            #[allow(clippy::collapsible_match)]
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
                 // Don't optimize this for `callpropvoid`
                 if push_return_value {

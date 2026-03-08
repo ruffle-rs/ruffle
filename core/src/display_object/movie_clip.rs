@@ -1065,7 +1065,7 @@ impl<'gc> MovieClip<'gc> {
             .map(|(frame, label)| (label.clone(), *frame))
             .collect();
 
-        values.sort_unstable_by(|(_, framea), (_, frameb)| framea.cmp(frameb));
+        values.sort_unstable_by_key(|(_, frame)| *frame);
 
         values
     }
@@ -4020,9 +4020,7 @@ impl<'gc, 'a> MovieClipShared<'gc> {
     fn scene_and_frame_labels(&self, reader: &mut SwfStream<'_>) -> Result<(), Error> {
         let mut shared = self.cell.borrow_mut();
         let mut sfl_data = reader.read_define_scene_and_frame_label_data()?;
-        sfl_data
-            .scenes
-            .sort_unstable_by(|s1, s2| s1.frame_num.cmp(&s2.frame_num));
+        sfl_data.scenes.sort_unstable_by_key(|s| s.frame_num);
 
         for (i, FrameLabelData { frame_num, label }) in sfl_data.scenes.iter().enumerate() {
             let start = *frame_num as u16 + 1;

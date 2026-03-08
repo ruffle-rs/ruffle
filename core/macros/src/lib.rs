@@ -126,16 +126,12 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
                 let mut is_no_dynamic = false;
 
                 method.attrs.retain(|attr| match &attr.meta {
-                    Meta::Path(path) => {
-                        if path.is_ident("no_dynamic") {
-                            is_no_dynamic = true;
+                    Meta::Path(path) if path.is_ident("no_dynamic") => {
+                        is_no_dynamic = true;
 
-                            // Remove the #[no_dynamic] attribute from the
-                            // list of method attributes.
-                            false
-                        } else {
-                            true
-                        }
+                        // Remove the #[no_dynamic] attribute from the
+                        // list of method attributes.
+                        false
                     }
                     _ => true,
                 });
