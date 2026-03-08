@@ -686,16 +686,13 @@ fn read_op<R: Read>(
 }
 
 fn validate_op(op: &Operation) -> Result<()> {
-    #[expect(clippy::single_match)]
     match op {
         Operation::Normal {
             opcode: Opcode::Ceil,
             dst,
             src,
-        } => {
-            if dst.kind != PixelBenderRegKind::Float || src.kind != PixelBenderRegKind::Float {
-                return Err(PixelBenderParsingError::UnsupportedRegisterKinds);
-            }
+        } if dst.kind != PixelBenderRegKind::Float || src.kind != PixelBenderRegKind::Float => {
+            return Err(PixelBenderParsingError::UnsupportedRegisterKinds);
         }
         _ => {}
     };

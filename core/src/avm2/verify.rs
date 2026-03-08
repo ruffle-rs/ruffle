@@ -634,10 +634,10 @@ fn translate_op<'gc>(
         | AbcOp::DecLocal { index }
         | AbcOp::DecLocalI { index }
         | AbcOp::IncLocal { index }
-        | AbcOp::IncLocalI { index } => {
-            if index >= max_locals {
-                return Err(make_error_1025(activation, index));
-            }
+        | AbcOp::IncLocalI { index }
+            if index >= max_locals =>
+        {
+            return Err(make_error_1025(activation, index));
         }
 
         AbcOp::HasNext2 {
@@ -672,19 +672,17 @@ fn translate_op<'gc>(
             }
         }
 
-        AbcOp::GetOuterScope { index } => {
-            if activation.outer().get(index as usize).is_none() {
-                return Err(make_error_1019(activation, None));
-            }
+        AbcOp::GetOuterScope { index } if activation.outer().get(index as usize).is_none() => {
+            return Err(make_error_1019(activation, None));
         }
 
         AbcOp::GetSlot { index }
         | AbcOp::SetSlot { index }
         | AbcOp::GetGlobalSlot { index }
-        | AbcOp::SetGlobalSlot { index } => {
-            if index == 0 {
-                return Err(make_error_1026(activation, 0, None, None));
-            }
+        | AbcOp::SetGlobalSlot { index }
+            if index == 0 =>
+        {
+            return Err(make_error_1026(activation, 0, None, None));
         }
 
         AbcOp::Dxns { .. } | AbcOp::DxnsLate if !method.sets_dxns() => {
