@@ -1,6 +1,7 @@
 //! `TextFormat` impl
 
 use crate::avm1::object::NativeObject;
+use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
 use crate::display_object::{AutoSizeMode, EditText, TDisplayObject};
@@ -518,12 +519,7 @@ fn get_text_extent<'gc>(
         .cloned()
         .unwrap_or(Value::Undefined)
         .coerce_to_string(activation)?;
-    let width = args
-        .get(1)
-        .cloned()
-        .map(|v| v.coerce_to_f64(activation))
-        .transpose()?
-        .filter(|w| w.is_finite());
+    let width = args.try_get_f64(activation, 1, UndefinedAs::None)?;
 
     let temp_edittext = EditText::new(
         activation.context,
@@ -535,6 +531,7 @@ fn get_text_extent<'gc>(
     );
 
     temp_edittext.set_autosize(AutoSizeMode::Left, activation.context);
+    temp_edittext.set_is_device_font(activation.context, false);
     temp_edittext.set_word_wrap(width.is_some(), activation.context);
     temp_edittext.set_new_text_format(text_format.clone());
     temp_edittext.set_text(&text, activation.context);

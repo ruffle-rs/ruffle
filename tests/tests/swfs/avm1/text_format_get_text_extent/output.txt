@@ -1,9 +1,43 @@
-No width - textFieldWidth > 0: true
-No width - textFieldHeight > 0: true
-Undefined width - textFieldWidth > 0: true
-Undefined width - textFieldHeight > 0: true
+=== Embedded font ===
+No width:
+  textFieldWidth = 42
+  textFieldHeight = 26
+  width = 38
+  height = 22
+  ascent = 17
+  descent = 5
+Undefined width:
+  textFieldWidth = 42
+  textFieldHeight = 26
+  width = 38
+  height = 22
+  ascent = 17
+  descent = 5
+Same textFieldWidth: true
 Same width: true
-Width 50 - textFieldWidth > 0: true
-Width 50 - textFieldHeight > 0: true
-setTextFormat after getTextExtent: OK
-Text preserved: Hello World
+Width 50:
+  textFieldWidth = 50
+  textFieldHeight = 26
+  width = 38
+  height = 22
+  ascent = 17
+  descent = 5
+=== Non-existent font ===
+Non-existent font:
+  textFieldWidth = 42
+  textFieldHeight = 26
+  width = 38
+  height = 22
+  ascent = 17
+  descent = 5
+Non-existent font undefined width:
+  textFieldWidth = 42
+  textFieldHeight = 26
+  width = 38
+  height = 22
+  ascent = 17
+  descent = 5
+Non-existent same textFieldWidth: true
+=== Side-effect test ===
+coerced
+Object width - textFieldWidth > 0: true
