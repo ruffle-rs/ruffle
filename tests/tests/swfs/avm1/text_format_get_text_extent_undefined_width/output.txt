@@ -1,0 +1,10 @@
+No width - textFieldWidth > 0: true
+No width - textFieldHeight > 0: true
+Undefined width - textFieldWidth > 0: true
+Undefined width - textFieldHeight > 0: true
+Same textFieldWidth: true
+Same textFieldHeight: true
+Width 50 - textFieldWidth > 0: true
+Width 50 - textFieldHeight > 0: true
+coerced
+Object width - textFieldWidth > 0: true

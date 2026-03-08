@@ -531,7 +531,6 @@ fn get_text_extent<'gc>(
     );
 
     temp_edittext.set_autosize(AutoSizeMode::Left, activation.context);
-    temp_edittext.set_is_device_font(activation.context, false);
     temp_edittext.set_word_wrap(width.is_some(), activation.context);
     temp_edittext.set_new_text_format(text_format.clone());
     temp_edittext.set_text(&text, activation.context);
