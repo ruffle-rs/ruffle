@@ -230,30 +230,6 @@ impl<'gc> Trait<'gc> {
         self.attributes.contains(TraitAttributes::OVERRIDE)
     }
 
-    /// Get the slot ID of this trait.
-    pub fn slot_id(&self) -> Option<usize> {
-        match self.kind {
-            TraitKind::Slot { slot_id, .. } => Some(slot_id),
-            TraitKind::Method { .. } => None,
-            TraitKind::Getter { .. } => None,
-            TraitKind::Setter { .. } => None,
-            TraitKind::Class { slot_id, .. } => Some(slot_id),
-            TraitKind::Const { slot_id, .. } => Some(slot_id),
-        }
-    }
-
-    /// Get the dispatch ID of this trait.
-    pub fn disp_id(&self) -> Option<usize> {
-        match self.kind {
-            TraitKind::Slot { .. } => None,
-            TraitKind::Method { disp_id, .. } => Some(disp_id),
-            TraitKind::Getter { disp_id, .. } => Some(disp_id),
-            TraitKind::Setter { disp_id, .. } => Some(disp_id),
-            TraitKind::Class { .. } => None,
-            TraitKind::Const { .. } => None,
-        }
-    }
-
     /// Get the method contained within this trait, if it has one.
     pub fn as_method(&self) -> Option<Method<'gc>> {
         match &self.kind {
