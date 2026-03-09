@@ -1,0 +1,7 @@
+abc
+abc
+abcde
+abcde
+Caught something while running test 2: TypeError: Error #1034: Type Coercion failed: cannot convert "abc" to Error.
+Caught something while running test 3: ReferenceError: Error #1069: Property toString not found on e and there is no default value.
+undefined
