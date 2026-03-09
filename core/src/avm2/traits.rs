@@ -8,6 +8,7 @@ use crate::avm2::class::Class;
 use crate::avm2::domain::Domain;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
+use crate::avm2::property::PropertyClass;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{Value, abc_default_value};
 use bitflags::bitflags;
@@ -75,9 +76,16 @@ pub enum TraitKind<'gc> {
     /// to.
     Slot {
         slot_id: usize,
-        type_name: Option<Gc<'gc, Multiname<'gc>>>,
+        slot_type: PropertyClass<'gc>,
         default_value: Value<'gc>,
-        domain: Domain<'gc>,
+    },
+
+    /// A data field on an object that is always a particular value, and cannot
+    /// be overridden.
+    Const {
+        slot_id: usize,
+        slot_type: PropertyClass<'gc>,
+        default_value: Value<'gc>,
     },
 
     /// A method on an object that can be called.
@@ -92,15 +100,6 @@ pub enum TraitKind<'gc> {
     /// A class property on an object that can be used to construct more
     /// objects.
     Class { slot_id: usize, class: Class<'gc> },
-
-    /// A data field on an object that is always a particular value, and cannot
-    /// be overridden.
-    Const {
-        slot_id: usize,
-        type_name: Option<Gc<'gc, Multiname<'gc>>>,
-        default_value: Value<'gc>,
-        domain: Domain<'gc>,
-    },
 }
 
 impl<'gc> Trait<'gc> {
@@ -115,9 +114,8 @@ impl<'gc> Trait<'gc> {
             attributes: TraitAttributes::empty(),
             kind: TraitKind::Const {
                 slot_id: 0,
+                slot_type: PropertyClass::name(type_name, domain),
                 default_value: default_value.unwrap_or_else(|| default_value_for_type(type_name)),
-                type_name,
-                domain,
             },
             metadata: None,
         }
@@ -144,9 +142,8 @@ impl<'gc> Trait<'gc> {
                     attributes: trait_attribs_from_abc_traits(abc_trait),
                     kind: TraitKind::Slot {
                         slot_id: slot_id as usize,
-                        type_name,
+                        slot_type: PropertyClass::name(type_name, unit.domain()),
                         default_value,
-                        domain: unit.domain(),
                     },
                     metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
                 }
@@ -200,9 +197,8 @@ impl<'gc> Trait<'gc> {
                     attributes: trait_attribs_from_abc_traits(abc_trait),
                     kind: TraitKind::Const {
                         slot_id: slot_id as usize,
-                        type_name,
+                        slot_type: PropertyClass::name(type_name, unit.domain()),
                         default_value,
-                        domain: unit.domain(),
                     },
                     metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
                 }
