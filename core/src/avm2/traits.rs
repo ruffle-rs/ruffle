@@ -5,7 +5,6 @@ use crate::avm2::Multiname;
 use crate::avm2::QName;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::domain::Domain;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
 use crate::avm2::property::PropertyClass;
@@ -103,19 +102,18 @@ pub enum TraitKind<'gc> {
 }
 
 impl<'gc> Trait<'gc> {
-    pub fn from_const(
-        name: QName<'gc>,
-        type_name: Option<Gc<'gc, Multiname<'gc>>>,
-        default_value: Option<Value<'gc>>,
-        domain: Domain<'gc>,
-    ) -> Self {
+    pub fn from_const(name: QName<'gc>, class: Option<Class<'gc>>) -> Self {
+        let slot_type = class
+            .map(PropertyClass::Class)
+            .unwrap_or(PropertyClass::Any);
+
         Trait {
             name,
             attributes: TraitAttributes::empty(),
             kind: TraitKind::Const {
                 slot_id: 0,
-                slot_type: PropertyClass::name(type_name, domain),
-                default_value: default_value.unwrap_or_else(|| default_value_for_type(type_name)),
+                slot_type,
+                default_value: default_value_for_class(class),
             },
             metadata: None,
         }
@@ -286,6 +284,29 @@ fn default_value_for_type<'gc>(type_name: Option<Gc<'gc, Multiname<'gc>>>) -> Va
             Value::Null
         }
     } else {
+        // Untyped aka `*`
+        Value::Undefined
+    }
+}
+
+/// Like `default_value_for_type`, but takes a `Class` instead of a `Multiname`.
+fn default_value_for_class<'gc>(type_class: Option<Class<'gc>>) -> Value<'gc> {
+    if let Some(type_class) = type_class {
+        if type_class.is_builtin_boolean() {
+            false.into()
+        } else if type_class.is_builtin_number() {
+            f64::NAN.into()
+        } else if type_class.is_builtin_int() {
+            0.into()
+        } else if type_class.is_builtin_string() {
+            Value::Null
+        } else if type_class.is_builtin_uint() {
+            0.into()
+        } else {
+            Value::Null
+        }
+    } else {
+        // Untyped aka `*`
         Value::Undefined
     }
 }
