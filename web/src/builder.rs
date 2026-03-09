@@ -728,7 +728,7 @@ impl RuffleInstanceBuilder {
             <dyn Any>::downcast_mut::<WebNavigatorBackend>(core.navigator_mut())
                 .expect("Expected WebNavigatorBackend")
                 .set_player(player_weak.clone());
-            core.local_connection_mut().set_player(player_weak.clone());
+            core.local_connection_mut().set_player(player_weak);
             // Set config parameters.
             core.set_volume(self.volume);
             core.set_background_color(self.background_color);

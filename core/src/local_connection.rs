@@ -9,11 +9,11 @@ use flash_lso::types::{AMFVersion, Element, Lso, Value as AmfValue};
 use fnv::FnvHashMap;
 use gc_arena::Collect;
 use gc_arena::collect::Trace;
-use std::str::FromStr;
 use ruffle_macros::istr;
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
 use std::rc::Rc;
+use std::str::FromStr;
 
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
@@ -261,10 +261,7 @@ impl<'gc> LocalConnections<'gc> {
         } else {
             QueuedMessageKind::Failure
         };
-        self.messages.push(QueuedMessage {
-            source,
-            kind,
-        });
+        self.messages.push(QueuedMessage { source, kind });
     }
 
     fn find_listener(&self, name: &WStr) -> Option<LocalConnectionKind<'gc>> {
@@ -368,20 +365,38 @@ mod tests {
 
     #[test]
     fn test_get_superdomain() {
-        assert_eq!(LocalConnections::get_superdomain("www.someDomain.com"), "someDomain.com");
-        assert_eq!(LocalConnections::get_superdomain("someDomain.com"), "someDomain.com");
+        assert_eq!(
+            LocalConnections::get_superdomain("www.someDomain.com"),
+            "someDomain.com"
+        );
+        assert_eq!(
+            LocalConnections::get_superdomain("someDomain.com"),
+            "someDomain.com"
+        );
         assert_eq!(LocalConnections::get_superdomain("localhost"), "localhost");
         assert_eq!(LocalConnections::get_superdomain("a.b.c.d.com"), "d.com");
         assert_eq!(LocalConnections::get_superdomain("com"), "com");
         assert_eq!(LocalConnections::get_superdomain(""), "");
         assert_eq!(LocalConnections::get_superdomain("127.0.0.1"), "127.0.0.1");
-        assert_eq!(LocalConnections::get_superdomain("192.168.1.100"), "192.168.1.100");
+        assert_eq!(
+            LocalConnections::get_superdomain("192.168.1.100"),
+            "192.168.1.100"
+        );
     }
 
     #[test]
     fn test_get_domain() {
-        assert_eq!(&*LocalConnections::get_domain("http://www.adobe.com/foo.swf"), "www.adobe.com");
-        assert_eq!(&*LocalConnections::get_domain("file:///C:/foo.swf"), "localhost");
-        assert_eq!(&*LocalConnections::get_domain("http://localhost/foo.swf"), "localhost");
+        assert_eq!(
+            &*LocalConnections::get_domain("http://www.adobe.com/foo.swf"),
+            "www.adobe.com"
+        );
+        assert_eq!(
+            &*LocalConnections::get_domain("file:///C:/foo.swf"),
+            "localhost"
+        );
+        assert_eq!(
+            &*LocalConnections::get_domain("http://localhost/foo.swf"),
+            "localhost"
+        );
     }
 }

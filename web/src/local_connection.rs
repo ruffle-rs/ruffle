@@ -78,8 +78,7 @@ impl WebLocalConnectionBackend {
 
         // Set up a beforeunload handler to clean up localStorage entries
         // in case the tab is closed without explicit close() calls.
-        let registered_names: Rc<RefCell<Vec<String>>> =
-            Rc::new(RefCell::new(Vec::new()));
+        let registered_names: Rc<RefCell<Vec<String>>> = Rc::new(RefCell::new(Vec::new()));
         let cleanup_ref = registered_names.clone();
         let on_beforeunload = Closure::wrap(Box::new(move |_event: web_sys::Event| {
             let names = cleanup_ref.borrow();
@@ -143,7 +142,9 @@ impl WebLocalConnectionBackend {
 
         let amf_data_js =
             js_sys::Reflect::get(data, &JsValue::from_str("amfData")).map_err(|_| ())?;
-        let amf_data_array = amf_data_js.dyn_into::<js_sys::Uint8Array>().map_err(|_| ())?;
+        let amf_data_array = amf_data_js
+            .dyn_into::<js_sys::Uint8Array>()
+            .map_err(|_| ())?;
         let amf_data = amf_data_array.to_vec();
 
         Ok(ExternalLocalConnectionMessage {

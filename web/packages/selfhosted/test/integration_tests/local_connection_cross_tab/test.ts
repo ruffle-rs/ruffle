@@ -5,7 +5,7 @@ import {
     waitForPlayerToLoad,
 } from "../../utils.js";
 import { expect } from "chai";
-import { Setup } from "ruffle-core";
+import { Player, Setup } from "ruffle-core";
 
 // Helpers to interact with the LocalConnection SWFs via ExternalInterface.
 
@@ -41,13 +41,12 @@ async function callExternalInterface(
 ): Promise<unknown> {
     const argsJson = JSON.stringify(args);
     return await browser.execute(
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (playerElement, methodName, argsJson) => {
             const name = methodName as unknown as string;
             const parsedArgs = JSON.parse(
                 argsJson as unknown as string,
             ) as unknown[];
-            return (playerElement as any)
+            return (playerElement as Player.PlayerElement)
                 .ruffle()
                 .callExternalInterface(name, ...parsedArgs);
         },
@@ -129,8 +128,6 @@ async function cleanupLocalStorage(browser: WebdriverIO.Browser) {
     });
 }
 
-
-
 describe("LocalConnection cross-tab", () => {
     let tabA: string;
     let tabB: string;
@@ -154,7 +151,9 @@ describe("LocalConnection cross-tab", () => {
         tabA = handles[0]!;
 
         // Tab B: sender in new window
-        await browser.newWindow("http://localhost:4567/test_assets/js_api.html");
+        await browser.newWindow(
+            "http://localhost:4567/test_assets/js_api.html",
+        );
         await injectRuffleAndWait(browser);
         senderPlayer = await createPlayer(
             browser,
@@ -194,12 +193,7 @@ describe("LocalConnection cross-tab", () => {
     it("cross-tab send delivers message to receiver", async () => {
         // Sender sends from Tab B
         await switchToTab(browser, tabB);
-        await sendMessage(
-            browser,
-            senderPlayer,
-            "testChannel",
-            "test",
-        );
+        await sendMessage(browser, senderPlayer, "testChannel", "test");
         await expectTraceOutput(browser, senderPlayer, [
             "sent:testChannel:test",
         ]);
@@ -256,12 +250,7 @@ describe("LocalConnection cross-tab", () => {
 
     it("send to non-existent channel gets error status", async () => {
         await switchToTab(browser, tabB);
-        await sendMessage(
-            browser,
-            senderPlayer,
-            "nonExistentChannel",
-            "test",
-        );
+        await sendMessage(browser, senderPlayer, "nonExistentChannel", "test");
         await expectTraceOutput(browser, senderPlayer, [
             "sent:nonExistentChannel:test",
         ]);
@@ -270,12 +259,7 @@ describe("LocalConnection cross-tab", () => {
 
     it("case insensitive channel names", async () => {
         await switchToTab(browser, tabB);
-        await sendMessage(
-            browser,
-            senderPlayer,
-            "TESTCHANNEL",
-            "test",
-        );
+        await sendMessage(browser, senderPlayer, "TESTCHANNEL", "test");
         await expectTraceOutput(browser, senderPlayer, [
             "sent:TESTCHANNEL:test",
         ]);
@@ -296,12 +280,7 @@ describe("LocalConnection cross-tab", () => {
 
         // Send from Tab B - should fail now
         await switchToTab(browser, tabB);
-        await sendMessage(
-            browser,
-            senderPlayer,
-            "testChannel",
-            "test",
-        );
+        await sendMessage(browser, senderPlayer, "testChannel", "test");
         await expectTraceOutput(browser, senderPlayer, [
             "sent:testChannel:test",
         ]);
@@ -341,12 +320,7 @@ describe("LocalConnection cross-tab", () => {
 
         // Send from Tab B
         await switchToTab(browser, tabB);
-        await sendMessage(
-            browser,
-            senderPlayer,
-            "_globalChannel",
-            "test",
-        );
+        await sendMessage(browser, senderPlayer, "_globalChannel", "test");
         await expectTraceOutput(browser, senderPlayer, [
             "sent:_globalChannel:test",
         ]);
@@ -401,12 +375,7 @@ describe("LocalConnection cross-tab", () => {
         });
 
         // Sender sends to "staleChannel2". It should fail with status error because the listener is considered dead.
-        await sendMessage(
-            browser,
-            senderPlayer,
-            "staleChannel2",
-            "test",
-        );
+        await sendMessage(browser, senderPlayer, "staleChannel2", "test");
         await expectTraceOutput(browser, senderPlayer, [
             "sent:staleChannel2:test",
         ]);
@@ -428,13 +397,13 @@ describe("LocalConnection cross-tab", () => {
         await switchToTab(browser, tabB);
         // Generate a 41KB string
         const hugeString = "A".repeat(41 * 1024);
-        
+
         await sendMessage(
             browser,
             senderPlayer,
             "hugeChannel",
             "test",
-            hugeString
+            hugeString,
         );
         await expectTraceOutput(browser, senderPlayer, [
             "sent:hugeChannel:test",
@@ -450,7 +419,9 @@ describe("LocalConnection cross-tab", () => {
 
     it("cleans up localStorage on beforeunload", async () => {
         // We need a pristine new tab for this test so we can safely close it.
-        await browser.newWindow("http://localhost:4567/test_assets/js_api.html");
+        await browser.newWindow(
+            "http://localhost:4567/test_assets/js_api.html",
+        );
         await injectRuffleAndWait(browser);
         const tempPlayer = await createPlayer(
             browser,
@@ -458,7 +429,7 @@ describe("LocalConnection cross-tab", () => {
         );
         const handles = await browser.getWindowHandles();
         const tempTab = handles[handles.length - 1]!;
-        
+
         await switchToTab(browser, tempTab);
         const result = await connectReceiver(
             browser,
@@ -472,9 +443,13 @@ describe("LocalConnection cross-tab", () => {
 
         // Verify it was added to localStorage
         const hasKey = await browser.execute(() => {
-            return window.localStorage.getItem("__ruffle_lc:localhost:unloadchannel") !== null;
+            return (
+                window.localStorage.getItem(
+                    "__ruffle_lc:localhost:unloadchannel",
+                ) !== null
+            );
         });
-        expect(hasKey).to.be.true;
+        expect(hasKey).to.equal(true);
 
         // Navigate away, which guarantees beforeunload/unload are fired
         await browser.url("about:blank");
@@ -486,9 +461,12 @@ describe("LocalConnection cross-tab", () => {
 
         // Verify it was removed from localStorage by the navigated tab's beforeunload handler
         const hasKeyAfter = await browser.execute(() => {
-            return window.localStorage.getItem("__ruffle_lc:localhost:unloadchannel") !== null;
+            return (
+                window.localStorage.getItem(
+                    "__ruffle_lc:localhost:unloadchannel",
+                ) !== null
+            );
         });
-        expect(hasKeyAfter).to.be.false;
-
+        expect(hasKeyAfter).to.equal(false);
     });
 });
