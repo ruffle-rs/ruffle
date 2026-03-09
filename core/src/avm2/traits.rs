@@ -102,7 +102,7 @@ pub enum TraitKind<'gc> {
 }
 
 impl<'gc> Trait<'gc> {
-    pub fn from_const(name: QName<'gc>, class: Option<Class<'gc>>) -> Self {
+    pub fn new_slot(name: QName<'gc>, class: Option<Class<'gc>>) -> Self {
         let slot_type = class
             .map(PropertyClass::Class)
             .unwrap_or(PropertyClass::Any);
@@ -110,7 +110,7 @@ impl<'gc> Trait<'gc> {
         Trait {
             name,
             attributes: TraitAttributes::empty(),
-            kind: TraitKind::Const {
+            kind: TraitKind::Slot {
                 slot_id: 0,
                 slot_type,
                 default_value: default_value_for_class(class),
