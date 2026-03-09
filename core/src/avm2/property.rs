@@ -124,6 +124,14 @@ impl<'gc> PropertyClass<'gc> {
             PropertyClass::Any => istr!(context, "*"),
         }
     }
+
+    pub fn get_local_name(&self) -> Option<AvmString<'gc>> {
+        match self {
+            PropertyClass::Class(class) => Some(class.name().local_name()),
+            PropertyClass::Name(name, _) => name.local_name(),
+            PropertyClass::Any => None,
+        }
+    }
 }
 
 impl Property {

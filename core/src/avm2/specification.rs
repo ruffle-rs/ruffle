@@ -365,16 +365,28 @@ impl Definition {
             let trait_name = class_trait.name().local_name().to_string();
             match class_trait.kind() {
                 TraitKind::Slot {
-                    type_name,
+                    slot_type,
                     default_value,
                     ..
                 } => {
                     output.get_or_insert_default().variables.insert(
                         trait_name,
                         VariableInfo {
-                            type_info: type_name
-                                .and_then(|m| m.local_name())
-                                .map(|n| n.to_string()),
+                            type_info: slot_type.get_local_name().map(|n| n.to_string()),
+                            value: format_value(default_value),
+                            stubbed: false,
+                        },
+                    );
+                }
+                TraitKind::Const {
+                    slot_type,
+                    default_value,
+                    ..
+                } => {
+                    output.get_or_insert_default().constants.insert(
+                        trait_name,
+                        VariableInfo {
+                            type_info: slot_type.get_local_name().map(|n| n.to_string()),
                             value: format_value(default_value),
                             stubbed: false,
                         },
@@ -424,22 +436,6 @@ impl Definition {
                     );
                 }
                 TraitKind::Class { .. } => {}
-                TraitKind::Const {
-                    type_name,
-                    default_value,
-                    ..
-                } => {
-                    output.get_or_insert_default().constants.insert(
-                        trait_name,
-                        VariableInfo {
-                            type_info: type_name
-                                .and_then(|m| m.local_name())
-                                .map(|n| n.to_string()),
-                            value: format_value(default_value),
-                            stubbed: false,
-                        },
-                    );
-                }
             }
         }
     }
