@@ -948,14 +948,15 @@ impl<'gc> Class<'gc> {
     pub fn for_catch(
         activation: &mut Activation<'_, 'gc>,
         variable_name: QName<'gc>,
+        target_class: Option<Class<'gc>>,
     ) -> Result<Class<'gc>, Error<'gc>> {
         // Yes, the name of the class is the variable's name
         let mut i_class = ClassData::empty(variable_name);
         i_class.attributes = Cell::new(ClassAttributes::FINAL | ClassAttributes::SEALED);
-        // TODO make the slot typed
-        let domain = activation.avm2().playerglobals_domain;
-        let traits: Box<[_]> = Box::new([Trait::from_const(variable_name, None, None, domain)]);
+
+        let traits: Box<[_]> = Box::new([Trait::from_const(variable_name, target_class)]);
         i_class.traits = OnceLock::from(traits);
+
         let i_class = Class(Gc::new(activation.gc(), i_class));
         i_class.init_vtable(activation)?;
 
