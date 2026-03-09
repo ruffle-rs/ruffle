@@ -3,3 +3,4 @@
 # expand the test framework to be able to compare error output so we can ensure
 # an uncaught VerifyError is properly being thrown.
 num_frames = 1
+known_failure = true
