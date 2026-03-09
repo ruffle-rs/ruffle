@@ -42,9 +42,9 @@
         "tsx": "^4.21.0",
         "typedoc-plugin-mdn-links": "^5.1.1",
         "typescript": "^5.9.3",
-        "typescript-eslint": "^8.56.1",
+        "typescript-eslint": "^8.57.0",
         "webdriverio": "^9.24.0",
-        "webpack": "^5.105.3",
+        "webpack": "^5.105.4",
         "webpack-cli": "^6.0.1",
         "workspace-version": "^0.1.4"
     },
