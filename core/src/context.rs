@@ -10,6 +10,7 @@ use crate::avm2::api_version::ApiVersion;
 use crate::avm2::{Avm2, LoaderInfoObject, SharedObjectObject, SoundChannelObject};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
+    local_connection::LocalConnectionBackend,
     log::LogBackend,
     navigator::NavigatorBackend,
     storage::StorageBackend,
@@ -107,6 +108,9 @@ pub struct UpdateContext<'gc> {
 
     /// The storage backend, used for storing persistent state
     pub storage: &'gc mut dyn StorageBackend,
+
+    /// The local connection backend, used for cross-context LocalConnection transport.
+    pub local_connection_backend: &'gc mut dyn LocalConnectionBackend,
 
     /// The logging backend, used for trace output capturing.
     ///
