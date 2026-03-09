@@ -954,7 +954,7 @@ impl<'gc> Class<'gc> {
         let mut i_class = ClassData::empty(variable_name);
         i_class.attributes = Cell::new(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-        let traits: Box<[_]> = Box::new([Trait::from_const(variable_name, target_class)]);
+        let traits: Box<[_]> = Box::new([Trait::new_slot(variable_name, target_class)]);
         i_class.traits = OnceLock::from(traits);
 
         let i_class = Class(Gc::new(activation.gc(), i_class));
