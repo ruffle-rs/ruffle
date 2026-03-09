@@ -60,10 +60,10 @@ impl WebLocalConnectionBackend {
             match Self::parse_message(&data) {
                 Ok(msg) => {
                     incoming_clone.borrow_mut().push(msg);
-                    if let Some(player) = player_clone.borrow().as_ref().and_then(|p| p.upgrade()) {
-                        if let Ok(mut player_lock) = player.try_lock() {
-                            player_lock.update_local_connections();
-                        }
+                    if let Some(player) = player_clone.borrow().as_ref().and_then(|p| p.upgrade())
+                        && let Ok(mut player_lock) = player.try_lock()
+                    {
+                        player_lock.update_local_connections();
                     }
                 }
                 Err(()) => {
@@ -283,13 +283,13 @@ impl Drop for WebLocalConnectionBackend {
         }
 
         // Remove beforeunload listener.
-        if let Some(ref closure) = self._on_beforeunload {
-            if let Some(window) = web_sys::window() {
-                let _ = window.remove_event_listener_with_callback(
-                    "beforeunload",
-                    closure.as_ref().unchecked_ref(),
-                );
-            }
+        if let Some(ref closure) = self._on_beforeunload
+            && let Some(window) = web_sys::window()
+        {
+            let _ = window.remove_event_listener_with_callback(
+                "beforeunload",
+                closure.as_ref().unchecked_ref(),
+            );
         }
     }
 }
