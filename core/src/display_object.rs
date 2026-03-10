@@ -2554,6 +2554,11 @@ pub trait TDisplayObject<'gc>:
             .unwrap_or(Avm1Value::Undefined)
     }
 
+    #[no_dynamic]
+    fn object1_or_null(self) -> Avm1Value<'gc> {
+        self.object1().map(|o| o.into()).unwrap_or(Avm1Value::Null)
+    }
+
     /// Equivalent to `self.object1_or_undef().coerce_to_object_or_bare()`, but avoids
     /// the need for an activation.
     ///
