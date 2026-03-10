@@ -13,19 +13,19 @@ package {
                 trace("enterFrame dispatched");
                 trace("Number of root children: " + self.numChildren);
                 trace("placed theSprite: " + self.theSprite);
-                trace("theSprite: " + theSprite);
+                trace("theSprite global variable: " + theSpriteGlobalVar);
             });
             addEventListener("frameConstructed",function(e:*):void {
                 trace("frameConstructed dispatched");
                 trace("Number of root children: " + self.numChildren);
                 trace("placed theSprite: " + self.theSprite);
-                trace("theSprite: " + theSprite);
+                trace("theSprite global variable: " + theSpriteGlobalVar);
             });
             addEventListener("exitFrame",function(e:*):void {
                 trace("exitFrame dispatched");
                 trace("Number of root children: " + self.numChildren);
                 trace("placed theSprite: " + self.theSprite);
-                trace("theSprite: " + theSprite);
+                trace("theSprite global variable: " + theSpriteGlobalVar);
             });
             addFrameScript(1,frame2,2,frame3);
             gotoAndStop(2);
