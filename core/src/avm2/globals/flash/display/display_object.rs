@@ -907,7 +907,7 @@ pub fn object_to_rectangle<'gc>(
 
     let mut values = [0.0; 4];
     for (slot, value) in SLOTS.iter().zip(&mut values) {
-        *value = object.get_slot(*slot).coerce_to_number(activation)?;
+        *value = object.get_slot(*slot).as_f64();
     }
 
     let [x, y, width, height] = values;
@@ -955,12 +955,8 @@ pub fn local_to_global<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let point = args.get_object(activation, 0, "point")?;
-        let x = point
-            .get_slot(point_slots::X)
-            .coerce_to_number(activation)?;
-        let y = point
-            .get_slot(point_slots::Y)
-            .coerce_to_number(activation)?;
+        let x = point.get_slot(point_slots::X).as_f64();
+        let y = point.get_slot(point_slots::Y).as_f64();
 
         let local = Point::from_pixels(x, y);
         let global = dobj.local_to_global(local);
@@ -982,12 +978,8 @@ pub fn global_to_local<'gc>(
 
     if let Some(dobj) = this.as_display_object() {
         let point = args.get_object(activation, 0, "point")?;
-        let x = point
-            .get_slot(point_slots::X)
-            .coerce_to_number(activation)?;
-        let y = point
-            .get_slot(point_slots::Y)
-            .coerce_to_number(activation)?;
+        let x = point.get_slot(point_slots::X).as_f64();
+        let y = point.get_slot(point_slots::Y).as_f64();
 
         let global = Point::from_pixels(x, y);
         let local = dobj.global_to_local(global).unwrap_or(global);
