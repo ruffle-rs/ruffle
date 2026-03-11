@@ -151,7 +151,7 @@ pub fn set_scale9grid<'gc>(
     if let Some(dobj) = this.as_display_object() {
         let rect = match args.try_get_object(0) {
             None => Rectangle::default(),
-            Some(rect) => object_to_rectangle(activation, rect)?,
+            Some(rect) => object_to_rectangle(rect),
         };
         dobj.set_scaling_grid(rect);
     }
@@ -894,10 +894,7 @@ pub fn get_scroll_rect<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn object_to_rectangle<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    object: Object<'gc>,
-) -> Result<Rectangle<Twips>, Error<'gc>> {
+pub fn object_to_rectangle<'gc>(object: Object<'gc>) -> Rectangle<Twips> {
     const SLOTS: &[usize] = &[
         rectangle_slots::X,
         rectangle_slots::Y,
@@ -911,16 +908,16 @@ pub fn object_to_rectangle<'gc>(
     }
 
     let [x, y, width, height] = values;
-    Ok(Rectangle {
+    Rectangle {
         x_min: Twips::from_pixels_i32(round_to_even(x)),
         y_min: Twips::from_pixels_i32(round_to_even(y)),
         x_max: Twips::from_pixels_i32(round_to_even(x + width)),
         y_max: Twips::from_pixels_i32(round_to_even(y + height)),
-    })
+    }
 }
 
 pub fn set_scroll_rect<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -936,7 +933,7 @@ pub fn set_scroll_rect<'gc>(
             // operate on a `next_scroll_rect` field. Just before we render a DisplayObject, we copy
             // its `next_scroll_rect` to the `scroll_rect` field used for both rendering and
             // `localToGlobal`.
-            dobj.set_next_scroll_rect(object_to_rectangle(activation, rectangle)?);
+            dobj.set_next_scroll_rect(object_to_rectangle(rectangle));
 
             dobj.set_has_scroll_rect(true);
         } else {
