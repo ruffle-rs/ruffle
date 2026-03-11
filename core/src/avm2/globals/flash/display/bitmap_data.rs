@@ -9,6 +9,7 @@ use crate::avm2::error::{
 };
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::globals::flash::geom::transform::object_to_color_transform;
+use crate::avm2::globals::flash::geom::transform::object_to_matrix;
 use crate::avm2::globals::slots::{
     flash_geom_point as point_slots, flash_geom_rectangle as rectangle_slots,
 };
@@ -919,8 +920,7 @@ pub fn draw<'gc>(
         let mut blend_mode = BlendMode::Normal;
 
         if let Some(matrix) = args.try_get_object(1) {
-            transform.matrix =
-                crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
+            transform.matrix = object_to_matrix(matrix);
         }
 
         if let Some(color_transform) = args.try_get_object(2) {
@@ -996,8 +996,7 @@ pub fn draw_with_quality<'gc>(
         let mut blend_mode = BlendMode::Normal;
 
         if let Some(matrix) = args.try_get_object(1) {
-            transform.matrix =
-                crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
+            transform.matrix = object_to_matrix(matrix);
         }
 
         if let Some(color_transform) = args.try_get_object(2) {

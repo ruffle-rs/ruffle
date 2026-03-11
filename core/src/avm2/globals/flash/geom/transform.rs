@@ -69,7 +69,7 @@ pub fn get_matrix<'gc>(
 }
 
 pub fn set_matrix<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -81,7 +81,7 @@ pub fn set_matrix<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let matrix = object_to_matrix(obj, activation)?;
+    let matrix = object_to_matrix(obj);
     dobj.set_matrix(matrix);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
@@ -275,34 +275,15 @@ pub fn matrix_to_object<'gc>(
     Ok(object)
 }
 
-pub fn object_to_matrix<'gc>(
-    object: Object<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<Matrix, Error<'gc>> {
-    let a = object
-        .get_slot(matrix_slots::A)
-        .coerce_to_number(activation)? as f32;
-    let b = object
-        .get_slot(matrix_slots::B)
-        .coerce_to_number(activation)? as f32;
-    let c = object
-        .get_slot(matrix_slots::C)
-        .coerce_to_number(activation)? as f32;
-    let d = object
-        .get_slot(matrix_slots::D)
-        .coerce_to_number(activation)? as f32;
-    let tx = Twips::from_pixels(
-        object
-            .get_slot(matrix_slots::TX)
-            .coerce_to_number(activation)?,
-    );
-    let ty = Twips::from_pixels(
-        object
-            .get_slot(matrix_slots::TY)
-            .coerce_to_number(activation)?,
-    );
+pub fn object_to_matrix<'gc>(object: Object<'gc>) -> Matrix {
+    let a = object.get_slot(matrix_slots::A).as_f64() as f32;
+    let b = object.get_slot(matrix_slots::B).as_f64() as f32;
+    let c = object.get_slot(matrix_slots::C).as_f64() as f32;
+    let d = object.get_slot(matrix_slots::D).as_f64() as f32;
+    let tx = Twips::from_pixels(object.get_slot(matrix_slots::TX).as_f64());
+    let ty = Twips::from_pixels(object.get_slot(matrix_slots::TY).as_f64());
 
-    Ok(Matrix { a, b, c, d, tx, ty })
+    Matrix { a, b, c, d, tx, ty }
 }
 
 pub fn get_pixel_bounds<'gc>(
