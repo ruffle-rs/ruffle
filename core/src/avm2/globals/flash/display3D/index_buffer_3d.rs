@@ -57,10 +57,10 @@ pub fn upload_from_vector<'gc>(
             .iter()
             .map(|val| {
                 // FIXME - use the low 16 bytes
-                val.coerce_to_u32(activation).map(|val| val as u16)
+                val.as_u32() as u16
             })
             .take(count as usize)
-            .collect::<Result<Vec<u16>, _>>()?;
+            .collect::<Vec<_>>();
 
         let data_bytes = bytemuck::cast_slice::<u16, u8>(&data);
 
