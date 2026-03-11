@@ -15,7 +15,7 @@ pub fn stop<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let id = this.get_slot(slots::_TIMER_ID).coerce_to_i32(activation)?;
+    let id = this.get_slot(slots::_TIMER_ID).as_i32();
 
     if id != -1 {
         activation.context.timers.remove(id);
@@ -33,9 +33,9 @@ pub fn start<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let id = this.get_slot(slots::_TIMER_ID).coerce_to_i32(activation)?;
+    let id = this.get_slot(slots::_TIMER_ID).as_i32();
 
-    let delay = this.get_slot(slots::_DELAY).coerce_to_i32(activation)?;
+    let delay = this.get_slot(slots::_DELAY).as_f64() as i32;
 
     if id == -1 {
         let on_update = this
@@ -68,9 +68,9 @@ pub fn update_delay<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let id = this.get_slot(slots::_TIMER_ID).coerce_to_i32(activation)?;
+    let id = this.get_slot(slots::_TIMER_ID).as_i32();
 
-    let delay = this.get_slot(slots::_DELAY).coerce_to_i32(activation)?;
+    let delay = this.get_slot(slots::_DELAY).as_f64() as i32;
 
     if id != -1 {
         activation.context.timers.set_delay(id, delay);
