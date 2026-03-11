@@ -194,21 +194,10 @@ pub fn start_drag<'gc>(
 
         let rectangle = args.try_get_object(1);
         let constraint = if let Some(rectangle) = rectangle {
-            let x = rectangle
-                .get_slot(rectangle_slots::X)
-                .coerce_to_number(activation)?;
-
-            let y = rectangle
-                .get_slot(rectangle_slots::Y)
-                .coerce_to_number(activation)?;
-
-            let width = rectangle
-                .get_slot(rectangle_slots::WIDTH)
-                .coerce_to_number(activation)?;
-
-            let height = rectangle
-                .get_slot(rectangle_slots::HEIGHT)
-                .coerce_to_number(activation)?;
+            let x = rectangle.get_slot(rectangle_slots::X).as_f64();
+            let y = rectangle.get_slot(rectangle_slots::Y).as_f64();
+            let width = rectangle.get_slot(rectangle_slots::WIDTH).as_f64();
+            let height = rectangle.get_slot(rectangle_slots::HEIGHT).as_f64();
 
             // Normalize the bounds.
             let mut x_min = Twips::from_pixels(x);
