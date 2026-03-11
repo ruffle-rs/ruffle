@@ -8,6 +8,7 @@ use crate::avm2::error::{
     make_error_2027,
 };
 use crate::avm2::filters::FilterAvm2Ext;
+use crate::avm2::globals::flash::geom::transform::object_to_color_transform;
 use crate::avm2::globals::slots::{
     flash_geom_point as point_slots, flash_geom_rectangle as rectangle_slots,
 };
@@ -690,11 +691,7 @@ pub fn color_transform<'gc>(
             let y_max = (y + height) as u32;
 
             let color_transform = args.get_object(activation, 1, "colorTransform")?;
-            let color_transform =
-                crate::avm2::globals::flash::geom::transform::object_to_color_transform(
-                    color_transform,
-                    activation,
-                )?;
+            let color_transform = object_to_color_transform(color_transform);
 
             operations::color_transform(
                 activation.gc(),
@@ -927,11 +924,7 @@ pub fn draw<'gc>(
         }
 
         if let Some(color_transform) = args.try_get_object(2) {
-            transform.color_transform =
-                crate::avm2::globals::flash::geom::transform::object_to_color_transform(
-                    color_transform,
-                    activation,
-                )?;
+            transform.color_transform = object_to_color_transform(color_transform);
         }
 
         if let Some(mode) = args.try_get_string(3) {
@@ -1008,11 +1001,7 @@ pub fn draw_with_quality<'gc>(
         }
 
         if let Some(color_transform) = args.try_get_object(2) {
-            transform.color_transform =
-                crate::avm2::globals::flash::geom::transform::object_to_color_transform(
-                    color_transform,
-                    activation,
-                )?;
+            transform.color_transform = object_to_color_transform(color_transform);
         }
 
         if let Some(mode) = args.try_get_string(3) {

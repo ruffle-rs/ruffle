@@ -42,10 +42,9 @@ pub fn set_color_transform<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let ct = object_to_color_transform(
-        args.get_object(activation, 0, "colorTransform")?,
-        activation,
-    )?;
+    let ct = args.get_object(activation, 0, "colorTransform")?;
+    let ct = object_to_color_transform(ct);
+
     let dobj = get_display_object(this);
     dobj.set_color_transform(ct);
     if let Some(parent) = dobj.parent() {
@@ -151,36 +150,17 @@ pub fn color_transform_from_transform_object(transform_object: Object<'_>) -> Co
 
 // FIXME - handle clamping. We're throwing away precision here in converting to an integer:
 // is that what we should be doing?
-pub fn object_to_color_transform<'gc>(
-    object: Object<'gc>,
-    activation: &mut Activation<'_, 'gc>,
-) -> Result<ColorTransform, Error<'gc>> {
-    let red_multiplier = object
-        .get_slot(ct_slots::RED_MULTIPLIER)
-        .coerce_to_number(activation)?;
-    let green_multiplier = object
-        .get_slot(ct_slots::GREEN_MULTIPLIER)
-        .coerce_to_number(activation)?;
-    let blue_multiplier = object
-        .get_slot(ct_slots::BLUE_MULTIPLIER)
-        .coerce_to_number(activation)?;
-    let alpha_multiplier = object
-        .get_slot(ct_slots::ALPHA_MULTIPLIER)
-        .coerce_to_number(activation)?;
-    let red_offset = object
-        .get_slot(ct_slots::RED_OFFSET)
-        .coerce_to_number(activation)?;
-    let green_offset = object
-        .get_slot(ct_slots::GREEN_OFFSET)
-        .coerce_to_number(activation)?;
-    let blue_offset = object
-        .get_slot(ct_slots::BLUE_OFFSET)
-        .coerce_to_number(activation)?;
-    let alpha_offset = object
-        .get_slot(ct_slots::ALPHA_OFFSET)
-        .coerce_to_number(activation)?;
+pub fn object_to_color_transform<'gc>(object: Object<'gc>) -> ColorTransform {
+    let red_multiplier = object.get_slot(ct_slots::RED_MULTIPLIER).as_f64();
+    let green_multiplier = object.get_slot(ct_slots::GREEN_MULTIPLIER).as_f64();
+    let blue_multiplier = object.get_slot(ct_slots::BLUE_MULTIPLIER).as_f64();
+    let alpha_multiplier = object.get_slot(ct_slots::ALPHA_MULTIPLIER).as_f64();
+    let red_offset = object.get_slot(ct_slots::RED_OFFSET).as_f64();
+    let green_offset = object.get_slot(ct_slots::GREEN_OFFSET).as_f64();
+    let blue_offset = object.get_slot(ct_slots::BLUE_OFFSET).as_f64();
+    let alpha_offset = object.get_slot(ct_slots::ALPHA_OFFSET).as_f64();
 
-    Ok(ColorTransform {
+    ColorTransform {
         r_multiply: Fixed8::from_f64(red_multiplier),
         g_multiply: Fixed8::from_f64(green_multiplier),
         b_multiply: Fixed8::from_f64(blue_multiplier),
@@ -189,7 +169,7 @@ pub fn object_to_color_transform<'gc>(
         g_add: green_offset as i16,
         b_add: blue_offset as i16,
         a_add: alpha_offset as i16,
-    })
+    }
 }
 
 pub fn color_transform_to_object<'gc>(
