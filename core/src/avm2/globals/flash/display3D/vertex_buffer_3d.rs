@@ -57,9 +57,9 @@ pub fn upload_from_vector<'gc>(
 
         let data = vector
             .iter()
-            .map(|val| val.coerce_to_number(activation).map(|val| val as f32))
+            .map(|val| val.as_f64() as f32)
             .take(num_vertices as usize * vertex_buffer.data32_per_vertex() as usize)
-            .collect::<Result<Vec<f32>, _>>()?;
+            .collect::<Vec<_>>();
 
         let data_bytes = bytemuck::cast_slice::<f32, u8>(&data);
 
