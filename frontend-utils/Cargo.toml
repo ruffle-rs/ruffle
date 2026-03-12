@@ -13,7 +13,7 @@ workspace = true
 [features]
 cpal = ["dep:cpal", "dep:bytemuck", "ruffle_core/audio"]
 fs = []
-navigator = ["fs", "dep:async-io", "dep:tokio"]
+navigator = ["fs", "dep:async-io", "dep:tokio", "dep:tokio-rustls", "dep:rustls", "dep:rustls-native-certs", "dep:rustls-pki-types"]
 
 [dependencies]
 toml_edit = { version = "0.23.6", features = ["parse"] }
@@ -36,6 +36,10 @@ reqwest = { version = "0.12.28", default-features = false, features = [
     "macos-system-configuration",
 ] }
 tokio = { workspace = true, features = ["net", "macros"], optional = true }
+tokio-rustls = { version = "0.26.4", optional = true, default-features = false, features = ["ring"] }
+rustls = { version = "0.23.35", default-features = false, features = ["std", "tls12", "ring"], optional = true }
+rustls-native-certs = { version = "0.8.3", optional = true }
+rustls-pki-types = { version = "1.13.2", optional = true }
 cpal = { workspace = true, optional = true }
 bytemuck = { workspace = true, optional = true }
 

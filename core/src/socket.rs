@@ -58,6 +58,9 @@ pub enum SocketAction {
     Connect(SocketHandle, ConnectionState),
     Data(SocketHandle, Vec<u8>),
     Close(SocketHandle),
+    /// Sets the TLS certificate status string on the target socket.
+    /// Must be sent before the corresponding Connect action.
+    CertificateStatus(SocketHandle, String),
 }
 
 /// Manages the collection of Sockets.
@@ -97,6 +100,35 @@ impl<'gc> Sockets<'gc> {
 
         // NOTE: This call will send SocketAction::Connect to sender with connection status.
         backend.connect_socket(
+            sanitize_host(&host).to_string(),
+            port,
+            Duration::from_millis(target.timeout().into()),
+            handle,
+            receiver,
+            self.sender.clone(),
+        );
+
+        if let Some(existing_handle) = target.set_handle(handle) {
+            // As written in the AS3 docs, we are supposed to close the existing connection,
+            // when a new one is created.
+            self.close(existing_handle)
+        }
+    }
+
+    pub fn connect_avm2_secure(
+        &mut self,
+        backend: &mut dyn NavigatorBackend,
+        target: SocketObject<'gc>,
+        host: String,
+        port: u16,
+    ) {
+        let (sender, receiver) = unbounded();
+
+        let socket = Socket::new(SocketKind::Avm2(target), sender);
+        let handle = self.sockets.insert(socket);
+
+        // NOTE: This call will send SocketAction::Connect to sender with connection status.
+        backend.connect_secure_socket(
             sanitize_host(&host).to_string(),
             port,
             Duration::from_millis(target.timeout().into()),
@@ -350,6 +382,13 @@ impl<'gc> Sockets<'gc> {
                                     }
                                 }
                             }
+                        }
+                    }
+                }
+                SocketAction::CertificateStatus(handle, status) => {
+                    if let Some(socket) = context.sockets.sockets.get(handle) {
+                        if let SocketKind::Avm2(target) = socket.target {
+                            target.set_certificate_status(status);
                         }
                     }
                 }
