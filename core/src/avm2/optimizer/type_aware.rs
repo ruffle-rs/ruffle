@@ -606,10 +606,15 @@ pub fn type_aware_optimize<'gc>(
         .body()
         .expect("Cannot verify non-native method without body!");
 
-    let this_class = method.bound_class();
+    // We use the method's bound class as the receiver type. If the method has
+    // no bound class (i.e. it is a freestanding method), then its receiver can
+    // be any value except `undefined` or `null`. The type that most closely
+    // matches this is `Object`, which can represent any value except for
+    // `undefined`, so we use it.
+    let this_class = method.bound_class().unwrap_or(types.object);
 
     let mut this_value = OptValue::any();
-    this_value.class = this_class;
+    this_value.class = Some(this_class);
     this_value.not_null = true;
 
     let argument_types = resolved_parameters
