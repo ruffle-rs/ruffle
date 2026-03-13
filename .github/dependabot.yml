@@ -51,3 +51,11 @@ updates:
     labels:
       - "T-chore"
       - "A-deps"
+
+  - package-ecosystem: "devcontainers
+    directory: "/"
+    schedule:
+      interval: "weekly"
+    labels:
+      - "T-chore"
+      - "A-deps"
