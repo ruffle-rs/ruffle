@@ -956,11 +956,17 @@ pub fn render_base<'gc>(
     let cache_info = if context.use_bitmap_cache && this.is_bitmap_cached() {
         let mut cache_info: Option<DrawCacheInfo> = None;
         let base_transform = context.transform_stack.transform();
-        let bounds: Rectangle<Twips> = this.render_bounds_with_transform(
+        let mut bounds: Rectangle<Twips> = this.render_bounds_with_transform(
             &base_transform.matrix,
             false, // we want to do the filter growth for this object ourselves, to know the offsets
             &context.stage.view_matrix(),
         );
+        bounds = Rectangle {
+            x_min: Twips::from_pixels(bounds.x_min.to_pixels().round()),
+            x_max: Twips::from_pixels(bounds.x_max.to_pixels().round()),
+            y_min: Twips::from_pixels(bounds.y_min.to_pixels().round()),
+            y_max: Twips::from_pixels(bounds.y_max.to_pixels().round()),
+        };
         let name = this.name();
         let mut filters: Vec<Filter> = this.filters().to_owned();
         let swf_version = this.swf_version();
@@ -1405,6 +1411,9 @@ pub trait TDisplayObject<'gc>:
 
         if let Some(ctr) = self.as_container() {
             for child in ctr.iter_render_list() {
+                if !child.visible() {
+                    continue;
+                }
                 let matrix = *matrix * child.base().matrix();
                 bounds =
                     bounds.union(&child.render_bounds_with_transform(&matrix, true, view_matrix));
