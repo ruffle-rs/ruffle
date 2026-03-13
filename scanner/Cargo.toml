@@ -12,7 +12,7 @@ workspace = true
 
 [dependencies]
 clap = { workspace = true }
-ruffle_core = { path = "../core", features = ["deterministic"] }
+ruffle_core = { path = "../core" }
 log = { workspace = true }
 walkdir = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
