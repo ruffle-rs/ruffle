@@ -21,7 +21,11 @@ theme = Тема
 theme-system = Системска подразумевана вредност
 theme-light = Светла
 theme-dark = Тамна
+gamemode-tooltip =
+    Режим игре (GameMode) привремено примењује скуп оптимизација на ваш рачунар и/или Ruffle.
+    Ruffle захтева режим игре (GameMode) само приликом репродукције филма.
 gamemode-default = Подразумевано
+gamemode-default-tooltip = Режим игре ће бити омогућен само када је подешавање напајања подешено на високо.
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Метод уноса
 ime-enabled-experimental = (експериментално)
