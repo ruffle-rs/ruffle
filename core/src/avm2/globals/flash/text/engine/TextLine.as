@@ -25,6 +25,9 @@ package flash.text.engine {
         [Ruffle(NativeAccessible)]
         private var _rawTextLength:int = 0;
 
+        [Ruffle(NativeAccessible)]
+        private var _textBlockBeginIndex:int = 0;
+
         internal var _validity:String = "valid";
 
         public static const MAX_LINE_WIDTH:int = 1000000;
@@ -36,8 +39,7 @@ package flash.text.engine {
         }
 
         public function get textBlockBeginIndex():int {
-            stub_getter("flash.text.engine.TextLine", "textBlockBeginIndex");
-            return 0;
+            return this._textBlockBeginIndex;
         }
 
         public function get specifiedWidth():Number {
@@ -72,7 +74,8 @@ package flash.text.engine {
 
         public function get unjustifiedTextWidth():Number {
             stub_getter("flash.text.engine.TextLine", "unjustifiedTextWidth");
-            return this._specifiedWidth;
+            // FIXME: textWidth == unjustifiedTextWidth only for non-justified text.
+            return this.textWidth;
         }
 
         public native function get textWidth():Number;
@@ -123,7 +126,11 @@ package flash.text.engine {
 
         public function getAtomIndexAtCharIndex(charIndex:int):int {
             stub_method("flash.text.engine.TextLine", "getAtomIndexAtCharIndex");
-            return -1;
+            // FIXME: This only works for simple ASCII text.
+            if (charIndex < this._textBlockBeginIndex || charIndex >= this._textBlockBeginIndex + this._rawTextLength) {
+                return -1;
+            }
+            return charIndex - this._textBlockBeginIndex;
         }
 
         public function getAtomBidiLevel(index:int):int {
@@ -148,12 +155,14 @@ package flash.text.engine {
 
         public function getAtomTextBlockBeginIndex(index:int):int {
             stub_method("flash.text.engine.TextLine", "getAtomTextBlockBeginIndex");
-            return 0;
+            // FIXME: Only works for simple ASCII
+            return this._textBlockBeginIndex + index;
         }
 
         public function getAtomTextBlockEndIndex(index:int):int {
             stub_method("flash.text.engine.TextLine", "getAtomTextBlockEndIndex");
-            return 0;
+            // FIXME: Only works for simple ASCII
+            return this._textBlockBeginIndex + index + 1;
         }
 
         public function getAtomTextRotation(index:int):String {
