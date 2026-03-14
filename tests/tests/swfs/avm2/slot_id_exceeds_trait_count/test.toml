@@ -1,0 +1,10 @@
+# Class C extends A, where C has slot_id=2 but only 1 trait.
+# Flash Player throws VerifyError #1107 because ne.id (2) > nameCount (1).
+# https://github.com/adobe/avmplus/blob/858d034/core/Traits.cpp#L800
+# Known failure: avmplus checks raw slot_id against per-class trait count,
+# but our playerglobal uses global slot numbering (slot_ids continue from
+# superclass), so a per-trait check would break playerglobal classes like
+# DeleteObjectSample. Our post-loop check uses adjusted slot counts and
+# misses this case where first_slot_offset absorbs the gap.
+num_frames = 1
+known_failure = true

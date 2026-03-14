@@ -522,13 +522,25 @@ impl<'gc> VTable<'gc> {
             }
         }
 
-        // Append the new slots to the slot table now
+        // Flash Player checks that no slot_id exceeds the total trait count.
+        // This check is illogical, but SWFs depend on it, so we match
+        // avmplus behavior.
+        // https://github.com/adobe/avmplus/blob/858d034/core/Traits.cpp#L800
+        if !force_auto_assign_slots && new_slots.len() > defining_class_def.traits().len() {
+            return Err(VTableInitError::SlotIdExceedsTraitCount);
+        }
+
+        // Append the new slots to the slot table now.
         for slot in new_slots {
             if let Some(slot) = slot {
                 slot_table.push(slot);
             } else {
-                // Holes in the slot table throw an error in Flash Player
-                return Err(VTableInitError::SlotHole);
+                // Gaps in the slot numbering are filled with a default
+                // `*`-typed slot, matching avmplus behavior.
+                slot_table.push(SlotInfo {
+                    property_class: Lock::new(PropertyClass::Any),
+                    default_value: Value::Undefined,
+                });
             }
         }
 
@@ -618,13 +630,13 @@ impl<'gc> VTable<'gc> {
 #[derive(Debug)]
 pub enum VTableInitError {
     SlotConflict,
-    SlotHole,
+    SlotIdExceedsTraitCount,
 }
 
 impl VTableInitError {
     pub fn into_avm<'gc>(self, activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
         match self {
-            VTableInitError::SlotConflict | VTableInitError::SlotHole => {
+            VTableInitError::SlotConflict | VTableInitError::SlotIdExceedsTraitCount => {
                 make_error_1107(activation)
             }
         }
