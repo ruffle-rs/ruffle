@@ -2,11 +2,16 @@
 []: native
 "": non-object: string
 5: non-object: number
+function() {}: native-ish (function)
 true: non-object: boolean
 null: non-object: null
 undefined: non-object: undefined
+Accessibility: non-native (readonly proto)
 new Array(): native
+new Function(): non-native
+Function(): non-native
 new Object(): non-native
+Object(): non-native
 new String(): native
 new Number(): native
 new Number(3): native
@@ -15,31 +20,43 @@ new Boolean(true): native
 new Button(): native
 timelineButton: native
 new Camera(): non-native
+new Color(): non-native (readonly proto)
+new Color(_root): non-native (readonly proto)
 new ContextMenu(): non-native
 new ContextMenuItem(): non-native
 new ContextMenuItem([...]): non-native
 new Error(): non-native
 new Error("e"): non-native
 new Function(): non-native
+Key: non-native (readonly proto)
 new LoadVars(): native
 new LocalConnection(): native
+Math: non-native (readonly proto)
 new Microphone(): non-native
+Mouse: non-native (readonly proto)
 new MovieClip(): non-native
-movieClip: non-object: movieclip
-timelineSprite: non-object: movieclip
+movieClip: native-ish (movieclip)
+timelineSprite: native-ish (movieclip)
 new MovieClipLoader(): native
+new NetConnection(): ERROR: failed to set __proto__
 new NetStream(): non-native
 new NetStream(new NetConnection()): non-native
 new PrintJob(): native
-SharedObject: non-object: function
+Selection: non-native (readonly proto)
+new SharedObject() /* not a class */: non-native
 new Sound(): native
 new Sound(2): native
 new Sound(_root): native
 Stage: non-native
 System: non-native
+System.capabilities: non-native
+new System.Product(): non-native (readonly proto)
+System.security: non-native
+System.IME: non-native (readonly proto)
 new TextField(): native
 textField: native
 timelineEditText: native
+new TextField.StyleSheet(): native
 new TextFormat(): native
 new TextSnapshot(): non-native
 new TextSnapshot(3): non-native
@@ -59,8 +76,17 @@ new XMLNode(1, "name", 1): native
 new XMLNode(1, "name", true): native
 new XMLNode(1, "name", 1, 2): native
 new XMLSocket(): non-native
+flash: non-native
+flash.automation: non-native
+new flash.automation.ActionGenerator() /* not a class */: non-native
+new flash.automation.Configuration() /* not a class */: non-native
+new flash.automation.StageCapture(): non-native
+flash.display: non-native
 new flash.display.BitmapData(): non-object: undefined
 new flash.display.BitmapData(1,1): native
+flash.external: non-native
+new flash.external.ExternalInterface() /* not a class */: non-native
+flash.filters: non-native
 new flash.filters.BevelFilter(): native
 new flash.filters.BitmapFilter(): non-native
 new flash.filters.BlurFilter(): native
@@ -74,6 +100,7 @@ new flash.filters.DropShadowFilter(): native
 new flash.filters.GlowFilter(): native
 new flash.filters.GradientBevelFilter(): native
 new flash.filters.GradientGlowFilter(): native
+flash.geom: non-native
 new flash.geom.ColorTransform(): native
 new flash.geom.Matrix(): non-native
 new flash.geom.Point(): non-native
@@ -81,4 +108,8 @@ new flash.geom.Rectangle(): non-native
 new flash.geom.Rectangle(1,2,3,4): non-native
 new flash.geom.Transform(): non-object: undefined
 new flash.geom.Transform(_root): native
+flash.text: non-native
 new flash.text.TextRenderer(): non-object: undefined
+flash.net: non-native
+new flash.net.FileReference(): native
+new flash.net.FileReferenceList(): non-native
