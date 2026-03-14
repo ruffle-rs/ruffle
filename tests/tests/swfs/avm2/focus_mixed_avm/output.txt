@@ -1,0 +1,63 @@
+mouse [object TextField] (txt1)
+focusIn txt1 null
+mouse null
+btn clicked
+mouse null
+focusOut txt1 null
+mouse [object Sprite] (rectTabEnabled)
+focusIn rectTabEnabled null
+mouse null
+btn clicked
+mouse null
+focusOut rectTabEnabled null
+mouse [object Sprite] (rectButtonMode)
+focusIn rectButtonMode null
+mouse null
+btn clicked
+mouse null
+focusOut rectButtonMode null
+mouse [object Sprite] (rectNormal)
+btn clicked
+mouse [object SimpleButton] (simpleBtn)
+focusIn simpleBtn null
+mouse null
+btn clicked
+mouse null
+focusOut simpleBtn null
+txt.onSetFocus null
+Selection.onSetFocus: null avm1_child.txt
+txt.onKillFocus null
+Selection.onSetFocus: avm1_child.txt null
+focusIn txt1 null
+mouse null
+txt.onSetFocus null
+Selection.onSetFocus: null avm1_child.txt
+focusOut txt1 null
+txt.onKillFocus null
+Selection.onSetFocus: avm1_child.txt null
+focusIn rectTabEnabled null
+mouse null
+txt.onSetFocus null
+Selection.onSetFocus: null avm1_child.txt
+focusOut rectTabEnabled null
+txt.onKillFocus null
+Selection.onSetFocus: avm1_child.txt null
+focusIn rectButtonMode null
+mouse null
+txt.onSetFocus null
+Selection.onSetFocus: null avm1_child.txt
+focusOut rectButtonMode null
+txt.onKillFocus null
+Selection.onSetFocus: avm1_child.txt null
+txt.onSetFocus null
+Selection.onSetFocus: null avm1_child.txt
+txt.onKillFocus null
+Selection.onSetFocus: avm1_child.txt null
+focusIn simpleBtn null
+mouse null
+txt.onSetFocus null
+Selection.onSetFocus: null avm1_child.txt
+focusOut simpleBtn null
+btn clicked
+txt.onKillFocus null
+Selection.onSetFocus: avm1_child.txt null
