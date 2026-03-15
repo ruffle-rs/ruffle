@@ -132,10 +132,19 @@ pub fn enumerate_fonts<'gc>(
             .cmp(b.descriptor().lowercase_name())
     });
 
-    let font_class = activation.avm2().classes().font;
+    let default_font_class = activation.avm2().classes().font;
+
     let storage = fonts
         .into_iter()
-        .map(|font| FontObject::for_font(activation.gc(), font_class, font))
+        .map(|font| {
+            let class = activation
+                .context
+                .library
+                .global_font_class(font)
+                .unwrap_or(default_font_class);
+
+            FontObject::for_font(activation.gc(), class, font)
+        })
         .collect();
 
     Ok(ArrayObject::from_storage(activation.context, storage).into())
@@ -158,7 +167,7 @@ pub fn register_font<'gc>(
         {
             if let Some(lib) = activation.context.library.library_for_movie(movie) {
                 if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                    activation.context.library.register_global_font(font);
+                    activation.context.library.register_global_font(font, class);
                     return Ok(Value::Undefined);
                 }
             }
