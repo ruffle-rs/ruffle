@@ -15,6 +15,7 @@ use crate::backend::navigator::SuccessResponse;
 use crate::backend::ui::FontDefinition;
 use crate::backend::{
     audio::{AudioBackend, AudioManager},
+    local_connection::{LocalConnectionBackend, NullLocalConnectionBackend},
     log::LogBackend,
     navigator::{NavigatorBackend, Request},
     storage::StorageBackend,
@@ -316,6 +317,7 @@ pub struct Player {
     log: Box<dyn LogBackend>,
     ui: Box<dyn UiBackend>,
     video: Box<dyn VideoBackend>,
+    local_connection_backend: Box<dyn LocalConnectionBackend>,
 
     transform_stack: TransformStack,
 
@@ -2145,6 +2147,16 @@ impl Player {
         &mut *self.ui
     }
 
+    pub fn local_connection_mut(&mut self) -> &mut dyn LocalConnectionBackend {
+        &mut *self.local_connection_backend
+    }
+
+    pub fn update_local_connections(&mut self) {
+        self.update(|context| {
+            crate::local_connection::LocalConnections::update_connections(context);
+        });
+    }
+
     pub fn run_actions(context: &mut UpdateContext<'_>) {
         // Note that actions can queue further actions, so a while loop is necessary here.
         while let Some(action) = context.action_queue.pop_action() {
@@ -2286,6 +2298,7 @@ impl Player {
                 page_url: &mut this.page_url,
                 instance_counter: &mut this.instance_counter,
                 storage: this.storage.deref_mut(),
+                local_connection_backend: this.local_connection_backend.deref_mut(),
                 log: this.log.deref_mut(),
                 video: this.video.deref_mut(),
                 avm1_shared_objects,
@@ -2576,6 +2589,7 @@ pub struct PlayerBuilder {
     storage: Option<Box<dyn StorageBackend>>,
     ui: Option<Box<dyn UiBackend>>,
     video: Option<Box<dyn VideoBackend>>,
+    local_connection_backend: Option<Box<dyn LocalConnectionBackend>>,
 
     // Notifications
     notification_sender: Option<Sender<PlayerNotification>>,
@@ -2629,6 +2643,7 @@ impl PlayerBuilder {
             storage: None,
             ui: None,
             video: None,
+            local_connection_backend: None,
 
             notification_sender: None,
 
@@ -2722,6 +2737,19 @@ impl PlayerBuilder {
     #[inline]
     pub fn with_storage(mut self, storage: Box<dyn StorageBackend>) -> Self {
         self.storage = Some(storage);
+        self
+    }
+
+    /// Sets the local connection backend of the player.
+    ///
+    /// This backend enables cross-context LocalConnection support
+    /// (e.g., between different browser tabs).
+    #[inline]
+    pub fn with_local_connection_backend(
+        mut self,
+        backend: Box<dyn LocalConnectionBackend>,
+    ) -> Self {
+        self.local_connection_backend = Some(backend);
         self
     }
 
@@ -2983,6 +3011,9 @@ impl PlayerBuilder {
         let video = self
             .video
             .unwrap_or_else(|| Box::new(null::NullVideoBackend::new()));
+        let local_connection_backend = self
+            .local_connection_backend
+            .unwrap_or_else(|| Box::new(NullLocalConnectionBackend));
 
         let player_version = self.player_version.unwrap_or(DEFAULT_PLAYER_VERSION);
         let language = ui.language();
@@ -3001,6 +3032,7 @@ impl PlayerBuilder {
                 storage,
                 ui,
                 video,
+                local_connection_backend,
 
                 // SWF info
                 swf: fake_movie.clone(),
