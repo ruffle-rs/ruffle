@@ -29,14 +29,19 @@ impl From<H263Error> for Error {
 }
 
 /// H263 video decoder.
-pub struct H263Decoder(H263State, VideoDeblocking);
+pub struct H263Decoder {
+    state: H263State,
+    deblock: VideoDeblocking,
+    scratch: Vec<u8>,
+}
 
 impl H263Decoder {
     pub fn new(deblock: VideoDeblocking) -> Self {
-        Self(
-            H263State::new(DecoderOption::SORENSON_SPARK_BITSTREAM),
+        Self {
+            state: H263State::new(DecoderOption::SORENSON_SPARK_BITSTREAM),
             deblock,
-        )
+            scratch: Vec::new(),
+        }
     }
 }
 
@@ -44,7 +49,7 @@ impl VideoDecoder for H263Decoder {
     fn preload_frame(&mut self, encoded_frame: EncodedFrame<'_>) -> Result<FrameDependency, Error> {
         let mut reader = H263Reader::from_source(encoded_frame.data());
         let picture = self
-            .0
+            .state
             .parse_picture(&mut reader, None)
             .map_err(H263Error::DecoderError)?
             .ok_or(H263Error::NoPictureInVideoStream)?;
@@ -64,12 +69,12 @@ impl VideoDecoder for H263Decoder {
     ) -> Result<(), Error> {
         let mut reader = H263Reader::from_source(encoded_frame.data());
 
-        self.0
+        self.state
             .decode_next_picture(&mut reader)
             .map_err(H263Error::DecoderError)?;
 
         let picture = self
-            .0
+            .state
             .get_last_picture()
             .expect("Decoding a picture should let us grab that picture");
 
@@ -79,44 +84,39 @@ impl VideoDecoder for H263Decoder {
             .ok_or(H263Error::MissingWidthHeight)?;
         let (y, b, r) = picture.as_yuv();
 
-        let hdr = picture.as_header();
+        self.scratch.clear();
+        let data = &mut self.scratch;
+        data.reserve_exact(y.len() + b.len() + r.len());
 
-        if self.1 == VideoDeblocking::Level1
-            || (self.1 == VideoDeblocking::UseVideoPacketValue
+        let hdr = picture.as_header();
+        if self.deblock == VideoDeblocking::Level1
+            || (self.deblock == VideoDeblocking::UseVideoPacketValue
                 && hdr.options.contains(PictureOption::USE_DEBLOCKER))
         {
             let chroma_width = picture.chroma_samples_per_row();
             let quantizer = hdr.quantizer as usize;
             let strength = QUANT_TO_STRENGTH[quantizer];
 
+            // TODO: it'd be nice if `h263_rs_deblock` provided in-place deblocking
             let y = deblock(y, width as usize, strength);
             let b = deblock(b, chroma_width, strength);
             let r = deblock(r, chroma_width, strength);
 
-            let mut data = Vec::with_capacity(y.len() + b.len() + r.len());
             data.extend_from_slice(&y);
             data.extend_from_slice(&b);
             data.extend_from_slice(&r);
-
-            callback(DecodedFrame::new(
-                width as u32,
-                height as u32,
-                BitmapFormat::Yuv420p,
-                data,
-            ));
         } else {
-            let mut data = Vec::with_capacity(y.len() + b.len() + r.len());
             data.extend_from_slice(y);
             data.extend_from_slice(b);
             data.extend_from_slice(r);
-
-            callback(DecodedFrame::new(
-                width as u32,
-                height as u32,
-                BitmapFormat::Yuv420p,
-                data,
-            ));
         }
+
+        callback(DecodedFrame::new(
+            width as u32,
+            height as u32,
+            BitmapFormat::Yuv420p,
+            data.as_slice(),
+        ));
         Ok(())
     }
 }
