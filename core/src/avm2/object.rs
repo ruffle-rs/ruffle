@@ -340,7 +340,7 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         let base = self.base();
-        base.init_property_local(name, value, activation)
+        base.set_property_local(name, value, activation)
     }
 
     /// Call a local property of the object. The Multiname should always be public.
