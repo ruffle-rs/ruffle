@@ -59,9 +59,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
                 if name.namespace_set().len() > 1 {
                     let public_match = name.namespace_set().iter().rev().find_map(|ns| {
                         if ns.is_public_ignoring_ns() {
-                            v.iter()
-                                .find(|(n, _)| n.matches_ns(*ns))
-                                .map(|(_, v)| v)
+                            v.iter().find(|(n, _)| n.matches_ns(*ns)).map(|(_, v)| v)
                         } else {
                             None
                         }
@@ -70,11 +68,10 @@ impl<'gc, V> PropertyMap<'gc, V> {
                         return public_match;
                     }
                 }
-                name.namespace_set().iter().rev().find_map(|ns| {
-                    v.iter()
-                        .find(|(n, _)| n.matches_ns(*ns))
-                        .map(|(_, v)| v)
-                })
+                name.namespace_set()
+                    .iter()
+                    .rev()
+                    .find_map(|ns| v.iter().find(|(n, _)| n.matches_ns(*ns)).map(|(_, v)| v))
             })
         } else {
             None
