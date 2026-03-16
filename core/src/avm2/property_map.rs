@@ -8,7 +8,6 @@ use fnv::FnvBuildHasher;
 use gc_arena::Collect;
 use smallvec::SmallVec;
 use std::collections::HashMap;
-use std::mem::swap;
 
 /// Type which represents named properties on an object.
 ///
@@ -108,16 +107,17 @@ impl<'gc, V> PropertyMap<'gc, V> {
             .flat_map(|(k, vs)| vs.iter().map(|(ns, v)| (*k, *ns, v)))
     }
 
-    pub fn insert(&mut self, name: QName<'gc>, mut value: V) -> Option<V> {
+    pub fn insert(&mut self, name: QName<'gc>, value: V) -> Option<V> {
         let bucket = self.0.entry(name.local_name()).or_default();
 
-        if let Some((_, old_value)) = bucket
-            .iter_mut()
-            .find(|(n, _)| n.matches_ns(name.namespace()))
+        if let Some(position) = bucket
+            .iter()
+            .position(|(n, _)| n.matches_ns(name.namespace()))
         {
-            swap(old_value, &mut value);
+            let (_, old_value) = bucket.remove(position);
+            bucket.insert(0, (name.namespace(), value));
 
-            Some(value)
+            Some(old_value)
         } else {
             bucket.insert(0, (name.namespace(), value));
 
@@ -129,14 +129,15 @@ impl<'gc, V> PropertyMap<'gc, V> {
         &mut self,
         ns: Namespace<'gc>,
         name: AvmString<'gc>,
-        mut value: V,
+        value: V,
     ) -> Option<V> {
         let bucket = self.0.entry(name).or_default();
 
-        if let Some((_, old_value)) = bucket.iter_mut().find(|(n, _)| n.matches_ns(ns)) {
-            swap(old_value, &mut value);
+        if let Some(position) = bucket.iter().position(|(n, _)| n.matches_ns(ns)) {
+            let (_, old_value) = bucket.remove(position);
+            bucket.insert(0, (ns, value));
 
-            Some(value)
+            Some(old_value)
         } else {
             bucket.insert(0, (ns, value));
 
