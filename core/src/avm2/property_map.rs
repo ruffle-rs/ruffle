@@ -55,23 +55,11 @@ impl<'gc, V> PropertyMap<'gc, V> {
             unreachable!("Lookup on lazy Multiname should never happen ({:?})", name);
         }
         if let Some(local_name) = name.local_name() {
-            self.0.get(&local_name).and_then(|v| {
-                if name.namespace_set().len() > 1 {
-                    let public_match = name.namespace_set().iter().rev().find_map(|ns| {
-                        if ns.is_public_ignoring_ns() {
-                            v.iter().find(|(n, _)| n.matches_ns(*ns)).map(|(_, v)| v)
-                        } else {
-                            None
-                        }
-                    });
-                    if public_match.is_some() {
-                        return public_match;
-                    }
-                }
-                name.namespace_set()
-                    .iter()
-                    .rev()
-                    .find_map(|ns| v.iter().find(|(n, _)| n.matches_ns(*ns)).map(|(_, v)| v))
+            self.0.get(&local_name).iter().find_map(|v| {
+                v.iter()
+                    .filter(|(n, _)| name.namespace_set().iter().any(|ns| n.matches_ns(*ns)))
+                    .map(|(_, v)| v)
+                    .next()
             })
         } else {
             None
@@ -83,26 +71,11 @@ impl<'gc, V> PropertyMap<'gc, V> {
             unreachable!("Lookup on lazy Multiname should never happen ({:?})", name);
         }
         if let Some(local_name) = name.local_name() {
-            self.0.get(&local_name).and_then(|v| {
-                if name.namespace_set().len() > 1 {
-                    let public_match = name.namespace_set().iter().rev().find_map(|ns| {
-                        if ns.is_public_ignoring_ns() {
-                            v.iter()
-                                .find(|(n, _)| n.matches_ns(*ns))
-                                .map(|(ns, v)| (*ns, v))
-                        } else {
-                            None
-                        }
-                    });
-                    if public_match.is_some() {
-                        return public_match;
-                    }
-                }
-                name.namespace_set().iter().rev().find_map(|ns| {
-                    v.iter()
-                        .find(|(n, _)| n.matches_ns(*ns))
-                        .map(|(ns, v)| (*ns, v))
-                })
+            self.0.get(&local_name).iter().find_map(|v| {
+                v.iter()
+                    .filter(|(n, _)| name.namespace_set().iter().any(|ns| n.matches_ns(*ns)))
+                    .map(|(ns, v)| (*ns, v))
+                    .next()
             })
         } else {
             None
@@ -146,7 +119,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
 
             Some(value)
         } else {
-            bucket.push((name.namespace(), value));
+            bucket.insert(0, (name.namespace(), value));
 
             None
         }
@@ -165,7 +138,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
 
             Some(value)
         } else {
-            bucket.push((ns, value));
+            bucket.insert(0, (ns, value));
 
             None
         }
