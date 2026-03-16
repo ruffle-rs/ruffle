@@ -191,7 +191,7 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
             }
         }
 
-        self.base().init_property_local(name, value, activation)
+        self.base().set_property_local(name, value, activation)
     }
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {

@@ -209,7 +209,7 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
             }
         }
 
-        self.base().init_property_local(name, value, activation)
+        self.base().set_property_local(name, value, activation)
     }
 
     fn delete_property_local(
