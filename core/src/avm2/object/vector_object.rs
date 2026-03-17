@@ -262,35 +262,6 @@ impl<'gc> TObject<'gc> for VectorObject<'gc> {
         ))
     }
 
-    fn init_property_local(
-        self,
-        name: &Multiname<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        if name.valid_dynamic_name() {
-            if let Some(local_name) = name.local_name() {
-                if let Some(index) = VectorObject::as_vector_index(&local_name) {
-                    let u32_index = index as u32;
-
-                    if u32_index as f64 == index {
-                        return self.set_element(activation, u32_index as usize, value);
-                    } else {
-                        return Err(self.fail_write_error(activation, name, index));
-                    }
-                }
-            }
-        }
-
-        // No properties can be set on Vector classes
-        Err(make_reference_error(
-            activation,
-            ReferenceErrorCode::InvalidWrite,
-            name,
-            self.instance_class(),
-        ))
-    }
-
     fn delete_property_local(
         self,
         _activation: &mut Activation<'_, 'gc>,

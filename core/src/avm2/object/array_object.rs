@@ -191,27 +191,6 @@ impl<'gc> TObject<'gc> for ArrayObject<'gc> {
         self.base().set_property_local(name, value, activation)
     }
 
-    fn init_property_local(
-        self,
-        name: &Multiname<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let mc = activation.gc();
-
-        if name.valid_dynamic_name() {
-            if let Some(name) = name.local_name() {
-                if let Some(index) = ArrayObject::as_array_index(&name) {
-                    self.set_element(mc, index, value);
-
-                    return Ok(());
-                }
-            }
-        }
-
-        self.base().set_property_local(name, value, activation)
-    }
-
     fn delete_property_local(
         self,
         activation: &mut Activation<'_, 'gc>,

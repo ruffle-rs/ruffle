@@ -1107,7 +1107,7 @@ impl<'gc> Value<'gc> {
             }
             None => {
                 if let Some(object) = self.as_object() {
-                    object.init_property_local(multiname, value, activation)
+                    object.set_property_local(multiname, value, activation)
                 } else {
                     let instance_class = self.instance_class(activation);
 
