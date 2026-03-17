@@ -804,7 +804,7 @@ pub fn set_sampler_state_at<'gc>(
 }
 
 pub fn set_scissor_rectangle<'gc>(
-    activation: &mut Activation<'_, 'gc>,
+    _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
@@ -813,18 +813,11 @@ pub fn set_scissor_rectangle<'gc>(
     let context3d = this.as_context_3d().unwrap();
     let rectangle = args.try_get_object(0);
     let rectangle = if let Some(rectangle) = rectangle {
-        let x = rectangle
-            .get_slot(rectangle_slots::X)
-            .coerce_to_number(activation)?;
-        let y = rectangle
-            .get_slot(rectangle_slots::Y)
-            .coerce_to_number(activation)?;
-        let width = rectangle
-            .get_slot(rectangle_slots::WIDTH)
-            .coerce_to_number(activation)?;
-        let height = rectangle
-            .get_slot(rectangle_slots::HEIGHT)
-            .coerce_to_number(activation)?;
+        let x = rectangle.get_slot(rectangle_slots::X).as_f64();
+        let y = rectangle.get_slot(rectangle_slots::Y).as_f64();
+        let width = rectangle.get_slot(rectangle_slots::WIDTH).as_f64();
+        let height = rectangle.get_slot(rectangle_slots::HEIGHT).as_f64();
+
         Some(Rectangle {
             x_min: Twips::from_pixels(x),
             y_min: Twips::from_pixels(y),

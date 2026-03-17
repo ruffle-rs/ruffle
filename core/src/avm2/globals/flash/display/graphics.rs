@@ -68,7 +68,7 @@ pub fn begin_bitmap_fill<'gc>(
             .as_bitmap_data()
             .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
         let matrix = if let Some(matrix) = args.try_get_object(1) {
-            Matrix::from(object_to_matrix(matrix, activation)?)
+            Matrix::from(object_to_matrix(matrix))
         } else {
             // Users can explicitly pass in `null` to mean identity matrix
             Matrix::IDENTITY
@@ -125,7 +125,7 @@ pub fn begin_gradient_fill<'gc>(
         )?;
 
         let matrix = if let Some(matrix) = args.try_get_object(4) {
-            Matrix::from(object_to_matrix(matrix, activation)?)
+            Matrix::from(object_to_matrix(matrix))
         } else {
             // Users can explicitly pass in `null` to mean identity matrix
             Matrix::IDENTITY
@@ -903,7 +903,7 @@ pub fn line_gradient_style<'gc>(
             ratios,
         )?;
         let matrix = if let Some(matrix) = args.try_get_object(4) {
-            Matrix::from(object_to_matrix(matrix, activation)?)
+            Matrix::from(object_to_matrix(matrix))
         } else {
             // Users can explicitly pass in `null` to mean identity matrix
             Matrix::IDENTITY
@@ -1305,7 +1305,7 @@ pub fn line_bitmap_style<'gc>(
             .as_bitmap_data()
             .expect("Bitmap argument is ensured to be a BitmapData from actionscript");
         let matrix = if let Some(matrix) = args.try_get_object(1) {
-            Matrix::from(object_to_matrix(matrix, activation)?)
+            Matrix::from(object_to_matrix(matrix))
         } else {
             // Users can explicitly pass in `null` to mean identity matrix
             Matrix::IDENTITY
@@ -1692,7 +1692,7 @@ fn handle_gradient_fill<'gc>(
             .as_object();
 
         match matrix {
-            Some(matrix) => Matrix::from(object_to_matrix(matrix, activation)?),
+            Some(matrix) => Matrix::from(object_to_matrix(matrix)),
             None => Matrix::IDENTITY,
         }
     };
@@ -1759,11 +1759,7 @@ fn handle_bitmap_fill<'gc>(
     let matrix = obj
         .get_slot(graphics_bitmap_fill_slots::MATRIX)
         .as_object()
-        .and_then(|matrix| {
-            let matrix = Matrix::from(object_to_matrix(matrix, activation).ok()?);
-
-            Some(matrix)
-        })
+        .map(|matrix| Matrix::from(object_to_matrix(matrix)))
         .unwrap_or(Matrix::IDENTITY);
 
     let is_repeating = obj
