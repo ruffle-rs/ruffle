@@ -39,9 +39,9 @@ pub struct ScreenVideoDecoder {
     block_w: usize,
     block_h: usize,
 
-    tile: Vec<u8>, // acts as a scratch buffer
+    scratch: Vec<u8>,
 
-    last_frame: Option<Vec<u8>>,
+    last_frame: Vec<u8>,
 }
 
 struct ByteReader<'a> {
@@ -86,17 +86,15 @@ impl ScreenVideoDecoder {
             h: 0,
             block_w: 0,
             block_h: 0,
-            tile: vec![],
-            last_frame: None,
+            scratch: vec![],
+            last_frame: vec![],
         }
     }
 
-    fn decode_v1(
-        &mut self,
-        src: &mut ByteReader,
-        data: &mut [u8],
-        stride: usize,
-    ) -> Result<bool, Error> {
+    fn decode_v1(&mut self, src: &mut ByteReader) -> Result<bool, Error> {
+        let stride = self.w * 3;
+        let data = self.last_frame.as_mut_slice();
+
         let mut is_intra = true;
         for (yy, row) in data.chunks_mut(stride * self.block_h).enumerate() {
             let cur_h = (self.h - yy * self.block_h).min(self.block_h);
@@ -105,18 +103,16 @@ impl ScreenVideoDecoder {
 
                 let data_size = src.read_u16be()? as usize;
                 if data_size > 0 {
+                    let tile = &mut self.scratch[..cur_w * cur_h * 3];
                     Decompress::new(true)
                         .decompress(
                             src.read_buf_ref(data_size)?,
-                            &mut self.tile[..cur_w * cur_h * 3],
+                            tile,
                             flate2::FlushDecompress::Finish,
                         )
                         .map_err(ScreenError::DecompressionError)?;
 
-                    for (dst, src) in row[x * 3..]
-                        .chunks_mut(stride)
-                        .zip(self.tile.chunks(cur_w * 3))
-                    {
+                    for (dst, src) in row[x * 3..].chunks_mut(stride).zip(tile.chunks(cur_w * 3)) {
                         dst[..cur_w * 3].copy_from_slice(src);
                     }
                 } else {
@@ -125,10 +121,6 @@ impl ScreenVideoDecoder {
             }
         }
         Ok(is_intra)
-    }
-
-    fn flush(&mut self) {
-        self.last_frame = None;
     }
 }
 
@@ -155,7 +147,7 @@ impl VideoDecoder for ScreenVideoDecoder {
     ) -> Result<(), Error> {
         let is_keyframe = encoded_frame.data[0] >> 4 == 1;
 
-        if !is_keyframe && self.last_frame.is_none() {
+        if !is_keyframe && self.last_frame.is_empty() {
             return Err(ScreenError::MissingReferenceFrame.into());
         }
 
@@ -172,31 +164,33 @@ impl VideoDecoder for ScreenVideoDecoder {
 
         debug_assert!(w != 0 && h != 0 && blk_w != 0 && blk_h != 0);
 
+        let block_size = blk_w * blk_h * 3;
+        let frame_size = w * h * 3;
+
         if self.w != w || self.h != h || self.block_w != blk_w || self.block_h != blk_h {
-            self.flush();
-            self.tile.resize(blk_w * blk_h * 3, 0);
             self.w = w;
             self.h = h;
             self.block_w = blk_w;
             self.block_h = blk_h;
+            // The scratch buffer is used for temporary tile data and the final RGB frame.
+            self.scratch
+                .resize(std::cmp::max(block_size, frame_size), 0);
+            // Flush previous frame.
+            self.last_frame.clear();
+            self.last_frame.resize(frame_size, 0);
         }
 
-        let mut data = self
-            .last_frame
-            .clone()
-            .unwrap_or_else(|| vec![0; w * h * 3]);
-
-        let stride = w * 3;
-
-        let is_intra = self.decode_v1(&mut br, data.as_mut_slice(), stride)?;
+        let is_intra = self.decode_v1(&mut br)?;
 
         if is_intra != is_keyframe {
             return Err(ScreenError::KeyframeInvalid.into());
         }
 
-        let mut rgb = vec![0u8; w * h * 3];
+        // `last_frame` was updated in-place by `decode_v1`.
+        let data = &self.last_frame[..frame_size];
 
         // convert from BGR to RGB and flip Y
+        let rgb = &mut self.scratch[..frame_size];
         for y in 0..h {
             let data_row = &data[y * w * 3..(y + 1) * w * 3];
             let rgb_row = &mut rgb[(h - y - 1) * w * 3..(h - y) * w * 3];
@@ -206,13 +200,11 @@ impl VideoDecoder for ScreenVideoDecoder {
             }
         }
 
-        self.last_frame = Some(data);
-
         callback(DecodedFrame::new(
             w as u32,
             h as u32,
             BitmapFormat::Rgb,
-            rgb,
+            &*rgb,
         ));
         Ok(())
     }
