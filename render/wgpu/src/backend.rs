@@ -1238,7 +1238,7 @@ impl ActiveFrame {
             command_encoder: descriptors
                 .device
                 .create_command_encoder(&Default::default()),
-            staging_belt: wgpu::util::StagingBelt::new(65536),
+            staging_belt: wgpu::util::StagingBelt::new(descriptors.device.clone(), 65536),
             draws_since_flush: 0,
         }
     }

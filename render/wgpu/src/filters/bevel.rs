@@ -96,7 +96,7 @@ impl BevelFilter {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group_layout],
-            push_constant_ranges: &[],
+            immediate_size: 0,
         });
 
         Self {
@@ -145,7 +145,7 @@ impl BevelFilter {
                         targets: &[Some(wgpu::TextureFormat::Rgba8Unorm.into())],
                         compilation_options: Default::default(),
                     }),
-                    multiview: None,
+                    multiview_mask: None,
                     cache: None,
                 })
         })
@@ -217,13 +217,7 @@ impl BevelFilter {
         shadow_color[1] *= shadow_color[3];
         shadow_color[2] *= shadow_color[3];
         staging_belt
-            .write_buffer(
-                draw_encoder,
-                &self.uniform_buffer,
-                0,
-                self.uniform_size,
-                &descriptors.device,
-            )
+            .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
             .copy_from_slice(bytemuck::cast_slice(&[BevelUniform {
                 highlight_color,
                 shadow_color,
@@ -239,13 +233,7 @@ impl BevelFilter {
                 composite_source: 1,
             }]));
         staging_belt
-            .write_buffer(
-                draw_encoder,
-                &self.vertex_buffer,
-                0,
-                self.vertices_size,
-                &descriptors.device,
-            )
+            .write_buffer(draw_encoder, &self.vertex_buffer, 0, self.vertices_size)
             .copy_from_slice(bytemuck::cast_slice(&[
                 source.vertices_with_highlight_and_shadow(blur_offset)
             ]));
