@@ -681,25 +681,44 @@ impl<'gc> Value<'gc> {
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToNumber algorithm which appears to match AVM2.
+    ///
+    /// This function can be very hot in physics code, so we inline a fast-path
+    /// for `Value::Number` and `Value::Integer`, and fall back to a non-inlined
+    /// slow-path handling the rest of the cases if necessary.
     pub fn coerce_to_number(
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<f64, Error<'gc>> {
-        Ok(match self {
-            Value::Undefined => f64::NAN,
-            Value::Null => 0.0,
-            Value::Bool(true) => 1.0,
-            Value::Bool(false) => 0.0,
-            Value::Number(n) => *n,
-            Value::Integer(i) => *i as f64,
-            Value::String(s) => {
-                let swf_version = activation.context.root_swf.version();
-                string_to_f64(s, swf_version, true).unwrap_or_else(|| string_to_int(s, 0, true))
+        // Full coerce-to-number implementation. This is the slow-path.
+        #[inline(never)]
+        fn coerce_to_number_slow<'gc>(
+            value: &Value<'gc>,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<f64, Error<'gc>> {
+            Ok(match value {
+                Value::Undefined => f64::NAN,
+                Value::Null => 0.0,
+                Value::Bool(true) => 1.0,
+                Value::Bool(false) => 0.0,
+                Value::Integer(_) | Value::Number(_) => unreachable!("Handled by fast path"),
+                Value::String(s) => {
+                    let swf_version = activation.context.root_swf.version();
+                    string_to_f64(s, swf_version, true).unwrap_or_else(|| string_to_int(s, 0, true))
+                }
+                Value::Object(_) => value
+                    .coerce_to_primitive(Some(Hint::Number), activation)?
+                    .coerce_to_number(activation)?,
+            })
+        }
+
+        match self {
+            Value::Number(n) => Ok(*n),
+            Value::Integer(i) => Ok(*i as f64),
+            _ => {
+                // Fall back to slow path
+                coerce_to_number_slow(self, activation)
             }
-            Value::Object(_) => self
-                .coerce_to_primitive(Some(Hint::Number), activation)?
-                .coerce_to_number(activation)?,
-        })
+        }
     }
 
     /// Coerce the value to a 32-bit unsigned integer.
@@ -709,16 +728,35 @@ impl<'gc> Value<'gc> {
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToUint32 algorithm which appears to match AVM2.
+    ///
+    /// This function can be very hot, so we inline a fast-path for
+    /// `Value::Number` and `Value::Integer`, and fall back to a non-inlined
+    /// slow-path handling the rest of the cases if necessary.
     pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc>) -> Result<u32, Error<'gc>> {
-        Ok(match self {
-            Value::Integer(i) => *i as u32,
-            Value::Number(n) => f64_to_wrapping_u32(*n),
-            Value::Bool(b) => *b as u32,
-            Value::Undefined | Value::Null => 0,
-            Value::String(_) | Value::Object(_) => {
-                f64_to_wrapping_u32(self.coerce_to_number(activation)?)
+        // Full coerce-to-u32 implementation. This is the slow-path.
+        #[inline(never)]
+        fn coerce_to_u32_slow<'gc>(
+            value: &Value<'gc>,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<u32, Error<'gc>> {
+            Ok(match value {
+                Value::Integer(_) | Value::Number(_) => unreachable!("Handled by fast path"),
+                Value::Bool(b) => *b as u32,
+                Value::Undefined | Value::Null => 0,
+                Value::String(_) | Value::Object(_) => {
+                    f64_to_wrapping_u32(value.coerce_to_number(activation)?)
+                }
+            })
+        }
+
+        match self {
+            Value::Number(n) => Ok(f64_to_wrapping_u32(*n)),
+            Value::Integer(i) => Ok(*i as u32),
+            _ => {
+                // Fall back to slow path
+                coerce_to_u32_slow(self, activation)
             }
-        })
+        }
     }
 
     /// Coerce the value to a 32-bit signed integer.
@@ -728,16 +766,35 @@ impl<'gc> Value<'gc> {
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToInt32 algorithm which appears to match AVM2.
+    ///
+    /// This function can be very hot, so we inline a fast-path for
+    /// `Value::Number` and `Value::Integer`, and fall back to a non-inlined
+    /// slow-path handling the rest of the cases if necessary.
     pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
-        Ok(match self {
-            Value::Integer(i) => *i,
-            Value::Number(n) => f64_to_wrapping_i32(*n),
-            Value::Bool(b) => *b as i32,
-            Value::Undefined | Value::Null => 0,
-            Value::String(_) | Value::Object(_) => {
-                f64_to_wrapping_i32(self.coerce_to_number(activation)?)
+        // Full coerce-to-i32 implementation. This is the slow-path.
+        #[inline(never)]
+        fn coerce_to_i32_slow<'gc>(
+            value: &Value<'gc>,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<i32, Error<'gc>> {
+            Ok(match value {
+                Value::Integer(_) | Value::Number(_) => unreachable!("Handled by fast path"),
+                Value::Bool(b) => *b as i32,
+                Value::Undefined | Value::Null => 0,
+                Value::String(_) | Value::Object(_) => {
+                    f64_to_wrapping_i32(value.coerce_to_number(activation)?)
+                }
+            })
+        }
+
+        match self {
+            Value::Number(n) => Ok(f64_to_wrapping_i32(*n)),
+            Value::Integer(i) => Ok(*i),
+            _ => {
+                // Fall back to slow path
+                coerce_to_i32_slow(self, activation)
             }
-        })
+        }
     }
 
     /// Minimum number of digits after which numbers are formatted as
