@@ -92,6 +92,13 @@ impl MainWindow {
                     return;
                 }
 
+                // This is needed because some platforms (like macOS)
+                // will fire this event at the same time as WindowEvent::MouseInput,
+                // which may cause inaccurate behavior in the movie
+                if position == self.mouse_pos {
+                    return;
+                }
+
                 self.mouse_pos = position;
                 let (x, y) = self.gui.window_to_movie_position(position);
                 let event = PlayerEvent::MouseMove { x, y };
