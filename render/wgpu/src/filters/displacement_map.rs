@@ -102,7 +102,7 @@ impl DisplacementMapFilter {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group_layout],
-            push_constant_ranges: &[],
+            immediate_size: 0,
         });
 
         let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -158,7 +158,7 @@ impl DisplacementMapFilter {
                         targets: &[Some(wgpu::TextureFormat::Rgba8Unorm.into())],
                         compilation_options: Default::default(),
                     }),
-                    multiview: None,
+                    multiview_mask: None,
                     cache: None,
                 })
         })
@@ -195,13 +195,7 @@ impl DisplacementMapFilter {
         let map_texture = as_texture(&map_handle);
         let map_view = map_texture.texture.create_view(&Default::default());
         staging_belt
-            .write_buffer(
-                draw_encoder,
-                &self.uniform_buffer,
-                0,
-                self.uniform_size,
-                &descriptors.device,
-            )
+            .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
             .copy_from_slice(bytemuck::cast_slice(&[DisplacementMapUniform {
                 color: [
                     f32::from(filter.color.r) / 255.0,
@@ -228,13 +222,7 @@ impl DisplacementMapFilter {
                 viewscale_y: filter.viewscale_y,
             }]));
         staging_belt
-            .write_buffer(
-                draw_encoder,
-                &self.vertex_buffer,
-                0,
-                self.vertices_size,
-                &descriptors.device,
-            )
+            .write_buffer(draw_encoder, &self.vertex_buffer, 0, self.vertices_size)
             .copy_from_slice(bytemuck::cast_slice(&[source.vertices()]));
         let filter_group = descriptors
             .device

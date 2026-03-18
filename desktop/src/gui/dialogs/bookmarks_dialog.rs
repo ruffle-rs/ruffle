@@ -135,9 +135,9 @@ impl BookmarksDialog {
             .default_width(600.0)
             .default_height(400.0)
             .show(egui_ctx, |ui| {
-                egui::TopBottomPanel::top("bookmark-dialog-top-panel")
+                egui::Panel::top("bookmark-dialog-top-panel")
                     .resizable(true)
-                    .min_height(100.0)
+                    .min_size(100.0)
                     .show_inside(ui, |ui| {
                         if self.preferences.have_bookmarks() {
                             should_close = self.show_bookmark_table(locale, ui);
