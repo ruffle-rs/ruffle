@@ -1,0 +1,6 @@
+avm1_child this: _root
+_level0: undefined
+_level-61440: undefined
+_level0.foo: undefined
+_level-61440.foo: undefined
+emptyMC._target: /emptyMC
