@@ -89,7 +89,7 @@ impl Descriptors {
                                 &self.bind_layouts.transforms,
                                 &self.bind_layouts.bitmap,
                             ],
-                            push_constant_ranges: &[],
+                            immediate_size: 0,
                         });
                 self.device
                     .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -128,7 +128,7 @@ impl Descriptors {
                             mask: !0,
                             alpha_to_coverage_enabled: false,
                         },
-                        multiview: None,
+                        multiview_mask: None,
                         cache: None,
                     })
             })
@@ -157,7 +157,7 @@ impl Descriptors {
                                 &self.bind_layouts.transforms,
                                 &self.bind_layouts.bitmap,
                             ],
-                            push_constant_ranges: &[],
+                            immediate_size: 0,
                         });
                 self.device
                     .create_render_pipeline(&wgpu::RenderPipelineDescriptor {
@@ -196,7 +196,7 @@ impl Descriptors {
                             mask: !0,
                             alpha_to_coverage_enabled: false,
                         },
-                        multiview: None,
+                        multiview_mask: None,
                         cache: None,
                     })
             })

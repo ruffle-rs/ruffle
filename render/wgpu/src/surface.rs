@@ -153,7 +153,6 @@ impl Surface {
                 Chunk::Draw(chunk, needs_stencil, transform_buffers) => {
                     transform_buffers.copy_to(
                         staging_belt,
-                        &descriptors.device,
                         draw_encoder,
                         &dynamic_transforms.buffer,
                     );
