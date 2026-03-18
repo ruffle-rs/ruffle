@@ -60,6 +60,7 @@ impl NagaBuilder<'_> {
                                     interpolation: Some(naga::Interpolation::Perspective),
                                     sampling: None,
                                     blend_src: None,
+                                    per_primitive: false,
                                 }),
                                 offset: 0,
                             });
@@ -86,6 +87,7 @@ impl NagaBuilder<'_> {
                             interpolation: Some(Interpolation::Perspective),
                             sampling: None,
                             blend_src: None,
+                            per_primitive: false,
                         }),
                     });
                     let arg_index = self.func.arguments.len() - 1;
