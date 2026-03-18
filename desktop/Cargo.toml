@@ -14,10 +14,10 @@ workspace = true
 clap = { workspace = true }
 cpal = { workspace = true }
 egui = { workspace = true }
-egui_extras = { version = "0.33.3", default-features = false, features = ["image"] }
-egui-wgpu = { version = "0.33.3", features = ["winit"] }
+egui_extras = { git = "https://github.com/emilk/egui.git", rev = "c09a8723b43abe43cdb3478711a433bda11cd46e", default-features = false, features = ["image"] }
+egui-wgpu = { git = "https://github.com/emilk/egui.git", rev = "c09a8723b43abe43cdb3478711a433bda11cd46e", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
-egui-winit = "0.33.3"
+egui-winit = { git = "https://github.com/emilk/egui.git", rev = "c09a8723b43abe43cdb3478711a433bda11cd46e" }
 fontdb = "0.23"
 ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "aac", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
