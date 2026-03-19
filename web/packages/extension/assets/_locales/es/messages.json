@@ -44,6 +44,9 @@
     "settings_preferred_renderer_auto": {
         "message": "Automático"
     },
+    "settings_device_font_renderer": {
+        "message": "Renderizado de fuente del dispositivo"
+    },
     "device_font_renderer_embedded": {
         "message": "Embebido"
     },
