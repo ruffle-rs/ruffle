@@ -1,4 +1,5 @@
 use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
+use crate::avm2::object::ClassObject;
 use crate::avm2::{Class as Avm2Class, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
@@ -438,6 +439,10 @@ pub struct Library<'gc> {
     /// These should be checked before any Movie-specific library's own fonts.
     global_fonts: FontMap<'gc>,
 
+    /// The AVM2 class associated with each globally registered font.
+    /// This is used by `Font.enumerateFonts` to create instances of the correct subclass.
+    global_font_classes: Vec<(Font<'gc>, ClassObject<'gc>)>,
+
     /// A set of which fonts we've asked from the backend already, to help with negative caching.
     /// If we've asked for a specific font, record it here and don't ask again.
     font_lookup_cache: FnvHashSet<FontQuery>,
@@ -462,6 +467,7 @@ impl<'gc> Library<'gc> {
             movie_libraries: MovieLibraries::new(),
             device_fonts: Default::default(),
             global_fonts: Default::default(),
+            global_font_classes: Default::default(),
             font_lookup_cache: Default::default(),
             font_sort_cache: Default::default(),
             default_font_names: Default::default(),
@@ -727,8 +733,24 @@ impl<'gc> Library<'gc> {
         self.global_fonts.all()
     }
 
-    pub fn register_global_font(&mut self, font: Font<'gc>) {
+    pub fn register_global_font(&mut self, font: Font<'gc>, class: ClassObject<'gc>) {
         self.global_fonts.register(font);
+
+        if !self
+            .global_font_classes
+            .iter()
+            .any(|(f, _)| Font::ptr_eq(*f, font))
+        {
+            self.global_font_classes.push((font, class));
+        }
+    }
+
+    /// Get the AVM2 class associated with a registered font.
+    pub fn global_font_class(&self, font: Font<'gc>) -> Option<ClassObject<'gc>> {
+        self.global_font_classes
+            .iter()
+            .find(|(f, _)| Font::ptr_eq(*f, font))
+            .map(|(_, c)| *c)
     }
 
     /// Get the AVM2 class registry.

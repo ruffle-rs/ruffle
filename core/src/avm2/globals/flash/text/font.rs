@@ -95,7 +95,7 @@ pub fn enumerate_fonts<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let mut fonts: Vec<Font<'gc>> = Vec::new();
+    let mut fonts: Vec<(Font<'gc>, _)> = Vec::new();
 
     if args.get_bool(0) {
         // We could include the ones we know about, but what to do for the ones that weren't eagerly loaded?
@@ -107,7 +107,7 @@ pub fn enumerate_fonts<'gc>(
         );
     }
 
-    fonts.append(&mut activation.context.library.global_fonts());
+    let default_font_class = activation.avm2().classes().font;
 
     if let Some(library) = activation
         .context
@@ -118,24 +118,33 @@ pub fn enumerate_fonts<'gc>(
             // TODO: EmbeddedCFF isn't supposed to show until it's been used (some kind of internal initialization method?)
             // Device is only supposed to show when arg0 is true - but that's supposed to be "all known" device fonts, not just loaded ones
             if font.has_layout() && font.font_type() == FontType::Embedded {
-                fonts.push(font);
+                fonts.push((font, default_font_class));
             }
         }
+    }
+
+    for font in activation.context.library.global_fonts() {
+        let class = activation
+            .context
+            .library
+            .global_font_class(font)
+            .unwrap_or(default_font_class);
+
+        fonts.push((font, class));
     }
 
     // The output from Flash is sorted by font name (case insensitive).
     // If two fonts have the same name (e.g. bold/italic variants),
     // the order is nondeterministic.
     fonts.sort_unstable_by(|a, b| {
-        a.descriptor()
+        a.0.descriptor()
             .lowercase_name()
-            .cmp(b.descriptor().lowercase_name())
+            .cmp(b.0.descriptor().lowercase_name())
     });
 
-    let font_class = activation.avm2().classes().font;
     let storage = fonts
         .into_iter()
-        .map(|font| FontObject::for_font(activation.gc(), font_class, font))
+        .map(|(font, class)| FontObject::for_font(activation.gc(), class, font))
         .collect();
 
     Ok(ArrayObject::from_storage(activation.context, storage).into())
@@ -158,7 +167,7 @@ pub fn register_font<'gc>(
         {
             if let Some(lib) = activation.context.library.library_for_movie(movie) {
                 if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                    activation.context.library.register_global_font(font);
+                    activation.context.library.register_global_font(font, class);
                     return Ok(Value::Undefined);
                 }
             }
