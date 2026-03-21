@@ -13,7 +13,11 @@ workspace = true
 [features]
 cpal = ["dep:cpal", "dep:bytemuck", "ruffle_core/audio"]
 fs = []
-navigator = ["fs", "dep:async-io", "dep:tokio"]
+navigator = ["fs", "dep:async-io", "dep:tokio", "dep:rustls", "dep:tokio-rustls", "dep:rustls-native-certs", "dep:rustls-pki-types"]
+rustls = ["dep:rustls"]
+tokio-rustls = ["dep:tokio-rustls"]
+rustls-native-certs = ["dep:rustls-native-certs"]
+rustls-pki-types = ["dep:rustls-pki-types"]
 
 [dependencies]
 toml_edit = { workspace = true, features = ["parse"] }
@@ -38,6 +42,10 @@ reqwest = { version = "0.12.28", default-features = false, features = [
 tokio = { workspace = true, features = ["net", "macros"], optional = true }
 cpal = { workspace = true, optional = true }
 bytemuck = { workspace = true, optional = true }
+rustls = { version = "0.23", default-features = false, features = ["ring", "std", "logging", "tls12"], optional = true }
+tokio-rustls = { version = "0.26", default-features = false, features = ["ring", "logging", "tls12"], optional = true }
+rustls-native-certs = { version = "0.8", optional = true }
+rustls-pki-types = { version = "1.0", optional = true }
 
 [dev-dependencies]
 tempfile = { workspace = true }

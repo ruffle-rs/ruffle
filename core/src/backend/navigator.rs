@@ -316,6 +316,22 @@ pub trait NavigatorBackend: Any {
         receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
     );
+
+    /// Handle a secure (TLS) Socket connection request.
+    ///
+    /// This is used by SecureSocket. By default it delegates to [connect_socket].
+    /// Backends that support TLS should override this to establish a TLS connection.
+    fn connect_secure_socket(
+        &mut self,
+        host: String,
+        port: u16,
+        timeout: Duration,
+        handle: SocketHandle,
+        receiver: Receiver<Vec<u8>>,
+        sender: Sender<SocketAction>,
+    ) {
+        self.connect_socket(host, port, timeout, handle, receiver, sender);
+    }
 }
 
 #[cfg(not(target_family = "wasm"))]
