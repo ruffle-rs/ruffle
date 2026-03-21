@@ -1,5 +1,7 @@
 ﻿package {
-	public class Test {
+	import flash.display.Sprite;
+
+	public class Test extends Sprite {
 	}
 }
 
@@ -29,3 +31,15 @@ trace(a.indexOf(undefined));
 
 trace("//a.indexOf(\"5\");");
 trace(a.indexOf("5"));
+
+trace("//a.indexOf(5, -1);");
+trace(a.indexOf(5, -1));
+
+trace("//a.indexOf(5, -3);");
+trace(a.indexOf(5, -3));
+
+trace("//a.indexOf(5, -8);");
+trace(a.indexOf(5, -8));
+
+trace("//a.indexOf(5, -9);");
+trace(a.indexOf(5, -9));
