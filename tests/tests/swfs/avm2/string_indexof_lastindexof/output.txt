@@ -1,20 +1,40 @@
-// // indexOf 
+// var s = "aaatestFOOtestaaanull"
+// // indexOf
 // s.indexOf("a")
+0
 // s.indexOf("a", 16)
+16
 // s.indexOf("a", 14)
+14
 // s.indexOf("a", 13)
+14
 // s.indexOf("a", 0)
+0
 // s.indexOf("test")
+3
 // s.indexOf("test", 4)
+10
 // s.indexOf("test", 100)
+-1
 // s.indexOf("test", -1)
+3
 // s.indexOf("test", 4294967300)
+-1
 // s.indexOf("test", null)
+3
 // s.indexOf("test", undefined)
+3
 // s.indexOf("")
+0
 // s.indexOf("", 5)
+5
 // s.indexOf("", 100)
+21
 // s.indexOf()
+-1
 // s.indexOf(null)
+-1
 // s.indexOf(undefined)
+-1
 // "hello undefined hi".indexOf(undefined)
+-1
