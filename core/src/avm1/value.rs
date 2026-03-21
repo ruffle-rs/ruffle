@@ -484,9 +484,7 @@ impl<'gc> Value<'gc> {
         }
 
         let result = match (prim_self, prim_other) {
-            (Value::String(a), Value::String(b)) => {
-                (a.as_wstr() < b.as_wstr()).into()
-            }
+            (Value::String(a), Value::String(b)) => (a.as_wstr() < b.as_wstr()).into(),
             (a, b) => {
                 // Coerce to number and compare, with any NaN resulting in undefined.
                 let a = a.primitive_as_number(activation);
