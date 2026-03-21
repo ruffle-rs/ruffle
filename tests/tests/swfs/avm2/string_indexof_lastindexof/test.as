@@ -1,5 +1,7 @@
 ﻿package {
-	public class test {}
+	import flash.display.Sprite;
+
+	public class test extends Sprite {}
 }
 
 trace("// var s = \"aaatestFOOtestaaanull\"");
