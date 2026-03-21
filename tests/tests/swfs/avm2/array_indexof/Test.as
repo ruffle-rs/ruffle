@@ -1,5 +1,7 @@
 ﻿package {
-	public class Test {
+	import flash.display.Sprite;
+
+	public class Test extends Sprite {
 	}
 }
 
