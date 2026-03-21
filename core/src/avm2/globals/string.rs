@@ -137,7 +137,7 @@ pub fn index_of<'gc>(
 
     let pattern = args.get_string(activation, 0);
 
-    let start_index = args.get_i32(1).max(0) as usize;
+    let start_index = string_index(args.get_f64(1), this.len());
 
     this.slice(start_index..)
         .and_then(|s| s.find(&pattern))
