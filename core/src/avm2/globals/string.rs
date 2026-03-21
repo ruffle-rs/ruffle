@@ -155,7 +155,9 @@ pub fn last_index_of<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.coerce_to_string(activation)?;
 
-    let pattern = args.get_string(activation, 0);
+    let Some(pattern) = args.try_get_string(0) else {
+        return Ok((-1).into());
+    };
 
     let start_index = match args.get_f64(1) {
         float if float.is_nan() => this.len(),
