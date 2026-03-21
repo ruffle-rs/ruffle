@@ -102,6 +102,7 @@ impl<'gc> FocusTracker<'gc> {
         &self,
         new: Option<InteractiveObject<'gc>>,
         context: &mut UpdateContext<'gc>,
+        should_reset_focus: bool,
     ) {
         let old = self.0.focus.get();
 
@@ -114,6 +115,10 @@ impl<'gc> FocusTracker<'gc> {
         }
 
         if Self::dispatch_focus_change_event(context, "mouseFocusChange", old, new, None) {
+            return;
+        }
+
+        if !should_reset_focus {
             return;
         }
 
@@ -164,6 +169,20 @@ impl<'gc> FocusTracker<'gc> {
 
         let old = self.0.focus.get();
 
+        fn handle_focus_change<'gc>(
+            int: Option<InteractiveObject<'gc>>,
+            focused: bool,
+            other: Option<InteractiveObject<'gc>>,
+            filter: fn(&DisplayObject<'gc>) -> bool,
+            context: &mut UpdateContext<'gc>,
+        ) {
+            if let Some(int) = int.filter(|int| filter(&int.as_displayobject())) {
+                int.set_has_focus(focused);
+                int.on_focus_changed(context, focused, other);
+                int.call_focus_handler(context, focused, other);
+            }
+        }
+
         // Check if the focused element changed.
         if !InteractiveObject::option_ptr_eq(old, new) {
             let focus = unlock!(Gc::write(context.gc(), self.0), FocusTrackerData, focus);
@@ -172,18 +191,10 @@ impl<'gc> FocusTracker<'gc> {
             // The highlight always follows the focus.
             self.update_highlight(context);
 
-            if let Some(old) = old {
-                old.set_has_focus(false);
-                old.on_focus_changed(context, false, new);
-                old.call_focus_handler(context, false, new);
-            }
-            if let Some(new) = new {
-                new.set_has_focus(true);
-                new.on_focus_changed(context, true, old);
-                new.call_focus_handler(context, true, old);
-            }
-
-            tracing::info!("Focus is now on {:?}", new);
+            // AVM2's focus events shouldn't fire yet, as that only happens
+            // after all of AVM1's focus handlers have been fired.
+            handle_focus_change(old, false, new, |dobj| dobj.object1().is_some(), context);
+            handle_focus_change(new, true, old, |dobj| dobj.object1().is_some(), context);
 
             if let Some(level0) = context.stage.root_clip() {
                 Avm1::notify_system_listeners(
@@ -201,6 +212,12 @@ impl<'gc> FocusTracker<'gc> {
                     context,
                 );
             }
+
+            // Now we fire the AVM2 focus changes.
+            handle_focus_change(old, false, new, |dobj| dobj.object2().is_some(), context);
+            handle_focus_change(new, true, old, |dobj| dobj.object2().is_some(), context);
+
+            tracing::info!("Focus is now on {:?}", new);
         }
 
         self.update_virtual_keyboard(context);

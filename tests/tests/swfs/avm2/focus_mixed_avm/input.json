@@ -1,0 +1,74 @@
+[
+  { "type": "Wait" },
+  { "type": "Wait" },
+  { "type": "MouseMove", "pos": [1, 1] },
+  { "type": "MouseDown", "pos": [1, 1], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 1], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 301] },
+  { "type": "MouseDown", "pos": [1, 301], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 301], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 351] },
+  { "type": "MouseDown", "pos": [1, 351], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 351], "btn": "Left" },
+
+  { "type": "MouseMove", "pos": [1, 51] },
+  { "type": "MouseDown", "pos": [1, 51], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 51], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 301] },
+  { "type": "MouseDown", "pos": [1, 301], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 301], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 351] },
+  { "type": "MouseDown", "pos": [1, 351], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 351], "btn": "Left" },
+
+  { "type": "MouseMove", "pos": [1, 101] },
+  { "type": "MouseDown", "pos": [1, 101], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 101], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 301] },
+  { "type": "MouseDown", "pos": [1, 301], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 301], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 351] },
+  { "type": "MouseDown", "pos": [1, 351], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 351], "btn": "Left" },
+
+  { "type": "MouseMove", "pos": [1, 151] },
+  { "type": "MouseDown", "pos": [1, 151], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 151], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 301] },
+  { "type": "MouseDown", "pos": [1, 301], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 301], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 351] },
+  { "type": "MouseDown", "pos": [1, 351], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 351], "btn": "Left" },
+
+  { "type": "MouseMove", "pos": [1, 201] },
+  { "type": "MouseDown", "pos": [1, 201], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 201], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 301] },
+  { "type": "MouseDown", "pos": [1, 301], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 301], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 351] },
+  { "type": "MouseDown", "pos": [1, 351], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 351], "btn": "Left" },
+
+
+  { "type": "MouseMove", "pos": [1, 251] },
+  { "type": "MouseDown", "pos": [1, 251], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 251], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 1] },
+  { "type": "MouseDown", "pos": [1, 1], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 1], "btn": "Left" },
+
+  { "type": "MouseMove", "pos": [1, 251] },
+  { "type": "MouseDown", "pos": [1, 251], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 251], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 51] },
+  { "type": "MouseDown", "pos": [1, 51], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 51], "btn": "Left" },
+
+  { "type": "MouseMove", "pos": [1, 251] },
+  { "type": "MouseDown", "pos": [1, 251], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 251], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 101] },
+  { "type": "MouseDown", "pos": [1, 101], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 101], "btn": "Left" },
+
+  { "type": "MouseMove", "pos": [1, 251] },
+  { "type": "MouseDown", "pos": [1, 251], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 251], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 151] },
+  { "type": "MouseDown", "pos": [1, 151], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 151], "btn": "Left" },
+
+  { "type": "MouseMove", "pos": [1, 251] },
+  { "type": "MouseDown", "pos": [1, 251], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 251], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 201] },
+  { "type": "MouseDown", "pos": [1, 201], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 201], "btn": "Left" },
+
+  { "type": "MouseMove", "pos": [1, 251] },
+  { "type": "MouseDown", "pos": [1, 251], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 251], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 301] },
+  { "type": "MouseDown", "pos": [1, 301], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 301], "btn": "Left" },
+
+  { "type": "MouseMove", "pos": [1, 251] },
+  { "type": "MouseDown", "pos": [1, 251], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 251], "btn": "Left" },
+  { "type": "MouseMove", "pos": [1, 351] },
+  { "type": "MouseDown", "pos": [1, 351], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 351], "btn": "Left" }
+]
