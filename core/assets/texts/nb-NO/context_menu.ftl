@@ -5,6 +5,7 @@ context-menu-back = Tilbake
 context-menu-quality-low = Kvalitet: lav
 context-menu-quality-medium = Kvalitet: medium
 context-menu-quality-high = Kvalitet: høy
+context-menu-cut = Kutt
 context-menu-copy = Kopier
 context-menu-paste = Lim inn
 context-menu-delete = Slett
