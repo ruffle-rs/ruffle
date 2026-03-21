@@ -237,7 +237,8 @@ After `mxmlc` is set up, create a file `Test.as` (note the capitalization) in a 
 
 ```as
 package {
-    public class Test {}
+    import flash.display.Sprite;
+    public class Test extends Sprite {}
 }
 
 // Your test here.
