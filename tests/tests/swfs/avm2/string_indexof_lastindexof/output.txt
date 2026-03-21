@@ -38,3 +38,42 @@
 -1
 // "hello undefined hi".indexOf(undefined)
 -1
+// // lastIndexOf
+// s.lastIndexOf("a")
+16
+// s.lastIndexOf("a", 16)
+16
+// s.lastIndexOf("a", 14)
+14
+// s.lastIndexOf("a", 13)
+2
+// s.lastIndexOf("a", 0)
+0
+// s.lastIndexOf("test")
+10
+// s.lastIndexOf("test", 4)
+3
+// s.lastIndexOf("test", 100)
+10
+// s.lastIndexOf("test", -1)
+-1
+// s.lastIndexOf("test", 4294967300)
+10
+// s.lastIndexOf("test", null)
+-1
+// s.lastIndexOf("test", undefined)
+10
+// s.lastIndexOf("")
+21
+// s.lastIndexOf("", 5)
+5
+// s.lastIndexOf("", 100)
+21
+// s.lastIndexOf()
+-1
+// s.lastIndexOf(null)
+-1
+// s.lastIndexOf(undefined)
+-1
+// "hello undefined hi".lastIndexOf(undefined)
+-1
