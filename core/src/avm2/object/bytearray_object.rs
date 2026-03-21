@@ -177,23 +177,6 @@ impl<'gc> TObject<'gc> for ByteArrayObject<'gc> {
         self.base().set_property_local(name, value, activation)
     }
 
-    fn init_property_local(
-        self,
-        name: &Multiname<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        if name.valid_dynamic_name() {
-            if let Some(name) = name.local_name() {
-                if let Some(index) = ArrayObject::as_array_index(&name) {
-                    return self.set_element(activation, index, value);
-                }
-            }
-        }
-
-        self.base().init_property_local(name, value, activation)
-    }
-
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         if name.valid_dynamic_name() {
             if let Some(name) = name.local_name() {

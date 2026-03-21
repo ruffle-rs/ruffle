@@ -325,24 +325,6 @@ pub trait TObject<'gc>: 'gc + Collect<'gc> + Debug + Into<Object<'gc>> + Clone +
         None
     }
 
-    /// Init a local property of the object. The Multiname should always be public.
-    ///
-    /// This skips class field lookups and looks at:
-    /// - object-specific storage (like arrays)
-    /// - Object dynamic properties
-    ///
-    /// This should be effectively equivalent to set_property_local,
-    /// as "init" is a concept specific to class const fields.
-    fn init_property_local(
-        self,
-        name: &Multiname<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        let base = self.base();
-        base.init_property_local(name, value, activation)
-    }
-
     /// Call a local property of the object. The Multiname should always be public.
     ///
     /// This skips class field lookups and looks at:

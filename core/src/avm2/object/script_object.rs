@@ -261,15 +261,6 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         Ok(())
     }
 
-    pub fn init_property_local(
-        self,
-        multiname: &Multiname<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.set_property_local(multiname, value, activation)
-    }
-
     pub fn delete_property_local(self, mc: &Mutation<'gc>, multiname: &Multiname<'gc>) -> bool {
         // TODO: FP behaves differently here in interpreter mode vs JIT mode
         if !multiname.valid_dynamic_name() {
