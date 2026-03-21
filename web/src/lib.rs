@@ -5,6 +5,7 @@ mod audio;
 mod builder;
 mod external_interface;
 mod input;
+mod local_connection;
 mod log_adapter;
 mod navigator;
 mod storage;

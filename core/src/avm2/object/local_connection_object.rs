@@ -87,6 +87,7 @@ impl<'gc> LocalConnectionObject<'gc> {
             &LocalConnections::get_domain(activation.context.root_swf.url()),
             (activation.domain(), self),
             &name,
+            activation.context.local_connection_backend,
         );
         let result = connection_handle.is_some();
 
@@ -97,7 +98,10 @@ impl<'gc> LocalConnectionObject<'gc> {
 
     pub fn disconnect(self, activation: &mut Activation<'_, 'gc>) {
         if let Some(conn_handle) = self.0.connection_handle.borrow_mut().take() {
-            activation.context.local_connections.close(conn_handle);
+            activation
+                .context
+                .local_connections
+                .close(conn_handle, activation.context.local_connection_backend);
         }
     }
 
