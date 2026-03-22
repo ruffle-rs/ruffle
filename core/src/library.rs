@@ -439,10 +439,6 @@ pub struct Library<'gc> {
     /// These should be checked before any Movie-specific library's own fonts.
     global_fonts: FontMap<'gc>,
 
-    /// The AVM2 class associated with each globally registered font.
-    /// This is used by `Font.enumerateFonts` to create instances of the correct subclass.
-    global_font_classes: Vec<(Font<'gc>, ClassObject<'gc>)>,
-
     /// A set of which fonts we've asked from the backend already, to help with negative caching.
     /// If we've asked for a specific font, record it here and don't ask again.
     font_lookup_cache: FnvHashSet<FontQuery>,
@@ -467,7 +463,6 @@ impl<'gc> Library<'gc> {
             movie_libraries: MovieLibraries::new(),
             device_fonts: Default::default(),
             global_fonts: Default::default(),
-            global_font_classes: Default::default(),
             font_lookup_cache: Default::default(),
             font_sort_cache: Default::default(),
             default_font_names: Default::default(),
@@ -730,20 +725,12 @@ impl<'gc> Library<'gc> {
     }
 
     pub fn register_global_font(&mut self, font: Font<'gc>, class: ClassObject<'gc>) {
-        self.global_fonts.register(font);
-
-        if !self
-            .global_font_classes
-            .iter()
-            .any(|(f, _)| Font::ptr_eq(*f, font))
-        {
-            self.global_font_classes.push((font, class));
-        }
+        self.global_fonts.register_with_class(font, class);
     }
 
     /// Get the globally registered fonts with their associated AVM2 classes.
-    pub fn global_fonts_with_classes(&self) -> &Vec<(Font<'gc>, ClassObject<'gc>)> {
-        &self.global_font_classes
+    pub fn global_fonts_with_classes(&self) -> Vec<(Font<'gc>, ClassObject<'gc>)> {
+        self.global_fonts.all_with_classes()
     }
 
     /// Get the AVM2 class registry.
@@ -759,18 +746,25 @@ impl<'gc> Library<'gc> {
 
 #[derive(Collect, Default)]
 #[collect(no_drop)]
-struct FontMap<'gc>(FnvHashMap<FontQuery, Font<'gc>>);
+struct FontMap<'gc>(FnvHashMap<FontQuery, (Font<'gc>, Option<ClassObject<'gc>>)>);
 
 impl<'gc> FontMap<'gc> {
     pub fn register(&mut self, font: Font<'gc>) {
         let descriptor = font.descriptor();
         self.0
             .entry(FontQuery::from_descriptor(font.font_type(), descriptor))
-            .or_insert(font);
+            .or_insert((font, None));
+    }
+
+    pub fn register_with_class(&mut self, font: Font<'gc>, class: ClassObject<'gc>) {
+        let descriptor = font.descriptor();
+        self.0
+            .entry(FontQuery::from_descriptor(font.font_type(), descriptor))
+            .or_insert((font, Some(class)));
     }
 
     pub fn get(&self, font_query: &FontQuery) -> Option<&Font<'gc>> {
-        self.0.get(font_query)
+        self.0.get(font_query).map(|(f, _)| f)
     }
 
     pub fn find(&self, font_query: &FontQuery) -> Option<Font<'gc>> {
@@ -846,6 +840,13 @@ impl<'gc> FontMap<'gc> {
     }
 
     pub fn all(&self) -> Vec<Font<'gc>> {
-        self.0.values().copied().collect()
+        self.0.values().map(|(f, _)| *f).collect()
+    }
+
+    pub fn all_with_classes(&self) -> Vec<(Font<'gc>, ClassObject<'gc>)> {
+        self.0
+            .values()
+            .filter_map(|(f, c)| c.map(|c| (*f, c)))
+            .collect()
     }
 }

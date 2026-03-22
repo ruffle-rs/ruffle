@@ -123,7 +123,7 @@ pub fn enumerate_fonts<'gc>(
         }
     }
 
-    for &(font, class) in activation.context.library.global_fonts_with_classes() {
+    for (font, class) in activation.context.library.global_fonts_with_classes() {
         fonts.push((font, class));
     }
 
