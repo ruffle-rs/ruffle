@@ -5,9 +5,9 @@ use crate::avm2::Multiname;
 use crate::avm2::QName;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::domain::Domain;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
+use crate::avm2::property::PropertyClass;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::value::{Value, abc_default_value};
 use bitflags::bitflags;
@@ -75,9 +75,16 @@ pub enum TraitKind<'gc> {
     /// to.
     Slot {
         slot_id: usize,
-        type_name: Option<Gc<'gc, Multiname<'gc>>>,
+        slot_type: PropertyClass<'gc>,
         default_value: Value<'gc>,
-        domain: Domain<'gc>,
+    },
+
+    /// A data field on an object that is always a particular value, and cannot
+    /// be overridden.
+    Const {
+        slot_id: usize,
+        slot_type: PropertyClass<'gc>,
+        default_value: Value<'gc>,
     },
 
     /// A method on an object that can be called.
@@ -92,32 +99,21 @@ pub enum TraitKind<'gc> {
     /// A class property on an object that can be used to construct more
     /// objects.
     Class { slot_id: usize, class: Class<'gc> },
-
-    /// A data field on an object that is always a particular value, and cannot
-    /// be overridden.
-    Const {
-        slot_id: usize,
-        type_name: Option<Gc<'gc, Multiname<'gc>>>,
-        default_value: Value<'gc>,
-        domain: Domain<'gc>,
-    },
 }
 
 impl<'gc> Trait<'gc> {
-    pub fn from_const(
-        name: QName<'gc>,
-        type_name: Option<Gc<'gc, Multiname<'gc>>>,
-        default_value: Option<Value<'gc>>,
-        domain: Domain<'gc>,
-    ) -> Self {
+    pub fn new_slot(name: QName<'gc>, class: Option<Class<'gc>>) -> Self {
+        let slot_type = class
+            .map(PropertyClass::Class)
+            .unwrap_or(PropertyClass::Any);
+
         Trait {
             name,
             attributes: TraitAttributes::empty(),
-            kind: TraitKind::Const {
+            kind: TraitKind::Slot {
                 slot_id: 0,
-                default_value: default_value.unwrap_or_else(|| default_value_for_type(type_name)),
-                type_name,
-                domain,
+                slot_type,
+                default_value: default_value_for_class(class),
             },
             metadata: None,
         }
@@ -144,9 +140,8 @@ impl<'gc> Trait<'gc> {
                     attributes: trait_attribs_from_abc_traits(abc_trait),
                     kind: TraitKind::Slot {
                         slot_id: slot_id as usize,
-                        type_name,
+                        slot_type: PropertyClass::name(type_name, unit.domain()),
                         default_value,
-                        domain: unit.domain(),
                     },
                     metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
                 }
@@ -200,9 +195,8 @@ impl<'gc> Trait<'gc> {
                     attributes: trait_attribs_from_abc_traits(abc_trait),
                     kind: TraitKind::Const {
                         slot_id: slot_id as usize,
-                        type_name,
+                        slot_type: PropertyClass::name(type_name, unit.domain()),
                         default_value,
-                        domain: unit.domain(),
                     },
                     metadata: Metadata::from_abc_index(activation, unit, &abc_trait.metadata)?,
                 }
@@ -228,30 +222,6 @@ impl<'gc> Trait<'gc> {
 
     pub fn is_override(&self) -> bool {
         self.attributes.contains(TraitAttributes::OVERRIDE)
-    }
-
-    /// Get the slot ID of this trait.
-    pub fn slot_id(&self) -> Option<usize> {
-        match self.kind {
-            TraitKind::Slot { slot_id, .. } => Some(slot_id),
-            TraitKind::Method { .. } => None,
-            TraitKind::Getter { .. } => None,
-            TraitKind::Setter { .. } => None,
-            TraitKind::Class { slot_id, .. } => Some(slot_id),
-            TraitKind::Const { slot_id, .. } => Some(slot_id),
-        }
-    }
-
-    /// Get the dispatch ID of this trait.
-    pub fn disp_id(&self) -> Option<usize> {
-        match self.kind {
-            TraitKind::Slot { .. } => None,
-            TraitKind::Method { disp_id, .. } => Some(disp_id),
-            TraitKind::Getter { disp_id, .. } => Some(disp_id),
-            TraitKind::Setter { disp_id, .. } => Some(disp_id),
-            TraitKind::Class { .. } => None,
-            TraitKind::Const { .. } => None,
-        }
     }
 
     /// Get the method contained within this trait, if it has one.
@@ -314,6 +284,29 @@ fn default_value_for_type<'gc>(type_name: Option<Gc<'gc, Multiname<'gc>>>) -> Va
             Value::Null
         }
     } else {
+        // Untyped aka `*`
+        Value::Undefined
+    }
+}
+
+/// Like `default_value_for_type`, but takes a `Class` instead of a `Multiname`.
+fn default_value_for_class<'gc>(type_class: Option<Class<'gc>>) -> Value<'gc> {
+    if let Some(type_class) = type_class {
+        if type_class.is_builtin_boolean() {
+            false.into()
+        } else if type_class.is_builtin_number() {
+            f64::NAN.into()
+        } else if type_class.is_builtin_int() {
+            0.into()
+        } else if type_class.is_builtin_string() {
+            Value::Null
+        } else if type_class.is_builtin_uint() {
+            0.into()
+        } else {
+            Value::Null
+        }
+    } else {
+        // Untyped aka `*`
         Value::Undefined
     }
 }
