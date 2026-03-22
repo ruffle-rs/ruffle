@@ -38,6 +38,10 @@
 -1
 // "hello undefined hi".indexOf(undefined)
 -1
+// "".indexOf(null)
+-1
+// "".indexOf(undefined)
+-1
 // // lastIndexOf
 // s.lastIndexOf("a")
 16
@@ -76,4 +80,8 @@
 // s.lastIndexOf(undefined)
 -1
 // "hello undefined hi".lastIndexOf(undefined)
+-1
+// "".lastIndexOf(null)
+-1
+// "".lastIndexOf(undefined)
 -1

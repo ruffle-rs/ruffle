@@ -46,6 +46,10 @@ trace("// s.indexOf(undefined)");
 trace(s.indexOf(undefined));
 trace("// \"hello undefined hi\".indexOf(undefined)");
 trace("hello undefined hi".indexOf(undefined));
+trace("// \"\".indexOf(null)");
+trace("".indexOf(null));
+trace("// \"\".indexOf(undefined)");
+trace("".indexOf(undefined));
 
 trace("// // lastIndexOf");
 // lastIndexOf
@@ -87,3 +91,7 @@ trace("// s.lastIndexOf(undefined)");
 trace(s.lastIndexOf(undefined));
 trace("// \"hello undefined hi\".lastIndexOf(undefined)");
 trace("hello undefined hi".lastIndexOf(undefined));
+trace("// \"\".lastIndexOf(null)");
+trace("".lastIndexOf(null));
+trace("// \"\".lastIndexOf(undefined)");
+trace("".lastIndexOf(undefined));
