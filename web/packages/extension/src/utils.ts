@@ -37,21 +37,6 @@ export let declarativeNetRequest:
     | typeof browser.declarativeNetRequest
     | typeof chrome.declarativeNetRequest;
 
-function promisify<T>(
-    func: (callback: (result: T) => void) => void,
-): Promise<T> {
-    return new Promise((resolve, reject) => {
-        func((result) => {
-            const error = chrome.runtime.lastError;
-            if (error) {
-                reject(error);
-            } else {
-                resolve(result);
-            }
-        });
-    });
-}
-
 if (typeof browser !== "undefined") {
     i18n = browser.i18n;
     scripting = browser.scripting as ScriptingType;
@@ -73,10 +58,22 @@ if (typeof browser !== "undefined") {
 }
 export const openOptionsPage: () => Promise<void> = () =>
     runtime.openOptionsPage();
-export const openPlayerPage: () => Promise<void> = () =>
-    promisify((cb: () => void) => tabs.create({ url: "/player.html" }, cb));
-export const openOnboardPage: () => Promise<void> = () =>
-    promisify((cb: () => void) => tabs.create({ url: "/onboard.html" }, cb));
+
+async function getAdjacentTabIndex(): Promise<number | undefined> {
+    const [activeTab] = await tabs.query({
+        active: true,
+        currentWindow: true,
+    });
+    return activeTab?.index !== undefined ? activeTab.index + 1 : undefined;
+}
+export const openPlayerPage: () => Promise<void> = async () => {
+    const index = await getAdjacentTabIndex();
+    await tabs.create({ url: "/player.html", index });
+};
+export const openOnboardPage: () => Promise<void> = async () => {
+    const index = await getAdjacentTabIndex();
+    await tabs.create({ url: "/onboard.html", index });
+};
 
 export async function getOptions(): Promise<Options> {
     const options = await storage.sync.get();
