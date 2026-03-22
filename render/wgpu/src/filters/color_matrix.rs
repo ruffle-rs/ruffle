@@ -65,7 +65,7 @@ impl ColorMatrixFilter {
         let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
             label: None,
             bind_group_layouts: &[&bind_group_layout],
-            push_constant_ranges: &[],
+            immediate_size: 0,
         });
 
         let uniform_buffer = device.create_buffer(&wgpu::BufferDescriptor {
@@ -121,7 +121,7 @@ impl ColorMatrixFilter {
                         targets: &[Some(wgpu::TextureFormat::Rgba8Unorm.into())],
                         compilation_options: Default::default(),
                     }),
-                    multiview: None,
+                    multiview_mask: None,
                     cache: None,
                 })
         })
@@ -155,22 +155,10 @@ impl ColorMatrixFilter {
         );
         let source_view = source.texture.create_view(&Default::default());
         staging_belt
-            .write_buffer(
-                draw_encoder,
-                &self.uniform_buffer,
-                0,
-                self.uniform_size,
-                &descriptors.device,
-            )
+            .write_buffer(draw_encoder, &self.uniform_buffer, 0, self.uniform_size)
             .copy_from_slice(bytemuck::cast_slice(&filter.matrix));
         staging_belt
-            .write_buffer(
-                draw_encoder,
-                &self.vertex_buffer,
-                0,
-                self.vertices_size,
-                &descriptors.device,
-            )
+            .write_buffer(draw_encoder, &self.vertex_buffer, 0, self.vertices_size)
             .copy_from_slice(bytemuck::cast_slice(&[source.vertices()]));
         let filter_group = descriptors
             .device

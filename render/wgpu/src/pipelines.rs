@@ -96,7 +96,7 @@ impl Pipelines {
             &VERTEX_BUFFERS_DESCRIPTION_COLOR,
             &colort_bindings,
             BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            &[],
+            0,
             PrimitiveTopology::TriangleList,
         );
 
@@ -109,7 +109,7 @@ impl Pipelines {
             &VERTEX_BUFFERS_DESCRIPTION_COLOR,
             &colort_bindings,
             BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            &[],
+            0,
             PrimitiveTopology::LineStrip,
         );
 
@@ -128,7 +128,7 @@ impl Pipelines {
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             &gradient_bindings,
             BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            &[],
+            0,
             PrimitiveTopology::TriangleList,
         );
 
@@ -148,7 +148,7 @@ impl Pipelines {
                 &VERTEX_BUFFERS_DESCRIPTION_POS,
                 &complex_blend_bindings,
                 BlendState::REPLACE,
-                &[],
+                0,
                 PrimitiveTopology::TriangleList,
             )
         };
@@ -172,7 +172,7 @@ impl Pipelines {
                     &VERTEX_BUFFERS_DESCRIPTION_POS,
                     &bitmap_blend_bindings,
                     blend.blend_state(),
-                    &[],
+                    0,
                     PrimitiveTopology::TriangleList,
                 )
             });
@@ -183,7 +183,7 @@ impl Pipelines {
             device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                 label: bitmap_opaque_pipeline_layout_label.as_deref(),
                 bind_group_layouts: &bitmap_blend_bindings,
-                push_constant_ranges: &[],
+                immediate_size: 0,
             });
 
         let bitmap_opaque = device.create_render_pipeline(&create_pipeline_descriptor(
@@ -246,7 +246,7 @@ impl Pipelines {
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             &alpha_mask_bindings,
             BlendState::PREMULTIPLIED_ALPHA_BLENDING,
-            &[],
+            0,
             PrimitiveTopology::TriangleList,
         );
 
@@ -309,7 +309,7 @@ fn create_pipeline_descriptor<'a>(
             mask: !0,
             alpha_to_coverage_enabled: false,
         },
-        multiview: None,
+        multiview_mask: None,
         cache: None,
     }
 }
@@ -324,14 +324,14 @@ fn create_shape_pipeline(
     vertex_buffers_layout: &[wgpu::VertexBufferLayout<'_>],
     bind_group_layouts: &[&wgpu::BindGroupLayout],
     blend: BlendState,
-    push_constant_ranges: &[wgpu::PushConstantRange],
+    immediate_size: u32,
     primitive_topology: PrimitiveTopology,
 ) -> ShapePipeline {
     let pipeline_layout_label = create_debug_label!("{} shape pipeline layout", name);
     let pipeline_layout = device.create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
         label: pipeline_layout_label.as_deref(),
         bind_group_layouts,
-        push_constant_ranges,
+        immediate_size,
     });
 
     let mask_render_state = |mask_name, stencil_state, write_mask| {
