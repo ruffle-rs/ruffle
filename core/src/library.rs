@@ -729,10 +729,6 @@ impl<'gc> Library<'gc> {
         None
     }
 
-    pub fn global_fonts(&self) -> Vec<Font<'gc>> {
-        self.global_fonts.all()
-    }
-
     pub fn register_global_font(&mut self, font: Font<'gc>, class: ClassObject<'gc>) {
         self.global_fonts.register(font);
 
@@ -745,12 +741,9 @@ impl<'gc> Library<'gc> {
         }
     }
 
-    /// Get the AVM2 class associated with a registered font.
-    pub fn global_font_class(&self, font: Font<'gc>) -> Option<ClassObject<'gc>> {
-        self.global_font_classes
-            .iter()
-            .find(|(f, _)| Font::ptr_eq(*f, font))
-            .map(|(_, c)| *c)
+    /// Get the globally registered fonts with their associated AVM2 classes.
+    pub fn global_fonts_with_classes(&self) -> &Vec<(Font<'gc>, ClassObject<'gc>)> {
+        &self.global_font_classes
     }
 
     /// Get the AVM2 class registry.
