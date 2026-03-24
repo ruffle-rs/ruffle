@@ -8,8 +8,7 @@ use crate::avm2::object::Object;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::string::AvmString;
-use encoding_rs::Encoding;
-use encoding_rs::UTF_8;
+use encoding_rs::{Encoding, UTF_8, UTF_16BE, UTF_16LE};
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf3::read::AMF3Decoder;
 use flash_lso::types::{AMFVersion, Element};
@@ -652,7 +651,24 @@ pub fn write_multi_byte<'gc>(
         let encoder =
             Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
         let utf8 = string.to_utf8_lossy();
-        let (encoded_bytes, _, _) = encoder.encode(&utf8);
+
+        // encoding_rs doesn't support encoding to UTF-16, so we have to handle it manually
+        let encoded_bytes = if encoder == UTF_16LE || encoder == UTF_16BE {
+            let mut bytes = Vec::with_capacity(utf8.len() * 2);
+            for c in utf8.encode_utf16() {
+                let encoded = if encoder == UTF_16LE {
+                    c.to_le_bytes()
+                } else {
+                    c.to_be_bytes()
+                };
+                bytes.extend_from_slice(&encoded);
+            }
+            std::borrow::Cow::Owned(bytes)
+        } else {
+            let (encoded_bytes, _, _) = encoder.encode(&utf8);
+            encoded_bytes
+        };
+
         bytearray
             .write_bytes(&encoded_bytes)
             .map_err(|e| e.to_avm(activation))?;
