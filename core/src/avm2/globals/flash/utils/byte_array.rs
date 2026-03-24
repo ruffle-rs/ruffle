@@ -671,19 +671,22 @@ pub fn read_multi_byte<'gc>(
     if let Some(bytearray) = this.as_bytearray() {
         let len = args.get_u32(0);
         let charset_label = args.get_string_non_null(activation, 1, "charSet")?;
-        let mut bytes = bytearray
+        let bytes = bytearray
             .read_bytes(len as usize)
             .map_err(|e| e.to_avm(activation))?;
-
-        // Flash cuts off the string at the first null byte (after checking that
-        // the original length fits in the ByteArray)
-        if let Some(null) = bytes.iter().position(|b| *b == b'\0') {
-            bytes = &bytes[..null];
-        }
 
         let encoder =
             Encoding::for_label(charset_label.to_utf8_lossy().as_bytes()).unwrap_or(UTF_8);
         let (decoded_str, _, _) = encoder.decode(bytes);
+
+        // Flash cuts off the string at the first null character (after checking that
+        // the original length fits in the ByteArray)
+        let decoded_str = if let Some(null_pos) = decoded_str.find('\0') {
+            &decoded_str[..null_pos]
+        } else {
+            &decoded_str
+        };
+
         return Ok(AvmString::new_utf8(activation.gc(), decoded_str).into());
     }
 
