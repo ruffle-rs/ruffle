@@ -119,7 +119,7 @@ impl<'gc, V> PropertyMap<'gc, V> {
 
             Some(old_value)
         } else {
-            bucket.insert(0, (name.namespace(), value));
+            bucket.push((name.namespace(), value));
 
             None
         }
@@ -139,9 +139,29 @@ impl<'gc, V> PropertyMap<'gc, V> {
 
             Some(old_value)
         } else {
-            bucket.insert(0, (ns, value));
+            bucket.push((ns, value));
 
             None
+        }
+    }
+
+    pub fn ns_counts(&self) -> HashMap<AvmString<'gc>, usize, FnvBuildHasher> {
+        self.0
+            .iter()
+            .map(|(name, bucket)| (*name, bucket.len()))
+            .collect()
+    }
+
+    pub fn promote_since(
+        &mut self,
+        saved_ns_counts: &HashMap<AvmString<'gc>, usize, FnvBuildHasher>,
+    ) {
+        for (name, &old_size) in saved_ns_counts {
+            if let Some(bucket) = self.0.get_mut(name) {
+                if bucket.len() > old_size {
+                    bucket.rotate_left(old_size);
+                }
+            }
         }
     }
 
