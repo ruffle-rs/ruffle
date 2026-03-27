@@ -53,6 +53,7 @@ impl<'gc> LocalConnection<'gc> {
             &LocalConnections::get_domain(activation.context.root_swf.url()),
             this,
             &name,
+            activation.context.local_connection_backend,
         );
         let result = connection_handle.is_some();
         *self.0.handle.borrow_mut() = connection_handle;
@@ -61,7 +62,10 @@ impl<'gc> LocalConnection<'gc> {
 
     pub fn disconnect(self, activation: &mut Activation<'_, 'gc>) {
         if let Some(conn_handle) = self.0.handle.take() {
-            activation.context.local_connections.close(conn_handle);
+            activation
+                .context
+                .local_connections
+                .close(conn_handle, activation.context.local_connection_backend);
         }
     }
 
@@ -235,6 +239,7 @@ pub fn send<'gc>(
         *connection_name,
         *method_name,
         amf_arguments,
+        activation.context.local_connection_backend,
     );
     Ok(true.into())
 }
