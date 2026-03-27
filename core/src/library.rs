@@ -1,4 +1,5 @@
 use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
+use crate::avm2::object::ClassObject;
 use crate::avm2::{Class as Avm2Class, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
@@ -723,12 +724,13 @@ impl<'gc> Library<'gc> {
         None
     }
 
-    pub fn global_fonts(&self) -> Vec<Font<'gc>> {
-        self.global_fonts.all()
+    pub fn register_global_font(&mut self, font: Font<'gc>, class: ClassObject<'gc>) {
+        self.global_fonts.register_with_class(font, class);
     }
 
-    pub fn register_global_font(&mut self, font: Font<'gc>) {
-        self.global_fonts.register(font);
+    /// Get the globally registered fonts with their associated AVM2 classes.
+    pub fn global_fonts_with_classes(&self) -> Vec<(Font<'gc>, ClassObject<'gc>)> {
+        self.global_fonts.all_with_classes()
     }
 
     /// Get the AVM2 class registry.
@@ -744,18 +746,25 @@ impl<'gc> Library<'gc> {
 
 #[derive(Collect, Default)]
 #[collect(no_drop)]
-struct FontMap<'gc>(FnvHashMap<FontQuery, Font<'gc>>);
+struct FontMap<'gc>(FnvHashMap<FontQuery, (Font<'gc>, Option<ClassObject<'gc>>)>);
 
 impl<'gc> FontMap<'gc> {
     pub fn register(&mut self, font: Font<'gc>) {
         let descriptor = font.descriptor();
         self.0
             .entry(FontQuery::from_descriptor(font.font_type(), descriptor))
-            .or_insert(font);
+            .or_insert((font, None));
+    }
+
+    pub fn register_with_class(&mut self, font: Font<'gc>, class: ClassObject<'gc>) {
+        let descriptor = font.descriptor();
+        self.0
+            .entry(FontQuery::from_descriptor(font.font_type(), descriptor))
+            .or_insert((font, Some(class)));
     }
 
     pub fn get(&self, font_query: &FontQuery) -> Option<&Font<'gc>> {
-        self.0.get(font_query)
+        self.0.get(font_query).map(|(f, _)| f)
     }
 
     pub fn find(&self, font_query: &FontQuery) -> Option<Font<'gc>> {
@@ -831,6 +840,13 @@ impl<'gc> FontMap<'gc> {
     }
 
     pub fn all(&self) -> Vec<Font<'gc>> {
-        self.0.values().copied().collect()
+        self.0.values().map(|(f, _)| *f).collect()
+    }
+
+    pub fn all_with_classes(&self) -> Vec<(Font<'gc>, ClassObject<'gc>)> {
+        self.0
+            .values()
+            .filter_map(|(f, c)| c.map(|c| (*f, c)))
+            .collect()
     }
 }
