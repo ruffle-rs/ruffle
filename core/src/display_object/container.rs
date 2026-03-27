@@ -218,11 +218,10 @@ pub trait TDisplayObjectContainer<'gc>:
         child.set_place_frame(0);
         child.set_depth(depth);
 
-        if let Some(removed_child) = removed_child {
-            if !self.raw_container().is_action_script_3() {
-                removed_child.avm1_unload(context);
-            }
-            removed_child.set_parent(context, None);
+        if let Some(removed_child) = removed_child
+            && !self.raw_container().is_action_script_3()
+        {
+            removed_child.avm1_unload(context);
         }
 
         let this: DisplayObject<'_> = self.into();
