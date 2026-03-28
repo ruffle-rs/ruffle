@@ -28,7 +28,7 @@
                 "https://kick.com/*", // See https://github.com/ruffle-rs/ruffle/issues/21708
                 "https://*.dhl.com/*", // See https://github.com/ruffle-rs/ruffle/issues/23325
                 "https://*.dhl.de/*", // See https://github.com/ruffle-rs/ruffle/issues/23325
-                "https://*.*.dhl/*", // See https://github.com/ruffle-rs/ruffle/issues/23325
+                "https://mydhl.express.dhl/*", // See https://github.com/ruffle-rs/ruffle/issues/23325
             ],
             "js": ["dist/content.js"],
             "all_frames": true,
