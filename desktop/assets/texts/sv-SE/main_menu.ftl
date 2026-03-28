@@ -9,6 +9,8 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Fil
+file-menu-open-file = Öppna fil...
+file-menu-open-directory = Öppna mapp...
 file-menu-open-advanced = Öppna avancerat...
 file-menu-close = Stäng
 file-menu-reload = Ladda Om
@@ -20,6 +22,7 @@ file-menu-export = Exportera...
 controls-menu = Kontroller
 controls-menu-suspend = Suspendera
 controls-menu-resume = Fortsätt
+controls-menu-step-once = Ta ett steg
 controls-menu-volume = Ljudkontroller
 help-menu = Hjälp
 help-menu-join-discord = Gå med i Discord
@@ -32,6 +35,7 @@ bookmarks-menu-add = Lägg till...
 bookmarks-menu-manage = Hantera bokmärken...
 debug-menu = Felsökningsverktyg
 debug-menu-open-stage = Visa sceninfo
+debug-menu-open-root-movie-clip = Visa rotens MovieClip
 debug-menu-open-movie = Visa film
 debug-menu-open-movie-list = Visa kända filmer
 debug-menu-open-domain-list = Visa domäner
