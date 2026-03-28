@@ -404,7 +404,7 @@ impl CurrentPipeline {
                 .create_pipeline_layout(&wgpu::PipelineLayoutDescriptor {
                     label: pipeline_layout_label.as_deref(),
                     bind_group_layouts: &[&compiled_shaders.bind_group_layout],
-                    push_constant_ranges: &[],
+                    immediate_size: 0,
                 });
 
         let bind_group = descriptors
@@ -573,7 +573,7 @@ impl CurrentPipeline {
                     mask: !0,
                     alpha_to_coverage_enabled: false,
                 },
-                multiview: Default::default(),
+                multiview_mask: None,
                 cache: None,
             });
         Some((compiled, bind_group))
