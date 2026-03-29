@@ -726,6 +726,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::GetDescendants { multiname } => self.op_get_descendants(*multiname),
                 Op::GetSlot { index } => self.op_get_slot(*index),
                 Op::SetSlot { index } => self.op_set_slot(*index),
+                Op::SetSlotCoerceI { index } => self.op_set_slot_coerce_i(*index),
                 Op::SetSlotNoCoerce { index } => self.op_set_slot_no_coerce(*index),
                 Op::SetGlobalSlot { index } => self.op_set_global_slot(*index),
                 Op::Construct { num_args } => self.op_construct(*num_args),
@@ -1685,6 +1686,21 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .expect("Cannot set_slot on primitive");
 
         object.set_slot(index, value, self)?;
+
+        Ok(())
+    }
+
+    fn op_set_slot_coerce_i(&mut self, index: usize) -> Result<(), Error<'gc>> {
+        let value = self.pop_stack();
+        let object = self
+            .pop_stack()
+            .null_check(self, None)?
+            .as_object()
+            .expect("Cannot set_slot on primitive");
+
+        let value = value.coerce_to_i32(self)?;
+
+        object.set_slot_no_coerce(index, value.into(), self.gc());
 
         Ok(())
     }

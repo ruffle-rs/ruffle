@@ -1446,6 +1446,9 @@ fn abstract_interpret_ops<'gc>(
                 // Skip the coercion when possible
                 if set_value.matches_type(resolved_value_class) {
                     optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
+                } else if resolved_value_class.is_some_and(|c| c.is_builtin_int()) {
+                    // Special case for integer coercion, for performance
+                    optimize_op_to!(Op::SetSlotCoerceI { index: slot_id });
                 }
             }
             Op::GetPropertyStatic { multiname } => {
@@ -1547,6 +1550,9 @@ fn abstract_interpret_ops<'gc>(
 
                                 if set_value.matches_type(resolved_value_class) {
                                     optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
+                                } else if resolved_value_class.is_some_and(|c| c.is_builtin_int()) {
+                                    // Special case for integer coercion, for performance
+                                    optimize_op_to!(Op::SetSlotCoerceI { index: slot_id });
                                 } else {
                                     optimize_op_to!(Op::SetSlot { index: slot_id });
                                 }
@@ -1602,6 +1608,9 @@ fn abstract_interpret_ops<'gc>(
 
                             if set_value.matches_type(resolved_value_class) {
                                 optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
+                            } else if resolved_value_class.is_some_and(|c| c.is_builtin_int()) {
+                                // Special case for integer coercion, for performance
+                                optimize_op_to!(Op::SetSlotCoerceI { index: slot_id });
                             } else {
                                 optimize_op_to!(Op::SetSlot { index: slot_id });
                             }
@@ -2116,6 +2125,7 @@ fn abstract_interpret_ops<'gc>(
             | Op::ConstructSlot { .. }
             | Op::GetScriptGlobals { .. }
             | Op::PopJump { .. }
+            | Op::SetSlotCoerceI { .. }
             | Op::SetSlotNoCoerce { .. } => unreachable!("Custom ops should not be encountered"),
         }
     }
