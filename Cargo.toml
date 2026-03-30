@@ -87,7 +87,7 @@ libtest-mimic = "0.8.2"
 regex = "1.12.3"
 toml = "1.0.6"
 toml_edit = "0.25.4"
-vfs = "0.12.2"
+vfs = "0.13.0"
 smallvec = { version = "1.15.1", features = ["const_new", "union"] }
 serde_json = "1.0.149"
 percent-encoding = "2.3.2"
