@@ -191,6 +191,7 @@ Finally, add a `test.toml` in the same directory to control how the test is run 
 Running `cargo test [your test]` from within the `tests` folder will run the `.swf` in Ruffle and compare the `trace()` output against `output.txt`. To run all of the tests in all workspaces, run `cargo test --all`.
 
 Some tests also compare Ruffle's visual output to an expected image. To properly run these tests, add the argument `--features imgtests`.
+When adding a new image test, make sure to include the expected visual output by taking a screenshot of Flash Player and cropping it.
 
 Heavily algorithmic code may benefit from unit tests in Rust: create a module `mod tests` conditionally compiled with `#[cfg(test)]`, and add your tests in there.
 
@@ -199,6 +200,12 @@ Heavily algorithmic code may benefit from unit tests in Rust: create a module `m
 Create a new ActionScript project. Save the `.fla` file and export an `.swf` (File -> Export -> Export Movie...).
 
 Adobe Flash Professional CS6 is the most recent version to support both ActionScript 2 and 3. Newer versions support ActionScript 3 only.
+
+### JPEXS Free Flash Decompiler
+
+You can use [JPEXS Free Flash Decompiler](https://github.com/jindrapetrik/jpexs-decompiler) for writing ActionScript 2 or ActionScript 3 tests. It can also be used to write more advanced tests, as you have full control over SWF tags.
+
+When using JPEXS Free Flash Decompiler you're editing the SWF file directly.
 
 ### Motion-Twin ActionScript 2 Compiler
 
@@ -282,7 +289,7 @@ web: Fix incorrect rendering of gradients (close #23)
 * Use the present tense and imperative mood ("fix", not "fixed" nor "fixes").
 * Reference any PRs or issues in the first line.
 * Use keywords to close/address issues when applicable ("close #23").
-* Write more detailed info on following lines when applicable.
+* Write more detailed info on following lines when applicable. **Note: it's usually applicable.** Please describe your changes and add all required context so that people working on it in the future can see the big picture of your changes.
 
 ## Pull Requests
 
