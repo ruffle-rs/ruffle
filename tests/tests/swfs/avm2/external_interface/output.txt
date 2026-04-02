@@ -7,6 +7,10 @@ true
 
 // ExternalInterface.addCallback("freestanding", freestanding)
 
+// ExternalInterface.addCallback("removeMe", removeMe)
+
+// ExternalInterface.addCallback("removeMe", null)
+
 // ExternalInterface.call("ping")
 [ExternalInterface] ping
 Pong!
@@ -74,6 +78,8 @@ After calling `parrot` with an object: Object({"a": Number(100.0), "b": String("
 [object global]
 
 /// freestanding() end
+Before calling `removeMe`
+After calling `removeMe`: Null
 /// callWith() start
 // this
 [object Target]

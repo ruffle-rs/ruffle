@@ -69,6 +69,10 @@ function freestanding() {
 	trace("/// freestanding() end");
 }
 
+function removeMe() {
+	trace("/// removeMe")
+}
+
 var thisTarget = new Target();
 var thatTarget = new Target();
 
@@ -86,6 +90,14 @@ trace("");
 
 trace("// ExternalInterface.addCallback(\"freestanding\", freestanding)");
 ExternalInterface.addCallback("freestanding", freestanding);
+trace("");
+
+trace("// ExternalInterface.addCallback(\"removeMe\", removeMe)");
+ExternalInterface.addCallback("removeMe", removeMe);
+trace("");
+
+trace("// ExternalInterface.addCallback(\"removeMe\", null)");
+ExternalInterface.addCallback("removeMe", null);
 trace("");
 
 trace("// ExternalInterface.call(\"ping\")");
