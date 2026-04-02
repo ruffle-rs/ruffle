@@ -396,6 +396,10 @@ impl<'gc> ExternalInterface<'gc> {
         }
     }
 
+    pub fn remove_callback(&mut self, name: String) {
+        self.callbacks.remove(&name);
+    }
+
     pub fn get_callback(&self, name: &str) -> Option<Callback<'gc>> {
         self.callbacks.get(name).cloned()
     }
