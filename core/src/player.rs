@@ -2464,6 +2464,7 @@ impl Player {
             if let Some(callback) = context.external_interface.get_callback(name) {
                 callback.call(context, name, args)
             } else {
+                tracing::warn!("Calling unknown internal interface: {}", name);
                 ExternalValue::Null
             }
         })
