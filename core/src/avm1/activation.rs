@@ -1214,8 +1214,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let mut clip_target: Option<DisplayObject<'gc>> = if level_target > -1 {
             self.get_level(level_target)
         } else if action.is_load_vars() || action.is_target_sprite() {
-            if let Some(target) = target_val.as_object(self) {
+            if let Value::Object(target) = target_val {
                 target.as_display_object()
+            } else if let Value::MovieClip(mcr) = target_val {
+                // We must not fallthrough to the code below for MovieClips
+                // that don't have a DisplayObject.
+                mcr.coerce_to_object(self)
+                    .and_then(|obj| obj.as_display_object())
             } else {
                 let start = self.target_clip_or_root();
                 self.resolve_target_display_object(start, target_val, true)?
