@@ -14,11 +14,7 @@ pub fn init<'gc>(
     let result = args.try_get_function(0);
     let status = args.try_get_function(1);
 
-    responder.set_callbacks(
-        activation.gc(),
-        result,
-        status,
-    );
+    responder.set_callbacks(activation.gc(), result, status);
 
     Ok(Value::Undefined)
 }
