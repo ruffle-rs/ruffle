@@ -172,9 +172,8 @@ pub fn parse_bytecode(agal: &[u8]) -> Result<ParsedBytecode, AgalError> {
 pub fn agal_to_naga(
     parsed: &ParsedBytecode,
     vertex_attributes: &[Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
-    sampler_configs: &[SamplerConfig; MAX_TEXTURES],
 ) -> Result<Module, Error> {
-    NagaBuilder::build_module(parsed, vertex_attributes, sampler_configs)
+    NagaBuilder::build_module(parsed, vertex_attributes)
 }
 
 pub fn extract_sampler_configs(
