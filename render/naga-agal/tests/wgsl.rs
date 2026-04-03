@@ -23,7 +23,7 @@ pub fn to_wgsl(module: &Module) -> String {
 macro_rules! test_shader {
     ($shader:expr, $attrs:expr, $shader_type:expr $(,)?) => {
         let parsed = parse_bytecode(&$shader).unwrap();
-        let module = agal_to_naga(&parsed, $attrs, &[Default::default(); 8]).unwrap();
+        let module = agal_to_naga(&parsed, $attrs).unwrap();
         let output = to_wgsl(&module);
         insta::assert_snapshot!(output);
     };
