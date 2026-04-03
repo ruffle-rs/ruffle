@@ -1,2 +1,6 @@
 num_frames = 1
-ignore = true # Ignored because Flash Player adds extra x, W, and/or ° symbols randomly
+# This test has two issues per the PR that introduced it:
+# 1. Precision limits that are specific to the chosen radix are not properly emulated
+# 2. Flash produces occasional and intermittent corruption in the resulting 0 padding; usually manifesting as `x`, `W`, or `°` characters
+# Issue 2 means the output.txt does not consistently match what Flash actual produces, but unless we emulate the corruption, Ruffle's output should be consistent.
+known_failure = true
