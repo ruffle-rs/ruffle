@@ -1,15 +1,18 @@
 num_ticks = 1
 
-[[image_comparisons.output.checks]]
-filter = 'not(arch = "aarch64")'
-tolerance = 2
+# FIXME: Ruffle doesn't do a good job at antialiasing here.
 
 [[image_comparisons.output.checks]]
-filter = 'arch = "aarch64"'
 tolerance = 2
+max_outliers = 3200
 
-# TODO There's an off-by-1-pixel line on AArch64
-max_outliers = 340
+[[image_comparisons.output.checks]]
+tolerance = 64
+max_outliers = 150
+
+[[image_comparisons.output.checks]]
+tolerance = 180
+max_outliers = 0
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false, quality = "high" }
