@@ -16,8 +16,8 @@ pub fn init<'gc>(
 
     responder.set_callbacks(
         activation.gc(),
-        result.and_then(|o| o.as_function_object()),
-        status.and_then(|o| o.as_function_object()),
+        result,
+        status,
     );
 
     Ok(Value::Undefined)
