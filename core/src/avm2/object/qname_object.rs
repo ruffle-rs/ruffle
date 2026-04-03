@@ -9,10 +9,9 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::value::Value;
 use crate::string::StringContext;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak, lock::RefLock};
+use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
-use std::cell::Ref;
 
 /// An Object which represents a boxed QName.
 #[derive(Collect, Clone, Copy)]
@@ -39,7 +38,7 @@ pub struct QNameObjectData<'gc> {
     base: ScriptObjectData<'gc>,
 
     /// The Multiname this object is associated with.
-    name: RefLock<Multiname<'gc>>,
+    name: Multiname<'gc>,
 }
 
 impl<'gc> QNameObject<'gc> {
@@ -48,17 +47,11 @@ impl<'gc> QNameObject<'gc> {
         let class = activation.avm2().classes().qname;
         let base = ScriptObjectData::new(class);
 
-        QNameObject(Gc::new(
-            activation.gc(),
-            QNameObjectData {
-                base,
-                name: RefLock::new(name),
-            },
-        ))
+        QNameObject(Gc::new(activation.gc(), QNameObjectData { base, name }))
     }
 
-    pub fn name(&self) -> Ref<'_, Multiname<'gc>> {
-        self.0.name.borrow()
+    pub fn name(&self) -> &Multiname<'gc> {
+        &self.0.name
     }
 
     pub fn local_name(self, context: &mut StringContext<'gc>) -> AvmString<'gc> {
@@ -68,7 +61,7 @@ impl<'gc> QNameObject<'gc> {
     }
 
     pub fn uri(self, context: &mut StringContext<'gc>) -> Option<AvmString<'gc>> {
-        let name = self.0.name.borrow();
+        let name = &self.0.name;
 
         if name.is_any_namespace() {
             None
@@ -83,7 +76,7 @@ impl<'gc> QNameObject<'gc> {
     }
 
     pub fn is_any_namespace(self) -> bool {
-        self.0.name.borrow().is_any_namespace()
+        self.0.name.is_any_namespace()
     }
 }
 
