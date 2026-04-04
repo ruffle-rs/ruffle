@@ -45,7 +45,9 @@ impl LehmerRng {
 /// unmultiplied values. Make sure to convert the color to the correct form beforehand.
 // TODO: Maybe split the type into `PremultipliedColor(u32)` and
 //   `UnmultipliedColor(u32)`?
-#[derive(Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, bytemuck::NoUninit)]
+#[derive(
+    Debug, Default, Copy, Clone, Eq, PartialEq, Ord, PartialOrd, bytemuck::Pod, bytemuck::Zeroable,
+)]
 #[repr(C, align(4))]
 pub struct Color {
     // Note: even though AS2/AS3 represent colors as (little-endian) BGRA `u32`s, this is stored
@@ -161,13 +163,19 @@ impl Color {
     /// * `self` - Must be in premultiplied form.
     /// * `source` - Must be in premultiplied form.
     #[must_use]
+    #[inline(always)]
     pub fn blend_over(&self, source: &Self) -> Self {
-        let sa = source.alpha();
+        let inv_sa = 255 - source.alpha() as u16;
 
-        let r = source.red() + ((self.red() as u16 * (255 - sa as u16)) / 255) as u8;
-        let g = source.green() + ((self.green() as u16 * (255 - sa as u16)) / 255) as u8;
-        let b = source.blue() + ((self.blue() as u16 * (255 - sa as u16)) / 255) as u8;
-        let a = source.alpha() + ((self.alpha() as u16 * (255 - sa as u16)) / 255) as u8;
+        #[inline(always)]
+        fn div255(x: u16) -> u8 {
+            (x / 255) as u8
+        }
+
+        let r = source.red() + div255(self.red() as u16 * inv_sa);
+        let g = source.green() + div255(self.green() as u16 * inv_sa);
+        let b = source.blue() + div255(self.blue() as u16 * inv_sa);
+        let a = source.alpha() + div255(self.alpha() as u16 * inv_sa);
         Self::rgba(r, g, b, a)
     }
 
