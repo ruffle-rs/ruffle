@@ -1462,8 +1462,6 @@ pub fn load_netstream<'gc>(
 
                 player.lock().unwrap().update(|uc| -> Result<(), Error> {
                     let stream = stream.fetch(uc);
-
-                    stream.reset_buffer(uc);
                     if let Ok(Some(len)) = expected_length {
                         stream.set_expected_length(len as usize);
                     }
