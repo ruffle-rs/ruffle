@@ -326,6 +326,14 @@ impl DisplayObjectWindow {
         Grid::new(ui.id().with("edittext"))
             .num_columns(2)
             .show(ui, |ui| {
+                ui.label("Is FTE");
+                if object.is_fte() {
+                    ui.label("Yes");
+                } else {
+                    ui.label("No");
+                }
+                ui.end_row();
+
                 ui.label("Border");
                 ui.horizontal(|ui| {
                     let mut has_border = object.has_border();
