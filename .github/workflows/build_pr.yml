@@ -1,0 +1,244 @@
+name: Build pr
+
+on:
+  # Allow for manual dispatch on GitHub
+  workflow_dispatch:
+
+  # Allow for PR auto trigger for build
+ # push:
+  pull_request:
+
+jobs:
+  build:
+    name: Build ${{ matrix.build_name }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - build_name: linux-x86_64
+            os: ubuntu-24.04
+
+          - build_name: linux-aarch64
+            os: ubuntu-24.04-arm
+
+          # Mac does two Rust builds to make a universal binary
+          - build_name: macos-x86_64
+            os: macos-15
+            target: x86_64-apple-darwin
+            MACOSX_DEPLOYMENT_TARGET: 10.7
+            DESKTOP_FEATURES: sandbox,jpegxr
+
+          - build_name: macos-aarch64
+            os: macos-15
+            target: aarch64-apple-darwin
+            MACOSX_DEPLOYMENT_TARGET: 11.0
+            DESKTOP_FEATURES: sandbox,jpegxr
+
+          - build_name: windows-x86_32
+            os: windows-2025
+            target: i686-pc-windows-msvc
+            RUSTFLAGS: -Ctarget-feature=+crt-static
+            DESKTOP_FEATURES: jpegxr
+            MSI_ARCH: x86
+
+          - build_name: windows-x86_64
+            os: windows-2025
+            target: x86_64-pc-windows-msvc
+            RUSTFLAGS: -Ctarget-feature=+crt-static
+            DESKTOP_FEATURES: jpegxr
+            MSI_ARCH: x64
+
+    env:
+      PACKAGE_FILE: build-${{ matrix.build_name }}.${{ startsWith(matrix.build_name, 'win') && 'zip' || 'tar.gz' }}
+      CARGO_BUILD_DIR: target/${{ matrix.target }}/release
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Clone Ruffle repo
+        uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt install -y libasound2-dev libudev-dev
+
+      - name: Install WiX
+        if: runner.os == 'Windows'
+        run: |
+          dotnet tool install --global wix --version 5.0.2
+          wix extension add -g WixToolset.UI.wixext/5.0.2
+          wix extension add -g WixToolset.Util.wixext/5.0.2
+
+      - name: Cargo build
+        run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        env:
+          CFG_RELEASE_CHANNEL: nightly
+          RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
+
+      - name: Package common
+        run: |
+          mkdir package
+          cp README.md package/README.md
+          cp LICENSE.md package/LICENSE.md
+
+#      - name: Package MSI
+       # run: |
+#          cd desktop/packages/windows/wix
+ #         wix build ruffle.wxs -ext WixToolset.UI.wixext -ext WixToolset.Util.wixext -arch ${{ matrix.MSI_ARCH }} -o ../../../../package/setup.msi -pdbtype none
+ #       env:
+ #         RUFFLE_VERSION: nightly
+ #         CARGO_BUILD_DIR: ../../../../target/${{ matrix.target }}/release
+#        if: runner.os == 'Windows'
+
+      - name: Package Windows
+        if: runner.os == 'Windows'
+        run: |
+          cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop.exe package/ruffle.exe
+          7z a ${{ env.PACKAGE_FILE }} ./package/*
+
+      - name: Package Linux
+        if: runner.os == 'Linux'
+        run: |
+          cp ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop package/ruffle
+
+          # Package extras
+          mkdir -p package/extras
+          cp desktop/packages/linux/rs.ruffle.Ruffle.desktop package/extras
+          cp desktop/packages/linux/rs.ruffle.Ruffle.metainfo.xml package/extras
+          cp desktop/packages/linux/rs.ruffle.Ruffle.svg package/extras
+
+          # We must enter the package/ directory in order to create a flat tarball (i.e. without a directory in it).
+          cd package
+          tar -czvf ../${{ env.PACKAGE_FILE }} *
+
+      - name: Build Safari Web Extension stub binary
+        if: runner.os == 'macOS'
+        run: cargo build --locked --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
+        env:
+          CFG_RELEASE_CHANNEL: nightly
+          RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
+          MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
+
+      - name: Upload macOS build artifact
+        if: runner.os == 'macOS'
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.build_name }}
+          path: |
+            ${{ env.CARGO_BUILD_DIR }}/ruffle_desktop
+            ${{ env.CARGO_BUILD_DIR }}/ruffle_web_safari
+            package
+
+      - name: Upload package to Actions artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: ${{ matrix.build_name }}-package
+          path: ${{ env.PACKAGE_FILE }}
+
+  build-mac-universal-binary:
+    name: Build macOS universal binary
+    needs: build
+    runs-on: macos-15
+    env:
+      PACKAGE_FILE: build-macos-universal.tar.gz
+    steps:
+      - name: Clone Ruffle repo
+        uses: actions/checkout@v6
+
+      - name: Download aarch64 binary
+        uses: actions/download-artifact@v8
+        with:
+          name: macos-aarch64
+
+      - name: Download x86_64 binary
+        uses: actions/download-artifact@v8
+        with:
+          name: macos-x86_64
+
+#      - name: Download Safari extension
+ #       uses: actions/download-artifact@v8
+  #      with:
+   #       name: macos-safari
+
+      - name: Make universal desktop binary
+        run: |
+          lipo -create -output package/ruffle target/x86_64-apple-darwin/release/ruffle_desktop target/aarch64-apple-darwin/release/ruffle_desktop
+          chmod +x package/ruffle
+
+   #   - name: Make universal Safari stub binary
+    #    continue-on-error: true
+     #   run: |
+     #     lipo -create -output package/ruffle_web_safari target/x86_64-apple-darwin/release/ruffle_web_safari target/aarch64-apple-darwin/release/ruffle_web_safari
+      #    chmod +x package/ruffle_web_safari
+
+      - name: Create app bundle
+        run: |
+          cp -r desktop/packages/macOS package/Ruffle.app
+          mkdir package/Ruffle.app/Contents/MacOS
+          mv package/ruffle package/Ruffle.app/Contents/MacOS/ruffle
+
+      - name: Compile asset catalog
+        run: |
+          mkdir package/Ruffle.app/Contents/Resources
+          xcrun actool --compile package/Ruffle.app/Contents/Resources desktop/assets/Assets.xcassets --minimum-deployment-target 10.0 --platform macosx --warnings --errors --notices --include-all-app-icons
+
+     # - name: Create extension bundle
+       # continue-on-error: true
+        #run: |
+         # mkdir package/Ruffle.app/Contents/PlugIns
+          # cp -r web/packages/extension/safari/package package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex
+          # mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
+          # mkdir package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS
+          # mv package/ruffle_web_safari package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/MacOS/ruffle_web_safari
+         # cp ruffle_extension.zip package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
+         # cd package/Ruffle.app/Contents/PlugIns/Ruffle\ Web.appex/Contents/Resources
+         # unzip ruffle_extension.zip
+         # rm ruffle_extension.zip
+         # cd ../../../../../../..
+
+      - name: Sign bundle
+        continue-on-error: true
+        env:
+          APPLE_DEVELOPER_KEY: ${{ secrets.APPLE_DEVELOPER_KEY }}
+          APPLE_DEVELOPER_KEY_PASSWORD: ${{ secrets.APPLE_DEVELOPER_KEY_PASSWORD }}
+        if: env.APPLE_DEVELOPER_KEY != ''
+        run: |
+          echo $APPLE_DEVELOPER_KEY | base64 --decode > certificate.p12
+          security create-keychain -p correct-horse-battery-staple build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p correct-horse-battery-staple build.keychain
+          security import certificate.p12 -k build.keychain -P $APPLE_DEVELOPER_KEY_PASSWORD -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k correct-horse-battery-staple build.keychain
+          codesign --deep -s ${{ secrets.APPLE_DEVELOPER_IDENTITY }} -f --entitlements desktop/assets/macOSEntitlements.plist --options runtime package/Ruffle.app
+          codesign --verify -vvvv package/Ruffle.app
+
+      - name: Notarize bundle
+        continue-on-error: true
+        run: |
+         # xcrun notarytool store-credentials "Ruffle" --apple-id ${{ secrets.APPLE_ID }} --team-id ${{ secrets.APPLE_TEAM }} --password ${{ secrets.APPLE_APP_PASSWORD }}
+          cd package
+          zip -r Ruffle.zip Ruffle.app
+          mv Ruffle.zip ..
+          cd ..
+       #   xcrun notarytool submit Ruffle.zip --keychain-profile Ruffle --wait
+        #  xcrun stapler staple package/Ruffle.app
+
+      - name: Package macOS
+        run: |
+          # We must enter the package/ directory in order to create a flat tarball (i.e. without a directory in it).
+          cd package
+          tar -czvf ../${{ env.PACKAGE_FILE }} *
+
+      - name: Upload package to Actions artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: macos-universal-package
+          path: ${{ env.PACKAGE_FILE }}
