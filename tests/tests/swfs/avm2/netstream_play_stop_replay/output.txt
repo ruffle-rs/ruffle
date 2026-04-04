@@ -1,0 +1,11 @@
+Playing video first time
+NetStream.Play.Start
+NetStream.Buffer.Full
+NetStream.Buffer.Flush
+NetStream.Play.Stop
+Replaying video
+NetStream.Play.Start
+NetStream.Buffer.Full
+NetStream.Buffer.Flush
+NetStream.Play.Stop
+NetStream.Buffer.Empty
