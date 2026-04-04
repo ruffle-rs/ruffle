@@ -455,12 +455,9 @@ impl<'gc> VTable<'gc> {
                     let default_value = trait_to_default_value(trait_data);
 
                     let prop_class = match trait_data.kind() {
-                        TraitKind::Slot {
-                            type_name, domain, ..
+                        TraitKind::Slot { slot_type, .. } | TraitKind::Const { slot_type, .. } => {
+                            *slot_type
                         }
-                        | TraitKind::Const {
-                            type_name, domain, ..
-                        } => PropertyClass::name(*type_name, *domain),
                         TraitKind::Class { class, .. } => PropertyClass::Class(
                             class.c_class().expect("Trait should hold an i_class"),
                         ),

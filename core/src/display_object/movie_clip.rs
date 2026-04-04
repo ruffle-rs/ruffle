@@ -743,12 +743,15 @@ impl<'gc> MovieClip<'gc> {
             _ => unreachable!(),
         };
 
-        let mc = context.gc();
-        let library = context.library.library_for_movie_mut(self.movie());
-
         let asset_url = url.to_string_lossy(UTF_8);
 
-        let request = Request::get(asset_url);
+        // FP does not attempt to load the url if it is empty
+        if asset_url.is_empty() {
+            return Ok(());
+        }
+
+        let mc = context.gc();
+        let library = context.library.library_for_movie_mut(self.movie());
 
         for asset in exported_assets {
             let name = asset.name.decode(reader.encoding());
@@ -758,6 +761,8 @@ impl<'gc> MovieClip<'gc> {
 
             library.register_import(name, id);
         }
+
+        let request = Request::get(asset_url);
 
         let fut = LoadManager::load_asset_movie(context, request, self);
         self.0

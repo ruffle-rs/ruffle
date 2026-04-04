@@ -1,7 +1,8 @@
 ﻿package {
+	import flash.display.Sprite;
 	import flash.utils.ByteArray;
 
-	public class Test {
+	public class Test extends Sprite {
 		public function Test() {
 			var trailingNull = new ByteArray();
 			trailingNull.writeUTFBytes("ABC");
@@ -18,7 +19,23 @@
 			var readWithNullUTFBytes = trailingNull.readUTFBytes(4);
 			trace("readWithNullUTFBytes: " + readWithNullUTFBytes); 
 			trace("readWithNullUTFBytes.length: " + readWithNullUTFBytes.length);
-			
+
+			var nullUTF16LE = new ByteArray();
+			nullUTF16LE.writeShort(0x4100);
+			nullUTF16LE.writeShort(0x0000);
+			nullUTF16LE.position = 0;
+			var readWithNullUTF16LEBytes: String = nullUTF16LE.readMultiByte(4, "utf-16le");
+			trace("readWithNullUTF16LEBytes: " + readWithNullUTF16LEBytes);
+			trace("readWithNullUTF16LEBytes.length: " + readWithNullUTF16LEBytes.length);
+
+			var nullUTF16BE = new ByteArray();
+			nullUTF16BE.writeShort(0x0041);
+			nullUTF16BE.writeShort(0x0000);
+			nullUTF16BE.position = 0;
+			var readWithNullUTF16BEBytes: String = nullUTF16BE.readMultiByte(4, "utf-16be");
+			trace("readWithNullUTF16BEBytes: " + readWithNullUTF16BEBytes);
+			trace("readWithNullUTF16BEBytes.length: " + readWithNullUTF16BEBytes.length);
+
 			var multipleNull = new ByteArray();
 			multipleNull.writeUTFBytes("ABC");
 			multipleNull.writeByte(0);

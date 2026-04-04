@@ -51,6 +51,7 @@ package {
 
         // These are called from prototype methods
         private static native function _setPropertyIsEnumerable(self:Object, prop:String, isEnumerable:Boolean):void;
+        [Ruffle(FastCall)]
         private static native function _toString(self:Object):String;
 
         // Normal instance methods

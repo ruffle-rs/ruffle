@@ -15,3 +15,15 @@
 6
 //a.lastIndexOf("5");
 1
+//a.lastIndexOf(5, -1);
+5
+//a.lastIndexOf(5, -3);
+5
+//a.lastIndexOf(5, -8);
+0
+//a.lastIndexOf(5, -9);
+0
+//a.lastIndexOf("5", -8);
+-1
+//a.lastIndexOf("5", -9);
+-1

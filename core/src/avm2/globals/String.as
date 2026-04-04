@@ -154,6 +154,7 @@ package {
 
         AS3 native function concat(...rest):String;
 
+        [Ruffle(FastCall)]
         AS3 native function indexOf(str:String = "undefined", index:Number = 0):int;
 
         AS3 native function lastIndexOf(str:String = "undefined", index:Number = 2147483647.0):int;

@@ -245,8 +245,6 @@ impl VertexAttributeFormat {
 pub struct ShaderConfig<'a> {
     pub shader_type: ShaderType,
     pub vertex_attributes: &'a [Option<VertexAttributeFormat>; 8],
-    #[expect(dead_code)] // set but never read
-    pub sampler_configs: &'a [SamplerConfig; 8],
     pub version: AgalVersion,
 }
 
@@ -473,12 +471,10 @@ impl<'a> NagaBuilder<'a> {
     pub fn build_module(
         parsed: &ParsedBytecode,
         vertex_attributes: &[Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
-        sampler_configs: &[SamplerConfig; 8],
     ) -> Result<Module> {
         let mut builder = NagaBuilder::new(ShaderConfig {
             shader_type: parsed.shader_type,
             vertex_attributes,
-            sampler_configs,
             version: parsed.version,
         });
 

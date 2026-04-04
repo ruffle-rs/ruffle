@@ -342,7 +342,7 @@ impl MainWindow {
         if let Some(mut player) = self.player.get() {
             player.set_viewport_dimensions(ViewportDimensions {
                 width: viewport_size.width,
-                height: viewport_size.height - height_offset as u32,
+                height: viewport_size.height - (height_offset * viewport_scale_factor) as u32,
                 scale_factor: viewport_scale_factor,
             });
         }

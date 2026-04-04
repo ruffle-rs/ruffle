@@ -4,6 +4,10 @@ readWithNull: ABC
 readWithNull.length: 3
 readWithNullUTFBytes: ABC
 readWithNullUTFBytes.length: 3
+readWithNullUTF16LEBytes: A
+readWithNullUTF16LEBytes.length: 1
+readWithNullUTF16BEBytes: A
+readWithNullUTF16BEBytes.length: 1
 Multiple null: ABCDEFGHI
 multipleNull.toString().length = 12
 readWithMultipleNull: ABC

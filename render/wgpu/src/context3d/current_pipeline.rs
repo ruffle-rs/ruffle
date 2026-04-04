@@ -392,7 +392,6 @@ impl CurrentPipeline {
             descriptors,
             ShaderCompileData {
                 vertex_attributes: agal_attributes,
-                sampler_configs: self.sampler_configs,
                 texture_infos,
             },
         );

@@ -359,7 +359,7 @@ pub fn verify_method<'gc>(
             // avmplus uses the first namespace, regardless of how many namespaces there are.
             let variable_name = QName::new(namespaces[0], name);
 
-            Some(Class::for_catch(activation, variable_name)?)
+            Some(Class::for_catch(activation, variable_name, target_class)?)
         };
 
         if !seen_exception_indices.contains(&exception_index) {

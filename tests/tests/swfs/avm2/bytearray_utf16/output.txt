@@ -1,0 +1,8 @@
+unicode : A
+unicode.length : 1
+utf-16 : A
+utf-16.length : 1
+utf-16le : A
+utf-16le.length : 1
+utf-16be : A
+utf-16be.length : 1

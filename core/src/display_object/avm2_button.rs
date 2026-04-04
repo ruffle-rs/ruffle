@@ -570,6 +570,7 @@ impl<'gc> TDisplayObject<'gc> for Avm2Button<'gc> {
         let current_state = self.get_state_child(self.0.state.get().into());
 
         if let Some(state) = current_state {
+            state.pre_render(context);
             state.render(context);
         }
     }

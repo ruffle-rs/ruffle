@@ -1,8 +1,9 @@
 # Adapted from https://github.com/mozilla/shumway/blob/master/test/swfs/esc.swf
 
-num_ticks = 1
-known_failure = true
+num_ticks = 2
 
+# The SWF logs how long it took to compile a SWF, which varies across test
+# executions, so ignore that number
 [approximations]
 number_patterns = [" [\\d.]+ ms"]
 epsilon = 1000
