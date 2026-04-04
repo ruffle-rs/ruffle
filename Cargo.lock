@@ -3172,6 +3172,8 @@ dependencies = [
  "anyhow",
  "clap",
  "ruffle_socket_format",
+ "rustls",
+ "rustls-pki-types",
  "tracing",
  "tracing-subscriber",
 ]
@@ -4683,9 +4685,13 @@ dependencies = [
  "reqwest",
  "ruffle_core",
  "ruffle_render",
+ "rustls",
+ "rustls-native-certs",
+ "rustls-pki-types",
  "tempfile",
  "thiserror 2.0.18",
  "tokio",
+ "tokio-rustls",
  "toml_edit",
  "tracing",
  "url",
@@ -5038,6 +5044,7 @@ version = "0.23.35"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "533f54bc6a7d4f647e46ad909549eda97bf5afc1585190ef692b4286b198bd8f"
 dependencies = [
+ "log",
  "once_cell",
  "ring",
  "rustls-pki-types",
