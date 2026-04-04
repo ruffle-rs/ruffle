@@ -9,3 +9,4 @@ export-bundle-dialog-error-user-canceled = Kullanıcı tarafından iptal edildi.
 export-bundle-dialog-error-failed-to-show-picker = Dosya seçici gösterilemedi.
 export-bundle-dialog-error-io-error = Paket yazılırken hata oluştu.
 export-bundle-dialog-info-title = Ruffle paketi nedir?
+export-bundle-dialog-info-description = Ruffle bundle, bir SWF dosyasını çalıştırmak için gereken her şeyi (tüm gerekli varlıkları ve yapılandırmayı) içeren evrensel bir pakettir. Bir paketle, SWF'niz hemen çalışır; eksik dosya yok, manuel kurulum yok, sadece tak ve çalıştır.
