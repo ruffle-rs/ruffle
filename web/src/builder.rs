@@ -679,7 +679,10 @@ impl RuffleInstanceBuilder {
             .with_boxed_renderer(renderer)
             .with_boxed_audio(self.create_audio_backend(log_subscriber.clone()))
             .with_navigator(self.create_navigator(log_subscriber.clone()))
-            .with_storage(self.create_storage_backend());
+            .with_storage(self.create_storage_backend())
+            .with_local_connection_backend(Box::new(
+                crate::local_connection::WebLocalConnectionBackend::new(),
+            ));
 
         // Create the external interface.
         if self.allow_script_access && self.allow_networking == NetworkingAccessMode::All {
@@ -724,7 +727,8 @@ impl RuffleInstanceBuilder {
                 .expect("Failed to lock player after construction");
             <dyn Any>::downcast_mut::<WebNavigatorBackend>(core.navigator_mut())
                 .expect("Expected WebNavigatorBackend")
-                .set_player(player_weak);
+                .set_player(player_weak.clone());
+            core.local_connection_mut().set_player(player_weak);
             // Set config parameters.
             core.set_volume(self.volume);
             core.set_background_color(self.background_color);
