@@ -485,7 +485,9 @@ export class InnerPlayer {
             if (document.hidden) {
                 this.lastActivePlayingState = this.instance.is_playing();
                 this.instance.enable_background_tick_mode();
-                this.startBackgroundTick();
+                if (this.lastActivePlayingState) {
+                    this.startBackgroundTick();
+                }
             } else {
                 this.stopBackgroundTick();
                 this.instance.restart_animation_loop();
