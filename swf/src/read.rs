@@ -124,6 +124,33 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         log::warn!("SWF length doesn't match header, may be corrupt");
     }
 
+    // Flash Player allocates a fixed buffer based on the header length and
+    // never accesses data beyond it. Match that behavior by truncating.
+    // The header length is inclusive of the fixed 8-byte SWF signature; a
+    // value smaller than that is impossible, and Flash rejects such SWFs.
+    // In that case return an empty stub that loads but plays no frames.
+    let Some(expected_body_len) = (uncompressed_len as usize).checked_sub(8) else {
+        return Ok(SwfBuf {
+            header: HeaderExt {
+                header: Header {
+                    compression,
+                    version,
+                    stage_size: Default::default(),
+                    frame_rate: Fixed8::ONE,
+                    num_frames: 0,
+                },
+                file_attributes: Default::default(),
+                background_color: None,
+                uncompressed_len: uncompressed_len as i32,
+                actual_uncompressed_len: 0,
+            },
+            data: vec![],
+        });
+    };
+    if data.len() > expected_body_len {
+        data.truncate(expected_body_len);
+    }
+
     let mut reader = Reader::new(&data, version);
     let stage_size = reader.read_rectangle()?;
     let frame_rate = reader.read_fixed8()?;
