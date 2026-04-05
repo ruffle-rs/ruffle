@@ -165,6 +165,22 @@ lzma = false
 # If JPEG XR support is enabled in this build
 jpegxr = false
 
+# List of frame-based audio assertions.
+[audio_assertions.ASSERTION_NAME]
+
+# List of frames where the assertions should be performed.
+# Both `from` and `to` are inclusive.
+frames = [2, 3]
+# or
+frames = { from = 2, to = 4 }
+
+# The maximum allowed audio amplitude.
+max_amplitude = 0.5
+
+# The lowest acceptable maximum amplitude.
+# The max is calculated per frame.
+min_max_amplitude = 0.4
+
 # A single device font provided for this test.
 [fonts.FONT_NAME] # FONT_NAME is a name of this particular font
 
