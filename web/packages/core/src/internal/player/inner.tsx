@@ -479,23 +479,23 @@ export class InnerPlayer {
      */
     private setupTabVisibilityHandling(): void {
         document.addEventListener("visibilitychange", () => {
-                if (!this.instance) {
-                    return;
+            if (!this.instance) {
+                return;
+            }
+            if (document.hidden) {
+                this.lastActivePlayingState = this.instance.is_playing();
+                this.instance.enable_background_tick_mode();
+                this.startBackgroundTick();
+            } else {
+                this.stopBackgroundTick();
+                this.instance.restart_animation_loop();
+                // Browsers may auto-suspend AudioContext in background tabs.
+                this.instance.audio_context()?.resume();
+                if (!this.lastActivePlayingState) {
+                    this.instance.pause();
                 }
-                if (document.hidden) {
-                    this.lastActivePlayingState = this.instance.is_playing();
-                    this.instance.enable_background_tick_mode();
-                    this.startBackgroundTick();
-                } else {
-                    this.stopBackgroundTick();
-                    this.instance.restart_animation_loop();
-                    // Browsers may auto-suspend AudioContext in background tabs.
-                    this.instance.audio_context()?.resume();
-                    if (!this.lastActivePlayingState) {
-                        this.instance.pause();
-                    }
-                }
-            });
+            }
+        });
     }
 
     /**
