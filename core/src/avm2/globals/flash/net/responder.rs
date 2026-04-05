@@ -11,14 +11,10 @@ pub fn init<'gc>(
 
     let responder = this.as_responder().expect("Must be Responder object");
 
-    let result = args.get_object(activation, 0, "result")?;
-    let status = args.try_get_object(1);
+    let result = args.try_get_function(0);
+    let status = args.try_get_function(1);
 
-    responder.set_callbacks(
-        activation.gc(),
-        result.as_function_object(),
-        status.and_then(|o| o.as_function_object()),
-    );
+    responder.set_callbacks(activation.gc(), result, status);
 
     Ok(Value::Undefined)
 }
