@@ -56,6 +56,30 @@ fn merge_into_subtest<'a>(
     )))
 }
 
+#[derive(Clone, Debug, Deserialize)]
+#[serde(untagged)]
+pub enum FrameSelection {
+    Array(Vec<u32>),
+    Range { from: u32, to: u32 },
+}
+
+impl FrameSelection {
+    pub fn includes_frame(&self, frame: u32) -> bool {
+        match self {
+            FrameSelection::Array(frames) => frames.contains(&frame),
+            &FrameSelection::Range { from, to } => from <= frame && frame <= to,
+        }
+    }
+}
+
+#[derive(Clone, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct AudioAssertion {
+    pub frames: FrameSelection,
+    pub max_amplitude: Option<f32>,
+    pub min_max_amplitude: Option<f32>,
+}
+
 #[derive(Clone, Deserialize)]
 #[serde(default, deny_unknown_fields)]
 pub struct TestOptions {
@@ -70,6 +94,7 @@ pub struct TestOptions {
     pub output_path: String,
     pub sleep_to_meet_frame_rate: bool,
     pub image_comparisons: HashMap<String, ImageComparison>,
+    pub audio_assertions: HashMap<String, AudioAssertion>,
     pub log_warnings: bool,
     pub ignore: bool,
     pub filter: Option<TestExpression>,
@@ -93,6 +118,7 @@ impl Default for TestOptions {
             output_path: "output.txt".to_string(),
             sleep_to_meet_frame_rate: false,
             image_comparisons: Default::default(),
+            audio_assertions: Default::default(),
             log_warnings: true,
             ignore: false,
             filter: None,

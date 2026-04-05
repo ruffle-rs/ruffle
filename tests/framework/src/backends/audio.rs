@@ -23,6 +23,12 @@ impl TestAudioBackend {
     const SAMPLE_RATE: u32 = 44100;
 }
 
+impl TestAudioBackend {
+    pub fn buffer(&self) -> &[f32] {
+        &self.buffer
+    }
+}
+
 impl AudioBackend for TestAudioBackend {
     impl_audio_mixer_backend!(mixer);
     fn play(&mut self) {}
