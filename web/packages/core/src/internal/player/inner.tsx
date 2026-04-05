@@ -194,6 +194,9 @@ export class InnerPlayer {
     private instance: RuffleHandle | null;
     private newZipWriter: (() => ZipWriter) | null;
     private lastActivePlayingState: boolean;
+    private backgroundTickChannel: MessageChannel | null;
+    private backgroundTickActive: boolean;
+    private backgroundLockRelease: (() => void) | null;
 
     metadata: MovieMetadata | null;
     _readyState: ReadyState;
@@ -338,7 +341,10 @@ export class InnerPlayer {
         this.metadata = null;
 
         this.lastActivePlayingState = false;
-        this.setupPauseOnTabHidden();
+        this.backgroundTickChannel = null;
+        this.backgroundTickActive = false;
+        this.backgroundLockRelease = null;
+        this.setupTabVisibilityHandling();
     }
 
     addFSCommandHandler(handler: (command: string, args: string) => void) {
@@ -459,34 +465,103 @@ export class InnerPlayer {
     }
 
     /**
-     * Setup event listener to detect when tab is not active to pause instance playback.
-     * this.instance.play() is called when the tab becomes visible only if the
-     * the instance was not paused before tab became hidden.
+     * Sets up an event listener for tab visibility changes to keep the player
+     * running in the background when the tab is hidden.
+     * While hidden, the normal animation loop is replaced with a background tick
+     * so audio and game logic continue running.
+     * When the tab becomes visible again, the animation loop is restarted and
+     * {@link pause} is called only if the instance was already paused before the
+     * tab was hidden.
      *
      * See: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
      * @ignore
      * @internal
      */
-    private setupPauseOnTabHidden(): void {
-        document.addEventListener(
-            "visibilitychange",
-            () => {
+    private setupTabVisibilityHandling(): void {
+        document.addEventListener("visibilitychange", () => {
                 if (!this.instance) {
                     return;
                 }
-
-                // Tab just changed to be inactive. Record whether instance was playing.
                 if (document.hidden) {
                     this.lastActivePlayingState = this.instance.is_playing();
-                    this.instance.pause();
+                    this.instance.enable_background_tick_mode();
+                    this.startBackgroundTick();
+                } else {
+                    this.stopBackgroundTick();
+                    this.instance.restart_animation_loop();
+                    // Browsers may auto-suspend AudioContext in background tabs.
+                    this.instance.audio_context()?.resume();
+                    if (!this.lastActivePlayingState) {
+                        this.instance.pause();
+                    }
                 }
-                // Play only if instance was playing originally.
-                if (!document.hidden && this.lastActivePlayingState === true) {
-                    this.instance.play();
+            });
+    }
+
+    /**
+     * Starts a background tick loop that keeps audio and game logic running while the tab is hidden.
+     *
+     * @ignore
+     * @internal
+     */
+    private startBackgroundTick(): void {
+        this.backgroundTickActive = true;
+
+        if ("locks" in navigator) {
+            navigator.locks.request(
+                "ruffle-background-tick",
+                { mode: "shared" },
+                () =>
+                    new Promise<void>((resolve) => {
+                        if (!this.backgroundTickActive) {
+                            resolve();
+                        } else {
+                            this.backgroundLockRelease = resolve;
+                        }
+                    }),
+            );
+        }
+
+        const channel = new MessageChannel();
+        this.backgroundTickChannel = channel;
+        const intervalMs = 1000 / (this.metadata?.frameRate ?? 24);
+        let lastTick = performance.now();
+        channel.port1.onmessage = () => {
+            if (!this.backgroundTickActive) {
+                return;
+            }
+            const now = performance.now();
+            if (now - lastTick >= intervalMs) {
+                lastTick = now;
+                this.instance?.tick_for_background(now);
+            }
+            // Delay the next message by the remaining time in this interval to
+            // avoid spinning the event loop at full speed and burning CPU.
+            const elapsed = performance.now() - lastTick;
+            const remaining = Math.max(0, intervalMs - elapsed);
+            setTimeout(() => {
+                if (this.backgroundTickActive) {
+                    channel.port2.postMessage(0);
                 }
-            },
-            false,
-        );
+            }, remaining);
+        };
+        channel.port2.postMessage(0);
+    }
+
+    /**
+     * Stops the background tick loop and releases any held resources.
+     *
+     * @ignore
+     * @internal
+     */
+    private stopBackgroundTick(): void {
+        this.backgroundTickActive = false;
+        if (this.backgroundTickChannel) {
+            this.backgroundTickChannel.port1.onmessage = null;
+            this.backgroundTickChannel = null;
+        }
+        this.backgroundLockRelease?.();
+        this.backgroundLockRelease = null;
     }
 
     /**
@@ -797,6 +872,7 @@ export class InnerPlayer {
      */
     destroy(): void {
         if (this.instance) {
+            this.stopBackgroundTick();
             this.instance.destroy();
             this.instance = null;
             this.metadata = null;
