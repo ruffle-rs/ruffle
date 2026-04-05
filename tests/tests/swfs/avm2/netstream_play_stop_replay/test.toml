@@ -1,0 +1,5 @@
+num_ticks=150
+
+[player_options]
+with_renderer = { optional = true, quality = "low" }
+with_video = true
