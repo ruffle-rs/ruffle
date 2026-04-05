@@ -3177,13 +3177,13 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
         // The nearest button-mode ancestor governs the cursor, so stop at the first one.
         let mut current: Option<DisplayObject<'gc>> = Some(self.into());
         while let Some(obj) = current {
-            if let Some(mc) = obj.as_movie_clip() {
-                if mc.is_button_mode(context) {
-                    if mc.use_hand_cursor(context) && mc.enabled(context) {
-                        return MouseCursor::Hand;
-                    }
-                    break;
+            if let Some(mc) = obj.as_movie_clip()
+                && mc.is_button_mode(context)
+            {
+                if mc.use_hand_cursor(context) && mc.enabled(context) {
+                    return MouseCursor::Hand;
                 }
+                break;
             }
             current = obj.parent();
         }
