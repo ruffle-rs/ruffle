@@ -14,7 +14,8 @@ use std::borrow::Cow;
 use url::Url;
 use wasm_bindgen::{JsCast, JsValue};
 use web_sys::{
-    Blob, HtmlCanvasElement, HtmlDocument, HtmlElement, HtmlTextAreaElement, Url as JsUrl,
+    Blob, FocusOptions, HtmlCanvasElement, HtmlDocument, HtmlElement, HtmlTextAreaElement,
+    Url as JsUrl,
 };
 
 use chrono::{DateTime, Utc};
@@ -245,7 +246,9 @@ impl UiBackend for WebUiBackend {
             let editing_text = self.js_player.is_virtual_keyboard_focused();
             textarea.set_value(&content);
             let _ = element.append_child(&textarea);
-            let _ = textarea.focus();
+            let focus_options = FocusOptions::new();
+            focus_options.set_prevent_scroll(true);
+            let _ = textarea.focus_with_options(&focus_options);
             textarea.select();
 
             match document.exec_command("copy") {
