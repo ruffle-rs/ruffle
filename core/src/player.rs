@@ -1762,6 +1762,7 @@ impl Player {
             // When the mouse moves within the same object, re-evaluate the cursor,
             // since different parts of an object may use different cursors (e.g. links inside a text field).
             if is_mouse_moved && InteractiveObject::option_ptr_eq(cur_over_object, new_over_object)
+            {
                 new_cursor = match new_over_object {
                     Some(obj) => obj.mouse_cursor(context),
                     None => MouseCursor::Arrow,
