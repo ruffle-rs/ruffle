@@ -193,7 +193,6 @@ export class InnerPlayer {
     private swfUrl?: URL;
     private instance: RuffleHandle | null;
     private newZipWriter: (() => ZipWriter) | null;
-    private lastActivePlayingState: boolean;
     private backgroundTickChannel: MessageChannel | null;
     private backgroundTickActive: boolean;
     private backgroundLockRelease: (() => void) | null;
@@ -340,7 +339,6 @@ export class InnerPlayer {
         this._readyState = ReadyState.HaveNothing;
         this.metadata = null;
 
-        this.lastActivePlayingState = false;
         this.backgroundTickChannel = null;
         this.backgroundTickActive = false;
         this.backgroundLockRelease = null;
@@ -483,9 +481,8 @@ export class InnerPlayer {
                 return;
             }
             if (document.hidden) {
-                this.lastActivePlayingState = this.instance.is_playing();
                 this.instance.enable_background_tick_mode();
-                if (this.lastActivePlayingState) {
+                if (this.instance.is_playing()) {
                     this.startBackgroundTick();
                 }
             } else {
@@ -493,9 +490,6 @@ export class InnerPlayer {
                 this.instance.restart_animation_loop();
                 // Browsers may auto-suspend AudioContext in background tabs.
                 this.instance.audio_context()?.resume();
-                if (!this.lastActivePlayingState) {
-                    this.instance.pause();
-                }
             }
         });
     }
