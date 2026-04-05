@@ -21,7 +21,6 @@ use crate::avm2_stub_method;
 use crate::display_object::TDisplayObject;
 use crate::drawing::Drawing;
 use crate::string::{AvmString, WStr};
-use either::Either;
 use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
 use ruffle_render::triangles::Triangles;
 use std::f64::consts::FRAC_1_SQRT_2;
@@ -1190,21 +1189,6 @@ fn parse_triangles<'gc>(
     }
 }
 
-fn iter_triangles(triangles: &Triangles) -> impl Iterator<Item = [Point<Twips>; 3]> + '_ {
-    match triangles {
-        Triangles::Indexed { vertices, indices } => {
-            Either::Left(indices.iter().map(|&[i0, i1, i2]| {
-                [
-                    vertices[i0 as usize],
-                    vertices[i1 as usize],
-                    vertices[i2 as usize],
-                ]
-            }))
-        }
-        Triangles::Sequential { triangles } => Either::Right(triangles.iter().copied()),
-    }
-}
-
 fn make_point<'gc>([x, y]: &[Value<'gc>; 2]) -> Point<Twips> {
     let x = Twips::from_pixels(x.as_f64());
     let y = Twips::from_pixels(y.as_f64());
@@ -1264,12 +1248,7 @@ fn draw_triangles_internal<'gc>(
         return Ok(());
     };
 
-    for [a, b, c] in iter_triangles(&triangles) {
-        drawing.draw_command(DrawCommand::MoveTo(a));
-        drawing.draw_command(DrawCommand::LineTo(b));
-        drawing.draw_command(DrawCommand::LineTo(c));
-        drawing.draw_command(DrawCommand::LineTo(a));
-    }
+    drawing.draw_triangles(triangles);
 
     Ok(())
 }

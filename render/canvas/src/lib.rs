@@ -1079,6 +1079,7 @@ fn swf_shape_to_canvas_commands(
                     },
                 });
             }
+            DrawPath::Triangles { style, triangles } => todo!(),
         }
     }
 

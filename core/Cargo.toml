@@ -70,7 +70,7 @@ id3 = "1.16.4"
 either = "1.16.0"
 chardetng = "0.1.17"
 tracy-client = { version = "0.18.2", optional = true, default-features = false }
-itertools = "0.14.0"
+itertools = { workspace = true }
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 workspace = true

@@ -1,11 +1,16 @@
 num_ticks = 1
 
-# TODO This output differs from FP due to the
-#   winding behavior not being implemented.
-[image_comparisons.output]
-trigger = 1
-tolerance = 1
-known_failure = true
+[[image_comparisons.output.checks]]
+tolerance = 0
+max_outliers = 1000
+
+[[image_comparisons.output.checks]]
+tolerance = 32
+max_outliers = 300
+
+[[image_comparisons.output.checks]]
+tolerance = 100
+max_outliers = 0
 
 [player_options]
 with_renderer = { optional = false, quality = "high" }

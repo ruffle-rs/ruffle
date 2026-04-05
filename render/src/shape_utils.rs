@@ -1,4 +1,4 @@
-use crate::matrix::Matrix;
+use crate::{matrix::Matrix, triangles::Triangles};
 use enum_map::Enum;
 use ruffle_wstr::{FromWStr, WStr};
 use smallvec::SmallVec;
@@ -125,6 +125,10 @@ pub enum DrawPath<'a> {
         style: &'a FillStyle,
         commands: Vec<DrawCommand>,
         winding_rule: FillRule,
+    },
+    Triangles {
+        style: &'a FillStyle,
+        triangles: &'a Triangles,
     },
 }
 
