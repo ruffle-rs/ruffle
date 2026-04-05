@@ -467,9 +467,7 @@ export class InnerPlayer {
      * running in the background when the tab is hidden.
      * While hidden, the normal animation loop is replaced with a background tick
      * so audio and game logic continue running.
-     * When the tab becomes visible again, the animation loop is restarted and
-     * {@link pause} is called only if the instance was already paused before the
-     * tab was hidden.
+     * When the tab becomes visible again, the animation loop is restarted.
      *
      * See: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
      * @ignore
