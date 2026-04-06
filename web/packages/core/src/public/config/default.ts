@@ -1,6 +1,7 @@
 import type { BaseLoadOptions } from "./load-options";
 import {
     AutoPlay,
+    BackgroundExecutionMode,
     ContextMenu,
     Letterbox,
     LogLevel,
@@ -58,4 +59,5 @@ export const DEFAULT_CONFIG: Required<BaseLoadOptions> = {
     urlRewriteRules: [],
     scrollingBehavior: ScrollingBehavior.Smart,
     deviceFontRenderer: DeviceFontRenderer.Embedded,
+    backgroundExecutionMode: BackgroundExecutionMode.None,
 };
