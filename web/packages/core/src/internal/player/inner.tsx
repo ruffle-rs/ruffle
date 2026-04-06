@@ -473,33 +473,33 @@ export class InnerPlayer {
      */
     private setupTabVisibilityHandling(): void {
         document.addEventListener("visibilitychange", () => {
-                if (!this.instance) {
-                    return;
-                }
-                const mode =
-                    this.loadedConfig?.backgroundExecutionMode ??
-                    BackgroundExecutionMode.None;
-                if (document.hidden) {
-                    this.lastActivePlayingState = this.instance.is_playing();
-                    if (mode === BackgroundExecutionMode.MainThread) {
-                        this.instance.enable_background_tick_mode();
-                        if (this.lastActivePlayingState) {
-                            this.startBackgroundTick();
-                        }
-                    } else {
-                        this.instance.pause();
+            if (!this.instance) {
+                return;
+            }
+            const mode =
+                this.loadedConfig?.backgroundExecutionMode ??
+                BackgroundExecutionMode.None;
+            if (document.hidden) {
+                this.lastActivePlayingState = this.instance.is_playing();
+                if (mode === BackgroundExecutionMode.MainThread) {
+                    this.instance.enable_background_tick_mode();
+                    if (this.lastActivePlayingState) {
+                        this.startBackgroundTick();
                     }
                 } else {
-                    if (mode === BackgroundExecutionMode.MainThread) {
-                        this.stopBackgroundTick();
-                        this.instance.restart_animation_loop();
-                    } else if (this.lastActivePlayingState) {
-                        this.instance.play();
-                    }
-                    // Browsers may auto-suspend AudioContext in background tabs.
-                    this.instance.audio_context()?.resume();
+                    this.instance.pause();
                 }
-            });
+            } else {
+                if (mode === BackgroundExecutionMode.MainThread) {
+                    this.stopBackgroundTick();
+                    this.instance.restart_animation_loop();
+                } else if (this.lastActivePlayingState) {
+                    this.instance.play();
+                }
+                // Browsers may auto-suspend AudioContext in background tabs.
+                this.instance.audio_context()?.resume();
+            }
+        });
     }
 
     /**
