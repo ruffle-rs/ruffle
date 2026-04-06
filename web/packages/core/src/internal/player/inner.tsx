@@ -1,6 +1,7 @@
 import type { RuffleHandle, ZipWriter } from "../../../dist/ruffle_web";
 import {
     AutoPlay,
+    BackgroundExecutionMode,
     ContextMenu,
     DataLoadOptions,
     DEFAULT_CONFIG,
@@ -193,7 +194,7 @@ export class InnerPlayer {
     private swfUrl?: URL;
     private instance: RuffleHandle | null;
     private newZipWriter: (() => ZipWriter) | null;
-    private backgroundTickChannel: MessageChannel | null;
+    private lastActivePlayingState: boolean;
     private backgroundTickActive: boolean;
     private backgroundLockRelease: (() => void) | null;
 
@@ -339,7 +340,7 @@ export class InnerPlayer {
         this._readyState = ReadyState.HaveNothing;
         this.metadata = null;
 
-        this.backgroundTickChannel = null;
+        this.lastActivePlayingState = false;
         this.backgroundTickActive = false;
         this.backgroundLockRelease = null;
         this.setupTabVisibilityHandling();
@@ -463,11 +464,8 @@ export class InnerPlayer {
     }
 
     /**
-     * Sets up an event listener for tab visibility changes to keep the player
-     * running in the background when the tab is hidden.
-     * While hidden, the normal animation loop is replaced with a background tick
-     * so audio and game logic continue running.
-     * When the tab becomes visible again, the animation loop is restarted.
+     * Sets up an event listener for tab visibility changes, responding
+     * according to the configured {@link BackgroundExecutionMode}.
      *
      * See: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
      * @ignore
@@ -475,21 +473,33 @@ export class InnerPlayer {
      */
     private setupTabVisibilityHandling(): void {
         document.addEventListener("visibilitychange", () => {
-            if (!this.instance) {
-                return;
-            }
-            if (document.hidden) {
-                this.instance.enable_background_tick_mode();
-                if (this.instance.is_playing()) {
-                    this.startBackgroundTick();
+                if (!this.instance) {
+                    return;
                 }
-            } else {
-                this.stopBackgroundTick();
-                this.instance.restart_animation_loop();
-                // Browsers may auto-suspend AudioContext in background tabs.
-                this.instance.audio_context()?.resume();
-            }
-        });
+                const mode =
+                    this.loadedConfig?.backgroundExecutionMode ??
+                    BackgroundExecutionMode.None;
+                if (document.hidden) {
+                    this.lastActivePlayingState = this.instance.is_playing();
+                    if (mode === BackgroundExecutionMode.MainThread) {
+                        this.instance.enable_background_tick_mode();
+                        if (this.lastActivePlayingState) {
+                            this.startBackgroundTick();
+                        }
+                    } else {
+                        this.instance.pause();
+                    }
+                } else {
+                    if (mode === BackgroundExecutionMode.MainThread) {
+                        this.stopBackgroundTick();
+                        this.instance.restart_animation_loop();
+                    } else if (this.lastActivePlayingState) {
+                        this.instance.play();
+                    }
+                    // Browsers may auto-suspend AudioContext in background tabs.
+                    this.instance.audio_context()?.resume();
+                }
+            });
     }
 
     /**
@@ -516,11 +526,9 @@ export class InnerPlayer {
             );
         }
 
-        const channel = new MessageChannel();
-        this.backgroundTickChannel = channel;
         const intervalMs = 1000 / (this.metadata?.frameRate ?? 24);
         let lastTick = performance.now();
-        channel.port1.onmessage = () => {
+        const tick = () => {
             if (!this.backgroundTickActive) {
                 return;
             }
@@ -529,17 +537,11 @@ export class InnerPlayer {
                 lastTick = now;
                 this.instance?.tick_for_background(now);
             }
-            // Delay the next message by the remaining time in this interval to
-            // avoid spinning the event loop at full speed and burning CPU.
             const elapsed = performance.now() - lastTick;
             const remaining = Math.max(0, intervalMs - elapsed);
-            setTimeout(() => {
-                if (this.backgroundTickActive) {
-                    channel.port2.postMessage(0);
-                }
-            }, remaining);
+            setTimeout(tick, remaining);
         };
-        channel.port2.postMessage(0);
+        setTimeout(tick, intervalMs);
     }
 
     /**
@@ -550,10 +552,6 @@ export class InnerPlayer {
      */
     private stopBackgroundTick(): void {
         this.backgroundTickActive = false;
-        if (this.backgroundTickChannel) {
-            this.backgroundTickChannel.port1.onmessage = null;
-            this.backgroundTickChannel = null;
-        }
         this.backgroundLockRelease?.();
         this.backgroundLockRelease = null;
     }
