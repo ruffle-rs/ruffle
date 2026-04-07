@@ -1,10 +1,8 @@
 num_frames = 1
 
 [image_comparisons.output]
-# there are a large number of outliers due to differences in texture sampling
-# the outline is also offset by 1 pixel
 tolerance = 5
-max_outliers = 8300
+max_outliers = 60
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false, quality = "high" }

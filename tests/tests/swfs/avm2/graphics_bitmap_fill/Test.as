@@ -13,7 +13,7 @@ package {
             var bmd = logoBitmap.bitmapData;
 
             var matrix: Matrix = new Matrix();
-            matrix.scale(1.5, 1.5);
+            matrix.scale(1, 1);
 
 			use_objects(bmd, matrix);
 			use_functions(bmd, matrix);
