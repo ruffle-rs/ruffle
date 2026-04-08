@@ -1,0 +1,28 @@
+[package]
+name = "ruffle-3ds"
+authors = ["Terpsichord", "Ruffle LLC <ruffle@ruffle.rs>"]
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+ruffle_core = { path = "../core" }
+ctru-rs = { git = "https://github.com/rust3ds/ctru-rs" }
+citro3d = { git = "https://github.com/rust3ds/citro3d-rs" }
+ruffle_render = { path = "../render" }
+swf = { path = "../swf" }
+downcast-rs = "1.2.1"
+
+futures.workspace = true
+
+
+#symphonia = { version = "0.5.4", features = ["pcm", "mp3"], default-features = false }
+bytemuck = "1.16.1"
+
+[package.metadata.cargo-3ds]
+romfs_dir = "romfs"

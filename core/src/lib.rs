@@ -5,6 +5,9 @@
 // It'd make those much less readable and consistent.
 #![allow(clippy::get_first)]
 
+// TODO: probably need to update to avoid this
+#![allow(mismatched_lifetime_syntaxes)]
+
 #[macro_use]
 mod display_object;
 pub use display_object::{StageAlign, StageDisplayState, StageScaleMode};

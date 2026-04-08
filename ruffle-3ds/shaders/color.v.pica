@@ -1,0 +1,50 @@
+; attributes
+; v0 = position (vec2)
+; v1 = color (vec4)
+
+; uniforms
+; c0-c3   = world_matrix
+; c4-c7   = view_matrix
+; c8      = mult_color
+; c9      = add_color
+
+; outputs
+; o0 = position
+; o1 = color
+
+; ---- color = clamp(color * mult + add)
+
+mul r0, v1, c8
+add r0, r0, c9
+
+; clamp 0..1
+max r0, r0, c10      ; c10 = vec4(0)
+min r0, r0, c11      ; c11 = vec4(1)
+
+; alpha premultiply
+mul r1.xyz, r0.xyz, r0.aaa
+mov r1.w, r0.w
+
+mov o1, r1
+
+; ---- build vec4(position,0,1)
+
+mov r2.xy, v0.xy
+mov r2.z, c10.x      ; 0
+mov r2.w, c11.x      ; 1
+
+; ---- world transform
+
+dp4 r3.x, r2, c0
+dp4 r3.y, r2, c1
+dp4 r3.z, r2, c2
+dp4 r3.w, r2, c3
+
+; ---- view transform
+
+dp4 o0.x, r3, c4
+dp4 o0.y, r3, c5
+dp4 o0.z, r3, c6
+dp4 o0.w, r3, c7
+
+end

@@ -1333,8 +1333,6 @@ impl CommandHandler for WebGlRenderBackend {
             Gl::NEAREST as i32
         };
         self.gl
-            .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MAG_FILTER, filter);
-        self.gl
             .tex_parameteri(Gl::TEXTURE_2D, Gl::TEXTURE_MIN_FILTER, filter);
 
         let wrap = Gl::CLAMP_TO_EDGE as i32;
@@ -1361,7 +1359,7 @@ impl CommandHandler for WebGlRenderBackend {
             ],
         ];
 
-        let mult_color = transform.color_transform.mult_rgba_normalized();
+        let mult_color = i.color_transform.mult_rgba_normalized();
         let add_color = transform.color_transform.add_rgba_normalized();
 
         self.set_stencil_state();
