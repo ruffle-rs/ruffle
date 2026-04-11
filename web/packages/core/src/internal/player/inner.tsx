@@ -195,8 +195,7 @@ export class InnerPlayer {
     private instance: RuffleHandle | null;
     private newZipWriter: (() => ZipWriter) | null;
     private lastActivePlayingState: boolean;
-    private backgroundTickActive: boolean;
-    private backgroundLockRelease: (() => void) | null;
+    private backgroundWorker: Worker | null;
 
     metadata: MovieMetadata | null;
     _readyState: ReadyState;
@@ -341,8 +340,7 @@ export class InnerPlayer {
         this.metadata = null;
 
         this.lastActivePlayingState = false;
-        this.backgroundTickActive = false;
-        this.backgroundLockRelease = null;
+        this.backgroundWorker = null;
         this.setupTabVisibilityHandling();
     }
 
@@ -503,57 +501,45 @@ export class InnerPlayer {
     }
 
     /**
-     * Starts a background tick loop that keeps audio and game logic running while the tab is hidden.
-     *
-     * @ignore
-     * @internal
+     * Starts a background tick loop while the tab is hidden.
      */
     private startBackgroundTick(): void {
-        this.backgroundTickActive = true;
+        const intervalMs = 1000 / (this.metadata?.frameRate || 24);
 
-        if ("locks" in navigator) {
-            navigator.locks.request(
-                "ruffle-background-tick",
-                { mode: "shared" },
-                () =>
-                    new Promise<void>((resolve) => {
-                        if (!this.backgroundTickActive) {
-                            resolve();
-                        } else {
-                            this.backgroundLockRelease = resolve;
-                        }
-                    }),
-            );
+        const workerCode = `
+            const intervalMs = ${intervalMs};
+            self.onmessage = () => {
+                setTimeout(() => self.postMessage("tick"), intervalMs);
+            };
+            setTimeout(() => self.postMessage("tick"), intervalMs);
+        `;
+
+        try {
+            const blob = new Blob([workerCode], {
+                type: "application/javascript",
+            });
+            const workerUrl = URL.createObjectURL(blob);
+            const worker = new Worker(workerUrl);
+            URL.revokeObjectURL(workerUrl);
+
+            this.backgroundWorker = worker;
+            worker.onmessage = () => {
+                if (this.backgroundWorker === worker) {
+                    this.instance?.tick_for_background(performance.now());
+                    worker.postMessage("ack");
+                }
+            };
+        } catch (e) {
+            console.warn("Unable to create background Worker:", e);
         }
-
-        const intervalMs = 1000 / (this.metadata?.frameRate ?? 24);
-        let lastTick = performance.now();
-        const tick = () => {
-            if (!this.backgroundTickActive) {
-                return;
-            }
-            const now = performance.now();
-            if (now - lastTick >= intervalMs) {
-                lastTick = now;
-                this.instance?.tick_for_background(now);
-            }
-            const elapsed = performance.now() - lastTick;
-            const remaining = Math.max(0, intervalMs - elapsed);
-            setTimeout(tick, remaining);
-        };
-        setTimeout(tick, intervalMs);
     }
 
     /**
      * Stops the background tick loop and releases any held resources.
-     *
-     * @ignore
-     * @internal
      */
     private stopBackgroundTick(): void {
-        this.backgroundTickActive = false;
-        this.backgroundLockRelease?.();
-        this.backgroundLockRelease = null;
+        this.backgroundWorker?.terminate();
+        this.backgroundWorker = null;
     }
 
     /**
