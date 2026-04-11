@@ -349,7 +349,7 @@ impl RuffleHandle {
         });
     }
 
-    /// Ticks the game core once. Intended to be called from a MessageChannel loop
+    /// Ticks the game core once. Intended to be called from a Web Worker loop
     /// after calling `enable_background_tick_mode`.
     pub fn tick_for_background(&self, timestamp: f64) {
         self.tick(timestamp);
