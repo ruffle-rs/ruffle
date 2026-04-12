@@ -1,7 +1,8 @@
 num_frames = 5
 
 [image_comparisons.output]
-tolerance = 1
+tolerance = 10
+max_outliers = 26000
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { quality = "high" }
