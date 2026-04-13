@@ -1,0 +1,20 @@
+<languageVersion : 1.0;>
+
+kernel shader
+<   namespace : "ruffle";
+    vendor : "ruffle";
+    version : 1;
+>
+{
+    input image4 background;
+    input image4 foreground;
+
+    output pixel4 dst;
+
+    void evaluatePixel() {
+        float4 a = sampleNearest(foreground, outCoord());
+        float4 b = sampleNearest(background, outCoord());
+
+        dst = (a + b) * 0.5;
+    }
+}
