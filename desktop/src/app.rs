@@ -401,6 +401,7 @@ pub struct App {
     event_loop_proxy: EventLoopProxy<RuffleEvent>,
     preferences: GlobalPreferences,
     font_database: fontdb::Database,
+    pending_open_files: Vec<std::path::PathBuf>,
 }
 
 /// Enters the tokio runtime context.
@@ -414,6 +415,8 @@ macro_rules! enter_runtime {
 impl App {
     pub fn new(preferences: GlobalPreferences) -> Result<(Self, EventLoop<RuffleEvent>), Error> {
         let event_loop = EventLoop::with_user_event().build()?;
+        #[cfg(target_os = "macos")]
+        crate::macos_open_files::install_open_file_handler();
 
         let mut font_database = fontdb::Database::default();
         font_database.load_system_fonts();
@@ -434,9 +437,41 @@ impl App {
                 event_loop_proxy,
                 font_database,
                 preferences,
+                pending_open_files: Vec::new(),
             },
             event_loop,
         ))
+    }
+
+    fn collect_pending_open_files(&mut self) {
+        #[cfg(target_os = "macos")]
+        {
+            self.pending_open_files
+                .extend(crate::macos_open_files::take_pending_open_files());
+        }
+    }
+
+    fn open_pending_files(&mut self) {
+        if self.pending_open_files.is_empty() {
+            return;
+        }
+
+        let Some(main_window) = &mut self.main_window else {
+            return;
+        };
+
+        let options = LaunchOptions::from(&main_window.preferences);
+        for file in self.pending_open_files.drain(..) {
+            if let Some(content_descriptor) = ContentDescriptor::new_local(&file, None) {
+                main_window.gui.create_movie(
+                    &mut main_window.player,
+                    options.clone(),
+                    content_descriptor,
+                );
+            } else {
+                tracing::warn!("Ignoring unsupported opened file: {}", file.display());
+            }
+        }
     }
 }
 
@@ -445,7 +480,9 @@ impl ApplicationHandler<RuffleEvent> for App {
         enter_runtime!(self);
 
         if cause == StartCause::Init {
+            self.collect_pending_open_files();
             let movie_url = self.preferences.cli.movie_url.clone();
+            let finder_file = self.pending_open_files.first().cloned();
             let icon_bytes = include_bytes!("../assets/favicon-32.rgba");
             let icon =
                 Icon::from_rgba(icon_bytes.to_vec(), 32, 32).expect("App icon should be correct");
@@ -519,13 +556,24 @@ impl ApplicationHandler<RuffleEvent> for App {
                         root_content_path: None,
                     },
                 );
+            } else if let Some(finder_file) = finder_file.as_ref() {
+                if let Some(content_descriptor) = ContentDescriptor::new_local(finder_file, None) {
+                    gui.create_movie(
+                        &mut player,
+                        LaunchOptions::from(&preferences),
+                        content_descriptor,
+                    );
+                    self.pending_open_files.remove(0);
+                } else {
+                    gui.show_open_dialog();
+                }
             } else {
                 gui.show_open_dialog();
             }
 
             let mut loaded = LoadingState::Loading;
 
-            if movie_url.is_none() {
+            if movie_url.is_none() && finder_file.is_none() {
                 // No SWF provided on command line; show window with dummy movie immediately.
                 window.set_visible(true);
                 loaded = LoadingState::Loaded;
@@ -549,6 +597,8 @@ impl ApplicationHandler<RuffleEvent> for App {
                 next_frame_time: None,
                 event_loop_proxy,
             });
+
+            self.open_pending_files();
         }
     }
 
@@ -677,6 +727,8 @@ impl ApplicationHandler<RuffleEvent> for App {
 
     fn about_to_wait(&mut self, event_loop: &ActiveEventLoop) {
         enter_runtime!(self);
+        self.collect_pending_open_files();
+        self.open_pending_files();
 
         if let Some(main_window) = &mut self.main_window {
             main_window.about_to_wait(self.gilrs.as_mut());

@@ -13,6 +13,8 @@ mod custom_event;
 mod dbus;
 mod gui;
 mod log;
+#[cfg(target_os = "macos")]
+mod macos_open_files;
 mod player;
 mod preferences;
 #[cfg(feature = "tracy")]

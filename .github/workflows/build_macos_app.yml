@@ -1,0 +1,63 @@
+name: Build macOS App Bundle
+
+on:
+  workflow_dispatch:
+    inputs:
+      upload_name:
+        description: "Artifact name prefix"
+        required: false
+        default: "ruffle-macos-app"
+
+jobs:
+  build-macos-app:
+    name: Build macOS universal app
+    runs-on: macos-15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          toolchain: stable
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Build desktop binaries
+        run: |
+          cargo build --locked --release --package ruffle_desktop --target aarch64-apple-darwin --features sandbox,jpegxr
+          cargo build --locked --release --package ruffle_desktop --target x86_64-apple-darwin --features sandbox,jpegxr
+        env:
+          CFG_RELEASE_CHANNEL: nightly
+          MACOSX_DEPLOYMENT_TARGET: 11.0
+
+      - name: Create universal binary
+        run: |
+          mkdir -p package
+          lipo -create -output package/ruffle \
+            target/aarch64-apple-darwin/release/ruffle_desktop \
+            target/x86_64-apple-darwin/release/ruffle_desktop
+          chmod +x package/ruffle
+
+      - name: Create app bundle
+        run: |
+          cp -r desktop/packages/macOS package/Ruffle.app
+          mkdir -p package/Ruffle.app/Contents/MacOS
+          mv package/ruffle package/Ruffle.app/Contents/MacOS/ruffle
+
+      - name: Compile app icon resources
+        run: |
+          mkdir -p package/Ruffle.app/Contents/Resources
+          xcrun actool --compile package/Ruffle.app/Contents/Resources desktop/assets/Assets.xcassets --minimum-deployment-target 10.0 --platform macosx --warnings --errors --notices --include-all-app-icons
+
+      - name: Package app bundle
+        run: |
+          cd package
+          tar -czvf Ruffle-macos-universal.tar.gz Ruffle.app
+
+      - name: Upload app artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ github.event.inputs.upload_name }}
+          path: package/Ruffle-macos-universal.tar.gz
+          if-no-files-found: error
