@@ -150,8 +150,12 @@ impl Surface {
 
         for chunk in chunks {
             match chunk {
-                Chunk::Draw(chunk, needs_stencil, transform_buffers) => {
-                    transform_buffers.copy_to(
+                Chunk::Draw {
+                    chunk,
+                    needs_stencil,
+                    transforms,
+                } => {
+                    transforms.copy_to(
                         staging_belt,
                         &descriptors.device,
                         draw_encoder,
@@ -194,7 +198,11 @@ impl Surface {
                     num_masks = renderer.num_masks();
                     mask_state = renderer.mask_state();
                 }
-                Chunk::Blend(texture, ChunkBlendMode::Shader(shader), needs_stencil) => {
+                Chunk::Blend {
+                    texture,
+                    blend_mode: ChunkBlendMode::Shader(shader),
+                    needs_stencil,
+                } => {
                     assert!(
                         !needs_stencil,
                         "Shader blend should not need stencil buffer"
@@ -229,7 +237,11 @@ impl Surface {
                     )
                     .expect("Failed to run PixelBender blend mode");
                 }
-                Chunk::Blend(texture, ChunkBlendMode::Complex(blend_mode), needs_stencil) => {
+                Chunk::Blend {
+                    texture,
+                    blend_mode: ChunkBlendMode::Complex(blend_mode),
+                    needs_stencil,
+                } => {
                     let parent = match blend_mode {
                         ComplexBlend::Alpha | ComplexBlend::Erase => {
                             match nearest_layer {
