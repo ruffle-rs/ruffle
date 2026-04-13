@@ -435,8 +435,16 @@ impl<'pass, 'frame: 'pass, 'global: 'frame> CommandRenderer<'pass, 'frame, 'glob
 }
 
 pub enum Chunk {
-    Draw(Vec<DrawCommand>, bool, BufferBuilder),
-    Blend(PoolOrArcTexture, ChunkBlendMode, bool),
+    Draw {
+        chunk: Vec<DrawCommand>,
+        needs_stencil: bool,
+        transforms: BufferBuilder,
+    },
+    Blend {
+        texture: PoolOrArcTexture,
+        blend_mode: ChunkBlendMode,
+        needs_stencil: bool,
+    },
 }
 
 #[derive(Debug)]
@@ -608,7 +616,11 @@ impl<'a> WgpuCommandHandler<'a> {
         );
 
         if !current.is_empty() {
-            result.push(Chunk::Draw(current, needs_stencil, transforms));
+            result.push(Chunk::Draw {
+                chunk: current,
+                needs_stencil,
+                transforms,
+            });
         }
 
         result
@@ -640,14 +652,14 @@ impl<'a> WgpuCommandHandler<'a> {
                 transform_range.start as wgpu::DynamicOffset,
             ));
         } else {
-            self.result.push(Chunk::Draw(
-                mem::take(&mut self.current),
-                self.needs_stencil,
-                mem::replace(
+            self.result.push(Chunk::Draw {
+                chunk: mem::take(&mut self.current),
+                needs_stencil: self.needs_stencil,
+                transforms: mem::replace(
                     &mut self.transforms,
                     BufferBuilder::new_for_uniform(&self.descriptors.limits),
                 ),
-            ));
+            });
             self.transforms
                 .set_buffer_limit(self.dynamic_transforms.buffer.size());
             let transform_range = self
@@ -738,14 +750,14 @@ impl CommandHandler for WgpuCommandHandler<'_> {
             }
             blend_type => {
                 if !self.current.is_empty() {
-                    self.result.push(Chunk::Draw(
-                        mem::take(&mut self.current),
-                        self.needs_stencil,
-                        mem::replace(
+                    self.result.push(Chunk::Draw {
+                        chunk: mem::take(&mut self.current),
+                        needs_stencil: self.needs_stencil,
+                        transforms: mem::replace(
                             &mut self.transforms,
                             BufferBuilder::new_for_uniform(&self.descriptors.limits),
                         ),
-                    ));
+                    });
                 }
                 self.transforms
                     .set_buffer_limit(self.dynamic_transforms.buffer.size());
@@ -754,11 +766,11 @@ impl CommandHandler for WgpuCommandHandler<'_> {
                     BlendType::Shader(shader) => ChunkBlendMode::Shader(shader),
                     _ => unreachable!(),
                 };
-                self.result.push(Chunk::Blend(
-                    target.take_color_texture(),
-                    chunk_blend_mode,
-                    self.num_masks > 0,
-                ));
+                self.result.push(Chunk::Blend {
+                    texture: target.take_color_texture(),
+                    blend_mode: chunk_blend_mode,
+                    needs_stencil: self.num_masks > 0,
+                });
                 self.needs_stencil = self.num_masks > 0;
             }
         }
