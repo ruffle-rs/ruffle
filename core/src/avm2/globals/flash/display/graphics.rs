@@ -24,8 +24,8 @@ use crate::string::{AvmString, WStr};
 use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{
-    Color, FillStyle, Fixed8, Fixed16, Gradient, GradientInterpolation, GradientRecord,
-    GradientSpread, LineCapStyle, LineJoinStyle, LineStyle, Matrix, Point, Twips,
+    Color, FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
+    LineCapStyle, LineJoinStyle, LineStyle, Matrix, Point, Twips,
 };
 
 /// Convert an RGB `color` and `alpha` argument pair into a `swf::Color`.
@@ -1321,8 +1321,8 @@ pub fn line_bitmap_style<'gc>(
             height: bitmap.height(),
         };
         let scale_matrix = Matrix::scale(
-            Fixed16::from_f64(bitmap.width as f64),
-            Fixed16::from_f64(bitmap.height as f64),
+            (Twips::TWIPS_PER_PIXEL as i16).into(),
+            (Twips::TWIPS_PER_PIXEL as i16).into(),
         );
 
         if let Some(mut draw) = this.as_drawing() {
@@ -1779,8 +1779,8 @@ fn handle_bitmap_fill<'gc>(
     };
 
     let scale_matrix = Matrix::scale(
-        Fixed16::from_f64(bitmap.width as f64),
-        Fixed16::from_f64(bitmap.height as f64),
+        (Twips::TWIPS_PER_PIXEL as i16).into(),
+        (Twips::TWIPS_PER_PIXEL as i16).into(),
     );
 
     let id = drawing.add_bitmap(bitmap);

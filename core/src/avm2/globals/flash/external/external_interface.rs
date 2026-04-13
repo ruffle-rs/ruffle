@@ -45,14 +45,22 @@ pub fn add_callback<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_string(activation, 0);
-    let method = args.get_function(activation, 1, "closure")?;
+    let callback = args.try_get_function(1);
 
     check_available(activation)?;
 
-    activation
-        .context
-        .external_interface
-        .add_callback(name.to_string(), Callback::Avm2 { method });
+    if let Some(method) = callback {
+        activation
+            .context
+            .external_interface
+            .add_callback(name.to_string(), Callback::Avm2 { method });
+    } else {
+        activation
+            .context
+            .external_interface
+            .remove_callback(name.to_string());
+    }
+
     Ok(Value::Undefined)
 }
 
