@@ -393,17 +393,39 @@ impl<'gc> E4XNode<'gc> {
             return None;
         };
 
-        let index = children
+        self.remove_matching_nodes(gc_context, children, name)
+    }
+
+    /// Removes all matching attributes matching provided name, returns the first attribute removed along with its index (if any).
+    pub fn remove_matching_attribute(
+        self,
+        gc_context: &Mutation<'gc>,
+        name: &Multiname<'gc>,
+    ) -> Option<(usize, E4XNode<'gc>)> {
+        let E4XNodeKind::Element { attributes, .. } = &mut *self.kind_mut(gc_context) else {
+            return None;
+        };
+
+        self.remove_matching_nodes(gc_context, attributes, name)
+    }
+
+    fn remove_matching_nodes(
+        self,
+        gc_context: &Mutation<'gc>,
+        nodes: &mut Vec<E4XNode<'gc>>,
+        name: &Multiname<'gc>,
+    ) -> Option<(usize, E4XNode<'gc>)> {
+        let index = nodes
             .iter()
             .position(|x| name.is_any_name() || x.matches_name(name));
 
         let val = if let Some(index) = index {
-            Some((index, children[index]))
+            Some((index, nodes[index]))
         } else {
             None
         };
 
-        children.retain(|x| {
+        nodes.retain(|x| {
             if name.is_any_name() || x.matches_name(name) {
                 // Remove parent.
                 x.set_parent(None, gc_context);
