@@ -491,7 +491,8 @@ export class InnerPlayer {
                 if (mode === BackgroundExecutionMode.MainThread) {
                     this.stopBackgroundTick();
                     this.instance.restart_animation_loop();
-                } else if (this.lastActivePlayingState) {
+                }
+                if (this.lastActivePlayingState) {
                     this.instance.play();
                 }
                 // Browsers may auto-suspend AudioContext in background tabs.
@@ -531,6 +532,7 @@ export class InnerPlayer {
             };
         } catch (e) {
             console.warn("Unable to create background Worker:", e);
+            this.instance?.pause();
         }
     }
 
