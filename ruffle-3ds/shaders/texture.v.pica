@@ -1,3 +1,8 @@
+; constants
+.constf myconst(0.0, 1.0, -1.0, 0.5)
+.alias zeros myconst.xxxx
+.alias ones myconst.yyyy
+
 ; inputs
 .in inpos v0
 .in inclr v1
@@ -6,20 +11,13 @@
 .out outpos position
 
 ; uniforms
-.fvec view[4], world[4]
-
-; Constants
-.constf myconst(0.0, 1.0, -1.0, 0.5)
-.alias  zeros myconst.xxxx ; Vector full of zeros
-.alias  ones  myconst.yyyy ; Vector full of ones
-.alias  half  myconst.wwww
-
+.fvec world[4], view[4], multclr, addclr
 
 .proc main
     ; r0 = vec4(inpos, 0, 1)
-    mov r0.xy inpos
-    mov r0.z  zeros
-    mov r0.w  ones
+    mov r0.xy, inpos
+    mov r0.z,  zeros
+    mov r0.w,  ones
 
     ; r1 = world * r0
     dp4 r1.x, world[0], r0

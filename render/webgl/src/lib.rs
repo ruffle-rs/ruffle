@@ -1359,7 +1359,7 @@ impl CommandHandler for WebGlRenderBackend {
             ],
         ];
 
-        let mult_color = i.color_transform.mult_rgba_normalized();
+        let mult_color = transform.color_transform.mult_rgba_normalized();
         let add_color = transform.color_transform.add_rgba_normalized();
 
         self.set_stencil_state();

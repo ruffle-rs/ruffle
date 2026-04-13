@@ -1,22 +1,26 @@
 use std::borrow::Cow;
 use std::cell::{Cell, RefCell};
+use std::collections::{HashMap, HashSet};
 use std::fmt::{Debug, Formatter};
 use std::rc::Rc;
 use std::sync::Arc;
 
 use bytemuck::{Pod, Zeroable};
 
-use citro3d::math::Matrix4;
+use citro3d::macros::include_shader;
+use citro3d::math::{FVec4, Matrix4};
 use citro3d::render::Frame;
 use citro3d::shader::Program;
 use citro3d::texenv::{self, TexEnv};
 use citro3d::texture::{self, ColorFormat, Face};
 use citro3d::{
-    attrib::{self, Register},
-    buffer, shader,
+    attrib::{self, Permutation, Register},
+    buffer::{self, Buffer},
+    shader,
     texture::{Texture, TextureParameters},
     uniform,
 };
+use ctru::linear::LinearAllocator;
 use ctru::prelude::Gfx;
 use ctru::services::gfx::{RawFrameBuffer, Screen, TopScreen3D, TopScreenLeft};
 
@@ -28,7 +32,8 @@ use ruffle_render::error::Error as BitmapError;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::DistilledShape;
-use ruffle_render::tessellator::ShapeTessellator;
+use ruffle_render::tessellator::DrawType as TessDrawType;
+use ruffle_render::tessellator::{ShapeTessellator, Vertex as TessVertex};
 use ruffle_render::transform::Transform;
 
 const TOP_WIDTH: u32 = 400;
@@ -40,14 +45,24 @@ const DIMENSIONS: ViewportDimensions = ViewportDimensions {
     scale_factor: 1.0,
 };
 
-#[derive(Debug)]
+#[derive(Clone)]
 struct Draw {
     draw_type: DrawType,
-    vertices: Cow<'static, [Vertex]>,
-    indices: Cow<'static, [u8]>,
+    vertices: buffer::Info,
+    indices: Vec<u16, LinearAllocator>,
 }
 
-#[derive(Debug)]
+impl std::fmt::Debug for Draw {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Draw")
+            .field("draw_type", &self.draw_type)
+            .field("vertices", &format!("[len: {}]", self.vertices.len()))
+            .field("indices", &self.indices)
+            .finish()
+    }
+}
+
+#[derive(Clone, Debug)]
 enum DrawType {
     Color,
     Gradient(Box<Gradient>),
@@ -75,24 +90,29 @@ struct Gradient {
     interpolation: swf::GradientInterpolation,
 }
 
-#[derive(Debug)]
 struct ShaderProgram {
     program: Program,
     texenv: TexEnv,
     view_idx: uniform::Index,
     world_idx: uniform::Index,
+    multclr_idx: uniform::Index,
+    addclr_idx: uniform::Index,
 }
 
 impl ShaderProgram {
     fn new(program: Program, texenv: TexEnv) -> Self {
         let view_idx = program.get_uniform("view").unwrap();
         let world_idx = program.get_uniform("world").unwrap();
+        let multclr_idx = program.get_uniform("multclr").unwrap();
+        let addclr_idx = program.get_uniform("addclr").unwrap();
 
         Self {
             program,
             texenv,
             view_idx,
             world_idx,
+            multclr_idx,
+            addclr_idx,
         }
     }
 }
@@ -102,6 +122,20 @@ impl ShaderProgram {
 struct Vertex {
     position: [f32; 2],
     color: [f32; 4],
+}
+
+impl From<TessVertex> for Vertex {
+    fn from(vertex: TessVertex) -> Vertex {
+        Self {
+            position: [vertex.x, vertex.y],
+            color: [
+                vertex.color.r as f32,
+                vertex.color.g as f32,
+                vertex.color.b as f32,
+                vertex.color.a as f32,
+            ],
+        }
+    }
 }
 
 struct CitroTexture {
@@ -116,12 +150,12 @@ impl Debug for CitroTexture {
 
 impl BitmapHandleImpl for CitroTexture {}
 
-fn as_texture(handle: &mut BitmapHandle) -> &mut CitroTexture {
-    <dyn BitmapHandleImpl>::downcast_mut(&mut *handle.0)
-        .expect("Bitmap handle must be CitroTexture")
-}
+// fn as_texture(handle: &mut BitmapHandle) -> &mut CitroTexture {
+//     <dyn BitmapHandleImpl>::downcast_mut(&mut *handle.0)
+//         .expect("Bitmap handle must be CitroTexture")
+// }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 struct Mesh {
     draws: Vec<Draw>,
 }
@@ -132,9 +166,34 @@ fn as_mesh(handle: &ShapeHandle) -> &Mesh {
     <dyn ShapeHandleImpl>::downcast_ref(&*handle.0).expect("Shape handle must be citro3d mesh")
 }
 
+fn mat4(m: [[f32; 4]; 4]) -> Matrix4 {
+    let flat = [
+        m[0][3], m[0][2], m[0][1], m[0][0], m[1][3], m[1][2], m[1][1], m[1][0], m[2][3], m[2][2],
+        m[2][1], m[2][0], m[3][3], m[3][2], m[3][1], m[3][0],
+    ];
+
+    Matrix4::from_cells_wzyx(flat)
+}
+
+fn vec4(v: [f32; 4]) -> FVec4 {
+    FVec4::new(v[0], v[1], v[2], v[3])
+}
+
+fn linear_vec<T>(vec: Vec<T>) -> Vec<T, LinearAllocator> {
+    let mut linear_vec = Vec::with_capacity_in(vec.len(), LinearAllocator);
+    for x in vec {
+        linear_vec.push(x);
+    }
+    linear_vec
+}
+
 pub struct Citro3DRenderBackend {
     c3d: citro3d::Instance,
-    gfx: Rc<RefCell<Gfx>>,
+    inner: BackendInner,
+}
+
+pub struct BackendInner {
+    gfx: Gfx,
 
     color_program: ShaderProgram,
     texture_program: ShaderProgram,
@@ -147,39 +206,57 @@ pub struct Citro3DRenderBackend {
     shape_tessellator: ShapeTessellator,
 }
 
+impl std::ops::Deref for Citro3DRenderBackend {
+    type Target = BackendInner;
+
+    fn deref(&self) -> &BackendInner {
+        &self.inner
+    }
+}
+
+impl std::ops::DerefMut for Citro3DRenderBackend {
+    fn deref_mut(&mut self) -> &mut BackendInner {
+        &mut self.inner
+    }
+}
+
 impl Citro3DRenderBackend {
-    pub fn new(gfx: Rc<RefCell<Gfx>>) -> citro3d::error::Result<Self> {
+    pub fn new(gfx: Gfx) -> citro3d::error::Result<Self> {
         let c3d = citro3d::Instance::new().unwrap();
 
-        let color_shader = shader::Library::from_bytes(include_bytes!("../shaders/color.v.pica"))
+        let color_shader = shader::Library::from_bytes(include_shader!("../shaders/color.v.pica"))
             .expect("failed to load color shader");
-        let color_program = Program::new(color_shader.get(0).unwrap())
+
+        let color_prog = Program::new(color_shader.get(0).unwrap())
             .expect("failed to create color shader program");
+
         let color_stage0 = TexEnv::new()
             .src(texenv::Mode::BOTH, texenv::Source::PrimaryColor, None, None)
             .func(texenv::Mode::BOTH, texenv::CombineFunc::Replace);
+        let color_program = ShaderProgram::new(color_prog, color_stage0);
 
         let texture_shader =
-            shader::Library::from_bytes(include_bytes!("../shaders/texture.v.pica"))
+            shader::Library::from_bytes(include_shader!("../shaders/texture.v.pica"))
                 .expect("failed to load texture shader");
-        let texture_program = Program::new(texture_shader.get(0).unwrap())
+        let texture_prog = Program::new(texture_shader.get(0).unwrap())
             .expect("failed to create texture shader program")
             .into();
-        let texture_stage0 = TexEnv::new()
-            .src(texenv::Mode::RGB, texenv::Source::Texture0, None, None)
+        let texture_stage0 =
+            TexEnv::new().src(texenv::Mode::RGB, texenv::Source::Texture0, None, None);
+        let texture_program = ShaderProgram::new(texture_prog, texture_stage0);
 
         // attributes for vertex buffer is always the same for both shaders, so we store this as a field
         let mut attr_info = attrib::Info::new();
 
         // v0 (position) = Float Vec2
-        attr_info.add_loader(Register::new(0)?, attrib::Format::Float, 2)?;
+        attr_info.add_loader(Register::V0, attrib::Format::Float, 2)?;
         // v1 (color) = Float Vec4
-        attr_info.add_loader(Register::new(1)?, attrib::Format::Float, 4)?;
+        attr_info.add_loader(Register::V1, attrib::Format::Float, 4)?;
 
-        let color_quad_draw = Self::quad_draw(false);
-        let bitmap_quad_draw = Self::quad_draw(true);
+        let color_quad_draw = Self::quad_draw(attr_info.permutation(), false);
+        let bitmap_quad_draw = Self::quad_draw(attr_info.permutation(), true);
 
-        let view_matrix = Matrix4::from([
+        let view_matrix = mat4([
             [1.0 / (TOP_WIDTH as f32 / 2.0), 0.0, 0.0, 0.0],
             [0.0, -1.0 / (TOP_HEIGHT as f32 / 2.0), 0.0, 0.0],
             [0.0, 0.0, 1.0, 0.0],
@@ -188,18 +265,24 @@ impl Citro3DRenderBackend {
 
         Ok(Self {
             c3d,
-            gfx,
-            color_program,
-            texture_program,
-            color_quad_draw,
-            bitmap_quad_draw,
-            attr_info,
-            view_matrix,
-            shape_tessellator: ShapeTessellator::new(),
+            inner: BackendInner {
+                gfx,
+                color_program,
+                texture_program,
+                color_quad_draw,
+                bitmap_quad_draw,
+                attr_info,
+                view_matrix,
+                shape_tessellator: ShapeTessellator::new(),
+            },
         })
     }
 
-    fn quad_draw(is_bitmap: bool) -> Draw {
+    pub fn gfx_mut(&mut self) -> &mut Gfx {
+        &mut self.gfx
+    }
+
+    fn quad_draw(permutation: Permutation, is_bitmap: bool) -> Draw {
         const QUAD_VERTICES: &[Vertex] = &[
             Vertex {
                 position: [0.0, 0.0],
@@ -219,6 +302,9 @@ impl Citro3DRenderBackend {
             },
         ];
 
+        let mut buf_info = buffer::Info::new();
+        buf_info.add(Buffer::new(QUAD_VERTICES), permutation);
+
         Draw {
             draw_type: if is_bitmap {
                 DrawType::Bitmap(BitmapDraw {
@@ -230,8 +316,8 @@ impl Citro3DRenderBackend {
             } else {
                 DrawType::Color
             },
-            vertices: QUAD_VERTICES.into(),
-            indices: &[0u8, 1, 2, 3].into(),
+            vertices: buf_info,
+            indices: [0, 1, 2, 3].to_vec_in(LinearAllocator),
         }
     }
 
@@ -278,12 +364,43 @@ impl RenderBackend for Citro3DRenderBackend {
 
         let mut draws = vec![];
         for draw in mesh.draws {
-            draws.append(Draw {
-                
-            })          
+            let draw_type = match draw.draw_type {
+                TessDrawType::Color => DrawType::Color,
+                TessDrawType::Gradient { matrix, gradient } => panic!("ahhh gradient, panic!"),
+                // DrawType::Gradient(Box::new(Gradient::new(
+                //     mesh.gradients[gradient].clone(), // TODO: Gradient deduplication
+                //     matrix,
+                // ))),
+                TessDrawType::Bitmap(bitmap) => DrawType::Bitmap(BitmapDraw {
+                    matrix: bitmap.matrix,
+                    handle: bitmap_source.bitmap_handle(bitmap.bitmap_id, self),
+                    is_smoothed: bitmap.is_smoothed,
+                    is_repeating: bitmap.is_repeating,
+                }),
+            };
+
+            let vertices = Buffer::new_in_linear(linear_vec(
+                draw.vertices.into_iter().map(Vertex::from).collect(),
+            ));
+            let mut buf_info = buffer::Info::new();
+            buf_info.add(vertices, self.attr_info.permutation());
+
+            let mut indices = linear_vec(
+                draw.indices
+                    .into_iter()
+                    .map(u16::try_from)
+                    .collect::<Result<_, _>>()
+                    .unwrap(),
+            );
+
+            draws.push(Draw {
+                draw_type,
+                vertices: buf_info,
+                indices,
+            });
         }
 
-        ShapeHandle(Arc::new(Mesh { draws: vec![] }))
+        ShapeHandle(Arc::new(Mesh { draws }))
     }
 
     fn render_offscreen(
@@ -306,8 +423,7 @@ impl RenderBackend for Citro3DRenderBackend {
             panic!("Bitmap caching unsupported in citro3d backend");
         }
 
-        let gfx = self.gfx.borrow_mut();
-        let top_screen = gfx.top_screen.borrow_mut();
+        let mut top_screen = self.inner.gfx.top_screen.borrow_mut();
         let RawFrameBuffer { width, height, .. } = top_screen.raw_framebuffer();
 
         let top_target = self
@@ -315,15 +431,19 @@ impl RenderBackend for Citro3DRenderBackend {
             .render_target(width, height, top_screen, None)
             .expect("failed to create target");
 
+        println!("rendering frame");
+
+        let mut meshes = vec![];
         self.c3d.render_frame_with(|mut frame| {
             frame.select_render_target(&top_target);
 
-            let cmd_handler = Citro3DCommandHandler {
-                renderer: &self,
+            let mut cmd_handler = Citro3DCommandHandler {
+                renderer: &self.inner,
                 frame,
+                meshes: &mut meshes,
             };
 
-            commands.execute(cmd_handler);
+            commands.execute(&mut cmd_handler);
 
             let Citro3DCommandHandler { frame, .. } = cmd_handler;
             frame
@@ -411,8 +531,20 @@ impl RenderBackend for Citro3DRenderBackend {
 }
 
 struct Citro3DCommandHandler<'a> {
-    renderer: &'a Citro3DRenderBackend,
+    renderer: &'a BackendInner,
     frame: Frame<'a>,
+    meshes: &'a mut Vec<Mesh>,
+}
+
+impl<'a> Citro3DCommandHandler<'a> {
+    fn cache_mesh(&mut self, mesh: &Mesh) -> &'a Mesh {
+        self.meshes.push(mesh.clone());
+        // SAFETY: we just pushed, so last() is Some; and meshes lives for 'a
+        unsafe {
+            let meshes: *mut Vec<Mesh> = self.meshes;
+            (*meshes).last().unwrap()
+        }
+    }
 }
 
 impl<'a> CommandHandler for Citro3DCommandHandler<'a> {
@@ -423,63 +555,57 @@ impl<'a> CommandHandler for Citro3DCommandHandler<'a> {
         smoothing: bool,
         pixel_snapping: PixelSnapping,
     ) {
-        let draw = &self.renderer.bitmap_quad_draw;
-        let bitmap_matrix = match draw.draw_type {
-            DrawType::Bitmap(BitmapDraw { matrix, .. }) => matrix,
-            _ => unreachable!(),
-        };
-
-        let texture = &mut as_texture(&mut bitmap).texture;
-
-        // Scale the quad to the bitmap's dimensions.
-        let mut matrix = transform.matrix;
-        pixel_snapping.apply(&mut matrix);
-        matrix *= Matrix::scale(texture.width() as f32, texture.height() as f32);
-
-        let world_matrix = Matrix4::from([
-            [matrix.a, matrix.b, 0.0, 0.0],
-            [matrix.c, matrix.d, 0.0, 0.0],
-            [0.0, 0.0, 1.0, 0.0],
-            [
-                matrix.tx.to_pixels() as f32,
-                matrix.ty.to_pixels() as f32,
-                0.0,
-                1.0,
-            ],
-        ]);
-
-        // TODO: add these
-        let mult_color = transform.color_transform.mult_rgba_normalized();
-        let add_color = transform.color_transform.add_rgba_normalized();
-
-        let program = &self.renderer.texture_program;
-
-        self.frame.bind_program(&program.program);
-        self.frame.bind_vertex_uniform(program.view_idx, &self.renderer.view_matrix);
-        self.frame.bind_vertex_uniform(program.world_idx, &world_matrix);
-
-        let filter = if smoothing {
-            texture::Filter::Linear
-        } else {
-            texture::Filter::Nearest
-        };
-        texture.set_filter(filter, filter);
-
-        self.frame.bind_texture(texture::Index::Texture0, texture);
-
-        let mut buf_info = buffer::Info::new();
-        let mut vbo_slice = buf_info
-            .add(&draw.vertices, &self.renderer.attr_info)
-            .expect("failed to add buffer");
-        let index_buffer = vbo_slice
-            .index_buffer(&draw.indices)
-            .expect("failed to set indices");
-
-        self.frame.set_attr_info(&self.renderer.attr_info);
-        self.frame.draw_elements(buffer::Primitive::TriangleFan, vbo_slice, &index_buffer)
+        panic!("idk how to draw a bitmap");
+        // let draw = &self.renderer.bitmap_quad_draw;
+        // let bitmap_matrix = match draw.draw_type {
+        //     DrawType::Bitmap(BitmapDraw { matrix, .. }) => matrix,
+        //     _ => unreachable!(),
+        // };
+        //
+        // let texture = &mut as_texture(&mut bitmap).texture;
+        //
+        // // Scale the quad to the bitmap's dimensions.
+        // let mut matrix = transform.matrix;
+        // pixel_snapping.apply(&mut matrix);
+        // matrix *= Matrix::scale(texture.width() as f32, texture.height() as f32);
+        //
+        // let world_matrix = mat4([
+        //     [matrix.a, matrix.b, 0.0, 0.0],
+        //     [matrix.c, matrix.d, 0.0, 0.0],
+        //     [0.0, 0.0, 1.0, 0.0],
+        //     [
+        //         matrix.tx.to_pixels() as f32,
+        //         matrix.ty.to_pixels() as f32,
+        //         0.0,
+        //         1.0,
+        //     ],
+        // ]);
+        //
+        // // TODO: add these
+        // let mult_color = transform.color_transform.mult_rgba_normalized();
+        // let add_color = transform.color_transform.add_rgba_normalized();
+        //
+        // let program = &self.renderer.texture_program;
+        //
+        // self.frame.bind_program(&program.program);
+        // self.frame.bind_vertex_uniform(program.view_idx, &self.renderer.view_matrix);
+        // self.frame.bind_vertex_uniform(program.world_idx, &world_matrix);
+        //
+        // let filter = if smoothing {
+        //     texture::Filter::Linear
+        // } else {
+        //     texture::Filter::Nearest
+        // };
+        // texture.set_filter(filter, filter);
+        //
+        // self.frame.bind_texture(texture::Index::Texture0, texture);
+        //
+        // self.frame.set_attr_info(&self.renderer.attr_info);
+        // self.frame.draw_elements(buffer::Primitive::TriangleFan, &draw.vertices, &draw.indices)
     }
 
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform) {
+        println!("rendering shape");
         let world_matrix = [
             [transform.matrix.a, transform.matrix.b, 0.0, 0.0],
             [transform.matrix.c, transform.matrix.d, 0.0, 0.0],
@@ -492,16 +618,38 @@ impl<'a> CommandHandler for Citro3DCommandHandler<'a> {
             ],
         ];
 
-        let mult_color = i.color_transform.mult_rgba_normalized();
+        let mult_color = transform.color_transform.mult_rgba_normalized();
         let add_color = transform.color_transform.add_rgba_normalized();
 
-        let mesh = as_mesh(&shape);
+        let mesh = self.cache_mesh(as_mesh(&shape));
 
+        println!("mesh with {} draws", mesh.draws.len());
+        println!("{:?}", self.meshes);
         for draw in &mesh.draws {
-            
-        }
+            let program = match &draw.draw_type {
+                DrawType::Color => &self.renderer.color_program,
+                _ => &self.renderer.texture_program,
+            };
 
-        // TODO
+            // todo: add some optimizations to this function
+
+            // bind shader program
+            self.frame.bind_program(&program.program);
+
+            // bind uniforms
+            self.frame
+                .bind_vertex_uniform(program.view_idx, &self.renderer.view_matrix);
+            self.frame
+                .bind_vertex_uniform(program.world_idx, &mat4(world_matrix));
+            self.frame
+                .bind_vertex_uniform(program.multclr_idx, vec4(mult_color));
+            self.frame
+                .bind_vertex_uniform(program.addclr_idx, vec4(add_color));
+
+            self.frame.set_attr_info(&self.renderer.attr_info);
+            self.frame
+                .draw_elements(buffer::Primitive::Triangles, &draw.vertices, &draw.indices);
+        }
     }
 
     fn render_stage3d(&mut self, _bitmap: BitmapHandle, _transform: Transform) {
@@ -509,15 +657,15 @@ impl<'a> CommandHandler for Citro3DCommandHandler<'a> {
     }
 
     fn draw_rect(&mut self, color: Color, matrix: Matrix) {
-        self.draw_quad(matrix, color);
+        panic!();
     }
 
     fn draw_line(&mut self, color: Color, matrix: Matrix) {
-        self.draw_quad(matrix, color);
+        panic!();
     }
 
     fn draw_line_rect(&mut self, color: Color, matrix: Matrix) {
-        self.draw_quad(matrix, color);
+        panic!();
     }
 
     fn push_mask(&mut self) {

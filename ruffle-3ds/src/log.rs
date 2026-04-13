@@ -1,3 +1,5 @@
+use ruffle_render::tessellator::ShapeTessellator;
+
 use std::borrow::Cow;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
@@ -74,10 +76,17 @@ impl RenderBackend for LogRenderer {
     fn register_shape(
         &mut self,
         shape: DistilledShape,
-        _bitmap_source: &dyn BitmapSource,
+        src: &dyn BitmapSource,
     ) -> ShapeHandle {
         let string = format!("{shape:?}");
-        println!("reg {}", &string[..50]);
+        println!("reg {}", &string[..]);
+
+        let mesh = ShapeTessellator::new().tessellate_shape(shape, src);
+        println!("draws");
+        for draw in mesh.draws {
+            println!("Draw {{\n\tty: {:?},\n\tvxs: {:?},\n\tidxs: {:?},\n\tmi_n: {:?}\n}}", draw.draw_type.name(), draw.vertices, draw.indices, draw.mask_index_count);
+        }
+        println!("\nall draws done");
 
         ShapeHandle(Arc::new(NullShapeHandle::new()))
     }

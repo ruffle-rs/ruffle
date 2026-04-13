@@ -1,0 +1,33 @@
+; Basic PICA200 vertex shader
+
+; Uniforms
+.fvec projection[4]
+
+; Constants
+.constf ones(1.0, 1.0, 1.0, 1.0)
+
+; Outputs
+.out outpos position
+.out outclr color
+
+; Inputs (defined as aliases for convenience)
+.alias inpos v0
+.alias inclr v1
+
+.proc main
+	; Force the w component of inpos to be 1.0
+	mov r0.xyz, inpos
+	mov r0.w,   ones
+
+	; outpos = projectionMatrix * inpos
+	dp4 outpos.x, projection[0], r0
+	dp4 outpos.y, projection[1], r0
+	dp4 outpos.z, projection[2], r0
+	dp4 outpos.w, projection[3], r0
+
+	; outclr = inclr
+	mov outclr, inclr
+
+	; We're finished
+	end
+.end

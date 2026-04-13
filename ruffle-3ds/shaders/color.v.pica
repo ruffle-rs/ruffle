@@ -1,50 +1,50 @@
-; attributes
-; v0 = position (vec2)
-; v1 = color (vec4)
+; constants
+.constf myconst(0.0, 1.0, -1.0, 0.5)
+.alias zeros myconst.xxxx
+.alias ones myconst.yyyy
 
-; uniforms
-; c0-c3   = world_matrix
-; c4-c7   = view_matrix
-; c8      = mult_color
-; c9      = add_color
+; inputs
+.in inpos v0
+.in inclr v1
 
 ; outputs
-; o0 = position
-; o1 = color
+.out outpos position
+.out outclr color
 
-; ---- color = clamp(color * mult + add)
+; uniforms
+.fvec world[4], view[4], multclr, addclr
 
-mul r0, v1, c8
-add r0, r0, c9
-
-; clamp 0..1
-max r0, r0, c10      ; c10 = vec4(0)
-min r0, r0, c11      ; c11 = vec4(1)
-
-; alpha premultiply
-mul r1.xyz, r0.xyz, r0.aaa
-mov r1.w, r0.w
-
-mov o1, r1
-
-; ---- build vec4(position,0,1)
-
-mov r2.xy, v0.xy
-mov r2.z, c10.x      ; 0
-mov r2.w, c11.x      ; 1
-
-; ---- world transform
-
-dp4 r3.x, r2, c0
-dp4 r3.y, r2, c1
-dp4 r3.z, r2, c2
-dp4 r3.w, r2, c3
-
-; ---- view transform
-
-dp4 o0.x, r3, c4
-dp4 o0.y, r3, c5
-dp4 o0.z, r3, c6
-dp4 o0.w, r3, c7
-
-end
+.proc main
+    ; r0 = clamp(inclr * mult + add)
+    mul r0, multclr, inclr
+    add r1, addclr, r0
+    
+    ; clamp 0..1
+    max r0, zeros, r0
+    min r0, ones, r0
+    
+    ; alpha premultiply
+    mul r1.rgb, r0.rgb, r0.aaa
+    mov r1.a, r0.a
+    
+    mov outclr, r1
+    
+    ; r2 = vec4(inpos, 0, 1)
+    mov r2.xy, inpos.xy
+    mov r2.z, zeros
+    mov r2.w, ones
+    
+    ; r3 = world * r2 
+    dp4 r3.x, world[0], r2
+    dp4 r3.y, world[1], r2
+    dp4 r3.z, world[2], r2
+    dp4 r3.w, world[3], r2
+    
+    ; outpos = view * world * r2
+    dp4 outpos.x, view[0], r3
+    dp4 outpos.y, view[1], r3
+    dp4 outpos.z, view[2], r3
+    dp4 outpos.w, view[3], r3
+    
+    end
+.end
