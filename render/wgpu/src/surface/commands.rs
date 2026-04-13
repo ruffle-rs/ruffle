@@ -702,6 +702,18 @@ impl CommandHandler for WgpuCommandHandler<'_> {
         );
         target.ensure_cleared(self.draw_encoder);
 
+        // We currently do not support shader blends in masks. In order not to
+        // break other parts of the scene, we just fall back to a normal blend.
+        //
+        // TODO Add support for shader blends in masks.
+        let is_shader_blend_in_mask =
+            self.num_masks > 0 && matches!(blend_type, BlendType::Shader(_));
+        let blend_type = if is_shader_blend_in_mask {
+            BlendType::Trivial(TrivialBlend::Normal)
+        } else {
+            blend_type
+        };
+
         match blend_type {
             BlendType::Trivial(blend_mode) => {
                 let transform = Transform {

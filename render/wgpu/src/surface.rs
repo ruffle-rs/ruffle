@@ -203,10 +203,7 @@ impl Surface {
                     blend_mode: ChunkBlendMode::Shader(shader),
                     needs_stencil,
                 } => {
-                    assert!(
-                        !needs_stencil,
-                        "Shader blend should not need stencil buffer"
-                    );
+                    assert!(!needs_stencil, "Shader blend mode not implemented in masks");
                     let parent_blend_buffer =
                         target.update_blend_buffer(descriptors, texture_pool, draw_encoder);
                     run_pixelbender_shader_impl(
