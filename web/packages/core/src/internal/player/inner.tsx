@@ -195,6 +195,10 @@ export class InnerPlayer {
     private instance: RuffleHandle | null;
     private newZipWriter: (() => ZipWriter) | null;
     private lastActivePlayingState: boolean;
+
+    // Non-null while ticking in the background (BackgroundExecutionMode.MainThread).
+    // Uses a ping-pong ack to avoid message queue build-up if the main thread falls behind.
+    // Set when the tab is hidden, cleared when it becomes visible again or the player is destroyed.
     private backgroundWorker: Worker | null;
 
     metadata: MovieMetadata | null;
@@ -507,6 +511,8 @@ export class InnerPlayer {
     private startBackgroundTick(): void {
         const intervalMs = 1000 / (this.metadata?.frameRate || 24);
 
+        // intervalMs is a number computed from SWF metadata, so there is no
+        // risk of code injection via the template literal below.
         const workerCode = `
             const intervalMs = ${intervalMs};
             self.onmessage = () => {
