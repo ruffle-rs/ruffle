@@ -511,8 +511,8 @@ export class InnerPlayer {
     private startBackgroundTick(): void {
         const intervalMs = 1000 / (this.metadata?.frameRate || 24);
 
-        // intervalMs is a number computed from SWF metadata, so there is no
-        // risk of code injection via the template literal below.
+        // intervalMs is always a number (dividing 1000 by anything yields a number
+        // or NaN), so no code injection via the template literal is possible.
         const workerCode = `
             const intervalMs = ${intervalMs};
             self.onmessage = () => {
