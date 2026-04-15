@@ -70,6 +70,8 @@ define_common_strings! {
     str_artist: b"artist",
     str_ascent: b"ascent",
     str_asyncError: b"asyncError",
+    str_attributeAdded: b"attributeAdded",
+    str_attributeChanged: b"attributeChanged",
     str_auto: b"auto",
     str_ba: b"ba",
     str_baseline: b"baseline",
