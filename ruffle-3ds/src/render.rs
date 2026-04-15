@@ -8,8 +8,11 @@ use std::sync::Arc;
 use bytemuck::{Pod, Zeroable};
 
 use citro3d::macros::include_shader;
-use citro3d::math::{FVec4, Matrix4};
+use citro3d::math::{AspectRatio, ClipPlanes, FVec4, Matrix4, Projection, StereoDisplacement};
+use citro3d::render::ClearFlags;
 use citro3d::render::Frame;
+use citro3d::render::Target as _;
+use citro3d::shader::Library;
 use citro3d::shader::Program;
 use citro3d::texenv::{self, TexEnv};
 use citro3d::texture::{self, ColorFormat, Face};
@@ -56,7 +59,7 @@ impl std::fmt::Debug for Draw {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Draw")
             .field("draw_type", &self.draw_type)
-            .field("vertices", &format!("[len: {}]", self.vertices.len()))
+            .field("vertices", &format!("[len {}]", self.vertices.len()))
             .field("indices", &self.indices)
             .finish()
     }
@@ -92,6 +95,7 @@ struct Gradient {
 
 struct ShaderProgram {
     program: Program,
+    library: Library,
     texenv: TexEnv,
     view_idx: uniform::Index,
     world_idx: uniform::Index,
@@ -100,7 +104,7 @@ struct ShaderProgram {
 }
 
 impl ShaderProgram {
-    fn new(program: Program, texenv: TexEnv) -> Self {
+    pub fn new(program: Program, library: Library, texenv: TexEnv) -> Self {
         let view_idx = program.get_uniform("view").unwrap();
         let world_idx = program.get_uniform("world").unwrap();
         let multclr_idx = program.get_uniform("multclr").unwrap();
@@ -108,6 +112,7 @@ impl ShaderProgram {
 
         Self {
             program,
+            library,
             texenv,
             view_idx,
             world_idx,
@@ -167,9 +172,12 @@ fn as_mesh(handle: &ShapeHandle) -> &Mesh {
 }
 
 fn mat4(m: [[f32; 4]; 4]) -> Matrix4 {
+    #[rustfmt::skip]
     let flat = [
-        m[0][3], m[0][2], m[0][1], m[0][0], m[1][3], m[1][2], m[1][1], m[1][0], m[2][3], m[2][2],
-        m[2][1], m[2][0], m[3][3], m[3][2], m[3][1], m[3][0],
+        m[0][3], m[0][2], m[0][1], m[0][0],
+        m[1][3], m[1][2], m[1][1], m[1][0],
+        m[2][3], m[2][2], m[2][1], m[2][0],
+        m[3][3], m[3][2], m[3][1], m[3][0],
     ];
 
     Matrix4::from_cells_wzyx(flat)
@@ -188,8 +196,8 @@ fn linear_vec<T>(vec: Vec<T>) -> Vec<T, LinearAllocator> {
 }
 
 pub struct Citro3DRenderBackend {
-    c3d: citro3d::Instance,
-    inner: BackendInner,
+    pub c3d: citro3d::Instance,
+    pub inner: BackendInner,
 }
 
 pub struct BackendInner {
@@ -204,6 +212,8 @@ pub struct BackendInner {
     attr_info: attrib::Info,
     view_matrix: Matrix4,
     shape_tessellator: ShapeTessellator,
+    //
+    // meshes: Vec<Mesh>,
 }
 
 impl std::ops::Deref for Citro3DRenderBackend {
@@ -233,7 +243,7 @@ impl Citro3DRenderBackend {
         let color_stage0 = TexEnv::new()
             .src(texenv::Mode::BOTH, texenv::Source::PrimaryColor, None, None)
             .func(texenv::Mode::BOTH, texenv::CombineFunc::Replace);
-        let color_program = ShaderProgram::new(color_prog, color_stage0);
+        let color_program = ShaderProgram::new(color_prog, color_shader, color_stage0);
 
         let texture_shader =
             shader::Library::from_bytes(include_shader!("../shaders/texture.v.pica"))
@@ -243,7 +253,7 @@ impl Citro3DRenderBackend {
             .into();
         let texture_stage0 =
             TexEnv::new().src(texenv::Mode::RGB, texenv::Source::Texture0, None, None);
-        let texture_program = ShaderProgram::new(texture_prog, texture_stage0);
+        let texture_program = ShaderProgram::new(texture_prog, texture_shader, texture_stage0);
 
         // attributes for vertex buffer is always the same for both shaders, so we store this as a field
         let mut attr_info = attrib::Info::new();
@@ -274,12 +284,9 @@ impl Citro3DRenderBackend {
                 attr_info,
                 view_matrix,
                 shape_tessellator: ShapeTessellator::new(),
+                // meshes: vec![],
             },
         })
-    }
-
-    pub fn gfx_mut(&mut self) -> &mut Gfx {
-        &mut self.gfx
     }
 
     fn quad_draw(permutation: Permutation, is_bitmap: bool) -> Draw {
@@ -303,7 +310,9 @@ impl Citro3DRenderBackend {
         ];
 
         let mut buf_info = buffer::Info::new();
-        buf_info.add(Buffer::new(QUAD_VERTICES), permutation);
+        buf_info
+            .add(Buffer::new(QUAD_VERTICES), permutation)
+            .unwrap();
 
         Draw {
             draw_type: if is_bitmap {
@@ -344,6 +353,62 @@ impl Citro3DRenderBackend {
 
         tex
     }
+
+    // pub fn submit_vbo(
+    //     &mut self,
+    //     clear: Color,
+    //     info: &buffer::Info,
+    //     attr: &attrib::Info,
+    //     idxs: &Vec<u16, LinearAllocator>,
+    //     world: Matrix4,
+    //     proj: Matrix4,
+    //     m: FVec4,
+    //     a: FVec4,
+    // ) {
+    //     let mut top_screen = self.inner.gfx.top_screen.borrow_mut();
+    //     let RawFrameBuffer { width, height, .. } = top_screen.raw_framebuffer();
+    //
+    //     let mut top_target = self
+    //         .c3d
+    //         .render_target(width, height, top_screen, None)
+    //         .expect("failed to create target");
+    //
+    //     println!("rendering frame");
+    //
+    //     // let mut meshes = vec![];
+    //     self.c3d.render_frame_with(|mut frame| {
+    //         top_target.clear(
+    //             ClearFlags::ALL,
+    //             0x68_B0_D8_FF, // u32::from_le_bytes([clear.b, clear.g, clear.r, clear.a]),
+    //             0,
+    //         );
+    //
+    //         frame.select_render_target(&top_target).unwrap();
+    //
+    //         println!("rendering shape");
+    //         // println!("{:?}", self.meshes);
+    //         let program = &self.inner.color_program;
+    //
+    //         frame.bind_program(&program.program);
+    //
+    //         println!("world: {:?}", world);
+    //         println!("worldView: {:?}", proj * world);
+    //
+    //         // bind uniforms
+    //         frame.bind_vertex_uniform(program.view_idx, proj);
+    //         frame.bind_vertex_uniform(program.world_idx, world);
+    //         frame.bind_vertex_uniform(program.multclr_idx, m);
+    //         frame.bind_vertex_uniform(program.addclr_idx, a);
+    //
+    //         frame.set_texenvs(&[program.texenv]);
+    //         frame.set_attr_info(&attr);
+    //
+    //         frame.draw_elements(buffer::Primitive::Triangles, info, idxs);
+    //         println!("drew elements");
+    //
+    //         frame
+    //     });
+    // }
 }
 
 impl RenderBackend for Citro3DRenderBackend {
@@ -426,21 +491,27 @@ impl RenderBackend for Citro3DRenderBackend {
         let mut top_screen = self.inner.gfx.top_screen.borrow_mut();
         let RawFrameBuffer { width, height, .. } = top_screen.raw_framebuffer();
 
-        let top_target = self
+        let mut top_target = self
             .c3d
             .render_target(width, height, top_screen, None)
             .expect("failed to create target");
 
         println!("rendering frame");
 
-        let mut meshes = vec![];
+        // let mut meshes = vec![];
         self.c3d.render_frame_with(|mut frame| {
-            frame.select_render_target(&top_target);
+            top_target.clear(
+                ClearFlags::ALL,
+                u32::from_be_bytes([clear.a, clear.r, clear.g, clear.b]),
+                0,
+            );
+
+            frame.select_render_target(&top_target).unwrap();
 
             let mut cmd_handler = Citro3DCommandHandler {
                 renderer: &self.inner,
                 frame,
-                meshes: &mut meshes,
+                // meshes: &mut meshes,
             };
 
             commands.execute(&mut cmd_handler);
@@ -533,19 +604,34 @@ impl RenderBackend for Citro3DRenderBackend {
 struct Citro3DCommandHandler<'a> {
     renderer: &'a BackendInner,
     frame: Frame<'a>,
-    meshes: &'a mut Vec<Mesh>,
+    // meshes: &'a mut Vec<Mesh>,
 }
 
 impl<'a> Citro3DCommandHandler<'a> {
-    fn cache_mesh(&mut self, mesh: &Mesh) -> &'a Mesh {
-        self.meshes.push(mesh.clone());
-        // SAFETY: we just pushed, so last() is Some; and meshes lives for 'a
-        unsafe {
-            let meshes: *mut Vec<Mesh> = self.meshes;
-            (*meshes).last().unwrap()
-        }
-    }
+    // fn cache_mesh(&mut self, mesh: &Mesh) -> &'a Mesh {
+    //     self.meshes.push(mesh.clone());
+    //     // SAFETY: we just pushed, so last() is Some; and meshes lives for 'a
+    //     unsafe {
+    //         let meshes: *mut Vec<Mesh> = self.meshes;
+    //         (*meshes).last().unwrap()
+    //     }
+    // }
 }
+
+static VERTICES: &[Vertex] = &[
+    Vertex {
+        position: [0.0, 0.5],
+        color: [1.0, 0.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [-0.5, -0.5],
+        color: [0.0, 1.0, 0.0, 1.0],
+    },
+    Vertex {
+        position: [0.5, -0.5],
+        color: [0.0, 0.0, 1.0, 1.0],
+    },
+];
 
 impl<'a> CommandHandler for Citro3DCommandHandler<'a> {
     fn render_bitmap(
@@ -613,7 +699,7 @@ impl<'a> CommandHandler for Citro3DCommandHandler<'a> {
             [
                 transform.matrix.tx.to_pixels() as f32,
                 transform.matrix.ty.to_pixels() as f32,
-                0.0,
+                -5.0,
                 1.0,
             ],
         ];
@@ -621,11 +707,13 @@ impl<'a> CommandHandler for Citro3DCommandHandler<'a> {
         let mult_color = transform.color_transform.mult_rgba_normalized();
         let add_color = transform.color_transform.add_rgba_normalized();
 
-        let mesh = self.cache_mesh(as_mesh(&shape));
+        // let mesh: &'a Mesh = unsafe { &*(as_mesh(&shape) as *const Mesh) };
 
-        println!("mesh with {} draws", mesh.draws.len());
-        println!("{:?}", self.meshes);
-        for draw in &mesh.draws {
+        let draws = &[&self.renderer.color_quad_draw];
+
+        // println!("mesh with {} draws", mesh.draws.len());
+        // println!("{:?}", self.meshes);
+        for draw in draws {
             let program = match &draw.draw_type {
                 DrawType::Color => &self.renderer.color_program,
                 _ => &self.renderer.texture_program,
@@ -635,6 +723,12 @@ impl<'a> CommandHandler for Citro3DCommandHandler<'a> {
 
             // bind shader program
             self.frame.bind_program(&program.program);
+
+            println!("world: {:?}", mat4(world_matrix));
+            println!(
+                "worldView: {:?}",
+                self.renderer.view_matrix * mat4(world_matrix)
+            );
 
             // bind uniforms
             self.frame
@@ -646,9 +740,13 @@ impl<'a> CommandHandler for Citro3DCommandHandler<'a> {
             self.frame
                 .bind_vertex_uniform(program.addclr_idx, vec4(add_color));
 
+            self.frame.set_texenvs(&[program.texenv]);
             self.frame.set_attr_info(&self.renderer.attr_info);
+
             self.frame
                 .draw_elements(buffer::Primitive::Triangles, &draw.vertices, &draw.indices);
+
+            println!("drew elements");
         }
     }
 
