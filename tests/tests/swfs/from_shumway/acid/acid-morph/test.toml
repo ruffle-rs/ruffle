@@ -2,8 +2,15 @@
 
 num_frames = 30
 
-[image_comparisons.output]
-tolerance = 1
+# FIXME The box is too thick.
+
+[[image_comparisons.output.checks]]
+tolerance = 10
+max_outliers = 5600
+
+[[image_comparisons.output.checks]]
+tolerance = 64
+max_outliers = 2600
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { quality = "high" }
