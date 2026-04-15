@@ -2,8 +2,8 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::e4x::{
-    E4XNamespace, E4XNode, E4XNodeKind, handle_input_multiname, namespace_for_multiname,
-    string_to_multiname,
+    E4XNamespace, E4XNode, E4XNodeKind, E4XNotification, handle_input_multiname,
+    namespace_for_multiname, string_to_multiname,
 };
 use crate::avm2::error::make_error_1087;
 use crate::avm2::function::FunctionArgs;
@@ -492,20 +492,33 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             // 6.e.i.2. Else call the [[Delete]] method of x with argument j.[[Name]]
             if let Some((index, old_attr)) = self.node().remove_matching_attribute(gc, &name) {
                 // NOTE: In this branch we modify the value of the first matching attribute.
+                let old_value = {
+                    // 6.g. Let a.[[Value]] = c
+                    let E4XNodeKind::Attribute(old_value) = &mut *old_attr.kind_mut(gc) else {
+                        unreachable!("Node should be of Attribute kind");
+                    };
+                    let old_value_copy = *old_value;
+                    *old_value = value;
 
-                // 6.g. Let a.[[Value]] = c
-                let E4XNodeKind::Attribute(old_value) = &mut *old_attr.kind_mut(gc) else {
-                    unreachable!("Node should be of Attribute kind");
+                    let node = self.0.node.get();
+                    let E4XNodeKind::Element { attributes, .. } = &mut *node.kind_mut(gc) else {
+                        return Ok(());
+                    };
+                    old_attr.set_parent(Some(self.node()), gc);
+                    attributes.insert(index, old_attr);
+                    old_value_copy
                 };
-                *old_value = value;
 
-                let node = self.0.node.get();
-                let E4XNodeKind::Element { attributes, .. } = &mut *node.kind_mut(gc) else {
-                    return Ok(());
-                };
-
-                old_attr.set_parent(Some(self.node()), gc);
-                attributes.insert(index, old_attr);
+                if let Some(name) = old_attr.local_name() {
+                    self.node().trigger_notification(
+                        activation,
+                        self.into(),
+                        E4XNotification::AttributeChanged,
+                        self.into(),
+                        name.into(),
+                        old_value.into(),
+                    );
+                }
             } else {
                 // 6.f. If a == null
 
@@ -518,12 +531,23 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 let ns = name.explicit_namespace().map(E4XNamespace::new_uri);
                 let attr = E4XNode::attribute(gc, ns, local_name, value, Some(self.node()));
 
-                // 6.f.iv. Let x.[[Attributes]] = x.[[Attributes]] ∪ { a }
-                let node = self.0.node.get();
-                let E4XNodeKind::Element { attributes, .. } = &mut *node.kind_mut(gc) else {
-                    return Ok(());
-                };
-                attributes.push(attr);
+                {
+                    // 6.f.iv. Let x.[[Attributes]] = x.[[Attributes]] ∪ { a }
+                    let node = self.0.node.get();
+                    let E4XNodeKind::Element { attributes, .. } = &mut *node.kind_mut(gc) else {
+                        return Ok(());
+                    };
+                    attributes.push(attr);
+                }
+
+                self.node().trigger_notification(
+                    activation,
+                    self.into(),
+                    E4XNotification::AttributeAdded,
+                    self.into(),
+                    local_name.into(),
+                    value.into(),
+                );
             }
 
             // 6.h. Return
