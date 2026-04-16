@@ -1830,20 +1830,7 @@ impl<'gc> Value<'gc> {
             (Value::Number(_) | Value::Integer(_), Value::Number(_) | Value::Integer(_)) => {
                 let a = self.coerce_to_number(activation)?;
                 let b = other.coerce_to_number(activation)?;
-
-                if a.is_nan() || b.is_nan() {
-                    return Ok(false);
-                }
-
-                if a == b {
-                    return Ok(true);
-                }
-
-                if a.abs() == 0.0 && b.abs() == 0.0 {
-                    return Ok(true);
-                }
-
-                Ok(false)
+                Ok(a == b)
             }
             (Value::String(a), Value::String(b)) => Ok(a == b),
             (Value::Bool(a), Value::Bool(b)) => Ok(a == b),
