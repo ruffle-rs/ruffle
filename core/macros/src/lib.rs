@@ -6,8 +6,8 @@ use proc_macro2::{Span, TokenStream as TokenStream2};
 use quote::{format_ident, quote};
 use syn::parse::{Parse, ParseStream};
 use syn::{
-    DeriveInput, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, LitStr, Meta, Pat, TraitItem,
-    Visibility, parse_macro_input, parse_quote,
+    DeriveInput, FnArg, ImplItem, ImplItemFn, ItemEnum, ItemTrait, LitByteStr, LitStr, Meta, Pat,
+    TraitItem, Visibility, parse_macro_input, parse_quote,
 };
 
 /// Define an enum whose variants each implement a trait.
@@ -303,6 +303,93 @@ pub fn derive_has_prefix_field(input: TokenStream) -> TokenStream {
                     #field_name as *const _
                 };
             };
+        }
+    }
+    .into()
+}
+
+/// Define the `CommonStrings` struct and its `new` method.
+///
+/// This macro generates the `CommonStrings` struct with fields for each of the
+/// given strings, prefixed with `str_`. It also generates a `new` method that
+/// interns all of these strings.
+///
+/// Usage:
+/// ```rs
+/// define_common_strings! {
+///    b"string1",
+///    b"string2",
+/// }
+/// ```
+#[proc_macro]
+pub fn define_common_strings(input: TokenStream) -> TokenStream {
+    struct Input {
+        strings: Vec<LitByteStr>,
+    }
+
+    impl Parse for Input {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            let mut strings = Vec::new();
+            while !input.is_empty() {
+                strings.push(input.parse()?);
+                if input.is_empty() {
+                    break;
+                }
+                let _: syn::token::Comma = input.parse()?;
+            }
+
+            Ok(Self { strings })
+        }
+    }
+
+    let input = parse_macro_input!(input as Input);
+
+    let fields: Vec<_> = input
+        .strings
+        .iter()
+        .map(|s| {
+            let bytes = s.value();
+            let name = String::from_utf8(bytes).expect("Common strings must be valid UTF-8");
+            format_ident!("str_{name}")
+        })
+        .collect();
+    let strings = &input.strings;
+
+    quote! {
+        const ASCII_CHARS_LEN: usize = 0x80;
+        static ASCII_CHARS: [u8; ASCII_CHARS_LEN] = {
+            let mut chs = [0; ASCII_CHARS_LEN];
+            let mut i = 0;
+            while i < chs.len() {
+                chs[i] = i as u8;
+                i += 1;
+            }
+            chs
+        };
+
+        #[allow(non_snake_case)]
+        #[derive(Collect)]
+        #[collect(no_drop)]
+        pub struct CommonStrings<'gc> {
+            pub ascii_chars: [AvmAtom<'gc>; ASCII_CHARS_LEN],
+
+            #(
+                pub #fields: AvmAtom<'gc>,
+            )*
+        }
+
+        impl<'gc> CommonStrings<'gc> {
+            pub(super) fn new(mut intern_from_static: impl FnMut(&'static [u8]) -> AvmAtom<'gc>) -> Self {
+                Self {
+                    ascii_chars: std::array::from_fn(|i| {
+                        let c = &ASCII_CHARS[i];
+                        intern_from_static(std::slice::from_ref(c))
+                    }),
+                    #(
+                        #fields: intern_from_static(#strings)
+                    ),*
+                }
+            }
         }
     }
     .into()
