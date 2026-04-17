@@ -317,14 +317,14 @@ pub fn derive_has_prefix_field(input: TokenStream) -> TokenStream {
 /// Usage:
 /// ```rs
 /// define_common_strings! {
-///    b"string1",
-///    b"string2",
+///    "string1",
+///    "string2",
 /// }
 /// ```
 #[proc_macro]
 pub fn define_common_strings(input: TokenStream) -> TokenStream {
     struct Input {
-        strings: Vec<LitByteStr>,
+        strings: Vec<LitStr>,
     }
 
     impl Parse for Input {
@@ -347,13 +347,18 @@ pub fn define_common_strings(input: TokenStream) -> TokenStream {
     let fields: Vec<_> = input
         .strings
         .iter()
+        .map(|s| common_string_to_ident(&s.value()))
+        .collect();
+
+    let strings: Vec<_> = input
+        .strings
+        .iter()
         .map(|s| {
-            let bytes = s.value();
-            let name = String::from_utf8(bytes).expect("Common strings must be valid UTF-8");
-            format_ident!("str_{name}")
+            let value = s.value();
+            assert!(value.is_ascii(), "Non-ASCII common strings unsupported");
+            LitByteStr::new(value.as_bytes(), s.span())
         })
         .collect();
-    let strings = &input.strings;
 
     quote! {
         const ASCII_CHARS_LEN: usize = 0x80;
@@ -393,6 +398,18 @@ pub fn define_common_strings(input: TokenStream) -> TokenStream {
         }
     }
     .into()
+}
+
+fn common_string_to_ident(s: &str) -> syn::Ident {
+    let mut ident = String::from("str_");
+    for c in s.chars() {
+        if c.is_ascii_alphanumeric() {
+            ident.push(c);
+        } else {
+            ident.push_str(&format!("_{:02x}", c as u32));
+        }
+    }
+    format_ident!("{ident}")
 }
 
 /// Get the string passed to it as an interned `AvmAtom`, assumed to be present on
@@ -460,7 +477,7 @@ fn atom_internal(
         let c = string.as_bytes()[0];
         (format_ident!("ascii_chars"), Some(c as usize))
     } else {
-        (format_ident!("str_{string}"), None)
+        (common_string_to_ident(&string), None)
     };
 
     let mut atom = if let Some(context) = input.context {
