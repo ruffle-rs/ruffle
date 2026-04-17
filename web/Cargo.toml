@@ -69,9 +69,10 @@ workspace = true
 features = [
     "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext",
     "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
+    "BroadcastChannel",
     "ChannelMergerNode", "ChannelSplitterNode", "ClipboardEvent", "DataTransfer", "Element",
     "EventTarget", "GainNode", "Headers", "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement",
-    "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "PageTransitionEvent", "PointerEvent",
+    "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "MessageEvent", "PageTransitionEvent", "PointerEvent",
     "Request", "RequestInit", "Response", "Storage", "WheelEvent", "Window", "ReadableStream", "RequestCredentials",
     "Url", "WebGlContextEvent", "Clipboard", "FocusEvent", "FocusOptions", "ShadowRoot", "Gamepad", "GamepadButton", "OffscreenCanvas",
     "TextMetrics", "OffscreenCanvasRenderingContext2d"
