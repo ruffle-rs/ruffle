@@ -159,13 +159,13 @@ fn get_progress<'gc>(
             result.define_value(
                 activation.gc(),
                 istr!("bytesLoaded"),
-                target.movie().compressed_len().into(),
+                Value::from_usize_lossy(target.movie().compressed_len()),
                 Attribute::empty(),
             );
             result.define_value(
                 activation.gc(),
                 istr!("bytesTotal"),
-                target.movie().compressed_len().into(),
+                Value::from_usize_lossy(target.movie().compressed_len()),
                 Attribute::empty(),
             );
         }

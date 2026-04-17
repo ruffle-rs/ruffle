@@ -201,7 +201,7 @@ pub fn size<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::FileReference(file_ref) = this.native() {
         let size = file_ref.0.size.get();
-        return Ok(size.map_or(Value::Undefined, Into::into));
+        return Ok(size.map_or(Value::Undefined, Value::from_u64_lossy));
     }
 
     Ok(Value::Undefined)
