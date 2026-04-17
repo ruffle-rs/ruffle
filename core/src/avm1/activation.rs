@@ -2068,7 +2068,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // In SWF6+, this is the same as String.length (returns number of UTF-16 code units).
         // TODO: In SWF5, this returns the byte length, even though the encoding is locale dependent.
         let val = self.context.avm1.pop().coerce_to_string(self)?;
-        self.context.avm1.push(val.len().into());
+        self.context.avm1.push(Value::from_usize_lossy(val.len()));
         Ok(FrameControl::Continue)
     }
 

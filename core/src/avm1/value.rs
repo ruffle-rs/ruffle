@@ -102,18 +102,6 @@ impl From<u32> for Value<'_> {
     }
 }
 
-impl From<u64> for Value<'_> {
-    fn from(value: u64) -> Self {
-        Value::Number(value as f64)
-    }
-}
-
-impl From<usize> for Value<'_> {
-    fn from(value: usize) -> Self {
-        Value::Number(value as f64)
-    }
-}
-
 impl PartialEq for Value<'_> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -131,6 +119,26 @@ impl PartialEq for Value<'_> {
 
 /// Value coercions and conversions.
 impl<'gc> Value<'gc> {
+    /// Do the best effort of converting the [`u64`] value to [`Value`].
+    ///
+    /// This is lossless for values less or equal to 2^53. For values greater
+    /// than that, it will return a value equivalent to the closest integer
+    /// representable as IEEE 754 64-bit.
+    #[inline(always)]
+    pub fn from_u64_lossy(value: u64) -> Self {
+        Value::Number(value as f64)
+    }
+
+    /// Do the best effort of converting the [`usize`] value to [`Value`].
+    ///
+    /// This is lossless on 32-bit architectures and for values less or equal to
+    /// 2^53. For values greater than that, it will return a value equivalent to
+    /// the closest integer representable as IEEE 754 64-bit.
+    #[inline(always)]
+    pub fn from_usize_lossy(value: usize) -> Self {
+        Value::Number(value as f64)
+    }
+
     /// Yields `true` if the given value is a primitive value.
     ///
     /// Note: Boxed primitive values are not considered primitive - it is

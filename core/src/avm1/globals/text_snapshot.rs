@@ -84,7 +84,7 @@ fn get_count<'gc>(
         return Ok(Value::Undefined);
     }
 
-    Ok(object.text_snapshot().count().into())
+    Ok(Value::from_usize_lossy(object.text_snapshot().count()))
 }
 
 fn set_selected<'gc>(
