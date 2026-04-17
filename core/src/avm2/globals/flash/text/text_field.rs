@@ -454,7 +454,7 @@ pub fn get_length<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(this.text_length().into());
+        return Ok(Value::from_usize_lossy(this.text_length()));
     }
 
     Ok(Value::Undefined)
@@ -861,7 +861,7 @@ pub fn get_caret_index<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         return if let Some(selection) = this.selection() {
-            Ok(selection.to().into())
+            Ok(Value::from_usize_lossy(selection.to()))
         } else {
             Ok(0.into())
         };
@@ -882,7 +882,7 @@ pub fn get_selection_begin_index<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         return if let Some(selection) = this.selection() {
-            Ok(selection.start().into())
+            Ok(Value::from_usize_lossy(selection.start()))
         } else {
             Ok(0.into())
         };
@@ -903,7 +903,7 @@ pub fn get_selection_end_index<'gc>(
         .and_then(|this| this.as_edit_text())
     {
         return if let Some(selection) = this.selection() {
-            Ok(selection.end().into())
+            Ok(Value::from_usize_lossy(selection.end()))
         } else {
             Ok(0.into())
         };
@@ -1168,7 +1168,7 @@ pub fn get_num_lines<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(this.layout_lines().into());
+        return Ok(Value::from_usize_lossy(this.layout_lines()));
     }
 
     Ok(Value::Undefined)
@@ -1233,7 +1233,7 @@ pub fn get_line_length<'gc>(
     }
 
     if let Some(length) = this.line_length(line_num as usize) {
-        Ok(length.into())
+        Ok(Value::from_usize_lossy(length))
     } else {
         Err(make_error_2006(activation))
     }
@@ -1281,7 +1281,7 @@ pub fn get_line_offset<'gc>(
     }
 
     if let Some(offset) = this.line_offset(line_num as usize) {
-        Ok(offset.into())
+        Ok(Value::from_usize_lossy(offset))
     } else {
         Err(make_error_2006(activation))
     }
@@ -1298,7 +1298,7 @@ pub fn get_bottom_scroll_v<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(this.bottom_scroll().into());
+        return Ok(Value::from_usize_lossy(this.bottom_scroll()));
     }
 
     Ok(Value::Undefined)
@@ -1315,7 +1315,7 @@ pub fn get_max_scroll_v<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(this.maxscroll().into());
+        return Ok(Value::from_usize_lossy(this.maxscroll()));
     }
 
     Ok(Value::Undefined)
@@ -1349,7 +1349,7 @@ pub fn get_scroll_v<'gc>(
         .as_display_object()
         .and_then(|this| this.as_edit_text())
     {
-        return Ok(this.scroll().into());
+        return Ok(Value::from_usize_lossy(this.scroll()));
     }
 
     Ok(Value::Undefined)
@@ -1552,7 +1552,14 @@ pub fn get_text_runs<'gc>(
         })
         .map(|(start, end, _, format)| {
             let tf = TextFormatObject::from_text_format(activation, format.get_text_format())?;
-            textrun_class.construct(activation, &[start.into(), end.into(), tf.into()])
+            textrun_class.construct(
+                activation,
+                &[
+                    Value::from_usize_lossy(start),
+                    Value::from_usize_lossy(end),
+                    tf.into(),
+                ],
+            )
         })
         .collect::<Result<ArrayStorage<'gc>, Error<'gc>>>()?;
     Ok(ArrayObject::from_storage(activation.context, array).into())
@@ -1579,7 +1586,7 @@ pub fn get_line_index_of_char<'gc>(
     }
 
     if let Some(line) = this.line_index_of_char(index as usize) {
-        Ok(line.into())
+        Ok(Value::from_usize_lossy(line))
     } else {
         Ok(Value::Number(-1f64))
     }
@@ -1604,7 +1611,7 @@ pub fn get_char_index_at_point<'gc>(
     let y = args.get_f64(1);
 
     if let Some(index) = this.char_index_at_point(Point::from_pixels(x, y)) {
-        Ok(index.into())
+        Ok(Value::from_usize_lossy(index))
     } else {
         Ok(Value::Number(-1f64))
     }
@@ -1629,7 +1636,7 @@ pub fn get_line_index_at_point<'gc>(
     let y = args.get_f64(1);
 
     if let Some(index) = this.line_index_at_point(Point::from_pixels(x, y)) {
-        Ok(index.into())
+        Ok(Value::from_usize_lossy(index))
     } else {
         Ok(Value::Number(-1f64))
     }

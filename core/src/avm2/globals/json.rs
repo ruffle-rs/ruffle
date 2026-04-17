@@ -62,7 +62,7 @@ fn deserialize_json_inner<'gc>(
                 .enumerate()
                 .map(|(key, val)| {
                     let val = deserialize_json_inner(activation, val.clone(), reviver)?;
-                    let args = &[key.into(), val];
+                    let args = &[Value::from_usize_lossy(key), val];
 
                     match reviver {
                         None => Ok(val),
