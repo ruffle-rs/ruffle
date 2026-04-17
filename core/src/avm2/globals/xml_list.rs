@@ -192,7 +192,7 @@ pub fn length<'gc>(
 
     let list = this.as_xml_list_object().unwrap();
     let children = list.children();
-    Ok(children.len().into())
+    Ok(Value::from_usize_lossy(children.len()))
 }
 
 pub fn child<'gc>(

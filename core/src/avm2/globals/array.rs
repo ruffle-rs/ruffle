@@ -69,7 +69,7 @@ pub fn get_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(array) = this.as_array_storage() {
-        return Ok(array.length().into());
+        return Ok(Value::from_usize_lossy(array.length()));
     }
 
     Ok(Value::Undefined)
@@ -464,7 +464,7 @@ pub fn _index_of<'gc>(
         for (i, val) in array.iter().enumerate() {
             let val = resolve_array_hole(activation, this, i, val)?;
             if i >= from_index && val == search_val {
-                return Ok(i.into());
+                return Ok(Value::from_usize_lossy(i));
             }
         }
 
@@ -495,7 +495,7 @@ pub fn _last_index_of<'gc>(
         for (i, val) in array.iter().enumerate().rev() {
             let val = resolve_array_hole(activation, this, i, val)?;
             if i <= from_index && val == search_val {
-                return Ok(i.into());
+                return Ok(Value::from_usize_lossy(i));
             }
         }
 
@@ -532,7 +532,7 @@ pub fn push<'gc>(
         for arg in args {
             array.push(*arg)
         }
-        return Ok(array.length().into());
+        return Ok(Value::from_usize_lossy(array.length()));
     }
 
     Ok(Value::Undefined)
@@ -601,7 +601,7 @@ pub fn unshift<'gc>(
         for arg in args.iter().rev() {
             array.unshift(*arg)
         }
-        return Ok(array.length().into());
+        return Ok(Value::from_usize_lossy(array.length()));
     }
 
     Ok(Value::Undefined)
@@ -677,7 +677,7 @@ pub fn splice<'gc>(
     let actual_start = resolve_index(activation, start, array_length)?;
     let delete_count = args
         .get_optional(1)
-        .unwrap_or_else(|| array_length.into())
+        .unwrap_or_else(|| Value::from_usize_lossy(array_length))
         .coerce_to_i32(activation)?
         .max(0);
 
@@ -977,7 +977,11 @@ fn sort_postprocess<'gc>(
         if options.contains(SortOptions::RETURN_INDEXED_ARRAY) {
             return Ok(build_array(
                 activation,
-                values.iter().map(|&(i, _)| i).collect(),
+                values
+                    .iter()
+                    .map(|&(i, _)| i)
+                    .map(Value::from_usize_lossy)
+                    .collect(),
             ));
         } else {
             if let Some(mut old_array) = this.as_array_storage_mut(activation.gc()) {

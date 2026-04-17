@@ -262,7 +262,7 @@ pub fn get_position<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bytearray) = this.as_bytearray() {
-        return Ok(bytearray.position().into());
+        return Ok(Value::from_usize_lossy(bytearray.position()));
     }
 
     Ok(Value::Undefined)
@@ -291,7 +291,7 @@ pub fn get_bytes_available<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bytearray) = this.as_bytearray() {
-        return Ok(bytearray.bytes_available().into());
+        return Ok(Value::from_usize_lossy(bytearray.bytes_available()));
     }
 
     Ok(Value::Undefined)
@@ -305,7 +305,7 @@ pub fn get_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(bytearray) = this.as_bytearray() {
-        return Ok(bytearray.len().into());
+        return Ok(Value::from_usize_lossy(bytearray.len()));
     }
 
     Ok(Value::Undefined)

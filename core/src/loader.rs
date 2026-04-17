@@ -14,7 +14,7 @@ use crate::avm2::object::{
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
-    Object as Avm2Object,
+    Object as Avm2Object, Value as Avm2Value,
 };
 use crate::avm2_stub_method_context;
 use crate::backend::navigator::{
@@ -1186,7 +1186,7 @@ pub fn load_data_into_url_loader<'gc>(
             ) {
                 use crate::avm2::globals::slots::flash_net_url_loader as url_loader_slots;
 
-                let body_len = body.len().into();
+                let body_len = Avm2Value::from_usize_lossy(body.len());
 
                 // TODO - update these as the download progresses
                 target

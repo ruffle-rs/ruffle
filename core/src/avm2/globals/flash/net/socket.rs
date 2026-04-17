@@ -111,7 +111,7 @@ pub fn get_bytes_available<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(socket) = this.as_socket() {
-        return Ok(socket.read_buffer().len().into());
+        return Ok(Value::from_usize_lossy(socket.read_buffer().len()));
     }
 
     Ok(Value::Undefined)
