@@ -1,0 +1,8 @@
+SecureSocket.isSupported = true
+Initial serverCertificateStatus = unknown
+Initial connected = false
+After connect call: connected = false
+Event: connect
+connected = true
+serverCertificateStatus = unknown
+After close: connected = false
