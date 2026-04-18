@@ -1,1 +1,65 @@
-{}
+{
+    "settings_ruffle_enable": {
+        "message": "Ruffle-да Flash контентын уйнатыгыз"
+    },
+    "settings_ignore_optout": {
+        "message": "Flash контентын хәтта Ruffle-ны тыйган сәхифәләрдә дә уйнатыгыз"
+    },
+    "settings_show_swf_download": {
+        "message": "Контекст менюында SWF йөкләүне күрсәтү"
+    },
+    "settings_autostart": {
+        "message": "Flash-ны автоуйнату (Тавышсыз режимны ачу өчен басыгыз)"
+    },
+    "settings_swf_takeover": {
+        "message": "SWF файлларын йөкләмичә, аларны браузерыгызда уйнатыгыз"
+    },
+    "settings_log_level": {
+        "message": "Лог дәрәҗәсе"
+    },
+    "settings_log_level_error": {
+        "message": "Хаталар"
+    },
+    "settings_log_level_warn": {
+        "message": "Кисәтүләр"
+    },
+    "settings_log_level_info": {
+        "message": "Инфо"
+    },
+    "settings_log_level_debug": {
+        "message": "Төзәтү"
+    },
+    "settings_log_level_trace": {
+        "message": "Күзәтү"
+    },
+    "settings_max_execution_duration": {
+        "message": "ActionScript башкаруның максималь вакыты (секундларда)"
+    },
+    "settings_player_version": {
+        "message": "Эмуляцияләү өчен Flash плеер версиясе саны (1-32 аралыгы)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Өстенлекле рендерер"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Автоматик"
+    },
+    "settings_device_font_renderer": {
+        "message": "Җайланма шрифтын күрсәтүче"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Кертелгән"
+    },
+    "settings_advanced_options": {
+        "message": "Киңәйтелгән опцияләр"
+    },
+    "settings_reset": {
+        "message": "Көйләүләрне ташлау"
+    },
+    "settings_reset_confirm": {
+        "message": "Ruffle көйләүләрен башлангыч гадәти хәленә кайтарырга телисезме?"
+    },
+    "status_init": {
+        "message": "Агымдагы табны укыйбыз…"
+    }
+}

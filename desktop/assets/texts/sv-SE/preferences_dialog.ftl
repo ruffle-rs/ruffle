@@ -1,4 +1,4 @@
-preferences-dialog = Ruffle-preferenser
+preferences-dialog = Ruffle-inställningar
 preference-locked-by-cli = Endast läsbar (sätt av CLI:n)
 graphics-backend = Grafik-backend
 graphics-backend-default = Standard
@@ -25,8 +25,11 @@ theme-light = Ljust
 theme-dark = Mörkt
 # See for context https://github.com/FeralInteractive/gamemode
 gamemode = GameMode
+gamemode-tooltip = GameMode använder temporärt en samling optimeringar för din dator och/eller Ruffle. Ruffle ber endast om GameMode när en film spelas.
 gamemode-default = Förval
+gamemode-default-tooltip = GameMode aktiveras endast när energialternativ är inställt på hög.
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Inmatningsmetod
 ime-enabled-experimental = (experimentell)
+ime-enabled-tooltip = Ett interaktionssätt tillåter att tecken skrivs som inte är tillgängliga på tangentbordet till exempel kinesiska, japanska eller koreanska tecken.
 ime-enabled-default = Förval

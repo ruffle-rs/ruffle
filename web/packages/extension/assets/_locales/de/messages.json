@@ -9,7 +9,7 @@
         "message": "SWF-Download im Kontextmenü anzeigen"
     },
     "settings_autostart": {
-        "message": "Automatisch ohne Splash-Screen abspielen (zum Entstummen klicken)"
+        "message": "Flash-Inhalte automatisch abspielen (Klicken für Ton)"
     },
     "settings_swf_takeover": {
         "message": "SWF-Dateien im Browser abspielen, anstatt sie herunterzuladen"
@@ -54,7 +54,7 @@
         "message": "Einstellungen zurücksetzen"
     },
     "settings_reset_confirm": {
-        "message": "Bist du sicher, dass du alle DNS-Einträge auf ihre ursprünglichen Werte zurücksetzen möchten?"
+        "message": "Sind Sie sicher, dass Sie die Ruffle-Einstellungen auf die ursprünglichen Standardwerte zurücksetzen möchten?"
     },
     "status_init": {
         "message": "Prüfe den aktuellen Tab…"
@@ -69,25 +69,25 @@
         "message": "Prüfe Status von Ruffle im aktuellen Tab…"
     },
     "status_result_running": {
-        "message": "Ruffle wurde geladen und spielt den Flashinhalt im aktuellen Tab ab."
+        "message": "Ruffle ist bereit, Flash-Inhalte im aktuellen Tab abzuspielen."
     },
     "status_result_running_protected": {
-        "message": "Ruffle wurde geladen und spielt den Flashinhalt im aktuellen Tab ab."
+        "message": "Ruffle ist bereit, die angeforderten Flash-Inhalte abzuspielen."
     },
     "status_result_optout": {
         "message": "Ruffle wurde nicht geladen, da die aktuelle Seite sich selbst als inkompatibel markiert hat."
     },
     "status_result_disabled": {
-        "message": "Ruffle wurde nicht geladen, da es vom Anwender abgeschaltet wurde."
+        "message": "Ruffle ist deaktiviert."
     },
     "status_result_error": {
-        "message": "Es ist ein Fehler beim Abfragen der aktuellen Tab-Instanz von Ruffle aufgetreten."
+        "message": "Fehler beim Abrufen der Ruffle-Instanz auf der aktuellen Seite."
     },
     "status_result_protected": {
         "message": "Ruffle kann nicht auf geschützten Browser-Seiten geladen werden."
     },
     "action_reload": {
-        "message": "Laden Sie den Tab neu um die Änderungen zu übernehmen."
+        "message": "Seite neu laden, um Änderungen zu übernehmen"
     },
     "open_player_page": {
         "message": "SWF-Player öffnen"

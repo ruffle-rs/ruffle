@@ -39,10 +39,16 @@
         "message": "Phiên bản trình phát Flash muốn giả lập (từ 1 đến 32)"
     },
     "settings_preferred_renderer": {
-        "message": "Trình quản lý đồ hoạ ưu tiên"
+        "message": "Trình kết xuất đồ hoạ ưu tiên"
     },
     "settings_preferred_renderer_auto": {
         "message": "Tự động lựa chọn"
+    },
+    "settings_device_font_renderer": {
+        "message": "Trình kết xuất đồ hoạ cho phông chữ hệ thống"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Nhúng"
     },
     "settings_advanced_options": {
         "message": "Các tuỳ chọn nâng cao"

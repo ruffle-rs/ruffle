@@ -1,1 +1,12 @@
+export-bundle-dialog-title = Ruffle Bundle-ны экспортлау
+export-bundle-dialog-bundle-name = Bundle исеме:
+export-bundle-dialog-files-description = Bundle-га кертәсе файлларны сайлагыз:
 export-bundle-dialog-files-select-all = Барысын сайлау
+export-bundle-dialog-export = Экспорт
+export-bundle-dialog-exporting = Экспортлана...
+export-bundle-dialog-exporting-failed = Экспортлау уңышсыз булды.
+export-bundle-dialog-error-user-canceled = Кулланучы тарафыннан гамәлдән чыгарылды.
+export-bundle-dialog-error-failed-to-show-picker = Файл сайлау тәрәзәсен ачып булмады.
+export-bundle-dialog-error-io-error = Bundle-ны язу хатасы.
+export-bundle-dialog-info-title = Ruffle Bundle нәрсә ул?
+export-bundle-dialog-info-description = Ruffle Bundle ул SWF файлын эшләтеп җибәрү өчен кирәк булган барлык әйберләрне үз эченә алган универсаль пакет: барлык кирәкле ресурслар һәм көйләүләр. Bundle ярдәмендә SWF шунда ук эшли — югалган файллар юк, кул белән көйләү кирәкми, бары тик ач та эшләт.
