@@ -983,6 +983,7 @@ impl<'gc> NetStream<'gc> {
                         codec,
                         data, //TODO: ScreenVideo's decoder wants the FLV header bytes
                         frame_id,
+                        composition_time: Some(write.stream_time as i32),
                     };
 
                     if let Err(e) = context
@@ -997,6 +998,7 @@ impl<'gc> NetStream<'gc> {
                     codec,
                     data, //TODO: ScreenVideo's decoder wants the FLV header bytes
                     frame_id,
+                    composition_time: Some(write.stream_time as i32),
                 };
 
                 match context.video.decode_video_stream_frame(
@@ -1034,7 +1036,7 @@ impl<'gc> NetStream<'gc> {
                 Some(video_handle),
                 Some(codec),
                 FlvVideoPacket::AvcNalu {
-                    composition_time_offset: _,
+                    composition_time_offset,
                     data,
                 },
             ) => {
@@ -1042,6 +1044,7 @@ impl<'gc> NetStream<'gc> {
                     codec,
                     data,
                     frame_id,
+                    composition_time: Some(write.stream_time as i32 + composition_time_offset),
                 };
 
                 match context.video.decode_video_stream_frame(
