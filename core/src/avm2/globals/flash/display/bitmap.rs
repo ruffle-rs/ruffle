@@ -14,6 +14,7 @@ use crate::avm2::parameters::ParametersExt;
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::character::Character;
 use crate::display_object::Bitmap;
+use crate::display_object::TDisplayObject;
 
 pub fn bitmap_allocator<'gc>(
     class: ClassObject<'gc>,
@@ -31,7 +32,7 @@ pub fn bitmap_allocator<'gc>(
                 0,
                 bitmap_data,
                 false,
-                &activation.caller_movie_or_root(),
+                activation.caller_movie_or_root(),
             )
             .into();
             return Ok(
@@ -39,18 +40,8 @@ pub fn bitmap_allocator<'gc>(
             );
         }
 
-        if let Some((movie, symbol)) = activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(class)
-        {
-            if let Some(Character::Bitmap(bitmap)) = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
-                .character_by_id(symbol)
-            {
+        if let Some((symbol, lib)) = class.symbol_class(activation.context.gc_context) {
+            if let Some(Character::Bitmap(bitmap)) = lib.borrow().character_by_id(symbol) {
                 let new_bitmap_data = fill_bitmap_data_from_symbol(activation, bitmap.compressed());
                 let bitmap_data_obj =
                     BitmapDataObject::from_bitmap_data(activation.context, new_bitmap_data);
@@ -61,8 +52,9 @@ pub fn bitmap_allocator<'gc>(
                     0,
                     new_bitmap_data,
                     false,
-                    &activation.caller_movie_or_root(),
+                    activation.caller_movie_or_root(),
                 );
+                child.set_library(activation.gc(), lib);
 
                 return Ok(
                     initialize_for_allocator(activation.context, child.into(), orig_class).into(),

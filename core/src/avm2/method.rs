@@ -14,7 +14,6 @@ use gc_arena::lock::OnceLock;
 use gc_arena::{Collect, Gc};
 use std::borrow::Cow;
 use std::rc::Rc;
-use std::sync::Arc;
 use swf::avm2::types::{
     AbcFile, Index, Method as AbcMethod, MethodBody as AbcMethodBody,
     MethodFlags as AbcMethodFlags, MethodParam as AbcMethodParam,
@@ -244,8 +243,15 @@ impl<'gc> Method<'gc> {
     }
 
     /// Get a reference to the SwfMovie this method came from.
-    pub fn owner_movie(self) -> Arc<SwfMovie> {
+    pub fn owner_movie(self) -> Gc<'gc, SwfMovie> {
         self.0.txunit.movie()
+    }
+
+    /// Get the library associated with this method's translation unit.
+    pub fn owner_library(
+        self,
+    ) -> Option<Gc<'gc, gc_arena::lock::RefLock<crate::library::MovieLibrary<'gc>>>> {
+        self.0.txunit.library()
     }
 
     /// Get a reference to the ABC method body entry this refers to.

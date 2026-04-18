@@ -39,7 +39,8 @@ fn validate_add_operation<'gc>(
         return Err(make_error_3783(activation));
     }
 
-    if !proposed_child.movie().is_action_script_3() && activation.context.root_swf.version() > 9 {
+    if !proposed_child.movie().is_action_script_3() && (*activation.context.root_swf).version() > 9
+    {
         return Err(make_error_2180(activation));
     }
 

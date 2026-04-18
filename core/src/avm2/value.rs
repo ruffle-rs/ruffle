@@ -1406,7 +1406,8 @@ impl<'gc> Value<'gc> {
                     value.construct(activation, arguments)
                 } else {
                     // Error 1115 is only thrown in SWFv9/v10 in interpreter-mode code
-                    if activation.context.root_swf.version() < 11 && activation.is_interpreter() {
+                    if (*activation.context.root_swf).version() < 11 && activation.is_interpreter()
+                    {
                         Err(make_error_1115(activation, "value"))
                     } else {
                         Err(make_error_1007(activation))

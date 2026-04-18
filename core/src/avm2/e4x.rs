@@ -1724,7 +1724,7 @@ pub fn maybe_escape_child<'gc>(
     child: Value<'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     // NOTE: This depends on root SWF version, not caller movie version.
-    if activation.context.root_swf.version() <= 9 {
+    if (*activation.context.root_swf).version() <= 9 {
         if child
             .as_object()
             .is_some_and(|x| x.as_xml_object().is_some() || x.as_xml_list_object().is_some())

@@ -23,23 +23,20 @@ pub fn sprite_allocator<'gc>(
     while let Some(class) = class_def {
         if class == sprite_cls {
             let movie = activation.caller_movie_or_root();
-            let display_object = MovieClip::new(movie, activation.gc()).into();
+            let display_object = MovieClip::new(movie, activation.context).into();
             return Ok(
                 initialize_for_allocator(activation.context, display_object, orig_class).into(),
             );
         }
 
-        if let Some((movie, symbol)) = activation
-            .context
-            .library
-            .avm2_class_registry()
-            .class_symbol(class)
-        {
-            let child = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
-                .instantiate_by_id(symbol, activation.context.gc_context);
+        if let Some((symbol, lib)) = class.symbol_class(activation.context.gc_context) {
+            let lib_ref = lib.borrow();
+            let child = lib_ref.instantiate_by_id(
+                symbol,
+                activation.context.gc_context,
+                lib_ref.movie(),
+                lib,
+            );
 
             if let Some(child) = child {
                 return Ok(initialize_for_allocator(activation.context, child, orig_class).into());
