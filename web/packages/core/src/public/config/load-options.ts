@@ -308,6 +308,22 @@ export enum DeviceFontRenderer {
 }
 
 /**
+ * Represents the various background execution behaviours that are supported.
+ */
+export enum BackgroundExecutionMode {
+    /**
+     * Ruffle will pause when the tab is hidden and resume when it becomes visible again.
+     */
+    None = "none",
+
+    /**
+     * Ruffle will keep running on the main thread while the tab is hidden,
+     * keeping audio and game logic alive at the cost of some background CPU usage.
+     */
+    MainThread = "mainThread",
+}
+
+/**
  * Represents a host, port and proxyUrl. Used when a SWF file tries to use a Socket.
  */
 export interface SocketProxy {
@@ -789,6 +805,13 @@ export interface BaseLoadOptions {
      * @default DeviceFontRenderer.Embedded
      */
     deviceFontRenderer?: DeviceFontRenderer;
+
+    /**
+     * Controls how Ruffle behaves when the browser tab is hidden.
+     *
+     * @default BackgroundExecutionMode.None
+     */
+    backgroundExecutionMode?: BackgroundExecutionMode;
 }
 
 /**

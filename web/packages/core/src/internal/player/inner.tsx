@@ -1,6 +1,7 @@
 import type { RuffleHandle, ZipWriter } from "../../../dist/ruffle_web";
 import {
     AutoPlay,
+    BackgroundExecutionMode,
     ContextMenu,
     DataLoadOptions,
     DEFAULT_CONFIG,
@@ -195,6 +196,11 @@ export class InnerPlayer {
     private newZipWriter: (() => ZipWriter) | null;
     private lastActivePlayingState: boolean;
 
+    // Non-null while ticking in the background (BackgroundExecutionMode.MainThread).
+    // Uses a ping-pong ack to avoid message queue build-up if the main thread falls behind.
+    // Set when the tab is hidden, cleared when it becomes visible again or the player is destroyed.
+    private backgroundWorker: Worker | null;
+
     metadata: MovieMetadata | null;
     _readyState: ReadyState;
 
@@ -338,7 +344,8 @@ export class InnerPlayer {
         this.metadata = null;
 
         this.lastActivePlayingState = false;
-        this.setupPauseOnTabHidden();
+        this.backgroundWorker = null;
+        this.setupTabVisibilityHandling();
     }
 
     addFSCommandHandler(handler: (command: string, args: string) => void) {
@@ -459,34 +466,88 @@ export class InnerPlayer {
     }
 
     /**
-     * Setup event listener to detect when tab is not active to pause instance playback.
-     * this.instance.play() is called when the tab becomes visible only if the
-     * the instance was not paused before tab became hidden.
+     * Sets up an event listener for tab visibility changes, responding
+     * according to the configured {@link BackgroundExecutionMode}.
      *
      * See: https://developer.mozilla.org/en-US/docs/Web/API/Page_Visibility_API
      * @ignore
      * @internal
      */
-    private setupPauseOnTabHidden(): void {
-        document.addEventListener(
-            "visibilitychange",
-            () => {
-                if (!this.instance) {
-                    return;
-                }
-
-                // Tab just changed to be inactive. Record whether instance was playing.
-                if (document.hidden) {
-                    this.lastActivePlayingState = this.instance.is_playing();
+    private setupTabVisibilityHandling(): void {
+        document.addEventListener("visibilitychange", () => {
+            if (!this.instance) {
+                return;
+            }
+            const mode =
+                this.loadedConfig?.backgroundExecutionMode ??
+                BackgroundExecutionMode.None;
+            if (document.hidden) {
+                this.lastActivePlayingState = this.instance.is_playing();
+                if (mode === BackgroundExecutionMode.MainThread) {
+                    this.instance.enable_background_tick_mode();
+                    if (this.lastActivePlayingState) {
+                        this.startBackgroundTick();
+                    }
+                } else {
                     this.instance.pause();
                 }
-                // Play only if instance was playing originally.
-                if (!document.hidden && this.lastActivePlayingState === true) {
+            } else {
+                if (mode === BackgroundExecutionMode.MainThread) {
+                    this.stopBackgroundTick();
+                    this.instance.restart_animation_loop();
+                }
+                if (this.lastActivePlayingState) {
                     this.instance.play();
                 }
-            },
-            false,
-        );
+                // Browsers may auto-suspend AudioContext in background tabs.
+                this.instance.audio_context()?.resume();
+            }
+        });
+    }
+
+    /**
+     * Starts a background tick loop while the tab is hidden.
+     */
+    private startBackgroundTick(): void {
+        const intervalMs = 1000 / (this.metadata?.frameRate || 24);
+
+        // intervalMs is always a number (dividing 1000 by anything yields a number
+        // or NaN), so no code injection via the template literal is possible.
+        const workerCode = `
+            const intervalMs = ${intervalMs};
+            self.onmessage = () => {
+                setTimeout(() => self.postMessage("tick"), intervalMs);
+            };
+            setTimeout(() => self.postMessage("tick"), intervalMs);
+        `;
+
+        try {
+            const blob = new Blob([workerCode], {
+                type: "application/javascript",
+            });
+            const workerUrl = URL.createObjectURL(blob);
+            const worker = new Worker(workerUrl);
+            URL.revokeObjectURL(workerUrl);
+
+            this.backgroundWorker = worker;
+            worker.onmessage = () => {
+                if (this.backgroundWorker === worker) {
+                    this.instance?.tick_for_background(performance.now());
+                    worker.postMessage("ack");
+                }
+            };
+        } catch (e) {
+            console.warn("Unable to create background Worker:", e);
+            this.instance?.pause();
+        }
+    }
+
+    /**
+     * Stops the background tick loop and releases any held resources.
+     */
+    private stopBackgroundTick(): void {
+        this.backgroundWorker?.terminate();
+        this.backgroundWorker = null;
     }
 
     /**
@@ -797,6 +858,7 @@ export class InnerPlayer {
      */
     destroy(): void {
         if (this.instance) {
+            this.stopBackgroundTick();
             this.instance.destroy();
             this.instance = null;
             this.metadata = null;
