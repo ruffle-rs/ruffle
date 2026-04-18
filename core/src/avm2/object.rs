@@ -184,6 +184,16 @@ pub use crate::avm2::object::xml_object::{
 };
 use crate::font::Font;
 
+macro_rules! define_marker {
+    ($name:ident) => {
+        #[derive(Clone, Collect)]
+        #[collect(require_static)]
+        pub enum $name {}
+    };
+}
+
+define_marker!(Erased);
+
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
 #[enum_trait_object(
