@@ -211,7 +211,7 @@ impl<'gc> Video<'gc> {
 
         match self.0.source.get() {
             VideoSource::Swf(swf_source) => {
-                let subslice = SwfSlice::from(movie).to_unbounded_subslice(tag.data);
+                let subslice = SwfSlice::from(movie).to_subslice(tag.data);
                 let mut frames = swf_source.frames.borrow_mut();
 
                 if frames.contains_key(&tag.frame_num.into()) {
