@@ -427,20 +427,22 @@ pub fn set_rotation_y<'gc>(
 
 pub fn get_rotation_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    this: Value<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // TODO This probably interacts with Matrix3D.
     avm2_stub_getter!(activation, "flash.display.DisplayObject", "rotationZ");
-    Ok(0.into())
+    get_rotation(activation, this, args)
 }
 
 pub fn set_rotation_z<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Value<'gc>,
-    _args: &[Value<'gc>],
+    this: Value<'gc>,
+    args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    // TODO This probably interacts with Matrix3D.
     avm2_stub_setter!(activation, "flash.display.DisplayObject", "rotationZ");
-    Ok(Value::Undefined)
+    set_rotation(activation, this, args)
 }
 
 pub fn get_scale_z<'gc>(
