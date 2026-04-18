@@ -456,28 +456,27 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
 
     let mut check_trait = |trait_: &Trait, parent: Option<Index<Multiname>>, is_class: bool| {
         match trait_.kind {
-            TraitKind::Slot { slot_id, .. } | TraitKind::Const { slot_id, .. } => {
-                if trait_has_metadata(&abc, trait_, METADATA_NATIVE_ACCESSIBLE) {
-                    if slot_id == 0 {
-                        panic!(
-                            "ASC should calculate slot ids for all slots; cannot apply NativeAccessible without a compiler-calculated slot id"
-                        )
-                    } else {
-                        // Slots are 1-indexed!
-                        let slot_id = slot_id - 1;
+            TraitKind::Slot { slot_id, .. } | TraitKind::Const { slot_id, .. }
+                if trait_has_metadata(&abc, trait_, METADATA_NATIVE_ACCESSIBLE) =>
+            {
+                if slot_id == 0 {
+                    panic!(
+                        "ASC should calculate slot ids for all slots; cannot apply NativeAccessible without a compiler-calculated slot id"
+                    )
+                } else {
+                    // Slots are 1-indexed!
+                    let slot_id = slot_id as usize - 1;
 
-                        let (trait_name, const_name) =
-                            rust_path_and_trait_name(&abc, trait_, parent);
-                        let const_name = quote::format_ident!("{}", const_name);
+                    let (trait_name, const_name) = rust_path_and_trait_name(&abc, trait_, parent);
+                    let const_name = quote::format_ident!("{}", const_name);
 
-                        // Declare a const with the slot name set to the slot id.
-                        rust_accessible_slots
-                            .entry(trait_name)
-                            .or_default()
-                            .push(quote! {
-                                pub const #const_name: u32 = #slot_id;
-                            });
-                    }
+                    // Declare a const with the slot name set to the slot id.
+                    rust_accessible_slots
+                        .entry(trait_name)
+                        .or_default()
+                        .push(quote! {
+                            pub const #const_name: usize = #slot_id;
+                        });
                 }
             }
             TraitKind::Method { disp_id, method }
@@ -495,6 +494,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                         // add 1 if it's a class method, or subtract 2 if it's
                         // an instance method.
                         let disp_id = if is_class { disp_id + 1 } else { disp_id - 2 };
+                        let disp_id = disp_id as usize;
 
                         let (trait_name, const_name) =
                             rust_path_and_trait_name(&abc, trait_, parent);
@@ -511,7 +511,7 @@ fn write_native_table(data: &[u8], out_dir: &Path) -> Result<Vec<u8>, Box<dyn st
                             .entry(trait_name)
                             .or_default()
                             .push(quote! {
-                                pub const #const_name: u32 = #disp_id;
+                                pub const #const_name: usize = #disp_id;
                             });
                     }
                 }

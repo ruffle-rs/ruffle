@@ -239,6 +239,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         callee: Option<Object<'gc>>,
         local_registers: &'a [Cell<Value<'gc>>],
     ) -> Self {
+        debug_assert!(swf_version > 0, "cannot execute code with SWF version 0");
         avm_debug!(context.avm1, "START {id}");
         Self {
             context,
@@ -291,6 +292,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         avm_debug!(context.avm1, "START {id}");
 
         let swf_version = base_clip.swf_version();
+        debug_assert!(swf_version > 0, "cannot execute code with SWF version 0");
         let scope = context.avm1.global_scope(swf_version);
         Self {
             id,
@@ -1469,7 +1471,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
 
             if let Some(prototype) = constructor
-                .filter(|_| self.swf_version >= 7)
+                .filter(|_| self.swf_version() >= 7)
                 .and_then(|o| o.prototype(self).as_object(self))
             {
                 prototype.set_interfaces(self.gc(), interfaces);
@@ -2177,7 +2179,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 let mut activation = Activation::from_action(
                     self.context,
                     self.id.child("[Catch]"),
-                    self.swf_version,
+                    self.swf_version(),
                     self.scope,
                     self.constant_pool,
                     self.base_clip,
@@ -2865,7 +2867,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     /// For SWF version 5 and lower, this is locale-dependent,
     /// and we default to WINDOWS-1252.
     pub fn encoding(&self) -> &'static swf::Encoding {
-        swf::SwfStr::encoding_for_version(self.swf_version)
+        swf::SwfStr::encoding_for_version(self.swf_version())
     }
 
     /// Returns the SWF version of the action or function being executed.

@@ -30,10 +30,25 @@ tick_rate = 16.666
 # Necessary for some timer tests.
 sleep_to_meet_frame_rate = false
 
+# If true, log AVM warnings.
+# Warnings are special AVM traces that can be produced by Flash Player (but
+# don't have to) and can provide insight into what AVM does.  This option can be
+# used to disable warnings in case the output does not contain them.
+log_warnings = true
+
 # If true, ignore this test.
 # Please comment why, ideally link to an issue, so we know what's up.
 # Prefer setting `known_failure = true` to ignoring the test.
 ignore = false
+
+# If specified, a cfg-like expression that checks if the test can run.
+# Useful for platform-specific tests.
+#
+# Available predicates:
+#  * os
+#  * arch
+#  * family
+filter = 'os = "windows"'
 
 # If true, this test is known to fail and the test runner will expect the check against
 # the trace output (specified `output_path`) to fail.
@@ -137,13 +152,8 @@ tolerance = 0
 # Same as `image_comparisons.COMPARISON_NAME.max_outliers`, but for this particular check.
 max_outliers = 0
 
-# Filter is a cfg-like expression that checks if this particular check should be performed.
-# It can be used to add different checks for e.g. different platforms.
-#
-# Available predicates:
-#  * os
-#  * arch
-#  * family
+# Filter is a cfg-like expression (with the same format as the top-level `filter` key) that checks if this
+# particular check should be performed. It can be used to add different checks for e.g. different platforms.
 filter = 'arch = "aarch64"'
 
 # Which build features are required for this test to run.
@@ -154,6 +164,22 @@ lzma = false
 
 # If JPEG XR support is enabled in this build
 jpegxr = false
+
+# List of frame-based audio assertions.
+[audio_assertions.ASSERTION_NAME]
+
+# List of frames where the assertions should be performed.
+# Both `from` and `to` are inclusive.
+frames = [2, 3]
+# or
+frames = { from = 2, to = 4 }
+
+# The maximum allowed audio amplitude.
+max_amplitude = 0.5
+
+# The lowest acceptable maximum amplitude.
+# The max is calculated per frame.
+min_max_amplitude = 0.4
 
 # A single device font provided for this test.
 [fonts.FONT_NAME] # FONT_NAME is a name of this particular font

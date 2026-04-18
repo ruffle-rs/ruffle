@@ -1,5 +1,6 @@
 use crate::avm2::class::Class;
 pub use crate::avm2::globals::flash::utils::get_qualified_class_name;
+pub use crate::avm2::globals::flash::utils::get_qualified_superclass_name;
 use crate::avm2::metadata::Metadata;
 use crate::avm2::method::Method;
 use crate::avm2::object::{ArrayObject, ScriptObject, TObject as _};
@@ -212,8 +213,6 @@ fn describe_internal_body<'gc>(
                     _ => unreachable!(),
                 };
 
-                let trait_metadata = vtable.get_metadata_for_slot(*slot_id);
-
                 let variable = ScriptObject::new_object(context);
                 variable.set_dynamic_property(istr!(context, "name"), prop_name.into(), mc);
                 variable.set_dynamic_property(istr!(context, "type"), prop_class_name.into(), mc);
@@ -228,7 +227,7 @@ fn describe_internal_body<'gc>(
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
                     let metadata_object = ArrayObject::empty(context);
-                    if let Some(metadata) = trait_metadata {
+                    if let Some(metadata) = vtable.get_metadata_for_slot(*slot_id) {
                         write_metadata(metadata_object, metadata, context);
                     }
                     variable.set_dynamic_property(
@@ -271,8 +270,6 @@ fn describe_internal_body<'gc>(
 
                 let declared_by_name = declared_by.dollar_removed_name(mc).to_qualified_name(mc);
 
-                let trait_metadata = vtable.get_metadata_for_disp(*disp_id);
-
                 let method_obj = ScriptObject::new_object(context);
 
                 method_obj.set_dynamic_property(istr!(context, "name"), prop_name.into(), mc);
@@ -300,7 +297,7 @@ fn describe_internal_body<'gc>(
 
                 if flags.contains(DescribeTypeFlags::INCLUDE_METADATA) {
                     let metadata_object = ArrayObject::empty(context);
-                    if let Some(metadata) = trait_metadata {
+                    if let Some(metadata) = vtable.get_metadata_for_disp(*disp_id) {
                         write_metadata(metadata_object, metadata, context);
                     }
                     method_obj.set_dynamic_property(

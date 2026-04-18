@@ -28,7 +28,7 @@ ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal", "fs", 
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
 tracing-appender = "0.2.4"
-winit = "0.30.12"
+winit = "0.30.13"
 webbrowser = "1.1.0"
 url = { workspace = true }
 dirs = "6.0"
@@ -42,7 +42,7 @@ wgpu = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
 fluent-templates = { workspace = true }
-toml_edit = { version = "0.23.6", features = ["parse"] }
+toml_edit = { workspace = true, features = ["parse"] }
 gilrs = "0.11"
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs"] }
 

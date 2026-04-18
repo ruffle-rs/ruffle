@@ -219,6 +219,9 @@ impl<'gc> ClassObject<'gc> {
             self.superclass_object().map(|cls| cls.instance_vtable()),
             activation.context,
         );
+        // If the vtable weren't valid, creation of the `Class` would have
+        // thrown an error.
+        let vtable = vtable.expect("ClassObject VTable should be valid");
 
         unlock!(Gc::write(mc, self.0), ClassObjectData, instance_vtable).set(vtable);
     }
@@ -255,6 +258,9 @@ impl<'gc> ClassObject<'gc> {
             Some(class_classobject.instance_vtable()),
             activation.gc(),
         );
+        // If the vtable weren't valid, creation of the `Class` would have
+        // thrown an error.
+        let class_vtable = class_vtable.expect("ClassObject VTable should be valid");
 
         self.set_vtable(activation.gc(), class_vtable);
     }
@@ -598,7 +604,7 @@ impl<'gc> ClassObject<'gc> {
         self,
         activation: &mut Activation<'_, 'gc>,
         receiver: Object<'gc>,
-        disp_id: u32,
+        disp_id: usize,
         arguments: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
         let full_method = self.instance_vtable().get_full_method(disp_id).unwrap();
@@ -719,8 +725,10 @@ impl<'gc> ClassObject<'gc> {
         }
     }
 
-    pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
-        self.init_method().map(|m| m.translation_unit())
+    pub fn translation_unit(self) -> TranslationUnit<'gc> {
+        self.inner_class_definition()
+            .translation_unit()
+            .expect("ClassObject must have init method")
     }
 
     pub fn init_method(self) -> Option<Method<'gc>> {

@@ -1,3 +1,5 @@
+use std::fmt::Display;
+
 use naga::Module;
 
 mod builder;
@@ -21,34 +23,105 @@ pub enum VertexAttributeFormat {
 }
 
 #[derive(Debug)]
-pub enum Error {
+pub enum AgalError {
+    EmptyProgram,
+    FragmentRegisterAsSource {
+        operand: u8,
+        token: usize,
+        shader_type: ShaderType,
+    },
+    IndirectNotAllowed {
+        operand: u8,
+        token: usize,
+        shader_type: ShaderType,
+    },
+    IndirectOnlyIntoConstants {
+        operand: u8,
+        token: usize,
+        shader_type: ShaderType,
+    },
     InvalidHeader,
-    InvalidShaderType(u8),
-    MissingVertexAttributeData(usize),
-    Unimplemented(String),
-    ReadError(std::io::Error),
-    InvalidOpcode(u32),
-    InvalidVersion(u32),
+    InvalidOpcode {
+        value: u32,
+        token: usize,
+        shader_type: ShaderType,
+    },
+    InvalidShaderType,
+    InvalidVersion,
+    ReadError,
+    ReadOutputRegister {
+        operand: u8,
+        token: usize,
+        shader_type: ShaderType,
+    },
     SamplerConfigMismatch {
-        texture: usize,
-        old: SamplerConfig,
-        new: SamplerConfig,
+        token: usize,
+        shader_type: ShaderType,
+    },
+    SamplerRegisterAsSource {
+        operand: u8,
+        token: usize,
+        shader_type: ShaderType,
+    },
+    WriteAttributeRegister {
+        token: usize,
+        shader_type: ShaderType,
+    },
+    WriteConstantRegister {
+        token: usize,
+        shader_type: ShaderType,
+    },
+    WriteFragmentRegister {
+        token: usize,
+        shader_type: ShaderType,
+    },
+    WriteSamplerRegister {
+        token: usize,
+        shader_type: ShaderType,
     },
 }
 
-impl From<std::io::Error> for Error {
-    fn from(err: std::io::Error) -> Self {
-        Error::ReadError(err)
+impl From<std::io::Error> for AgalError {
+    fn from(_value: std::io::Error) -> Self {
+        AgalError::ReadError
     }
 }
 
 #[derive(Debug)]
+pub enum Error {
+    Agal(AgalError),
+    MissingVertexAttributeData,
+    Unimplemented(String),
+}
+
+impl From<AgalError> for Error {
+    fn from(value: AgalError) -> Self {
+        Error::Agal(value)
+    }
+}
+
+impl From<std::io::Error> for Error {
+    fn from(value: std::io::Error) -> Self {
+        Error::Agal(AgalError::from(value))
+    }
+}
+
+#[derive(Clone, Copy, Debug)]
 pub enum ShaderType {
     Vertex,
     Fragment,
 }
 
-pub use builder::{TEXTURE_SAMPLER_START_BIND_INDEX, TEXTURE_START_BIND_INDEX};
+impl Display for ShaderType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ShaderType::Vertex => f.write_str("vertex"),
+            ShaderType::Fragment => f.write_str("fragment"),
+        }
+    }
+}
+
+pub use builder::{ParsedBytecode, TEXTURE_SAMPLER_START_BIND_INDEX, TEXTURE_START_BIND_INDEX};
 pub use types::{Filter, Mipmap, SamplerConfig, Wrapping};
 
 /// Compiles an Adobe AGAL shader to a Naga Module.
@@ -92,16 +165,19 @@ pub use types::{Filter, Mipmap, SamplerConfig, Wrapping};
 ///
 /// * Program constants - An AGAL fragment shader has access to 28 program constants.
 ///   These are mapped to a single Naga uniform buffer, with a binding id of 1.
+pub fn parse_bytecode(agal: &[u8]) -> Result<ParsedBytecode, AgalError> {
+    NagaBuilder::parse_bytecode(agal)
+}
+
 pub fn agal_to_naga(
-    agal: &[u8],
+    parsed: &ParsedBytecode,
     vertex_attributes: &[Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
-    sampler_configs: &[SamplerConfig; MAX_TEXTURES],
 ) -> Result<Module, Error> {
-    NagaBuilder::build_module(agal, vertex_attributes, sampler_configs)
+    NagaBuilder::build_module(parsed, vertex_attributes)
 }
 
 pub fn extract_sampler_configs(
-    agal: &[u8],
-) -> Result<[Option<SamplerConfig>; MAX_TEXTURES], Error> {
-    NagaBuilder::extract_sampler_configs(agal)
+    parsed: &ParsedBytecode,
+) -> Result<[Option<SamplerConfig>; MAX_TEXTURES], AgalError> {
+    NagaBuilder::extract_sampler_configs(parsed)
 }

@@ -1,46 +1,97 @@
 ﻿package {
-	public class test {}
+	import flash.display.Sprite;
+
+	public class test extends Sprite {}
 }
 
+trace("// var s = \"aaatestFOOtestaaanull\"");
 var s = "aaatestFOOtestaaanull";
-trace("// // indexOf ");
-// indexOf 
+trace("// // indexOf");
+// indexOf
 trace("// s.indexOf(\"a\")");
-s.indexOf("a")
+trace(s.indexOf("a"));
 trace("// s.indexOf(\"a\", 16)");
-s.indexOf("a", 16)
+trace(s.indexOf("a", 16));
 trace("// s.indexOf(\"a\", 14)");
-s.indexOf("a", 14)
+trace(s.indexOf("a", 14));
 trace("// s.indexOf(\"a\", 13)");
-s.indexOf("a", 13)
+trace(s.indexOf("a", 13));
 trace("// s.indexOf(\"a\", 0)");
-s.indexOf("a", 0)
+trace(s.indexOf("a", 0));
 trace("// s.indexOf(\"test\")");
-s.indexOf("test")
+trace(s.indexOf("test"));
 trace("// s.indexOf(\"test\", 4)");
-s.indexOf("test", 4)
+trace(s.indexOf("test", 4));
 trace("// s.indexOf(\"test\", 100)");
-s.indexOf("test", 100)
+trace(s.indexOf("test", 100));
 trace("// s.indexOf(\"test\", -1)");
-s.indexOf("test", -1)
+trace(s.indexOf("test", -1));
 trace("// s.indexOf(\"test\", 4294967300)");
-s.indexOf("test", 4294967300)
+trace(s.indexOf("test", 4294967300));
 trace("// s.indexOf(\"test\", null)");
-s.indexOf("test", null)
+trace(s.indexOf("test", null));
 trace("// s.indexOf(\"test\", undefined)");
-s.indexOf("test", undefined)
+trace(s.indexOf("test", undefined));
 trace("// s.indexOf(\"\")");
-s.indexOf("")
+trace(s.indexOf(""));
 trace("// s.indexOf(\"\", 5)");
-s.indexOf("", 5)
+trace(s.indexOf("", 5));
 trace("// s.indexOf(\"\", 100)");
-s.indexOf("", 100)
+trace(s.indexOf("", 100));
 trace("// s.indexOf()");
-s.indexOf()
+trace(s.indexOf());
 trace("// s.indexOf(null)");
-s.indexOf(null)
+trace(s.indexOf(null));
 trace("// s.indexOf(undefined)");
-s.indexOf(undefined)
+trace(s.indexOf(undefined));
 trace("// \"hello undefined hi\".indexOf(undefined)");
-"hello undefined hi".indexOf(undefined)
+trace("hello undefined hi".indexOf(undefined));
+trace("// \"\".indexOf(null)");
+trace("".indexOf(null));
+trace("// \"\".indexOf(undefined)");
+trace("".indexOf(undefined));
 
+trace("// // lastIndexOf");
+// lastIndexOf
+trace("// s.lastIndexOf(\"a\")");
+trace(s.lastIndexOf("a"));
+trace("// s.lastIndexOf(\"a\", 16)");
+trace(s.lastIndexOf("a", 16));
+trace("// s.lastIndexOf(\"a\", 14)");
+trace(s.lastIndexOf("a", 14));
+trace("// s.lastIndexOf(\"a\", 13)");
+trace(s.lastIndexOf("a", 13));
+trace("// s.lastIndexOf(\"a\", 0)");
+trace(s.lastIndexOf("a", 0));
+trace("// s.lastIndexOf(\"test\")");
+trace(s.lastIndexOf("test"));
+trace("// s.lastIndexOf(\"test\", 4)");
+trace(s.lastIndexOf("test", 4));
+trace("// s.lastIndexOf(\"test\", 100)");
+trace(s.lastIndexOf("test", 100));
+trace("// s.lastIndexOf(\"test\", -1)");
+trace(s.lastIndexOf("test", -1));
+trace("// s.lastIndexOf(\"test\", 4294967300)");
+trace(s.lastIndexOf("test", 4294967300));
+trace("// s.lastIndexOf(\"test\", null)");
+trace(s.lastIndexOf("test", null));
+trace("// s.lastIndexOf(\"test\", undefined)");
+trace(s.lastIndexOf("test", undefined));
+trace("// s.lastIndexOf(\"\")");
+trace(s.lastIndexOf(""));
+trace("// s.lastIndexOf(\"\", 5)");
+trace(s.lastIndexOf("", 5));
+trace("// s.lastIndexOf(\"\", 100)");
+trace(s.lastIndexOf("", 100));
+trace("// s.lastIndexOf()");
+trace(s.lastIndexOf());
+trace("// s.lastIndexOf(null)");
+trace(s.lastIndexOf(null));
+trace("// s.lastIndexOf(undefined)");
+trace(s.lastIndexOf(undefined));
+trace("// \"hello undefined hi\".lastIndexOf(undefined)");
+trace("hello undefined hi".lastIndexOf(undefined));
+trace("// \"\".lastIndexOf(null)");
+trace("".lastIndexOf(null));
+trace("// \"\".lastIndexOf(undefined)");
+trace("".lastIndexOf(undefined));

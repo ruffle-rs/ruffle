@@ -13,6 +13,7 @@ use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use gc_arena::Collect;
+use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::rc::Rc;
 
@@ -163,10 +164,11 @@ impl Value {
             Value::Number(value) => Avm1Value::Number(value),
             Value::String(value) => {
                 let value = if activation.swf_version() < 9 && value.trim().is_empty() {
-                    "null"
+                    Cow::Borrowed("null")
                 } else {
-                    &value
+                    Cow::Owned(value)
                 };
+
                 Avm1Value::String(AvmString::new_utf8(activation.gc(), value))
             }
             Value::Object(values) => {
@@ -396,6 +398,10 @@ impl<'gc> ExternalInterface<'gc> {
         if let Some(provider) = &self.provider {
             provider.on_callback_available(&name);
         }
+    }
+
+    pub fn remove_callback(&mut self, name: String) {
+        self.callbacks.remove(&name);
     }
 
     pub fn get_callback(&self, name: &str) -> Option<Callback<'gc>> {

@@ -423,15 +423,23 @@ pub fn push<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.gc()) {
-        let value_type = vs.value_type_for_coercion(activation);
-
+    let value_type = if let Some(vs) = this.as_vector_storage() {
         // Pushing nothing will still throw if the Vector is fixed.
         vs.check_fixed(activation)?;
+        vs.value_type_for_coercion(activation)
+    } else {
+        return Ok(Value::Undefined);
+    };
+    // Make sure vector is not borrowed while coercing which can have side-effects.
 
-        for arg in args {
-            let coerced_arg = arg.coerce_to_type(activation, value_type)?;
+    let mut coerced_args = Vec::new();
+    for arg in args {
+        let coerced_arg = arg.coerce_to_type(activation, value_type)?;
+        coerced_args.push(coerced_arg);
+    }
 
+    if let Some(mut vs) = this.as_vector_storage_mut(activation.gc()) {
+        for coerced_arg in coerced_args {
             vs.push(coerced_arg, activation)?;
         }
 
@@ -464,12 +472,21 @@ pub fn unshift<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
+    let value_type = if let Some(vs) = this.as_vector_storage() {
+        vs.value_type_for_coercion(activation)
+    } else {
+        return Ok(Value::Undefined);
+    };
+    // Make sure vector is not borrowed while coercing which can have side-effects.
+
+    let mut coerced_args = Vec::new();
+    for arg in args {
+        let coerced_arg = arg.coerce_to_type(activation, value_type)?;
+        coerced_args.push(coerced_arg);
+    }
+
     if let Some(mut vs) = this.as_vector_storage_mut(activation.gc()) {
-        let value_type = vs.value_type_for_coercion(activation);
-
-        for arg in args.iter().rev() {
-            let coerced_arg = arg.coerce_to_type(activation, value_type)?;
-
+        for coerced_arg in coerced_args.into_iter().rev() {
             vs.unshift(coerced_arg, activation)?;
         }
 
@@ -487,13 +504,17 @@ pub fn insert_at<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
+    let value_type = if let Some(vs) = this.as_vector_storage() {
+        vs.value_type_for_coercion(activation)
+    } else {
+        return Ok(Value::Undefined);
+    };
+    // Make sure vector is not borrowed while coercing which can have side-effects.
+
+    let index = args.get_i32(0);
+    let value = args.get_value(1).coerce_to_type(activation, value_type)?;
+
     if let Some(mut vs) = this.as_vector_storage_mut(activation.gc()) {
-        let index = args.get_i32(0);
-
-        let value_type = vs.value_type_for_coercion(activation);
-
-        let value = args.get_value(1).coerce_to_type(activation, value_type)?;
-
         vs.insert(index, value, activation)?;
     }
 
@@ -656,11 +677,9 @@ pub fn splice<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(mut vs) = this.as_vector_storage_mut(activation.gc()) {
+    let (value_type_for_coercion, start, end) = if let Some(vs) = this.as_vector_storage() {
         let start_len = args.get_i32(0);
         let delete_len = args.get_i32(1);
-        let value_type = vs.value_type();
-        let value_type_for_coercion = vs.value_type_for_coercion(activation);
 
         let start = vs.clamp_parameter_index(start_len);
         let end = max(
@@ -674,14 +693,24 @@ pub fn splice<'gc>(
                 vs.length(),
             ),
         );
-        let mut to_coerce = Vec::new();
 
-        for value in args[2..].iter() {
-            to_coerce.push(value.coerce_to_type(activation, value_type_for_coercion)?);
-        }
+        (vs.value_type_for_coercion(activation), start, end)
+    } else {
+        return Ok(Value::Undefined);
+    };
+    // Make sure vector is not borrowed while coercing which can have side-effects.
 
-        let new_vs =
-            VectorStorage::from_values(vs.splice(start..end, to_coerce)?, false, value_type);
+    let mut coerced_args = Vec::new();
+    for value in args[2..].iter() {
+        coerced_args.push(value.coerce_to_type(activation, value_type_for_coercion)?);
+    }
+
+    if let Some(mut vs) = this.as_vector_storage_mut(activation.gc()) {
+        let new_vs = VectorStorage::from_values(
+            vs.splice(start..end, coerced_args)?,
+            false,
+            vs.value_type(),
+        );
         let new_vector = VectorObject::from_vector(new_vs, activation);
 
         return Ok(new_vector.into());

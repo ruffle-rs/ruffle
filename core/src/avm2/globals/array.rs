@@ -455,9 +455,15 @@ pub fn _index_of<'gc>(
         let search_val = args.get_value(0);
         let from = args.get_i32(1);
 
+        let from_index = if from >= 0 {
+            from as usize
+        } else {
+            array.length().saturating_sub(-from as usize)
+        };
+
         for (i, val) in array.iter().enumerate() {
             let val = resolve_array_hole(activation, this, i, val)?;
-            if i >= from as usize && val == search_val {
+            if i >= from_index && val == search_val {
                 return Ok(i.into());
             }
         }
@@ -658,13 +664,15 @@ pub fn splice<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    let Some(mut array_storage) = this.as_array_storage_mut(activation.gc()) else {
+    let Some(array_object) = this.as_array_object() else {
         return Ok(Value::Undefined);
     };
-    let array_length = array_storage.length();
+
     let Some(start) = args.get_optional(0) else {
         return Ok(Value::Undefined);
     };
+
+    let array_length = array_object.storage().length();
 
     let actual_start = resolve_index(activation, start, array_length)?;
     let delete_count = args
@@ -678,11 +686,17 @@ pub fn splice<'gc>(
     // FIXME Flash does not iterate over those elements like we do, it's too
     //   inefficient. Flash probably iterates through set properties only.
     for i in actual_start..array_length {
-        let item = array_storage.get(i);
-        array_storage.set(i, resolve_array_hole(activation, this, i, item)?);
+        let item = array_object.storage().get(i);
+        let resolved = resolve_array_hole(activation, this, i, item)?;
+        array_object.storage_mut(activation.gc()).set(i, resolved);
     }
 
-    let ret = array_storage.splice(actual_start, delete_count as usize, args_slice);
+    let ret = array_object.storage_mut(activation.gc()).splice(
+        actual_start,
+        delete_count as usize,
+        args_slice,
+    );
+
     Ok(build_array(activation, ret))
 }
 

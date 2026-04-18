@@ -2,6 +2,9 @@ preferences-dialog = Подешавања Ruffle-а
 preference-locked-by-cli = Само за читање (подешава се помоћу командне линије)
 graphics-backend = Графички бекенд систем
 graphics-backend-default = Подразумевано
+graphics-power = Преференција снаге
+graphics-power-low = Ниско (нпр. iGPU)
+graphics-power-high = Високо (нпр. GPU)
 language = Језик
 audio-output-device = Аудио излазни уређај
 audio-output-device-default = Системска подразумевана вредност
@@ -17,7 +20,7 @@ storage-backend-memory = Памћење
 theme = Тема
 theme-system = Системска подразумевана вредност
 theme-light = Светла
-# See for context https://github.com/FeralInteractive/gamemode
+theme-dark = Тамна
 gamemode-default = Подразумевано
 # See for context https://wiki.archlinux.org/title/Input_method
 ime-enabled = Метод уноса

@@ -1,5 +1,5 @@
 use lru::LruCache;
-use naga_agal::{SamplerConfig, VertexAttributeFormat};
+use naga_agal::{AgalError, ParsedBytecode, SamplerConfig, VertexAttributeFormat};
 use ruffle_render::backend::ShaderModule;
 use std::{
     borrow::Cow,
@@ -13,9 +13,9 @@ use super::MAX_VERTEX_ATTRIBUTES;
 use crate::descriptors::Descriptors;
 
 pub struct ShaderPairAgal {
-    vertex_bytecode: Vec<u8>,
+    vertex_shader: ParsedBytecode,
 
-    fragment_bytecode: Vec<u8>,
+    fragment_shader: ParsedBytecode,
     fragment_sampler_configs: [Option<SamplerConfig>; 8],
     // Caches compiled wgpu shader modules. The cache key represents all of the data
     // that we need to pass to `naga_agal::agal_to_naga` to compile a shader.
@@ -31,17 +31,18 @@ pub struct CompiledShaderProgram {
 }
 
 impl ShaderPairAgal {
-    pub fn new(vertex_bytecode: Vec<u8>, fragment_bytecode: Vec<u8>) -> Self {
-        let fragment_sampler_configs =
-            naga_agal::extract_sampler_configs(&fragment_bytecode).unwrap();
+    pub fn new(vertex_bytecode: Vec<u8>, fragment_bytecode: Vec<u8>) -> Result<Self, AgalError> {
+        let vertex_shader = naga_agal::parse_bytecode(&vertex_bytecode)?;
+        let fragment_shader = naga_agal::parse_bytecode(&fragment_bytecode)?;
+        let fragment_sampler_configs = naga_agal::extract_sampler_configs(&fragment_shader)?;
 
-        Self {
-            vertex_bytecode,
-            fragment_bytecode,
+        Ok(Self {
+            vertex_shader,
+            fragment_shader,
             fragment_sampler_configs,
             // TODO - figure out a good size for this cache.
             compiled: RefCell::new(LruCache::new(NonZeroUsize::new(2).unwrap())),
-        }
+        })
     }
 
     pub fn fragment_sampler_configs(&self) -> &[Option<SamplerConfig>; 8] {
@@ -57,12 +58,8 @@ impl ShaderPairAgal {
         RefMut::map(compiled, |compiled| {
             // TODO: Figure out a way to avoid the clone when we have a cache hit
             compiled.get_or_insert_mut(data.clone(), || {
-                let vertex_naga_module = naga_agal::agal_to_naga(
-                    &self.vertex_bytecode,
-                    &data.vertex_attributes,
-                    &data.sampler_configs,
-                )
-                .unwrap();
+                let vertex_naga_module =
+                    naga_agal::agal_to_naga(&self.vertex_shader, &data.vertex_attributes).unwrap();
                 let vertex_module =
                     descriptors
                         .device
@@ -71,12 +68,9 @@ impl ShaderPairAgal {
                             source: wgpu::ShaderSource::Naga(Cow::Owned(vertex_naga_module)),
                         });
 
-                let fragment_naga_module = naga_agal::agal_to_naga(
-                    &self.fragment_bytecode,
-                    &data.vertex_attributes,
-                    &data.sampler_configs,
-                )
-                .unwrap();
+                let fragment_naga_module =
+                    naga_agal::agal_to_naga(&self.fragment_shader, &data.vertex_attributes)
+                        .unwrap();
                 let fragment_module =
                     descriptors
                         .device
@@ -162,7 +156,6 @@ pub enum ShaderTextureInfo {
 
 #[derive(Hash, Eq, PartialEq, Clone)]
 pub struct ShaderCompileData {
-    pub sampler_configs: [SamplerConfig; 8],
     pub vertex_attributes: [Option<VertexAttributeFormat>; MAX_VERTEX_ATTRIBUTES],
     pub texture_infos: [Option<ShaderTextureInfo>; 8],
 }

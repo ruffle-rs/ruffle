@@ -6,15 +6,15 @@ use crate::avm2::Namespace;
 use crate::avm2::QName;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{
-    Error1014Type, make_error_1014, make_error_1053, make_error_1059, make_error_1103,
-    make_error_1107, make_error_1110, make_error_1111,
+    Error1014Type, make_error_1014, make_error_1053, make_error_1059, make_error_1060,
+    make_error_1103, make_error_1107, make_error_1110, make_error_1111,
 };
 use crate::avm2::method::{Method, MethodAssociation, NativeMethodImpl};
 use crate::avm2::object::{ClassObject, Object, scriptobject_allocator};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::traits::{Trait, TraitKind};
 use crate::avm2::value::Value;
-use crate::avm2::vtable::VTable;
+use crate::avm2::vtable::{VTable, VTableInitError};
 use crate::context::UpdateContext;
 use crate::library::MovieLibrary;
 use crate::prelude::CharacterId;
@@ -379,9 +379,13 @@ impl<'gc> Class<'gc> {
         let c_class = Class(Gc::new(mc, c_class));
 
         i_class.link_with_c_class(mc, c_class);
-        i_class.init_vtable_with_interfaces(context, Box::new([]));
+        i_class
+            .init_vtable_with_interfaces(context, Box::new([]))
+            .expect("Specialized vector has no traits on itself");
 
-        c_class.init_vtable_with_interfaces(context, Box::new([]));
+        c_class
+            .init_vtable_with_interfaces(context, Box::new([]))
+            .expect("Specialized vector has no traits on itself");
 
         let write = unlock!(Gc::write(mc, this.0), ClassData, cell);
         write.borrow_mut().applications.insert(Some(param), i_class);
@@ -446,7 +450,7 @@ impl<'gc> Class<'gc> {
         let abc_instance = abc
             .instances
             .get(class_index as usize)
-            .ok_or("LoadError: Instance index not valid")?;
+            .ok_or_else(|| make_error_1060(activation, class_index, abc.instances.len()))?;
 
         let name = QName::from_abc_multiname(activation, unit, abc_instance.name)?;
 
@@ -553,12 +557,12 @@ impl<'gc> Class<'gc> {
         let abc_instance = abc
             .instances
             .get(class_index as usize)
-            .ok_or("LoadError: Instance index not valid")?;
+            .ok_or_else(|| make_error_1060(activation, class_index, abc.instances.len()))?;
 
         let abc_class = abc
             .classes
             .get(class_index as usize)
-            .ok_or("LoadError: Class index not valid")?;
+            .ok_or_else(|| make_error_1060(activation, class_index, abc.classes.len()))?;
 
         // FIXME loading name again is a little wasteful
         let name = QName::from_abc_multiname(activation, unit, abc_instance.name)?;
@@ -622,7 +626,7 @@ impl<'gc> Class<'gc> {
         let abc_instance = abc
             .instances
             .get(class_index as usize)
-            .ok_or("LoadError: Instance index not valid")?;
+            .ok_or_else(|| make_error_1060(activation, class_index, abc.instances.len()))?;
         self.load_abc_traits(activation, unit, &abc_instance.traits)
     }
 
@@ -637,7 +641,7 @@ impl<'gc> Class<'gc> {
         let abc_class = abc
             .classes
             .get(class_index as usize)
-            .ok_or("LoadError: Class index not valid")?;
+            .ok_or_else(|| make_error_1060(activation, class_index, abc.classes.len()))?;
         self.load_abc_traits(activation, unit, &abc_class.traits)
     }
 
@@ -867,11 +871,22 @@ impl<'gc> Class<'gc> {
         Ok(())
     }
 
+    /// Initialize the vtable and interfaces of this Class with an empty vtable
+    /// and no interfaces. This is useful for classes that are known to not have
+    /// any traits or interfaces.
+    pub fn init_empty_vtable(self, mc: &Mutation<'gc>) {
+        let write = Gc::write(mc, self.0);
+
+        let _ = unlock!(write, ClassData, all_interfaces).set(Box::new([]));
+        let _ = unlock!(write, ClassData, vtable).set(VTable::empty(mc));
+    }
+
     /// Initialize the vtable and interfaces of this Class.
     pub fn init_vtable(self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         let interfaces = self.gather_interfaces(activation)?;
 
-        self.init_vtable_with_interfaces(activation.context, interfaces);
+        self.init_vtable_with_interfaces(activation.context, interfaces)
+            .map_err(|e| e.into_avm(activation))?;
 
         Ok(())
     }
@@ -883,7 +898,7 @@ impl<'gc> Class<'gc> {
         self,
         context: &mut UpdateContext<'gc>,
         interfaces: Box<[Class<'gc>]>,
-    ) {
+    ) -> Result<(), VTableInitError> {
         if self.0.traits.get().is_none() {
             panic!(
                 "Attempted to initialize vtable on a class that did not have its traits loaded yet"
@@ -902,7 +917,9 @@ impl<'gc> Class<'gc> {
             None,
             self.0.super_class.map(|c| c.vtable()),
             context,
-        ));
+        )?);
+
+        Ok(())
     }
 
     /// Associate all the methods defined on this class with the specified
@@ -953,7 +970,7 @@ impl<'gc> Class<'gc> {
         method: &AbcMethod,
         body: &AbcMethodBody,
     ) -> Result<Class<'gc>, Error<'gc>> {
-        let name = translation_unit.pool_string(method.name.as_u30(), activation.strings())?;
+        let name = translation_unit.pool_string(method.name, activation)?;
 
         let load_trait = |trait_entry| -> Result<Trait<'gc>, Error<'gc>> {
             let loaded_trait = Trait::from_abc_trait(translation_unit, trait_entry, activation)?;
@@ -988,14 +1005,15 @@ impl<'gc> Class<'gc> {
     pub fn for_catch(
         activation: &mut Activation<'_, 'gc>,
         variable_name: QName<'gc>,
+        target_class: Option<Class<'gc>>,
     ) -> Result<Class<'gc>, Error<'gc>> {
         // Yes, the name of the class is the variable's name
         let mut i_class = ClassData::empty(variable_name);
         i_class.attributes = Cell::new(ClassAttributes::FINAL | ClassAttributes::SEALED);
-        // TODO make the slot typed
-        let domain = activation.avm2().playerglobals_domain;
-        let traits: Box<[_]> = Box::new([Trait::from_const(variable_name, None, None, domain)]);
+
+        let traits: Box<[_]> = Box::new([Trait::new_slot(variable_name, target_class)]);
         i_class.traits = OnceLock::from(traits);
+
         let i_class = Class(Gc::new(activation.gc(), i_class));
         i_class.init_vtable(activation)?;
 
@@ -1124,6 +1142,10 @@ impl<'gc> Class<'gc> {
             .all_interfaces
             .get()
             .expect("Interfaces not yet initialized!")
+    }
+
+    pub fn translation_unit(self) -> Option<TranslationUnit<'gc>> {
+        self.instance_init().map(|m| m.translation_unit())
     }
 
     /// Determine if this class is sealed (no dynamic properties)

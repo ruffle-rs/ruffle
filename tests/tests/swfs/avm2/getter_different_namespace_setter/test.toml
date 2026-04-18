@@ -1,0 +1,3 @@
+# Note: The p-code in the SWF included here is edited to ensure that we
+# properly test lookups with Multinames.
+num_frames = 1

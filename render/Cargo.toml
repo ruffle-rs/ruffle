@@ -15,7 +15,7 @@ ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf"}
 pixel_bender = { path = "pixel_bender"}
 tracing = { workspace = true }
-gif = "0.14.1"
+gif = "0.14.2"
 png = "0.18.1"
 flate2 = { workspace = true }
 smallvec = { workspace = true }
@@ -32,6 +32,7 @@ num-derive = { workspace = true }
 byteorder = { workspace = true }
 wgpu = { workspace = true, optional = true }
 indexmap = { workspace = true }
+naga-agal = { path = "naga-agal" }
 
 # This crate has a `compile_error!` on apple platforms
 [target.'cfg(not(target_vendor = "apple"))'.dependencies.renderdoc]

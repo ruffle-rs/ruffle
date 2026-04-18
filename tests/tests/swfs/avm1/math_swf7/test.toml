@@ -1,5 +1,4 @@
 num_frames = 1
-known_failure = true
 
 [approximations]
 epsilon = 1e-14 # roughly 50 ulps

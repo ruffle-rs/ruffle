@@ -38,6 +38,10 @@ pub struct SwfMovie {
     /// something else, like an loaded image, filler movie, or error state.
     is_movie: bool,
 
+    /// Whether this movie should be interpreted as AVM1, regardless of what the
+    /// header declares.
+    force_avm1: bool,
+
     /// Security sandbox type enforced for this movie.
     ///
     /// It absolutely cannot be changed after constructing
@@ -62,6 +66,7 @@ impl SwfMovie {
             encoding: swf::UTF_8,
             compressed_len: 0,
             is_movie: false,
+            force_avm1: false,
             sandbox_type,
         }
     }
@@ -89,6 +94,7 @@ impl SwfMovie {
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             is_movie: false,
+            force_avm1: false,
             sandbox_type,
         }
     }
@@ -114,6 +120,7 @@ impl SwfMovie {
             parameters: Vec::new(),
             encoding: swf::UTF_8,
             is_movie: false,
+            force_avm1: false,
             sandbox_type,
         }
     }
@@ -137,6 +144,7 @@ impl SwfMovie {
             encoding: swf::UTF_8,
             compressed_len: 0,
             is_movie: false,
+            force_avm1: false,
             sandbox_type,
         }
     }
@@ -160,6 +168,7 @@ impl SwfMovie {
             encoding,
             compressed_len,
             is_movie: true,
+            force_avm1: false,
             sandbox_type,
         };
         movie.append_parameters_from_url();
@@ -179,6 +188,7 @@ impl SwfMovie {
             encoding: swf::UTF_8,
             compressed_len: length,
             is_movie: false,
+            force_avm1: false,
             sandbox_type,
         };
         movie.append_parameters_from_url();
@@ -241,6 +251,10 @@ impl SwfMovie {
         self.url = url;
     }
 
+    pub fn set_force_avm1(&mut self) {
+        self.force_avm1 = true;
+    }
+
     /// Get the URL that triggered the fetch of this SWF.
     pub fn loader_url(&self) -> Option<&str> {
         self.loader_url.as_deref()
@@ -262,8 +276,18 @@ impl SwfMovie {
         self.header.uncompressed_len()
     }
 
-    pub fn is_action_script_3(&self) -> bool {
+    /// Whether the SWF's FileAttributes tag declares the SWF to be AVM2.
+    pub fn is_declared_action_script_3(&self) -> bool {
         self.header.is_action_script_3()
+    }
+
+    /// Whether this `SwfMovie` should be interpreted as AVM2.
+    ///
+    /// This usually is the same as `is_declared_action_script_3`, but will
+    /// return false if this is an AVM2 movie loaded by AVM1 (which we mark by
+    /// setting `force_avm1` to true).
+    pub fn is_action_script_3(&self) -> bool {
+        self.header.is_action_script_3() && !self.force_avm1
     }
 
     pub fn stage_size(&self) -> &Rectangle<Twips> {

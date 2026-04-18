@@ -1,0 +1,13 @@
+inside (10,10): -10000
+inside (29,29): -10000
+outside (0,0): -ffff01
+outside (9,9): -ffff01
+outside (30,30): -ffff01
+outside (49,49): -ffff01
+mat inside (10,10): -10000
+mat inside (29,29): -10000
+mat outside (0,0): -ffff01
+mat outside (9,9): -ffff01
+mat outside (30,30): -ffff01
+no-overlap inside clip (0,0): -ffff01
+no-overlap at source (40,40): -ffff01

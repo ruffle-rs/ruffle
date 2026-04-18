@@ -732,6 +732,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::GetDescendants { multiname } => self.op_get_descendants(*multiname),
                 Op::GetSlot { index } => self.op_get_slot(*index),
                 Op::SetSlot { index } => self.op_set_slot(*index),
+                Op::SetSlotCoerceI { index } => self.op_set_slot_coerce_i(*index),
                 Op::SetSlotNoCoerce { index } => self.op_set_slot_no_coerce(*index),
                 Op::SetGlobalSlot { index } => self.op_set_global_slot(*index),
                 Op::Construct { num_args } => self.op_construct(*num_args),
@@ -1067,7 +1068,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_call_method(
         &mut self,
-        index: u32,
+        index: usize,
         arg_count: u32,
         push_return_value: bool,
     ) -> Result<(), Error<'gc>> {
@@ -1663,7 +1664,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_get_slot(&mut self, index: u32) -> Result<(), Error<'gc>> {
+    fn op_get_slot(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let stack_top = self.stack.stack_top();
 
         let object = stack_top
@@ -1682,7 +1683,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_set_slot(&mut self, index: u32) -> Result<(), Error<'gc>> {
+    fn op_set_slot(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
         let object = self
             .pop_stack()
@@ -1695,7 +1696,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_set_slot_no_coerce(&mut self, index: u32) -> Result<(), Error<'gc>> {
+    fn op_set_slot_coerce_i(&mut self, index: usize) -> Result<(), Error<'gc>> {
+        let value = self.pop_stack();
+        let object = self
+            .pop_stack()
+            .null_check(self, None)?
+            .as_object()
+            .expect("Cannot set_slot on primitive");
+
+        let value = value.coerce_to_i32(self)?;
+
+        object.set_slot_no_coerce(index, value.into(), self.gc());
+
+        Ok(())
+    }
+
+    fn op_set_slot_no_coerce(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
         let object = self
             .pop_stack()
@@ -1708,7 +1724,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_set_global_slot(&mut self, index: u32) -> Result<(), Error<'gc>> {
+    fn op_set_global_slot(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
 
         self.global_scope()
@@ -1746,7 +1762,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
-    fn op_construct_slot(&mut self, index: u32, arg_count: u32) -> Result<(), Error<'gc>> {
+    fn op_construct_slot(&mut self, index: usize, arg_count: u32) -> Result<(), Error<'gc>> {
         let args = self.get_args(arg_count);
         let source = self
             .pop_stack()
@@ -2004,8 +2020,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value1 = self.pop_stack();
 
         let sum_value = match (value1, value2) {
-            // note: with not-yet-guaranteed assumption that Integer < 1<<28, this won't overflow.
-            (Value::Integer(n1), Value::Integer(n2)) => (n1 + n2).into(),
+            (Value::Integer(n1), Value::Integer(n2)) => {
+                if let Some(res) = n1.checked_add(n2) {
+                    res.into()
+                } else {
+                    ((n1 as i64 + n2 as i64) as f64).into()
+                }
+            }
             (Value::Number(n1), Value::Number(n2)) => (n1 + n2).into(),
             (Value::String(s), value2) => Value::String(AvmString::concat(
                 self.gc(),
@@ -2250,8 +2271,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value1 = self.pop_stack();
 
         let sub_value: Value<'gc> = match (value1, value2) {
-            // note: with not-yet-guaranteed assumption that Integer < 1<<28, this won't underflow.
-            (Value::Integer(n1), Value::Integer(n2)) => (n1 - n2).into(),
+            (Value::Integer(n1), Value::Integer(n2)) => {
+                if let Some(res) = n1.checked_sub(n2) {
+                    res.into()
+                } else {
+                    ((n1 as i64 - n2 as i64) as f64).into()
+                }
+            }
             (Value::Number(n1), Value::Number(n2)) => (n1 - n2).into(),
             _ => {
                 let value2 = value2.coerce_to_number(self)?;

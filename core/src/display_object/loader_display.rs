@@ -1,6 +1,7 @@
 use crate::avm1::Object as Avm1Object;
 use crate::avm2::Activation;
 use crate::avm2::StageObject as Avm2StageObject;
+use crate::backend::ui::MouseCursor;
 use crate::context::RenderContext;
 use crate::context::UpdateContext;
 use crate::display_object::TInteractiveObject;
@@ -201,6 +202,10 @@ impl<'gc> TInteractiveObject<'gc> for LoaderDisplay<'gc> {
             }
         }
         Avm2MousePick::Miss
+    }
+
+    fn mouse_cursor(self, _context: &mut UpdateContext<'gc>) -> MouseCursor {
+        MouseCursor::Arrow
     }
 }
 

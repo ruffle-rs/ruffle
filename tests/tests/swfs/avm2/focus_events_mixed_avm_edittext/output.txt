@@ -1,0 +1,49 @@
+mouseFocusChange: [object TextField]
+Selection.onSetFocus: undefined undefined
+focusIn - Target: as3Input1 relatedObject: null
+mouseFocusChange: null
+Selection.onSetFocus: undefined undefined
+focusOut - Target: as3Input1 relatedObject: null
+input_txt1.onSetFocus: undefined
+Selection.onSetFocus: undefined input1_txt
+input_txt1.onKillFocus: undefined
+Selection.onSetFocus: input1_txt undefined
+focusIn - Target: buttonMc relatedObject: null
+mouseFocusChange: null
+selectable_txt.onSetFocus: undefined
+Selection.onSetFocus: undefined selectable_txt
+focusOut - Target: buttonMc relatedObject: null
+selectable_txt.onKillFocus: undefined
+Selection.onSetFocus: selectable_txt undefined
+focusIn - Target: as3Input2 relatedObject: null
+mouseFocusChange: [object TextField]
+Selection.onSetFocus: undefined undefined
+focusOut - Target: as3Input2 relatedObject: as3Input1
+focusIn - Target: as3Input1 relatedObject: as3Input2
+mouseFocusChange: null
+input_txt1.onSetFocus: undefined
+Selection.onSetFocus: undefined input1_txt
+focusOut - Target: as3Input1 relatedObject: null
+input_txt1.onKillFocus: undefined
+Selection.onSetFocus: input1_txt undefined
+mouseFocusChange: [object MovieClip]
+mouseFocusChange: [object TextField]
+Selection.onSetFocus: undefined undefined
+focusIn - Target: as3Input1 relatedObject: null
+keyFocusChange: [object TextField]
+Selection.onSetFocus: undefined undefined
+focusOut - Target: as3Input1 relatedObject: as3Input2
+focusIn - Target: as3Input2 relatedObject: as3Input1
+keyFocusChange: null
+input_txt1.onSetFocus: undefined
+Selection.onSetFocus: undefined input1_txt
+focusOut - Target: as3Input2 relatedObject: null
+input_txt1.onKillFocus: undefined
+Selection.onSetFocus: input1_txt undefined
+input_txt1.onSetFocus: undefined
+Selection.onSetFocus: undefined input1_txt
+input_txt1.onKillFocus: input2_txt
+input_txt2.onSetFocus: input1_txt
+Selection.onSetFocus: input1_txt input2_txt
+input_txt2.onKillFocus: undefined
+Selection.onSetFocus: input2_txt undefined

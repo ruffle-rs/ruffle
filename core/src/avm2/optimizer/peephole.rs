@@ -8,15 +8,11 @@ use std::collections::HashSet;
 pub fn preprocess_peephole(ops: &[Cell<Op<'_>>]) {
     for (i, op) in ops.iter().enumerate() {
         match op.get() {
-            Op::Jump { offset } => {
-                if offset == i + 1 {
-                    op.set(Op::Nop);
-                }
+            Op::Jump { offset } if offset == i + 1 => {
+                op.set(Op::Nop);
             }
-            Op::IfTrue { offset } | Op::IfFalse { offset } => {
-                if offset == i + 1 {
-                    op.set(Op::Pop);
-                }
+            Op::IfTrue { offset } | Op::IfFalse { offset } if offset == i + 1 => {
+                op.set(Op::Pop);
             }
             _ => {}
         }
@@ -40,20 +36,18 @@ pub fn postprocess_peephole(
             | Op::DecLocal { index }
             | Op::DecLocalI { index }
             | Op::IncLocal { index }
-            | Op::IncLocalI { index } => {
-                if index == 0 {
-                    sets_local_0 = true;
-                    break;
-                }
+            | Op::IncLocalI { index }
+                if index == 0 =>
+            {
+                sets_local_0 = true;
+                break;
             }
             Op::HasNext2 {
                 object_register,
                 index_register,
-            } => {
-                if object_register == 0 || index_register == 0 {
-                    sets_local_0 = true;
-                    break;
-                }
+            } if object_register == 0 || index_register == 0 => {
+                sets_local_0 = true;
+                break;
             }
 
             _ => {}
@@ -91,11 +85,11 @@ pub fn postprocess_peephole(
                 // Remove CoerceB before IfTrue, IfFalse, and Not
                 last_op.set(Op::Nop);
             }
-            (_, _, Op::GetScopeObject { index: 0 }) => {
+            (_, _, Op::GetScopeObject { index: 0 })
+                if simple_scope_op_positions.is_some() && !sets_local_0 =>
+            {
                 // Replace `getscopeobject 0` with `getlocal 0` if possible
-                if simple_scope_op_positions.is_some() && !sets_local_0 {
-                    current_op.set(Op::GetLocal { index: 0 })
-                }
+                current_op.set(Op::GetLocal { index: 0 })
             }
             (Some(last_op), Some(Op::Dup), Op::SetLocal { index }) => {
                 // Dup+SetLocal becomes Nop+StoreLocal

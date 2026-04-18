@@ -9,11 +9,12 @@ use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapRawData;
 use crate::context::RenderContext;
 use gc_arena::{Collect, Gc, GcWeak};
+use naga_agal::AgalError;
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::{
     BufferUsage, Context3D, Context3DBlendFactor, Context3DCommand, Context3DCompareMode,
-    Context3DTextureFormat, Context3DTriangleFace, Context3DVertexBufferFormat, ProgramType,
-    Texture,
+    Context3DStencilAction, Context3DTextureFormat, Context3DTriangleFace,
+    Context3DVertexBufferFormat, ProgramType, Texture,
 };
 use ruffle_render::commands::CommandHandler;
 use std::cell::Cell;
@@ -203,14 +204,14 @@ impl<'gc> Context3DObject<'gc> {
         program: Program3DObject<'gc>,
         vertex_shader_agal: Vec<u8>,
         fragment_shader_agal: Vec<u8>,
-    ) {
+    ) -> Result<(), AgalError> {
         self.with_context_3d(|ctx| {
-            ctx.process_command(Context3DCommand::UploadShaders {
-                module: program.shader_module_handle(),
+            ctx.upload_shaders(
+                program.shader_module_handle(),
                 vertex_shader_agal,
                 fragment_shader_agal,
-            })
-        });
+            )
+        })
     }
 
     pub fn set_program(self, program: Option<Program3DObject<'gc>>) {
@@ -455,6 +456,40 @@ impl<'gc> Context3DObject<'gc> {
     pub(crate) fn set_scissor_rectangle(self, rect: Option<Rectangle<Twips>>) {
         self.with_context_3d(|ctx| {
             ctx.process_command(Context3DCommand::SetScissorRectangle { rect })
+        });
+    }
+
+    pub(crate) fn set_stencil_actions(
+        self,
+        triangle_face: Context3DTriangleFace,
+        compare_mode: Context3DCompareMode,
+        on_both_pass: Context3DStencilAction,
+        on_depth_fail: Context3DStencilAction,
+        on_depth_pass_stencil_fail: Context3DStencilAction,
+    ) {
+        self.with_context_3d(|ctx| {
+            ctx.process_command(Context3DCommand::SetStencilActions {
+                triangle_face,
+                compare_mode,
+                on_both_pass,
+                on_depth_fail,
+                on_depth_pass_stencil_fail,
+            })
+        });
+    }
+
+    pub(crate) fn set_stencil_reference_value(
+        self,
+        reference_value: u32,
+        read_mask: u32,
+        write_mask: u32,
+    ) {
+        self.with_context_3d(|ctx| {
+            ctx.process_command(Context3DCommand::SetStencilReferenceValue {
+                reference_value,
+                read_mask,
+                write_mask,
+            })
         });
     }
 }

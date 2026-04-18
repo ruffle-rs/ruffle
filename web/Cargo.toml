@@ -35,7 +35,7 @@ console_error_panic_hook = { version = "0.1.7", optional = true }
 slotmap = { workspace = true }
 js-sys = { workspace = true }
 tracing = { workspace = true, features = ["log"] }
-tracing-subscriber = { version = "0.3.22", default-features = false, features = ["registry"] }
+tracing-subscriber = { version = "0.3.23", default-features = false, features = ["registry"] }
 tracing-log = "0.2.0"
 tracing-wasm = { workspace = true }
 ruffle_render_canvas = { path = "../render/canvas", optional = true }
@@ -58,7 +58,7 @@ gloo-net =  { version = "0.6.0", default-features = false, features = ["websocke
 rfd = { workspace = true, features = ["file-handle-inner"] }
 wasm-streams = "0.5.0"
 futures = { workspace = true }
-zip = { version = "8.0.0", default-features = false }
+zip = { version = "8.5.1", default-features = false }
 
 [dependencies.ruffle_core]
 path = "../core"
@@ -73,7 +73,7 @@ features = [
     "EventTarget", "GainNode", "Headers", "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement",
     "HtmlInputElement", "HtmlTextAreaElement", "KeyboardEvent", "Location", "PageTransitionEvent", "PointerEvent",
     "Request", "RequestInit", "Response", "Storage", "WheelEvent", "Window", "ReadableStream", "RequestCredentials",
-    "Url", "WebGlContextEvent", "Clipboard", "FocusEvent", "ShadowRoot", "Gamepad", "GamepadButton", "OffscreenCanvas",
+    "Url", "WebGlContextEvent", "Clipboard", "FocusEvent", "FocusOptions", "ShadowRoot", "Gamepad", "GamepadButton", "OffscreenCanvas",
     "TextMetrics", "OffscreenCanvasRenderingContext2d"
 ]
 

@@ -4,7 +4,7 @@ use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
-use crate::html::{TextDisplay, TextFormat};
+use crate::html::TextFormat;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_common::utils::HasPrefixField;
@@ -19,10 +19,7 @@ pub fn textformat_allocator<'gc>(
         activation.gc(),
         TextFormatObjectData {
             base: ScriptObjectData::new(class),
-            text_format: RefCell::new(TextFormat {
-                display: Some(TextDisplay::Block),
-                ..Default::default()
-            }),
+            text_format: RefCell::new(Default::default()),
         },
     ))
     .into())

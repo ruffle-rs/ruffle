@@ -307,6 +307,10 @@ impl<'gc> LoadManager<'gc> {
         request: Request,
         importer_movie: MovieClip<'gc>,
     ) -> OwnedFuture<(), Error> {
+        // TODO: Observe more closely how this should behave in AVM2.
+        // It looks like AVM2 is more strict than AVM1 regarding when
+        // something is not a valid import, and doesn't continue
+        // executing when that is the case(?).
         let player = uc.player_handle();
         let importer_movie = MovieClipHandle::stash(uc, importer_movie);
 
@@ -314,42 +318,44 @@ impl<'gc> LoadManager<'gc> {
             let fetch = player.lock().unwrap().fetch(request, FetchReason::LoadSwf);
 
             match wait_for_full_response(fetch).await {
+                // TODO: In some cases, if the fetched url is a directory,
+                // FP will ignore it and continue to execute the movie.
                 Ok((body, url, _status, _redirected)) => {
                     let content_type = ContentType::sniff(&body);
                     tracing::info!("Loading imported movie: {:?}", url);
-                    match content_type {
-                        ContentType::Swf => {
+
+                    player.lock().unwrap().mutate_with_update_context(|uc| {
+                        let importer_movie = importer_movie.fetch(uc);
+
+                        if matches!(content_type, ContentType::Swf) {
                             let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))
                                 .expect("Could not load movie");
 
-                            player.lock().unwrap().mutate_with_update_context(|uc| {
-                                let movie = Gc::new(uc.gc(), movie);
-                                let importer_movie = importer_movie.fetch(uc);
-                                let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
+                            let movie = Gc::new(uc.gc(), movie);
 
-                                clip.set_cur_preload_frame(0);
-                                let mut execution_limit = ExecutionLimit::none();
+                            let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
 
-                                tracing::debug!("Preloading swf to run exports {:?}", url);
+                            clip.set_cur_preload_frame(0);
+                            let mut execution_limit = ExecutionLimit::none();
 
-                                let res = clip.preload(uc, &mut execution_limit);
-                                tracing::debug!(
-                                    "Preloaded swf to run exports result {:?} {}",
-                                    url,
-                                    res
-                                );
-                                importer_movie.finish_importing();
-                            });
-                            Ok(())
-                        }
-                        _ => {
+                            tracing::debug!("Preloading swf to run exports {:?}", url);
+
+                            let res = clip.preload(uc, &mut execution_limit);
+                            tracing::debug!(
+                                "Preloaded swf to run exports result {:?} {}",
+                                url,
+                                res
+                            );
+                        } else {
                             tracing::warn!(
                                 "Unsupported content type for ImportAssets: {:?}",
                                 content_type
                             );
-                            Ok(())
                         }
-                    }
+
+                        importer_movie.finish_importing();
+                    });
+                    Ok(())
                 }
                 Err(e) => Err(Error::FetchError(format!(
                     "Could not fetch: {:?} because {:?}",
@@ -664,9 +670,13 @@ impl<'gc> MovieLoader<'gc> {
                     if !mc.movie().is_action_script_3() {
                         mc.avm1_unload(uc);
 
-                        // Clear deletable properties on the target before loading
-                        // Properties written during the subsequent onLoad events will persist
-                        if let Some(clip_object) = mc.object1() {
+                        // Clear deletable properties on the target before loading.
+                        // Properties written during the subsequent onLoad events will persist.
+                        // Note: skip this step when we can't execute code (swf_version is 0).
+                        //   This will happen in case we're replacing an error movie.
+                        if let Some(clip_object) = mc.object1()
+                            && mc.swf_version() > 0
+                        {
                             let mut activation = Activation::from_nothing(
                                 uc,
                                 ActivationIdentifier::root("unknown"),
@@ -1049,7 +1059,11 @@ pub fn load_form_into_load_vars<'gc>(
                     );
                 }
                 Err(response) => {
-                    // TODO: Log "Error opening URL" trace similar to the Flash Player?
+                    tracing::error!(
+                        "Error during LoadVars load of {:?}: {:?}",
+                        response.url,
+                        response.error
+                    );
 
                     let status_code = if let Error::HttpNotOk(_, status_code, _, _) = response.error
                     {
@@ -1120,8 +1134,12 @@ pub fn load_stylesheet<'gc>(
                         ExecutionReason::Special,
                     );
                 }
-                Err(_) => {
-                    // TODO: Log "Error opening URL" trace similar to the Flash Player?
+                Err(response) => {
+                    tracing::error!(
+                        "Error during AVM1 stylesheet load of {:?}: {:?}",
+                        response.url,
+                        response.error
+                    );
 
                     let _ = that.call_method(
                         istr!("onLoad"),
@@ -1334,7 +1352,7 @@ pub fn load_sound_avm1<'gc>(
                         .context
                         .audio
                         .get_sound_duration(handle)
-                        .map(|d| d.round() as u32);
+                        .map(|d| d.as_millis().round() as u32);
                     sound.set_duration(duration);
                     Ok(())
                 })
@@ -1411,7 +1429,13 @@ pub fn load_sound_avm2<'gc>(
                         Avm2EventObject::bare_default_event(activation.context, "complete");
                     Avm2::dispatch_event(activation.context, complete_evt, sound_object);
                 }
-                Err(_err) => {
+                Err(response) => {
+                    tracing::error!(
+                        "Error during AVM2 sound load of {:?}: {:?}",
+                        response.url,
+                        response.error
+                    );
+
                     let mut activation = Avm2Activation::from_nothing(uc);
 
                     // FIXME: Match the exact error message generated by Flash.
@@ -1478,12 +1502,20 @@ pub fn load_netstream<'gc>(
 
                 Ok(())
             }
-            Err(response) => player.lock().unwrap().update(|uc| {
-                let stream = stream.fetch(uc);
+            Err(response) => {
+                tracing::error!(
+                    "Error during netstream load of {:?}: {:?}",
+                    response.url,
+                    response.error
+                );
 
-                stream.report_error(response.error);
-                Ok(())
-            }),
+                player.lock().unwrap().update(|uc| {
+                    let stream = stream.fetch(uc);
+
+                    stream.report_error(response.error);
+                    Ok(())
+                })
+            }
         }
     })
 }
@@ -1577,10 +1609,17 @@ impl<'gc> MovieLoader<'gc> {
         };
 
         let movie = match sniffed_type {
-            ContentType::Swf => Gc::new(
-                uc.gc(),
-                SwfMovie::from_data(data, url.clone(), loader_url.clone())?,
-            ),
+            ContentType::Swf => {
+                let mut movie = SwfMovie::from_data(data, url.clone(), loader_url.clone())?;
+
+                if matches!(vm_data, MovieLoaderVMData::Avm1 { .. }) {
+                    // If AVM1 loads a SWF, that SWF is always interpreted as
+                    // AVM1, regardless of what it declares in its header.
+                    movie.set_force_avm1();
+                }
+
+                Gc::new(uc.gc(), movie)
+            }
             ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
                 Gc::new(uc.gc(), SwfMovie::from_loaded_image(url.clone(), length))
             }

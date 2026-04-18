@@ -128,6 +128,14 @@ pub fn external_interface_avm2(
 
             player_locked.call_internal_interface("freestanding", ["Hello World!".into()]);
 
+            player_locked
+                .log_backend()
+                .avm_trace("Before calling `removeMe`");
+            let removed = player_locked.call_internal_interface("removeMe", []);
+            player_locked
+                .log_backend()
+                .avm_trace(&format!("After calling `removeMe`: {removed:?}",));
+
             let root: ExternalValue = vec![
                 "string".into(),
                 100.into(),

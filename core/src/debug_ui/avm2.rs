@@ -261,11 +261,14 @@ impl Avm2ObjectWindow {
                 ui.text_edit_singleline(&mut name.local_name().to_string().as_str());
                 ui.end_row();
 
-                if let Some(tuint) = class.translation_unit() {
-                    ui.label("Movie");
-                    open_movie_button(ui, &mut *activation.context, tuint.movie(), messages);
-                    ui.end_row();
-                }
+                ui.label("Movie");
+                open_movie_button(
+                    ui,
+                    &mut *activation.context,
+                    class.translation_unit().movie(),
+                    messages,
+                );
+                ui.end_row();
 
                 ui.label("Super Chain");
                 ui.vertical(|ui| {

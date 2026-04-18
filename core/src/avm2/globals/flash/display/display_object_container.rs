@@ -512,12 +512,8 @@ pub fn get_objects_under_point<'gc>(
     // FIXME: different result at from_shumway/hittesting/hittesting "two-layer button".
 
     let point = args.get_object(activation, 0, "point")?;
-    let x = point
-        .get_slot(point_slots::X)
-        .coerce_to_number(activation)?;
-    let y = point
-        .get_slot(point_slots::Y)
-        .coerce_to_number(activation)?;
+    let x = point.get_slot(point_slots::X).as_f64();
+    let y = point.get_slot(point_slots::Y).as_f64();
 
     let point = Point {
         x: Twips::from_pixels(x),

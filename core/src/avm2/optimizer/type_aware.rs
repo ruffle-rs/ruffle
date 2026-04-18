@@ -606,10 +606,15 @@ pub fn type_aware_optimize<'gc>(
         .body()
         .expect("Cannot verify non-native method without body!");
 
-    let this_class = method.bound_class();
+    // We use the method's bound class as the receiver type. If the method has
+    // no bound class (i.e. it is a freestanding method), then its receiver can
+    // be any value except `undefined` or `null`. The type that most closely
+    // matches this is `Object`, which can represent any value except for
+    // `undefined`, so we use it.
+    let this_class = method.bound_class().unwrap_or(types.object);
 
     let mut this_value = OptValue::any();
-    this_value.class = this_class;
+    this_value.class = Some(this_class);
     this_value.not_null = true;
 
     let argument_types = resolved_parameters
@@ -1403,7 +1408,7 @@ fn abstract_interpret_ops<'gc>(
                     return Err(make_error_1026(
                         activation,
                         slot_id + 1,
-                        Some(vtable.default_slots().len()),
+                        Some(vtable.slot_count()),
                         Some(class),
                     ));
                 };
@@ -1434,7 +1439,7 @@ fn abstract_interpret_ops<'gc>(
                     return Err(make_error_1026(
                         activation,
                         slot_id + 1,
-                        Some(vtable.default_slots().len()),
+                        Some(vtable.slot_count()),
                         Some(class),
                     ));
                 };
@@ -1446,6 +1451,9 @@ fn abstract_interpret_ops<'gc>(
                 // Skip the coercion when possible
                 if set_value.matches_type(resolved_value_class) {
                     optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
+                } else if resolved_value_class.is_some_and(|c| c.is_builtin_int()) {
+                    // Special case for integer coercion, for performance
+                    optimize_op_to!(Op::SetSlotCoerceI { index: slot_id });
                 }
             }
             Op::GetPropertyStatic { multiname } => {
@@ -1547,6 +1555,9 @@ fn abstract_interpret_ops<'gc>(
 
                                 if set_value.matches_type(resolved_value_class) {
                                     optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
+                                } else if resolved_value_class.is_some_and(|c| c.is_builtin_int()) {
+                                    // Special case for integer coercion, for performance
+                                    optimize_op_to!(Op::SetSlotCoerceI { index: slot_id });
                                 } else {
                                     optimize_op_to!(Op::SetSlot { index: slot_id });
                                 }
@@ -1602,6 +1613,9 @@ fn abstract_interpret_ops<'gc>(
 
                             if set_value.matches_type(resolved_value_class) {
                                 optimize_op_to!(Op::SetSlotNoCoerce { index: slot_id });
+                            } else if resolved_value_class.is_some_and(|c| c.is_builtin_int()) {
+                                // Special case for integer coercion, for performance
+                                optimize_op_to!(Op::SetSlotCoerceI { index: slot_id });
                             } else {
                                 optimize_op_to!(Op::SetSlot { index: slot_id });
                             }
@@ -2116,6 +2130,7 @@ fn abstract_interpret_ops<'gc>(
             | Op::ConstructSlot { .. }
             | Op::GetScriptGlobals { .. }
             | Op::PopJump { .. }
+            | Op::SetSlotCoerceI { .. }
             | Op::SetSlotNoCoerce { .. } => unreachable!("Custom ops should not be encountered"),
         }
     }
@@ -2279,6 +2294,7 @@ fn optimize_call_property<'gc>(
                 let return_type = method.resolved_return_type();
                 return Ok(Some((result_op, return_type)));
             }
+            #[allow(clippy::collapsible_match)]
             Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
                 // Don't optimize this for `callpropvoid`
                 if push_return_value {

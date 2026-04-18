@@ -34,7 +34,9 @@ pub fn create_class<'gc>(
 
     // `global` classes have no interfaces, so use `init_vtable_with_interfaces`
     // and pass an empty list
-    class.init_vtable_with_interfaces(activation.context, Box::new([]));
+    class
+        .init_vtable_with_interfaces(activation.context, Box::new([]))
+        .map_err(|e| e.into_avm(activation))?;
 
     class.mark_builtin_type(BuiltinType::ScriptTraits);
 

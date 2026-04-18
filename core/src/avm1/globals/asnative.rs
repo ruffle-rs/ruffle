@@ -22,6 +22,7 @@ pub fn asnative<'gc>(
         100 => Some(globals::method),
         101 => Some(globals::object::method),
         103 => Some(globals::date::method),
+        200 => Some(globals::math::method),
         1101 => Some(globals::drop_shadow_filter::method),
         1102 => Some(globals::blur_filter::method),
         1103 => Some(globals::glow_filter::method),

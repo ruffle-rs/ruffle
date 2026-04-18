@@ -12,7 +12,6 @@
 //! inline in the order that clips were originally created.
 
 use crate::avm2::{Avm2, EventObject};
-use crate::avm2_stub_method_context;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, MovieClip, TDisplayObject};
 use crate::loader::LoadManager;
@@ -125,13 +124,6 @@ pub fn run_inner_goto_frame<'gc>(
     initial_clip: MovieClip<'gc>,
 ) {
     if initial_clip.swf_version() <= 9 && initial_clip.movie().is_action_script_3() {
-        avm2_stub_method_context!(
-            context,
-            "flash.display.MovieClip",
-            "goto",
-            "with SWF 9 movie"
-        );
-
         // We skip the next `enter_frame` call, so that we will still run the framescripts
         // queued for our target frame.
         initial_clip.base().set_skip_next_enter_frame(true);

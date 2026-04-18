@@ -4,3 +4,15 @@ flash.display::Sprite
 Object
 Object
 flash.display::DisplayObjectContainer
+null
+null
+Object
+flash.display::MovieClip
+Object
+flash.display::Sprite
+Object
+Object
+flash.display::DisplayObjectContainer
+null
+null
+Object

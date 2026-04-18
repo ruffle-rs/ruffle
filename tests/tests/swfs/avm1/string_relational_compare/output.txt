@@ -1,0 +1,4 @@
+"A" < "B"
+true
+"\uFF61" < "\uD800\uDC02"
+true

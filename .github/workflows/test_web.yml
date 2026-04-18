@@ -35,7 +35,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        node_version: ["22", "24"]
+        node_version: ["24", "25"]
         os: [ubuntu-24.04, windows-2025]
 
     steps:
@@ -145,7 +145,7 @@ jobs:
           npm run build --workspace=ruffle-selfhosted
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: selfhosted-dist
           path: web/packages/selfhosted/dist
@@ -172,7 +172,7 @@ jobs:
           cache-dependency-path: web/package-lock.json
 
       - name: Download artifact
-        uses: actions/download-artifact@v7
+        uses: actions/download-artifact@v8
         with:
           name: selfhosted-dist
           path: web/packages/selfhosted/dist
@@ -197,7 +197,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        node_version: ["22", "24"]
+        node_version: ["24", "25"]
         os: [ubuntu-24.04, windows-2025]
 
     steps:

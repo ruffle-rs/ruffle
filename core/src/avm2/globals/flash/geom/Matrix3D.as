@@ -52,18 +52,18 @@ package flash.geom {
                 ty = pivotPoint.y;
                 tz = pivotPoint.z;
             }
-            var radian = degrees * Math.PI / 180;
-            var cos = Math.cos(radian);
-            var sin = Math.sin(radian);
-            var x = axis.x;
-            var y = axis.y;
-            var z = axis.z;
-            var x2 = x * x;
-            var y2 = y * y;
-            var z2 = z * z;
-            var ls = x2 + y2 + z2;
+            var radian:Number = degrees * Math.PI / 180;
+            var cos:Number = Math.cos(radian);
+            var sin:Number = Math.sin(radian);
+            var x:Number = axis.x;
+            var y:Number = axis.y;
+            var z:Number = axis.z;
+            var x2:Number = x * x;
+            var y2:Number = y * y;
+            var z2:Number = z * z;
+            var ls:Number = x2 + y2 + z2;
             if (ls != 0) {
-                var l = Math.sqrt(ls);
+                var l:Number = Math.sqrt(ls);
                 x /= l;
                 y /= l;
                 z /= l;
@@ -71,10 +71,11 @@ package flash.geom {
                 y2 /= ls;
                 z2 /= ls;
             }
-            var ccos = 1 - cos;
-            var m = new Matrix3D();
+            var ccos:Number = 1 - cos;
+            var m:Matrix3D = new Matrix3D();
 
-            var d = m.rawData;
+            // Modify the matrix's data in-place
+            var d:Vector.<Number> = m._rawData;
             d[0] = x2 + (y2 + z2) * cos;
             d[1] = x * y * ccos + z * sin;
             d[2] = x * z * ccos - y * sin;
@@ -87,7 +88,6 @@ package flash.geom {
             d[12] = (tx * (y2 + z2) - x * (ty * y + tz * z)) * ccos + (ty * z - tz * y) * sin;
             d[13] = (ty * (x2 + z2) - y * (tx * x + tz * z)) * ccos + (tz * x - tx * z) * sin;
             d[14] = (tz * (x2 + y2) - z * (tx * x + ty * y)) * ccos + (tx * y - ty * x) * sin;
-            m.rawData = d;
 
             this.append(m);
         }
@@ -118,28 +118,28 @@ package flash.geom {
 
             switch (row) {
                 case 0:
-                    vector3D.x = rawData[0];
-                    vector3D.y = rawData[4];
-                    vector3D.z = rawData[8];
-                    vector3D.w = rawData[12];
+                    vector3D.x = _rawData[0];
+                    vector3D.y = _rawData[4];
+                    vector3D.z = _rawData[8];
+                    vector3D.w = _rawData[12];
                     break;
                 case 1:
-                    vector3D.x = rawData[1];
-                    vector3D.y = rawData[5];
-                    vector3D.z = rawData[9];
-                    vector3D.w = rawData[13];
+                    vector3D.x = _rawData[1];
+                    vector3D.y = _rawData[5];
+                    vector3D.z = _rawData[9];
+                    vector3D.w = _rawData[13];
                     break;
                 case 2:
-                    vector3D.x = rawData[2];
-                    vector3D.y = rawData[6];
-                    vector3D.z = rawData[10];
-                    vector3D.w = rawData[14];
+                    vector3D.x = _rawData[2];
+                    vector3D.y = _rawData[6];
+                    vector3D.z = _rawData[10];
+                    vector3D.w = _rawData[14];
                     break;
                 case 3:
-                    vector3D.x = rawData[3];
-                    vector3D.y = rawData[7];
-                    vector3D.z = rawData[11];
-                    vector3D.w = rawData[15];
+                    vector3D.x = _rawData[3];
+                    vector3D.y = _rawData[7];
+                    vector3D.z = _rawData[11];
+                    vector3D.w = _rawData[15];
                     break;
             }
         }
@@ -223,8 +223,8 @@ package flash.geom {
 
         [Ruffle(NativeCallable)]
         public function transpose():void {
-            // Make a copy
-            var oRawData = this._rawData.AS3::concat();
+            // This makes a copy of this.rawData
+            var oRawData:Vector.<Number> = this.rawData;
             this._rawData[1] = oRawData[4];
             this._rawData[2] = oRawData[8];
             this._rawData[3] = oRawData[12];
@@ -302,13 +302,13 @@ package flash.geom {
         }
 
         public function prependTranslation(x:Number, y:Number, z:Number):void {
-            var m = new Matrix3D();
+            var m:Matrix3D = new Matrix3D();
             m.position = new Vector3D(x, y, z);
             this.prepend(m);
         }
 
         public function prependRotation(degrees:Number, axis:Vector3D, pivotPoint:Vector3D = null):void {
-            var m = new Matrix3D();
+            var m:Matrix3D = new Matrix3D();
             m.appendRotation(degrees, axis, pivotPoint);
             this.prepend(m);
         }
@@ -379,7 +379,7 @@ package flash.geom {
         }
 
         public function prependScale(xScale:Number, yScale:Number, zScale:Number):void {
-            var m = new Matrix3D();
+            var m:Matrix3D = new Matrix3D();
             m.appendScale(xScale, yScale, zScale);
             this.prepend(m);
         }
@@ -396,8 +396,9 @@ package flash.geom {
                 this.transpose();
             }
 
-            for (var i = 0; i < rawData.length; i++) {
-                vector[i + index] = _rawData[i];
+            var d:Vector.<Number> = this._rawData;
+            for (var i = 0; i < d.length; i++) {
+                vector[i + index] = d[i];
             }
 
             if (transpose) {
@@ -407,11 +408,13 @@ package flash.geom {
 
         [Ruffle(NativeCallable)]
         public function clone():Matrix3D {
-            return new Matrix3D(this.rawData);
+            // The constructor will make a copy of this._rawData
+            return new Matrix3D(this._rawData);
         }
 
         public function copyToMatrix3D(other:Matrix3D):void {
-            other.rawData = rawData;
+            // This makes a copy of this.rawData
+            other._rawData = this.rawData;
         }
 
         public function pointAt(pos:Vector3D, at:Vector3D = null, up:Vector3D = null):void {
@@ -441,12 +444,12 @@ package flash.geom {
 
             switch (orientationStyle) {
                 case Orientation3D.EULER_ANGLES:
-                    var cx = Math.cos(components[1].x);
-                    var cy = Math.cos(components[1].y);
-                    var cz = Math.cos(components[1].z);
-                    var sx = Math.sin(components[1].x);
-                    var sy = Math.sin(components[1].y);
-                    var sz = Math.sin(components[1].z);
+                    var cx:Number = Math.cos(components[1].x);
+                    var cy:Number = Math.cos(components[1].y);
+                    var cz:Number = Math.cos(components[1].z);
+                    var sx:Number = Math.sin(components[1].x);
+                    var sy:Number = Math.sin(components[1].y);
+                    var sz:Number = Math.sin(components[1].z);
 
                     _rawData[0] = cy * cz * scale[0];
                     _rawData[1] = cy * sz * scale[1];
@@ -467,10 +470,10 @@ package flash.geom {
                     break;
 
                 default:
-                    var x = components[1].x;
-                    var y = components[1].y;
-                    var z = components[1].z;
-                    var w = components[1].w;
+                    var x:Number = components[1].x;
+                    var y:Number = components[1].y;
+                    var z:Number = components[1].z;
+                    var w:Number = components[1].w;
 
                     if (orientationStyle == Orientation3D.AXIS_ANGLE) {
                         x *= Math.sin(w / 2);
@@ -587,16 +590,16 @@ package flash.geom {
         public function decompose(orientationStyle:String = "eulerAngles"):Vector.<Vector3D> {
             checkOrientation(orientationStyle);
 
-            var vec = new Vector.<Vector3D>([]);
-            var m = clone();
-            var mr = m.rawData;
+            var vec:Vector.<Vector3D> = new Vector.<Vector3D>([]);
+            // This makes a copy of this.rawData
+            var mr:Vector.<Number> = this.rawData;
 
-            var pos = new Vector3D(mr[12], mr[13], mr[14]);
+            var pos:Vector3D = new Vector3D(mr[12], mr[13], mr[14]);
             mr[12] = 0;
             mr[13] = 0;
             mr[14] = 0;
 
-            var scale = new Vector3D();
+            var scale:Vector3D = new Vector3D();
 
             scale.x = Math.sqrt(mr[0] * mr[0] + mr[1] * mr[1] + mr[2] * mr[2]);
             scale.y = Math.sqrt(mr[4] * mr[4] + mr[5] * mr[5] + mr[6] * mr[6]);
@@ -616,7 +619,7 @@ package flash.geom {
             mr[9] /= scale.z;
             mr[10] /= scale.z;
 
-            var rot = new Vector3D();
+            var rot:Vector3D = new Vector3D();
 
             switch (orientationStyle) {
                 case Orientation3D.AXIS_ANGLE:
@@ -684,8 +687,8 @@ package flash.geom {
         }
 
         public function invert():Boolean {
-            var d = determinant;
-            var invertable = Math.abs(d) > 0.00000000001;
+            var d:Number = this.determinant;
+            var invertable:Boolean = Math.abs(d) > 0.00000000001;
 
             if (invertable) {
                 d = 1 / d;

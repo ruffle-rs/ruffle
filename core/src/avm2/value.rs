@@ -19,7 +19,7 @@ use num_bigint::BigInt;
 use num_traits::{ToPrimitive, Zero};
 use ruffle_macros::istr;
 use std::mem::size_of;
-use swf::avm2::types::{DefaultValue as AbcDefaultValue, Index};
+use swf::avm2::types::DefaultValue as AbcDefaultValue;
 
 use super::class::Class;
 use super::e4x::E4XNode;
@@ -44,11 +44,15 @@ pub enum Value<'gc> {
     Undefined,
     Null,
     Bool(bool),
+
+    /// Numbers that are representable as ints are equivalent to
+    /// [`Value::Integer`]. See [`Value::normalize`] for details.
     Number(f64),
-    // note: this value should never reach +/- 1<<28; this is currently not enforced (TODO).
-    // Ruffle currently won't break if you break that invariant,
-    // but some FP compatibility edge cases depend on it, so we should do this at some point.
+
+    /// All integers are equivalent to [`Value::Number`].
+    /// See [`Value::normalize`] for details.
     Integer(i32),
+
     String(AvmString<'gc>),
     Object(Object<'gc>),
 }
@@ -57,18 +61,21 @@ pub enum Value<'gc> {
 const _: () = assert!(size_of::<Value<'_>>() <= 16);
 
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
+    #[inline(always)]
     fn from(string: AvmString<'gc>) -> Self {
         Value::String(string)
     }
 }
 
 impl<'gc> From<AvmAtom<'gc>> for Value<'gc> {
+    #[inline(always)]
     fn from(atom: AvmAtom<'gc>) -> Self {
         Value::String(atom.into())
     }
 }
 
 impl From<bool> for Value<'_> {
+    #[inline(always)]
     fn from(value: bool) -> Self {
         Value::Bool(value)
     }
@@ -78,50 +85,65 @@ impl<'gc, T> From<T> for Value<'gc>
 where
     Object<'gc>: From<T>,
 {
+    #[inline(always)]
     fn from(value: T) -> Self {
         Value::Object(Object::from(value))
     }
 }
 
 impl From<f64> for Value<'_> {
+    #[inline(always)]
     fn from(value: f64) -> Self {
         Value::Number(value)
     }
 }
 
 impl From<f32> for Value<'_> {
+    #[inline(always)]
     fn from(value: f32) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
 impl From<u8> for Value<'_> {
+    #[inline(always)]
     fn from(value: u8) -> Self {
         Value::Integer(i32::from(value))
     }
 }
 
 impl From<i8> for Value<'_> {
+    #[inline(always)]
     fn from(value: i8) -> Self {
         Value::Integer(i32::from(value))
     }
 }
 
 impl From<i16> for Value<'_> {
+    #[inline(always)]
     fn from(value: i16) -> Self {
         Value::Integer(i32::from(value))
     }
 }
 
 impl From<u16> for Value<'_> {
+    #[inline(always)]
     fn from(value: u16) -> Self {
         Value::Integer(i32::from(value))
     }
 }
 
 impl From<i32> for Value<'_> {
+    #[inline(always)]
     fn from(value: i32) -> Self {
-        if fits_in_value_integer_i32(value) {
+        Value::Integer(value)
+    }
+}
+
+impl From<u32> for Value<'_> {
+    #[inline(always)]
+    fn from(value: u32) -> Self {
+        if let Some(value) = value.to_i32() {
             Value::Integer(value)
         } else {
             Value::Number(value as f64)
@@ -129,19 +151,14 @@ impl From<i32> for Value<'_> {
     }
 }
 
-impl From<u32> for Value<'_> {
-    fn from(value: u32) -> Self {
-        if fits_in_value_integer_u32(value) {
-            Value::Integer(value as i32)
+impl From<usize> for Value<'_> {
+    #[inline(always)]
+    fn from(value: usize) -> Self {
+        if let Some(value) = value.to_i32() {
+            Value::Integer(value)
         } else {
             Value::Number(value as f64)
         }
-    }
-}
-
-impl From<usize> for Value<'_> {
-    fn from(value: usize) -> Self {
-        Value::Number(value as f64)
     }
 }
 
@@ -164,10 +181,6 @@ impl PartialEq for Value<'_> {
 
 fn fits_in_value_integer_i32(value: i32) -> bool {
     value < (1 << 28) && value >= -(1 << 28)
-}
-
-fn fits_in_value_integer_u32(value: u32) -> bool {
-    value < (1 << 28)
 }
 
 /// Strips leading whitespace.
@@ -459,57 +472,6 @@ pub fn string_to_f64(mut s: &WStr, swf_version: u8, strict: bool) -> Option<f64>
     Some(result)
 }
 
-pub fn abc_int<'gc>(
-    translation_unit: TranslationUnit<'gc>,
-    index: Index<i32>,
-) -> Result<i32, Error<'gc>> {
-    if index.0 == 0 {
-        return Ok(0);
-    }
-
-    translation_unit
-        .abc()
-        .constant_pool
-        .ints
-        .get(index.0 as usize - 1)
-        .cloned()
-        .ok_or_else(|| format!("Unknown int constant {}", index.0).into())
-}
-
-pub fn abc_uint<'gc>(
-    translation_unit: TranslationUnit<'gc>,
-    index: Index<u32>,
-) -> Result<u32, Error<'gc>> {
-    if index.0 == 0 {
-        return Ok(0);
-    }
-
-    translation_unit
-        .abc()
-        .constant_pool
-        .uints
-        .get(index.0 as usize - 1)
-        .cloned()
-        .ok_or_else(|| format!("Unknown uint constant {}", index.0).into())
-}
-
-pub fn abc_double<'gc>(
-    translation_unit: TranslationUnit<'gc>,
-    index: Index<f64>,
-) -> Result<f64, Error<'gc>> {
-    if index.0 == 0 {
-        return Ok(f64::NAN);
-    }
-
-    translation_unit
-        .abc()
-        .constant_pool
-        .doubles
-        .get(index.0 as usize - 1)
-        .cloned()
-        .ok_or_else(|| format!("Unknown double constant {}", index.0).into())
-}
-
 /// Retrieve a default value as an AVM2 `Value`.
 pub fn abc_default_value<'gc>(
     translation_unit: TranslationUnit<'gc>,
@@ -517,12 +479,14 @@ pub fn abc_default_value<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
     match default {
-        AbcDefaultValue::Int(i) => abc_int(translation_unit, i).map(|v| v.into()),
-        AbcDefaultValue::Uint(u) => abc_uint(translation_unit, u).map(|v| v.into()),
-        AbcDefaultValue::Double(d) => abc_double(translation_unit, d).map(|v| v.into()),
+        AbcDefaultValue::Int(i) => translation_unit.pool_int(activation, i).map(|v| v.into()),
+        AbcDefaultValue::Uint(u) => translation_unit.pool_uint(activation, u).map(|v| v.into()),
+        AbcDefaultValue::Double(d) => translation_unit
+            .pool_double(activation, d)
+            .map(|v| v.into()),
         AbcDefaultValue::String(s) => translation_unit
-            .pool_string(s.0, activation.strings())
-            .map(Into::into),
+            .pool_string(s, activation)
+            .map(|v| v.into()),
         AbcDefaultValue::True => Ok(true.into()),
         AbcDefaultValue::False => Ok(false.into()),
         AbcDefaultValue::Null => Ok(Value::Null),
@@ -730,25 +694,44 @@ impl<'gc> Value<'gc> {
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToNumber algorithm which appears to match AVM2.
+    ///
+    /// This function can be very hot in physics code, so we inline a fast-path
+    /// for `Value::Number` and `Value::Integer`, and fall back to a non-inlined
+    /// slow-path handling the rest of the cases if necessary.
     pub fn coerce_to_number(
         &self,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<f64, Error<'gc>> {
-        Ok(match self {
-            Value::Undefined => f64::NAN,
-            Value::Null => 0.0,
-            Value::Bool(true) => 1.0,
-            Value::Bool(false) => 0.0,
-            Value::Number(n) => *n,
-            Value::Integer(i) => *i as f64,
-            Value::String(s) => {
-                let swf_version = (*activation.context.root_swf).version();
-                string_to_f64(s, swf_version, true).unwrap_or_else(|| string_to_int(s, 0, true))
+        // Full coerce-to-number implementation. This is the slow-path.
+        #[inline(never)]
+        fn coerce_to_number_slow<'gc>(
+            value: &Value<'gc>,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<f64, Error<'gc>> {
+            Ok(match value {
+                Value::Undefined => f64::NAN,
+                Value::Null => 0.0,
+                Value::Bool(true) => 1.0,
+                Value::Bool(false) => 0.0,
+                Value::Integer(_) | Value::Number(_) => unreachable!("Handled by fast path"),
+                Value::String(s) => {
+                    let swf_version = activation.context.root_swf.version();
+                    string_to_f64(s, swf_version, true).unwrap_or_else(|| string_to_int(s, 0, true))
+                }
+                Value::Object(_) => value
+                    .coerce_to_primitive(Some(Hint::Number), activation)?
+                    .coerce_to_number(activation)?,
+            })
+        }
+
+        match self {
+            Value::Number(n) => Ok(*n),
+            Value::Integer(i) => Ok(*i as f64),
+            _ => {
+                // Fall back to slow path
+                coerce_to_number_slow(self, activation)
             }
-            Value::Object(_) => self
-                .coerce_to_primitive(Some(Hint::Number), activation)?
-                .coerce_to_number(activation)?,
-        })
+        }
     }
 
     /// Coerce the value to a 32-bit unsigned integer.
@@ -758,16 +741,35 @@ impl<'gc> Value<'gc> {
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToUint32 algorithm which appears to match AVM2.
+    ///
+    /// This function can be very hot, so we inline a fast-path for
+    /// `Value::Number` and `Value::Integer`, and fall back to a non-inlined
+    /// slow-path handling the rest of the cases if necessary.
     pub fn coerce_to_u32(&self, activation: &mut Activation<'_, 'gc>) -> Result<u32, Error<'gc>> {
-        Ok(match self {
-            Value::Integer(i) => *i as u32,
-            Value::Number(n) => f64_to_wrapping_u32(*n),
-            Value::Bool(b) => *b as u32,
-            Value::Undefined | Value::Null => 0,
-            Value::String(_) | Value::Object(_) => {
-                f64_to_wrapping_u32(self.coerce_to_number(activation)?)
+        // Full coerce-to-u32 implementation. This is the slow-path.
+        #[inline(never)]
+        fn coerce_to_u32_slow<'gc>(
+            value: &Value<'gc>,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<u32, Error<'gc>> {
+            Ok(match value {
+                Value::Integer(_) | Value::Number(_) => unreachable!("Handled by fast path"),
+                Value::Bool(b) => *b as u32,
+                Value::Undefined | Value::Null => 0,
+                Value::String(_) | Value::Object(_) => {
+                    f64_to_wrapping_u32(value.coerce_to_number(activation)?)
+                }
+            })
+        }
+
+        match self {
+            Value::Number(n) => Ok(f64_to_wrapping_u32(*n)),
+            Value::Integer(i) => Ok(*i as u32),
+            _ => {
+                // Fall back to slow path
+                coerce_to_u32_slow(self, activation)
             }
-        })
+        }
     }
 
     /// Coerce the value to a 32-bit signed integer.
@@ -777,16 +779,35 @@ impl<'gc> Value<'gc> {
     ///
     /// Numerical conversions occur according to ECMA-262 3rd Edition's
     /// ToInt32 algorithm which appears to match AVM2.
+    ///
+    /// This function can be very hot, so we inline a fast-path for
+    /// `Value::Number` and `Value::Integer`, and fall back to a non-inlined
+    /// slow-path handling the rest of the cases if necessary.
     pub fn coerce_to_i32(&self, activation: &mut Activation<'_, 'gc>) -> Result<i32, Error<'gc>> {
-        Ok(match self {
-            Value::Integer(i) => *i,
-            Value::Number(n) => f64_to_wrapping_i32(*n),
-            Value::Bool(b) => *b as i32,
-            Value::Undefined | Value::Null => 0,
-            Value::String(_) | Value::Object(_) => {
-                f64_to_wrapping_i32(self.coerce_to_number(activation)?)
+        // Full coerce-to-i32 implementation. This is the slow-path.
+        #[inline(never)]
+        fn coerce_to_i32_slow<'gc>(
+            value: &Value<'gc>,
+            activation: &mut Activation<'_, 'gc>,
+        ) -> Result<i32, Error<'gc>> {
+            Ok(match value {
+                Value::Integer(_) | Value::Number(_) => unreachable!("Handled by fast path"),
+                Value::Bool(b) => *b as i32,
+                Value::Undefined | Value::Null => 0,
+                Value::String(_) | Value::Object(_) => {
+                    f64_to_wrapping_i32(value.coerce_to_number(activation)?)
+                }
+            })
+        }
+
+        match self {
+            Value::Number(n) => Ok(f64_to_wrapping_i32(*n)),
+            Value::Integer(i) => Ok(*i),
+            _ => {
+                // Fall back to slow path
+                coerce_to_i32_slow(self, activation)
             }
-        })
+        }
     }
 
     /// Minimum number of digits after which numbers are formatted as
@@ -1156,7 +1177,7 @@ impl<'gc> Value<'gc> {
             }
             None => {
                 if let Some(object) = self.as_object() {
-                    object.init_property_local(multiname, value, activation)
+                    object.set_property_local(multiname, value, activation)
                 } else {
                     let instance_class = self.instance_class(activation);
 
@@ -1257,7 +1278,7 @@ impl<'gc> Value<'gc> {
     /// This method will panic if called on null or undefined.
     pub fn call_method(
         &self,
-        id: u32,
+        id: usize,
         arguments: &[Value<'gc>],
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1266,7 +1287,7 @@ impl<'gc> Value<'gc> {
 
     pub fn call_method_with_args(
         &self,
-        id: u32,
+        id: usize,
         arguments: FunctionArgs<'_, 'gc>,
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
@@ -1810,20 +1831,7 @@ impl<'gc> Value<'gc> {
             (Value::Number(_) | Value::Integer(_), Value::Number(_) | Value::Integer(_)) => {
                 let a = self.coerce_to_number(activation)?;
                 let b = other.coerce_to_number(activation)?;
-
-                if a.is_nan() || b.is_nan() {
-                    return Ok(false);
-                }
-
-                if a == b {
-                    return Ok(true);
-                }
-
-                if a.abs() == 0.0 && b.abs() == 0.0 {
-                    return Ok(true);
-                }
-
-                Ok(false)
+                Ok(a == b)
             }
             (Value::String(a), Value::String(b)) => Ok(a == b),
             (Value::Bool(a), Value::Bool(b)) => Ok(a == b),
@@ -1883,7 +1891,7 @@ impl<'gc> Value<'gc> {
                 let prim_other = other.coerce_to_primitive(Some(Hint::Number), activation)?;
 
                 if let (Value::String(s), Value::String(o)) = (&prim_self, &prim_other) {
-                    return Ok(Some(s.to_string().bytes().lt(o.to_string().bytes())));
+                    return Ok(Some(s.as_wstr() < o.as_wstr()));
                 }
 
                 let num_self = prim_self.coerce_to_number(activation)?;

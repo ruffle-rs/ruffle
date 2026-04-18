@@ -10,7 +10,7 @@ use crate::avm2::vtable::VTable;
 use crate::avm2::{Error, Multiname, QName};
 use crate::context::UpdateContext;
 use crate::string::AvmString;
-use gc_arena::barrier::{Write, unlock};
+use gc_arena::barrier::{field, unlock};
 use gc_arena::{
     Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable,
     lock::{Lock, RefLock},
@@ -150,21 +150,13 @@ impl<'gc> ScriptObjectData<'gc> {
         proto: Option<Object<'gc>>,
         vtable: VTable<'gc>,
     ) -> Self {
-        let default_slots = vtable.default_slots();
+        let slot_table = vtable.slot_table();
 
         // We use `iter` and `collect` rather than setting elements of a Box<[]>
         // or pushing to a Vec for better performance
-        let slots = default_slots
+        let slots = slot_table
             .iter()
-            .map(|value| {
-                if let Some(value) = value {
-                    Lock::new(*value)
-                } else {
-                    // FIXME this case throws a VerifyError during vtable
-                    // construction in Flash Player
-                    Lock::new(Value::Undefined)
-                }
-            })
+            .map(|slot_info| Lock::new(slot_info.default_value))
             .collect::<Box<_>>();
 
         ScriptObjectData {
@@ -269,15 +261,6 @@ impl<'gc> ScriptObjectWrapper<'gc> {
         Ok(())
     }
 
-    pub fn init_property_local(
-        self,
-        multiname: &Multiname<'gc>,
-        value: Value<'gc>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<(), Error<'gc>> {
-        self.set_property_local(multiname, value, activation)
-    }
-
     pub fn delete_property_local(self, mc: &Mutation<'gc>, multiname: &Multiname<'gc>) -> bool {
         // TODO: FP behaves differently here in interpreter mode vs JIT mode
         if !multiname.valid_dynamic_name() {
@@ -294,32 +277,25 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     #[inline(always)]
-    pub fn get_slot(self, id: u32) -> Value<'gc> {
+    pub fn get_slot(self, id: usize) -> Value<'gc> {
         self.0
             .slots
-            .get(id as usize)
+            .get(id)
             .cloned()
             .map(|s| s.get())
             .expect("Slot index out of bounds")
     }
 
     /// Set a slot by its index.
-    pub fn set_slot(self, id: u32, value: Value<'gc>, mc: &Mutation<'gc>) {
-        let slot = self
-            .0
-            .slots
-            .get(id as usize)
-            .expect("Slot index out of bounds");
+    pub fn set_slot(self, id: usize, value: Value<'gc>, mc: &Mutation<'gc>) {
+        let slots_write = field!(Gc::write(mc, self.0), ScriptObjectData, slots).as_deref();
 
-        Gc::write(mc, self.0);
-        // SAFETY: We just triggered a write barrier on the Gc.
-        let slot_write = unsafe { Write::assume(slot) };
-        slot_write.unlock().set(value);
+        slots_write[id].unlock().set(value);
     }
 
     /// Retrieve a bound method from the method table.
-    pub fn get_bound_method(self, id: u32) -> Option<FunctionObject<'gc>> {
-        self.bound_methods().get(id as usize).and_then(|v| *v)
+    pub fn get_bound_method(self, id: usize) -> Option<FunctionObject<'gc>> {
+        self.bound_methods().get(id).and_then(|v| *v)
     }
 
     pub fn has_own_dynamic_property(self, name: &Multiname<'gc>) -> bool {
@@ -378,16 +354,16 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     pub fn install_bound_method(
         self,
         mc: &Mutation<'gc>,
-        disp_id: u32,
+        disp_id: usize,
         function: FunctionObject<'gc>,
     ) {
         let mut bound_methods = self.bound_methods_mut(mc);
 
-        if bound_methods.len() <= disp_id as usize {
-            bound_methods.resize_with(disp_id as usize + 1, Default::default);
+        if bound_methods.len() <= disp_id {
+            bound_methods.resize_with(disp_id + 1, Default::default);
         }
 
-        *bound_methods.get_mut(disp_id as usize).unwrap() = Some(function);
+        *bound_methods.get_mut(disp_id).unwrap() = Some(function);
     }
 
     /// Get the `Class` for this object.
@@ -406,10 +382,7 @@ impl<'gc> ScriptObjectWrapper<'gc> {
 
     pub fn set_vtable(&self, mc: &Mutation<'gc>, vtable: VTable<'gc>) {
         // Make sure both vtables have the same number of slots
-        assert_eq!(
-            self.vtable().default_slots().len(),
-            vtable.default_slots().len()
-        );
+        assert_eq!(self.vtable().slot_count(), vtable.slot_count());
 
         unlock!(Gc::write(mc, self.0), ScriptObjectData, vtable).set(vtable);
     }

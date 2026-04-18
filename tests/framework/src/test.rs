@@ -155,10 +155,6 @@ impl Test {
             return false;
         }
 
-        self.options.required_features.can_run()
-            && self
-                .options
-                .player_options
-                .can_run(check_renderer, environment)
+        self.options.can_run(check_renderer, environment)
     }
 }

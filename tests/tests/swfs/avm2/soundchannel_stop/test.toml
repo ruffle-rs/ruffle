@@ -1,1 +1,12 @@
 num_frames = 4
+
+[player_options]
+with_audio = true
+
+[audio_assertions.sound]
+frames = [3]
+min_max_amplitude = 0.9
+
+[audio_assertions.silence]
+frames = [4]
+max_amplitude = 0.0

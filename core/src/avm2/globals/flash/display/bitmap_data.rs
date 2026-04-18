@@ -8,6 +8,9 @@ use crate::avm2::error::{
     make_error_2027,
 };
 use crate::avm2::filters::FilterAvm2Ext;
+use crate::avm2::globals::flash::display::display_object::object_to_rectangle;
+use crate::avm2::globals::flash::geom::transform::object_to_color_transform;
+use crate::avm2::globals::flash::geom::transform::object_to_matrix;
 use crate::avm2::globals::slots::{
     flash_geom_point as point_slots, flash_geom_rectangle as rectangle_slots,
 };
@@ -682,11 +685,7 @@ pub fn color_transform<'gc>(
             let y_max = (y + height) as u32;
 
             let color_transform = args.get_object(activation, 1, "colorTransform")?;
-            let color_transform =
-                crate::avm2::globals::flash::geom::transform::object_to_color_transform(
-                    color_transform,
-                    activation,
-                )?;
+            let color_transform = object_to_color_transform(color_transform);
 
             operations::color_transform(
                 activation.gc(),
@@ -914,16 +913,11 @@ pub fn draw<'gc>(
         let mut blend_mode = BlendMode::Normal;
 
         if let Some(matrix) = args.try_get_object(1) {
-            transform.matrix =
-                crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
+            transform.matrix = object_to_matrix(matrix);
         }
 
         if let Some(color_transform) = args.try_get_object(2) {
-            transform.color_transform =
-                crate::avm2::globals::flash::geom::transform::object_to_color_transform(
-                    color_transform,
-                    activation,
-                )?;
+            transform.color_transform = object_to_color_transform(color_transform);
         }
 
         if let Some(mode) = args.try_get_string(3) {
@@ -938,10 +932,7 @@ pub fn draw<'gc>(
         let mut clip_rect = None;
 
         if let Some(clip_rect_obj) = args.try_get_object(4) {
-            clip_rect = Some(super::display_object::object_to_rectangle(
-                activation,
-                clip_rect_obj,
-            )?);
+            clip_rect = Some(object_to_rectangle(clip_rect_obj));
         }
 
         let smoothing = args.get_bool(5);
@@ -995,16 +986,11 @@ pub fn draw_with_quality<'gc>(
         let mut blend_mode = BlendMode::Normal;
 
         if let Some(matrix) = args.try_get_object(1) {
-            transform.matrix =
-                crate::avm2::globals::flash::geom::transform::object_to_matrix(matrix, activation)?;
+            transform.matrix = object_to_matrix(matrix);
         }
 
         if let Some(color_transform) = args.try_get_object(2) {
-            transform.color_transform =
-                crate::avm2::globals::flash::geom::transform::object_to_color_transform(
-                    color_transform,
-                    activation,
-                )?;
+            transform.color_transform = object_to_color_transform(color_transform);
         }
 
         if let Some(mode) = args.try_get_string(3) {
@@ -1019,10 +1005,7 @@ pub fn draw_with_quality<'gc>(
         let mut clip_rect = None;
 
         if let Some(clip_rect_obj) = args.try_get_object(4) {
-            clip_rect = Some(super::display_object::object_to_rectangle(
-                activation,
-                clip_rect_obj,
-            )?);
+            clip_rect = Some(object_to_rectangle(clip_rect_obj));
         }
 
         let smoothing = args.get_bool(5);
@@ -1148,7 +1131,7 @@ pub fn apply_filter<'gc>(
             .as_bitmap_data()
             .unwrap();
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
-        let mut source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
+        let mut source_rect = object_to_rectangle(source_rect);
         let filter = args.get_object(activation, 3, "filter")?;
         let filter = Filter::from_avm2_object(activation, filter)?;
 
@@ -1251,7 +1234,7 @@ pub fn palette_map<'gc>(
             .unwrap();
 
         let source_rect = args.get_object(activation, 1, "sourceRect")?;
-        let source_rect = super::display_object::object_to_rectangle(activation, source_rect)?;
+        let source_rect = object_to_rectangle(source_rect);
         let source_point = (
             source_rect.x_min.to_pixels().floor() as i32,
             source_rect.y_min.to_pixels().floor() as i32,

@@ -2,18 +2,19 @@ mod automation;
 mod image_test;
 mod trace;
 
-use crate::backends::{TestLogBackend, TestNavigatorBackend, TestUiBackend};
+use crate::backends::{TestAudioBackend, TestLogBackend, TestNavigatorBackend, TestUiBackend};
 use crate::environment::RenderInterface;
 use crate::fs_commands::{FsCommand, TestFsCommandProvider};
 use crate::image_trigger::ImageTrigger;
-use crate::options::TestOptions;
 use crate::options::image_comparison::ImageComparison;
 use crate::options::known_failure::KnownFailure;
+use crate::options::{AudioAssertion, TestOptions};
 use crate::runner::automation::perform_automated_event;
 use crate::runner::image_test::capture_and_compare_image;
 use crate::runner::trace::compare_trace_output;
 use crate::test::Test;
 use anyhow::{Result, anyhow};
+use ruffle_core::FloatDuration;
 use ruffle_core::backend::navigator::NullExecutor;
 use ruffle_core::limits::ExecutionLimit;
 use ruffle_core::tag_utils::SwfMovie;
@@ -42,12 +43,13 @@ pub struct TestRunner {
     player: Arc<Mutex<Player>>,
     injector: InputInjector,
     executor: NullExecutor,
-    frame_time: f64,
+    frame_time: FloatDuration,
     frame_time_duration: Duration,
     log: TestLogBackend,
     fs_commands: mpsc::Receiver<FsCommand>,
     render_interface: Option<Box<dyn RenderInterface>>,
     images: HashMap<String, ImageComparison>,
+    audio_assertions: HashMap<String, AudioAssertion>,
     remaining_iterations: u32,
     current_iteration: u32,
     preloaded: bool,
@@ -70,14 +72,16 @@ impl TestRunner {
         }
 
         let executor = NullExecutor::new();
-        let mut frame_time = 1000.0 / movie.frame_rate().to_f64();
-        if let Some(tr) = test.options.tick_rate {
-            frame_time = tr;
-        }
 
-        let frame_time_duration = Duration::from_millis(frame_time as u64);
+        let frame_time_millis = if let Some(tick_rate) = test.options.tick_rate {
+            tick_rate
+        } else {
+            1000.0 / movie.frame_rate().to_f64()
+        };
+        let frame_time = FloatDuration::from_millis(frame_time_millis);
+        let frame_time_duration = Duration::from_millis(frame_time_millis as u64);
 
-        let log = TestLogBackend::default();
+        let log = TestLogBackend::new(test.options.log_warnings);
         let (fs_command_provider, fs_commands) = TestFsCommandProvider::new();
         let navigator = TestNavigatorBackend::new(
             test.root_path.clone(),
@@ -138,6 +142,7 @@ impl TestRunner {
             log,
             fs_commands,
             images,
+            audio_assertions: test.options.audio_assertions.clone(),
             remaining_iterations,
             current_iteration: 0,
             options: test.options.clone(),
@@ -265,6 +270,8 @@ impl TestRunner {
             }
         }
 
+        self.test_audio()?;
+
         self.injector.next(|evt, _btns_down| {
             let mut player = self.player.lock().unwrap();
             perform_automated_event(evt, &mut player);
@@ -281,6 +288,55 @@ impl TestRunner {
                 comp,
                 self.render_interface.as_deref(),
             )?;
+        }
+
+        Ok(())
+    }
+
+    fn test_audio(&mut self) -> Result<()> {
+        if self.audio_assertions.is_empty() {
+            return Ok(());
+        }
+
+        let player = self.player.lock().unwrap();
+        let Some(audio) = <dyn std::any::Any>::downcast_ref::<TestAudioBackend>(player.audio())
+        else {
+            return Err(anyhow!("Audio assertions require audio"));
+        };
+
+        for assertion in self.audio_assertions.values() {
+            if !assertion.frames.includes_frame(self.current_iteration) {
+                continue;
+            }
+
+            let current_max = audio
+                .buffer()
+                .iter()
+                .map(|&v| v.abs())
+                .reduce(|a, b| a.max(b))
+                .expect("buffer should not be empty");
+
+            if let Some(max_amplitude) = assertion.max_amplitude
+                && current_max > max_amplitude
+            {
+                return Err(anyhow!(
+                    "Expected max audio amplitude to be {}, was {} at frame {}",
+                    max_amplitude,
+                    current_max,
+                    self.current_iteration
+                ));
+            }
+
+            if let Some(min_max_amplitude) = assertion.min_max_amplitude
+                && current_max < min_max_amplitude
+            {
+                return Err(anyhow!(
+                    "Expected max audio amplitude to be at least {}, was {} at frame {}",
+                    min_max_amplitude,
+                    current_max,
+                    self.current_iteration
+                ));
+            }
         }
 
         Ok(())

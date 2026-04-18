@@ -154,20 +154,16 @@ impl<'gc> Multiname<'gc> {
         translation_unit: TranslationUnit<'gc>,
         namespace_set_index: Index<AbcNamespaceSet>,
     ) -> Result<NamespaceSet<'gc>, Error<'gc>> {
+        let ns_sets = &translation_unit.abc().constant_pool.namespace_sets;
+
         if namespace_set_index.0 == 0 {
-            return Err(make_error_1032(activation, 0));
+            return Err(make_error_1032(activation, 0, ns_sets.len()));
         }
 
-        let actual_index = namespace_set_index.0 as usize - 1;
-        let abc = translation_unit.abc();
-        let ns_set: Result<_, Error<'gc>> = abc
-            .constant_pool
-            .namespace_sets
-            .get(actual_index)
-            .ok_or_else(|| {
-                format!("Unknown namespace set constant {}", namespace_set_index.0).into()
-            });
-        let ns_set = ns_set?;
+        let idx = namespace_set_index.0 as usize;
+        let ns_set = ns_sets
+            .get(idx - 1)
+            .ok_or_else(|| make_error_1032(activation, idx, ns_sets.len()))?;
 
         if ns_set.len() == 1 {
             let namespace = translation_unit.pool_namespace(activation, ns_set[0])?;
@@ -201,17 +197,16 @@ impl<'gc> Multiname<'gc> {
     ) -> Result<Self, Error<'gc>> {
         let mc = activation.gc();
 
+        let multinames = &translation_unit.abc().constant_pool.multinames;
+
         if multiname_index.0 == 0 {
-            return Err(make_error_1032(activation, 0));
+            return Err(make_error_1032(activation, 0, multinames.len()));
         }
 
-        let abc = translation_unit.abc();
-
-        let abc_multiname = abc
-            .constant_pool
-            .multinames
-            .get(multiname_index.0 as usize - 1)
-            .ok_or_else(|| format!("Unknown multiname constant {}", multiname_index.0))?;
+        let idx = multiname_index.0 as usize;
+        let abc_multiname = multinames
+            .get(idx - 1)
+            .ok_or_else(|| make_error_1032(activation, idx, multinames.len()))?;
 
         let mut multiname = match abc_multiname {
             AbcMultiname::QName { namespace, name } | AbcMultiname::QNameA { namespace, name } => {
@@ -220,7 +215,7 @@ impl<'gc> Multiname<'gc> {
                         translation_unit.pool_namespace(activation, *namespace)?,
                     ),
                     name: translation_unit
-                        .pool_string_option(name.0, activation.strings())?
+                        .pool_string_option(*name, activation)?
                         .map(|v| v.into()),
                     param: None,
                     flags: MultinameFlags::IS_QNAME,
@@ -229,7 +224,7 @@ impl<'gc> Multiname<'gc> {
             AbcMultiname::RTQName { name } | AbcMultiname::RTQNameA { name } => Self {
                 ns: NamespaceSet::multiple(vec![], mc),
                 name: translation_unit
-                    .pool_string_option(name.0, activation.strings())?
+                    .pool_string_option(*name, activation)?
                     .map(|v| v.into()),
                 param: None,
                 flags: MultinameFlags::HAS_LAZY_NS | MultinameFlags::IS_QNAME,
@@ -252,7 +247,7 @@ impl<'gc> Multiname<'gc> {
             } => Self {
                 ns: Self::abc_namespace_set(activation, translation_unit, *namespace_set)?,
                 name: translation_unit
-                    .pool_string_option(name.0, activation.strings())?
+                    .pool_string_option(*name, activation)?
                     .map(|v| v.into()),
                 param: None,
                 flags: MultinameFlags::HAS_MULTIPLE_NS,

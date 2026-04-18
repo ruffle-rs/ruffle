@@ -1,0 +1,10 @@
+before push: 
+toString called i = 0
+before unshift: sneaky#0
+toString called i = 1
+before insertAt: sneaky#1,sneaky#0
+toString called i = 2
+before splice: sneaky#1,sneaky#2,sneaky#0
+toString called i = 3
+toString called i = 4
+done: sneaky#3,sneaky#4,sneaky#0

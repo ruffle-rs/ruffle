@@ -50,11 +50,11 @@ version = "0.1.0"
 
 [workspace.dependencies]
 tracing = "0.1.43"
-tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 naga = { version = "27.0.3", features = ["wgsl-out"] }
 wgpu = "27.0.1"
 egui = "0.33.3"
-clap = { version = "4.5.58", features = ["derive"] }
+clap = { version = "4.6.0", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
 gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["hashbrown", "indexmap", "smallvec", "slotmap"] }
@@ -62,11 +62,11 @@ slotmap = "1.1.1"
 async-channel = "2.5.0"
 bitflags = "2.11.0"
 bytemuck = "1.25.0"
-chrono = { version = "0.4.43", default-features = false }
+chrono = { version = "0.4.44", default-features = false }
 enum-map = "2.7.3"
 flate2 = "1.1.9"
 futures = "0.3.32"
-image = { version = "0.25.9", default-features = false }
+image = { version = "0.25.10", default-features = false }
 js-sys = "0.3.85"
 web-sys = "0.3.85"
 log = "0.4"
@@ -76,17 +76,18 @@ serde = "1.0.228"
 thiserror = "2.0.18"
 url = "2.5.8"
 quick-xml = "0.37.5"
-regress = { git = "https://github.com/ruffle-rs/regras3", rev = "5fcb02513c5ab4e00df4346459f5a8d0521d8fed" }
+regress = { git = "https://github.com/ruffle-rs/regras3", rev = "6d48179d6bd448f2cc66b76352c9f048dde968d1" }
 # Make sure to match wasm-bindgen-cli version to this everywhere.
 wasm-bindgen = "=0.2.108"
 walkdir = "2.5.0"
-tokio = "1.49.0"
+tokio = "1.51.1"
 rfd = { version = "0.17.2", default-features = false, features = ["wayland", "xdg-portal"] }
 memmap2 = "0.9.10"
-libtest-mimic = "0.8.1"
+libtest-mimic = "0.8.2"
 regex = "1.12.3"
-toml = "0.9.7"
-vfs = "0.12.2"
+toml = "1.0.6"
+toml_edit = "0.25.4"
+vfs = "0.13.0"
 smallvec = { version = "1.15.1", features = ["const_new", "union"] }
 serde_json = "1.0.149"
 percent-encoding = "2.3.2"
@@ -100,9 +101,9 @@ sha2 = "0.10.9"
 indexmap = "2.13.0"
 fnv = "1.0.7"
 hashbrown = "0.16.1"
-fluent-templates = "0.13.2"
+fluent-templates = "0.13.3"
 lzma-rs = "0.3.0"
-tempfile = "3.25.0"
+tempfile = "3.27.0"
 tracing-wasm = "0.2.1"
 
 [workspace.lints.rust]

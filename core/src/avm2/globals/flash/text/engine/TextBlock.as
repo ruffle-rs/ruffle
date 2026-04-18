@@ -1,4 +1,5 @@
 package flash.text.engine {
+    import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
 
     [API("662")]
@@ -177,6 +178,7 @@ package flash.text.engine {
         }
 
         public function get lastLine():TextLine {
+            stub_getter("flash.text.engine.TextBlock", "lastLine");
             return this._firstLine;
         }
 

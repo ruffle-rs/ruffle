@@ -1139,11 +1139,14 @@ pub fn render_base<'gc>(
         // If there's nothing to draw, throw away the blend entirely.
         if !sub_commands.is_empty() {
             let render_blend_mode = if let ExtendedBlendMode::Shader = blend_mode {
-                // Note - Flash appears to let you set `dobj.blendMode = BlendMode.SHADER` without
-                // having `dobj.blendShader` result, but the resulting rendered displayobject
-                // seems to be corrupted. For now, let's panic, and see if any swfs actually
-                // rely on this behavior.
-                RenderBlendMode::Shader(this.blend_shader().expect("Missing blend shader"))
+                // Note - Flash appears to let you set blend mode to shader
+                // without having blend shader set.  In this case, Flash seems
+                // to fall back to a normal blend.
+                if let Some(shader) = this.blend_shader() {
+                    RenderBlendMode::Shader(shader)
+                } else {
+                    RenderBlendMode::Builtin(swf::BlendMode::Normal)
+                }
             } else {
                 RenderBlendMode::Builtin(blend_mode.try_into().unwrap())
             };
@@ -2573,6 +2576,11 @@ pub trait TDisplayObject<'gc>:
         self.object1()
             .map(|o| o.into())
             .unwrap_or(Avm1Value::Undefined)
+    }
+
+    #[no_dynamic]
+    fn object1_or_null(self) -> Avm1Value<'gc> {
+        self.object1().map(|o| o.into()).unwrap_or(Avm1Value::Null)
     }
 
     /// Equivalent to `self.object1_or_undef().coerce_to_object_or_bare()`, but avoids

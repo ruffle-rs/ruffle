@@ -17,6 +17,7 @@
     <name xml:lang="it">Ruffle</name>
     <name xml:lang="ja">Ruffle</name>
     <name xml:lang="ko">Ruffle</name>
+    <name xml:lang="nb">Ruffle</name>
     <name xml:lang="nl">Ruffle</name>
     <name xml:lang="pl">Ruffle</name>
     <name xml:lang="pt-BR">Ruffle</name>
@@ -47,6 +48,7 @@
     <summary xml:lang="it">Gioca e guarda i contenuti fatto in Flash</summary>
     <summary xml:lang="ja">Flashゲームと動画を再生します</summary>
     <summary xml:lang="ko">플래시 게임 &amp; 영상 실행</summary>
+    <summary xml:lang="nb">Spill Flash spill og filmer</summary>
     <summary xml:lang="nl">Speel Flash spellen &amp; animaties</summary>
     <summary xml:lang="pl">Graj w gry i odtwarzaj filmy Flash</summary>
     <summary xml:lang="pt-BR">Reproduza jogos e filmes Flash</summary>
@@ -227,6 +229,7 @@
         <keyword xml:lang="it">flash</keyword>
         <keyword xml:lang="ja">flash</keyword>
         <keyword xml:lang="ko">플래시</keyword>
+        <keyword xml:lang="nb">flash</keyword>
         <keyword xml:lang="nl">flash</keyword>
         <keyword xml:lang="pl">flash</keyword>
         <keyword xml:lang="pt-BR">flash</keyword>
@@ -258,6 +261,7 @@
         <keyword xml:lang="it">swf</keyword>
         <keyword xml:lang="ja">swf</keyword>
         <keyword xml:lang="ko">swf</keyword>
+        <keyword xml:lang="nb">swf</keyword>
         <keyword xml:lang="nl">swf</keyword>
         <keyword xml:lang="pl">swf</keyword>
         <keyword xml:lang="pt-BR">swf</keyword>

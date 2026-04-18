@@ -1,0 +1,5 @@
+num_frames = 10
+known_failure = true
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
