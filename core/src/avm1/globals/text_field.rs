@@ -675,7 +675,7 @@ pub fn scroll<'gc>(
     this: EditText<'gc>,
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.scroll().into())
+    Ok(Value::from_usize_lossy(this.scroll()))
 }
 
 pub fn set_scroll<'gc>(
@@ -692,7 +692,7 @@ pub fn maxscroll<'gc>(
     this: EditText<'gc>,
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.maxscroll().into())
+    Ok(Value::from_usize_lossy(this.maxscroll()))
 }
 
 pub fn set_max_chars<'gc>(
@@ -721,7 +721,7 @@ pub fn bottom_scroll<'gc>(
     this: EditText<'gc>,
     _activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.bottom_scroll().into())
+    Ok(Value::from_usize_lossy(this.bottom_scroll()))
 }
 
 pub fn anti_alias_type<'gc>(

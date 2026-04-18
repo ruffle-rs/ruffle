@@ -1031,9 +1031,17 @@ pub fn load_form_into_load_vars<'gc>(
                     let length = body.len();
 
                     // Set the properties used by the getBytesTotal and getBytesLoaded methods.
-                    that.set(istr!("_bytesTotal"), length.into(), &mut activation)?;
+                    that.set(
+                        istr!("_bytesTotal"),
+                        Value::from_usize_lossy(length),
+                        &mut activation,
+                    )?;
                     if length > 0 {
-                        that.set(istr!("_bytesLoaded"), length.into(), &mut activation)?;
+                        that.set(
+                            istr!("_bytesLoaded"),
+                            Value::from_usize_lossy(length),
+                            &mut activation,
+                        )?;
                     }
 
                     let _ = that.call_method(
@@ -1918,8 +1926,8 @@ impl<'gc> MovieLoader<'gc> {
                         &[
                             istr!(uc, "onLoadProgress").into(),
                             target_clip.object1_or_undef(),
-                            cur_len.into(),
-                            total_len.into(),
+                            Value::from_usize_lossy(cur_len),
+                            Value::from_usize_lossy(total_len),
                         ],
                         uc,
                     );
@@ -2535,7 +2543,11 @@ pub fn download_file_dialog<'gc>(
 
                                 as_broadcaster::broadcast_internal(
                                     target_object,
-                                    &[target_object.into(), total_bytes.into(), total_bytes.into()],
+                                    &[
+                                        target_object.into(),
+                                        Value::from_usize_lossy(total_bytes),
+                                        Value::from_usize_lossy(total_bytes),
+                                    ],
                                     istr!("onProgress"),
                                     &mut activation,
                                 )?;
@@ -2588,8 +2600,8 @@ pub fn download_file_dialog<'gc>(
                                             target_object,
                                             &[
                                                 target_object.into(),
-                                                body_len.into(),
-                                                body_len.into(),
+                                                Value::from_u64_lossy(body_len),
+                                                Value::from_u64_lossy(body_len),
                                             ],
                                             istr!("onProgress"),
                                             &mut activation,
@@ -2722,8 +2734,8 @@ pub fn upload_file<'gc>(
                         target_object,
                         &[
                             target_object.into(),
-                            total_size_bytes.into(),
-                            total_size_bytes.into(),
+                            Value::from_usize_lossy(total_size_bytes),
+                            Value::from_usize_lossy(total_size_bytes),
                         ],
                         istr!("onProgress"),
                         &mut activation,
@@ -2757,8 +2769,8 @@ pub fn upload_file<'gc>(
                                 target_object,
                                 &[
                                     target_object.into(),
-                                    total_size_bytes.into(),
-                                    total_size_bytes.into(),
+                                    Value::from_usize_lossy(total_size_bytes),
+                                    Value::from_usize_lossy(total_size_bytes),
                                 ],
                                 istr!("onProgress"),
                                 &mut activation,

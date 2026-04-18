@@ -58,7 +58,7 @@ pub fn constructor<'gc>(
     this.define_value(
         activation.gc(),
         istr!("length"),
-        value.len().into(),
+        Value::from_usize_lossy(value.len()),
         Attribute::DONT_ENUM | Attribute::DONT_DELETE,
     );
 
@@ -175,7 +175,9 @@ fn index_of<'gc>(
 
     this.slice(start_index..)
         .and_then(|s| s.find(&pattern))
-        .map(|i| Ok((i + start_index).into()))
+        .map(|i| i + start_index)
+        .map(Value::from_usize_lossy)
+        .map(Ok)
         .unwrap_or_else(|| Ok((-1).into())) // Out of range or not found
 }
 
@@ -201,7 +203,8 @@ fn last_index_of<'gc>(
     this.slice(..start_index)
         .unwrap_or(&this)
         .rfind(&pattern)
-        .map(|i| Ok(i.into()))
+        .map(Value::from_usize_lossy)
+        .map(Ok)
         .unwrap_or_else(|| Ok((-1).into())) // Not found
 }
 

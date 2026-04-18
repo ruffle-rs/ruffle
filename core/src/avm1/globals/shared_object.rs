@@ -536,7 +536,7 @@ fn get_size<'gc>(
         Ok(0.into())
     } else {
         let bytes = flash_lso::write::write_to_bytes(&mut lso).unwrap_or_default();
-        Ok(bytes.len().into())
+        Ok(Value::from_usize_lossy(bytes.len()))
     }
 }
 
