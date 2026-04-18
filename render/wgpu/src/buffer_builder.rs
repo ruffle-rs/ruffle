@@ -82,18 +82,12 @@ impl BufferBuilder {
     pub fn copy_to(
         self,
         staging_belt: &mut wgpu::util::StagingBelt,
-        device: &wgpu::Device,
         encoder: &mut wgpu::CommandEncoder,
         buffer: &wgpu::Buffer,
     ) {
         if let Some(length) = wgpu::BufferSize::new(self.inner.len() as u64) {
-            let mut view = staging_belt.write_buffer(
-                encoder,
-                buffer,
-                BufferAddress::default(),
-                length,
-                device,
-            );
+            let mut view =
+                staging_belt.write_buffer(encoder, buffer, BufferAddress::default(), length);
             view.copy_from_slice(&self.inner);
         }
     }

@@ -157,7 +157,6 @@ impl Surface {
                 } => {
                     transforms.copy_to(
                         staging_belt,
-                        &descriptors.device,
                         draw_encoder,
                         &dynamic_transforms.buffer,
                     );
