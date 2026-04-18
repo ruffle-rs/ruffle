@@ -688,6 +688,12 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         let texture = as_texture(handle);
 
         let mut bitmap = bitmap.to_rgba();
+
+        // Check if bitmap data is empty (e.g., disposed BitmapData with pending dirty state)
+        if bitmap.data().is_empty() {
+            return Ok(());
+        }
+
         if self.clamp_bitmap(&mut bitmap) {
             // If we're updating a resized texture, just redo the whole thing.
             // We can't trivially map pixel regions as we use a filter to resize.
