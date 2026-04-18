@@ -1133,9 +1133,14 @@ impl<'gc> MovieClip<'gc> {
             return max(self.total_bytes(), 0) as u32;
         }
 
-        let swf_header_size = max(self.total_bytes(), 0) as u32 - self.tag_stream_len() as u32;
+        if self.is_root() {
+            let swf_header_size =
+                (max(self.total_bytes(), 0) as u32).saturating_sub(self.tag_stream_len() as u32);
 
-        swf_header_size + progress.next_preload_chunk.get() as u32
+            swf_header_size + progress.next_preload_chunk.get() as u32
+        } else {
+            progress.next_preload_chunk.get() as u32
+        }
     }
 
     /// Calculate the compressed total size of this movie clip's tag stream.
