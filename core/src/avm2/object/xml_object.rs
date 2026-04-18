@@ -2,8 +2,8 @@
 
 use crate::avm2::activation::Activation;
 use crate::avm2::e4x::{
-    E4XNamespace, E4XNode, E4XNodeKind, handle_input_multiname, namespace_for_multiname,
-    string_to_multiname,
+    E4XNamespace, E4XNode, E4XNodeKind, E4XNotification, handle_input_multiname,
+    namespace_for_multiname, string_to_multiname,
 };
 use crate::avm2::error::make_error_1087;
 use crate::avm2::function::FunctionArgs;
@@ -478,24 +478,79 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
                 AvmString::new(activation.gc(), out)
             // 6.c. Else
             } else {
+                // 6.c.i. Let c = ToString(c)
                 value.coerce_to_string(activation)?
             };
 
-            let mc = activation.gc();
-            self.delete_property_local(activation, &name)?;
-            let Some(local_name) = name.local_name() else {
-                return Err(format!("Cannot set attribute {name:?} without a local name").into());
-            };
-            let ns = name.explicit_namespace().map(E4XNamespace::new_uri);
-            let new_attr = E4XNode::attribute(mc, ns, local_name, value, Some(self.node()));
+            let gc = activation.gc();
 
-            let node = self.0.node.get();
-            let mut kind = node.kind_mut(mc);
-            let E4XNodeKind::Element { attributes, .. } = &mut *kind else {
-                return Ok(());
-            };
+            // 6.d. Let a = null
+            // 6.e. For each j in x.[[Attributes]]
+            // 6.e.i. If (n.[[Name]].localName == j.[[Name]].localName)
+            //        and ((n.[[Name]].uri == null) or (n.[[Name]].uri == j.[[Name]].uri))
+            // 6.e.i.1. If (a == null), a = j
+            // 6.e.i.2. Else call the [[Delete]] method of x with argument j.[[Name]]
+            if let Some((index, old_attr)) = self.node().remove_matching_attribute(gc, &name) {
+                // NOTE: In this branch we modify the value of the first matching attribute.
+                let old_value = {
+                    // 6.g. Let a.[[Value]] = c
+                    let E4XNodeKind::Attribute(old_value) = &mut *old_attr.kind_mut(gc) else {
+                        unreachable!("Node should be of Attribute kind");
+                    };
+                    let old_value_copy = *old_value;
+                    *old_value = value;
 
-            attributes.push(new_attr);
+                    let node = self.0.node.get();
+                    let E4XNodeKind::Element { attributes, .. } = &mut *node.kind_mut(gc) else {
+                        return Ok(());
+                    };
+                    old_attr.set_parent(Some(self.node()), gc);
+                    attributes.insert(index, old_attr);
+                    old_value_copy
+                };
+
+                if let Some(name) = old_attr.local_name() {
+                    self.node().trigger_notification(
+                        activation,
+                        self.into(),
+                        E4XNotification::AttributeChanged,
+                        self.into(),
+                        name.into(),
+                        old_value.into(),
+                    );
+                }
+            } else {
+                // 6.f. If a == null
+
+                // TODO: Make this closer to the specification.
+                let Some(local_name) = name.local_name() else {
+                    return Err(
+                        format!("Cannot set attribute {name:?} without a local name").into(),
+                    );
+                };
+                let ns = name.explicit_namespace().map(E4XNamespace::new_uri);
+                let attr = E4XNode::attribute(gc, ns, local_name, value, Some(self.node()));
+
+                {
+                    // 6.f.iv. Let x.[[Attributes]] = x.[[Attributes]] ∪ { a }
+                    let node = self.0.node.get();
+                    let E4XNodeKind::Element { attributes, .. } = &mut *node.kind_mut(gc) else {
+                        return Ok(());
+                    };
+                    attributes.push(attr);
+                }
+
+                self.node().trigger_notification(
+                    activation,
+                    self.into(),
+                    E4XNotification::AttributeAdded,
+                    self.into(),
+                    local_name.into(),
+                    value.into(),
+                );
+            }
+
+            // 6.h. Return
             return Ok(());
         }
 
@@ -635,25 +690,13 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
         // 3. If Type(n) is AttributeName
         if name.is_attribute() {
-            let E4XNodeKind::Element { attributes, .. } = &mut *node.kind_mut(activation.gc())
-            else {
-                return Ok(true);
-            };
-
             // 3.a. For each a in x.[[Attributes]]
-            attributes.retain(|attr| {
-                // 3.a.i. If ((n.[[Name]].localName == "*") or
-                //            (n.[[Name]].localName == a.[[Name]].localName))
-                // and ((n.[[Name]].uri == null) or (n.[[Name]].uri == a.[[Name]].uri))
-                if attr.matches_name(&name) {
-                    // 3.a.i.1. Let a.[[Parent]] = null
-                    attr.set_parent(None, activation.gc());
-                    // 3.a.i.2. Remove the attribute a from x.[[Attributes]]
-                    false
-                } else {
-                    true
-                }
-            });
+            // 3.a.i. If ((n.[[Name]].localName == "*") or
+            //            (n.[[Name]].localName == a.[[Name]].localName))
+            //        and ((n.[[Name]].uri == null) or (n.[[Name]].uri == a.[[Name]].uri))
+            // 3.a.i.1. Let a.[[Parent]] = null
+            // 3.a.i.2. Remove the attribute a from x.[[Attributes]]
+            node.remove_matching_attribute(activation.gc(), &name);
 
             // 3.b. Return true
             return Ok(true);

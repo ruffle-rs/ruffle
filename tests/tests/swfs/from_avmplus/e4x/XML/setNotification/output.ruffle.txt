@@ -1,2 +1,8 @@
+attributeAdded-command PASSED!
+attributeAdded-value PASSED!
+attributeAdded-detail PASSED!
+attributeChanged-command PASSED!
+attributeChanged-value PASSED!
+attributeChanged-detail PASSED!
 Asserting for TypeError PASSED!
 StringNotifier PASSED!

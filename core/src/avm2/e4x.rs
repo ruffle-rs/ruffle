@@ -5,7 +5,7 @@ use crate::avm2::error::{
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::multiname::NamespaceSet;
 use crate::avm2::object::{E4XOrXml, FunctionObject, NamespaceObject};
-use crate::avm2::{Activation, Error, Multiname, Namespace, Value};
+use crate::avm2::{Activation, Error, Multiname, Namespace, Object, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
 
 use gc_arena::barrier::unlock;
@@ -88,6 +88,11 @@ pub fn handle_input_multiname<'gc>(
 }
 
 pub use is_xml_name::is_xml_name;
+
+pub enum E4XNotification {
+    AttributeAdded,
+    AttributeChanged,
+}
 
 /// The underlying XML node data, based on E4XNode in avmplus
 /// This wrapped by XMLObject when necessary (see `E4XOrXml`)
@@ -393,17 +398,39 @@ impl<'gc> E4XNode<'gc> {
             return None;
         };
 
-        let index = children
+        self.remove_matching_nodes(gc_context, children, name)
+    }
+
+    /// Removes all matching attributes matching provided name, returns the first attribute removed along with its index (if any).
+    pub fn remove_matching_attribute(
+        self,
+        gc_context: &Mutation<'gc>,
+        name: &Multiname<'gc>,
+    ) -> Option<(usize, E4XNode<'gc>)> {
+        let E4XNodeKind::Element { attributes, .. } = &mut *self.kind_mut(gc_context) else {
+            return None;
+        };
+
+        self.remove_matching_nodes(gc_context, attributes, name)
+    }
+
+    fn remove_matching_nodes(
+        self,
+        gc_context: &Mutation<'gc>,
+        nodes: &mut Vec<E4XNode<'gc>>,
+        name: &Multiname<'gc>,
+    ) -> Option<(usize, E4XNode<'gc>)> {
+        let index = nodes
             .iter()
             .position(|x| name.is_any_name() || x.matches_name(name));
 
         let val = if let Some(index) = index {
-            Some((index, children[index]))
+            Some((index, nodes[index]))
         } else {
             None
         };
 
-        children.retain(|x| {
+        nodes.retain(|x| {
             if name.is_any_name() || x.matches_name(name) {
                 // Remove parent.
                 x.set_parent(None, gc_context);
@@ -1154,6 +1181,37 @@ impl<'gc> E4XNode<'gc> {
 
     pub fn notification(self) -> Option<FunctionObject<'gc>> {
         self.0.notification.get()
+    }
+
+    pub fn trigger_notification(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        target_current: Object<'gc>,
+        command: E4XNotification,
+        target: Object<'gc>,
+        value: Value<'gc>,
+        detail: Value<'gc>,
+    ) {
+        let Some(function) = self.notification() else {
+            return;
+        };
+
+        let command = AvmString::new_utf8(
+            activation.gc(),
+            match command {
+                E4XNotification::AttributeAdded => "attributeAdded",
+                E4XNotification::AttributeChanged => "attributeChanged",
+            },
+        );
+
+        let args = [
+            target_current.into(),
+            command.into(),
+            target.into(),
+            value,
+            detail,
+        ];
+        let _ = function.call(activation, Value::Null, FunctionArgs::from_slice(&args));
     }
 
     // 13.3.5.4 [[GetNamespace]] ( [ InScopeNamespaces ] )
