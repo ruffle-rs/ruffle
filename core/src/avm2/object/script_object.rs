@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::dynamic_map::{DynamicKey, DynamicMap};
 use crate::avm2::error;
-use crate::avm2::object::{ArrayObject, ClassObject, FunctionObject, Object, TObject};
+use crate::avm2::object::{ArrayObject, ClassObject, Erased, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
 use crate::avm2::{Error, Multiname, QName};
@@ -17,6 +17,7 @@ use gc_arena::{
 };
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
+use std::marker::PhantomData;
 
 /// A class instance allocator that allocates `ScriptObject`s.
 pub fn scriptobject_allocator<'gc>(
@@ -58,7 +59,7 @@ impl ScriptObjectHandle {
 #[derive(Clone, Collect)]
 #[collect(no_drop)]
 #[repr(align(8))]
-pub struct ScriptObjectData<'gc> {
+pub struct ScriptObjectData<'gc, K = Erased> {
     /// Values stored on this object.
     values: RefLock<DynamicMap<DynamicKey<'gc>, Value<'gc>>>,
 
@@ -76,6 +77,8 @@ pub struct ScriptObjectData<'gc> {
 
     /// The table used for non-dynamic property lookups.
     vtable: Lock<VTable<'gc>>,
+
+    _kind: PhantomData<fn() -> K>,
 }
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
@@ -166,6 +169,7 @@ impl<'gc> ScriptObjectData<'gc> {
             proto: Lock::new(proto),
             instance_class,
             vtable: Lock::new(vtable),
+            _kind: PhantomData,
         }
     }
 }
