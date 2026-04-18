@@ -691,6 +691,14 @@ impl<'gc> DisplayObjectBase<'gc> {
         self.set_flag(DisplayObjectFlags::AVM1_PENDING_REMOVAL, value);
     }
 
+    pub fn being_removed(&self) -> bool {
+        self.contains_flag(DisplayObjectFlags::BEING_REMOVED)
+    }
+
+    pub fn set_being_removed(&self, value: bool) {
+        self.set_flag(DisplayObjectFlags::BEING_REMOVED, value);
+    }
+
     fn scale_rotation_cached(&self) -> bool {
         self.contains_flag(DisplayObjectFlags::SCALE_ROTATION_CACHED)
     }
@@ -2033,6 +2041,19 @@ pub trait TDisplayObject<'gc>:
         self.base().set_avm1_pending_removal(value)
     }
 
+    #[no_dynamic]
+    /// Whether this object is currently dispatching its `removed`/`removedFromStage` events.
+    /// Used as a reentrancy guard in `dispatch_removed_event` to prevent infinite recursion
+    /// when an AS3 event listener calls `remove_child` again during event dispatch.
+    fn being_removed(self) -> bool {
+        self.base().being_removed()
+    }
+
+    #[no_dynamic]
+    fn set_being_removed(self, value: bool) {
+        self.base().set_being_removed(value)
+    }
+
     /// Whether this display object is visible.
     /// Invisible objects are not rendered, but otherwise continue to exist normally.
     /// Returned by the `_visible`/`visible` ActionScript properties.
@@ -2995,6 +3016,12 @@ bitflags! {
         /// (they need to be instantiated "manually" by
         /// `Sprite.constructChildren`).
         const MANUAL_FRAME_CONSTRUCT  = 1 << 16;
+
+        /// Whether this object is currently having its `removed`/`removedFromStage`
+        /// events dispatched. Used to prevent re-entrant calls to `remove_child`
+        /// during event dispatch (which would cause infinite recursion), matching
+        /// Flash Player behaviour.
+        const BEING_REMOVED           = 1 << 17;
     }
 }
 
