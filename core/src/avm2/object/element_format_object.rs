@@ -1,6 +1,7 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::font_description_object::FontDescriptionObject;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::fte::{
@@ -11,7 +12,7 @@ use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::Cell;
@@ -51,10 +52,6 @@ pub fn element_format_allocator<'gc>(
 #[collect(no_drop)]
 pub struct ElementFormatObject<'gc>(pub Gc<'gc, ElementFormatObjectData<'gc>>);
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ElementFormatObjectWeak<'gc>(pub GcWeak<'gc, ElementFormatObjectData<'gc>>);
-
 impl fmt::Debug for ElementFormatObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("ElementFormatObject")
@@ -67,7 +64,7 @@ impl fmt::Debug for ElementFormatObject<'_> {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct ElementFormatObjectData<'gc> {
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::ElementFormatObject>,
     alignment_baseline: Cell<TextBaselineValue>,
     alpha: Cell<f64>,
     baseline_shift: Cell<f64>,
@@ -248,6 +245,6 @@ impl<'gc> ElementFormatObject<'gc> {
 
 impl<'gc> TObject<'gc> for ElementFormatObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

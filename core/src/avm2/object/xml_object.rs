@@ -7,6 +7,7 @@ use crate::avm2::e4x::{
 };
 use crate::avm2::error::make_error_1087;
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, NamespaceObject, Object, TObject, XmlListObject};
 use crate::avm2::value::Value;
@@ -59,7 +60,7 @@ impl fmt::Debug for XmlObject<'_> {
 #[repr(C, align(8))]
 pub struct XmlObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::XmlObject>,
 
     node: Lock<E4XNode<'gc>>,
 }
@@ -325,7 +326,7 @@ impl<'gc> XmlObject<'gc> {
 
 impl<'gc> TObject<'gc> for XmlObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     fn xml_descendants(

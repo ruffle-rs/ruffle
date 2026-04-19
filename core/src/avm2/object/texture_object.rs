@@ -1,6 +1,7 @@
 //! Object representation for Texture3D objects
 
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
 use gc_arena::{Collect, Gc, GcWeak};
@@ -56,7 +57,7 @@ impl<'gc> TextureObject<'gc> {
 #[repr(C, align(8))]
 pub struct TextureObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::TextureObject>,
 
     context3d: Context3DObject<'gc>,
 
@@ -69,7 +70,7 @@ pub struct TextureObjectData<'gc> {
 
 impl<'gc> TObject<'gc> for TextureObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 

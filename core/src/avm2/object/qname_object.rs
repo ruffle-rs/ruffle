@@ -5,6 +5,7 @@ use crate::avm2::Error;
 use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::TObject;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::value::Value;
 use crate::string::StringContext;
@@ -35,7 +36,7 @@ impl fmt::Debug for QNameObject<'_> {
 #[repr(C, align(8))]
 pub struct QNameObjectData<'gc> {
     /// All normal script data.
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::QNameObject>,
 
     /// The Multiname this object is associated with.
     name: Multiname<'gc>,
@@ -82,7 +83,7 @@ impl<'gc> QNameObject<'gc> {
 
 impl<'gc> TObject<'gc> for QNameObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     fn get_next_enumerant(

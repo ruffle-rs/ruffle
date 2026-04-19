@@ -1,5 +1,6 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::fte::{
@@ -9,7 +10,7 @@ use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::Cell;
@@ -38,10 +39,6 @@ pub fn font_description_allocator<'gc>(
 #[collect(no_drop)]
 pub struct FontDescriptionObject<'gc>(pub Gc<'gc, FontDescriptionObjectData<'gc>>);
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct FontDescriptionObjectWeak<'gc>(pub GcWeak<'gc, FontDescriptionObjectData<'gc>>);
-
 impl fmt::Debug for FontDescriptionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("FontDescriptionObject")
@@ -54,7 +51,7 @@ impl fmt::Debug for FontDescriptionObject<'_> {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct FontDescriptionObjectData<'gc> {
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::FontDescriptionObject>,
     font_name: Lock<AvmString<'gc>>,
     font_weight: Cell<FontWeightValue>,
     font_posture: Cell<FontPostureValue>,
@@ -124,6 +121,6 @@ impl<'gc> FontDescriptionObject<'gc> {
 
 impl<'gc> TObject<'gc> for FontDescriptionObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

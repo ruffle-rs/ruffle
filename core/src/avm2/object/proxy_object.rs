@@ -5,6 +5,7 @@ use crate::avm2::Multiname;
 use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::globals::methods::flash_utils_proxy as proxy_methods;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, QNameObject, TObject};
 use crate::avm2::value::Value;
@@ -45,12 +46,12 @@ impl fmt::Debug for ProxyObject<'_> {
 #[repr(C, align(8))]
 pub struct ProxyObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::ProxyObject>,
 }
 
 impl<'gc> TObject<'gc> for ProxyObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     fn get_property_local(

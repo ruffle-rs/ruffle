@@ -1,5 +1,6 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Hint;
@@ -95,14 +96,14 @@ impl<'gc> DateObject<'gc> {
 #[repr(C, align(8))]
 pub struct DateObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::DateObject>,
 
     date_time: Cell<Option<DateTime<Utc>>>,
 }
 
 impl<'gc> TObject<'gc> for DateObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     fn default_hint(&self) -> Hint {

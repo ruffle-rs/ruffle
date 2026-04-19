@@ -4,6 +4,7 @@ use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::call_stack::CallStack;
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::string::AvmString;
@@ -44,7 +45,7 @@ impl fmt::Debug for ErrorObject<'_> {
 #[repr(C, align(8))]
 pub struct ErrorObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::ErrorObject>,
 
     call_stack: CallStack<'gc>,
 }
@@ -94,6 +95,6 @@ impl<'gc> ErrorObject<'gc> {
 
 impl<'gc> TObject<'gc> for ErrorObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

@@ -6,6 +6,7 @@ use crate::avm2::e4x::{
 };
 use crate::avm2::error::make_error_1089;
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
@@ -355,7 +356,7 @@ impl<'gc> XmlListObject<'gc> {
 #[repr(C, align(8))]
 pub struct XmlListObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::XmlListObject>,
 
     /// The children stored by this list.
     children: RefLock<Vec<E4XOrXml<'gc>>>,
@@ -476,7 +477,7 @@ impl<'gc> From<XmlObject<'gc>> for XmlOrXmlListObject<'gc> {
 
 impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     fn xml_descendants(

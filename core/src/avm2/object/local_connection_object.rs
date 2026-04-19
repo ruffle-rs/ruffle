@@ -1,6 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::amf::deserialize_value;
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, EventObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -58,7 +59,7 @@ impl fmt::Debug for LocalConnectionObject<'_> {
 #[repr(C, align(8))]
 pub struct LocalConnectionObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::LocalConnectionObject>,
 
     connection_handle: RefCell<Option<LocalConnectionHandle>>,
 
@@ -177,6 +178,6 @@ impl<'gc> LocalConnectionObject<'gc> {
 
 impl<'gc> TObject<'gc> for LocalConnectionObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

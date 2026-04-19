@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::dynamic_map::{DynamicKey, DynamicMap};
 use crate::avm2::error;
-use crate::avm2::object::kind::Erased;
+use crate::avm2::object::kind::{self, Erased};
 use crate::avm2::object::{ArrayObject, ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
@@ -33,14 +33,15 @@ pub fn scriptobject_allocator<'gc>(
 /// Default implementation of `avm2::Object`.
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct ScriptObject<'gc>(pub Gc<'gc, ScriptObjectData<'gc>>);
+pub struct ScriptObject<'gc>(pub Gc<'gc, ScriptObjectData<'gc, kind::ScriptObject>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct ScriptObjectWeak<'gc>(pub GcWeak<'gc, ScriptObjectData<'gc>>);
+pub struct ScriptObjectWeak<'gc>(pub GcWeak<'gc, ScriptObjectData<'gc, kind::ScriptObject>>);
 
 #[derive(Clone)]
-pub struct ScriptObjectHandle(DynamicRoot<Rootable![ScriptObjectData<'_>]>);
+#[allow(clippy::type_complexity)]
+pub struct ScriptObjectHandle(DynamicRoot<Rootable![ScriptObjectData<'_, kind::ScriptObject>]>);
 
 impl ScriptObjectHandle {
     pub fn stash<'gc>(context: &UpdateContext<'gc>, this: ScriptObject<'gc>) -> Self {
@@ -84,7 +85,7 @@ pub struct ScriptObjectData<'gc, K = Erased> {
 
 impl<'gc> TObject<'gc> for ScriptObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        self.0
+        ScriptObjectData::erase_kind(self.0)
     }
 }
 
@@ -407,7 +408,10 @@ impl<'gc> ScriptObjectWrapper<'gc> {
 impl Debug for ScriptObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
         f.debug_struct("ScriptObject")
-            .field("name", &ScriptObjectWrapper(self.0).class_name())
+            .field(
+                "name",
+                &ScriptObjectWrapper(ScriptObjectData::erase_kind(self.0)).class_name(),
+            )
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }

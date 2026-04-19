@@ -3,6 +3,7 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::TObject;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::value::Value;
 use crate::avm2_stub_method;
@@ -503,7 +504,7 @@ impl<'gc> Context3DObject<'gc> {
 #[repr(C, align(8))]
 pub struct Context3DObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::Context3DObject>,
 
     #[collect(require_static)]
     render_context: Cell<Option<Box<dyn Context3D>>>,
@@ -513,7 +514,7 @@ pub struct Context3DObjectData<'gc> {
 
 impl<'gc> TObject<'gc> for Context3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 

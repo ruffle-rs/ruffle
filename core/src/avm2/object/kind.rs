@@ -87,4 +87,8 @@ define_variants!(
     WorkerDomainObject,
     MessageChannelObject,
     SecurityDomainObject,
+    ContentElementObject,
+    ElementFormatObject,
+    FontDescriptionObject,
+    TextBlockObject,
 );

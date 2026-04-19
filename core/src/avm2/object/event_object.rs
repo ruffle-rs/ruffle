@@ -3,6 +3,7 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::events::Event;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, ScriptObject, TObject};
 use crate::avm2::value::Value;
@@ -48,7 +49,7 @@ pub struct EventObjectWeak<'gc>(pub GcWeak<'gc, EventObjectData<'gc>>);
 #[repr(C, align(8))]
 pub struct EventObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::EventObject>,
 
     /// The event this object holds.
     event: RefLock<Event<'gc>>,
@@ -363,7 +364,7 @@ impl<'gc> EventObject<'gc> {
 
 impl<'gc> TObject<'gc> for EventObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 

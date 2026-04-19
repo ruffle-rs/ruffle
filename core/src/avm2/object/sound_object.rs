@@ -5,6 +5,7 @@ use crate::avm2::Error;
 use crate::avm2::EventObject;
 use crate::avm2::activation::Activation;
 use crate::avm2::globals::slots::flash_media_id3info as id3_slots;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::backend::audio::{AudioManager, SoundHandle};
@@ -80,7 +81,7 @@ impl SoundObjectHandle {
 #[repr(C, align(8))]
 pub struct SoundObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::SoundObject>,
 
     /// Loading state of the sound.
     loading_state: Cell<SoundLoadingState>,
@@ -301,6 +302,6 @@ fn play_queued<'gc>(
 
 impl<'gc> TObject<'gc> for SoundObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

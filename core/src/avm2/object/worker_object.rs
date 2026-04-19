@@ -1,5 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::object::TObject;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
@@ -26,12 +27,12 @@ impl fmt::Debug for WorkerObject<'_> {
 #[repr(C, align(8))]
 pub struct WorkerObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::WorkerObject>,
 }
 
 impl<'gc> TObject<'gc> for WorkerObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 

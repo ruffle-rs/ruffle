@@ -4,6 +4,7 @@ use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::TObject;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::value::Value;
 use crate::string::AvmString;
@@ -34,7 +35,7 @@ impl fmt::Debug for NamespaceObject<'_> {
 #[repr(C, align(8))]
 pub struct NamespaceObjectData<'gc> {
     /// All normal script data.
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::NamespaceObject>,
 
     /// The namespace name this object is associated with.
     namespace: Namespace<'gc>,
@@ -92,7 +93,7 @@ impl<'gc> NamespaceObject<'gc> {
 
 impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {
