@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::dynamic_map::{DynamicKey, DynamicMap};
 use crate::avm2::error;
-use crate::avm2::object::kind::{self, Erased};
+use crate::avm2::object::kind::{self, Erased, Kind, ObjectKind};
 use crate::avm2::object::{ArrayObject, ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2::vtable::VTable;
@@ -62,6 +62,8 @@ impl ScriptObjectHandle {
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct ScriptObjectData<'gc, K = Erased> {
+    kind: ObjectKind,
+
     /// Values stored on this object.
     values: RefLock<DynamicMap<DynamicKey<'gc>, Value<'gc>>>,
 
@@ -136,12 +138,19 @@ impl<'gc> ScriptObject<'gc> {
 
 impl<'gc, K> ScriptObjectData<'gc, K> {
     #[inline(always)]
+    pub fn kind(&self) -> ObjectKind {
+        self.kind
+    }
+
+    #[inline(always)]
     pub fn erase_kind(this: Gc<'gc, Self>) -> Gc<'gc, ScriptObjectData<'gc, Erased>> {
         // SAFETY: K only appears in PhantomData and the struct is #[repr(C)], so
         // ScriptObjectData<'gc, K> has the same layout as ScriptObjectData<'gc, Erased>.
         unsafe { Gc::cast(this) }
     }
+}
 
+impl<'gc, K: Kind> ScriptObjectData<'gc, K> {
     /// Create new object data of a given class.
     /// This is a low-level function used to implement things like object allocators.
     pub fn new(instance_of: ClassObject<'gc>) -> Self {
@@ -172,6 +181,7 @@ impl<'gc, K> ScriptObjectData<'gc, K> {
             .collect::<Box<_>>();
 
         ScriptObjectData {
+            kind: K::ID,
             values: RefLock::new(Default::default()),
             slots,
             bound_methods: RefLock::new(Vec::new()),
