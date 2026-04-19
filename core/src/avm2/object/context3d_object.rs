@@ -28,11 +28,11 @@ use super::{ClassObject, IndexBuffer3DObject, Stage3DObject, VertexBuffer3DObjec
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct Context3DObject<'gc>(pub Gc<'gc, Context3DData<'gc>>);
+pub struct Context3DObject<'gc>(pub Gc<'gc, Context3DObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct Context3DObjectWeak<'gc>(pub GcWeak<'gc, Context3DData<'gc>>);
+pub struct Context3DObjectWeak<'gc>(pub GcWeak<'gc, Context3DObjectData<'gc>>);
 
 impl<'gc> Context3DObject<'gc> {
     pub fn from_context(
@@ -44,7 +44,7 @@ impl<'gc> Context3DObject<'gc> {
 
         Context3DObject(Gc::new(
             context.gc(),
-            Context3DData {
+            Context3DObjectData {
                 base: ScriptObjectData::new(class),
                 render_context: Cell::new(Some(context3d)),
                 stage3d,
@@ -501,7 +501,7 @@ impl<'gc> Context3DObject<'gc> {
 #[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
-pub struct Context3DData<'gc> {
+pub struct Context3DObjectData<'gc> {
     /// Base script object
     base: ScriptObjectData<'gc>,
 

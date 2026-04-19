@@ -77,6 +77,8 @@ mod worker_object;
 mod xml_list_object;
 mod xml_object;
 
+pub mod kind;
+
 pub use crate::avm2::object::array_object::{ArrayObject, ArrayObjectWeak, array_allocator};
 pub use crate::avm2::object::bitmapdata_object::{
     BitmapDataObject, BitmapDataObjectWeak, bitmap_data_allocator,
@@ -183,16 +185,6 @@ pub use crate::avm2::object::xml_object::{
     NotificationCommand, XmlObject, XmlObjectWeak, xml_allocator,
 };
 use crate::font::Font;
-
-macro_rules! define_marker {
-    ($name:ident) => {
-        #[derive(Clone, Collect)]
-        #[collect(require_static)]
-        pub enum $name {}
-    };
-}
-
-define_marker!(Erased);
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
