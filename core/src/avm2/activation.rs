@@ -663,7 +663,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::PushInt { value } => self.op_push_int(*value),
                 Op::PushNamespace { namespace } => self.op_push_namespace(*namespace),
                 Op::PushNull => self.op_push_null(),
-                Op::PushShort { value } => self.op_push_short(*value),
                 Op::PushString { string } => self.op_push_string(*string),
                 Op::PushTrue => self.op_push_true(),
                 Op::PushUint { value } => self.op_push_uint(*value),
@@ -978,11 +977,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_push_null(&mut self) -> Result<(), Error<'gc>> {
         self.push_stack(Value::Null);
-        Ok(())
-    }
-
-    fn op_push_short(&mut self, value: i16) -> Result<(), Error<'gc>> {
-        self.push_stack(value);
         Ok(())
     }
 

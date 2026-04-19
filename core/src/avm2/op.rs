@@ -268,9 +268,6 @@ pub enum Op<'gc> {
     },
     PushNull,
     PushScope,
-    PushShort {
-        value: i16,
-    },
     PushString {
         string: AvmAtom<'gc>,
     },
@@ -369,7 +366,6 @@ impl Op<'_> {
                 | Op::PushInt { .. }
                 | Op::PushNamespace { .. }
                 | Op::PushNull
-                | Op::PushShort { .. }
                 | Op::PushString { .. }
                 | Op::PushTrue
                 | Op::PushUint { .. }
@@ -407,7 +403,6 @@ impl Op<'_> {
                 | Op::PushNull
                 | Op::PushDouble { .. }
                 | Op::PushInt { .. }
-                | Op::PushShort { .. }
                 | Op::PushUint { .. }
                 | Op::GetLocal { .. }
                 | Op::Dup

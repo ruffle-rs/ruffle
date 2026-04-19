@@ -901,14 +901,6 @@ fn abstract_interpret_ops<'gc>(
             Op::PushUndefined => {
                 stack.push_class(activation, types.void)?;
             }
-            Op::PushShort { value } => {
-                let mut new_value = OptValue::of_type(types.int);
-                new_value.contains_valid_integer = true;
-                if value >= 0 {
-                    new_value.contains_valid_unsigned = true;
-                }
-                stack.push(activation, new_value)?;
-            }
             Op::PushInt { value } => {
                 let mut new_value = OptValue::of_type(types.int);
                 if value < -(1 << 28) || value >= (1 << 28) {
