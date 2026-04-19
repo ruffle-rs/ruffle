@@ -903,21 +903,17 @@ fn abstract_interpret_ops<'gc>(
             }
             Op::PushInt { value } => {
                 let mut new_value = OptValue::of_type(types.int);
-                if value < -(1 << 28) || value >= (1 << 28) {
-                    // will be coerced to Number
-                } else {
-                    new_value.contains_valid_integer = true;
-                    if value >= 0 {
-                        new_value.contains_valid_unsigned = true;
-                    }
+                new_value.contains_valid_integer = true;
+                if value >= 0 {
+                    new_value.contains_valid_unsigned = true;
                 }
                 stack.push(activation, new_value)?;
             }
             Op::PushUint { value } => {
                 let mut new_value = OptValue::of_type(types.uint);
-                if value < (1 << 28) {
+                new_value.contains_valid_unsigned = true;
+                if value <= (i32::MAX as u32) {
                     new_value.contains_valid_integer = true;
-                    new_value.contains_valid_unsigned = true;
                 }
                 stack.push(activation, new_value)?;
             }
