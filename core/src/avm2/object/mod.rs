@@ -23,7 +23,7 @@ use crate::streams::NetStream;
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
-use ruffle_macros::enum_trait_object;
+use ruffle_macros::tagged_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
 use std::hash::{Hash, Hasher};
@@ -208,7 +208,7 @@ pub(crate) unsafe trait ObjectVariant<'gc>: Copy {
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
-#[enum_trait_object(
+#[tagged_trait_object(
     #[expect(clippy::enum_variant_names)]
     #[derive(Clone, Collect, Debug, Copy)]
     #[collect(no_drop)]
@@ -760,11 +760,7 @@ macro_rules! impl_downcast_methods {
         #[doc = concat!("Downcast this object as a `", stringify!($variant), "`.")]
         #[inline(always)]
         $vis fn $fn_name(self) -> Option<$variant<'gc>> {
-            if let Self::$variant(obj) = self {
-                Some(obj)
-            } else {
-                None
-            }
+            cast::downcast::<$variant<'gc>>(self.0)
         }
     )* }
 }
@@ -888,7 +884,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Unwrap this object as a font.
-    pub fn as_font(&self) -> Option<Font<'gc>> {
+    pub fn as_font(self) -> Option<Font<'gc>> {
         self.as_font_object().and_then(|o| o.font())
     }
 
@@ -903,7 +899,7 @@ impl<'gc> Object<'gc> {
     }
 
     /// Unwrap this object as a bitmap data.
-    pub fn as_bitmap_data(&self) -> Option<BitmapData<'gc>> {
+    pub fn as_bitmap_data(self) -> Option<BitmapData<'gc>> {
         self.as_bitmap_data_object().map(|o| o.get_bitmap_data())
     }
 
@@ -957,15 +953,23 @@ macro_rules! define_weak_enum {
 
             $vis fn upgrade(self, mc: &Mutation<'gc>) -> Option<$strong_enum<'gc>> {
                 match self {
-                    $( Self::$variant(o) => $strong_enum::$variant($variant(o.0.upgrade(mc)?)).into(), )*
+                    $( Self::$variant(o) => Some($variant(o.0.upgrade(mc)?).into()), )*
                 }
             }
         }
 
         impl<'gc> $strong_enum<'gc> {
             $vis fn downgrade(self) -> $weak_enum<'gc> {
-                match self {
-                    $( Self::$variant(o) => $weak_enum::$variant($weak_ty(Gc::downgrade(o.0))), )*
+                match self.0.kind() {
+                    $(
+                        crate::avm2::object::kind::ObjectKind::$variant => {
+                            // SAFETY: the kind tag matches.
+                            let obj: $variant<'gc> = unsafe {
+                                crate::avm2::object::cast::downcast_unchecked(self.0)
+                            };
+                            $weak_enum::$variant($weak_ty(Gc::downgrade(obj.0)))
+                        }
+                    )*
                 }
             }
         }

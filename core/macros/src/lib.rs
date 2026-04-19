@@ -249,6 +249,312 @@ pub fn enum_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
     out.into()
 }
 
+/// Sibling of [`enum_trait_object`] that emits a pointer-sized tagged handle
+/// instead of an enum.
+///
+/// Takes the same input shape: an `enum`-shaped variant list inside the
+/// attribute, plus the annotated trait. Generates:
+///
+/// * A `#[repr(transparent)]` struct with the enum's name, wrapping
+///   `Gc<'gc, crate::avm2::object::ScriptObjectData<'gc, crate::avm2::object::kind::Erased>>`.
+/// * An `impl Trait for Struct` whose method bodies match on
+///   `self.0.kind()` and dispatch via `crate::avm2::object::cast::downcast_unchecked`.
+/// * `From<Variant> for Struct` impls backed by
+///   `crate::avm2::object::cast::upcast`.
+///
+/// `#[no_dynamic]` is handled identically to `enum_trait_object`: the original
+/// default body is moved into the struct's impl, the trait's default body
+/// becomes a delegating `(*self).into().method(...)` call, and the NoDyn
+/// pub-in-private trait prevents variants from overriding.
+///
+/// The inner Gc type, kind accessor, and cast functions are hardcoded to the
+/// paths above — this macro is specifically for the AVM2 `Object` type.
+#[proc_macro_attribute]
+pub fn tagged_trait_object(args: TokenStream, item: TokenStream) -> TokenStream {
+    let mut input_trait = parse_macro_input!(item as ItemTrait);
+    let trait_name = &input_trait.ident;
+    let trait_generics = &input_trait.generics;
+    let enum_input = parse_macro_input!(args as ItemEnum);
+    let struct_name = &enum_input.ident;
+
+    assert!(
+        trait_generics.lifetimes().count() == 1,
+        "tagged_trait_object requires exactly one lifetime parameter"
+    );
+    assert!(
+        trait_generics.type_params().count() == 0,
+        "Generic type parameters are currently unsupported"
+    );
+    assert_eq!(
+        trait_generics, &enum_input.generics,
+        "Trait and struct should have the same generic parameters"
+    );
+
+    let lt = &trait_generics.lifetimes().next().unwrap().lifetime;
+
+    // Same NoDyn pub-in-private trick as enum_trait_object for #[no_dynamic]
+    // methods: variants inherit a delegating default body and cannot override.
+    struct NoOverrideModule {
+        mod_name: syn::Ident,
+        lt: syn::Lifetime,
+        contents: TokenStream2,
+    }
+    impl NoOverrideModule {
+        fn make(trait_name: &syn::Ident) -> Self {
+            let mod_name = syn::Ident::new(
+                &format!("__{trait_name}_do_not_override"),
+                Span::call_site(),
+            );
+            let lt = syn::Lifetime::new("'no_dyn", Span::call_site());
+            let contents = quote! {
+                #[automatically_derived]
+                #[doc(hidden)]
+                mod #mod_name {
+                    pub trait NoDyn<#lt> {}
+                    impl NoDyn<'_> for () {}
+                }
+            };
+            Self {
+                mod_name,
+                lt,
+                contents,
+            }
+        }
+
+        fn adjust_method(&self, method: &mut syn::TraitItemFn) {
+            let Self { mod_name, lt, .. } = self;
+            let generics = &mut method.sig.generics;
+            generics
+                .params
+                .insert(0, syn::LifetimeParam::new(lt.clone()).into());
+            generics
+                .make_where_clause()
+                .predicates
+                .push(parse_quote!((): #mod_name::NoDyn<#lt>));
+        }
+    }
+
+    let mut no_override: Option<NoOverrideModule> = None;
+
+    let trait_methods: Vec<_> = input_trait
+        .items
+        .iter_mut()
+        .map(|item| match item {
+            TraitItem::Fn(method) => {
+                let mut is_no_dynamic = false;
+                method.attrs.retain(|attr| match &attr.meta {
+                    Meta::Path(path) if path.is_ident("no_dynamic") => {
+                        is_no_dynamic = true;
+                        false
+                    }
+                    _ => true,
+                });
+
+                let params: Vec<_> = method
+                    .sig
+                    .inputs
+                    .iter()
+                    .filter_map(|arg| {
+                        if let FnArg::Typed(arg) = arg && let Pat::Ident(i) = &*arg.pat {
+                            return Some(i.ident.clone());
+                        }
+                        None
+                    })
+                    .collect();
+
+                let self_token: syn::Token![self] = method
+                    .sig
+                    .receiver()
+                    .map(|r| r.self_token)
+                    .unwrap_or_else(|| syn::Token![self](Span::call_site()));
+
+                let method_block = if is_no_dynamic {
+                    no_override
+                        .get_or_insert_with(|| NoOverrideModule::make(trait_name))
+                        .adjust_method(method);
+
+                    let method_name = &method.sig.ident;
+                    let deref = if let Some(syn::Receiver {
+                        colon_token: None,
+                        reference,
+                        ..
+                    }) = method.sig.receiver()
+                    {
+                        reference.is_some().then(|| quote!(*))
+                    } else {
+                        panic!("#[no_dynamic] method `{method_name}` must take `self`, `&self`, or `&mut self`")
+                    };
+
+                    method
+                        .default
+                        .replace(parse_quote!({
+                            let mut o: #struct_name<'_> = (#deref #self_token).into();
+                            o.#method_name(#(#params),*)
+                        }))
+                        .expect("#[no_dynamic] method `{method_name}` must have a default body")
+                } else {
+                    let method_name = &method.sig.ident;
+                    let match_arms: Vec<_> = enum_input
+                        .variants
+                        .iter()
+                        .map(|variant| {
+                            let variant_name = &variant.ident;
+                            let variant_type = &variant
+                                .fields
+                                .iter()
+                                .next()
+                                .expect("Missing field for enum variant")
+                                .ty;
+                            quote! {
+                                crate::avm2::object::kind::ObjectKind::#variant_name => {
+                                    // SAFETY: the kind tag matches T::Kind::ID for this variant,
+                                    // so the allocation is originally of this variant's Data type.
+                                    let o: #variant_type = unsafe {
+                                        crate::avm2::object::cast::downcast_unchecked(#self_token.0)
+                                    };
+                                    o.#method_name(#(#params),*)
+                                }
+                            }
+                        })
+                        .collect();
+
+                    parse_quote!({
+                        match #self_token.0.kind() {
+                            #(#match_arms)*
+                        }
+                    })
+                };
+
+                ImplItem::Fn(ImplItemFn {
+                    attrs: method.attrs.clone(),
+                    vis: Visibility::Inherited,
+                    defaultness: None,
+                    sig: method.sig.clone(),
+                    block: method_block,
+                })
+            }
+            _ => panic!("Unsupported trait item: {item:?}"),
+        })
+        .collect();
+
+    let (impl_generics, ty_generics, where_clause) = trait_generics.split_for_impl();
+
+    let from_impls: Vec<_> = enum_input
+        .variants
+        .iter()
+        .map(|variant| {
+            let variant_type = &variant
+                .fields
+                .iter()
+                .next()
+                .expect("Missing field for enum variant")
+                .ty;
+            quote!(
+                impl #impl_generics From<#variant_type> for #struct_name #ty_generics {
+                    fn from(obj: #variant_type) -> #struct_name #trait_generics {
+                        #struct_name(crate::avm2::object::cast::upcast(obj))
+                    }
+                }
+            )
+        })
+        .collect();
+
+    // Copy the enum's attrs onto the struct, dropping enum-specific lints and
+    // filtering `Debug` out of `#[derive(...)]` (auto-deriving Debug on the
+    // struct's `Gc<ScriptObjectData<Erased>>` field doesn't work because
+    // `ScriptObjectData` doesn't itself implement Debug; we emit a manual impl
+    // further down).
+    let mut derived_debug = false;
+    let struct_attrs: Vec<_> = enum_input
+        .attrs
+        .iter()
+        .filter_map(|attr| match &attr.meta {
+            Meta::List(list) if list.path.is_ident("expect") || list.path.is_ident("allow") => {
+                if list.tokens.to_string().contains("enum_variant_names") {
+                    None
+                } else {
+                    Some(attr.clone())
+                }
+            }
+            Meta::List(list) if list.path.is_ident("derive") => {
+                let tokens = list.tokens.to_string();
+                if tokens.split(',').any(|t| t.trim() == "Debug") {
+                    derived_debug = true;
+                    // Strip just `Debug` from the derive list. If removing it leaves
+                    // nothing, drop the whole attribute.
+                    let kept: Vec<_> = tokens
+                        .split(',')
+                        .map(|t| t.trim())
+                        .filter(|t| *t != "Debug")
+                        .collect();
+                    if kept.is_empty() {
+                        None
+                    } else {
+                        let list_tokens: TokenStream2 = kept
+                            .join(", ")
+                            .parse()
+                            .expect("Failed to re-parse derive list");
+                        let path = &list.path;
+                        Some(syn::parse_quote! { #[#path(#list_tokens)] })
+                    }
+                } else {
+                    Some(attr.clone())
+                }
+            }
+            _ => Some(attr.clone()),
+        })
+        .collect();
+    let struct_vis = &enum_input.vis;
+    let struct_generics = &enum_input.generics;
+
+    let debug_impl = if derived_debug {
+        quote! {
+            impl #impl_generics ::core::fmt::Debug for #struct_name #ty_generics #where_clause {
+                fn fmt(&self, f: &mut ::core::fmt::Formatter<'_>) -> ::core::fmt::Result {
+                    f.debug_tuple(stringify!(#struct_name))
+                        .field(&self.0.kind())
+                        .finish()
+                }
+            }
+        }
+    } else {
+        quote!()
+    };
+
+    let struct_def = quote! {
+        #(#struct_attrs)*
+        #[repr(transparent)]
+        #struct_vis struct #struct_name #struct_generics(
+            pub ::gc_arena::Gc<
+                #lt,
+                crate::avm2::object::ScriptObjectData<
+                    #lt,
+                    crate::avm2::object::kind::Erased,
+                >,
+            >,
+        );
+    };
+
+    let no_override = no_override.map(|s| s.contents).into_iter();
+    let out = quote!(
+        #(#no_override)*
+
+        #input_trait
+
+        #struct_def
+
+        impl #impl_generics #trait_name #ty_generics for #struct_name #ty_generics #where_clause {
+            #(#trait_methods)*
+        }
+
+        #debug_impl
+
+        #(#from_impls)*
+    );
+
+    out.into()
+}
+
 #[proc_macro_derive(HasPrefixField)]
 pub fn derive_has_prefix_field(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
