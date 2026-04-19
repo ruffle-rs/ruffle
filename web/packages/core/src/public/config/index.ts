@@ -9,3 +9,4 @@
 
 export * from "./default";
 export * from "./load-options";
+export * from "./custom-font-bridge";
