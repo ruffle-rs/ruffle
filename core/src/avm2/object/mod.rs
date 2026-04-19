@@ -78,6 +78,7 @@ mod worker_object;
 mod xml_list_object;
 mod xml_object;
 
+pub(crate) mod cast;
 pub mod kind;
 
 pub use crate::avm2::object::array_object::{ArrayObject, ArrayObjectWeak, array_allocator};
