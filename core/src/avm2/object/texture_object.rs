@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::{Context3DTextureFormat, Texture};
 use std::rc::Rc;
@@ -14,10 +14,6 @@ use super::{ClassObject, Context3DObject};
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct TextureObject<'gc>(pub Gc<'gc, TextureObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct TextureObjectWeak<'gc>(pub GcWeak<'gc, TextureObjectData<'gc>>);
 
 impl<'gc> TextureObject<'gc> {
     pub fn from_handle(

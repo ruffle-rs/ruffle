@@ -11,7 +11,7 @@ use crate::avm2::object::{ClassObject, Object, QNameObject, TObject};
 use crate::avm2::value::Value;
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 
@@ -28,10 +28,6 @@ pub fn proxy_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct ProxyObject<'gc>(pub Gc<'gc, ProxyObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ProxyObjectWeak<'gc>(pub GcWeak<'gc, ProxyObjectData<'gc>>);
 
 impl fmt::Debug for ProxyObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

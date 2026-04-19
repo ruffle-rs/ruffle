@@ -9,7 +9,7 @@ use crate::avm2::value::Value;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapRawData;
 use crate::context::{RenderContext, UpdateContext};
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use naga_agal::AgalError;
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::{
@@ -30,10 +30,6 @@ use super::{ClassObject, IndexBuffer3DObject, Stage3DObject, VertexBuffer3DObjec
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Context3DObject<'gc>(pub Gc<'gc, Context3DObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct Context3DObjectWeak<'gc>(pub GcWeak<'gc, Context3DObjectData<'gc>>);
 
 impl<'gc> Context3DObject<'gc> {
     pub fn from_context(

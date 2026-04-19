@@ -13,7 +13,7 @@ use crate::context::UpdateContext;
 use crate::string::AvmString;
 use gc_arena::barrier::{field, unlock};
 use gc_arena::{
-    Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable,
+    Collect, DynamicRoot, Gc, Mutation, Rootable,
     lock::{Lock, RefLock},
 };
 use std::cell::{Ref, RefMut};
@@ -34,10 +34,6 @@ pub fn scriptobject_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct ScriptObject<'gc>(pub Gc<'gc, ScriptObjectData<'gc, kind::ScriptObject>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ScriptObjectWeak<'gc>(pub GcWeak<'gc, ScriptObjectData<'gc, kind::ScriptObject>>);
 
 #[derive(Clone)]
 #[allow(clippy::type_complexity)]

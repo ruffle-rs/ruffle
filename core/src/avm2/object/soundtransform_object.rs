@@ -4,7 +4,7 @@ use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
 
@@ -32,10 +32,6 @@ pub fn sound_transform_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct SoundTransformObject<'gc>(pub Gc<'gc, SoundTransformObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct SoundTransformObjectWeak<'gc>(pub GcWeak<'gc, SoundTransformObjectData<'gc>>);
 
 impl fmt::Debug for SoundTransformObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

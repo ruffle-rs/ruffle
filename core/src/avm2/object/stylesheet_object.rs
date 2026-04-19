@@ -5,7 +5,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::html::{StyleSheet, TextFormat};
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_wstr::{WStr, WString};
 
@@ -29,10 +29,6 @@ pub fn style_sheet_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct StyleSheetObject<'gc>(pub Gc<'gc, StyleSheetObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct StyleSheetObjectWeak<'gc>(pub GcWeak<'gc, StyleSheetObjectData<'gc>>);
 
 impl fmt::Debug for StyleSheetObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

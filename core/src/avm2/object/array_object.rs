@@ -12,7 +12,7 @@ use crate::context::UpdateContext;
 use crate::string::{AvmString, WStr};
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
+use gc_arena::{Collect, Gc, Mutation, lock::RefLock};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefMut};
 
@@ -37,10 +37,6 @@ pub fn array_allocator<'gc>(
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct ArrayObject<'gc>(pub Gc<'gc, ArrayObjectData<'gc>>);
-
-#[derive(Collect, Clone, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ArrayObjectWeak<'gc>(pub GcWeak<'gc, ArrayObjectData<'gc>>);
 
 impl fmt::Debug for ArrayObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

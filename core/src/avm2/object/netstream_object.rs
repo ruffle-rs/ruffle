@@ -6,7 +6,7 @@ use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::streams::NetStream;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use std::fmt::Debug;
 
@@ -29,10 +29,6 @@ pub fn netstream_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct NetStreamObject<'gc>(pub Gc<'gc, NetStreamObjectData<'gc>>);
-
-#[derive(Collect, Clone, Copy, Debug)]
-#[collect(no_drop)]
-pub struct NetStreamObjectWeak<'gc>(pub GcWeak<'gc, NetStreamObjectData<'gc>>);
 
 #[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]

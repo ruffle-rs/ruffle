@@ -4,7 +4,7 @@ use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error};
 use crate::backend::ui::FileDialogSelection;
 use crate::context::UpdateContext;
-use gc_arena::{Collect, DynamicRoot, Gc, GcWeak, Rootable};
+use gc_arena::{Collect, DynamicRoot, Gc, Rootable};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, Ref, RefCell};
 use std::fmt;
@@ -29,10 +29,6 @@ pub fn file_reference_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct FileReferenceObject<'gc>(pub Gc<'gc, FileReferenceObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct FileReferenceObjectWeak<'gc>(pub GcWeak<'gc, FileReferenceObjectData<'gc>>);
 
 #[derive(Clone)]
 pub struct FileReferenceObjectHandle(DynamicRoot<Rootable![FileReferenceObjectData<'_>]>);

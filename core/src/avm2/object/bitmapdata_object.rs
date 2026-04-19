@@ -9,7 +9,7 @@ use crate::bitmap::bitmap_data::BitmapData;
 use crate::context::UpdateContext;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
+use gc_arena::{Collect, Gc, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
 
 /// A class instance allocator that allocates BitmapData objects.
@@ -35,10 +35,6 @@ pub fn bitmap_data_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct BitmapDataObject<'gc>(pub Gc<'gc, BitmapDataObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct BitmapDataObjectWeak<'gc>(pub GcWeak<'gc, BitmapDataObjectData<'gc>>);
 
 impl fmt::Debug for BitmapDataObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

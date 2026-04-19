@@ -14,7 +14,7 @@ use crate::avm2::{Error, Multiname, Namespace};
 use crate::string::AvmString;
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    Collect, Gc, GcWeak, Mutation,
+    Collect, Gc, Mutation,
     lock::{Lock, RefLock},
 };
 use ruffle_common::utils::HasPrefixField;
@@ -50,10 +50,6 @@ pub fn xml_list_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct XmlListObject<'gc>(pub Gc<'gc, XmlListObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct XmlListObjectWeak<'gc>(pub GcWeak<'gc, XmlListObjectData<'gc>>);
 
 impl Debug for XmlListObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

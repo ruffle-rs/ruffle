@@ -13,7 +13,7 @@ use crate::display_object::{DisplayObject, InteractiveObject, TInteractiveObject
 use crate::events::{KeyCode, MouseButton};
 use crate::string::AvmString;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
+use gc_arena::{Collect, Gc, Mutation, lock::RefLock};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::{Ref, RefMut};
@@ -39,10 +39,6 @@ pub fn event_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct EventObject<'gc>(pub Gc<'gc, EventObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct EventObjectWeak<'gc>(pub GcWeak<'gc, EventObjectData<'gc>>);
 
 #[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]

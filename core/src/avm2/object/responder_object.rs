@@ -6,7 +6,7 @@ use crate::avm2::{Activation, Error};
 use crate::net_connection::ResponderCallback;
 use flash_lso::types::Value as AMFValue;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
+use gc_arena::{Collect, Gc, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
 use std::fmt;
 
@@ -31,10 +31,6 @@ pub fn responder_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct ResponderObject<'gc>(pub Gc<'gc, ResponderObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ResponderObjectWeak<'gc>(pub GcWeak<'gc, ResponderObjectData<'gc>>);
 
 impl<'gc> TObject<'gc> for ResponderObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {

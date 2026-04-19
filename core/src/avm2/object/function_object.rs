@@ -14,7 +14,7 @@ use crate::context::UpdateContext;
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
+use gc_arena::{Collect, Gc, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 
@@ -22,10 +22,6 @@ use ruffle_macros::istr;
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct FunctionObject<'gc>(pub Gc<'gc, FunctionObjectData<'gc>>);
-
-#[derive(Collect, Clone, Copy, Debug)]
-#[collect(no_drop)]
-pub struct FunctionObjectWeak<'gc>(pub GcWeak<'gc, FunctionObjectData<'gc>>);
 
 impl fmt::Debug for FunctionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -6,17 +6,12 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, ScriptObject, TObject};
 use crate::context::UpdateContext;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, lock::Lock};
+use gc_arena::{Collect, Gc, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
-use std::fmt::Debug;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct SharedObjectObject<'gc>(pub Gc<'gc, SharedObjectObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct SharedObjectObjectWeak<'gc>(pub GcWeak<'gc, SharedObjectObjectData<'gc>>);
 
 #[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]

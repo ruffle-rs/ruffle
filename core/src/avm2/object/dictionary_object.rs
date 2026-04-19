@@ -9,7 +9,7 @@ use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 
 /// A class instance allocator that allocates Dictionary objects.
@@ -30,10 +30,6 @@ pub fn dictionary_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct DictionaryObject<'gc>(pub Gc<'gc, DictionaryObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct DictionaryObjectWeak<'gc>(pub GcWeak<'gc, DictionaryObjectData<'gc>>);
 
 impl fmt::Debug for DictionaryObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
