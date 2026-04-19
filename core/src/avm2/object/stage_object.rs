@@ -7,17 +7,13 @@ use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, TObject};
 use crate::display_object::DisplayObject;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::fmt::Debug;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct StageObject<'gc>(pub Gc<'gc, StageObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct StageObjectWeak<'gc>(pub GcWeak<'gc, StageObjectData<'gc>>);
 
 #[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]

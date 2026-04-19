@@ -15,7 +15,7 @@ use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    Collect, DynamicRoot, Gc, GcWeak, Mutation, Rootable,
+    Collect, DynamicRoot, Gc, Mutation, Rootable,
     lock::{Lock, RefLock},
 };
 use id3::{Tag, TagLike};
@@ -50,10 +50,6 @@ pub fn sound_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct SoundObject<'gc>(pub Gc<'gc, SoundObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct SoundObjectWeak<'gc>(pub GcWeak<'gc, SoundObjectData<'gc>>);
 
 impl fmt::Debug for SoundObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

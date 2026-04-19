@@ -4,7 +4,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::VertexBuffer;
 use std::rc::Rc;
@@ -14,10 +14,6 @@ use super::Context3DObject;
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct VertexBuffer3DObject<'gc>(pub Gc<'gc, VertexBuffer3DObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct VertexBuffer3DObjectWeak<'gc>(pub GcWeak<'gc, VertexBuffer3DObjectData<'gc>>);
 
 impl<'gc> VertexBuffer3DObject<'gc> {
     pub fn from_handle(

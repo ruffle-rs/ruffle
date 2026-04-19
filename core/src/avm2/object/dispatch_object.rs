@@ -7,7 +7,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
+use gc_arena::{Collect, Gc, Mutation, lock::RefLock};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::RefMut;
 
@@ -39,10 +39,6 @@ use std::cell::RefMut;
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct DispatchObject<'gc>(pub Gc<'gc, DispatchObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct DispatchObjectWeak<'gc>(pub GcWeak<'gc, DispatchObjectData<'gc>>);
 
 impl fmt::Debug for DispatchObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -11,7 +11,7 @@ use crate::avm2::vector::VectorStorage;
 use crate::string::WStr;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
+use gc_arena::{Collect, Gc, Mutation, lock::RefLock};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefMut};
 
@@ -41,10 +41,6 @@ pub fn vector_allocator<'gc>(
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct VectorObject<'gc>(pub Gc<'gc, VectorObjectData<'gc>>);
-
-#[derive(Collect, Clone, Copy, Debug)]
-#[collect(no_drop)]
-pub struct VectorObjectWeak<'gc>(pub GcWeak<'gc, VectorObjectData<'gc>>);
 
 impl fmt::Debug for VectorObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

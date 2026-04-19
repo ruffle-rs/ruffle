@@ -9,7 +9,7 @@ use crate::avm2::value::Value;
 use crate::character::Character;
 use crate::context::UpdateContext;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefCell, RefMut};
 
@@ -59,10 +59,6 @@ pub fn byte_array_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct ByteArrayObject<'gc>(pub Gc<'gc, ByteArrayObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ByteArrayObjectWeak<'gc>(pub GcWeak<'gc, ByteArrayObjectData<'gc>>);
 
 impl fmt::Debug for ByteArrayObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -24,7 +24,7 @@ use crate::string::AvmString;
 use fnv::FnvHashMap;
 use gc_arena::barrier::unlock;
 use gc_arena::{
-    Collect, Gc, GcWeak, Mutation,
+    Collect, Gc, Mutation,
     lock::{Lock, RefLock},
 };
 use ruffle_common::utils::HasPrefixField;
@@ -36,10 +36,6 @@ use std::hash::{Hash, Hasher};
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct ClassObject<'gc>(pub Gc<'gc, ClassObjectData<'gc>>);
-
-#[derive(Collect, Clone, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ClassObjectWeak<'gc>(pub GcWeak<'gc, ClassObjectData<'gc>>);
 
 #[derive(Collect, Clone, HasPrefixField)]
 #[collect(no_drop)]

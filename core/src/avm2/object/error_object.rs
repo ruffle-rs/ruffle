@@ -9,9 +9,8 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
-use std::fmt::Debug;
 
 /// A class instance allocator that allocates Error objects.
 pub fn error_allocator<'gc>(
@@ -26,10 +25,6 @@ pub fn error_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct ErrorObject<'gc>(pub Gc<'gc, ErrorObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ErrorObjectWeak<'gc>(pub GcWeak<'gc, ErrorObjectData<'gc>>);
 
 impl fmt::Debug for ErrorObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -9,7 +9,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::value::Value;
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 
@@ -17,10 +17,6 @@ use ruffle_macros::istr;
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct NamespaceObject<'gc>(pub Gc<'gc, NamespaceObjectData<'gc>>);
-
-#[derive(Collect, Clone, Copy, Debug)]
-#[collect(no_drop)]
-pub struct NamespaceObjectWeak<'gc>(pub GcWeak<'gc, NamespaceObjectData<'gc>>);
 
 impl fmt::Debug for NamespaceObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

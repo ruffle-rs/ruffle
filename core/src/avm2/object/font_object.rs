@@ -4,7 +4,7 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::{Activation, ClassObject, Error};
 use crate::character::Character;
 use crate::font::Font;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::fmt;
 
@@ -40,10 +40,6 @@ pub fn font_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct FontObject<'gc>(pub Gc<'gc, FontObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct FontObjectWeak<'gc>(pub GcWeak<'gc, FontObjectData<'gc>>);
 
 impl<'gc> FontObject<'gc> {
     pub fn for_font(mc: &Mutation<'gc>, class: ClassObject<'gc>, font: Font<'gc>) -> Object<'gc> {

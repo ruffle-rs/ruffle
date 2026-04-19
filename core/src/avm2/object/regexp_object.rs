@@ -8,7 +8,7 @@ use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::regexp::RegExp;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
+use gc_arena::{Collect, Gc, Mutation, lock::RefLock};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::{Ref, RefMut};
@@ -33,10 +33,6 @@ pub fn reg_exp_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct RegExpObject<'gc>(pub Gc<'gc, RegExpObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct RegExpObjectWeak<'gc>(pub GcWeak<'gc, RegExpObjectData<'gc>>);
 
 impl fmt::Debug for RegExpObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

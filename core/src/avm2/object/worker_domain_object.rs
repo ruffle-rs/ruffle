@@ -3,16 +3,12 @@ use crate::avm2::object::TObject;
 use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct WorkerDomainObject<'gc>(pub Gc<'gc, WorkerDomainObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct WorkerDomainObjectWeak<'gc>(pub GcWeak<'gc, WorkerDomainObjectData<'gc>>);
 
 impl fmt::Debug for WorkerDomainObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

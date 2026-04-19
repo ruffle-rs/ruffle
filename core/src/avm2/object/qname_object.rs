@@ -10,7 +10,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::value::Value;
 use crate::string::StringContext;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 
@@ -18,10 +18,6 @@ use ruffle_macros::istr;
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct QNameObject<'gc>(pub Gc<'gc, QNameObjectData<'gc>>);
-
-#[derive(Collect, Clone, Copy, Debug)]
-#[collect(no_drop)]
-pub struct QNameObjectWeak<'gc>(pub GcWeak<'gc, QNameObjectData<'gc>>);
 
 impl fmt::Debug for QNameObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

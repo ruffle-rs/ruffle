@@ -7,7 +7,7 @@ use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::html::TextFormat;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefCell, RefMut};
 
@@ -29,10 +29,6 @@ pub fn textformat_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct TextFormatObject<'gc>(pub Gc<'gc, TextFormatObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct TextFormatObjectWeak<'gc>(pub GcWeak<'gc, TextFormatObjectData<'gc>>);
 
 impl fmt::Debug for TextFormatObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

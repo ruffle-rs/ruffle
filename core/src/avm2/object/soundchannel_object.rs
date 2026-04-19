@@ -9,7 +9,7 @@ use crate::backend::audio::SoundInstanceHandle;
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, RefCell};
 
@@ -37,10 +37,6 @@ pub fn sound_channel_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct SoundChannelObject<'gc>(pub Gc<'gc, SoundChannelObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct SoundChannelObjectWeak<'gc>(pub GcWeak<'gc, SoundChannelObjectData<'gc>>);
 
 impl fmt::Debug for SoundChannelObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

@@ -7,7 +7,7 @@ use crate::avm2::value::Hint;
 use crate::context::UpdateContext;
 use chrono::{DateTime, Utc};
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
 
@@ -28,10 +28,6 @@ pub fn date_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct DateObject<'gc>(pub Gc<'gc, DateObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct DateObjectWeak<'gc>(pub GcWeak<'gc, DateObjectData<'gc>>);
 
 impl fmt::Debug for DateObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

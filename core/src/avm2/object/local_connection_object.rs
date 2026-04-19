@@ -12,7 +12,7 @@ use crate::string::AvmString;
 use core::fmt;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
+use gc_arena::{Collect, Gc, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 use std::cell::RefCell;
@@ -41,10 +41,6 @@ pub fn local_connection_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct LocalConnectionObject<'gc>(pub Gc<'gc, LocalConnectionObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct LocalConnectionObjectWeak<'gc>(pub GcWeak<'gc, LocalConnectionObjectData<'gc>>);
 
 impl fmt::Debug for LocalConnectionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

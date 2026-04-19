@@ -7,17 +7,13 @@ use crate::context::UpdateContext;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::Cell;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct Stage3DObject<'gc>(pub Gc<'gc, Stage3DObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct Stage3DObjectWeak<'gc>(pub GcWeak<'gc, Stage3DObjectData<'gc>>);
 
 impl fmt::Debug for Stage3DObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
