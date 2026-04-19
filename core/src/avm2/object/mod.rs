@@ -22,6 +22,7 @@ use crate::html::TextFormat;
 use crate::streams::NetStream;
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::enum_trait_object;
 use std::cell::{Ref, RefMut};
 use std::fmt::Debug;
@@ -185,6 +186,24 @@ pub use crate::avm2::object::xml_object::{
     NotificationCommand, XmlObject, XmlObjectWeak, xml_allocator,
 };
 use crate::font::Font;
+
+/// # Safety
+/// - `Self` is a `Copy` newtype wrapping `Gc<'gc, Self::Data>`.
+/// - `Self::Data` has `ScriptObjectData<'gc, Self::Kind>` as its first field at
+///   offset 0 (expressed by the `HasPrefixField` bound).
+/// - Every safely constructed `Self::Data` has its base's runtime kind equal to
+///   `Self::Kind::ID`.
+#[allow(dead_code)]
+pub(crate) unsafe trait ObjectVariant<'gc>: Copy {
+    type Kind: kind::Kind;
+    type Data: HasPrefixField<ScriptObjectData<'gc, Self::Kind>> + 'gc;
+
+    fn data_gc(self) -> Gc<'gc, Self::Data>;
+
+    /// # Safety
+    /// `gc` must point to an allocation originally allocated as `Self::Data`.
+    unsafe fn from_data_gc_unchecked(gc: Gc<'gc, Self::Data>) -> Self;
+}
 
 /// Represents an object that can be directly interacted with by the AVM2
 /// runtime.
