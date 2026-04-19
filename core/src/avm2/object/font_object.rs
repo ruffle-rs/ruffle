@@ -1,3 +1,4 @@
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::{Activation, ClassObject, Error};
@@ -64,7 +65,7 @@ impl<'gc> FontObject<'gc> {
 
 impl<'gc> TObject<'gc> for FontObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 
@@ -73,7 +74,7 @@ impl<'gc> TObject<'gc> for FontObject<'gc> {
 #[repr(C, align(8))]
 pub struct FontObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::FontObject>,
 
     font: Option<Font<'gc>>,
 }

@@ -1,5 +1,6 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::html::{StyleSheet, TextFormat};
@@ -47,14 +48,14 @@ impl fmt::Debug for StyleSheetObject<'_> {
 #[repr(C, align(8))]
 pub struct StyleSheetObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::StyleSheetObject>,
 
     style_sheet: StyleSheet<'gc>,
 }
 
 impl<'gc> TObject<'gc> for StyleSheetObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 

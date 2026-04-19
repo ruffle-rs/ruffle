@@ -1,6 +1,7 @@
 //! Loader-info object
 
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{EventObject, Object, StageObject, TObject};
 use crate::avm2::{Avm2, Error};
@@ -73,7 +74,7 @@ impl fmt::Debug for LoaderInfoObject<'_> {
 #[repr(C, align(8))]
 pub struct LoaderInfoObjectData<'gc> {
     /// All normal script data.
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::LoaderInfoObject>,
 
     /// The loaded stream that this gets its info from.
     loaded_stream: RefLock<LoaderStream<'gc>>,
@@ -289,6 +290,6 @@ impl<'gc> LoaderInfoObject<'gc> {
 
 impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

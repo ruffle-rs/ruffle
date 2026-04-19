@@ -2,6 +2,7 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::streams::NetStream;
@@ -37,7 +38,7 @@ pub struct NetStreamObjectWeak<'gc>(pub GcWeak<'gc, NetStreamObjectData<'gc>>);
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct NetStreamObjectData<'gc> {
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::NetStreamObject>,
     ns: NetStream<'gc>,
 }
 
@@ -49,7 +50,7 @@ impl<'gc> NetStreamObject<'gc> {
 
 impl<'gc> TObject<'gc> for NetStreamObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 

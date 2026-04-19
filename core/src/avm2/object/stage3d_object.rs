@@ -1,5 +1,6 @@
 //! Object representation for Stage3D objects
 
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
 use crate::context::UpdateContext;
@@ -61,7 +62,7 @@ impl<'gc> Stage3DObject<'gc> {
 #[repr(C, align(8))]
 pub struct Stage3DObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::Stage3DObject>,
 
     /// The context3D object associated with this Stage3D object,
     /// if it's been created with `requestContext3D`
@@ -71,6 +72,6 @@ pub struct Stage3DObjectData<'gc> {
 
 impl<'gc> TObject<'gc> for Stage3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

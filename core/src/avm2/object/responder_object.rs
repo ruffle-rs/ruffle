@@ -1,4 +1,5 @@
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, FunctionObject, Object, TObject};
 use crate::avm2::{Activation, Error};
@@ -37,7 +38,7 @@ pub struct ResponderObjectWeak<'gc>(pub GcWeak<'gc, ResponderObjectData<'gc>>);
 
 impl<'gc> TObject<'gc> for ResponderObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 
@@ -87,7 +88,7 @@ impl<'gc> ResponderObject<'gc> {
 #[repr(C, align(8))]
 pub struct ResponderObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::ResponderObject>,
 
     /// Method to call with any result
     result: Lock<Option<FunctionObject<'gc>>>,

@@ -3,6 +3,7 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::dynamic_map::DynamicKey;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
@@ -47,7 +48,7 @@ impl fmt::Debug for DictionaryObject<'_> {
 #[repr(C, align(8))]
 pub struct DictionaryObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::DictionaryObject>,
 }
 
 impl<'gc> DictionaryObject<'gc> {
@@ -79,7 +80,7 @@ impl<'gc> DictionaryObject<'gc> {
 
 impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     // Calling `setPropertyIsEnumerable` on a `Dictionary` has no effect -
