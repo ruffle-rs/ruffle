@@ -21,7 +21,7 @@ pub mod xml_socket;
 
 fn object_to_index_map<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    obj: &Object<'gc>,
+    obj: Object<'gc>,
 ) -> Result<IndexMap<String, String>, Error<'gc>> {
     let mut map = IndexMap::new();
     let mut last_index = obj.get_next_enumerant(0, activation)?;
@@ -59,7 +59,7 @@ fn parse_data<'gc>(
         let obj = data
             .as_object()
             .expect("URLVariables object should be Value::Object");
-        vars = object_to_index_map(activation, &obj).unwrap_or_default();
+        vars = object_to_index_map(activation, obj).unwrap_or_default();
     } else if *data != Value::Null {
         let str_data = data.coerce_to_string(activation)?.to_string();
         if !url.contains('?') {
