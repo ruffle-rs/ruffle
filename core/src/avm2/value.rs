@@ -151,17 +151,6 @@ impl From<u32> for Value<'_> {
     }
 }
 
-impl From<usize> for Value<'_> {
-    #[inline(always)]
-    fn from(value: usize) -> Self {
-        if let Some(value) = value.to_i32() {
-            Value::Integer(value)
-        } else {
-            Value::Number(value as f64)
-        }
-    }
-}
-
 impl PartialEq for Value<'_> {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
@@ -505,6 +494,20 @@ pub fn abc_default_value<'gc>(
 }
 
 impl<'gc> Value<'gc> {
+    /// Do the best effort of converting the [`usize`] value to [`Value`].
+    ///
+    /// This is lossless on 32-bit architectures and for values less or equal to
+    /// 2^53. For values greater than that, it will return a value equivalent to
+    /// the closest integer representable as IEEE 754 64-bit.
+    #[inline(always)]
+    pub fn from_usize_lossy(value: usize) -> Self {
+        if let Some(value) = value.to_i32() {
+            Value::Integer(value)
+        } else {
+            Value::Number(value as f64)
+        }
+    }
+
     pub fn as_namespace(&self) -> Result<Namespace<'gc>, Error<'gc>> {
         match self {
             Value::Object(ns) => ns

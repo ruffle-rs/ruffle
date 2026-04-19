@@ -86,9 +86,11 @@ pub fn get_bytes_total<'gc>(
 
     if let Some(loader_stream) = this.as_loader_info_object().map(|o| o.loader_stream()) {
         match &*loader_stream {
-            LoaderStream::NotYetLoaded(swf, _, _) => return Ok(swf.compressed_len().into()),
+            LoaderStream::NotYetLoaded(swf, _, _) => {
+                return Ok(Value::from_usize_lossy(swf.compressed_len()));
+            }
             LoaderStream::Swf(movie, _) => {
-                return Ok(movie.compressed_len().into());
+                return Ok(Value::from_usize_lossy(movie.compressed_len()));
             }
         }
     }
@@ -109,13 +111,13 @@ pub fn get_bytes_loaded<'gc>(
     match &*loader_stream {
         LoaderStream::NotYetLoaded(swf, None, _) => {
             if loader_info.errored() {
-                return Ok(swf.compressed_len().into());
+                return Ok(Value::from_usize_lossy(swf.compressed_len()));
             }
             Ok(0.into())
         }
         LoaderStream::Swf(swf, root) | LoaderStream::NotYetLoaded(swf, Some(root), _) => {
             if root.as_bitmap().is_some() {
-                return Ok(swf.compressed_len().into());
+                return Ok(Value::from_usize_lossy(swf.compressed_len()));
             }
             Ok(root
                 .as_movie_clip()

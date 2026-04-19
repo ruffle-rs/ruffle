@@ -242,7 +242,7 @@ pub fn get_num_children<'gc>(
         .as_display_object()
         .and_then(|this| this.as_container())
     {
-        return Ok(parent.num_children().into());
+        return Ok(Value::from_usize_lossy(parent.num_children()));
     }
 
     Ok(0.into())
@@ -289,7 +289,7 @@ pub fn get_child_index<'gc>(
             if let Some(target_child) = target_child {
                 for (i, child) in ctr.iter_render_list().enumerate() {
                     if DisplayObject::ptr_eq(child, target_child) {
-                        return Ok(i.into());
+                        return Ok(Value::from_usize_lossy(i));
                     }
                 }
             }
