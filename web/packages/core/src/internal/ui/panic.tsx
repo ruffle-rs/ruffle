@@ -49,9 +49,9 @@ function createPanicAction({
     errorText: string;
 }) {
     if (action.type === "show_details") {
-        const onClick = () => {
+        const onClick = (event: MouseEvent) => {
+            event.preventDefault();
             showDetails();
-            return false;
         };
         return (
             <li>
@@ -396,21 +396,17 @@ export function showPanicScreen(
     const errorText = errorArray.join("");
     const { body, actions } = createPanicError(error);
 
-    const panicBody = createRef<HTMLDivElement>();
+    const detailsModal = createRef<HTMLDivElement>();
+    const copyButton = createRef<HTMLSpanElement>();
     const showDetails = () => {
-        panicBody.current!.classList.add("details");
-        panicBody.current!.replaceChildren(
-            <textarea readOnly>{errorText}</textarea>,
-        );
+        detailsModal.current!.classList.remove("hidden");
     };
 
     container.textContent = "";
     container.appendChild(
         <div id="panic">
             <div id="panic-title">{text("panic-title")}</div>
-            <div id="panic-body" ref={panicBody}>
-                {body}
-            </div>
+            <div id="panic-body">{body}</div>
             <div id="panic-footer">
                 <ul>
                     {actions.map((action) =>
@@ -423,6 +419,38 @@ export function showPanicScreen(
                         }),
                     )}
                 </ul>
+            </div>
+            <div
+                id="panic-details-modal"
+                class="hidden"
+                ref={detailsModal}
+            >
+                <div
+                    id="panic-details-content"
+                >
+                    <span
+                        class="panic-copy-button"
+                        title="Copy to clipboard"
+                        ref={copyButton}
+                        onClick={() => {
+                            if (!copyButton.current) {
+                                return;
+                            }
+                            navigator.clipboard?.writeText(errorText);
+                            copyButton.current.classList.add("copied");
+                            setTimeout(() => {
+                                copyButton.current?.classList.remove("copied");
+                            }, 2000);
+                        }}
+                    ></span>
+                    <span
+                        class="close-modal"
+                        onClick={() =>
+                            detailsModal.current!.classList.add("hidden")
+                        }
+                    ></span>
+                    <textarea readOnly>{errorText}</textarea>
+                </div>
             </div>
         </div>,
     );
