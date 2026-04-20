@@ -3,6 +3,10 @@
 .alias zeros myconst.xxxx
 .alias ones myconst.yyyy
 
+; .constf screen(400, 240, 1.0, 1.0)
+; .constf scrRcp(0.0025, 0.004166667, 1.0, 1.0)
+.constf dblScrRcp(0.005, 0.00833333, 1.0, 1.0)
+
 ; inputs
 .in inpos v0
 .in inclr v1
@@ -34,17 +38,27 @@
     mov r2.z, zeros
     mov r2.w, ones
     
-    ; r3 = world * r2 
-    dp4 r3.x, world[0], r2
-    dp4 r3.y, world[1], r2
-    dp4 r3.z, world[2], r2
-    dp4 r3.w, world[3], r2
-    
+;    ; r3 = world * r2 
+;    dp4 r3.x, world[0], r2
+;    dp4 r3.y, world[1], r2
+;    dp4 r3.z, world[2], r2
+;    dp4 r3.w, world[3], r2
+;    
     ; outpos = view * world * r2
-    dp4 outpos.x, view[0], r3
-    dp4 outpos.y, view[1], r3
-    dp4 outpos.z, view[2], r3
-    dp4 outpos.w, view[3], r3
-    
+    dp4 outpos.x, view[0], r2
+    dp4 outpos.y, view[1], r2
+    dp4 outpos.z, view[2], r2
+    dp4 outpos.w, view[3], r2
+
+;    ; mul r3, dblScrRcp, r2
+;    ; flr r4, r3
+;    ; ; add r5, myconst.zzxx, r4
+;    ; mul r5, screen, r4
+;    ; mul outpos, myconst.wwyy, r5
+
+;    mul r3, dblScrRcp, r2
+;    add r4, myconst.zzxx, r3
+;    mul outpos, myconst.zzyy, r4
+
     end
 .end

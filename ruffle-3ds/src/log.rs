@@ -73,20 +73,9 @@ impl RenderBackend for LogRenderer {
     fn set_viewport_dimensions(&mut self, dimensions: ViewportDimensions) {
         self.dimensions = dimensions;
     }
-    fn register_shape(
-        &mut self,
-        shape: DistilledShape,
-        src: &dyn BitmapSource,
-    ) -> ShapeHandle {
+    fn register_shape(&mut self, shape: DistilledShape, src: &dyn BitmapSource) -> ShapeHandle {
         let string = format!("{shape:?}");
         println!("reg {}", &string[..]);
-
-        let mesh = ShapeTessellator::new().tessellate_shape(shape, src);
-        println!("draws");
-        for draw in mesh.draws {
-            println!("Draw {{\n\tty: {:?},\n\tvxs: {:?},\n\tidxs: {:?},\n\tmi_n: {:?}\n}}", draw.draw_type.name(), draw.vertices, draw.indices, draw.mask_index_count);
-        }
-        println!("\nall draws done");
 
         ShapeHandle(Arc::new(NullShapeHandle::new()))
     }
@@ -98,6 +87,7 @@ impl RenderBackend for LogRenderer {
         quality: StageQuality,
         bounds: PixelRegion,
     ) -> Option<Box<dyn SyncHandle>> {
+        println!("render offscreen");
         None
     }
 
@@ -111,6 +101,7 @@ impl RenderBackend for LogRenderer {
         commands.execute(self);
     }
     fn register_bitmap(&mut self, _bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+        println!("register bitmap");
         Ok(BitmapHandle(Arc::new(NullBitmapHandle)))
     }
 
@@ -120,6 +111,7 @@ impl RenderBackend for LogRenderer {
         bitmap: Bitmap,
         region: PixelRegion,
     ) -> Result<(), Error> {
+        println!("update_texture");
         Ok(())
     }
 
@@ -171,6 +163,7 @@ impl RenderBackend for LogRenderer {
     }
 
     fn create_empty_texture(&mut self, _width: u32, _height: u32) -> Result<BitmapHandle, Error> {
+        println!("new empty texture");
         Ok(BitmapHandle(Arc::new(NullBitmapHandle)))
     }
 }
