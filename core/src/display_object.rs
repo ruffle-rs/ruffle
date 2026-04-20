@@ -3162,7 +3162,7 @@ impl SoundTransform {
             left_to_right: (sound_transform.left_to_right() * 100.0) as i32,
             right_to_left: (sound_transform.right_to_left() * 100.0) as i32,
             right_to_right: (sound_transform.right_to_right() * 100.0) as i32,
-            volume: (sound_transform.volume() * 100.0) as i32,
+            volume: i32:abs((sound_transform.volume() * 100.0) as i32),
         }
     }
 
