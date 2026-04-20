@@ -2401,7 +2401,7 @@ export function isYoutubeFlashSource(filename: string | null): boolean {
         // See https://wiki.mozilla.org/QA/Youtube_Embedded_Rewrite
         if (
             pathname.startsWith("/v/") &&
-            /^(?:(?:www\.|m\.)?youtube(?:-nocookie)?\.com)|(?:youtu\.be)$/i.test(
+            /^(?:www\.|m\.)?youtube(?:-nocookie)?\.com|youtu\.be$/i.test(
                 hostname,
             )
         ) {
