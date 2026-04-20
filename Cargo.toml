@@ -54,13 +54,13 @@ tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 naga = { version = "27.0.3", features = ["wgsl-out"] }
 wgpu = "27.0.1"
 egui = "0.33.3"
-clap = { version = "4.6.0", features = ["derive"] }
+clap = { version = "4.6.1", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
 gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["hashbrown", "indexmap", "smallvec", "slotmap"] }
 slotmap = "1.1.1"
 async-channel = "2.5.0"
-bitflags = "2.11.0"
+bitflags = "2.11.1"
 bytemuck = "1.25.0"
 chrono = { version = "0.4.44", default-features = false }
 enum-map = "2.7.3"
@@ -80,7 +80,7 @@ regress = { git = "https://github.com/ruffle-rs/regras3", rev = "6d48179d6bd448f
 # Make sure to match wasm-bindgen-cli version to this everywhere.
 wasm-bindgen = "=0.2.108"
 walkdir = "2.5.0"
-tokio = "1.51.1"
+tokio = "1.52.1"
 rfd = { version = "0.17.2", default-features = false, features = ["wayland", "xdg-portal"] }
 memmap2 = "0.9.10"
 libtest-mimic = "0.8.2"
@@ -94,9 +94,9 @@ percent-encoding = "2.3.2"
 approx = "0.5.1"
 encoding_rs = "0.8.35"
 byteorder = "1.5"
-bitstream-io = "4.9.0"
+bitstream-io = "4.10.0"
 indicatif = "0.18"
-rayon = "1.11.0"
+rayon = "1.12.0"
 sha2 = "0.10.9"
 indexmap = "2.13.0"
 fnv = "1.0.7"
