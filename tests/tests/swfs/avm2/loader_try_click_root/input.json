@@ -180,5 +180,50 @@
     "type": "MouseUp",
     "pos": [352, 673],
     "btn": "Left"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [101, 782]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [101, 782],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [101, 782],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [224.25, 787.25]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [224.25, 787.25],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [224.25, 787.25],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [332, 781]
+  },
+  {
+    "type": "MouseDown",
+    "pos": [332, 781],
+    "btn": "Left"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [332, 781],
+    "btn": "Left"
   }
 ]

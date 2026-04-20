@@ -1,0 +1,22 @@
+const variable item1 PASSED!
+package const variable packageItem1 PASSED!
+package const variable packageItem2 PASSED!
+package const variable packageItem3 PASSED!
+package const variable packageItem4 PASSED!
+package const variable packageItem5 PASSED!
+Class1 const variable classItem1 PASSED!
+Class1 const variable classItem2 PASSED!
+Class1 const variable classItem3 PASSED!
+Class1 const variable classItem4 PASSED!
+Class1 const variable classItem5 PASSED!
+Class1 const variable classItem6 PASSED!
+Class1 const variable classItem7 PASSED!
+Class1 const variable classItem8 PASSED!
+Class2 const variable classItem1 PASSED!
+Class2 const variable classItem2 PASSED!
+Class2 const variable classItem3 PASSED!
+Class2 const variable classItem4 PASSED!
+Class2 const variable classItem5 PASSED!
+Class2 const variable classItem6 PASSED!
+Class2 const variable classItem7 FAILED! expected: ns1 const Class2 classItem7 set in constructor got: null
+Class2 const variable classItem8 PASSED!

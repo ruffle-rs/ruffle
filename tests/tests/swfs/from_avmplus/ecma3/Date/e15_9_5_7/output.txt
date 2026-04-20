@@ -1,0 +1,16 @@
+typeof (now.toLocaleTimeString()) PASSED!
+Date.prototype.toLocaleTimeString.length PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!
+().toLocaleTimeString() PASSED!

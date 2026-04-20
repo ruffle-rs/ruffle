@@ -1,11 +1,12 @@
 import * as utils from "./utils";
-import type { BaseLoadOptions } from "ruffle-core";
+import type { Config } from "ruffle-core";
 
-export interface Options extends BaseLoadOptions {
+export interface Options extends Config.BaseLoadOptions {
     ruffleEnable: boolean;
     ignoreOptout: boolean;
     autostart: boolean;
     showReloadButton: boolean;
+    swfTakeover: boolean;
 }
 
 interface OptionElement<T> {
@@ -201,5 +202,12 @@ export async function bindOptions(
 }
 
 export async function resetOptions(): Promise<void> {
-    utils.storage.sync.clear();
+    // This setting is consistent for the browser in use and should not change
+    const data = await utils.storage.sync.get({
+        responseHeadersUnsupported: false,
+    });
+    await utils.storage.sync.clear();
+    if (data["responseHeadersUnsupported"]) {
+        utils.storage.sync.set({ responseHeadersUnsupported: true });
+    }
 }

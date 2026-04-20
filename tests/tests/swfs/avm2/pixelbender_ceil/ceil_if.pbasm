@@ -1,0 +1,5 @@
+version 1i
+
+param.out "dst", float4, f0.rgba
+
+ceil i1.g, f1.r

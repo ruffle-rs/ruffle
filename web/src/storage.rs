@@ -1,5 +1,5 @@
-use base64::prelude::BASE64_STANDARD;
 use base64::Engine;
+use base64::prelude::BASE64_STANDARD;
 use ruffle_core::backend::storage::StorageBackend;
 use web_sys::Storage;
 
@@ -15,13 +15,13 @@ impl LocalStorageBackend {
 
 impl StorageBackend for LocalStorageBackend {
     fn get(&self, name: &str) -> Option<Vec<u8>> {
-        if let Ok(Some(data)) = self.storage.get(name) {
-            if let Ok(data) = BASE64_STANDARD.decode(data) {
-                return Some(data);
-            }
+        if let Ok(Some(data)) = self.storage.get(name)
+            && let Ok(data) = BASE64_STANDARD.decode(data)
+        {
+            Some(data)
+        } else {
+            None
         }
-
-        None
     }
 
     fn put(&mut self, name: &str, value: &[u8]) -> bool {

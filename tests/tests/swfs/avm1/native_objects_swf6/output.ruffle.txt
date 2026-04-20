@@ -1,0 +1,115 @@
+{}: non-native
+[]: native
+"": non-object: string
+5: non-object: number
+function() {}: native-ish (function)
+true: non-object: boolean
+null: non-object: null
+undefined: non-object: undefined
+Accessibility: non-native
+new Array(): native
+new Function(): non-native
+Function(): non-native
+new Object(): non-native
+Object(): non-native
+new String(): native
+new Number(): native
+new Number(3): native
+new Boolean(): native
+new Boolean(true): native
+new Button(): non-native
+timelineButton: native
+new Camera(): non-native
+new Color(): non-native
+new Color(_root): non-native
+new ContextMenu(): non-native
+new ContextMenuItem(): non-native
+new ContextMenuItem([...]): non-native
+new Error(): non-native
+new Error("e"): non-native
+new Function(): non-native
+Key: non-native
+new LoadVars(): non-native
+new LocalConnection(): native
+Math: non-native
+new Microphone(): non-native
+Mouse: non-native
+new MovieClip(): non-native
+movieClip: native-ish (movieclip)
+timelineSprite: native-ish (movieclip)
+new MovieClipLoader(): non-native
+new NetConnection(): native
+new NetStream(): native
+new NetStream(new NetConnection()): native
+new PrintJob(): non-native
+Selection: non-native
+new SharedObject() /* not a class */: native
+new Sound(): native
+new Sound(2): native
+new Sound(_root): native
+Stage: non-native
+System: non-native
+System.capabilities: non-native
+new System.Product(): non-native
+System.security: non-native
+System.IME: non-native
+new TextField(): non-object: undefined
+textField: native
+timelineEditText: native
+new TextField.StyleSheet(): non-object: undefined
+new TextFormat(): native
+new TextSnapshot(): non-native
+new TextSnapshot(3): non-native
+new TextSnapshot(timelineButton): non-native
+new TextSnapshot(_root): native
+new TextSnapshot(_root, 4): non-native
+new TextSnapshot(_root, _root): non-native
+new Video(): non-native
+timelineVideo: native
+new XML(): native
+new XML(""): native
+new XML("<a></a>"): native
+new XMLNode(): native
+new XMLNode(1): native
+new XMLNode(1, "name"): native
+new XMLNode(1, "name", 1): native
+new XMLNode(1, "name", true): native
+new XMLNode(1, "name", 1, 2): native
+new XMLSocket(): native
+flash: non-object: undefined
+flash.automation: non-object: undefined
+new flash.automation.ActionGenerator() /* not a class */: non-object: undefined
+new flash.automation.Configuration() /* not a class */: non-object: undefined
+new flash.automation.StageCapture(): non-object: undefined
+flash.display: non-object: undefined
+new flash.display.BitmapData(): non-object: undefined
+new flash.display.BitmapData(1,1): non-object: undefined
+flash.external: non-object: undefined
+new flash.external.ExternalInterface() /* not a class */: non-object: undefined
+flash.filters: non-object: undefined
+new flash.filters.BevelFilter(): non-object: undefined
+new flash.filters.BitmapFilter(): non-object: undefined
+new flash.filters.BlurFilter(): non-object: undefined
+new flash.filters.ColorMatrixFilter(): non-object: undefined
+new flash.filters.ColorMatrixFilter([...]): non-object: undefined
+new flash.filters.ConvolutionFilter(): non-object: undefined
+new flash.filters.ConvolutionFilter([...]): non-object: undefined
+new flash.filters.DisplacementMapFilter(): non-object: undefined
+new flash.filters.DisplacementMapFilter([...]): non-object: undefined
+new flash.filters.DropShadowFilter(): non-object: undefined
+new flash.filters.GlowFilter(): non-object: undefined
+new flash.filters.GradientBevelFilter(): non-object: undefined
+new flash.filters.GradientGlowFilter(): non-object: undefined
+flash.geom: non-object: undefined
+new flash.geom.ColorTransform(): non-object: undefined
+new flash.geom.Matrix(): non-object: undefined
+new flash.geom.Point(): non-object: undefined
+new flash.geom.Rectangle(): non-object: undefined
+new flash.geom.Rectangle(1,2,3,4): non-object: undefined
+new flash.geom.Transform(): non-object: undefined
+new flash.geom.Transform(_root): non-object: undefined
+flash.text: non-object: undefined
+new flash.text.TextRenderer(): non-object: undefined
+flash.net: non-object: undefined
+new flash.net.FileReference(): non-object: undefined
+new flash.net.FileReferenceList(): non-object: undefined

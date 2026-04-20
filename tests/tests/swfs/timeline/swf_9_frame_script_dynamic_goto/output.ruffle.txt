@@ -1,0 +1,34 @@
+Main constructor
+Main addFrameScript
+Main frame1
+LeafChild 1 constructor
+LeafChild 1 addFrameScript
+adding child1 at 0
+NodeChild constructor
+LeafChild 2 constructor
+LeafChild 2 addFrameScript
+NodeChild addFrameScript
+adding child2 at 0
+LeafChild 3 constructor
+LeafChild 3 addFrameScript
+adding child3 at 2
+LeafChild 1 frame1
+LeafChild 2 frame1
+NodeChild frame1
+LeafChild 3 frame1
+LeafChild 1 enter frame
+Main frame2
+LeafChild 2 frame2
+LeafChild 1 enter frame
+NodeChild frame2
+LeafChild 1 frame2
+LeafChild 3 frame2
+LeafChild 1 enter frame
+Main frame1
+NodeChild frame1
+LeafChild 1 frame1
+LeafChild 3 frame1
+Main frame2
+NodeChild frame2
+LeafChild 1 frame2
+LeafChild 3 frame2

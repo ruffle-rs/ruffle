@@ -1,0 +1,6 @@
+# Note: the output contains failed tests because it's been recorded in flashplayerdebugger
+num_ticks = 1
+
+# TODO Our current output is a combination of the release's version output
+#   and debugger's output. This has to be cleaned up.
+known_failure = true

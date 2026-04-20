@@ -1,0 +1,2 @@
+# NOTE this test fails in FP32 but passes in FP9
+num_frames = 1

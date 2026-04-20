@@ -1,0 +1,2 @@
+Math.max(1, Number.NaN) PASSED!
+Math.max(0.0, 0.0) PASSED!

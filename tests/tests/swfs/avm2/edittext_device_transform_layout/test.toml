@@ -1,0 +1,8 @@
+num_ticks = 1
+known_failure = true
+
+[fonts.test_font]
+family = "TestFont"
+path = "TestFont.ttf"
+bold = false
+italic = false

@@ -1,0 +1,10 @@
+PASSED: typeof(_root.mc_red)  ==  'movieclip' [action_execution_order_test1.c:69]
+PASSED: _root.typeofMcBluFromMcRedLoad  ==  'movieclip' [action_execution_order_test1.c:113]
+PASSED: _root.typeofMcRedFromMcRedLoad  ==  'movieclip' [action_execution_order_test1.c:116]
+PASSED: _root.typeofMcRedFromMcBluLoad  ==  'movieclip' [action_execution_order_test1.c:119]
+PASSED: _root.typeofMcBluFromMcBluLoad  ==  'movieclip' [action_execution_order_test1.c:122]
+PASSED: _root.mcBluLoadCalls  ==  1 [action_execution_order_test1.c:125]
+PASSED: _root.mcRedLoadCalls  ==  1 [action_execution_order_test1.c:126]
+#passed: 7
+#failed: 0
+#total tests run: 7

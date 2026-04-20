@@ -2,24 +2,24 @@ use crate::avm1::{PropertyMap as Avm1PropertyMap, PropertyMap};
 use crate::avm2::{Class as Avm2Class, Domain as Avm2Domain};
 use crate::backend::audio::SoundHandle;
 use crate::character::Character;
-use std::borrow::Cow;
 
 use crate::display_object::{Bitmap, Graphic, MorphShape, Text};
-use crate::font::{Font, FontDescriptor, FontType};
+use crate::font::{Font, FontDescriptor, FontLike, FontQuery, FontType};
 use crate::prelude::*;
 use crate::string::AvmString;
 use crate::tag_utils::SwfMovie;
+use gc_arena::collect::Trace;
 use gc_arena::{Collect, Mutation};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::utils::remove_invalid_jpeg_data;
 
 use crate::backend::ui::{FontDefinition, UiBackend};
-use crate::DefaultFont;
+use crate::font::DefaultFont;
 use fnv::{FnvHashMap, FnvHashSet};
 use std::collections::HashMap;
 use std::sync::{Arc, Weak};
-use weak_table::{traits::WeakElement, PtrWeakKeyHashMap, WeakValueHashMap};
+use weak_table::{PtrWeakKeyHashMap, WeakValueHashMap, traits::WeakElement};
 
 #[derive(Clone)]
 struct MovieSymbol(Arc<SwfMovie>, CharacterId);
@@ -51,10 +51,10 @@ pub struct Avm2ClassRegistry<'gc> {
     class_map: WeakValueHashMap<Avm2Class<'gc>, WeakMovieSymbol>,
 }
 
-unsafe impl Collect for Avm2ClassRegistry<'_> {
-    fn trace(&self, cc: &gc_arena::Collection) {
+unsafe impl<'gc> Collect<'gc> for Avm2ClassRegistry<'gc> {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         for (k, _) in self.class_map.iter() {
-            k.trace(cc);
+            cc.trace(k);
         }
     }
 }
@@ -141,31 +141,44 @@ impl<'gc> MovieLibrary<'gc> {
         }
     }
 
-    pub fn register_character(&mut self, id: CharacterId, character: Character<'gc>) {
-        // TODO(Herschel): What is the behavior if id already exists?
-        if !self.contains_character(id) {
-            if let Character::Font(font) = character {
-                self.fonts.register(font);
+    /// Registers a character; returns `true` if successful, or `false` if a character with
+    /// the given ID already exists.
+    pub fn register_character(&mut self, id: CharacterId, character: Character<'gc>) -> bool {
+        use std::collections::hash_map::Entry;
+        match self.characters.entry(id) {
+            Entry::Vacant(e) => {
+                if let Character::Font(font) = character {
+                    self.fonts.register(font);
+                }
+                e.insert(character);
+                true
             }
-
-            self.characters.insert(id, character);
-        } else {
-            tracing::error!("Character ID collision: Tried to register ID {} twice", id);
+            Entry::Occupied(_) => {
+                tracing::error!("Character ID collision: Tried to register ID {} twice", id);
+                false
+            }
         }
     }
 
     /// Registers an export name for a given character ID.
     /// This character will then be instantiable from AVM1.
     pub fn register_export(&mut self, id: CharacterId, export_name: AvmString<'gc>) {
+        let character_exists = self.contains_character(id);
+        debug_assert!(character_exists);
+        if !character_exists {
+            tracing::error!(
+                "Tried to register export '{export_name}' for a non-existent character {id}"
+            );
+            return;
+        }
+
         self.export_characters.insert(export_name, id, false);
     }
 
-    #[allow(dead_code)]
     pub fn characters(&self) -> &HashMap<CharacterId, Character<'gc>> {
         &self.characters
     }
 
-    #[allow(dead_code)]
     pub fn export_characters(&self) -> &PropertyMap<'gc, CharacterId> {
         &self.export_characters
     }
@@ -174,16 +187,18 @@ impl<'gc> MovieLibrary<'gc> {
         self.characters.contains_key(&id)
     }
 
-    pub fn character_by_id(&self, id: CharacterId) -> Option<&Character<'gc>> {
-        self.characters.get(&id)
+    pub fn character_by_id(&self, id: CharacterId) -> Option<Character<'gc>> {
+        self.characters.get(&id).copied()
     }
 
     pub fn character_by_export_name(
         &self,
         name: AvmString<'gc>,
-    ) -> Option<(CharacterId, &Character<'gc>)> {
-        if let Some(id) = self.export_characters.get(name, false) {
-            return Some((*id, self.characters.get(id).unwrap()));
+    ) -> Option<(CharacterId, Character<'gc>)> {
+        if let Some(id) = self.export_characters.get(name, false)
+            && let Some(character) = self.characters.get(id)
+        {
+            return Some((*id, *character));
         }
         None
     }
@@ -202,12 +217,12 @@ impl<'gc> MovieLibrary<'gc> {
         &self,
         id: CharacterId,
         mc: &Mutation<'gc>,
-    ) -> Result<DisplayObject<'gc>, Cow<'static, str>> {
-        if let Some(character) = self.characters.get(&id) {
+    ) -> Option<DisplayObject<'gc>> {
+        if let Some(&character) = self.characters.get(&id) {
             self.instantiate_display_object(id, character, mc)
         } else {
             tracing::error!("Tried to instantiate non-registered character ID {}", id);
-            Err("Character id doesn't exist".into())
+            None
         }
     }
 
@@ -217,7 +232,7 @@ impl<'gc> MovieLibrary<'gc> {
         &self,
         export_name: AvmString<'gc>,
         mc: &Mutation<'gc>,
-    ) -> Result<DisplayObject<'gc>, Cow<'static, str>> {
+    ) -> Option<DisplayObject<'gc>> {
         if let Some((id, character)) = self.character_by_export_name(export_name) {
             self.instantiate_display_object(id, character, mc)
         } else {
@@ -225,7 +240,7 @@ impl<'gc> MovieLibrary<'gc> {
                 "Tried to instantiate non-registered character {}",
                 export_name
             );
-            Err("Character id doesn't exist".into())
+            None
         }
     }
 
@@ -234,30 +249,29 @@ impl<'gc> MovieLibrary<'gc> {
     fn instantiate_display_object(
         &self,
         id: CharacterId,
-        character: &Character<'gc>,
+        character: Character<'gc>,
         mc: &Mutation<'gc>,
-    ) -> Result<DisplayObject<'gc>, Cow<'static, str>> {
+    ) -> Option<DisplayObject<'gc>> {
         match character {
-            Character::Bitmap {
-                compressed,
-                avm2_bitmapdata_class,
-                handle: _,
-            } => {
-                let bitmap = compressed.decode().unwrap();
-                let bitmap = Bitmap::new(mc, id, bitmap, self.swf.clone())
-                    .map_err(|e| Cow::Owned(format!("Failed to instantiate bitmap: {:?}", e)))?;
-                bitmap.set_avm2_bitmapdata_class(mc, *avm2_bitmapdata_class.read());
-                Ok(bitmap.instantiate(mc))
+            Character::Bitmap(bitmap) => {
+                let avm2_class = bitmap.avm2_class();
+                let bitmap = bitmap.compressed().decode().unwrap();
+                let bitmap = Bitmap::new(mc, id, bitmap, self.swf.clone());
+                bitmap.set_avm2_bitmapdata_class(mc, avm2_class);
+                Some(bitmap.instantiate(mc))
             }
-            Character::EditText(edit_text) => Ok(edit_text.instantiate(mc)),
-            Character::Graphic(graphic) => Ok(graphic.instantiate(mc)),
-            Character::MorphShape(morph_shape) => Ok(morph_shape.instantiate(mc)),
-            Character::MovieClip(movie_clip) => Ok(movie_clip.instantiate(mc)),
-            Character::Avm1Button(button) => Ok(button.instantiate(mc)),
-            Character::Avm2Button(button) => Ok(button.instantiate(mc)),
-            Character::Text(text) => Ok(text.instantiate(mc)),
-            Character::Video(video) => Ok(video.instantiate(mc)),
-            _ => Err("Not a DisplayObject".into()),
+            Character::EditText(edit_text) => Some(edit_text.instantiate(mc)),
+            Character::Graphic(graphic) => Some(graphic.instantiate(mc)),
+            Character::MorphShape(morph_shape) => Some(morph_shape.instantiate(mc)),
+            Character::MovieClip(movie_clip) => Some(movie_clip.instantiate(mc)),
+            Character::Avm1Button(button) => Some(button.instantiate(mc)),
+            Character::Avm2Button(button) => Some(button.instantiate(mc)),
+            Character::Text(text) => Some(text.instantiate(mc)),
+            Character::Video(video) => Some(video.instantiate(mc)),
+            _ => {
+                // Cannot instantiate non-display object
+                None
+            }
         }
     }
 
@@ -354,52 +368,67 @@ pub struct MovieLibrarySource<'a, 'gc> {
     pub library: &'a MovieLibrary<'gc>,
 }
 
-impl<'a, 'gc> ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'a, 'gc> {
+impl ruffle_render::bitmap::BitmapSource for MovieLibrarySource<'_, '_> {
     fn bitmap_size(&self, id: u16) -> Option<ruffle_render::bitmap::BitmapSize> {
-        if let Some(Character::Bitmap { compressed, .. }) = self.library.characters.get(&id) {
-            Some(compressed.size())
+        if let Some(Character::Bitmap(bitmap)) = self.library.characters.get(&id) {
+            Some(bitmap.compressed().size())
         } else {
             None
         }
     }
 
     fn bitmap_handle(&self, id: u16, backend: &mut dyn RenderBackend) -> Option<BitmapHandle> {
-        let Some(Character::Bitmap {
-            compressed,
-            handle,
-            avm2_bitmapdata_class: _,
-        }) = self.library.characters.get(&id)
-        else {
+        let Some(Character::Bitmap(bitmap)) = self.library.characters.get(&id) else {
             return None;
         };
-        let mut handle = handle.borrow_mut();
-        if let Some(handle) = &*handle {
-            return Some(handle.clone());
+
+        match bitmap.bitmap_handle(backend) {
+            Ok(handle) => Some(handle),
+            Err(e) => {
+                tracing::error!("Failed to register bitmap character {id}: {e}");
+                None
+            }
         }
-        let decoded = match compressed.decode() {
-            Ok(decoded) => decoded,
-            Err(e) => {
-                tracing::error!("Failed to decode bitmap character {id:?}: {e:?}");
-                return None;
-            }
-        };
-        let new_handle = match backend.register_bitmap(decoded) {
-            Ok(handle) => handle,
-            Err(e) => {
-                tracing::error!("Failed to register bitmap character {id:?}: {e:?}");
-                return None;
-            }
-        };
-        // FIXME - do we ever want to release this handle, to avoid taking up GPU memory?
-        *handle = Some(new_handle.clone());
-        Some(new_handle)
+    }
+}
+
+struct MovieLibraries<'gc>(PtrWeakKeyHashMap<Weak<SwfMovie>, MovieLibrary<'gc>>);
+
+unsafe impl<'gc> Collect<'gc> for MovieLibraries<'gc> {
+    #[inline]
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
+        for (_, val) in self.0.iter() {
+            cc.trace(val);
+        }
+    }
+}
+
+impl<'gc> MovieLibraries<'gc> {
+    fn new() -> Self {
+        Self(PtrWeakKeyHashMap::new())
+    }
+
+    fn get(&self, key: &Arc<SwfMovie>) -> Option<&MovieLibrary<'gc>> {
+        self.0.get(key)
+    }
+
+    fn get_or_insert_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
+        self.0
+            .entry(movie.clone())
+            .or_insert_with(|| MovieLibrary::new(movie))
+    }
+
+    fn known_movies(&self) -> impl Iterator<Item = Arc<SwfMovie>> {
+        self.0.keys()
     }
 }
 
 /// Symbol library for multiple movies.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct Library<'gc> {
     /// All the movie libraries.
-    movie_libraries: PtrWeakKeyHashMap<Weak<SwfMovie>, MovieLibrary<'gc>>,
+    movie_libraries: MovieLibraries<'gc>,
 
     /// A cache of seen device fonts.
     // TODO: Descriptors shouldn't be stored in fonts. Fonts should be a list that we iterate and ask "do you match". A font can have zero or many names.
@@ -411,7 +440,10 @@ pub struct Library<'gc> {
 
     /// A set of which fonts we've asked from the backend already, to help with negative caching.
     /// If we've asked for a specific font, record it here and don't ask again.
-    font_lookup_cache: FnvHashSet<(String, bool, bool)>,
+    font_lookup_cache: FnvHashSet<FontQuery>,
+
+    /// Cached font sort queries.
+    font_sort_cache: FnvHashMap<FontQuery, Vec<Font<'gc>>>,
 
     /// The implementation names of each default font.
     default_font_names: FnvHashMap<DefaultFont, Vec<String>>,
@@ -424,28 +456,14 @@ pub struct Library<'gc> {
     avm2_class_registry: Avm2ClassRegistry<'gc>,
 }
 
-unsafe impl<'gc> gc_arena::Collect for Library<'gc> {
-    #[inline]
-    fn trace(&self, cc: &gc_arena::Collection) {
-        for (_, val) in self.movie_libraries.iter() {
-            val.trace(cc);
-        }
-        for (_, val) in self.default_font_cache.iter() {
-            val.trace(cc);
-        }
-        self.device_fonts.trace(cc);
-        self.global_fonts.trace(cc);
-        self.avm2_class_registry.trace(cc);
-    }
-}
-
 impl<'gc> Library<'gc> {
     pub fn empty() -> Self {
         Self {
-            movie_libraries: PtrWeakKeyHashMap::new(),
+            movie_libraries: MovieLibraries::new(),
             device_fonts: Default::default(),
             global_fonts: Default::default(),
             font_lookup_cache: Default::default(),
+            font_sort_cache: Default::default(),
             default_font_names: Default::default(),
             default_font_cache: Default::default(),
             avm2_class_registry: Default::default(),
@@ -457,15 +475,11 @@ impl<'gc> Library<'gc> {
     }
 
     pub fn library_for_movie_mut(&mut self, movie: Arc<SwfMovie>) -> &mut MovieLibrary<'gc> {
-        // NOTE(Clippy): Cannot use or_default() here as PtrWeakKeyHashMap does not have such a method on its Entry API
-        #[allow(clippy::unwrap_or_default)]
-        self.movie_libraries
-            .entry(movie.clone())
-            .or_insert_with(|| MovieLibrary::new(movie))
+        self.movie_libraries.get_or_insert_mut(movie)
     }
 
-    pub fn known_movies(&self) -> Vec<Arc<SwfMovie>> {
-        self.movie_libraries.keys().collect()
+    pub fn known_movies(&self) -> impl Iterator<Item = Arc<SwfMovie>> {
+        self.movie_libraries.known_movies()
     }
 
     /// Returns the default Font implementations behind the built in names (ie `_sans`)
@@ -487,8 +501,8 @@ impl<'gc> Library<'gc> {
         let mut result = vec![];
         // First try to find any exactly matching fonts.
         for name in self.default_font_names.entry(name).or_default().clone() {
-            if let Some(font) = self
-                .get_or_load_exact_device_font(&name, is_bold, is_italic, ui, renderer, gc_context)
+            let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
+            if let Some(font) = self.get_or_load_exact_device_font(&query, ui, renderer, gc_context)
             {
                 result.push(font);
                 break; // TODO: Return multiple fonts when it's needed.
@@ -498,10 +512,8 @@ impl<'gc> Library<'gc> {
         // Nothing found, try a compatible font.
         if result.is_empty() {
             for name in self.default_font_names.entry(name).or_default().clone() {
-                if let Some(font) =
-                    self.device_fonts
-                        .find(&name, FontType::Device, is_bold, is_italic)
-                {
+                let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
+                if let Some(font) = self.device_fonts.find(&query) {
                     result.push(font);
                     break; // TODO: Return multiple fonts when it's needed.
                 }
@@ -516,41 +528,34 @@ impl<'gc> Library<'gc> {
     /// Returns the device font exactly matching the requested options.
     fn get_or_load_exact_device_font(
         &mut self,
-        name: &str,
-        is_bold: bool,
-        is_italic: bool,
+        query: &FontQuery,
         ui: &dyn UiBackend,
         renderer: &mut dyn RenderBackend,
         gc_context: &Mutation<'gc>,
     ) -> Option<Font<'gc>> {
         // If we have the exact matching font already, use that
         // TODO: We should instead ask each font if it matches a given name. Partial matches are allowed, and fonts may have any amount of names.
-        if let Some(font) = self
-            .device_fonts
-            .get(name, FontType::Device, is_bold, is_italic)
-        {
+        if let Some(font) = self.device_fonts.get(query) {
             return Some(*font);
         }
 
         // We don't have this font already. Did we ask for it before?
-        let new_request = self
-            .font_lookup_cache
-            .insert((name.to_string(), is_bold, is_italic));
+        let new_request = self.font_lookup_cache.insert(query.clone());
         if new_request {
             // First time asking for this font, see if our backend can provide anything relevant
-            ui.load_device_font(name, is_bold, is_italic, &mut |definition| {
+            ui.load_device_font(query, &mut |definition| {
                 self.register_device_font(gc_context, renderer, definition)
             });
 
             // Check again. A backend may or may not have provided some new fonts,
             // and they may or may not be relevant to the one we're asking for.
-            if let Some(font) = self
-                .device_fonts
-                .get(name, FontType::Device, is_bold, is_italic)
-            {
+            if let Some(font) = self.device_fonts.get(query) {
                 return Some(*font);
             }
 
+            let name = &query.name;
+            let is_bold = query.is_bold;
+            let is_italic = query.is_italic;
             warn!("Unknown device font \"{name}\" (bold: {is_bold}, italic: {is_italic})");
         }
 
@@ -567,16 +572,73 @@ impl<'gc> Library<'gc> {
         renderer: &mut dyn RenderBackend,
         gc_context: &Mutation<'gc>,
     ) -> Option<Font<'gc>> {
+        let query = FontQuery::new(FontType::Device, name.to_owned(), is_bold, is_italic);
+
         // Try to find an exactly matching font.
-        if let Some(font) =
-            self.get_or_load_exact_device_font(name, is_bold, is_italic, ui, renderer, gc_context)
-        {
+        if let Some(font) = self.get_or_load_exact_device_font(&query, ui, renderer, gc_context) {
             return Some(font);
         }
 
         // Fallback: Try to find an existing font to re-use instead of giving up.
-        self.device_fonts
-            .find(name, FontType::Device, is_bold, is_italic)
+        self.device_fonts.find(&query)
+    }
+
+    fn sort_device_fonts(
+        &mut self,
+        query: &FontQuery,
+        ui: &dyn UiBackend,
+        renderer: &mut dyn RenderBackend,
+        gc_context: &Mutation<'gc>,
+    ) -> Vec<Font<'gc>> {
+        // First, ask the backend to sort the fonts for us.
+        let fonts = ui.sort_device_fonts(query, &mut |definition| {
+            self.register_device_font(gc_context, renderer, definition)
+        });
+
+        let fonts: Vec<Font<'gc>> = fonts
+            .iter()
+            .filter_map(|font_query| self.device_fonts.get(font_query))
+            .copied()
+            .collect();
+
+        if !fonts.is_empty() {
+            return fonts;
+        }
+
+        // When the backend failed (or doesn't support sorting fonts), fall back
+        // to loading one font only without sorting.
+        let font = self.get_or_load_device_font(
+            &query.name,
+            query.is_bold,
+            query.is_italic,
+            ui,
+            renderer,
+            gc_context,
+        );
+        font.map(|font| vec![font]).unwrap_or_default()
+    }
+
+    pub fn get_or_sort_device_fonts(
+        &mut self,
+        name: &str,
+        is_bold: bool,
+        is_italic: bool,
+        ui: &dyn UiBackend,
+        renderer: &mut dyn RenderBackend,
+        gc_context: &Mutation<'gc>,
+    ) -> Vec<Font<'gc>> {
+        // TODO We should be able to return a &Vec here, but (1) the borrow
+        //   checker is too strict and doesn't allow if branching, and
+        //   (2) there's no way to insert a value and get a reference to
+        //   it at the same time.
+        let query = FontQuery::new(FontType::Device, name.to_owned(), is_bold, is_italic);
+        if let Some(fonts) = self.font_sort_cache.get(&query) {
+            return fonts.clone();
+        }
+
+        let fonts = self.sort_device_fonts(&query, ui, renderer, gc_context);
+        self.font_sort_cache.insert(query, fonts.clone());
+        fonts
     }
 
     pub fn set_default_font(&mut self, font: DefaultFont, names: Vec<String>) {
@@ -595,7 +657,11 @@ impl<'gc> Library<'gc> {
                 let font =
                     Font::from_swf_tag(gc_context, renderer, tag, encoding, FontType::Device);
                 let name = font.descriptor().name().to_owned();
-                info!("Loaded new device font \"{name}\" from swf tag");
+                let is_bold = font.descriptor().bold();
+                let is_italic = font.descriptor().italic();
+                tracing::debug!(
+                    "Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from swf tag"
+                );
                 self.device_fonts.register(font);
             }
             FontDefinition::FontFile {
@@ -606,19 +672,30 @@ impl<'gc> Library<'gc> {
                 index,
             } => {
                 let descriptor = FontDescriptor::from_parts(&name, is_bold, is_italic);
-                if let Ok(font) = Font::from_font_file(
-                    gc_context,
-                    descriptor,
-                    Cow::Owned(data),
-                    index,
-                    FontType::Device,
-                ) {
+                if let Ok(font) =
+                    Font::from_font_file(gc_context, descriptor, data, index, FontType::Device)
+                {
                     let name = font.descriptor().name().to_owned();
-                    info!("Loaded new device font \"{name}\" from file");
+                    tracing::debug!(
+                        "Loaded new device font \"{name}\" (bold: {is_bold}, italic: {is_italic}) from file"
+                    );
                     self.device_fonts.register(font);
                 } else {
                     warn!("Failed to load device font from file");
                 }
+            }
+            FontDefinition::ExternalRenderer {
+                name,
+                is_bold,
+                is_italic,
+                font_renderer,
+            } => {
+                let descriptor = FontDescriptor::from_parts(&name, is_bold, is_italic);
+                let font = Font::from_renderer(gc_context, descriptor, font_renderer);
+                tracing::debug!(
+                    "Loaded new externally rendered font \"{name}\" (bold: {is_bold}, italic: {is_italic})"
+                );
+                self.device_fonts.register(font);
             }
         }
         self.default_font_cache.clear();
@@ -633,15 +710,15 @@ impl<'gc> Library<'gc> {
         is_italic: bool,
         movie: Option<Arc<SwfMovie>>,
     ) -> Option<Font<'gc>> {
-        if let Some(font) = self.global_fonts.find(name, font_type, is_bold, is_italic) {
+        let query = FontQuery::new(font_type, name.to_owned(), is_bold, is_italic);
+        if let Some(font) = self.global_fonts.find(&query) {
             return Some(font);
         }
-        if let Some(movie) = movie {
-            if let Some(library) = self.library_for_movie(movie) {
-                if let Some(font) = library.fonts.find(name, font_type, is_bold, is_italic) {
-                    return Some(font);
-                }
-            }
+        if let Some(movie) = movie
+            && let Some(library) = self.library_for_movie(movie)
+            && let Some(font) = library.fonts.find(&query)
+        {
+            return Some(font);
         }
         None
     }
@@ -667,59 +744,51 @@ impl<'gc> Library<'gc> {
 
 #[derive(Collect, Default)]
 #[collect(no_drop)]
-struct FontMap<'gc>(FnvHashMap<(FontType, String, bool, bool), Font<'gc>>);
+struct FontMap<'gc>(FnvHashMap<FontQuery, Font<'gc>>);
 
 impl<'gc> FontMap<'gc> {
     pub fn register(&mut self, font: Font<'gc>) {
         let descriptor = font.descriptor();
         self.0
-            .entry((
-                font.font_type(),
-                descriptor.lowercase_name().to_owned(),
-                descriptor.bold(),
-                descriptor.italic(),
-            ))
+            .entry(FontQuery::from_descriptor(font.font_type(), descriptor))
             .or_insert(font);
     }
 
-    pub fn get(
-        &self,
-        name: &str,
-        font_type: FontType,
-        is_bold: bool,
-        is_italic: bool,
-    ) -> Option<&Font<'gc>> {
-        self.0
-            .get(&(font_type, name.to_lowercase(), is_bold, is_italic))
+    pub fn get(&self, font_query: &FontQuery) -> Option<&Font<'gc>> {
+        self.0.get(font_query)
     }
 
-    pub fn find(
-        &self,
-        name: &str,
-        font_type: FontType,
-        is_bold: bool,
-        is_italic: bool,
-    ) -> Option<Font<'gc>> {
+    pub fn find(&self, font_query: &FontQuery) -> Option<Font<'gc>> {
         // The order here is specific, and tested in `tests/swfs/fonts/embed_matching/fallback_preferences`
 
         // Exact match
-        if let Some(font) = self.get(name, font_type, is_bold, is_italic) {
+        if let Some(font) = self.get(font_query) {
             return Some(*font);
         }
 
+        let is_italic = font_query.is_italic;
+        let is_bold = font_query.is_bold;
+
+        let mut fallback_query = font_query.clone();
         if is_italic ^ is_bold {
             // If one is set (but not both), then try upgrading to bold italic...
-            if let Some(font) = self.get(name, font_type, true, true) {
+            fallback_query.is_bold = true;
+            fallback_query.is_italic = true;
+            if let Some(font) = self.get(&fallback_query) {
                 return Some(*font);
             }
 
             // and then downgrading to regular
-            if let Some(font) = self.get(name, font_type, false, false) {
+            fallback_query.is_bold = false;
+            fallback_query.is_italic = false;
+            if let Some(font) = self.get(&fallback_query) {
                 return Some(*font);
             }
 
             // and then finally whichever one we don't have set
-            if let Some(font) = self.get(name, font_type, !is_bold, !is_italic) {
+            fallback_query.is_bold = !is_bold;
+            fallback_query.is_italic = !is_italic;
+            if let Some(font) = self.get(&fallback_query) {
                 return Some(*font);
             }
         } else {
@@ -727,24 +796,32 @@ impl<'gc> FontMap<'gc> {
 
             if is_italic && is_bold {
                 // Do we have regular? (unless we already looked for it)
-                if let Some(font) = self.get(name, font_type, false, false) {
+                fallback_query.is_bold = false;
+                fallback_query.is_italic = false;
+                if let Some(font) = self.get(&fallback_query) {
                     return Some(*font);
                 }
             }
 
             // Do we have bold?
-            if let Some(font) = self.get(name, font_type, true, false) {
+            fallback_query.is_bold = true;
+            fallback_query.is_italic = false;
+            if let Some(font) = self.get(&fallback_query) {
                 return Some(*font);
             }
 
             // Do we have italic?
-            if let Some(font) = self.get(name, font_type, false, true) {
+            fallback_query.is_bold = false;
+            fallback_query.is_italic = true;
+            if let Some(font) = self.get(&fallback_query) {
                 return Some(*font);
             }
 
             if !is_bold && !is_italic {
                 // Do we have bold italic? (unless we already looked for it)
-                if let Some(font) = self.get(name, font_type, true, true) {
+                fallback_query.is_bold = true;
+                fallback_query.is_italic = true;
+                if let Some(font) = self.get(&fallback_query) {
                     return Some(*font);
                 }
             }

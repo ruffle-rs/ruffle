@@ -1,0 +1,20 @@
+access 'protected' method from 'default' method of sub class PASSED!
+access 'protected' method from 'public' method of sub class PASSED!
+access 'protected' method from 'final' method of sub class PASSED!
+access 'protected' method from 'public final' method of sub class PASSED!
+access 'protected' method from 'private final' method of sub class PASSED!
+access 'protected' method from 'private' method of sub class PASSED!
+access 'protected' method from 'virtual' method of sub class PASSED!
+access 'protected' method from 'public virtual' method of sub class PASSED!
+access 'protected' method from 'private virtual' method of sub class PASSED!
+access 'protected' method from 'static' method of the sub class PASSED!
+access 'protected' property from 'default' method of sub class PASSED!
+access 'protected' property from 'final' method of sub class PASSED!
+access 'protected' property from 'virtual' method of sub class PASSED!
+access 'protected' property from 'public' method of sub class PASSED!
+access 'protected' property from 'private' method of sub class PASSED!
+access 'protected' property from 'public final' method of sub class PASSED!
+access 'protected' property from 'public virtual' method of sub class PASSED!
+access 'protected' property from 'private final' method of sub class PASSED!
+access 'protected' property from 'private virtual' method of sub class PASSED!
+access protected property from static public method of sub class PASSED!

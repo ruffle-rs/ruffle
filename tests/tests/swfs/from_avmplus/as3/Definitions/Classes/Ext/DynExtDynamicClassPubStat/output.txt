@@ -1,0 +1,16 @@
+*** Access public static method from default method of sub class *** PASSED!
+EXTDCLASS.testSubArray(arr) PASSED!
+*** Access public static method from public method of sub class *** PASSED!
+EXTDCLASS.pubSubSetArray(arr), EXTDCLASS.pubSubGetArray() PASSED!
+*** Access public static method from private method of sub class *** PASSED!
+EXTDCLASS.testPrivSubArray(arr) PASSED!
+*** Access public static method from final method of sub class *** PASSED!
+EXTDCLASS.testFinSubArray(arr) PASSED!
+*** Access public static property from default method in sub class *** PASSED!
+EXTDCLASS.testSubDPArray(arr) PASSED!
+*** Access public static property from public method in sub class *** PASSED!
+EXTDCLASS.pubSubSetDPArray(arr), EXTDCLASS.pubSubGetDPArray() PASSED!
+*** Access public static property from private method in sub class *** PASSED!
+EXTDCLASS.testPrivSubDPArray(arr) PASSED!
+*** Access public static property from final method in sub class *** PASSED!
+EXTDCLASS.testFinSubPArray(arr) PASSED!

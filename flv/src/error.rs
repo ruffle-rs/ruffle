@@ -6,7 +6,9 @@ pub enum Error {
     #[error("the FLV parser ran out of data")]
     EndOfData,
 
-    #[error("the FLV cannot be read as its length exceeds the maximum memory size for this architecture")]
+    #[error(
+        "the FLV cannot be read as its length exceeds the maximum memory size for this architecture"
+    )]
     PointerTooBig,
 
     #[error("the data stream does not have a valid FLV header signature")]

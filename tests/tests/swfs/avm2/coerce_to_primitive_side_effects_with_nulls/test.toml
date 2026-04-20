@@ -1,0 +1,4 @@
+num_frames = 1
+known_failure = true
+# this observes the subtle difference between string-null and object-null
+# the toString logic in AVM2 uses an "is Object" check via discriminant check, which only object-null passes.

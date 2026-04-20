@@ -1,0 +1,17 @@
+mc1.init_actions
+mc1.onClipInitialize
+PASSED: [object Object] == [object Object]
+mc2.init_actions
+mc2.onClipInitialize
+mc1.onClipConstruct
+mc2.onClipConstruct
+_root.actions
+mc1.onClipLoad
+mc1.actions
+mc2.onClipLoad
+mc2.actions
+PASSED: _root.x  ==  '0+1+2+3+4+5+6+7+8+9+10+11+' [InitActionTest.c:156]
+PASSED: _root.y  ==  'var_of_root' [InitActionTest.c:158]
+#passed: 3
+#failed: 0
+#total tests run: 3

@@ -1,6 +1,9 @@
 message-cant-embed =
     Ruffle wasn't able to run the Flash embedded in this page.
     You can try to open the file in a separate tab, to sidestep this issue.
+message-restored-from-bfcache =
+    Your browser restored this Flash content from a previous session.
+    To start fresh, reload the page.
 panic-title = Something went wrong :(
 more-info = More info
 run-anyway = Run anyway
@@ -24,6 +27,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } for copy
 clipboard-message-cut = { " " } for cut
 clipboard-message-paste = { " " } for paste
+error-canvas-reload = Cannot reload with the canvas renderer when the canvas renderer is already in use.
 error-file-protocol =
     It appears you are running Ruffle on the "file:" protocol.
     This doesn't work as browsers block many features from working for security reasons.
@@ -68,6 +72,10 @@ error-wasm-disabled-on-edge =
     To fix this, try opening your browser's settings, clicking "Privacy, search, and services", scrolling down, and turning off "Enhance your security on the web".
     This will allow your browser to load the required ".wasm" files.
     If the issue persists, you might have to use a different browser.
+error-wasm-unsupported-browser =
+    The browser you are using does not support the WebAssembly extensions Ruffle requires to run.
+    Please switch to a supported browser.
+    You can find a list of supported browsers on the Wiki.
 error-javascript-conflict =
     Ruffle has encountered a major issue whilst trying to initialize.
     It seems like this page uses JavaScript code that conflicts with Ruffle.

@@ -1,0 +1,72 @@
+-- Transparent --
+// compare()
+-1
+
+// compare(transparentBmd)
+{ height=3, rectangle={ height=3, width=3, x=0, y=0 }, transparent=true, width=3 }
+
+// compare(null)
+-2
+
+// compare(undefined)
+-2
+
+// compare({})
+-2
+
+// compare(opaqueBmd)
+{ height=3, rectangle={ height=3, width=3, x=0, y=0 }, transparent=true, width=3 }
+
+// compare(disposedBmd)
+-2
+
+
+
+-- Opaque --
+// compare()
+-1
+
+// compare(transparentBmd)
+{ height=3, rectangle={ height=3, width=3, x=0, y=0 }, transparent=true, width=3 }
+
+// compare(null)
+-2
+
+// compare(undefined)
+-2
+
+// compare({})
+-2
+
+// compare(opaqueBmd)
+{ height=3, rectangle={ height=3, width=3, x=0, y=0 }, transparent=true, width=3 }
+
+// compare(disposedBmd)
+-2
+
+
+
+-- Disposed --
+// compare()
+-1
+
+// compare(transparentBmd)
+-1
+
+// compare(null)
+-1
+
+// compare(undefined)
+-1
+
+// compare({})
+-1
+
+// compare(opaqueBmd)
+-1
+
+// compare(disposedBmd)
+-1
+
+
+

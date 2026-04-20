@@ -1,8 +1,7 @@
-use crate::avm1::TObject as _;
 use crate::avm2::object::TObject as _;
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, DisplayObjectPtr, TDisplayObject};
-use gc_arena::{DynamicRoot, DynamicRootSet, Rootable};
+use gc_arena::{DynamicRoot, DynamicRootSet, Gc, Rootable};
 use std::fmt::{Debug, Formatter};
 use std::hash::{Hash, Hasher};
 
@@ -15,12 +14,15 @@ pub struct DisplayObjectHandle {
 
 impl DisplayObjectHandle {
     pub fn new<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: impl Into<DisplayObject<'gc>>,
     ) -> Self {
         let object = object.into();
         Self {
-            root: context.dynamic_root.stash(context.gc_context, object),
+            // TODO(moulins): it'd be nice to avoid the double indirection here...
+            root: context
+                .dynamic_root
+                .stash(context.gc(), Gc::new(context.gc(), object)),
             ptr: object.as_ptr(),
         }
     }
@@ -45,7 +47,7 @@ impl Debug for DisplayObjectHandle {
 impl PartialEq<DisplayObjectHandle> for DisplayObjectHandle {
     #[inline(always)]
     fn eq(&self, other: &DisplayObjectHandle) -> bool {
-        self.ptr == other.ptr
+        std::ptr::eq(self.ptr, other.ptr)
     }
 }
 
@@ -64,12 +66,12 @@ pub struct AVM1ObjectHandle {
 }
 
 impl AVM1ObjectHandle {
-    pub fn new<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
-        object: crate::avm1::Object<'gc>,
-    ) -> Self {
+    pub fn new<'gc>(context: &mut UpdateContext<'gc>, object: crate::avm1::Object<'gc>) -> Self {
         Self {
-            root: context.dynamic_root.stash(context.gc_context, object),
+            // TODO(moulins): it'd be nice to avoid the double indirection here...
+            root: context
+                .dynamic_root
+                .stash(context.gc(), Gc::new(context.gc(), object)),
             ptr: object.as_ptr(),
         }
     }
@@ -88,7 +90,7 @@ impl Debug for AVM1ObjectHandle {
 impl PartialEq<AVM1ObjectHandle> for AVM1ObjectHandle {
     #[inline(always)]
     fn eq(&self, other: &AVM1ObjectHandle) -> bool {
-        self.ptr == other.ptr
+        std::ptr::eq(self.ptr, other.ptr)
     }
 }
 
@@ -107,12 +109,12 @@ pub struct AVM2ObjectHandle {
 }
 
 impl AVM2ObjectHandle {
-    pub fn new<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
-        object: crate::avm2::Object<'gc>,
-    ) -> Self {
+    pub fn new<'gc>(context: &mut UpdateContext<'gc>, object: crate::avm2::Object<'gc>) -> Self {
         Self {
-            root: context.dynamic_root.stash(context.gc_context, object),
+            // TODO(moulins): it'd be nice to avoid the double indirection here...
+            root: context
+                .dynamic_root
+                .stash(context.gc(), Gc::new(context.gc(), object)),
             ptr: object.as_ptr(),
         }
     }
@@ -131,7 +133,7 @@ impl Debug for AVM2ObjectHandle {
 impl PartialEq<AVM2ObjectHandle> for AVM2ObjectHandle {
     #[inline(always)]
     fn eq(&self, other: &AVM2ObjectHandle) -> bool {
-        self.ptr == other.ptr
+        std::ptr::eq(self.ptr, other.ptr)
     }
 }
 
@@ -152,12 +154,12 @@ pub struct DomainHandle {
 }
 
 impl DomainHandle {
-    pub fn new<'gc>(
-        context: &mut UpdateContext<'_, 'gc>,
-        domain: crate::avm2::Domain<'gc>,
-    ) -> Self {
+    pub fn new<'gc>(context: &mut UpdateContext<'gc>, domain: crate::avm2::Domain<'gc>) -> Self {
         Self {
-            root: context.dynamic_root.stash(context.gc_context, domain),
+            // TODO(moulins): it'd be nice to avoid the double indirection here...
+            root: context
+                .dynamic_root
+                .stash(context.gc(), Gc::new(context.gc(), domain)),
             ptr: domain.as_ptr(),
         }
     }
@@ -176,7 +178,7 @@ impl Debug for DomainHandle {
 impl PartialEq<DomainHandle> for DomainHandle {
     #[inline(always)]
     fn eq(&self, other: &DomainHandle) -> bool {
-        self.ptr == other.ptr
+        std::ptr::eq(self.ptr, other.ptr)
     }
 }
 

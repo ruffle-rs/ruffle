@@ -1,0 +1,272 @@
+======================================
+  Setting HTML: x<p class="di">a</p>y<span class="di">b</span>z<a class="di">c</a>s
+  HTML get:     x<p class="di">a</p>y<span class="di">b</span>z<a class="di">c</a>s
+  Text get:     xaybzcs
+  Text runs (1):
+    from 0 to 7: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xaybzcs</FONT></P>
+  Text runs (1):
+    from 0 to 7: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<p class="db">a</p>y<span class="db">b</span>z<a class="db">c</a>s
+  HTML get:     x<p class="db">a</p>y<span class="db">b</span>z<a class="db">c</a>s
+  Text get:     xaybzcs
+  Text runs (1):
+    from 0 to 7: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xaybzcs</FONT></P>
+  Text runs (1):
+    from 0 to 7: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<p class="dn">a</p>y<span class="dn">b</span>z<a class="dn">c</a>s
+  HTML get:     x<p class="dn">a</p>y<span class="dn">b</span>z<a class="dn">c</a>s
+  Text get:     xyzs
+  Text runs (1):
+    from 0 to 4: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xyzs</FONT></P>
+  Text runs (1):
+    from 0 to 4: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <di>a</di>
+  HTML get:     <di>a</di>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <db>a</db>
+  HTML get:     <db>a</db>
+  Text get:     a\r
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <dn>a</dn>
+  HTML get:     <dn>a</dn>
+  Text get:     \r
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0"></FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<di></di>y
+  HTML get:     x<di></di>y
+  Text get:     xy
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xy</FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<db></db>y
+  HTML get:     x<db></db>y
+  Text get:     x\ry
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">x</FONT></P><P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">y</FONT></P>
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<dn></dn>y
+  HTML get:     x<dn></dn>y
+  Text get:     x\ry
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">x</FONT></P><P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">y</FONT></P>
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<di>y
+  HTML get:     x<di>y
+  Text get:     xy
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xy</FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<db>y
+  HTML get:     x<db>y
+  Text get:     xy
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xy</FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<dn>y
+  HTML get:     x<dn>y
+  Text get:     x
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">x</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<di></p>y
+  HTML get:     x<di></p>y
+  Text get:     xy
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xy</FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<db></p>y
+  HTML get:     x<db></p>y
+  Text get:     xy
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xy</FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<dn></p>y
+  HTML get:     x<dn></p>y
+  Text get:     x
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">x</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<di>a</di>y<db>b</db>z<dn>c</dn>s
+  HTML get:     x<di>a</di>y<db>b</db>z<dn>c</dn>s
+  Text get:     xayb\rz\rs
+  Text runs (1):
+    from 0 to 8: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xayb</FONT></P><P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">z</FONT></P><P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">s</FONT></P>
+  Text runs (1):
+    from 0 to 8: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <p>a</p>
+  HTML get:     <p>a</p>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <li>a</li>
+  HTML get:     <li>a</li>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=true, underline=false
+  Style reset:  <LI><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></LI>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=true, underline=false
+======================================
+  Setting HTML: <a>a</a>
+  HTML get:     <a>a</a>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<p>a</p>y<li>b</li>z<a>c</a>s
+  HTML get:     x<p>a</p>y<li>b</li>z<a>c</a>s
+  Text get:     xaybzcs
+  Text runs (3):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 3 to 4: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=true, underline=false
+    from 4 to 7: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xaybzcs</FONT></P>
+  Text runs (3):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 3 to 4: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=true, underline=false
+    from 4 to 7: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <p>a</p>
+  HTML get:     <p>a</p>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <li>a</li>
+  HTML get:     <li>a</li>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=true, underline=false
+  Style reset:  <LI><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></LI>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=true, underline=false
+======================================
+  Setting HTML: <a>a</a>
+  HTML get:     <a>a</a>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<p>a</p>y<li>b</li>z<a>c</a>s
+  HTML get:     x<p>a</p>y<li>b</li>z<a>c</a>s
+  Text get:     xaybzcs
+  Text runs (3):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 3 to 4: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=true, underline=false
+    from 4 to 7: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xaybzcs</FONT></P>
+  Text runs (3):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 3 to 4: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=true, underline=false
+    from 4 to 7: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <p>a</p>
+  HTML get:     <p>a</p>
+  Text get:     
+  Text runs (0):
+  Style reset:  
+  Text runs (0):
+======================================
+  Setting HTML: <li>a</li>
+  HTML get:     <li>a</li>
+  Text get:     
+  Text runs (0):
+  Style reset:  
+  Text runs (0):
+======================================
+  Setting HTML: <a>a</a>
+  HTML get:     <a>a</a>
+  Text get:     
+  Text runs (0):
+  Style reset:  
+  Text runs (0):
+======================================
+  Setting HTML: x<p>a</p>y<li>b</li>z<a>c</a>s
+  HTML get:     x<p>a</p>y<li>b</li>z<a>c</a>s
+  Text get:     xyzs
+  Text runs (1):
+    from 0 to 4: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xyzs</FONT></P>
+  Text runs (1):
+    from 0 to 4: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <as>a</as>
+  HTML get:     <as>a</as>
+  Text get:     a
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">a</FONT></P>
+  Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: x<as>a</as>y<as>b</as>z
+  HTML get:     x<as>a</as>y<as>b</as>z
+  Text get:     xaybz
+  Text runs (1):
+    from 0 to 5: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">xaybz</FONT></P>
+  Text runs (1):
+    from 0 to 5: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false

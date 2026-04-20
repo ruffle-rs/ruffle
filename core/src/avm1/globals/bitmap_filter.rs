@@ -11,21 +11,23 @@ use crate::avm1::globals::drop_shadow_filter::DropShadowFilter;
 use crate::avm1::globals::glow_filter::GlowFilter;
 use crate::avm1::globals::gradient_filter::GradientFilter;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Attribute, Object, ScriptObject, TObject, Value};
-use crate::context::{GcContext, UpdateContext};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{Object, Value};
+use crate::context::UpdateContext;
+use ruffle_macros::istr;
 use ruffle_render::filters::Filter;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "clone" => method(clone);
 };
 
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.empty_class(super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
 }
 
 pub fn clone<'gc>(
@@ -35,45 +37,41 @@ pub fn clone<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let native = match this.native() {
         NativeObject::BlurFilter(blur_filter) => {
-            NativeObject::BlurFilter(blur_filter.duplicate(activation.context.gc_context))
+            NativeObject::BlurFilter(blur_filter.duplicate(activation.gc()))
         }
         NativeObject::BevelFilter(bevel_filter) => {
-            NativeObject::BevelFilter(bevel_filter.duplicate(activation.context.gc_context))
+            NativeObject::BevelFilter(bevel_filter.duplicate(activation.gc()))
         }
         NativeObject::GlowFilter(glow_filter) => {
-            NativeObject::GlowFilter(glow_filter.duplicate(activation.context.gc_context))
+            NativeObject::GlowFilter(glow_filter.duplicate(activation.gc()))
         }
-        NativeObject::DropShadowFilter(drop_shadow_filter) => NativeObject::DropShadowFilter(
-            drop_shadow_filter.duplicate(activation.context.gc_context),
-        ),
-        NativeObject::ColorMatrixFilter(color_matrix_filter) => NativeObject::ColorMatrixFilter(
-            color_matrix_filter.duplicate(activation.context.gc_context),
-        ),
+        NativeObject::DropShadowFilter(drop_shadow_filter) => {
+            NativeObject::DropShadowFilter(drop_shadow_filter.duplicate(activation.gc()))
+        }
+        NativeObject::ColorMatrixFilter(color_matrix_filter) => {
+            NativeObject::ColorMatrixFilter(color_matrix_filter.duplicate(activation.gc()))
+        }
         NativeObject::DisplacementMapFilter(displacement_map_filter) => {
-            NativeObject::DisplacementMapFilter(
-                displacement_map_filter.duplicate(activation.context.gc_context),
-            )
+            NativeObject::DisplacementMapFilter(displacement_map_filter.duplicate(activation.gc()))
         }
-        NativeObject::ConvolutionFilter(convolution_filter) => NativeObject::ConvolutionFilter(
-            convolution_filter.duplicate(activation.context.gc_context),
-        ),
+        NativeObject::ConvolutionFilter(convolution_filter) => {
+            NativeObject::ConvolutionFilter(convolution_filter.duplicate(activation.gc()))
+        }
         NativeObject::GradientBevelFilter(gradient_bevel_filter) => {
-            NativeObject::GradientBevelFilter(
-                gradient_bevel_filter.duplicate(activation.context.gc_context),
-            )
+            NativeObject::GradientBevelFilter(gradient_bevel_filter.duplicate(activation.gc()))
         }
-        NativeObject::GradientGlowFilter(gradient_glow_filter) => NativeObject::GradientGlowFilter(
-            gradient_glow_filter.duplicate(activation.context.gc_context),
-        ),
+        NativeObject::GradientGlowFilter(gradient_glow_filter) => {
+            NativeObject::GradientGlowFilter(gradient_glow_filter.duplicate(activation.gc()))
+        }
         _ => return Ok(Value::Undefined),
     };
-    let proto = this.get_local_stored("__proto__", activation, false);
-    Ok(create_instance(activation, native, proto).into())
+    let proto = this.get_local_stored(istr!("__proto__"), activation);
+    Ok(Object::new_with_native(activation.strings(), proto, native).into())
 }
 
 pub fn avm1_to_filter<'gc>(
     object: Object<'gc>,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
 ) -> Option<Filter> {
     let native = object.native();
     match native {
@@ -101,67 +99,49 @@ pub fn avm1_to_filter<'gc>(
 pub fn filter_to_avm1<'gc>(activation: &mut Activation<'_, 'gc>, filter: Filter) -> Value<'gc> {
     let (native, proto) = match filter {
         Filter::BevelFilter(filter) => (
-            NativeObject::BevelFilter(BevelFilter::from_filter(
-                activation.context.gc_context,
-                filter,
-            )),
-            activation.context.avm1.prototypes().bevel_filter,
+            NativeObject::BevelFilter(BevelFilter::from_filter(activation.gc(), filter)),
+            activation.prototypes().bevel_filter,
         ),
         Filter::BlurFilter(filter) => (
-            NativeObject::BlurFilter(BlurFilter::from_filter(
-                activation.context.gc_context,
-                filter,
-            )),
-            activation.context.avm1.prototypes().blur_filter,
+            NativeObject::BlurFilter(BlurFilter::from_filter(activation.gc(), filter)),
+            activation.prototypes().blur_filter,
         ),
         Filter::ColorMatrixFilter(filter) => (
             NativeObject::ColorMatrixFilter(ColorMatrixFilter::from_filter(
-                activation.context.gc_context,
+                activation.gc(),
                 filter,
             )),
-            activation.context.avm1.prototypes().color_matrix_filter,
+            activation.prototypes().color_matrix_filter,
         ),
         Filter::ConvolutionFilter(filter) => (
             NativeObject::ConvolutionFilter(ConvolutionFilter::from_filter(
-                activation.context.gc_context,
+                activation.gc(),
                 filter,
             )),
-            activation.context.avm1.prototypes().convolution_filter,
+            activation.prototypes().convolution_filter,
         ),
         Filter::GlowFilter(filter) => (
-            NativeObject::GlowFilter(GlowFilter::from_filter(
-                activation.context.gc_context,
-                filter,
-            )),
-            activation.context.avm1.prototypes().glow_filter,
+            NativeObject::GlowFilter(GlowFilter::from_filter(activation.gc(), filter)),
+            activation.prototypes().glow_filter,
         ),
         Filter::DropShadowFilter(filter) => (
-            NativeObject::DropShadowFilter(DropShadowFilter::from_filter(
-                activation.context.gc_context,
-                filter,
-            )),
-            activation.context.avm1.prototypes().drop_shadow_filter,
+            NativeObject::DropShadowFilter(DropShadowFilter::from_filter(activation.gc(), filter)),
+            activation.prototypes().drop_shadow_filter,
         ),
         Filter::DisplacementMapFilter(filter) => (
             NativeObject::DisplacementMapFilter(DisplacementMapFilter::from_filter(
-                activation.context.gc_context,
+                activation.gc(),
                 filter,
             )),
-            activation.context.avm1.prototypes().displacement_map_filter,
+            activation.prototypes().displacement_map_filter,
         ),
         Filter::GradientBevelFilter(filter) => (
-            NativeObject::GradientBevelFilter(GradientFilter::from_filter(
-                activation.context.gc_context,
-                filter,
-            )),
-            activation.context.avm1.prototypes().gradient_bevel_filter,
+            NativeObject::GradientBevelFilter(GradientFilter::from_filter(activation.gc(), filter)),
+            activation.prototypes().gradient_bevel_filter,
         ),
         Filter::GradientGlowFilter(filter) => (
-            NativeObject::GradientGlowFilter(GradientFilter::from_filter(
-                activation.context.gc_context,
-                filter,
-            )),
-            activation.context.avm1.prototypes().gradient_glow_filter,
+            NativeObject::GradientGlowFilter(GradientFilter::from_filter(activation.gc(), filter)),
+            activation.prototypes().gradient_glow_filter,
         ),
         Filter::ShaderFilter(_) => {
             unreachable!(
@@ -169,36 +149,5 @@ pub fn filter_to_avm1<'gc>(activation: &mut Activation<'_, 'gc>, filter: Filter)
             )
         }
     };
-
-    create_instance(activation, native, Some(proto.into())).into()
-}
-
-pub fn create_instance<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    native: NativeObject<'gc>,
-    proto: Option<Value<'gc>>,
-) -> ScriptObject<'gc> {
-    let result = ScriptObject::new(activation.context.gc_context, None);
-    // Set `__proto__` manually since `ScriptObject::new()` doesn't support primitive prototypes.
-    // TODO: Pass `proto` to `ScriptObject::new()` once possible.
-    if let Some(proto) = proto {
-        result.define_value(
-            activation.context.gc_context,
-            "__proto__",
-            proto,
-            Attribute::DONT_ENUM | Attribute::DONT_DELETE,
-        );
-    }
-    result.set_native(activation.context.gc_context, native);
-    result
-}
-
-pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    Object::new_with_native(activation.strings(), Some(proto), native).into()
 }

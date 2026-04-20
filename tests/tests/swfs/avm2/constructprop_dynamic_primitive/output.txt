@@ -1,0 +1,7 @@
+[object TypeError]
+1007
+no error
+[object TypeError]
+1007
+[object TypeError]
+1007

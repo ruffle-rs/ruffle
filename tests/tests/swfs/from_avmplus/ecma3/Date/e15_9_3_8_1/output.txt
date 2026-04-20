@@ -1,0 +1,90 @@
+new Date(0).getTime() PASSED!
+new Date(0).valueOf() PASSED!
+new Date(0).getUTCFullYear() PASSED!
+new Date(0).getUTCMonth() PASSED!
+new Date(0).getUTCDate() PASSED!
+new Date(0).getUTCDay() PASSED!
+new Date(0).getUTCHours() PASSED!
+new Date(0).getUTCMinutes() PASSED!
+new Date(0).getUTCSeconds() PASSED!
+new Date(0).getUTCMilliseconds() PASSED!
+new Date(0).getFullYear() PASSED!
+new Date(0).getMonth() PASSED!
+new Date(0).getDate() PASSED!
+new Date(0).getDay() PASSED!
+new Date(0).getHours() PASSED!
+new Date(0).getMinutes() PASSED!
+new Date(0).getSeconds() PASSED!
+new Date(0).getMilliseconds() PASSED!
+new Date(1).getTime() PASSED!
+new Date(1).valueOf() PASSED!
+new Date(1).getUTCFullYear() PASSED!
+new Date(1).getUTCMonth() PASSED!
+new Date(1).getUTCDate() PASSED!
+new Date(1).getUTCDay() PASSED!
+new Date(1).getUTCHours() PASSED!
+new Date(1).getUTCMinutes() PASSED!
+new Date(1).getUTCSeconds() PASSED!
+new Date(1).getUTCMilliseconds() PASSED!
+new Date(1).getFullYear() PASSED!
+new Date(1).getMonth() PASSED!
+new Date(1).getDate() PASSED!
+new Date(1).getDay() PASSED!
+new Date(1).getHours() PASSED!
+new Date(1).getMinutes() PASSED!
+new Date(1).getSeconds() PASSED!
+new Date(1).getMilliseconds() PASSED!
+new Date(true).getTime() PASSED!
+new Date(true).valueOf() PASSED!
+new Date(true).getUTCFullYear() PASSED!
+new Date(true).getUTCMonth() PASSED!
+new Date(true).getUTCDate() PASSED!
+new Date(true).getUTCDay() PASSED!
+new Date(true).getUTCHours() PASSED!
+new Date(true).getUTCMinutes() PASSED!
+new Date(true).getUTCSeconds() PASSED!
+new Date(true).getUTCMilliseconds() PASSED!
+new Date(true).getFullYear() PASSED!
+new Date(true).getMonth() PASSED!
+new Date(true).getDate() PASSED!
+new Date(true).getDay() PASSED!
+new Date(true).getHours() PASSED!
+new Date(true).getMinutes() PASSED!
+new Date(true).getSeconds() PASSED!
+new Date(true).getMilliseconds() PASSED!
+new Date(false).getTime() PASSED!
+new Date(false).valueOf() PASSED!
+new Date(false).getUTCFullYear() PASSED!
+new Date(false).getUTCMonth() PASSED!
+new Date(false).getUTCDate() PASSED!
+new Date(false).getUTCDay() PASSED!
+new Date(false).getUTCHours() PASSED!
+new Date(false).getUTCMinutes() PASSED!
+new Date(false).getUTCSeconds() PASSED!
+new Date(false).getUTCMilliseconds() PASSED!
+new Date(false).getFullYear() PASSED!
+new Date(false).getMonth() PASSED!
+new Date(false).getDate() PASSED!
+new Date(false).getDay() PASSED!
+new Date(false).getHours() PASSED!
+new Date(false).getMinutes() PASSED!
+new Date(false).getSeconds() PASSED!
+new Date(false).getMilliseconds() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getTime() PASSED!
+new Date(+ (new Date(0)).toString()+ ).valueOf() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getUTCFullYear() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getUTCMonth() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getUTCDate() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getUTCDay() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getUTCHours() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getUTCMinutes() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getUTCSeconds() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getUTCMilliseconds() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getFullYear() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getMonth() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getDate() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getDay() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getHours() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getMinutes() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getSeconds() PASSED!
+new Date(+ (new Date(0)).toString()+ ).getMilliseconds() PASSED!

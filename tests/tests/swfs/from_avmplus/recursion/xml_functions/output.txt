@@ -1,0 +1,3 @@
+new XML(...).copy() PASSED!
+new XML(...).toXMLString() PASSED!
+new XML(...).descendants() PASSED!

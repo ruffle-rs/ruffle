@@ -1,0 +1,72 @@
+new Date(951782400000).getTime() PASSED!
+new Date(951782400000).valueOf() PASSED!
+new Date(951782400000).getUTCFullYear() PASSED!
+new Date(951782400000).getUTCMonth() PASSED!
+new Date(951782400000).getUTCDate() PASSED!
+new Date(951782400000).getUTCDay() PASSED!
+new Date(951782400000).getUTCHours() PASSED!
+new Date(951782400000).getUTCMinutes() PASSED!
+new Date(951782400000).getUTCSeconds() PASSED!
+new Date(951782400000).getUTCMilliseconds() PASSED!
+new Date(951782400000).getFullYear() PASSED!
+new Date(951782400000).getMonth() PASSED!
+new Date(951782400000).getDate() PASSED!
+new Date(951782400000).getDay() PASSED!
+new Date(951782400000).getHours() PASSED!
+new Date(951782400000).getMinutes() PASSED!
+new Date(951782400000).getSeconds() PASSED!
+new Date(951782400000).getMilliseconds() PASSED!
+new Date(951811200000).getTime() PASSED!
+new Date(951811200000).valueOf() PASSED!
+new Date(951811200000).getUTCFullYear() PASSED!
+new Date(951811200000).getUTCMonth() PASSED!
+new Date(951811200000).getUTCDate() PASSED!
+new Date(951811200000).getUTCDay() PASSED!
+new Date(951811200000).getUTCHours() PASSED!
+new Date(951811200000).getUTCMinutes() PASSED!
+new Date(951811200000).getUTCSeconds() PASSED!
+new Date(951811200000).getUTCMilliseconds() PASSED!
+new Date(951811200000).getFullYear() PASSED!
+new Date(951811200000).getMonth() PASSED!
+new Date(951811200000).getDate() PASSED!
+new Date(951811200000).getDay() PASSED!
+new Date(951811200000).getHours() PASSED!
+new Date(951811200000).getMinutes() PASSED!
+new Date(951811200000).getSeconds() PASSED!
+new Date(951811200000).getMilliseconds() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getTime() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).valueOf() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getUTCFullYear() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getUTCMonth() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getUTCDate() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getUTCDay() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getUTCHours() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getUTCMinutes() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getUTCSeconds() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getUTCMilliseconds() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getFullYear() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getMonth() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getDate() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getDay() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getHours() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getMinutes() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getSeconds() PASSED!
+new Date(+(new Date(UTC_FEB_29_2000)).toString()+).getMilliseconds() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getTime() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).valueOf() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getUTCFullYear() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getUTCMonth() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getUTCDate() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getUTCDay() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getUTCHours() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getUTCMinutes() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getUTCSeconds() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getUTCMilliseconds() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getFullYear() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getMonth() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getDate() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getDay() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getHours() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getMinutes() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getSeconds() PASSED!
+new Date(+(new Date(PST_FEB_29_2000)).toString()+).getMilliseconds() PASSED!

@@ -2,40 +2,33 @@
 
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
-use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::object::TObject;
+use crate::avm1::parameters::{ParametersExt, UndefinedAs};
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::Declaration;
-use crate::avm1::{Activation, ArrayObject, Object, ScriptObject, Value};
-use crate::context::GcContext;
-use crate::string::AvmString;
-use gc_arena::{Collect, Mutation};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{Activation, ArrayBuilder, Object, Value};
+use crate::string::{AvmString, StringContext};
+use gc_arena::Collect;
+use ruffle_macros::istr;
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "initialize" => method(initialize; DONT_ENUM | DONT_DELETE);
     "addListener" => function(add_listener; DONT_ENUM | DONT_DELETE);
     "removeListener" => function(remove_listener; DONT_ENUM | DONT_DELETE);
     "broadcastMessage" => function(broadcast_message; DONT_ENUM | DONT_DELETE);
 };
 
-pub fn create<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> (BroadcasterFunctions<'gc>, Object<'gc>) {
-    let gc_context = context.gc_context;
-    let as_broadcaster_proto = ScriptObject::new(gc_context, Some(proto));
-    let as_broadcaster = FunctionObject::constructor(
-        gc_context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        as_broadcaster_proto.into(),
-    );
-    let object = as_broadcaster.raw_script_object();
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> (BroadcasterFunctions<'gc>, SystemClass<'gc>) {
+    // Despite the documentation says that there is no constructor function for the `AsBroadcaster`
+    // class, Flash accepts expressions like `new AsBroadcaster()`, and a newly-created object is
+    // returned in such cases.
+    let class = context.empty_class(super_proto);
 
+    let decls = OBJECT_DECLS(context);
     let mut define_as_object = |index: usize| -> Object<'gc> {
-        match OBJECT_DECLS[index].define_on(context, object, fn_proto) {
+        match decls[index].define_on(context.strings, class.constr, context.fn_proto) {
             Value::Object(o) => o,
             _ => panic!("expected object for broadcaster function"),
         }
@@ -48,7 +41,7 @@ pub fn create<'gc>(
             remove_listener: define_as_object(2),
             broadcast_message: define_as_object(3),
         },
-        as_broadcaster,
+        class,
     )
 }
 
@@ -63,11 +56,11 @@ pub struct BroadcasterFunctions<'gc> {
 impl<'gc> BroadcasterFunctions<'gc> {
     pub fn initialize(
         self,
-        gc_context: &Mutation<'gc>,
+        context: &StringContext<'gc>,
         broadcaster: Object<'gc>,
         array_proto: Object<'gc>,
     ) {
-        initialize_internal(gc_context, broadcaster, self, array_proto);
+        initialize_internal(context, broadcaster, self, array_proto);
     }
 }
 
@@ -76,15 +69,26 @@ fn add_listener<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let new_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let listeners = this.get("_listeners", activation)?;
+    let new_listener = args.get_value(0);
+    let listeners = this.get(istr!("_listeners"), activation)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length(activation)?;
-        let exists = (0..length).any(|i| listeners.get_element(activation, i) == new_listener);
+        let mut exists = false;
+        for i in 0..length {
+            if listeners
+                .get_element(activation, i)
+                .abstract_eq(new_listener, activation)?
+            {
+                listeners.set_element(activation, i, new_listener)?;
+                exists = true;
+                break;
+            }
+        }
+
         if !exists {
             listeners.call_method(
-                "push".into(),
+                istr!("push"),
                 &[new_listener],
                 activation,
                 ExecutionReason::FunctionCall,
@@ -100,21 +104,24 @@ fn remove_listener<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let old_listener = args.get(0).cloned().unwrap_or(Value::Undefined);
-    let listeners = this.get("_listeners", activation)?;
+    let old_listener = args.get_value(0);
+    let listeners = this.get(istr!("_listeners"), activation)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length(activation)?;
-        if let Some(index) =
-            (0..length).find(|&i| listeners.get_element(activation, i) == old_listener)
-        {
-            listeners.call_method(
-                "splice".into(),
-                &[index.into(), 1.into()],
-                activation,
-                ExecutionReason::FunctionCall,
-            )?;
-            return Ok(true.into());
+        for i in 0..length {
+            if listeners
+                .get_element(activation, i)
+                .abstract_eq(old_listener, activation)?
+            {
+                listeners.call_method(
+                    istr!("splice"),
+                    &[i.into(), 1.into()],
+                    activation,
+                    ExecutionReason::FunctionCall,
+                )?;
+                return Ok(true.into());
+            }
         }
     }
 
@@ -126,39 +133,35 @@ fn broadcast_message<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(event_name_value) = args.get(0) {
-        let event_name = event_name_value.coerce_to_string(activation)?;
+    let event_name = args.try_get_string(activation, 0, UndefinedAs::Some)?;
+    if let Some(event_name) = event_name {
         let call_args = &args[1..];
+        broadcast_internal(this, call_args, event_name, activation)?;
 
-        broadcast_internal(activation, this, call_args, event_name)?;
+        return Ok(true.into());
     }
 
     Ok(Value::Undefined)
 }
 
 pub fn broadcast_internal<'gc>(
-    activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     call_args: &[Value<'gc>],
     method_name: AvmString<'gc>,
+    activation: &mut Activation<'_, 'gc>,
 ) -> Result<bool, Error<'gc>> {
-    let listeners = this.get("_listeners", activation)?;
+    let listeners = this.get(istr!("_listeners"), activation)?;
 
     if let Value::Object(listeners) = listeners {
         let length = listeners.length(activation)?;
         for i in 0..length {
             let listener = listeners.get_element(activation, i);
-
-            if let Value::Object(listener) = listener {
-                listener.call_method(
-                    method_name,
-                    call_args,
-                    activation,
-                    ExecutionReason::Special,
-                )?;
-            } else if let Value::MovieClip(_) = listener {
-                let object = listener.coerce_to_object(activation);
-                object.call_method(method_name, call_args, activation, ExecutionReason::Special)?;
+            if let Some(obj) = listener.as_object(activation) {
+                if method_name.is_empty() {
+                    obj.call(method_name, activation, listener, call_args)?;
+                } else {
+                    obj.call_method(method_name, call_args, activation, ExecutionReason::Special)?;
+                }
             }
         }
 
@@ -168,62 +171,53 @@ pub fn broadcast_internal<'gc>(
     }
 }
 
-/// Implements `AsBroadcaster` constructor and function.
-// Despite the documentation says that there is no constructor function for the `AsBroadcaster`
-// class, Flash accepts expressions like `new AsBroadcaster()`, and a newly-created object is
-// returned in such cases.
-fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(this.into())
-}
-
 fn initialize<'gc>(
     activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(val) = args.get(0) {
-        let broadcaster = val.coerce_to_object(activation);
-        initialize_internal(
-            activation.context.gc_context,
-            broadcaster,
-            activation.context.avm1.broadcaster_functions(),
-            activation.context.avm1.prototypes().array,
-        );
-    }
+    let broadcaster = args.get_object(activation, 0)?;
+    initialize_internal(
+        &activation.context.strings,
+        broadcaster,
+        activation
+            .context
+            .avm1
+            .broadcaster_functions(activation.swf_version()),
+        activation.prototypes().array,
+    );
     Ok(Value::Undefined)
 }
 
 fn initialize_internal<'gc>(
-    gc_context: &Mutation<'gc>,
+    context: &StringContext<'gc>,
     broadcaster: Object<'gc>,
     functions: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) {
     broadcaster.define_value(
-        gc_context,
-        "_listeners",
-        ArrayObject::empty_with_proto(gc_context, array_proto).into(),
+        context.gc(),
+        istr!(context, "_listeners"),
+        ArrayBuilder::new_with_proto(context, array_proto)
+            .with([])
+            .into(),
         Attribute::DONT_ENUM,
     );
     broadcaster.define_value(
-        gc_context,
-        "addListener",
+        context.gc(),
+        istr!(context, "addListener"),
         functions.add_listener.into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
     broadcaster.define_value(
-        gc_context,
-        "removeListener",
+        context.gc(),
+        istr!(context, "removeListener"),
         functions.remove_listener.into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
     broadcaster.define_value(
-        gc_context,
-        "broadcastMessage",
+        context.gc(),
+        istr!(context, "broadcastMessage"),
         functions.broadcast_message.into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );

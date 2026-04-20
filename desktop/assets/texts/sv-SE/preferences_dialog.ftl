@@ -8,9 +8,25 @@ graphics-power-high = Hög (t.ex. GPU)
 language = Språk
 audio-output-device = Ljudutgångsenhet
 audio-output-device-default = Systemstandard
+enable-openh264 = Sätt på OpenH264
+show-license = Visa licens
+openh264-license = OpenH264 licens
 log-filename-pattern = Loggfilnamn
-log-filename-pattern-single-file = Enskild Fil (ruffle.log)
-log-filename-pattern-with-timestamp = Med Tidsstämpel
+log-filename-pattern-single-file = Enskild fil (ruffle.log)
+log-filename-pattern-with-timestamp = Med tidsstämpel
 storage-backend = Sparfilplats
 storage-backend-disk = Disk
 storage-backend-memory = Minne
+recent-limit = Nylig begränsning
+recent-clear = Rensa
+theme = Tema
+theme-system = Systemstandard
+theme-light = Ljust
+theme-dark = Mörkt
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
+gamemode-default = Förval
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = Inmatningsmetod
+ime-enabled-experimental = (experimentell)
+ime-enabled-default = Förval

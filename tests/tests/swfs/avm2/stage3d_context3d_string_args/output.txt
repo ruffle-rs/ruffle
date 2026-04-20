@@ -1,0 +1,158 @@
+=== setCulling ===
+triangleFace 'none': OK
+triangleFace 'back': OK
+triangleFace 'front': OK
+triangleFace 'frontAndBack': OK
+triangleFace 'None': ArgumentError: Error #2008: Parameter triangleFaceToCull must be one of the accepted values.
+triangleFace 'NONE': ArgumentError: Error #2008: Parameter triangleFaceToCull must be one of the accepted values.
+triangleFace 'Front': ArgumentError: Error #2008: Parameter triangleFaceToCull must be one of the accepted values.
+triangleFace 'BACK': ArgumentError: Error #2008: Parameter triangleFaceToCull must be one of the accepted values.
+triangleFace 'FrontAndBack': ArgumentError: Error #2008: Parameter triangleFaceToCull must be one of the accepted values.
+triangleFace 'frontandback': ArgumentError: Error #2008: Parameter triangleFaceToCull must be one of the accepted values.
+triangleFace 'garbage': ArgumentError: Error #2008: Parameter triangleFaceToCull must be one of the accepted values.
+=== setProgramConstants ===
+programType 'vertex' (matrix): OK
+programType 'fragment' (matrix): OK
+programType 'vertex' (vector): OK
+programType 'fragment' (vector): OK
+programType 'Vertex': ArgumentError: Error #2008: Parameter programType must be one of the accepted values.
+programType 'VERTEX': ArgumentError: Error #2008: Parameter programType must be one of the accepted values.
+programType 'Fragment': ArgumentError: Error #2008: Parameter programType must be one of the accepted values.
+programType 'FRAGMENT': ArgumentError: Error #2008: Parameter programType must be one of the accepted values.
+programType 'garbage': ArgumentError: Error #2008: Parameter programType must be one of the accepted values.
+programType 'Vertex' (vector): ArgumentError: Error #2008: Parameter programType must be one of the accepted values.
+programType 'FRAGMENT' (vector): ArgumentError: Error #2008: Parameter programType must be one of the accepted values.
+programType 'garbage' (vector): ArgumentError: Error #2008: Parameter programType must be one of the accepted values.
+=== setStencilActions ===
+triangleFace 'none': OK
+triangleFace 'back': OK
+triangleFace 'front': OK
+triangleFace 'frontAndBack': OK
+triangleFace 'None': ArgumentError: Error #2008: Parameter triangleFace must be one of the accepted values.
+triangleFace 'NONE': ArgumentError: Error #2008: Parameter triangleFace must be one of the accepted values.
+triangleFace 'Front': ArgumentError: Error #2008: Parameter triangleFace must be one of the accepted values.
+triangleFace 'FRONT': ArgumentError: Error #2008: Parameter triangleFace must be one of the accepted values.
+triangleFace 'Back': ArgumentError: Error #2008: Parameter triangleFace must be one of the accepted values.
+triangleFace 'BACK': ArgumentError: Error #2008: Parameter triangleFace must be one of the accepted values.
+triangleFace 'FrontAndBack': ArgumentError: Error #2008: Parameter triangleFace must be one of the accepted values.
+triangleFace 'frontandback': ArgumentError: Error #2008: Parameter triangleFace must be one of the accepted values.
+triangleFace 'FRONTANDBACK': ArgumentError: Error #2008: Parameter triangleFace must be one of the accepted values.
+triangleFace 'garbage': ArgumentError: Error #2008: Parameter triangleFace must be one of the accepted values.
+triangleFace '': ArgumentError: Error #2008: Parameter triangleFace must be one of the accepted values.
+compareMode 'never': OK
+compareMode 'less': OK
+compareMode 'equal': OK
+compareMode 'lessEqual': OK
+compareMode 'greater': OK
+compareMode 'notEqual': OK
+compareMode 'greaterEqual': OK
+compareMode 'always': OK
+compareMode 'Always': ArgumentError: Error #2008: Parameter compareMode must be one of the accepted values.
+compareMode 'ALWAYS': ArgumentError: Error #2008: Parameter compareMode must be one of the accepted values.
+compareMode 'Never': ArgumentError: Error #2008: Parameter compareMode must be one of the accepted values.
+compareMode 'LessEqual': ArgumentError: Error #2008: Parameter compareMode must be one of the accepted values.
+compareMode 'lessequal': ArgumentError: Error #2008: Parameter compareMode must be one of the accepted values.
+compareMode 'LESSEQUAL': ArgumentError: Error #2008: Parameter compareMode must be one of the accepted values.
+compareMode 'GreaterEqual': ArgumentError: Error #2008: Parameter compareMode must be one of the accepted values.
+compareMode 'NotEqual': ArgumentError: Error #2008: Parameter compareMode must be one of the accepted values.
+compareMode 'garbage': ArgumentError: Error #2008: Parameter compareMode must be one of the accepted values.
+action 'decrementSaturate': OK
+action 'decrementWrap': OK
+action 'incrementSaturate': OK
+action 'incrementWrap': OK
+action 'invert': OK
+action 'keep': OK
+action 'set': OK
+action 'zero': OK
+actionOnBothPass 'Keep': ArgumentError: Error #2008: Parameter actionOnBothPass must be one of the accepted values.
+actionOnBothPass 'KEEP': ArgumentError: Error #2008: Parameter actionOnBothPass must be one of the accepted values.
+actionOnBothPass 'Zero': ArgumentError: Error #2008: Parameter actionOnBothPass must be one of the accepted values.
+actionOnBothPass 'IncrementSaturate': ArgumentError: Error #2008: Parameter actionOnBothPass must be one of the accepted values.
+actionOnBothPass 'incrementsaturate': ArgumentError: Error #2008: Parameter actionOnBothPass must be one of the accepted values.
+actionOnBothPass 'INCREMENTSATURATE': ArgumentError: Error #2008: Parameter actionOnBothPass must be one of the accepted values.
+actionOnBothPass 'DecrementWrap': ArgumentError: Error #2008: Parameter actionOnBothPass must be one of the accepted values.
+actionOnBothPass 'garbage': ArgumentError: Error #2008: Parameter actionOnBothPass must be one of the accepted values.
+actionOnDepthFail 'Invert': ArgumentError: Error #2008: Parameter actionOnDepthFail must be one of the accepted values.
+actionOnDepthFail 'ZERO': ArgumentError: Error #2008: Parameter actionOnDepthFail must be one of the accepted values.
+actionOnDepthPassStencilFail 'Set': ArgumentError: Error #2008: Parameter actionOnDepthPassStencilFail must be one of the accepted values.
+actionOnDepthPassStencilFail 'SET': ArgumentError: Error #2008: Parameter actionOnDepthPassStencilFail must be one of the accepted values.
+=== setDepthTest ===
+passCompareMode 'never': OK
+passCompareMode 'less': OK
+passCompareMode 'equal': OK
+passCompareMode 'lessEqual': OK
+passCompareMode 'greater': OK
+passCompareMode 'notEqual': OK
+passCompareMode 'greaterEqual': OK
+passCompareMode 'always': OK
+passCompareMode 'Less': ArgumentError: Error #2008: Parameter passCompareMode must be one of the accepted values.
+passCompareMode 'LESS': ArgumentError: Error #2008: Parameter passCompareMode must be one of the accepted values.
+passCompareMode 'LessEqual': ArgumentError: Error #2008: Parameter passCompareMode must be one of the accepted values.
+passCompareMode 'Always': ArgumentError: Error #2008: Parameter passCompareMode must be one of the accepted values.
+passCompareMode 'garbage': ArgumentError: Error #2008: Parameter passCompareMode must be one of the accepted values.
+=== setBlendFactors ===
+sourceFactor 'one' / destinationFactor 'zero': OK
+sourceFactor 'sourceAlpha' / destinationFactor 'destinationAlpha': OK
+sourceFactor 'sourceColor' / destinationFactor 'destinationColor': OK
+sourceFactor 'oneMinusSourceAlpha' / destinationFactor 'oneMinusDestinationAlpha': OK
+sourceFactor 'oneMinusSourceColor' / destinationFactor 'oneMinusDestinationColor': OK
+sourceFactor 'One': ArgumentError: Error #2008: Parameter sourceFactor must be one of the accepted values.
+sourceFactor 'ONE': ArgumentError: Error #2008: Parameter sourceFactor must be one of the accepted values.
+sourceFactor 'SourceAlpha': ArgumentError: Error #2008: Parameter sourceFactor must be one of the accepted values.
+sourceFactor 'sourcealpha': ArgumentError: Error #2008: Parameter sourceFactor must be one of the accepted values.
+sourceFactor 'SOURCEALPHA': ArgumentError: Error #2008: Parameter sourceFactor must be one of the accepted values.
+sourceFactor 'OneMinusSourceAlpha': ArgumentError: Error #2008: Parameter sourceFactor must be one of the accepted values.
+sourceFactor 'garbage': ArgumentError: Error #2008: Parameter sourceFactor must be one of the accepted values.
+destinationFactor 'Zero': ArgumentError: Error #2008: Parameter destinationFactor must be one of the accepted values.
+destinationFactor 'ZERO': ArgumentError: Error #2008: Parameter destinationFactor must be one of the accepted values.
+destinationFactor 'DestinationAlpha': ArgumentError: Error #2008: Parameter destinationFactor must be one of the accepted values.
+destinationFactor 'garbage': ArgumentError: Error #2008: Parameter destinationFactor must be one of the accepted values.
+=== setVertexBufferAt ===
+format 'float1': OK
+format 'float2': OK
+format 'float3': OK
+format 'float4': OK
+format 'bytes4': OK
+format 'Float1': ArgumentError: Error #2008: Parameter vertexStreamFormat must be one of the accepted values.
+format 'FLOAT1': ArgumentError: Error #2008: Parameter vertexStreamFormat must be one of the accepted values.
+format 'Bytes4': ArgumentError: Error #2008: Parameter vertexStreamFormat must be one of the accepted values.
+format 'BYTES4': ArgumentError: Error #2008: Parameter vertexStreamFormat must be one of the accepted values.
+format 'garbage': ArgumentError: Error #2008: Parameter vertexStreamFormat must be one of the accepted values.
+=== setSamplerStateAt ===
+wrap 'clamp': OK
+wrap 'repeat': OK
+wrap 'clamp_u_repeat_v': OK
+wrap 'repeat_u_clamp_v': OK
+wrap 'Clamp': ArgumentError: Error #2008: Parameter wrap must be one of the accepted values.
+wrap 'CLAMP': ArgumentError: Error #2008: Parameter wrap must be one of the accepted values.
+wrap 'Repeat': ArgumentError: Error #2008: Parameter wrap must be one of the accepted values.
+wrap 'clampURepeatV': ArgumentError: Error #2008: Parameter wrap must be one of the accepted values.
+wrap 'garbage': ArgumentError: Error #2008: Parameter wrap must be one of the accepted values.
+filter 'linear': OK
+filter 'nearest': OK
+filter 'Linear': ArgumentError: Error #2008: Parameter filter must be one of the accepted values.
+filter 'LINEAR': ArgumentError: Error #2008: Parameter filter must be one of the accepted values.
+filter 'Nearest': ArgumentError: Error #2008: Parameter filter must be one of the accepted values.
+filter 'garbage': ArgumentError: Error #2008: Parameter filter must be one of the accepted values.
+=== createTexture ===
+textureFormat 'bgra': OK
+textureFormat 'compressed': OK
+textureFormat 'compressedAlpha': OK
+textureFormat 'Bgra': ArgumentError: Error #2008: Parameter textureFormat must be one of the accepted values.
+textureFormat 'BGRA': ArgumentError: Error #2008: Parameter textureFormat must be one of the accepted values.
+textureFormat 'Compressed': ArgumentError: Error #2008: Parameter textureFormat must be one of the accepted values.
+textureFormat 'CompressedAlpha': ArgumentError: Error #2008: Parameter textureFormat must be one of the accepted values.
+textureFormat 'compressedalpha': ArgumentError: Error #2008: Parameter textureFormat must be one of the accepted values.
+textureFormat 'garbage': ArgumentError: Error #2008: Parameter textureFormat must be one of the accepted values.
+=== createCubeTexture ===
+textureFormat 'bgra': OK
+textureFormat 'compressed': OK
+textureFormat 'Bgra': ArgumentError: Error #2008: Parameter textureFormat must be one of the accepted values.
+textureFormat 'COMPRESSED': ArgumentError: Error #2008: Parameter textureFormat must be one of the accepted values.
+textureFormat 'garbage': ArgumentError: Error #2008: Parameter textureFormat must be one of the accepted values.
+=== createRectangleTexture ===
+textureFormat 'bgra': OK
+textureFormat 'Bgra': ArgumentError: Error #2008: Parameter textureFormat must be one of the accepted values.
+textureFormat 'BGRA': ArgumentError: Error #2008: Parameter textureFormat must be one of the accepted values.
+textureFormat 'garbage': ArgumentError: Error #2008: Parameter textureFormat must be one of the accepted values.
+Done

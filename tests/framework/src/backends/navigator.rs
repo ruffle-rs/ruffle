@@ -4,8 +4,8 @@ use async_channel::{Receiver, Sender};
 use percent_encoding::percent_decode_str;
 use ruffle_core::backend::log::LogBackend;
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, ErrorResponse, NavigationMethod, NavigatorBackend,
-    NullExecutor, NullSpawner, OwnedFuture, Request, SuccessResponse,
+    ErrorResponse, NavigationMethod, NavigatorBackend, NullExecutor, NullSpawner, OwnedFuture,
+    Request, SuccessResponse, async_return, create_fetch_error,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
@@ -26,8 +26,12 @@ struct TestResponse {
 }
 
 impl SuccessResponse for TestResponse {
-    fn url(&self) -> Cow<str> {
+    fn url(&self) -> Cow<'_, str> {
         Cow::Borrowed(&self.url)
+    }
+
+    fn set_url(&mut self, url: String) {
+        self.url = url;
     }
 
     fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
@@ -105,12 +109,12 @@ impl NavigatorBackend for TestNavigatorBackend {
         // Log request.
         if let Some(log) = &self.log {
             log.avm_trace("Navigator::navigate_to_url:");
-            log.avm_trace(&format!("  URL: {}", url));
-            log.avm_trace(&format!("  Target: {}", target));
+            log.avm_trace(&format!("  URL: {url}"));
+            log.avm_trace(&format!("  Target: {target}"));
             if let Some((method, vars)) = vars_method {
-                log.avm_trace(&format!("  Method: {}", method));
+                log.avm_trace(&format!("  Method: {method}"));
                 for (key, value) in vars {
-                    log.avm_trace(&format!("  Param: {}={}", key, value));
+                    log.avm_trace(&format!("  Param: {key}={value}"));
                 }
             }
         }
@@ -166,18 +170,18 @@ impl NavigatorBackend for TestNavigatorBackend {
                 ))
             }
             if let Some((body, mime_type)) = request.body() {
-                log.avm_trace(&format!("  Mime-Type: {}", mime_type));
+                log.avm_trace(&format!("  Mime-Type: {mime_type}"));
                 if mime_type == "application/x-www-form-urlencoded" {
                     log.avm_trace(&format!("  Body: {}", String::from_utf8_lossy(body)));
                 } else {
-                    log.avm_trace(&format!("  Body: {:02X?}", body));
+                    log.avm_trace(&format!("  Body: {body:02X?}"));
                 }
             }
         }
 
         let url = match self.resolve_url(request.url()) {
             Ok(url) => url,
-            Err(e) => return async_return(create_fetch_error(request.url(), e)),
+            Err(e) => return async_return(Err(create_fetch_error(request.url(), e))),
         };
 
         let base_path = self.relative_base_path.clone();
@@ -280,7 +284,7 @@ impl NavigatorBackend for TestNavigatorBackend {
     ) {
         if let Some(log) = &self.log {
             log.avm_trace("Navigator::connect_socket");
-            log.avm_trace(&format!("    Host: {}; Port: {}", host, port));
+            log.avm_trace(&format!("    Host: {host}; Port: {port}"));
         }
 
         if let Some(events) = self.socket_events.clone() {
@@ -306,7 +310,7 @@ impl NavigatorBackend for TestNavigatorBackend {
                             match receiver.recv().await {
                                 Ok(val) => {
                                     if expected != val {
-                                        panic!("Received data did not match expected data\nExpected: {:?}\nActual: {:?}", expected, val);
+                                        panic!("Received data did not match expected data\nExpected: {expected:?}\nActual: {val:?}");
                                     }
                                 }
                                 Err(_) => panic!("Expected client to send data, but connection was closed instead"),

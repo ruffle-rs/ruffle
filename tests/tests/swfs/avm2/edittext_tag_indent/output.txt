@@ -1,0 +1,51 @@
+Indent for text1:
+1638
+1638
+Indent for text2:
+-1638
+-1638
+Indent for text3:
+-10
+-10
+Indent for text4:
+2
+2
+Indent for text5:
+-4
+-4
+Setting 0 -> 0
+Setting 0.1 -> 0
+Setting 0.4 -> 0
+Setting 0.5 -> 0
+Setting 0.6 -> 1
+Setting 0.8 -> 1
+Setting 1 -> 1
+Setting 1.1 -> 1
+Setting 1.4 -> 1
+Setting 1.5 -> 2
+Setting 1.6 -> 2
+Setting 1.8 -> 2
+Setting 2 -> 2
+Setting -10 -> -10
+Setting 100 -> 100
+Setting 64010 -> 64010
+lines for text1:
+a
+bcdabcd
+
+lines for text2:
+abcdabcd
+
+
+lines for text3:
+abcdabcd
+
+
+lines for text4:
+abcdabcd
+
+
+lines for text5:
+abcdabcd
+
+

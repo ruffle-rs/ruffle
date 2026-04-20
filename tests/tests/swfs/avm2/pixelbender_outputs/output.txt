@@ -1,0 +1,10 @@
+Error while starting: ArgumentError: Error #2162: The Shader output type is not compatible for this operation.
+=================
+Error while starting: ArgumentError: Error #2162: The Shader output type is not compatible for this operation.
+=================
+Result: ff00ff
+Result: ffff00ff
+=================
+Result: ff00ff
+Result: ffff00ff
+=================

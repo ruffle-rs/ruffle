@@ -1,0 +1,22 @@
+num_frames = 30
+known_failure = true
+
+[subtests.fp9]
+output_path = "output.fp9-14.txt"
+player_options.version = 9
+
+[subtests.fp13]
+output_path = "output.fp13-17.txt"
+player_options.version = 13
+
+[subtests.fp14]
+output_path = "output.fp9-14.txt"
+player_options.version = 14
+
+[subtests.fp17]
+output_path = "output.fp13-17.txt"
+player_options.version = 17
+
+[subtests.fp24]
+output_path = "output.fp24.txt"
+player_options.version = 24

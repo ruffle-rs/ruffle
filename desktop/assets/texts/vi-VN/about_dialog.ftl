@@ -1,0 +1,11 @@
+about-ruffle = Giới thiệu về Ruffle
+about-ruffle-version = Phiên bản
+about-ruffle-channel = Kênh hoạt động
+about-ruffle-build-time = Thời gian dựng
+about-ruffle-build-features = Các tính năng bao gồm
+about-ruffle-commit-ref = Tham chiếu commit
+about-ruffle-commit-time = Thời gian phát hành
+about-ruffle-visit-website = Website
+about-ruffle-visit-github = GitHub
+about-ruffle-visit-discord = Discord
+about-ruffle-visit-sponsor = Tài trợ

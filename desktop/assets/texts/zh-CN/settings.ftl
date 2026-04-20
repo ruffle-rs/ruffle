@@ -16,9 +16,9 @@ open-url-mode-allow = 允许
 open-url-mode-confirm = 询问
 open-url-mode-deny = 拒绝
 load-behavior = 加载方式
-load-behavior-streaming = 流
+load-behavior-streaming = 流式
 load-behavior-delayed = 延迟
-load-behavior-blocking = 阻止
+load-behavior-blocking = 阻塞
 max-execution-duration = 最大执行时长
 max-execution-duration-suffix = { " " } 秒
 quality = 质量
@@ -46,11 +46,28 @@ align-top-right = 右上
 align-bottom-right = 右下
 align-force = 强制
 scale-mode = 缩放模式
-scale-mode-exactfit = 精确填充
-scale-mode-noborder = 无边框
-scale-mode-noscale = 无缩放
-scale-mode-showall = 显示全部
+scale-mode-noscale = 无缩放 (100%)
+scale-mode-noscale-tooltip =
+    显示影片的原始大小，没有任何缩放。
+    
+    对应 StageScaleMode.NO_SCALE
+scale-mode-showall = 缩放以适应
+scale-mode-showall-tooltip =
+    将影片放大以尽可能填满窗口，同时不进行裁剪，保持长宽比。
+    
+    对应 StageScaleMode.SHOW_ALL
+scale-mode-exactfit = 拉伸以适应
+scale-mode-exactfit-tooltip =
+    确保影片填满整个窗口，忽略长宽比。
+    
+    对应 StageScaleMode.EXACT_FIT
+scale-mode-noborder = 裁剪以适应
+scale-mode-noborder-tooltip =
+    填满整个窗口，同时保持长宽比，必要时裁剪画面。
+    
+    对应 StageScaleMode.NO_BORDER
 scale-mode-force = 强制
+scale-mode-force-tooltip = 防止影片改变缩放模式，将其锁定为所选设置。
 player-version = 播放器版本
 player-runtime = 运行时系统
 player-runtime-flash = Flash Player

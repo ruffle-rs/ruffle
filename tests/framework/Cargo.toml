@@ -11,24 +11,26 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-ruffle_core = { path = "../../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "default_font", "serde"] }
+ruffle_core = { path = "../../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "aac", "default_font", "serde"] }
 ruffle_render = { path = "../../render", features = ["serde"] }
 ruffle_input_format = { path = "../input-format" }
 ruffle_socket_format = { path = "../socket-format" }
 ruffle_video_software = { path = "../../video/software", optional = true }
-ruffle_video_external = { path = "../../video/external", optional = true }
+ruffle_video_external = { path = "../../video/external", features = ["openh264"], optional = true }
 image = { workspace = true, features  = ["png"] }
-regex = "1.10.5"
+regex = { workspace = true }
 url = { workspace = true }
 chrono = { workspace = true }
-approx = "0.5.1"
-pretty_assertions = "1.4.0"
+approx = { workspace = true }
+pretty_assertions = "1.4.1"
 serde = { workspace = true }
-toml = "0.8.15"
+toml = { workspace = true }
 anyhow = { workspace = true }
 async-channel = { workspace = true }
-vfs = "0.12.0"
-percent-encoding = "2.3.1"
+vfs = { workspace = true }
+percent-encoding = { workspace = true }
+cfg-expr = "0.20.7"
+oxipng = "10.1.0"
 
 [features]
 jpegxr = ["ruffle_core/jpegxr"]

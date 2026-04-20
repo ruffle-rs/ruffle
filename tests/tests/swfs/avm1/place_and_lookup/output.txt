@@ -1,0 +1,30 @@
+prop: doPrint
+object: [type Function]
+object name: undefined
+prop: placedButton
+object: _level0.placedButton
+object name: placedButton
+prop: instanceXX
+object: _level0.instanceXX
+object name: instanceXX
+prop: placedVideo
+object: _level0.placedVideo
+object name: placedVideo
+prop: placedImage
+object: _level0
+object name: 
+prop: placedText
+object: _level0
+object name: 
+prop: placedSprite
+object: _level0.placedSprite
+object name: placedSprite
+prop: instanceXX
+object: _level0.instanceXX
+object name: instanceXX
+prop: placedMorph
+object: _level0
+object name: 
+prop: placedShape
+object: _level0
+object name: 

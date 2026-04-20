@@ -1,0 +1,38 @@
+{
+    "settings_ruffle_enable": {
+        "message": "เล่นเนื้อหา Flash ใน Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "เล่นเนื้อหา Flash แม้ว่าเว็บไซต์ดังกล่าวไม่อนุญาตให้กับ Ruffle"
+    },
+    "settings_swf_takeover": {
+        "message": "เล่นไฟล์ SWF ในเบราว์เซอร์แทนการดาวน์โหลดไฟล์"
+    },
+    "settings_log_level_warn": {
+        "message": "คำเตือน"
+    },
+    "settings_max_execution_duration": {
+        "message": "อนุญาตระยะเวลาสูงสุดในการทำงานของ ActionScript (หน่วยวินาที)"
+    },
+    "settings_player_version": {
+        "message": "รุ่นโปรแกรมของ Flash ที่ต้องการให้เลียนแบบ (ในช่วง 1-32)"
+    },
+    "settings_reset_confirm": {
+        "message": "คุณแน่ใจหรือว่าต้องการเรียกค่ามาตรฐานของ Ruffle คืนกลับมา"
+    },
+    "status_no_tabs": {
+        "message": "ไม่มีแท็บที่เคลื่อนไหว"
+    },
+    "status_message_init": {
+        "message": "กำลังตรวจสอบสถานะของ Ruffle ในแท็บปัจจุบัน"
+    },
+    "status_result_running": {
+        "message": "Ruffle พร้อมเล่นเนื้อหา Flash ในแท็บปัจจุบัน"
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle พร้อมเล่นเนื้อหา Flash ตามคำร้องขอของคุณ"
+    },
+    "status_result_optout": {
+        "message": "Ruffle ไม่สามารถโหลดได้ เพราะเว็บปัจจุบันถูกกำหนดว่าเข้ากันไม่ได้"
+    }
+}

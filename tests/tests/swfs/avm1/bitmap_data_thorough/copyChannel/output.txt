@@ -1,0 +1,2718 @@
+-- Transparent --
+// copyChannel()
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 2, 4)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbcc55 0xaabbcc55
+0xaabbccdc 0xaabbcc55 0xaabbcc55
+--
+
+// copyChannel(null, rect, point, 2, 4)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(undefined, rect, point, 2, 4)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel({}, rect, point, 2, 4)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(opaqueBmd, rect, point, 2, 4)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbcc55 0xaabbcc55
+0xaabbccdc 0xaabbcc55 0xaabbcc55
+--
+
+// copyChannel(disposedBmd, rect, point, 2, 4)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, null, point, 2, 4)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, undefined, point, 2, 4)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, {}, point, 2, 4)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, zeroSizedRect, point, 2, 4)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rectAsObj, point, 2, 4)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbcc55 0xaabbcc55
+0xaabbccdc 0xaabbcc55 0xaabbcc55
+--
+
+// copyChannel(transparentBmd, rectWithoutWidth, point, 2, 4)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, null, 2, 4)
+-1
+--
+0xaabbcc55 0xaabbcc55 0xaabbccdc
+0xaabbcc55 0xaabbcc55 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, undefined, 2, 4)
+-1
+--
+0xaabbcc55 0xaabbcc55 0xaabbccdc
+0xaabbcc55 0xaabbcc55 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, {}, 2, 4)
+-1
+--
+0xaabbcc55 0xaabbcc55 0xaabbccdc
+0xaabbcc55 0xaabbcc55 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, pointOutsideBmd, 2, 4)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, pointAsObj, 2, 4)
+-1
+--
+0xaabbcc55 0xaabbcc55 0xaabbccdc
+0xaabbcc55 0xaabbcc55 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, pointWithoutY, 2, 4)
+-1
+--
+0xaabbcc55 0xaabbcc55 0xaabbccdc
+0xaabbcc55 0xaabbcc55 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, null, 4)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbcc00 0xaabbcc00
+0xaabbccdc 0xaabbcc00 0xaabbcc00
+--
+
+// copyChannel(transparentBmd, rect, point, undefined, 4)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbcc00 0xaabbcc00
+0xaabbccdc 0xaabbcc00 0xaabbcc00
+--
+
+// copyChannel(transparentBmd, rect, point, {}, 4)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbcc00 0xaabbcc00
+0xaabbccdc 0xaabbcc00 0xaabbcc00
+--
+
+// copyChannel(transparentBmd, rect, point, objLooksLikeNum, 4)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbcc55 0xaabbcc55
+0xaabbccdc 0xaabbcc55 0xaabbcc55
+--
+
+// copyChannel(transparentBmd, rect, point, -1, 4)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbcc00 0xaabbcc00
+0xaabbccdc 0xaabbcc00 0xaabbcc00
+--
+
+// copyChannel(transparentBmd, rect, point, -2, 4)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbcc00 0xaabbcc00
+0xaabbccdc 0xaabbcc00 0xaabbcc00
+--
+
+// copyChannel(transparentBmd, rect, point, 10, 4)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbcc00 0xaabbcc00
+0xaabbccdc 0xaabbcc00 0xaabbcc00
+--
+
+// copyChannel(transparentBmd, rect, point, 2, null)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 2, undefined)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 2, {})
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 2, objLooksLikeNum)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabb55dc 0xaabb55dc
+0xaabbccdc 0xaabb55dc 0xaabb55dc
+--
+
+// copyChannel(transparentBmd, rect, point, 2, -1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 2, -2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 2, 10)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 3, 1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+--
+
+// copyChannel(null, rect, point, 3, 1)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(undefined, rect, point, 3, 1)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel({}, rect, point, 3, 1)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(opaqueBmd, rect, point, 3, 1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+--
+
+// copyChannel(disposedBmd, rect, point, 3, 1)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, null, point, 3, 1)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, undefined, point, 3, 1)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, {}, point, 3, 1)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, zeroSizedRect, point, 3, 1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rectAsObj, point, 3, 1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+--
+
+// copyChannel(transparentBmd, rectWithoutWidth, point, 3, 1)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, null, 3, 1)
+-1
+--
+0xaa00ccdc 0xaa00ccdc 0xaabbccdc
+0xaa00ccdc 0xaa00ccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, undefined, 3, 1)
+-1
+--
+0xaa00ccdc 0xaa00ccdc 0xaabbccdc
+0xaa00ccdc 0xaa00ccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, {}, 3, 1)
+-1
+--
+0xaa00ccdc 0xaa00ccdc 0xaabbccdc
+0xaa00ccdc 0xaa00ccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, pointOutsideBmd, 3, 1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, pointAsObj, 3, 1)
+-1
+--
+0xaa00ccdc 0xaa00ccdc 0xaabbccdc
+0xaa00ccdc 0xaa00ccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, pointWithoutY, 3, 1)
+-1
+--
+0xaa00ccdc 0xaa00ccdc 0xaabbccdc
+0xaa00ccdc 0xaa00ccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, null, 1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+--
+
+// copyChannel(transparentBmd, rect, point, undefined, 1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+--
+
+// copyChannel(transparentBmd, rect, point, {}, 1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+--
+
+// copyChannel(transparentBmd, rect, point, objLooksLikeNum, 1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaa55ccdc 0xaa55ccdc
+0xaabbccdc 0xaa55ccdc 0xaa55ccdc
+--
+
+// copyChannel(transparentBmd, rect, point, -1, 1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+--
+
+// copyChannel(transparentBmd, rect, point, -2, 1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 10, 1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+0xaabbccdc 0xaa00ccdc 0xaa00ccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 3, null)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 3, undefined)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 3, {})
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 3, objLooksLikeNum)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+--
+
+// copyChannel(transparentBmd, rect, point, 3, -1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 3, -2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 3, 10)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 8)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 8, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabb12dc 0xaabb12dc
+0xaabbccdc 0xaabb12dc 0xaabb12dc
+--
+
+// copyChannel(null, rect, point, 8, 2)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(undefined, rect, point, 8, 2)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel({}, rect, point, 8, 2)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(opaqueBmd, rect, point, 8, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbffdc 0xaabbffdc
+0xaabbccdc 0xaabbffdc 0xaabbffdc
+--
+
+// copyChannel(disposedBmd, rect, point, 8, 2)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, null, point, 8, 2)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, undefined, point, 8, 2)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, {}, point, 8, 2)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, zeroSizedRect, point, 8, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rectAsObj, point, 8, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabb12dc 0xaabb12dc
+0xaabbccdc 0xaabb12dc 0xaabb12dc
+--
+
+// copyChannel(transparentBmd, rectWithoutWidth, point, 8, 2)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, null, 8, 2)
+-1
+--
+0xaabb12dc 0xaabb12dc 0xaabbccdc
+0xaabb12dc 0xaabb12dc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, undefined, 8, 2)
+-1
+--
+0xaabb12dc 0xaabb12dc 0xaabbccdc
+0xaabb12dc 0xaabb12dc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, {}, 8, 2)
+-1
+--
+0xaabb12dc 0xaabb12dc 0xaabbccdc
+0xaabb12dc 0xaabb12dc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, pointOutsideBmd, 8, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, pointAsObj, 8, 2)
+-1
+--
+0xaabb12dc 0xaabb12dc 0xaabbccdc
+0xaabb12dc 0xaabb12dc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, pointWithoutY, 8, 2)
+-1
+--
+0xaabb12dc 0xaabb12dc 0xaabbccdc
+0xaabb12dc 0xaabb12dc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, null, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+--
+
+// copyChannel(transparentBmd, rect, point, undefined, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+--
+
+// copyChannel(transparentBmd, rect, point, {}, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+--
+
+// copyChannel(transparentBmd, rect, point, objLooksLikeNum, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabb55dc 0xaabb55dc
+0xaabbccdc 0xaabb55dc 0xaabb55dc
+--
+
+// copyChannel(transparentBmd, rect, point, -1, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+--
+
+// copyChannel(transparentBmd, rect, point, -2, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+--
+
+// copyChannel(transparentBmd, rect, point, 10, 2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+0xaabbccdc 0xaabb00dc 0xaabb00dc
+--
+
+// copyChannel(transparentBmd, rect, point, 8, null)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 8, undefined)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 8, {})
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 8, objLooksLikeNum)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabb12dc 0xaabb12dc
+0xaabbccdc 0xaabb12dc 0xaabb12dc
+--
+
+// copyChannel(transparentBmd, rect, point, 8, -1)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 8, -2)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 8, 10)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 2, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(null, rect, point, 2, 3)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(undefined, rect, point, 2, 3)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel({}, rect, point, 2, 3)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(opaqueBmd, rect, point, 2, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(disposedBmd, rect, point, 2, 3)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, null, point, 2, 3)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, undefined, point, 2, 3)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, {}, point, 2, 3)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, zeroSizedRect, point, 2, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rectAsObj, point, 2, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rectWithoutWidth, point, 2, 3)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, null, 2, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, undefined, 2, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, {}, 2, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, pointOutsideBmd, 2, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, pointAsObj, 2, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, pointWithoutY, 2, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, null, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, undefined, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, {}, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, objLooksLikeNum, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, -1, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, -2, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 10, 3)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// copyChannel(transparentBmd, rect, point, 2, {})
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+
+
+-- Opaque --
+// copyChannel()
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 2, 4)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbcc55 0xffbbcc55
+0xffbbccdd 0xffbbcc55 0xffbbcc55
+--
+
+// copyChannel(null, rect, point, 2, 4)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(undefined, rect, point, 2, 4)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel({}, rect, point, 2, 4)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(opaqueBmd, rect, point, 2, 4)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbcc56 0xffbbcc56
+0xffbbccdd 0xffbbcc56 0xffbbcc56
+--
+
+// copyChannel(disposedBmd, rect, point, 2, 4)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, null, point, 2, 4)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, undefined, point, 2, 4)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, {}, point, 2, 4)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, zeroSizedRect, point, 2, 4)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rectAsObj, point, 2, 4)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbcc55 0xffbbcc55
+0xffbbccdd 0xffbbcc55 0xffbbcc55
+--
+
+// copyChannel(transparentBmd, rectWithoutWidth, point, 2, 4)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, null, 2, 4)
+-1
+--
+0xffbbcc55 0xffbbcc55 0xffbbccdd
+0xffbbcc55 0xffbbcc55 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, undefined, 2, 4)
+-1
+--
+0xffbbcc55 0xffbbcc55 0xffbbccdd
+0xffbbcc55 0xffbbcc55 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, {}, 2, 4)
+-1
+--
+0xffbbcc55 0xffbbcc55 0xffbbccdd
+0xffbbcc55 0xffbbcc55 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, pointOutsideBmd, 2, 4)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, pointAsObj, 2, 4)
+-1
+--
+0xffbbcc55 0xffbbcc55 0xffbbccdd
+0xffbbcc55 0xffbbcc55 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, pointWithoutY, 2, 4)
+-1
+--
+0xffbbcc55 0xffbbcc55 0xffbbccdd
+0xffbbcc55 0xffbbcc55 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, null, 4)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbcc00 0xffbbcc00
+0xffbbccdd 0xffbbcc00 0xffbbcc00
+--
+
+// copyChannel(transparentBmd, rect, point, undefined, 4)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbcc00 0xffbbcc00
+0xffbbccdd 0xffbbcc00 0xffbbcc00
+--
+
+// copyChannel(transparentBmd, rect, point, {}, 4)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbcc00 0xffbbcc00
+0xffbbccdd 0xffbbcc00 0xffbbcc00
+--
+
+// copyChannel(transparentBmd, rect, point, objLooksLikeNum, 4)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbcc55 0xffbbcc55
+0xffbbccdd 0xffbbcc55 0xffbbcc55
+--
+
+// copyChannel(transparentBmd, rect, point, -1, 4)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbcc00 0xffbbcc00
+0xffbbccdd 0xffbbcc00 0xffbbcc00
+--
+
+// copyChannel(transparentBmd, rect, point, -2, 4)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbcc00 0xffbbcc00
+0xffbbccdd 0xffbbcc00 0xffbbcc00
+--
+
+// copyChannel(transparentBmd, rect, point, 10, 4)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbcc00 0xffbbcc00
+0xffbbccdd 0xffbbcc00 0xffbbcc00
+--
+
+// copyChannel(transparentBmd, rect, point, 2, null)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 2, undefined)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 2, {})
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 2, objLooksLikeNum)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbb55dd 0xffbb55dd
+0xffbbccdd 0xffbb55dd 0xffbb55dd
+--
+
+// copyChannel(transparentBmd, rect, point, 2, -1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 2, -2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 2, 10)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 3, 1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+--
+
+// copyChannel(null, rect, point, 3, 1)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(undefined, rect, point, 3, 1)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel({}, rect, point, 3, 1)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(opaqueBmd, rect, point, 3, 1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+--
+
+// copyChannel(disposedBmd, rect, point, 3, 1)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, null, point, 3, 1)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, undefined, point, 3, 1)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, {}, point, 3, 1)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, zeroSizedRect, point, 3, 1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rectAsObj, point, 3, 1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+--
+
+// copyChannel(transparentBmd, rectWithoutWidth, point, 3, 1)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, null, 3, 1)
+-1
+--
+0xff00ccdd 0xff00ccdd 0xffbbccdd
+0xff00ccdd 0xff00ccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, undefined, 3, 1)
+-1
+--
+0xff00ccdd 0xff00ccdd 0xffbbccdd
+0xff00ccdd 0xff00ccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, {}, 3, 1)
+-1
+--
+0xff00ccdd 0xff00ccdd 0xffbbccdd
+0xff00ccdd 0xff00ccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, pointOutsideBmd, 3, 1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, pointAsObj, 3, 1)
+-1
+--
+0xff00ccdd 0xff00ccdd 0xffbbccdd
+0xff00ccdd 0xff00ccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, pointWithoutY, 3, 1)
+-1
+--
+0xff00ccdd 0xff00ccdd 0xffbbccdd
+0xff00ccdd 0xff00ccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, null, 1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+--
+
+// copyChannel(transparentBmd, rect, point, undefined, 1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+--
+
+// copyChannel(transparentBmd, rect, point, {}, 1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+--
+
+// copyChannel(transparentBmd, rect, point, objLooksLikeNum, 1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff55ccdd 0xff55ccdd
+0xffbbccdd 0xff55ccdd 0xff55ccdd
+--
+
+// copyChannel(transparentBmd, rect, point, -1, 1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+--
+
+// copyChannel(transparentBmd, rect, point, -2, 1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 10, 1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+0xffbbccdd 0xff00ccdd 0xff00ccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 3, null)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 3, undefined)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 3, {})
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 3, objLooksLikeNum)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+--
+
+// copyChannel(transparentBmd, rect, point, 3, -1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 3, -2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 3, 10)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 8)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 8, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbb12dd 0xffbb12dd
+0xffbbccdd 0xffbb12dd 0xffbb12dd
+--
+
+// copyChannel(null, rect, point, 8, 2)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(undefined, rect, point, 8, 2)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel({}, rect, point, 8, 2)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(opaqueBmd, rect, point, 8, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbffdd 0xffbbffdd
+0xffbbccdd 0xffbbffdd 0xffbbffdd
+--
+
+// copyChannel(disposedBmd, rect, point, 8, 2)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, null, point, 8, 2)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, undefined, point, 8, 2)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, {}, point, 8, 2)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, zeroSizedRect, point, 8, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rectAsObj, point, 8, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbb12dd 0xffbb12dd
+0xffbbccdd 0xffbb12dd 0xffbb12dd
+--
+
+// copyChannel(transparentBmd, rectWithoutWidth, point, 8, 2)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, null, 8, 2)
+-1
+--
+0xffbb12dd 0xffbb12dd 0xffbbccdd
+0xffbb12dd 0xffbb12dd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, undefined, 8, 2)
+-1
+--
+0xffbb12dd 0xffbb12dd 0xffbbccdd
+0xffbb12dd 0xffbb12dd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, {}, 8, 2)
+-1
+--
+0xffbb12dd 0xffbb12dd 0xffbbccdd
+0xffbb12dd 0xffbb12dd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, pointOutsideBmd, 8, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, pointAsObj, 8, 2)
+-1
+--
+0xffbb12dd 0xffbb12dd 0xffbbccdd
+0xffbb12dd 0xffbb12dd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, pointWithoutY, 8, 2)
+-1
+--
+0xffbb12dd 0xffbb12dd 0xffbbccdd
+0xffbb12dd 0xffbb12dd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, null, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+--
+
+// copyChannel(transparentBmd, rect, point, undefined, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+--
+
+// copyChannel(transparentBmd, rect, point, {}, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+--
+
+// copyChannel(transparentBmd, rect, point, objLooksLikeNum, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbb55dd 0xffbb55dd
+0xffbbccdd 0xffbb55dd 0xffbb55dd
+--
+
+// copyChannel(transparentBmd, rect, point, -1, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+--
+
+// copyChannel(transparentBmd, rect, point, -2, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+--
+
+// copyChannel(transparentBmd, rect, point, 10, 2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+0xffbbccdd 0xffbb00dd 0xffbb00dd
+--
+
+// copyChannel(transparentBmd, rect, point, 8, null)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 8, undefined)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 8, {})
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 8, objLooksLikeNum)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbb12dd 0xffbb12dd
+0xffbbccdd 0xffbb12dd 0xffbb12dd
+--
+
+// copyChannel(transparentBmd, rect, point, 8, -1)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 8, -2)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 8, 10)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 2, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(null, rect, point, 2, 3)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(undefined, rect, point, 2, 3)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel({}, rect, point, 2, 3)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(opaqueBmd, rect, point, 2, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(disposedBmd, rect, point, 2, 3)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, null, point, 2, 3)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, undefined, point, 2, 3)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, {}, point, 2, 3)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, zeroSizedRect, point, 2, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rectAsObj, point, 2, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rectWithoutWidth, point, 2, 3)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, null, 2, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, undefined, 2, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, {}, 2, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, pointOutsideBmd, 2, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, pointAsObj, 2, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, pointWithoutY, 2, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, null, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, undefined, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, {}, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, objLooksLikeNum, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, -1, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, -2, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 10, 3)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// copyChannel(transparentBmd, rect, point, 2, {})
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+
+
+-- Disposed --
+// copyChannel()
+-1
+--
+--
+
+// copyChannel(transparentBmd)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 2, 4)
+-1
+--
+--
+
+// copyChannel(null, rect, point, 2, 4)
+-1
+--
+--
+
+// copyChannel(undefined, rect, point, 2, 4)
+-1
+--
+--
+
+// copyChannel({}, rect, point, 2, 4)
+-1
+--
+--
+
+// copyChannel(opaqueBmd, rect, point, 2, 4)
+-1
+--
+--
+
+// copyChannel(disposedBmd, rect, point, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, null, point, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, undefined, point, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, {}, point, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, zeroSizedRect, point, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rectAsObj, point, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rectWithoutWidth, point, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, null, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, undefined, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, {}, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, pointOutsideBmd, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, pointAsObj, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, pointWithoutY, 2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, null, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, undefined, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, {}, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, objLooksLikeNum, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, -1, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, -2, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 10, 4)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 2, null)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 2, undefined)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 2, {})
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 2, objLooksLikeNum)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 2, -1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 2, -2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 2, 10)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 3, 1)
+-1
+--
+--
+
+// copyChannel(null, rect, point, 3, 1)
+-1
+--
+--
+
+// copyChannel(undefined, rect, point, 3, 1)
+-1
+--
+--
+
+// copyChannel({}, rect, point, 3, 1)
+-1
+--
+--
+
+// copyChannel(opaqueBmd, rect, point, 3, 1)
+-1
+--
+--
+
+// copyChannel(disposedBmd, rect, point, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, null, point, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, undefined, point, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, {}, point, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, zeroSizedRect, point, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rectAsObj, point, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rectWithoutWidth, point, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, null, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, undefined, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, {}, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, pointOutsideBmd, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, pointAsObj, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, pointWithoutY, 3, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, null, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, undefined, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, {}, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, objLooksLikeNum, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, -1, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, -2, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 10, 1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 3, null)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 3, undefined)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 3, {})
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 3, objLooksLikeNum)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 3, -1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 3, -2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 3, 10)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 8)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 8, 2)
+-1
+--
+--
+
+// copyChannel(null, rect, point, 8, 2)
+-1
+--
+--
+
+// copyChannel(undefined, rect, point, 8, 2)
+-1
+--
+--
+
+// copyChannel({}, rect, point, 8, 2)
+-1
+--
+--
+
+// copyChannel(opaqueBmd, rect, point, 8, 2)
+-1
+--
+--
+
+// copyChannel(disposedBmd, rect, point, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, null, point, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, undefined, point, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, {}, point, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, zeroSizedRect, point, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rectAsObj, point, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rectWithoutWidth, point, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, null, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, undefined, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, {}, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, pointOutsideBmd, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, pointAsObj, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, pointWithoutY, 8, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, null, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, undefined, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, {}, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, objLooksLikeNum, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, -1, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, -2, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 10, 2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 8, null)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 8, undefined)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 8, {})
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 8, objLooksLikeNum)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 8, -1)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 8, -2)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 8, 10)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 2, 3)
+-1
+--
+--
+
+// copyChannel(null, rect, point, 2, 3)
+-1
+--
+--
+
+// copyChannel(undefined, rect, point, 2, 3)
+-1
+--
+--
+
+// copyChannel({}, rect, point, 2, 3)
+-1
+--
+--
+
+// copyChannel(opaqueBmd, rect, point, 2, 3)
+-1
+--
+--
+
+// copyChannel(disposedBmd, rect, point, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, null, point, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, undefined, point, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, {}, point, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, zeroSizedRect, point, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rectAsObj, point, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rectWithoutWidth, point, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, null, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, undefined, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, {}, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, pointOutsideBmd, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, pointAsObj, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, pointWithoutY, 2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, null, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, undefined, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, {}, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, objLooksLikeNum, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, -1, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, -2, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 10, 3)
+-1
+--
+--
+
+// copyChannel(transparentBmd, rect, point, 2, {})
+-1
+--
+--
+
+
+

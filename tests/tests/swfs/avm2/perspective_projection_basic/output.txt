@@ -1,0 +1,40 @@
+// Default values (stage)
+  z = 0
+  matrix = (a=1, b=0, c=0, d=1, tx=0, ty=0)
+  matrix3D = null
+  perspectiveProjection = [object PerspectiveProjection]
+// Default values (root)
+  z = 0
+  matrix = (a=1, b=0, c=0, d=1, tx=0, ty=0)
+  matrix3D = null
+  perspectiveProjection = [object PerspectiveProjection]
+// Default values (object)
+  z = 0
+  matrix = (a=1, b=0, c=0, d=1, tx=0, ty=0)
+  matrix3D = null
+  perspectiveProjection = null
+// Before setting
+  z = 0
+  matrix = (a=1, b=0, c=0, d=1, tx=0, ty=0)
+  matrix3D = null
+  perspectiveProjection = null
+// After setting to non-null
+  z = 0
+  matrix = (a=1, b=0, c=0, d=1, tx=0, ty=0)
+  matrix3D = null
+  perspectiveProjection = [object PerspectiveProjection]
+// After setting to null
+  z = 0
+  matrix = (a=1, b=0, c=0, d=1, tx=0, ty=0)
+  matrix3D = null
+  perspectiveProjection = null
+// After setting stage to null
+  z = 0
+  matrix = (a=1, b=0, c=0, d=1, tx=0, ty=0)
+  matrix3D = null
+  perspectiveProjection = [object PerspectiveProjection]
+// After setting root to null
+  z = 0
+  matrix = (a=1, b=0, c=0, d=1, tx=0, ty=0)
+  matrix3D = null
+  perspectiveProjection = [object PerspectiveProjection]

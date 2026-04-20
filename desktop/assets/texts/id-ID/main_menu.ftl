@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Berkas
-file-menu-open-quick = Buka...
 file-menu-open-advanced = Buka dengan opsi lanjutan...
 file-menu-close = Tutup
 file-menu-reload = Muat ulang

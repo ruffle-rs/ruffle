@@ -1,0 +1,15 @@
+typeof (now.toLocaleString()) PASSED!
+Date.prototype.toLocaleString.length PASSED!
+Math.abs(Date.parse(now.toLocaleString()) - now.valueOf()) < 1000 FAILED! expected: true got: false
+Date.parse(   +   givenDate   +   ).toLocaleString()) FAILED! expected: 0 got: NaN number
+Date.parse(   +   givenDate   +   ).toLocaleString()) FAILED! expected: 20700000 got: NaN number
+Date.parse(   +   givenDate   +   ).toLocaleString()) FAILED! expected: -2208988800000 got: NaN number
+Date.parse(   +   givenDate   +   ).toLocaleString()) FAILED! expected: -2209009500000 got: NaN number
+Date.parse(   +   givenDate   +   ).toLocaleString()) FAILED! expected: 946684800000 got: NaN number
+Date.parse(   +   givenDate   +   ).toLocaleString()) FAILED! expected: 946664100000 got: NaN number
+Date.parse(   +   givenDate   +   ).toLocaleString()) FAILED! expected: 951782400000 got: NaN number
+Date.parse(   +   givenDate   +   ).toLocaleString()) FAILED! expected: 951782399000 got: NaN number
+Date.parse(   +   givenDate   +   ).toLocaleString()) FAILED! expected: 951761700000 got: NaN number
+Date.parse(   +   givenDate   +   ).toLocaleString()) FAILED! expected: 1104537600000 got: NaN number
+Date.parse(   +   givenDate   +   ).toLocaleString()) FAILED! expected: 1104537599000 got: NaN number
+Date.parse(   +   givenDate   +   ).toLocaleString()) FAILED! expected: 1104516900000 got: NaN number

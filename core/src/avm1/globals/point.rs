@@ -2,28 +2,39 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, ExecutionReason, FunctionObject};
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
+use crate::avm1::function::ExecutionReason;
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{Object, Value};
 use crate::string::AvmString;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "toString" => method(to_string);
-    "clone" => method(clone);
-    "equals" => method(equals);
-    "add" => method(add);
-    "subtract" => method(subtract);
-    "normalize" => method(normalize);
-    "offset" => method(offset);
+use ruffle_macros::istr;
+
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "length" => property(length; READ_ONLY);
+    "clone" => method(clone);
+    "offset" => method(offset);
+    "equals" => method(equals);
+    "subtract" => method(subtract);
+    "add" => method(add);
+    "normalize" => method(normalize);
+    "toString" => method(to_string);
 };
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "distance" => method(distance);
     "polar" => method(polar);
     "interpolate" => method(interpolate);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    context.define_properties_on(class.constr, OBJECT_DECLS(context));
+    class
+}
 
 pub fn point_to_object<'gc>(
     point: (f64, f64),
@@ -37,7 +48,7 @@ pub fn construct_new_point<'gc>(
     args: &[Value<'gc>],
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let constructor = activation.context.avm1.prototypes().point_constructor;
+    let constructor = activation.prototypes().point_constructor;
     let object = constructor.construct(activation, args)?;
     Ok(object)
 }
@@ -47,12 +58,12 @@ pub fn value_to_point<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<(f64, f64), Error<'gc>> {
     let x = value
-        .coerce_to_object(activation)
-        .get("x", activation)?
+        .coerce_to_object_or_bare(activation)?
+        .get(istr!("x"), activation)?
         .coerce_to_f64(activation)?;
     let y = value
-        .coerce_to_object(activation)
-        .get("y", activation)?
+        .coerce_to_object_or_bare(activation)?
+        .get(istr!("y"), activation)?
         .coerce_to_f64(activation)?;
     Ok((x, y))
 }
@@ -61,8 +72,12 @@ pub fn object_to_point<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<(f64, f64), Error<'gc>> {
-    let x = object.get("x", activation)?.coerce_to_f64(activation)?;
-    let y = object.get("y", activation)?.coerce_to_f64(activation)?;
+    let x = object
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let y = object
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
     Ok((x, y))
 }
 
@@ -72,22 +87,22 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        this.set("x", 0.into(), activation)?;
-        this.set("y", 0.into(), activation)?;
+        this.set(istr!("y"), 0.into(), activation)?;
+        this.set(istr!("x"), 0.into(), activation)?;
     } else {
         this.set(
-            "x",
-            args.get(0).unwrap_or(&Value::Undefined).to_owned(),
+            istr!("y"),
+            args.get(1).unwrap_or(&Value::Undefined).to_owned(),
             activation,
         )?;
         this.set(
-            "y",
-            args.get(1).unwrap_or(&Value::Undefined).to_owned(),
+            istr!("x"),
+            args.get(0).unwrap_or(&Value::Undefined).to_owned(),
             activation,
         )?;
     }
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 fn clone<'gc>(
@@ -95,8 +110,11 @@ fn clone<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let args = [this.get("x", activation)?, this.get("y", activation)?];
-    let constructor = activation.context.avm1.prototypes().point_constructor;
+    let args = [
+        this.get(istr!("x"), activation)?,
+        this.get(istr!("y"), activation)?,
+    ];
+    let constructor = activation.prototypes().point_constructor;
     let cloned = constructor.construct(activation, &args)?;
 
     Ok(cloned)
@@ -108,11 +126,11 @@ fn equals<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Some(other) = args.get(0) {
-        let this_x = this.get("x", activation)?;
-        let this_y = this.get("y", activation)?;
-        let other = other.coerce_to_object(activation);
-        let other_x = other.get("x", activation)?;
-        let other_y = other.get("y", activation)?;
+        let this_x = this.get(istr!("x"), activation)?;
+        let this_y = this.get(istr!("y"), activation)?;
+        let other = other.coerce_to_object_or_bare(activation)?;
+        let other_x = other.get(istr!("x"), activation)?;
+        let other_y = other.get(istr!("y"), activation)?;
         return Ok((this_x == other_x && this_y == other_y).into());
     }
 
@@ -124,8 +142,12 @@ fn add<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this_x = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let this_y = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let this_x = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let this_y = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
     let other = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         activation,
@@ -139,8 +161,12 @@ fn subtract<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this_x = this.get("x", activation)?.coerce_to_f64(activation)?;
-    let this_y = this.get("y", activation)?.coerce_to_f64(activation)?;
+    let this_x = this
+        .get(istr!("x"), activation)?
+        .coerce_to_f64(activation)?;
+    let this_y = this
+        .get(istr!("y"), activation)?
+        .coerce_to_f64(activation)?;
     let other = value_to_point(
         args.get(0).unwrap_or(&Value::Undefined).to_owned(),
         activation,
@@ -161,15 +187,17 @@ fn distance<'gc>(
     let a = args
         .get(0)
         .unwrap_or(&Value::Undefined)
-        .coerce_to_object(activation);
+        .coerce_to_object_or_bare(activation)?;
     let b = args.get(1).unwrap_or(&Value::Undefined);
     let delta = a.call_method(
-        "subtract".into(),
+        istr!("subtract"),
         &[b.to_owned()],
         activation,
         ExecutionReason::FunctionCall,
     )?;
-    delta.coerce_to_object(activation).get("length", activation)
+    delta
+        .coerce_to_object_or_bare(activation)?
+        .get(istr!("length"), activation)
 }
 
 fn polar<'gc>(
@@ -210,11 +238,11 @@ fn to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let x = this.get("x", activation)?;
-    let y = this.get("y", activation)?;
+    let x = this.get(istr!("x"), activation)?;
+    let y = this.get(istr!("y"), activation)?;
 
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         format!(
             "(x={}, y={})",
             x.coerce_to_string(activation)?,
@@ -239,7 +267,10 @@ fn normalize<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let current_length = this.get("length", activation)?.coerce_to_f64(activation)?;
+    let current_length = this
+        .get(istr!("length"), activation)?
+        .coerce_to_f64(activation)?;
+
     if current_length.is_finite() {
         let point = object_to_point(this, activation)?;
         let new_length = args
@@ -255,8 +286,8 @@ fn normalize<'gc>(
             )
         };
 
-        this.set("x", x.into(), activation)?;
-        this.set("y", y.into(), activation)?;
+        this.set(istr!("x"), x.into(), activation)?;
+        this.set(istr!("y"), y.into(), activation)?;
     }
 
     Ok(Value::Undefined)
@@ -277,35 +308,8 @@ fn offset<'gc>(
         .unwrap_or(&Value::Undefined)
         .coerce_to_f64(activation)?;
 
-    this.set("x", (point.0 + dx).into(), activation)?;
-    this.set("y", (point.1 + dy).into(), activation)?;
+    this.set(istr!("x"), (point.0 + dx).into(), activation)?;
+    this.set(istr!("y"), (point.1 + dy).into(), activation)?;
 
     Ok(Value::Undefined)
-}
-
-pub fn create_point_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    point_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let point = FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        point_proto,
-    );
-    let object = point.raw_script_object();
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
-    point
-}
-
-pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
 }

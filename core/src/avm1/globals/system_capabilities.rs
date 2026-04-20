@@ -1,47 +1,51 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::globals::system::SystemCapabilities;
-use crate::avm1::object::Object;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ScriptObject, Value};
-use crate::context::GcContext;
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
+use crate::avm1::{Object, Value};
 use crate::string::AvmString;
+use crate::system_properties::SystemCapabilities;
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "supports64BitProcesses" => property(get_has_64_bit_support);
-    "supports32BitProcesses" => property(get_has_32_bit_support);
-    "isEmbeddedInAcrobat" => property(get_is_acrobat_embedded);
-    "hasTLS" => property(get_has_tls);
-    "cpuArchitecture" => property(get_cpu_architecture);
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "hasAccessibility" => property(get_has_accessibility);
-    "hasAudio" => property(get_has_audio);
+    "pixelAspectRatio" => property(get_pixel_aspect_ratio);
+    "screenColor" => property(get_screen_color);
+    "screenDPI" => property(get_screen_dpi);
+    "screenResolutionY" => property(get_screen_resolution_y);
+    "screenResolutionX" => property(get_screen_resolution_x);
+    "hasTLS" => property(get_has_tls);
+    "hasVideoEncoder" => property(get_has_video_encoder);
     "hasAudioEncoder" => property(get_has_audio_encoder);
-    "hasEmbeddedVideo" => property(get_has_embedded_video);
-    "hasIME" => property(get_has_ime);
     "hasMP3" => property(get_has_mp3);
-    "hasPrinting" => property(get_has_printing);
-    "hasScreenBroadcast" => property(get_has_screen_broadcast);
-    "hasScreenPlayback" => property(get_has_screen_playback);
+    "hasAudio" => property(get_has_audio);
+    "serverString" => property(get_server_string);
+    "version" => property(get_version);
     "hasStreamingAudio" => property(get_has_streaming_audio);
     "hasStreamingVideo" => property(get_has_streaming_video);
-    "hasVideoEncoder" => property(get_has_video_encoder);
+    "hasEmbeddedVideo" => property(get_has_embedded_video);
+    "hasPrinting" => property(get_has_printing);
+    "hasScreenPlayback" => property(get_has_screen_playback);
+    "hasScreenBroadcast" => property(get_has_screen_broadcast);
     "isDebugger" => property(get_is_debugger);
+    "playerType" => property(get_player_type);
     "avHardwareDisable" => property(get_is_av_hardware_disabled);
     "localFileReadDisable" => property(get_is_local_file_read_disabled);
     "windowlessDisable" => property(get_is_windowless_disabled);
-    "language" => property(get_language);
+    "maxLevelIDC" => property(get_max_idc_level);
+    "isEmbeddedInAcrobat" => property(get_is_acrobat_embedded);
     "manufacturer" => property(get_manufacturer);
     "os" => property(get_os_name);
-    "pixelAspectRatio" => property(get_pixel_aspect_ratio);
-    "playerType" => property(get_player_type);
-    "screenColor" => property(get_screen_color);
-    "screenDPI" => property(get_screen_dpi);
-    "screenResolutionX" => property(get_screen_resolution_x);
-    "screenResolutionY" => property(get_screen_resolution_y);
-    "serverString" => property(get_server_string);
-    "version" => property(get_version);
-    "maxLevelIDC" => property(get_max_idc_level);
+    "cpuArchitecture" => property(get_cpu_architecture);
+    "language" => property(get_language);
+    "hasIME" => property(get_has_ime);
+    "supports32BitProcesses" => property(get_has_32_bit_support);
+    "supports64BitProcesses" => property(get_has_64_bit_support);
 };
+
+pub fn create<'gc>(context: &mut DeclContext<'_, 'gc>) -> Object<'gc> {
+    let capabilities = Object::new(context.strings, Some(context.object_proto));
+    context.define_properties_on(capabilities, OBJECT_DECLS(context));
+    capabilities
+}
 
 macro_rules! capabilities_func {
     ($func_name: ident, $capability: expr) => {
@@ -104,7 +108,7 @@ pub fn get_player_type<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         activation.context.system.player_type.to_string(),
     )
     .into())
@@ -116,7 +120,7 @@ pub fn get_screen_color<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         activation.context.system.screen_color.to_string(),
     )
     .into())
@@ -128,12 +132,12 @@ pub fn get_language<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         activation
             .context
             .system
             .language
-            .get_language_code(activation.context.avm1.player_version()),
+            .get_language_code(activation.context.player_version),
     )
     .into())
 }
@@ -182,12 +186,12 @@ pub fn get_manufacturer<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         activation
             .context
             .system
             .manufacturer
-            .get_manufacturer_string(activation.context.avm1.player_version()),
+            .get_manufacturer_string(activation.context.player_version),
     )
     .into())
 }
@@ -197,11 +201,7 @@ pub fn get_os_name<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new_utf8(
-        activation.context.gc_context,
-        activation.context.system.os.to_string(),
-    )
-    .into())
+    Ok(AvmString::new_utf8(activation.gc(), activation.context.system.os.to_string()).into())
 }
 
 pub fn get_version<'gc>(
@@ -210,11 +210,11 @@ pub fn get_version<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         activation
             .context
             .system
-            .get_version_string(activation.context.avm1),
+            .get_version_string(activation.context.player_version),
     )
     .into())
 }
@@ -227,8 +227,8 @@ pub fn get_server_string<'gc>(
     let server_string = activation
         .context
         .system
-        .get_server_string(&activation.context);
-    Ok(AvmString::new_utf8(activation.context.gc_context, server_string).into())
+        .get_server_string(activation.context);
+    Ok(AvmString::new_utf8(activation.gc(), server_string).into())
 }
 
 pub fn get_cpu_architecture<'gc>(
@@ -237,7 +237,7 @@ pub fn get_cpu_architecture<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         activation.context.system.cpu_architecture.to_string(),
     )
     .into())
@@ -248,19 +248,5 @@ pub fn get_max_idc_level<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(AvmString::new_utf8(
-        activation.context.gc_context,
-        &activation.context.system.idc_level,
-    )
-    .into())
-}
-
-pub fn create<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let capabilities = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(OBJECT_DECLS, context, capabilities, fn_proto);
-    capabilities.into()
+    Ok(AvmString::new_utf8(activation.gc(), &activation.context.system.idc_level).into())
 }

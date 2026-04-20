@@ -1,5 +1,6 @@
 use crate::matrix::Matrix;
 use enum_map::Enum;
+use ruffle_wstr::{FromWStr, WStr};
 use smallvec::SmallVec;
 use swf::{CharacterId, FillStyle, LineStyle, Rectangle, Shape, ShapeRecord, Twips};
 
@@ -19,12 +20,43 @@ pub enum GradientType {
     Focal,
 }
 
+impl FromWStr for FillRule {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"evenOdd" {
+            Ok(FillRule::EvenOdd)
+        } else if s == b"nonZero" {
+            Ok(FillRule::NonZero)
+        } else {
+            Err(())
+        }
+    }
+}
+
 #[cfg(feature = "tessellator")]
 impl From<FillRule> for lyon::path::FillRule {
     fn from(rule: FillRule) -> lyon::path::FillRule {
         match rule {
             FillRule::EvenOdd => lyon::path::FillRule::EvenOdd,
             FillRule::NonZero => lyon::path::FillRule::NonZero,
+        }
+    }
+}
+
+impl FillRule {
+    pub fn from_flags(flags: swf::ShapeFlag) -> Self {
+        if flags.contains(swf::ShapeFlag::NON_ZERO_WINDING_RULE) {
+            Self::NonZero
+        } else {
+            Self::EvenOdd
+        }
+    }
+
+    pub fn hit_test(self, winding_number: i32) -> bool {
+        match self {
+            Self::EvenOdd => winding_number & 0b1 != 0,
+            Self::NonZero => winding_number != 0,
         }
     }
 }
@@ -81,7 +113,8 @@ pub fn calculate_shape_bounds(shape_records: &[swf::ShapeRecord]) -> swf::Rectan
 /// `DrawPath` represents a solid fill or a stroke.
 /// Fills are always closed paths, while strokes may be open or closed.
 /// Closed paths will have the first point equal to the last point.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
+#[cfg_attr(test, derive(PartialEq))]
 pub enum DrawPath<'a> {
     Stroke {
         style: &'a LineStyle,
@@ -97,7 +130,7 @@ pub enum DrawPath<'a> {
 
 /// `DistilledShape` represents a ready-to-be-consumed collection of paths (both fills and strokes)
 /// that has been converted down from another source (such as SWF's `swf::Shape` format).
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug)]
 pub struct DistilledShape<'a> {
     pub paths: Vec<DrawPath<'a>>,
     pub shape_bounds: Rectangle<Twips>,
@@ -109,8 +142,8 @@ impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
     fn from(shape: &'a Shape) -> Self {
         Self {
             paths: ShapeConverter::from_shape(shape).into_commands(),
-            shape_bounds: shape.shape_bounds.clone(),
-            edge_bounds: shape.edge_bounds.clone(),
+            shape_bounds: shape.shape_bounds,
+            edge_bounds: shape.edge_bounds,
             id: shape.id,
         }
     }
@@ -118,7 +151,8 @@ impl<'a> From<&'a swf::Shape> for DistilledShape<'a> {
 
 /// `DrawCommands` trace the outline of a path.
 /// Fills follow the even-odd fill rule, with opposite winding for holes.
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Clone, Debug)]
+#[cfg_attr(test, derive(Eq, PartialEq))]
 pub enum DrawCommand {
     MoveTo(swf::Point<Twips>),
     LineTo(swf::Point<Twips>),
@@ -557,7 +591,7 @@ impl<'a> ShapeConverter<'a> {
  * For SWF shapes, edges with fillstyle1 use clockwise winding, and edges with fillstyle0 use CCW winding (flip them).
  * We ignore any edges with fills on both sides (interior edges).
  *
- * If the final winding number is odd, then the point is inside the shape (for default even-odd winding).
+ * The final winding number determines whether the point is inside the shape or not, according to the shape's fill rule.
  *
  * For strokes, we calculate the distance to the line segment or curve and compare it to the stroke width.
  * Note that Flash renders with a minimum stroke width of 1px (20 twips) that we must account for.
@@ -572,6 +606,7 @@ pub fn shape_hit_test(
     local_matrix: &Matrix,
 ) -> bool {
     let mut cursor = swf::Point::ZERO;
+    let fill_rule = FillRule::from_flags(shape.flags);
     let mut winding = 0;
 
     let mut has_fill_style0 = false;
@@ -587,7 +622,7 @@ pub fn shape_hit_test(
                 // New styles indicates a new layer;
                 // Check if the point is within the current layer, then reset winding.
                 if let Some(new_styles) = &style_change.new_styles {
-                    if winding & 0b1 != 0 {
+                    if fill_rule.hit_test(winding) {
                         return true;
                     }
                     line_styles = &new_styles.line_styles;
@@ -631,10 +666,10 @@ pub fn shape_hit_test(
                     winding += winding_number_line(test_point, end, cursor);
                 }
 
-                if let Some(width) = stroke_width {
-                    if hit_test_stroke(test_point, cursor, end, width) {
-                        return true;
-                    }
+                if let Some(width) = stroke_width
+                    && hit_test_stroke(test_point, cursor, end, width)
+                {
+                    return true;
                 }
 
                 cursor = end;
@@ -655,21 +690,25 @@ pub fn shape_hit_test(
                     winding += winding_number_curve(test_point, anchor, control, cursor);
                 }
 
-                if let Some(width) = stroke_width {
-                    if hit_test_stroke_curve(test_point, cursor, control, anchor, width) {
-                        return true;
-                    }
+                if let Some(width) = stroke_width
+                    && hit_test_stroke_curve(test_point, cursor, control, anchor, width)
+                {
+                    return true;
                 }
 
                 cursor = anchor;
             }
         }
     }
-    winding & 0b1 != 0
+    fill_rule.hit_test(winding)
 }
 
 /// Test whether the given point is contained within the paths specified by the draw commands.
-pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: swf::Point<Twips>) -> bool {
+pub fn draw_command_fill_hit_test(
+    commands: &[DrawCommand],
+    fill_rule: FillRule,
+    test_point: swf::Point<Twips>,
+) -> bool {
     let mut cursor = swf::Point::ZERO;
     let mut fill_start = swf::Point::ZERO;
     let mut winding = 0;
@@ -720,7 +759,7 @@ pub fn draw_command_fill_hit_test(commands: &[DrawCommand], test_point: swf::Poi
         winding += winding_number_line(test_point, cursor, fill_start);
     }
 
-    winding & 0b1 != 0
+    fill_rule.hit_test(winding)
 }
 
 /// Test whether the given point is contained within the strokes specified by the draw commands.
@@ -958,18 +997,18 @@ fn winding_number_line(
     let d1 = end - begin;
 
     // Adjust winding number if we are on the left side of the segment.
-    // An upward segment (-y) increments the winding number (including the initial endpoint).
-    // A downward segment (+y) decrements the winding number (including the final endpoint)
+    // A downward segment (+y) increments the winding number (including the initial endpoint).
+    // An upward segment (-y) decrements the winding number (including the final endpoint).
     // Perp-dot indicates which side of the segment the point is on.
-    if begin.y < test_point.y {
-        if end.y >= test_point.y
-            && (d1.dx.get() as i64) * (d0.dy.get() as i64)
-                > (d1.dy.get() as i64) * (d0.dx.get() as i64)
-        {
-            return 1;
-        }
-    } else if end.y < test_point.y
-        && (d1.dx.get() as i64) * (d0.dy.get() as i64) < (d1.dy.get() as i64) * (d0.dx.get() as i64)
+    if ((begin.y)..(end.y)).contains(&test_point.y)
+        && (d1.dx.get() as i64) * (d0.dy.get() as i64)
+            >= (d1.dy.get() as i64) * (d0.dx.get() as i64)
+    {
+        return 1;
+    }
+    if ((end.y)..(begin.y)).contains(&test_point.y)
+        && (d1.dx.get() as i64) * (d0.dy.get() as i64)
+            <= (d1.dy.get() as i64) * (d0.dx.get() as i64)
     {
         return -1;
     }
@@ -993,9 +1032,8 @@ fn winding_number_curve(
     // However, there are two issues:
     // 1) Solving the quadratic needs to be numerically robust, particularly near the endpoints 0.0 and 1.0, and as the curve is tangent to the ray.
     //    We use the "Citardauq" method for improved numerical stability.
-    // 2) The convention for including/excluding endpoints needs to act similarly to lines, with the initial point included if the curve is "upward",
-    //    and the final point included if the curve is pointing "downward". This is complicated by the fact that the curve could be tangent to the ray
-    //    at the endpoint (this is still considered "upward" or "downward" depending on the slope at earlier t).
+    // 2) The convention for including/excluding endpoints needs to act similarly to lines, with the initial and final point included if the parabola is opening "upward",
+    //    This is complicated by the fact that the curve could be tangent to the ray at the endpoint.
     //    We solve this by splitting the curve into y-monotonic subcurves. This is helpful because
     //    a) each subcurve will have 1 intersection with the ray
     //    b) if the subcurve surrounds the ray, we know it has an intersection without having to check if t is in [0, 1]
@@ -1045,8 +1083,8 @@ fn winding_number_curve(
             a * t_extrema * t_extrema + b * t_extrema + c
         };
 
-        // First subcurve is moving upward, include initial point.
-        if is_t0_valid && y0 >= 0.0 && y_min < 0.0 {
+        // First subcurve is moving upward, include extrema point.
+        if is_t0_valid && (y_min..y0).contains(&0.0) {
             // If curve point is to the right of the ray origin (x > 0), the ray will hit it.
             // We don't have to check 0 <= t <= 1 check because we've already guaranteed that the subcurve
             // straddles the ray.
@@ -1056,8 +1094,8 @@ fn winding_number_curve(
             }
         }
 
-        // Second subcurve is moving downard, include final point.
-        if is_t1_valid && y_min < 0.0 && y2 >= 0.0 {
+        // Second subcurve is moving downard, include extrema point.
+        if is_t1_valid && (y_min..y2).contains(&0.0) {
             let x = x0 + bx * t1 + ax * t1 * t1;
             if x > 0.0 {
                 winding -= 1;
@@ -1071,16 +1109,16 @@ fn winding_number_curve(
             a * t_extrema * t_extrema + b * t_extrema + c
         };
 
-        // First subcurve is moving downward, include extrema point.
-        if is_t1_valid && y0 < 0.0 && y_max >= 0.0 {
+        // First subcurve is moving downward, include initial point.
+        if is_t1_valid && (y0..y_max).contains(&0.0) {
             let x = x0 + bx * t1 + ax * t1 * t1;
             if x > 0.0 {
                 winding -= 1;
             }
         }
 
-        // Second subcurve is moving upward, include extrema point.
-        if is_t0_valid && y_max >= 0.0 && y2 < 0.0 {
+        // Second subcurve is moving upward, include final point.
+        if is_t0_valid && (y2..y_max).contains(&0.0) {
             let x = x0 + bx * t0 + ax * t0 * t0;
             if x > 0.0 {
                 winding += 1;
@@ -1116,11 +1154,11 @@ fn solve_quadratic(a: f64, b: f64, c: f64) -> (f64, f64) {
     // and the second root is where the root slopes downward.
     if b >= 0.0 {
         let root0 = (-b - disc) / (2.0 * a);
-        let root1 = c / (a * root0);
+        let root1 = (-b + disc) / (2.0 * a);
         (root0, root1)
     } else {
         let root0 = (-b + disc) / (2.0 * a);
-        let root1 = c / (a * root0);
+        let root1 = (-b - disc) / (2.0 * a);
         (root1, root0)
     }
 }
@@ -1129,14 +1167,14 @@ fn solve_quadratic(a: f64, b: f64, c: f64) -> (f64, f64) {
 /// from http://www.cplusplus.com/forum/beginner/234717/
 /// The roots are not necessarily unique.
 /// TODO: This probably isn't numerically robust
-#[allow(clippy::many_single_char_names)]
+#[expect(clippy::many_single_char_names)]
 fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> SmallVec<[f64; 3]> {
     let mut roots = SmallVec::new();
 
     if a.abs() <= COEFFICIENT_EPSILON {
         // Fall back to quadratic formula.
         let (t0, t1) = solve_quadratic(b, c, d);
-        #[allow(clippy::tuple_array_conversions)]
+        #[expect(clippy::tuple_array_conversions)]
         roots.extend_from_slice(&[t0, t1]);
         return roots;
     }
@@ -1172,20 +1210,19 @@ fn solve_cubic(a: f64, b: f64, c: f64, d: f64) -> SmallVec<[f64; 3]> {
 }
 
 /// Converts an SWF glyph into an SWF shape, for ease of use by rendering backends.
-pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
+pub fn swf_glyph_to_shape(glyph: swf::Glyph) -> swf::Shape {
     // Per SWF19 p.164, the FontBoundsTable can contain empty bounds for every glyph (reserved).
     // SWF19 says this is true through SWFv7, but it seems like it might be generally true?
     // In any case, we have to be sure to calculate the shape bounds ourselves to make a proper
     // SVG.
     let bounds = glyph
         .bounds
-        .clone()
         .filter(|b| b.x_min != b.x_max || b.y_min != b.y_max)
         .unwrap_or_else(|| calculate_shape_bounds(&glyph.shape_records));
     swf::Shape {
         version: 2,
         id: 0,
-        shape_bounds: bounds.clone(),
+        shape_bounds: bounds,
         edge_bounds: bounds,
         flags: swf::ShapeFlag::HAS_SCALING_STROKES | swf::ShapeFlag::NON_ZERO_WINDING_RULE,
         styles: swf::ShapeStyles {
@@ -1197,7 +1234,7 @@ pub fn swf_glyph_to_shape(glyph: &swf::Glyph) -> swf::Shape {
             })],
             line_styles: vec![],
         },
-        shape: glyph.shape_records.clone(),
+        shape: glyph.shape_records,
     }
 }
 
@@ -1340,7 +1377,7 @@ mod tests {
         swf::Shape {
             version: 2,
             id: 1,
-            shape_bounds: bounds.clone(),
+            shape_bounds: bounds,
             edge_bounds: bounds,
             flags: swf::ShapeFlag::HAS_SCALING_STROKES,
             styles: swf::ShapeStyles {
@@ -1460,6 +1497,32 @@ mod tests {
             swf::Point::new(Twips::new(44868), Twips::new(-41726)),
             swf::Point::new(Twips::new(44868), Twips::new(8275)),
             1,
+        );
+    }
+
+    #[test]
+    fn test_winding_number_curve() {
+        fn test(
+            test_point: swf::Point<Twips>,
+            begin: swf::Point<Twips>,
+            control: swf::Point<Twips>,
+            anchor: swf::Point<Twips>,
+            expected: i32,
+        ) {
+            let result = winding_number_curve(test_point, begin, control, anchor);
+
+            assert_eq!(
+                expected, result,
+                "result (winding number curve) should match"
+            );
+        }
+
+        test(
+            swf::Point::new(Twips::new(10), Twips::new(10)),
+            swf::Point::new(Twips::new(20), Twips::new(10)),
+            swf::Point::new(Twips::new(30), Twips::new(10)),
+            swf::Point::new(Twips::new(30), Twips::new(20)),
+            -1,
         );
     }
 }

@@ -1,0 +1,2 @@
+From TestClip root is _level0.container_mc
+From TestClip parent is _level0.container_mc

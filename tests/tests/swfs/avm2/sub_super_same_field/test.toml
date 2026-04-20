@@ -1,3 +1,1 @@
 num_frames = 1
-# Ruffle does not currently reproduce this behavior
-known_failure = true

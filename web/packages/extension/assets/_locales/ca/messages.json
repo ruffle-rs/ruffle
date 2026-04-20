@@ -94,5 +94,14 @@
     },
     "settings_saved": {
         "message": "S'ha desat la configuració"
+    },
+    "onboarding_page": {
+        "message": "Pàgina d'incorporació"
+    },
+    "permissions_grant": {
+        "message": "Permetre a Ruffle l'accés a les meves dades en totes les pàgines web"
+    },
+    "grant_single_site_permission": {
+        "message": "Permetre permanentment en aquest web"
     }
 }

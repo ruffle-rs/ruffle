@@ -16,20 +16,20 @@
         "ruffle-core": "^0.1.0"
     },
     "devDependencies": {
-        "@tsconfig/strictest": "^2.0.5",
-        "@types/archiver": "^6.0.2",
-        "@types/chrome": "^0.0.269",
+        "@tsconfig/strictest": "^2.0.8",
+        "@types/archiver": "^7.0.0",
+        "@types/chrome": "^0.1.37",
         "@types/common-tags": "^1.8.4",
-        "@types/firefox-webext-browser": "^120.0.4",
-        "@types/jsonwebtoken": "^9.0.6",
+        "@types/firefox-webext-browser": "^143.0.0",
+        "@types/jsonwebtoken": "^9.0.10",
         "archiver": "^7.0.1",
         "json5": "^2.2.3",
-        "ts-loader": "^9.5.1",
-        "typescript": "^5.5.4",
-        "webpack-cli": "^5.1.4",
-        "axios": "^1.7.2",
-        "form-data": "^4.0.0",
-        "jsonwebtoken": "^9.0.2",
-        "tsx": "^4.16.2"
+        "ts-loader": "^9.5.4",
+        "typescript": "^5.9.3",
+        "webpack-cli": "^6.0.1",
+        "axios": "^1.15.0",
+        "form-data": "^4.0.5",
+        "jsonwebtoken": "^9.0.3",
+        "tsx": "^4.21.0"
     }
 }

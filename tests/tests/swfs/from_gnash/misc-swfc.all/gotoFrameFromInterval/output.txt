@@ -1,0 +1,23 @@
+_level0.clip1
+_level0.clip1 --> 1 =
+_level0.clip1 --> 2 ==
+_level0.clip1 --> 3 ===
+_level0.clip1 --> 4 ====
+_level0.clip2
+_level0.clip2 --> 1 =
+_level0.clip2 --> 2 ==
+_level0.clip2 --> 3 ===
+_level0.clip2 --> 4 ====
+_level0.clip3
+_level0.clip3 --> 1 =
+_level0.clip3 --> 2 ==
+_level0.clip3 --> 3 ===
+_level0.clip3 --> 4 ====
+PASSED: asOrder == 0+1+2+3+4+1+2+3+4+1+2+3+4+  [gotoFrameFromInterval.sc:67]
+PASSED:  [gotoFrameFromInterval.sc:93]
+frame7
+PASSED: _root.asOrder == x0xx1x234  [gotoFrameFromInterval.sc:125]
+Total tests run: 3 typeof expected: number
+#passed: 3
+#failed: 0
+__END_OF_TEST__

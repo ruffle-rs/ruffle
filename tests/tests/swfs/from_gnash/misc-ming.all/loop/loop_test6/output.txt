@@ -1,0 +1,23 @@
+_level0.movieClip1 initialized
+_level0.movieClip2 initialized
+_level0.movieClip1 constructed
+_level0.movieClip2 constructed
+PASSED: typeof(movieClip1)  ==  'movieclip' [loop_test6.c:138]
+PASSED: _root.mc1Constructed  ==  1 [loop_test6.c:139]
+PASSED: typeof(movieClip2)  ==  'movieclip' [loop_test6.c:140]
+PASSED: _root.mc1Constructed  ==  1 [loop_test6.c:141]
+PASSED: typeof(movieClip1)  ==  'undefined' [loop_test6.c:147]
+PASSED: _root.mc1Constructed  ==  1 [loop_test6.c:148]
+_level0.movieClip2 unloaded
+_level0.movieClip2 initialized
+_level0.movieClip2 constructed
+PASSED: typeof(movieClip1)  ==  'undefined' [loop_test6.c:157]
+PASSED: typeof(movieClip2)  ==  'movieclip' [loop_test6.c:158]
+PASSED: _root.mc1Constructed  ==  1 [loop_test6.c:163]
+PASSED: _root.mc1Initialized  ==  1 [loop_test6.c:164]
+PASSED: _root.mc2Constructed  ==  2 [loop_test6.c:166]
+PASSED: _root.mc2Initialized  ==  2 [loop_test6.c:167]
+#passed: 12
+#failed: 0
+#total tests run: 12
+_level0.movieClip2 unloaded

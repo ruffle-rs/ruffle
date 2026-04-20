@@ -47,6 +47,59 @@ pub enum TextControlCode {
     Delete,
 }
 
+/// All possible keys which can be simulated in tests.
+///
+/// Note: Add more keys if needed.
+#[derive(Serialize, Deserialize, Debug, Copy, Clone)]
+pub enum AutomatedKey {
+    Char(char),
+    Numpad(char),
+    ArrowDown,
+    ArrowLeft,
+    ArrowRight,
+    ArrowUp,
+    Backspace,
+    CapsLock,
+    Delete,
+    End,
+    Enter,
+    Escape,
+    F1,
+    F2,
+    F3,
+    F4,
+    F5,
+    F6,
+    F7,
+    F8,
+    F9,
+    Home,
+    Insert,
+    LeftAlt,
+    LeftControl,
+    LeftShift,
+    NumLock,
+    NumpadDelete,
+    NumpadDown,
+    NumpadEnd,
+    NumpadHome,
+    NumpadInsert,
+    NumpadLeft,
+    NumpadPageDown,
+    NumpadPageUp,
+    NumpadRight,
+    NumpadUp,
+    PageDown,
+    PageUp,
+    Pause,
+    RightControl,
+    RightShift,
+    ScrollLock,
+    Space,
+    Tab,
+    Unknown,
+}
+
 /// All automated event types supported by FlashTAS.
 ///
 /// A FlashTAS input file consists of a string of `AutomatedEvent`s which are
@@ -82,10 +135,10 @@ pub enum AutomatedEvent {
     },
 
     /// Press a key
-    KeyDown { key_code: u8 },
+    KeyDown { key: AutomatedKey },
 
     /// Release a key
-    KeyUp { key_code: u8 },
+    KeyUp { key: AutomatedKey },
 
     /// Input a character code
     TextInput { codepoint: char },
@@ -101,6 +154,15 @@ pub enum AutomatedEvent {
 
     /// Inform the player that the focus has been lost (i.e. the user focused another window).
     FocusLost,
+
+    /// Update the IME preedit string and cursor.
+    ImePreedit {
+        text: String,
+        cursor: Option<(usize, usize)>,
+    },
+
+    /// Commit text using IME.
+    ImeCommit { text: String },
 }
 
 #[derive(Serialize, Deserialize, Debug)]

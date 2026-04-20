@@ -1,0 +1,12 @@
+TESTOBJ.returnArguments('String1'); PASSED!
+TESTOBJ.returnArguments('String1',false) PASSED!
+TESTOBJ.returnArguments('String1',false,100); PASSED!
+returnArguments('String2') PASSED!
+returnArguments('String2',true) PASSED!
+returnArguments('String2',true,100) PASSED!
+TESTOBJ1.returnArguments('String3') PASSED!
+TESTOBJ1.returnArguments('String3',false) PASSED!
+TESTOBJ1.returnArguments('String3',false,300) PASSED!
+returnArgumentsNoPackage('String4') PASSED!
+returnArgumentsNoPackage('String4',true) PASSED!
+returnArgumentsNoPackage('String4',true,400) PASSED!

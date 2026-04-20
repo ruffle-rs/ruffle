@@ -7,8 +7,8 @@
 use crate::avm1;
 use crate::avm2;
 use crate::context::UpdateContext;
+use crate::display_object::{DisplayObject, InteractiveObject};
 use crate::display_object::{EditText, Stage};
-use crate::display_object::{InteractiveObject, TDisplayObject};
 use crate::events::TextControlCode;
 use crate::i18n::core_text;
 use gc_arena::Collect;
@@ -20,6 +20,7 @@ pub struct ContextMenuState<'gc> {
     #[collect(require_static)]
     info: Vec<ContextMenuItem>,
     callbacks: Vec<ContextMenuCallback<'gc>>,
+    object: Option<DisplayObject<'gc>>,
 }
 
 impl<'gc> ContextMenuState<'gc> {
@@ -40,21 +41,29 @@ impl<'gc> ContextMenuState<'gc> {
         &self.callbacks[index]
     }
 
+    pub fn get_display_object(&self) -> Option<DisplayObject<'gc>> {
+        self.object
+    }
+
+    pub fn set_display_object(&mut self, object: Option<DisplayObject<'gc>>) {
+        self.object = object;
+    }
+
     pub fn build_builtin_items(
         &mut self,
         item_flags: BuiltInItemFlags,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
     ) {
         let stage = context.stage;
         let language = &context.ui.language();
 
         // When a text field is focused and the mouse is hovering it,
         // show the copy/paste menu.
-        if let Some(text) = context.focus_tracker.get_as_edit_text() {
-            if InteractiveObject::option_ptr_eq(context.mouse_data.hovered, text.as_interactive()) {
-                self.build_text_items(text, context);
-                return;
-            }
+        if let Some(text) = context.focus_tracker.get_as_edit_text()
+            && InteractiveObject::option_ptr_eq(context.mouse_data.hovered, Some(text.into()))
+        {
+            self.build_text_items(text, context);
+            return;
         }
 
         let Some(root_mc) = stage.root_clip().and_then(|c| c.as_movie_clip()) else {
@@ -137,7 +146,7 @@ impl<'gc> ContextMenuState<'gc> {
         }
     }
 
-    fn build_text_items(&mut self, text: EditText<'gc>, context: &mut UpdateContext<'_, 'gc>) {
+    fn build_text_items(&mut self, text: EditText<'gc>, context: &mut UpdateContext<'gc>) {
         let language = &context.ui.language();
         self.push(
             ContextMenuItem {
@@ -253,7 +262,7 @@ pub struct BuiltInItemFlags {
 impl BuiltInItemFlags {
     pub fn for_stage(stage: Stage<'_>) -> Self {
         let root_mc = stage.root_clip().and_then(|c| c.as_movie_clip());
-        let is_multiframe_movie = root_mc.map(|mc| mc.total_frames() > 1).unwrap_or(false);
+        let is_multiframe_movie = root_mc.map(|mc| mc.header_frames() > 1).unwrap_or(false);
         if is_multiframe_movie {
             Self {
                 forward_and_back: true,

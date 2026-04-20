@@ -17,7 +17,12 @@ use std::io::{self, Write};
 /// let header = Header {
 ///     compression: Compression::Zlib,
 ///     version: 6,
-///     stage_size: Rectangle { x_min: Twips::from_pixels(0.0), x_max: Twips::from_pixels(400.0), y_min: Twips::from_pixels(0.0), y_max: Twips::from_pixels(400.0) },
+///     stage_size: Rectangle {
+///         x_min: Twips::ZERO,
+///         x_max: Twips::from_pixels(400.0),
+///         y_min: Twips::ZERO,
+///         y_max: Twips::from_pixels(400.0),
+///     },
 ///     frame_rate: Fixed8::from_f32(60.0),
 ///     num_frames: 1,
 /// };
@@ -83,8 +88,8 @@ pub fn write_swf_raw_tags<W: Write>(header: &Header, tags: &[u8], mut output: W)
 
 #[cfg(feature = "flate2")]
 fn write_zlib_swf<W: Write>(mut output: W, swf_body: &[u8]) -> Result<()> {
-    use flate2::write::ZlibEncoder;
     use flate2::Compression;
+    use flate2::write::ZlibEncoder;
     let mut encoder = ZlibEncoder::new(&mut output, Compression::best());
     encoder.write_all(swf_body)?;
     encoder.finish()?;
@@ -142,10 +147,22 @@ impl<W: Write> BitWriter<W> {
         self.bits.write_bit(bit)
     }
 
+    /// A variant of `write_ubits` for when the number of bits to write is
+    /// a *c*ompile-*t*ime constant. This should be more efficient.
+    #[inline]
+    fn write_ubits_ct<const NUM_BITS: u32>(&mut self, n: u32) -> io::Result<()> {
+        if NUM_BITS > 0 {
+            self.bits.write::<NUM_BITS, u32>(n)
+        } else {
+            Ok(())
+        }
+    }
+
+    /// If `num_bits` is a compile-time constant, consider `write_ubits_ct` instead.
     #[inline]
     fn write_ubits(&mut self, num_bits: u32, n: u32) -> io::Result<()> {
         if num_bits > 0 {
-            self.bits.write(num_bits, n)
+            self.bits.write_var(num_bits, n)
         } else {
             Ok(())
         }
@@ -154,7 +171,7 @@ impl<W: Write> BitWriter<W> {
     #[inline]
     fn write_sbits(&mut self, num_bits: u32, n: i32) -> io::Result<()> {
         if num_bits > 0 {
-            self.bits.write_signed(num_bits, n)
+            self.bits.write_signed_var(num_bits, n)
         } else {
             Ok(())
         }
@@ -302,7 +319,7 @@ impl<W: Write> Writer<W> {
         .max()
         .unwrap();
         let mut bits = self.bits();
-        bits.write_ubits(5, num_bits)?;
+        bits.write_ubits_ct::<5>(num_bits)?;
         bits.write_sbits_twips(num_bits, rectangle.x_min)?;
         bits.write_sbits_twips(num_bits, rectangle.x_max)?;
         bits.write_sbits_twips(num_bits, rectangle.y_min)?;
@@ -315,14 +332,14 @@ impl<W: Write> Writer<W> {
         Ok(())
     }
 
-    fn write_rgb(&mut self, color: &Color) -> Result<()> {
+    fn write_rgb(&mut self, color: Color) -> Result<()> {
         self.write_u8(color.r)?;
         self.write_u8(color.g)?;
         self.write_u8(color.b)?;
         Ok(())
     }
 
-    fn write_rgba(&mut self, color: &Color) -> Result<()> {
+    fn write_rgba(&mut self, color: Color) -> Result<()> {
         self.write_u8(color.r)?;
         self.write_u8(color.g)?;
         self.write_u8(color.b)?;
@@ -366,7 +383,7 @@ impl<W: Write> Writer<W> {
                 add.iter().map(|n| count_sbits((*n).into())).max().unwrap(),
             );
         }
-        bits.write_ubits(4, num_bits)?;
+        bits.write_ubits_ct::<4>(num_bits)?;
         if has_mult {
             bits.write_sbits_fixed8(num_bits, color_transform.r_multiply)?;
             bits.write_sbits_fixed8(num_bits, color_transform.g_multiply)?;
@@ -419,7 +436,7 @@ impl<W: Write> Writer<W> {
                 add.iter().map(|n| count_sbits((*n).into())).max().unwrap(),
             );
         }
-        bits.write_ubits(4, num_bits)?;
+        bits.write_ubits_ct::<4>(num_bits)?;
         if has_mult {
             bits.write_sbits_fixed8(num_bits, color_transform.r_multiply)?;
             bits.write_sbits_fixed8(num_bits, color_transform.g_multiply)?;
@@ -442,7 +459,7 @@ impl<W: Write> Writer<W> {
         bits.write_bit(has_scale)?;
         if has_scale {
             let num_bits = max(count_fbits(m.a), count_fbits(m.d));
-            bits.write_ubits(5, num_bits)?;
+            bits.write_ubits_ct::<5>(num_bits)?;
             bits.write_fbits(num_bits, m.a)?;
             bits.write_fbits(num_bits, m.d)?;
         }
@@ -451,13 +468,13 @@ impl<W: Write> Writer<W> {
         bits.write_bit(has_rotate_skew)?;
         if has_rotate_skew {
             let num_bits = max(count_fbits(m.b), count_fbits(m.c));
-            bits.write_ubits(5, num_bits)?;
+            bits.write_ubits_ct::<5>(num_bits)?;
             bits.write_fbits(num_bits, m.b)?;
             bits.write_fbits(num_bits, m.c)?;
         }
         // Translate (always written)
         let num_bits = max(count_sbits_twips(m.tx), count_sbits_twips(m.ty));
-        bits.write_ubits(5, num_bits)?;
+        bits.write_ubits_ct::<5>(num_bits)?;
         bits.write_sbits_twips(num_bits, m.tx)?;
         bits.write_sbits_twips(num_bits, m.ty)?;
         Ok(())
@@ -484,7 +501,6 @@ impl<W: Write> Writer<W> {
                 }
             }
 
-            #[allow(clippy::unusual_byte_groupings)]
             Tag::CsmTextSettings(ref settings) => {
                 self.write_tag_header(TagCode::CsmTextSettings, 12)?;
                 self.write_character_id(settings.id)?;
@@ -634,7 +650,7 @@ impl<W: Write> Writer<W> {
                             Self::write_shape_record(shape_record, &mut bits, &mut shape_context)?;
                         }
                         // End shape record.
-                        bits.write_ubits(6, 0)?;
+                        bits.write_ubits_ct::<6>(0)?;
                     }
                 }
 
@@ -650,7 +666,7 @@ impl<W: Write> Writer<W> {
             Tag::DefineFont2(ref font) => self.write_define_font_2(font)?,
             Tag::DefineFont4(ref font) => self.write_define_font_4(font)?,
 
-            #[allow(clippy::unusual_byte_groupings)]
+            #[expect(clippy::unusual_byte_groupings)]
             Tag::DefineFontAlignZones {
                 id,
                 thickness,
@@ -787,7 +803,7 @@ impl<W: Write> Writer<W> {
             }
 
             // TODO: Allow clone of color.
-            Tag::SetBackgroundColor(ref color) => {
+            Tag::SetBackgroundColor(color) => {
                 self.write_tag_header(TagCode::SetBackgroundColor, 3)?;
                 self.write_rgb(color)?;
             }
@@ -941,7 +957,7 @@ impl<W: Write> Writer<W> {
                 writer.write_button_record(record, 1)?;
             }
             writer.write_u8(0)?; // End button records
-                                 // TODO: Assert we have some action.
+            // TODO: Assert we have some action.
             writer.output.write_all(button.actions[0].action_data)?;
         }
         self.write_tag_header(TagCode::DefineButton, buf.len() as u32)?;
@@ -1058,7 +1074,7 @@ impl<W: Write> Writer<W> {
                 Self::write_shape_record(shape_record, &mut bits, &mut shape_context)?;
             }
             // End shape record.
-            bits.write_ubits(6, 0)?;
+            bits.write_ubits_ct::<6>(0)?;
         }
 
         let mut buf = Vec::new();
@@ -1091,7 +1107,7 @@ impl<W: Write> Writer<W> {
                 Self::write_shape_record(shape_record, &mut bits, &mut shape_context)?;
             }
             // End shape record.
-            bits.write_ubits(6, 0)?;
+            bits.write_ubits_ct::<6>(0)?;
         }
 
         let tag_code = if data.version == 1 {
@@ -1108,8 +1124,8 @@ impl<W: Write> Writer<W> {
         match (start, end) {
             (FillStyle::Color(start_color), FillStyle::Color(end_color)) => {
                 self.write_u8(0x00)?; // Solid color.
-                self.write_rgba(start_color)?;
-                self.write_rgba(end_color)?;
+                self.write_rgba(*start_color)?;
+                self.write_rgba(*end_color)?;
             }
 
             (
@@ -1175,7 +1191,7 @@ impl<W: Write> Writer<W> {
             _ => {
                 return Err(Error::invalid_data(
                     "Morph start and end fill styles must be the same variant.",
-                ))
+                ));
             }
         }
         Ok(())
@@ -1192,9 +1208,9 @@ impl<W: Write> Writer<W> {
         self.write_gradient_flags(start)?;
         for (start_record, end_record) in start.records.iter().zip(end.records.iter()) {
             self.write_u8(start_record.ratio)?;
-            self.write_rgba(&start_record.color)?;
+            self.write_rgba(start_record.color)?;
             self.write_u8(end_record.ratio)?;
-            self.write_rgba(&end_record.color)?;
+            self.write_rgba(end_record.color)?;
         }
         Ok(())
     }
@@ -1211,8 +1227,8 @@ impl<W: Write> Writer<W> {
             self.write_u16(end.width.get() as u16)?;
             match (&start.fill_style, &end.fill_style) {
                 (FillStyle::Color(start), FillStyle::Color(end)) => {
-                    self.write_rgba(start)?;
-                    self.write_rgba(end)?;
+                    self.write_rgba(*start)?;
+                    self.write_rgba(*end)?;
                 }
                 _ => {
                     return Err(Error::invalid_data(
@@ -1241,8 +1257,8 @@ impl<W: Write> Writer<W> {
             } else {
                 match (&start.fill_style, &end.fill_style) {
                     (FillStyle::Color(start), FillStyle::Color(end)) => {
-                        self.write_rgba(start)?;
-                        self.write_rgba(end)?;
+                        self.write_rgba(*start)?;
+                        self.write_rgba(*end)?;
                     }
                     _ => {
                         return Err(Error::invalid_data("Unexpected line fill style fill type"));
@@ -1300,7 +1316,7 @@ impl<W: Write> Writer<W> {
                 Self::write_shape_record(shape_record, &mut bits, &mut shape_context)?;
             }
             // End shape record.
-            bits.write_ubits(6, 0)?;
+            bits.write_ubits_ct::<6>(0)?;
         }
 
         let tag_code = match shape.version {
@@ -1421,13 +1437,13 @@ impl<W: Write> Writer<W> {
     ) -> Result<()> {
         match record {
             ShapeRecord::StraightEdge { delta } => {
-                bits.write_ubits(2, 0b11)?; // Straight edge
-                                            // TODO: Check underflow?
+                bits.write_ubits_ct::<2>(0b11)?; // Straight edge
+                // TODO: Check underflow?
                 let num_bits = count_sbits_twips(delta.dx)
                     .max(count_sbits_twips(delta.dy))
                     .max(2);
                 let is_axis_aligned = delta.dx == Twips::ZERO || delta.dy == Twips::ZERO;
-                bits.write_ubits(4, num_bits - 2)?;
+                bits.write_ubits_ct::<4>(num_bits - 2)?;
                 bits.write_bit(!is_axis_aligned)?;
                 let is_vertical = is_axis_aligned && delta.dx == Twips::ZERO;
                 if is_axis_aligned {
@@ -1444,13 +1460,13 @@ impl<W: Write> Writer<W> {
                 control_delta,
                 anchor_delta,
             } => {
-                bits.write_ubits(2, 0b10)?; // Curved edge
+                bits.write_ubits_ct::<2>(0b10)?; // Curved edge
                 let num_bits = count_sbits_twips(control_delta.dx)
                     .max(count_sbits_twips(control_delta.dy))
                     .max(count_sbits_twips(anchor_delta.dx))
                     .max(count_sbits_twips(anchor_delta.dy))
                     .max(2);
-                bits.write_ubits(4, num_bits - 2)?;
+                bits.write_ubits_ct::<4>(num_bits - 2)?;
                 bits.write_sbits_twips(num_bits, control_delta.dx)?;
                 bits.write_sbits_twips(num_bits, control_delta.dy)?;
                 bits.write_sbits_twips(num_bits, anchor_delta.dx)?;
@@ -1478,10 +1494,10 @@ impl<W: Write> Writer<W> {
                     ShapeRecordFlag::NEW_STYLES,
                     style_change.new_styles.is_some(),
                 );
-                bits.write_ubits(5, flags.bits().into())?;
+                bits.write_ubits_ct::<5>(flags.bits().into())?;
                 if let Some(move_to) = &style_change.move_to {
                     let num_bits = count_sbits_twips(move_to.x).max(count_sbits_twips(move_to.y));
-                    bits.write_ubits(5, num_bits)?;
+                    bits.write_ubits_ct::<5>(num_bits)?;
                     bits.write_sbits_twips(num_bits, move_to.x)?;
                     bits.write_sbits_twips(num_bits, move_to.y)?;
                 }
@@ -1514,7 +1530,7 @@ impl<W: Write> Writer<W> {
 
     fn write_fill_style(&mut self, fill_style: &FillStyle, shape_version: u8) -> Result<()> {
         match *fill_style {
-            FillStyle::Color(ref color) => {
+            FillStyle::Color(color) => {
                 self.write_u8(0x00)?; // Solid color.
                 if shape_version >= 3 {
                     self.write_rgba(color)?
@@ -1576,14 +1592,14 @@ impl<W: Write> Writer<W> {
             if line_style.flags.contains(LineStyleFlag::HAS_FILL) {
                 self.write_fill_style(&line_style.fill_style, shape_version)?;
             } else if let FillStyle::Color(color) = &line_style.fill_style {
-                self.write_rgba(color)?;
+                self.write_rgba(*color)?;
             } else {
                 return Err(Error::invalid_data("Unexpected line style fill type"));
             }
         } else {
             // LineStyle1
             let color = if let FillStyle::Color(color) = &line_style.fill_style {
-                color
+                *color
             } else {
                 return Err(Error::invalid_data(
                     "Complex line styles can only be used in DefineShape4 tags",
@@ -1604,9 +1620,9 @@ impl<W: Write> Writer<W> {
         for record in &gradient.records {
             self.write_u8(record.ratio)?;
             if shape_version >= 3 {
-                self.write_rgba(&record.color)?;
+                self.write_rgba(record.color)?;
             } else {
-                self.write_rgb(&record.color)?;
+                self.write_rgb(record.color)?;
             }
         }
         Ok(())
@@ -1706,10 +1722,10 @@ impl<W: Write> Writer<W> {
 
             writer.write_u16(place_object.depth)?;
 
-            if place_object_version >= 3 {
-                if let Some(class_name) = place_object.class_name {
-                    writer.write_string(class_name)?;
-                }
+            if place_object_version >= 3
+                && let Some(class_name) = place_object.class_name
+            {
+                writer.write_string(class_name)?;
             }
 
             match place_object.action {
@@ -1753,7 +1769,7 @@ impl<W: Write> Writer<W> {
                     writer.write_u8(if is_visible { 1 } else { 0 })?;
                 }
 
-                if let Some(ref background_color) = place_object.background_color {
+                if let Some(background_color) = place_object.background_color {
                     writer.write_rgba(background_color)?;
                 }
             }
@@ -1763,10 +1779,10 @@ impl<W: Write> Writer<W> {
             }
 
             // PlaceObject4 adds some embedded AMF data per instance.
-            if place_object_version >= 4 {
-                if let Some(data) = place_object.amf_data {
-                    writer.output.write_all(data)?;
-                }
+            if place_object_version >= 4
+                && let Some(data) = place_object.amf_data
+            {
+                writer.output.write_all(data)?;
             }
         }
         let tag_code = match place_object_version {
@@ -1781,7 +1797,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_drop_shadow_filter(&mut self, filter: &DropShadowFilter) -> Result<()> {
-        self.write_rgba(&filter.color)?;
+        self.write_rgba(filter.color)?;
         self.write_fixed16(filter.blur_x)?;
         self.write_fixed16(filter.blur_y)?;
         self.write_fixed16(filter.angle)?;
@@ -1799,7 +1815,7 @@ impl<W: Write> Writer<W> {
     }
 
     fn write_glow_filter(&mut self, filter: &GlowFilter) -> Result<()> {
-        self.write_rgba(&filter.color)?;
+        self.write_rgba(filter.color)?;
         self.write_fixed16(filter.blur_x)?;
         self.write_fixed16(filter.blur_y)?;
         self.write_fixed8(filter.strength)?;
@@ -1809,8 +1825,8 @@ impl<W: Write> Writer<W> {
 
     fn write_bevel_filter(&mut self, filter: &BevelFilter) -> Result<()> {
         // Note that the color order is wrong in the spec, it's highlight then shadow.
-        self.write_rgba(&filter.highlight_color)?;
-        self.write_rgba(&filter.shadow_color)?;
+        self.write_rgba(filter.highlight_color)?;
+        self.write_rgba(filter.shadow_color)?;
         self.write_fixed16(filter.blur_x)?;
         self.write_fixed16(filter.blur_y)?;
         self.write_fixed16(filter.angle)?;
@@ -1823,7 +1839,7 @@ impl<W: Write> Writer<W> {
     fn write_gradient_filter(&mut self, filter: &GradientFilter) -> Result<()> {
         self.write_u8(filter.colors.len() as u8)?;
         for gradient_record in &filter.colors {
-            self.write_rgba(&gradient_record.color)?;
+            self.write_rgba(gradient_record.color)?;
         }
         for gradient_record in &filter.colors {
             self.write_u8(gradient_record.ratio)?;
@@ -1845,7 +1861,7 @@ impl<W: Write> Writer<W> {
         for val in &filter.matrix {
             self.write_f32(*val)?;
         }
-        self.write_rgba(&filter.default_color)?;
+        self.write_rgba(filter.default_color)?;
         self.write_u8(filter.flags.bits())?;
         Ok(())
     }
@@ -1960,24 +1976,21 @@ impl<W: Write> Writer<W> {
 
     fn write_sound_format(&mut self, sound_format: &SoundFormat) -> Result<()> {
         let mut bits = self.bits();
-        bits.write_ubits(4, sound_format.compression as u32)?;
-        bits.write_ubits(
-            2,
-            match sound_format.sample_rate {
-                5512 => 0,
-                11025 => 1,
-                22050 => 2,
-                44100 => 3,
-                _ => return Err(Error::invalid_data("Invalid sample rate.")),
-            },
-        )?;
+        bits.write_ubits_ct::<4>(sound_format.compression as u32)?;
+        bits.write_ubits_ct::<2>(match sound_format.sample_rate {
+            5512 => 0,
+            11025 => 1,
+            22050 => 2,
+            44100 => 3,
+            _ => return Err(Error::invalid_data("Invalid sample rate.")),
+        })?;
         bits.write_bit(sound_format.is_16_bit)?;
         bits.write_bit(sound_format.is_stereo)?;
         Ok(())
     }
 
     fn write_sound_info(&mut self, sound_info: &SoundInfo) -> Result<()> {
-        let flags = (sound_info.event as u8) << 4
+        let flags = ((sound_info.event as u8) << 4)
             | if sound_info.in_sample.is_some() {
                 0b1
             } else {
@@ -2053,7 +2066,7 @@ impl<W: Write> Writer<W> {
                         Self::write_shape_record(shape_record, &mut bits, &mut shape_context)?;
                     }
                     // End shape record.
-                    bits.write_ubits(6, 0)?;
+                    bits.write_ubits_ct::<6>(0)?;
                 }
             }
 
@@ -2109,7 +2122,7 @@ impl<W: Write> Writer<W> {
                 writer.write_u16(layout.descent)?;
                 writer.write_i16(layout.leading)?;
                 for glyph in &font.glyphs {
-                    writer.write_i16(glyph.advance)?;
+                    writer.write_u16(glyph.advance)?;
                 }
                 for glyph in &font.glyphs {
                     writer.write_rectangle(
@@ -2251,7 +2264,7 @@ impl<W: Write> Writer<W> {
                 if let Some(id) = record.font_id {
                     writer.write_character_id(id)?;
                 }
-                if let Some(ref color) = record.color {
+                if let Some(color) = record.color {
                     if version == 1 {
                         writer.write_rgb(color)?;
                     } else {
@@ -2423,7 +2436,7 @@ fn count_fbits(n: Fixed16) -> u32 {
 }
 
 #[cfg(test)]
-#[allow(clippy::unusual_byte_groupings)]
+#[expect(clippy::unusual_byte_groupings)]
 mod tests {
     use super::*;
     use crate::test_data;
@@ -2436,9 +2449,9 @@ mod tests {
                 compression,
                 version: 13,
                 stage_size: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(640.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(480.0),
                 },
                 frame_rate: Fixed8::from_f32(60.0),
@@ -2524,6 +2537,21 @@ mod tests {
             let mut bits = writer.bits();
             for b in &out_bits {
                 bits.write_bit(*b).unwrap();
+            }
+        }
+        assert_eq!(buf, [0b01010101, 0b00100101]);
+    }
+
+    #[test]
+    fn write_ubits_ct() {
+        const NUM_BITS: u32 = 2;
+        let nums = [1, 1, 1, 1, 0, 2, 1, 1];
+        let mut buf = Vec::new();
+        {
+            let mut writer = Writer::new(&mut buf, 1);
+            let mut bits = writer.bits();
+            for n in &nums {
+                bits.write_ubits_ct::<NUM_BITS>(*n).unwrap();
             }
         }
         assert_eq!(buf, [0b01010101, 0b00100101]);
@@ -2645,10 +2673,10 @@ mod tests {
     #[test]
     fn write_rectangle_signed() {
         let rectangle = Rectangle {
-            x_min: Twips::from_pixels(-1.0),
-            x_max: Twips::from_pixels(1.0),
-            y_min: Twips::from_pixels(-1.0),
-            y_max: Twips::from_pixels(1.0),
+            x_min: -Twips::ONE_PX,
+            x_max: Twips::ONE_PX,
+            y_min: -Twips::ONE_PX,
+            y_max: Twips::ONE_PX,
         };
         let mut buf = Vec::new();
         {
@@ -2670,7 +2698,7 @@ mod tests {
             let mut buf = Vec::new();
             {
                 let mut writer = Writer::new(&mut buf, 1);
-                writer.write_rgb(&color).unwrap();
+                writer.write_rgb(color).unwrap();
             }
             assert_eq!(buf, [1, 128, 255]);
         }
@@ -2684,7 +2712,7 @@ mod tests {
             let mut buf = Vec::new();
             {
                 let mut writer = Writer::new(&mut buf, 1);
-                writer.write_rgba(&color).unwrap();
+                writer.write_rgba(color).unwrap();
             }
             assert_eq!(buf, [1, 2, 3, 11]);
         }
@@ -2771,11 +2799,11 @@ mod tests {
             glyphs: vec![Glyph {
                 shape_records: vec![
                     ShapeRecord::StraightEdge {
-                        delta: PointDelta::new(Twips::ONE, -Twips::ONE),
+                        delta: PointDelta::new(Twips::ONE_PX, -Twips::ONE_PX),
                     },
                     ShapeRecord::CurvedEdge {
-                        control_delta: PointDelta::new(Twips::ONE, Twips::ONE),
-                        anchor_delta: PointDelta::new(Twips::ONE, -Twips::ONE),
+                        control_delta: PointDelta::new(Twips::ONE_PX, Twips::ONE_PX),
+                        anchor_delta: PointDelta::new(Twips::ONE_PX, -Twips::ONE_PX),
                     },
                     ShapeRecord::StraightEdge {
                         delta: PointDelta::new(Twips::ZERO, Twips::ZERO),

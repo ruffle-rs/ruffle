@@ -1,0 +1,9 @@
+Test (SWF6): Loading target.swf into _level2
+Test (SWF6): _level2.getSWFVersion() = 8
+Test (SWF6): _level2.testProp = 
+Test (SWF6): _level2.__proto__ === MovieClip.prototype: false
+Target (SWF8): _level2.customProp = FROM_SWF8
+Target (SWF8): _level2.__proto__ === MovieClip.prototype: true
+Test (SWF6): Unloading _level2
+Test (SWF6): After unload - _level2.__proto__ === MovieClip.prototype: false
+Test (SWF6): After unload - _level2.testProp = 

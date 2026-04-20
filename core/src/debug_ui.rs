@@ -1,5 +1,6 @@
 mod avm1;
 mod avm2;
+mod common;
 mod display_object;
 mod domain;
 mod handle;
@@ -15,6 +16,7 @@ use crate::debug_ui::handle::{
 };
 use crate::debug_ui::movie::{MovieListWindow, MovieWindow};
 use crate::display_object::TDisplayObject;
+use crate::prelude::DisplayObject;
 use crate::tag_utils::SwfMovie;
 use gc_arena::DynamicRootSet;
 use hashbrown::HashMap;
@@ -50,6 +52,7 @@ pub enum Message {
     ShowDomains,
     SaveFile(ItemToSave),
     SearchForDisplayObject,
+    TrackRootMovieClip,
 }
 
 impl DebugUi {
@@ -79,22 +82,22 @@ impl DebugUi {
         self.movies
             .retain(|movie, window| window.show(egui_ctx, context, movie, &mut messages));
 
-        if let Some(mut movie_list) = self.movie_list.take() {
-            if movie_list.show(egui_ctx, context, &mut messages) {
-                self.movie_list = Some(movie_list);
-            }
+        if let Some(mut movie_list) = self.movie_list.take()
+            && movie_list.show(egui_ctx, context, &mut messages)
+        {
+            self.movie_list = Some(movie_list);
         }
 
-        if let Some(mut domain_list) = self.domain_list.take() {
-            if domain_list.show(egui_ctx, context, &mut messages) {
-                self.domain_list = Some(domain_list);
-            }
+        if let Some(mut domain_list) = self.domain_list.take()
+            && domain_list.show(egui_ctx, context, &mut messages)
+        {
+            self.domain_list = Some(domain_list);
         }
 
-        if let Some(mut search) = self.display_object_search.take() {
-            if search.show(egui_ctx, context, &mut messages, movie_offset) {
-                self.display_object_search = Some(search);
-            }
+        if let Some(mut search) = self.display_object_search.take()
+            && search.show(egui_ctx, context, &mut messages, movie_offset)
+        {
+            self.display_object_search = Some(search);
         }
 
         for message in messages {
@@ -112,7 +115,8 @@ impl DebugUi {
                     self.movies.insert(movie, Default::default());
                 }
                 Message::TrackTopLevelMovie => {
-                    self.movies.insert(context.swf.clone(), Default::default());
+                    self.movies
+                        .insert(context.root_swf.clone(), Default::default());
                 }
                 Message::TrackAVM1Object(object) => {
                     self.avm1_objects.insert(object, Default::default());
@@ -131,6 +135,15 @@ impl DebugUi {
                 }
                 Message::SearchForDisplayObject => {
                     self.display_object_search = Some(Default::default());
+                }
+                Message::TrackRootMovieClip => {
+                    // Convenience action to quickly access the root movie clip
+                    if let Some(obj @ DisplayObject::MovieClip(_)) = context.stage.root_clip() {
+                        let win =
+                            DisplayObjectWindow::with_panel(display_object::Panel::TypeSpecific);
+                        self.display_objects
+                            .insert(DisplayObjectHandle::new(context, obj), win);
+                    }
                 }
             }
         }
@@ -157,7 +170,7 @@ impl DebugUi {
         context: &mut RenderContext<'_, 'gc>,
         dynamic_root_set: DynamicRootSet<'gc>,
     ) {
-        let world_matrix = context.stage.view_matrix() * *context.stage.base().matrix();
+        let world_matrix = context.stage.view_matrix() * context.stage.base().matrix();
 
         for (object, window) in self.display_objects.iter() {
             if let Some(color) = window.debug_rect_color() {
@@ -181,11 +194,11 @@ impl DebugUi {
         }
 
         if let Some(window) = &self.display_object_search {
-            for (color, object) in window.hovered_debug_rects() {
+            for (object, color) in window.hovered_debug_rects() {
                 let object = object.fetch(dynamic_root_set);
                 let bounds = world_matrix * object.debug_rect_bounds();
 
-                draw_debug_rect(context, color, bounds, 5.0);
+                draw_debug_rect(context, *color, bounds, 5.0);
             }
         }
 

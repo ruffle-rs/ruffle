@@ -1,0 +1,24 @@
+// Number(10)
+typeof = number, value = 10
+// new Number(42)
+typeof = object, value = 42
+keys = []
+
+// Boolean(false)
+typeof = boolean, value = false
+// new Boolean(true)
+typeof = object, value = true
+keys = []
+
+// String('bluh')
+typeof = string, value = bluh
+// new String('blah')
+typeof = object, value = blah
+keys = []
+length = 4
+hasOwnProperty = true
+// str.length = 'hmm'
+length = hmm
+keys = []
+// delete str.length
+length = hmm

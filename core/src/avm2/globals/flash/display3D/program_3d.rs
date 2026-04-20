@@ -1,35 +1,32 @@
-use crate::avm2::Activation;
-
-use crate::avm2::TObject;
-use crate::avm2::Value;
-use crate::avm2::{Error, Object};
+use crate::avm2::Error;
+use crate::avm2::activation::Activation;
+use crate::avm2::error::make_agal_upload_error;
+use crate::avm2::parameters::ParametersExt;
+use crate::avm2::value::Value;
 
 pub fn upload<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(this) = this.as_program_3d() {
-        let vertex_agal = args
-            .get(0)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let vertex_agal = args.get_object(activation, 0, "source_vertex")?;
         let vertex_agal = vertex_agal
             .as_bytearray()
-            .ok_or_else(|| Error::from("ArgumentError: Parameter must be a ByteArray"))?;
+            .expect("Parameter must be a ByteArray");
         let vertex_agal = vertex_agal.bytes().to_vec();
 
-        let fragment_agal = args
-            .get(1)
-            .unwrap_or(&Value::Undefined)
-            .coerce_to_object(activation)?;
+        let fragment_agal = args.get_object(activation, 1, "source_fragment")?;
         let fragment_agal = fragment_agal
             .as_bytearray()
-            .ok_or_else(|| Error::from("ArgumentError: Parameter must be a ByteArray"))?;
+            .expect("Parameter must be a ByteArray");
         let fragment_agal = fragment_agal.bytes().to_vec();
 
         this.context3d()
-            .upload_shaders(this, vertex_agal, fragment_agal);
+            .upload_shaders(this, vertex_agal, fragment_agal)
+            .map_err(|e| make_agal_upload_error(activation, e))?;
     }
     Ok(Value::Undefined)
 }

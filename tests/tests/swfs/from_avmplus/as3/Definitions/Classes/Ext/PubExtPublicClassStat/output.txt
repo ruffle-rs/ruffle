@@ -1,0 +1,27 @@
+*** Access static method from default method of sub class *** PASSED!
+PUBEXTDCLASSS.testSubArray(arr) PASSED!
+*** Access static method from public method of sub class *** PASSED!
+PUBEXTDCLASSS.pubSubSetArray(arr), PUBEXTDCLASSS.pubSubGetArray() PASSED!
+*** Access static method from private method of sub class *** PASSED!
+PUBEXTDCLASSS.testPrivSubArray(arr) PASSED!
+PUBEXTDCLASSS.testFinSubArray(arr) PASSED!
+*** Access static method from static method of sub class *** PASSED!
+PubExtPublicClassStat.testStatSubArray(arr) PASSED!
+*** Access static method from public static method of sub class *** PASSED!
+PubExtPublicClassStat.pubStatSubSetArray(arr), PubExtPublicClassStat.pubStatSubGetArray() PASSED!
+*** Access static method from private static method of sub class *** PASSED!
+PubExtPublicClassStat.testPrivStatSubArray(arr) PASSED!
+*** Access static property from default method in sub class *** PASSED!
+PUBEXTDCLASSS.testSubDPArray(arr) PASSED!
+*** Access static property from public method in sub class *** PASSED!
+PUBEXTDCLASSS.pubSubSetDPArray(arr), PUBEXTDCLASSS.pubSubGetDPArray() PASSED!
+*** Access static property from private method in sub class *** PASSED!
+PUBEXTDCLASSS.testPrivSubDPArray(arr) PASSED!
+*** Access static property from static method in sub class *** PASSED!
+PubExtPublicClassStat.testStatSubPArray(arr) PASSED!
+*** Access static property from public static method in sub class *** PASSED!
+PubExtPublicClassStat.pubStatSubSetSPArray(arr), PubExtPublicClassStat.pubStatSubGetSPArray() PASSED!
+*** Access static property from private static method in sub class *** PASSED!
+PUBEXTDCLASSS.testPrivStatSubPArray(arr) PASSED!
+*** Access static property from final method in sub class *** PASSED!
+PUBEXTDCLASSS.testFinSubDPArray(arr) PASSED!

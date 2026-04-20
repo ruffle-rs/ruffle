@@ -1,0 +1,11 @@
+text.getLineMetrics(-1) = RangeError: Error #2006: The supplied index is out of bounds.
+text.getLineMetrics(0) = ascent=6, descent=6, leading=0, width=21.65, height=12, x=2
+text.getLineMetrics(1) = ascent=13.45, descent=4.7, leading=0, width=27.15, height=18.15, x=2
+text.getLineMetrics(2) = ascent=2.4, descent=9.6, leading=0, width=0, height=12, x=2
+text.getLineMetrics(3) = ascent=13.45, descent=6, leading=0, width=88.15, height=19.45, x=2
+text.getLineMetrics(4) = ascent=15.7, descent=5.5, leading=0, width=65.9, height=21.2, x=2
+text.getLineMetrics(5) = ascent=13.45, descent=6, leading=5, width=63.3, height=24.45, x=2
+text.getLineMetrics(6) = ascent=13.45, descent=4.7, leading=4, width=254.8, height=22.15, x=2
+text.getLineMetrics(7) = ascent=13.45, descent=9.6, leading=4, width=51, height=27.05, x=2
+text.getLineMetrics(8) = ascent=2.4, descent=9.6, leading=0, width=0, height=12, x=2
+text.getLineMetrics(9) = RangeError: Error #2006: The supplied index is out of bounds.

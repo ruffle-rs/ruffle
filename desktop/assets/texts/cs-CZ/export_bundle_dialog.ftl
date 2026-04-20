@@ -1,0 +1,12 @@
+export-bundle-dialog-title = Exportovat balíček Ruffle
+export-bundle-dialog-bundle-name = Název balíčku:
+export-bundle-dialog-files-description = Vyberte soubory k zabalení:
+export-bundle-dialog-files-select-all = Vybrat vše
+export-bundle-dialog-export = Exportovat
+export-bundle-dialog-exporting = Exportování...
+export-bundle-dialog-exporting-failed = Exportování selhalo.
+export-bundle-dialog-error-user-canceled = Zrušeno uživatelem.
+export-bundle-dialog-error-failed-to-show-picker = Nepodařilo se zobrazit výběr souborů.
+export-bundle-dialog-error-io-error = Chyba při zápisu balíčku.
+export-bundle-dialog-info-title = Co je to balíček Ruffle?
+export-bundle-dialog-info-description = Balíček Ruffle je univerzální balíček, který obsahuje vše potřebné ke spuštění souboru SWF – všechny požadované prvky a konfiguraci. S balíčkem bude váš SWF fungovat ihned po vybalení – žádné chybějící soubory, žádné manuální nastavování, stačí jej připojit a používat.

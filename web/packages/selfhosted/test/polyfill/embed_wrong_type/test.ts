@@ -10,9 +10,11 @@ describe("Embed with wrong type attribute value", () => {
         await openTest(browser, `polyfill/embed_wrong_type`);
     });
 
-    it("polyfills with ruffle", async () => {
+    it("doesn't polyfill with ruffle", async () => {
         await injectRuffleAndWait(browser);
-        const actual = await browser.$("#test-container").getHTML(false);
+        const actual = await browser
+            .$("#test-container")
+            .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",

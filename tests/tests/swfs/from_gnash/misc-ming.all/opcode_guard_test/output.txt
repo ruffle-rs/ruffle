@@ -1,0 +1,18 @@
+mc1 Construct called
+PASSED: movieclip == movieclip
+PASSED: undefined == undefined
+mc1 Load called
+mc1 Unload called
+PASSED: undefined == undefined
+PASSED: testvar1  ==  'executed' [opcode_guard_test.c:122]
+PASSED: testvar2  ==  'executed' [opcode_guard_test.c:123]
+PASSED: testvar3  ==  'executed' [opcode_guard_test.c:124]
+mc2 EnterFrame called
+PASSED: undefined == undefined
+PASSED: / == /
+PASSED: 9 == 9
+PASSED: 9 == 9
+PASSED: 100 == 100
+#passed: 11
+#failed: 0
+#total tests run: 11

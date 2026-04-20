@@ -1,0 +1,3 @@
+Check if branch after end is allowed
+PASSED: jump after end ALLOWED
+END OF TEST

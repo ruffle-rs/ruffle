@@ -1,0 +1,5 @@
+test_0 PASSED!
+test_1 PASSED!
+test_2 FAILED! expected: ReferenceError: Error #1074 got: no-exception
+test_3 FAILED! expected: ReferenceError: Error #1074 got: no-exception
+test_4 FAILED! expected: ReferenceError: Error #1074 got: no-exception

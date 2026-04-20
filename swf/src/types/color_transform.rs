@@ -58,7 +58,7 @@ impl ColorTransform {
     }
 
     /// Sets the multiplicate component of this color transform.
-    pub fn set_mult_color(&mut self, color: &Color) {
+    pub fn set_mult_color(&mut self, color: Color) {
         self.r_multiply = Fixed8::from_f32(f32::from(color.r) / 255.0);
         self.g_multiply = Fixed8::from_f32(f32::from(color.g) / 255.0);
         self.b_multiply = Fixed8::from_f32(f32::from(color.b) / 255.0);

@@ -1,0 +1,16 @@
+key down 17, xxxxx
+input abc, xxxxx
+change xxx
+key up 17, xxx
+key down 17, xxx
+input ayb, xxx
+change xxxy
+key up 17, xxxy
+key down 88, xxxy
+input x, xxxy
+change xxxy
+key up 88, xxxy
+key down 89, xxxy
+input y, xxxy
+change xxxyy
+key up 89, xxxyy

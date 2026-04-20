@@ -3,17 +3,16 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::shared_object::{deserialize_value, serialize};
-use crate::avm1::object::TObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{
-    ActivationIdentifier, ExecutionReason, NativeObject, Object, ScriptObject, Value,
-};
-use crate::context::{GcContext, UpdateContext};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{ActivationIdentifier, ExecutionReason, NativeObject, Object, Value};
+use crate::avm1_stub;
+use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::local_connection::{LocalConnectionHandle, LocalConnections};
 use crate::string::AvmString;
 use flash_lso::types::Value as AmfValue;
 use gc_arena::{Collect, Gc};
+use ruffle_macros::istr;
 use std::cell::RefCell;
 
 #[derive(Debug, Collect)]
@@ -28,20 +27,20 @@ pub struct LocalConnection<'gc>(Gc<'gc, LocalConnectionData>);
 
 impl<'gc> LocalConnection<'gc> {
     pub fn cast(value: Value<'gc>) -> Option<Self> {
-        if let Value::Object(object) = value {
-            if let NativeObject::LocalConnection(local_connection) = object.native() {
-                return Some(local_connection);
-            }
+        if let Value::Object(object) = value
+            && let NativeObject::LocalConnection(local_connection) = object.native()
+        {
+            return Some(local_connection);
         }
         None
     }
 
-    pub fn is_connected(&self) -> bool {
+    pub fn is_connected(self) -> bool {
         self.0.handle.borrow().is_some()
     }
 
     pub fn connect(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         name: AvmString<'gc>,
         this: Object<'gc>,
@@ -51,7 +50,7 @@ impl<'gc> LocalConnection<'gc> {
         }
 
         let connection_handle = activation.context.local_connections.connect(
-            &LocalConnections::get_domain(activation.context.swf.url()),
+            &LocalConnections::get_domain(activation.context.root_swf.url()),
             this,
             &name,
         );
@@ -60,33 +59,33 @@ impl<'gc> LocalConnection<'gc> {
         result
     }
 
-    pub fn disconnect(&self, activation: &mut Activation<'_, 'gc>) {
+    pub fn disconnect(self, activation: &mut Activation<'_, 'gc>) {
         if let Some(conn_handle) = self.0.handle.take() {
             activation.context.local_connections.close(conn_handle);
         }
     }
 
     pub fn send_status(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         this: Object<'gc>,
-        status: &'static str,
+        status: AvmString<'gc>,
     ) -> Result<(), Error<'gc>> {
         let Some(root_clip) = context.stage.root_clip() else {
             tracing::warn!("Ignored LocalConnection callback as there's no root movie");
             return Ok(());
         };
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[LocalConnection onStatus]"),
             root_clip,
         );
-        let constructor = activation.context.avm1.prototypes().object_constructor;
+        let constructor = activation.prototypes().object_constructor;
         let event = constructor
             .construct(&mut activation, &[])?
-            .coerce_to_object(&mut activation);
-        event.set("level", status.into(), &mut activation)?;
+            .coerce_to_object_or_bare(&mut activation)?;
+        event.set(istr!("level"), status.into(), &mut activation)?;
         this.call_method(
-            "onStatus".into(),
+            istr!("onStatus"),
             &[event.into()],
             &mut activation,
             ExecutionReason::Special,
@@ -95,7 +94,7 @@ impl<'gc> LocalConnection<'gc> {
     }
 
     pub fn run_method(
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         this: Object<'gc>,
         method_name: AvmString<'gc>,
         amf_arguments: Vec<AmfValue>,
@@ -105,7 +104,7 @@ impl<'gc> LocalConnection<'gc> {
             return Ok(());
         };
         let mut activation = Activation::from_nothing(
-            context.reborrow(),
+            context,
             ActivationIdentifier::root("[LocalConnection call]"),
             root_clip,
         );
@@ -130,12 +129,39 @@ impl<'gc> LocalConnection<'gc> {
     }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "domain" => method(domain; DONT_DELETE | DONT_ENUM);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "connect" => method(connect; DONT_DELETE | DONT_ENUM);
-    "close" => method(close; DONT_DELETE | DONT_ENUM);
     "send" => method(send; DONT_DELETE | DONT_ENUM);
+    "close" => method(close; DONT_DELETE | DONT_ENUM);
+    "domain" => method(domain; DONT_DELETE | DONT_ENUM);
+    "isPerUser" => property(is_per_user; DONT_DELETE | DONT_ENUM);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(constructor, None, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+fn constructor<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    this.set_native(
+        activation.gc(),
+        NativeObject::LocalConnection(LocalConnection(Gc::new(
+            activation.gc(),
+            LocalConnectionData {
+                handle: RefCell::new(None),
+            },
+        ))),
+    );
+    Ok(this.into())
+}
 
 pub fn domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -145,10 +171,7 @@ pub fn domain<'gc>(
     let movie = activation.base_clip().movie();
     let domain = LocalConnections::get_domain(movie.url());
 
-    Ok(Value::String(AvmString::new_utf8(
-        activation.context.gc_context,
-        domain,
-    )))
+    Ok(Value::String(AvmString::new_utf8(activation.gc(), domain)))
 }
 
 pub fn connect<'gc>(
@@ -207,7 +230,7 @@ pub fn send<'gc>(
     }
 
     activation.context.local_connections.send(
-        &LocalConnections::get_domain(activation.context.swf.url()),
+        &LocalConnections::get_domain(activation.context.root_swf.url()),
         this,
         *connection_name,
         *method_name,
@@ -227,29 +250,11 @@ pub fn close<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn constructor<'gc>(
+pub fn is_per_user<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    this.set_native(
-        activation.gc(),
-        NativeObject::LocalConnection(LocalConnection(Gc::new(
-            activation.gc(),
-            LocalConnectionData {
-                handle: RefCell::new(None),
-            },
-        ))),
-    );
-    Ok(this.into())
-}
-
-pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+    avm1_stub!(activation, "LocalConnection", "isPerUser");
+    Ok(Value::Undefined)
 }

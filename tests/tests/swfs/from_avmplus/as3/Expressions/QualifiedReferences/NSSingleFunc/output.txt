@@ -1,0 +1,3 @@
+f.Baseball::getTeam() PASSED!
+f.Hockey::getTeam() PASSED!
+use namespace Basketball, f.getTeam() PASSED!

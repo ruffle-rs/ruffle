@@ -1,0 +1,35 @@
+[
+  { "type": "FocusGained" },
+
+  { "type": "ImePreedit", "text": "", "cursor": null },
+  { "type": "ImePreedit", "text": "´", "cursor": [2, 2] },
+  { "type": "KeyUp", "key": "Unknown" },
+  { "type": "ImePreedit", "text": "", "cursor": null },
+  { "type": "ImeCommit", "text": "á" },
+  { "type": "ImePreedit", "text": "", "cursor": [0, 0] },
+  { "type": "KeyUp", "key": { "Char": "a" } },
+
+  { "type": "KeyDown", "key": "LeftShift" },
+  { "type": "ImePreedit", "text": "¨", "cursor": [2, 2] },
+  { "type": "KeyUp", "key": "Unknown" },
+  { "type": "KeyUp", "key": "LeftShift" },
+  { "type": "ImePreedit", "text": "", "cursor": null },
+  { "type": "ImeCommit", "text": "ä" },
+  { "type": "ImePreedit", "text": "", "cursor": [0, 0] },
+  { "type": "KeyUp", "key": { "Char": "a" } },
+
+  { "type": "KeyDown", "key": "LeftShift" },
+  { "type": "ImePreedit", "text": "¨", "cursor": [2, 2] },
+  { "type": "KeyUp", "key": "Unknown" },
+  { "type": "KeyUp", "key": "LeftShift" },
+  { "type": "ImePreedit", "text": "", "cursor": null },
+  { "type": "ImeCommit", "text": "¨r" },
+  { "type": "ImePreedit", "text": "", "cursor": [0, 0] },
+  { "type": "KeyUp", "key": { "Char": "r" } },
+
+  { "type": "KeyDown", "key": { "Char": "q" } },
+  { "type": "TextInput", "codepoint": "q" },
+  { "type": "KeyUp", "key": { "Char": "q" } },
+
+  { "type": "FocusLost" }
+]

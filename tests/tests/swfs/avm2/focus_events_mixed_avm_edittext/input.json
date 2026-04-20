@@ -1,0 +1,21 @@
+[
+  { "type": "Wait" },
+  { "type": "Wait" },
+  { "type": "MouseDown", "pos": [300, 30], "btn": "Left" }, { "type": "MouseUp", "pos": [300, 30], "btn": "Left" },
+  { "type": "MouseDown", "pos": [1, 1], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 1], "btn": "Left" },
+  { "type": "MouseDown", "pos": [300, 170], "btn": "Left" }, { "type": "MouseUp", "pos": [300, 170], "btn": "Left" },
+  { "type": "MouseDown", "pos": [100, 300], "btn": "Left" }, { "type": "MouseUp", "pos": [100, 300], "btn": "Left" },
+  { "type": "MouseDown", "pos": [300, 280], "btn": "Left" }, { "type": "MouseUp", "pos": [300, 280], "btn": "Left" },
+  { "type": "MouseDown", "pos": [300, 100], "btn": "Left" }, { "type": "MouseUp", "pos": [300, 100], "btn": "Left" },
+  { "type": "MouseDown", "pos": [300, 30], "btn": "Left" }, { "type": "MouseUp", "pos": [300, 30], "btn": "Left" },
+  { "type": "MouseDown", "pos": [300, 170], "btn": "Left" }, { "type": "MouseUp", "pos": [300, 170], "btn": "Left" },
+  { "type": "MouseDown", "pos": [100, 100], "btn": "Left" }, { "type": "MouseUp", "pos": [100, 100], "btn": "Left" },
+  { "type": "MouseDown", "pos": [100, 100], "btn": "Left" }, { "type": "MouseUp", "pos": [100, 100], "btn": "Left" },
+  { "type": "MouseDown", "pos": [300, 30], "btn": "Left" }, { "type": "MouseUp", "pos": [300, 30], "btn": "Left" },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "MouseDown", "pos": [1, 1], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 1], "btn": "Left" },
+  { "type": "MouseDown", "pos": [300, 170], "btn": "Left" }, { "type": "MouseUp", "pos": [300, 170], "btn": "Left" },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "MouseDown", "pos": [1, 1], "btn": "Left" }, { "type": "MouseUp", "pos": [1, 1], "btn": "Left" }
+]

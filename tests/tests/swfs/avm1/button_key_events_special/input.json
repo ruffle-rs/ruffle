@@ -1,56 +1,56 @@
 [
-  { "type": "KeyDown", "key_code": 37 },
+  { "type": "KeyDown", "key": "ArrowLeft" },
   { "type": "TextControl", "code": "MoveLeft" },
-  { "type": "KeyUp", "key_code": 37 },
+  { "type": "KeyUp", "key": "ArrowLeft" },
 
-  { "type": "KeyDown", "key_code": 39 },
+  { "type": "KeyDown", "key": "ArrowRight" },
   { "type": "TextControl", "code": "MoveRight" },
-  { "type": "KeyUp", "key_code": 39 },
+  { "type": "KeyUp", "key": "ArrowRight" },
 
-  { "type": "KeyDown", "key_code": 36 },
+  { "type": "KeyDown", "key": "Home" },
   { "type": "TextControl", "code": "MoveLeftLine" },
-  { "type": "KeyUp", "key_code": 36 },
+  { "type": "KeyUp", "key": "Home" },
 
-  { "type": "KeyDown", "key_code": 35 },
+  { "type": "KeyDown", "key": "End" },
   { "type": "TextControl", "code": "MoveRightLine" },
-  { "type": "KeyUp", "key_code": 35 },
+  { "type": "KeyUp", "key": "End" },
 
-  { "type": "KeyDown", "key_code": 45 },
-  { "type": "KeyUp", "key_code": 45 },
+  { "type": "KeyDown", "key": "Insert" },
+  { "type": "KeyUp", "key": "Insert" },
 
-  { "type": "KeyDown", "key_code": 46 },
+  { "type": "KeyDown", "key": "Delete" },
   { "type": "TextControl", "code": "Delete" },
-  { "type": "KeyUp", "key_code": 46 },
+  { "type": "KeyUp", "key": "Delete" },
 
-  { "type": "KeyDown", "key_code": 8 },
+  { "type": "KeyDown", "key": "Backspace" },
   { "type": "TextControl", "code": "Backspace" },
-  { "type": "KeyUp", "key_code": 8 },
+  { "type": "KeyUp", "key": "Backspace" },
 
-  { "type": "KeyDown", "key_code": 9 },
+  { "type": "KeyDown", "key": "Tab" },
   { "type": "TextInput", "codepoint": "\t" },
-  { "type": "KeyUp", "key_code": 9 },
+  { "type": "KeyUp", "key": "Tab" },
 
-  { "type": "KeyDown", "key_code": 13 },
+  { "type": "KeyDown", "key": "Enter" },
   { "type": "TextControl", "code": "Enter" },
-  { "type": "KeyUp", "key_code": 13 },
+  { "type": "KeyUp", "key": "Enter" },
 
-  { "type": "KeyDown", "key_code": 38 },
-  { "type": "KeyUp", "key_code": 38 },
+  { "type": "KeyDown", "key": "ArrowUp" },
+  { "type": "KeyUp", "key": "ArrowUp" },
 
-  { "type": "KeyDown", "key_code": 40 },
-  { "type": "KeyUp", "key_code": 40 },
+  { "type": "KeyDown", "key": "ArrowDown" },
+  { "type": "KeyUp", "key": "ArrowDown" },
 
-  { "type": "KeyDown", "key_code": 33 },
-  { "type": "KeyUp", "key_code": 33 },
+  { "type": "KeyDown", "key": "PageUp" },
+  { "type": "KeyUp", "key": "PageUp" },
 
-  { "type": "KeyDown", "key_code": 34 },
-  { "type": "KeyUp", "key_code": 34 },
+  { "type": "KeyDown", "key": "PageDown" },
+  { "type": "KeyUp", "key": "PageDown" },
 
-  { "type": "KeyDown", "key_code": 27 },
+  { "type": "KeyDown", "key": "Escape" },
   { "type": "TextInput", "codepoint": "\u001b" },
-  { "type": "KeyUp", "key_code": 27 },
+  { "type": "KeyUp", "key": "Escape" },
 
-  { "type": "KeyDown", "key_code": 32 },
+  { "type": "KeyDown", "key": "Space" },
   { "type": "TextInput", "codepoint": " " },
-  { "type": "KeyUp", "key_code": 32 }
+  { "type": "KeyUp", "key": "Space" }
 ]

@@ -2,10 +2,8 @@ package flash.globalization {
     import __ruffle__.stub_constructor;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
-    import flash.globalization.LastOperationStatus;
-    import flash.globalization.NationalDigitsType;
-    import flash.globalization.NumberParseResult;
 
+    [API("667")]
     public final class NumberFormatter {
         private var _decimalSeparator = ".";
         private var _digitsType = NationalDigitsType.EUROPEAN;

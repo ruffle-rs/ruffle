@@ -1,0 +1,17 @@
+[
+  { "type": "SetClipboardText", "text": "abc" },
+  { "type": "KeyDown", "key": "LeftControl" },
+  { "type": "TextControl", "code": "Paste" },
+  { "type": "KeyUp", "key": "LeftControl" },
+  { "type": "SetClipboardText", "text": "ayb" },
+  { "type": "KeyDown", "key": "LeftControl" },
+  { "type": "TextControl", "code": "Paste" },
+  { "type": "KeyUp", "key": "LeftControl" },
+  { "type": "KeyDown", "key": { "Char": "x" } },
+  { "type": "TextInput", "codepoint": "x" },
+  { "type": "KeyUp", "key": { "Char": "x" } },
+  { "type": "KeyDown", "key": { "Char": "y" } },
+  { "type": "TextInput", "codepoint": "y" },
+  { "type": "KeyUp", "key": { "Char": "y" } },
+  { "type": "Wait" }
+]

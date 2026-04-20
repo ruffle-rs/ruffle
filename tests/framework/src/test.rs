@@ -1,8 +1,12 @@
+use std::collections::HashMap;
+
 use crate::environment::Environment;
 use crate::options::TestOptions;
+use crate::options::known_failure::KnownFailure;
 use crate::runner::TestRunner;
 use crate::util::read_bytes;
-use anyhow::{anyhow, Result};
+use anyhow::{Result, anyhow};
+use ruffle_core::font::{FontQuery, FontType};
 use ruffle_core::tag_utils::SwfMovie;
 use ruffle_input_format::InputInjector;
 use ruffle_socket_format::SocketEvent;
@@ -66,16 +70,17 @@ impl Test {
 
     pub fn movie(&self) -> Result<SwfMovie> {
         let data = read_bytes(&self.swf_path)?;
-        let movie = SwfMovie::from_data(&data, format!("file:///{}", self.swf_path.as_str()), None)
+        let movie = SwfMovie::from_data(&data, format!("file://{}", self.swf_path.as_str()), None)
             .map_err(|e| anyhow!(e.to_string()))?;
         Ok(movie)
     }
 
     fn socket_events(&self) -> Result<Option<Vec<SocketEvent>>> {
         Ok(if self.socket_path.is_file()? {
-            Some(SocketEvent::from_reader(
-                &read_bytes(&self.socket_path)?[..],
-            )?)
+            Some(
+                SocketEvent::from_reader(&read_bytes(&self.socket_path)?[..])
+                    .map_err(|e| anyhow!("Error reading {}: {e}", self.socket_path.as_str()))?,
+            )
         } else {
             None
         })
@@ -83,35 +88,73 @@ impl Test {
 
     fn input_injector(&self) -> Result<InputInjector> {
         Ok(if self.input_path.is_file()? {
-            InputInjector::from_reader(&read_bytes(&self.input_path)?[..])?
+            InputInjector::from_reader(&read_bytes(&self.input_path)?[..])
+                .map_err(|e| anyhow!("Error reading {}: {e}", self.input_path.as_str()))?
         } else {
             InputInjector::empty()
         })
     }
 
-    pub fn fonts(&self) -> Result<Vec<Font>> {
+    pub fn fonts(&self) -> Result<HashMap<FontQuery, Font>> {
         self.options
             .fonts
             .values()
             .map(|font| {
-                Ok(Font {
-                    bytes: read_bytes(&self.root_path.join(&font.path)?)?.to_vec(),
-                    family: font.family.to_owned(),
-                    bold: font.bold,
-                    italic: font.italic,
-                })
+                Ok((
+                    font.to_font_query(),
+                    Font {
+                        bytes: read_bytes(&self.root_path.join(&font.path)?)?.to_vec(),
+                        family: font.family.to_owned(),
+                        bold: font.bold,
+                        italic: font.italic,
+                    },
+                ))
             })
             .collect()
     }
 
-    pub fn should_run(&self, check_renderer: bool, environment: &impl Environment) -> bool {
+    pub fn font_sorts(&self) -> HashMap<FontQuery, Vec<FontQuery>> {
+        self.options
+            .font_sorts
+            .values()
+            .map(|font_sort| {
+                let query = FontQuery::new(
+                    FontType::Device,
+                    font_sort.family.clone(),
+                    font_sort.bold,
+                    font_sort.italic,
+                );
+                let sort = font_sort
+                    .sort
+                    .iter()
+                    .filter_map(|name| Some(self.options.fonts.get(name)?.to_font_query()))
+                    .collect();
+                (query, sort)
+            })
+            .collect()
+    }
+
+    pub fn should_run(
+        &self,
+        ignore_known_failures: bool,
+        check_renderer: bool,
+        environment: &impl Environment,
+    ) -> bool {
         if self.options.ignore {
             return false;
         }
-        self.options.required_features.can_run()
-            && self
-                .options
-                .player_options
-                .can_run(check_renderer, environment)
+        if ignore_known_failures && self.options.has_known_failure() {
+            return false;
+        }
+
+        // Panicky tests may expect to hit a debug assertion, so don't run them
+        // if assertions are disabled.
+        if !cfg!(debug_assertions)
+            && matches!(self.options.known_failure, KnownFailure::Panic { .. })
+        {
+            return false;
+        }
+
+        self.options.can_run(check_renderer, environment)
     }
 }

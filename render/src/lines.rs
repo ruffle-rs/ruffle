@@ -8,16 +8,16 @@ use swf::{Color, Point, PointDelta, Twips};
 /// the rendering backend's implementation and rasterization rules.
 pub fn emulate_line(handler: &mut impl CommandHandler, color: Color, matrix: Matrix) {
     let a = matrix * Point::new(Twips::ZERO, Twips::ZERO);
-    let b = matrix * Point::new(Twips::ONE, Twips::ZERO);
+    let b = matrix * Point::new(Twips::ONE_PX, Twips::ZERO);
     emulate_line_as_rect(handler, color, a, b);
 }
 
 /// Similar to [`emulate_line`], but emulates drawing a rectangle with lines as its sides.
 pub fn emulate_line_rect(handler: &mut impl CommandHandler, color: Color, matrix: Matrix) {
     let a = matrix * Point::new(Twips::ZERO, Twips::ZERO);
-    let b = matrix * Point::new(Twips::ONE, Twips::ZERO);
-    let c = matrix * Point::new(Twips::ONE, Twips::ONE);
-    let d = matrix * Point::new(Twips::ZERO, Twips::ONE);
+    let b = matrix * Point::new(Twips::ONE_PX, Twips::ZERO);
+    let c = matrix * Point::new(Twips::ONE_PX, Twips::ONE_PX);
+    let d = matrix * Point::new(Twips::ZERO, Twips::ONE_PX);
     emulate_line_as_rect(handler, color, a, b);
     emulate_line_as_rect(handler, color, b, c);
     emulate_line_as_rect(handler, color, c, d);
@@ -41,10 +41,10 @@ fn emulate_line_as_rect(
     let angle = dy.atan2(dx) as f32;
 
     let rotation = Matrix::rotate(angle);
-    let translation = Matrix::translate(a.x + Twips::HALF, a.y + Twips::HALF);
+    let translation = Matrix::translate(a.x + Twips::HALF_PX, a.y + Twips::HALF_PX);
 
     // Step 1: Create a 1px thick line with the proper length.
-    let line = Matrix::create_box(len, 1.0, Twips::ZERO, -Twips::HALF);
+    let line = Matrix::create_box(len, 1.0, Twips::ZERO, -Twips::HALF_PX);
     // Step 2: Rotate it, so it still starts at `(0,0)` but points to `b-a`.
     let line = rotation * line;
     // Step 3: Translate it to `a`, so that it points to `b`.

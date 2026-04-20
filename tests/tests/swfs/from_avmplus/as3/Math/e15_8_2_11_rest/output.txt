@@ -1,0 +1,6 @@
+Math.max(1, 2, 3) PASSED!
+1.0/Math.max(0.0, -1, 0.0) PASSED!
+1.0/Math.max(0.0, -1, -0.0) PASSED!
+1.0/Math.max(-0.0, -1, 0.0) PASSED!
+1.0/Math.max(-0.0, -1, -0.0) PASSED!
+Math.max(4, 3, 4) PASSED!

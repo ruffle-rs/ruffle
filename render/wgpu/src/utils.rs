@@ -96,7 +96,6 @@ pub struct BufferDimensions {
 }
 
 impl BufferDimensions {
-    #[allow(dead_code)]
     pub fn new(width: usize, height: usize, format: TextureFormat) -> Self {
         let bytes_per_pixel = format.block_copy_size(None).unwrap() as usize;
         let unpadded_bytes_per_row = width * bytes_per_pixel;
@@ -141,11 +140,12 @@ pub fn capture_image<R, F: FnOnce(&[u8], u32) -> R>(
     buffer_slice.map_async(wgpu::MapMode::Read, move |result| {
         sender.send(result).unwrap();
     });
-    device.poll(
-        index
-            .map(wgpu::Maintain::WaitForSubmissionIndex)
-            .unwrap_or(wgpu::Maintain::Wait),
-    );
+    device
+        .poll(wgpu::PollType::Wait {
+            submission_index: index,
+            timeout: None,
+        })
+        .expect("Device must not fail to poll");
     let _ = receiver.recv().expect("MPSC channel must not fail");
     let map = buffer_slice.get_mapped_range();
     let result = with_rgba(&map, dimensions.padded_bytes_per_row);
@@ -194,7 +194,7 @@ pub fn supported_sample_count(
     sample_count
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub fn run_copy_pipeline(
     descriptors: &Descriptors,
     format: wgpu::TextureFormat,
@@ -248,6 +248,7 @@ pub fn run_copy_pipeline(
                 store: wgpu::StoreOp::Store,
             },
             resolve_target: None,
+            depth_slice: None,
         })],
         ..Default::default()
     });

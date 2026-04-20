@@ -1,0 +1,12 @@
+Registered class
+frame 1
+frame 3
+PASSED: c  ==  0 [RegisterClassTest3.c:114]
+PASSED: i  ==  0 [RegisterClassTest3.c:115]
+PASSED: _root.mc2 == undefined [RegisterClassTest3.c:116]
+onInitialize
+Object ID 2 is constructed
+frame 5
+PASSED: c  ==  1 [RegisterClassTest3.c:135]
+PASSED: i  ==  1 [RegisterClassTest3.c:136]
+PASSED: typeof(_root.mc2a) == 'movieclip' [RegisterClassTest3.c:137]

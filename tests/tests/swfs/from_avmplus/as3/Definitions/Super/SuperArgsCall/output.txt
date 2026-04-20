@@ -1,0 +1,4 @@
+test super(object).method(args), one self PASSED!
+test super(object).method(args), two self PASSED!
+test super(object).method(args), one other PASSED!
+test super(object).method(args), two other PASSED!

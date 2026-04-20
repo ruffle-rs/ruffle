@@ -1,0 +1,5 @@
+JSON.stringify('mn\u0001op\u0002qr\u0003st') PASSED!
+JSON.parse('"\u000FF "') PASSED!
+JSON.parse('"\u0061F "') PASSED!
+JSON.stringify(deep) PASSED!
+JSON.parse(deep2) PASSED!

@@ -1,0 +1,18 @@
+<languageVersion : 1.0;>
+
+kernel VectorTest4Channel
+<   namespace : "ruffle";
+    vendor : "Ruffle";
+    version : 1;
+    description : "Test shader for 4-channel Vector.<Number> output";
+>
+{
+    parameter float param1 < defaultValue: 1.0; >;
+    parameter float param2 < defaultValue: 2.0; >;
+    output pixel4 dst;
+
+    void evaluatePixel()
+    {
+        dst = pixel4(param1 * 10.5, param2 * 20.5, param1 + param2, 99.25);
+    }
+}

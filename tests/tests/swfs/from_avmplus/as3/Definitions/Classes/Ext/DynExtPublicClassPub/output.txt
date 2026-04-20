@@ -1,0 +1,16 @@
+*** Access public method from default method of sub class *** PASSED!
+DYNEXTDCLASS.testSubArray(arr) PASSED!
+*** Access public method from public method of sub class *** PASSED!
+DYNEXTDCLASS.pubSubSetArray(arr), DYNEXTDCLASS.pubSubGetArray() PASSED!
+*** Access public method from private method of sub class *** PASSED!
+DYNEXTDCLASS.testPrivSubArray(arr) PASSED!
+*** Access public method from final method of sub class *** PASSED!
+DYNEXTDCLASS.testFinSubArray(arr) PASSED!
+*** Access public property from default method in sub class *** PASSED!
+DYNEXTDCLASS.testSubDPArray(arr) PASSED!
+*** Access public property from public method in sub class *** PASSED!
+DYNEXTDCLASS.pubSubSetDPArray(arr), DYNEXTDCLASS.pubSubGetDPArray() PASSED!
+*** Access public property from private method in sub class *** PASSED!
+DYNEXTDCLASS.testPrivSubDPArray(arr) PASSED!
+*** Access public property from final method in sub class *** PASSED!
+DYNEXTDCLASS.testFinSubDPArray(arr) PASSED!

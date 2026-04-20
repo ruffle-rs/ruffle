@@ -1,0 +1,95 @@
+Sun Nov 1 22:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Mon Nov 2 22:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Wed Nov 4 22:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Sat Nov 7 22:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Wed Nov 11 22:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Mon Nov 16 22:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Sun Nov 22 22:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Sun Nov 29 22:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Mon Dec 7 22:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Wed Dec 16 22:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Sat Dec 26 22:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Wed Jan 6 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Jan 18 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Jan 31 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Feb 14 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Mar 1 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Wed Mar 17 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sat Apr 3 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Wed Apr 21 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon May 10 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun May 30 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Jun 20 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Jul 12 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Wed Aug 4 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sat Aug 28 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Wed Sep 22 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Oct 18 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Nov 14 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Dec 12 22:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Jan 10 22:15:00 GMT+0545 2000 new Date(t).getDate() PASSED!
+Wed Feb 9 22:15:00 GMT+0545 2000 new Date(t).getDate() PASSED!
+Sun Nov 1 21:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Mon Nov 2 21:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Wed Nov 4 21:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Sat Nov 7 21:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Wed Nov 11 21:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Mon Nov 16 21:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Sun Nov 22 21:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Sun Nov 29 21:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Mon Dec 7 21:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Wed Dec 16 21:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Sat Dec 26 21:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Wed Jan 6 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Jan 18 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Jan 31 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Feb 14 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Mar 1 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Wed Mar 17 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sat Apr 3 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Wed Apr 21 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon May 10 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun May 30 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Jun 20 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Jul 12 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Wed Aug 4 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sat Aug 28 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Wed Sep 22 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Oct 18 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Nov 14 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Dec 12 21:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Jan 10 21:15:00 GMT+0545 2000 new Date(t).getDate() PASSED!
+Wed Feb 9 21:15:00 GMT+0545 2000 new Date(t).getDate() PASSED!
+Sun Nov 1 23:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Mon Nov 2 23:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Wed Nov 4 23:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Sat Nov 7 23:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Wed Nov 11 23:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Mon Nov 16 23:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Sun Nov 22 23:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Sun Nov 29 23:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Mon Dec 7 23:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Wed Dec 16 23:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Sat Dec 26 23:15:00 GMT+0545 1998 new Date(t).getDate() PASSED!
+Wed Jan 6 23:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Jan 18 23:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Jan 31 23:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Feb 14 23:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Mar 1 23:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Wed Mar 17 23:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sat Apr 3 23:15:00 GMT+0545 1999 new Date(t).getDate() FAILED! expected: 4 got: 3
+Wed Apr 21 23:15:00 GMT+0545 1999 new Date(t).getDate() FAILED! expected: 22 got: 21
+Mon May 10 23:15:00 GMT+0545 1999 new Date(t).getDate() FAILED! expected: 11 got: 10
+Sun May 30 23:15:00 GMT+0545 1999 new Date(t).getDate() FAILED! expected: 31 got: 30
+Sun Jun 20 23:15:00 GMT+0545 1999 new Date(t).getDate() FAILED! expected: 21 got: 20
+Mon Jul 12 23:15:00 GMT+0545 1999 new Date(t).getDate() FAILED! expected: 13 got: 12
+Wed Aug 4 23:15:00 GMT+0545 1999 new Date(t).getDate() FAILED! expected: 5 got: 4
+Sat Aug 28 23:15:00 GMT+0545 1999 new Date(t).getDate() FAILED! expected: 29 got: 28
+Wed Sep 22 23:15:00 GMT+0545 1999 new Date(t).getDate() FAILED! expected: 23 got: 22
+Mon Oct 18 23:15:00 GMT+0545 1999 new Date(t).getDate() FAILED! expected: 19 got: 18
+Sun Nov 14 23:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Sun Dec 12 23:15:00 GMT+0545 1999 new Date(t).getDate() PASSED!
+Mon Jan 10 23:15:00 GMT+0545 2000 new Date(t).getDate() PASSED!
+Wed Feb 9 23:15:00 GMT+0545 2000 new Date(t).getDate() PASSED!
+(new Date(NaN)).getDate() PASSED!
+Date.prototype.getDate.length PASSED!

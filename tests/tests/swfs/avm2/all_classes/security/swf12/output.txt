@@ -1,0 +1,19 @@
+<type name="flash.security::CertificateStatus" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="EXPIRED" type="String"/>
+  <constant name="INVALID" type="String"/>
+  <constant name="INVALID_CHAIN" type="String"/>
+  <constant name="NOT_YET_VALID" type="String"/>
+  <constant name="PRINCIPAL_MISMATCH" type="String"/>
+  <constant name="REVOKED" type="String"/>
+  <constant name="TRUSTED" type="String"/>
+  <constant name="UNKNOWN" type="String"/>
+  <constant name="UNTRUSTED_SIGNERS" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.security::CertificateStatus">
+      <extendsClass type="Object"/>
+  </factory>
+</type>
+X500DistinguishedName not accessible
+X509Certificate not accessible

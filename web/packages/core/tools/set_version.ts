@@ -5,7 +5,7 @@ import path from "path";
 
 let buildDate = new Date().toISOString();
 let versionNumber = process.env["npm_package_version"] ?? "";
-let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "nightly";
+let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "local";
 const firefoxExtensionId =
     process.env["FIREFOX_EXTENSION_ID"] || "ruffle@ruffle.rs";
 
@@ -17,10 +17,12 @@ try {
     console.log("Couldn't fetch latest git commit...");
 }
 
-let versionName =
-    versionChannel === "nightly"
-        ? `nightly ${buildDate.substr(0, 10)}`
-        : versionNumber;
+let versionName;
+if (versionChannel === "stable" || versionNumber?.includes(versionChannel)) {
+    versionName = versionNumber;
+} else {
+    versionName = `${versionChannel} ${versionNumber}`;
+}
 
 interface VersionInformation {
     version_number: string;
@@ -28,7 +30,7 @@ interface VersionInformation {
     version_channel: string;
     build_date: string;
     commitHash: string;
-    build_id: string;
+    version4: string;
     firefox_extension_id: string;
 }
 
@@ -56,13 +58,18 @@ if (process.env["ENABLE_VERSION_SEAL"] === "true") {
             version_channel: versionChannel,
             build_date: buildDate,
             commitHash: commitHash,
-            build_id: process.env["BUILD_ID"] ?? "",
+            version4: process.env["VERSION4"] ?? "",
             firefox_extension_id: firefoxExtensionId,
         };
 
         fs.writeFileSync(sealFile, JSON.stringify(versionSeal));
     }
 }
+
+const fallbackWasmName =
+    process.env["BUILD_WASM_MVP"] === "true"
+        ? "ruffle_web-wasm_mvp"
+        : "ruffle_web";
 
 const options = {
     files: "dist/**",
@@ -72,8 +79,16 @@ const options = {
         /%VERSION_CHANNEL%/g,
         /%BUILD_DATE%/g,
         /%COMMIT_HASH%/g,
+        /%FALLBACK_WASM%/g,
     ],
-    to: [versionNumber, versionName, versionChannel, buildDate, commitHash],
+    to: [
+        versionNumber,
+        versionName,
+        versionChannel,
+        buildDate,
+        commitHash,
+        fallbackWasmName,
+    ],
 };
 
 replaceInFileSync(options);

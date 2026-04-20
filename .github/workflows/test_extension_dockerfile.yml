@@ -11,25 +11,26 @@ on:
 jobs:
   test-dockerfile:
     name: Test the Dockerfile
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
           targets: wasm32-unknown-unknown
+          components: rust-src
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: "20"
+          node-version: "24"
           registry-url: https://registry.npmjs.org
 
       - name: Install wasm-bindgen
-        run: cargo install wasm-bindgen-cli --version 0.2.92
+        run: cargo install wasm-bindgen-cli --version 0.2.108
 
       # Keep the version number in sync in all workflows,
       # and in the extension builder Dockerfile!
@@ -37,7 +38,7 @@ jobs:
         uses: sigoden/install-binary@v1
         with:
           repo: WebAssembly/binaryen
-          tag: version_118
+          tag: version_126
           name: wasm-opt
 
       - name: Install fclones
@@ -61,7 +62,7 @@ jobs:
         env:
           CARGO_FEATURES: jpegxr
           WASM_SOURCE: cargo_and_store
-        run: npm run build:repro
+        run: npm run build:dual-wasm-repro
 
       - name: Build Docker image with Ruffle in it
         run: docker build --tag ruffle-web-docker -f web/docker/Dockerfile .
@@ -87,7 +88,7 @@ jobs:
         run: test ! -s result.txt
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: ${{ always() }}
         with:
           name: result

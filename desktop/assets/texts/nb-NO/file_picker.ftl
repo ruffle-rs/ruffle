@@ -1,0 +1,10 @@
+file-picker-title-open-file = Åpne en enkelt fil
+file-picker-title-open-directory = Åpne en mappe
+file-picker-filter-supported = Alle støttede filtyper
+file-picker-filter-swf = SWF (*.swf)
+file-picker-filter-spl = FutureSplash Animator (*.spl)
+file-picker-filter-ruf = Ruffle pakke (*.ruf)
+file-picker-filter-all = Alle filer
+file-picker-select-root-movie-title = Velg kilde flash film
+file-picker-select-root-movie-message = Velg kilde flash film fra den åpne mappen.
+file-picker-select-root-movie-select = Velg

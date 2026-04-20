@@ -1,0 +1,11 @@
+keyDown 87 119
+textInput w
+keyUp 87 119
+keyDown 87 119
+textInput w
+keyDown 16 0
+keyUp 87 87
+keyUp 16 0
+keyDown 66 98
+textInput b
+keyUp 66 98

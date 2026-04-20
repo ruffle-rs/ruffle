@@ -24,28 +24,13 @@ use std::mem::swap;
 /// The internal structure of the `PropertyMap` technically allows storage of
 /// multiple values per `QName`. It's implementation enforces the invariant
 /// that each `QName` only have one associated `V`.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Collect)]
+#[collect(no_drop)]
 pub struct PropertyMap<'gc, V>(
     HashMap<AvmString<'gc>, SmallVec<[(Namespace<'gc>, V); 2]>, FnvBuildHasher>,
 );
 
-unsafe impl<'gc, V> Collect for PropertyMap<'gc, V>
-where
-    V: Collect,
-{
-    #[inline]
-    fn trace(&self, cc: &gc_arena::Collection) {
-        for (key, value) in self.0.iter() {
-            key.trace(cc);
-            for (ns, v) in value.iter() {
-                ns.trace(cc);
-                v.trace(cc);
-            }
-        }
-    }
-}
-
-impl<'gc, V> Default for PropertyMap<'gc, V> {
+impl<V> Default for PropertyMap<'_, V> {
     fn default() -> Self {
         Self::new()
     }
@@ -159,7 +144,6 @@ impl<'gc, V> PropertyMap<'gc, V> {
         }
     }
 
-    #[allow(dead_code)]
     pub fn remove(&mut self, name: QName<'gc>) -> Option<V> {
         let bucket = self.0.get_mut(&name.local_name());
 

@@ -1,0 +1,20 @@
+base line PASSED!
+base line PASSED!
+auto small PASSED!
+auto large PASSED!
+length direct 1K PASSED!
+length indirect 1K PASSED!
+length direct wrap PASSED!
+length indirect wrap PASSED!
+pub pop arrays PASSED!
+AS3 pop arrays PASSED!
+pub pop alikes PASSED!
+pub push arrays PASSED!
+AS3 push arrays PASSED!
+pub push alikes PASSED!
+pub shift arrays PASSED!
+AS3 shift arrays PASSED!
+pub shift alikes PASSED!
+pub unshift arrays PASSED!
+AS3 unshift arrays PASSED!
+unshift alikes PASSED!

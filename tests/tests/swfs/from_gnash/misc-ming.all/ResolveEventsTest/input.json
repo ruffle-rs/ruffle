@@ -1,0 +1,128 @@
+[
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [
+      155.0,
+      155.0
+    ]
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      155.0,
+      155.0
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      155.0,
+      155.0
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [
+      65.0,
+      140.0
+    ]
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      65.0,
+      140.0
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      65.0,
+      140.0
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseMove",
+    "pos": [
+      100.0,
+      140.0
+    ]
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseDown",
+    "pos": [
+      100.0,
+      140.0
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "Wait"
+  },
+  {
+    "type": "MouseUp",
+    "pos": [
+      100.0,
+      140.0
+    ],
+    "btn": "Left"
+  },
+  {
+    "type": "Wait"
+  }
+]

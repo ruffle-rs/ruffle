@@ -1,8 +1,9 @@
 use crate::backend::WgpuRenderBackend;
 use crate::target::RenderTarget;
 use crate::{
-    as_texture, Descriptors, GradientUniforms, PosColorVertex, PosVertex, TextureTransforms,
+    Descriptors, GradientUniforms, PosColorVertex, PosVertex, TextureTransforms, as_texture,
 };
+use std::any::Any;
 use std::ops::Range;
 use wgpu::util::DeviceExt;
 
@@ -25,7 +26,7 @@ pub struct Mesh {
 impl ShapeHandleImpl for Mesh {}
 
 pub fn as_mesh(handle: &ShapeHandle) -> &Mesh {
-    <dyn ShapeHandleImpl>::downcast_ref(&*handle.0).expect("Shape handle must be a WGPU ShapeData")
+    <dyn Any>::downcast_ref(&*handle.0).expect("Shape handle must be a WGPU ShapeData")
 }
 
 #[derive(Debug)]
@@ -66,7 +67,7 @@ pub struct Draw {
 }
 
 impl PendingDraw {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new<T: RenderTarget>(
         backend: &mut WgpuRenderBackend<T>,
         source: &dyn BitmapSource,
@@ -117,7 +118,6 @@ impl PendingDraw {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub enum PendingDrawType {
     Color,
@@ -274,7 +274,6 @@ impl PendingDrawType {
     }
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 pub enum DrawType {
     Color,
@@ -298,6 +297,8 @@ impl CommonGradient {
             [0; GRADIENT_SIZE * 4]
         } else {
             let mut colors = [0; GRADIENT_SIZE * 4];
+            let mut last = 0;
+            let mut next;
 
             let convert = if gradient.interpolation == GradientInterpolation::LinearRgb {
                 |c| srgb_to_linear(c / 255.0) * 255.0
@@ -306,28 +307,32 @@ impl CommonGradient {
             };
 
             for t in 0..GRADIENT_SIZE {
-                let mut last = 0;
-                let mut next = 0;
-
-                for (i, record) in gradient.records.iter().enumerate().rev() {
-                    if (record.ratio as usize) < t {
-                        last = i;
-                        next = (i + 1).min(gradient.records.len() - 1);
-                        break;
-                    }
+                if last + 1 < gradient.records.len()
+                    && t > gradient.records[last + 1].ratio as usize
+                {
+                    last += 1;
                 }
+                next = (last + 1).min(gradient.records.len() - 1);
+
                 assert!(last == next || last + 1 == next);
 
                 let last_record = &gradient.records[last];
                 let next_record = &gradient.records[next];
 
-                let a = if next == last {
-                    // this can happen if we are before the first gradient record, or after the last one
+                let a = if t <= last_record.ratio as usize || last_record.ratio == next_record.ratio
+                {
+                    // We are before the first gradient record,
+                    // or this record's ratio is equal to the next one,
+                    // meaning we need to do a full stop of this color for 1 pixel.
                     0.0
+                } else if t > next_record.ratio as usize {
+                    // We are after the last record
+                    1.0
                 } else {
                     (t as f32 - last_record.ratio as f32)
                         / (next_record.ratio as f32 - last_record.ratio as f32)
                 };
+
                 colors[t * 4] = lerp(
                     convert(last_record.color.r as f32),
                     convert(next_record.color.r as f32),

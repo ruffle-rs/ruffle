@@ -1,0 +1,99 @@
+=== Testing shader parameter values actually received by shader ===
+
+=== Test 1: Normal - shader.data.amount.value = [0.4] ===
+Stored value: [object ShaderParameter]
+Stored type: object
+Output pixel RGB: 102, 102, 102
+Shader received (approx): 0.4000
+
+=== Test 2: Array on data - shader.data.amount = [0.75] ===
+Stored value: 0.75
+Stored type: object
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 3: Primitive number - shader.data.amount = 0.299 ===
+Stored value: 0.299
+Stored type: number
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 4: Integer - shader.data.amount = 1 ===
+Stored value: 1
+Stored type: number
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 5: Zero - shader.data.amount = 0 ===
+Stored value: 0
+Stored type: number
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 6: Negative - shader.data.amount = -0.5 ===
+Stored value: -0.5
+Stored type: number
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 7: Boolean true - shader.data.amount = true ===
+Stored value: true
+Stored type: boolean
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 8: Boolean false - shader.data.amount = false ===
+Stored value: false
+Stored type: boolean
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 9: String '0.123' - shader.data.amount = '0.123' ===
+Stored value: 0.123
+Stored type: string
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 10: String 'hello' - shader.data.amount = 'hello' ===
+Stored value: hello
+Stored type: string
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 11: null - shader.data.amount = null ===
+Stored value: null
+Stored type: object
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 12: undefined - shader.data.amount = undefined ===
+Stored value: undefined
+Stored type: undefined
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 13: NaN - shader.data.amount = NaN ===
+Stored value: NaN
+Stored type: number
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 14: Infinity - shader.data.amount = Infinity ===
+Stored value: Infinity
+Stored type: number
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 15: Empty array - shader.data.amount = [] ===
+Stored value: 
+Stored type: object
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Test 16: Object - shader.data.amount = {valueOf: 0.777} ===
+Stored value: [object Object]
+Stored type: object
+Output pixel RGB: 51, 51, 51
+Shader received (approx): 0.2000
+
+=== Done ===

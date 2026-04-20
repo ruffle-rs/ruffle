@@ -1,0 +1,9 @@
+target before dispatch 1: null
+currentTarget before dispatch 1: null
+target after dispatch 1: null
+currentTarget after dispatch 1: null
+target before dispatch 2: null
+currentTarget before dispatch 2: null
+Dispatched!
+target after dispatch 2: [object EventDispatcher]
+currentTarget after dispatch 2: [object EventDispatcher]

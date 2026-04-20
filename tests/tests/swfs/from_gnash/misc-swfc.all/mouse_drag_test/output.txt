@@ -1,0 +1,12 @@
+PASSED: typeof(mc1.shape1) == movieclip  [mouse_drag_test.sc:45]
+PASSED: mc1.shape1 == _level0.mc1  [mouse_drag_test.sc:47]
+PASSED: mc1._x == 0  [mouse_drag_test.sc:49]
+PASSED: mc1._y == 0  [mouse_drag_test.sc:50]
+PASSED:  [mouse_drag_test.sc:57]
+PASSED:  [mouse_drag_test.sc:58]
+PASSED:  [mouse_drag_test.sc:66]
+PASSED:  [mouse_drag_test.sc:67]
+Total tests run: 8 typeof expected: number
+#passed: 8
+#failed: 0
+__END_OF_TEST__

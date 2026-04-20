@@ -1,0 +1,190 @@
+Testing value '1,2,3' (length 3)
+Default value
+  data: 0,600,0,400
+After setting
+  data: 1,2,3
+After started
+  data: 1,2,3
+=================
+Testing value '1,2,3,4,5,6' (length 6)
+Default value
+  data: 0,600,0,400
+After setting
+  data: 1,2,3,4,5,6
+After started
+  data: 1,2,3,4,5,6
+=================
+Testing value '' (length 0)
+Default value
+  data: 0,600,0,400
+After setting
+  data: 
+After started
+  data: 
+=================
+Testing value 'test' (length 1)
+Default value
+  data: 0,600,0,400
+After setting
+  data: test
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: test
+=================
+Testing value '' (length 1)
+Default value
+  data: 0,600,0,400
+After setting
+  data: 
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: 
+=================
+Testing value '' (length 1)
+Default value
+  data: 0,600,0,400
+After setting
+  data: 
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: 
+=================
+Testing value '[object Object]' (length 1)
+Default value
+  data: 0,600,0,400
+After setting
+  data: [object Object]
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: [object Object]
+=================
+Testing value 'true' (length 1)
+Default value
+  data: 0,600,0,400
+After setting
+  data: true
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: true
+=================
+Testing value 'false' (length 1)
+Default value
+  data: 0,600,0,400
+After setting
+  data: false
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: false
+=================
+Testing value '1' (length 1)
+Default value
+  data: 0,600,0,400
+After setting
+  data: 1
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: 1
+=================
+Testing value '1,2,3,4,test' (length 5)
+Default value
+  data: 0,600,0,400
+After setting
+  data: 1,2,3,4,test
+After started
+  data: 1,2,3,4,test
+=================
+Testing int value '' (length 0)
+Default value
+  data: 0
+After setting
+  data: 
+After started
+  data: 
+=================
+Testing int value '1,2' (length 2)
+Default value
+  data: 0
+After setting
+  data: 1,2
+After started
+  data: 1,2
+=================
+Testing int value 'test' (length 1)
+Default value
+  data: 0
+After setting
+  data: test
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: test
+=================
+Testing int value '' (length 1)
+Default value
+  data: 0
+After setting
+  data: 
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: 
+=================
+Testing int value '' (length 1)
+Default value
+  data: 0
+After setting
+  data: 
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: 
+=================
+Testing int value '[object Object]' (length 1)
+Default value
+  data: 0
+After setting
+  data: [object Object]
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: [object Object]
+=================
+Testing int value 'true' (length 1)
+Default value
+  data: 0
+After setting
+  data: true
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: true
+=================
+Testing int value 'false' (length 1)
+Default value
+  data: 0
+After setting
+  data: false
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: false
+=================
+Testing int value '1.65' (length 1)
+Default value
+  data: 0
+After setting
+  data: 1.65
+After started
+  data: 1.65
+=================
+Testing int value '1' (length 1)
+Default value
+  data: 0
+After setting
+  data: 1
+Error while starting: ArgumentError: Error #2004: One of the parameters is invalid.
+After started
+  data: 1
+=================
+Testing int value '1,test' (length 2)
+Default value
+  data: 0
+After setting
+  data: 1,test
+After started
+  data: 1,test
+=================

@@ -1,0 +1,21 @@
+<languageVersion : 1.0;>
+
+kernel PassthroughParam
+<   namespace : "Ruffle Tests";
+    vendor : "Ruffle";
+    version : 1;
+>
+{
+    output pixel4 dst;
+
+    parameter float amount
+    <
+        defaultValue: 0.2;
+    >;
+
+    void evaluatePixel()
+    {
+        // Output the parameter value as RGB, alpha = 1
+        dst = pixel4(amount, amount, amount, 1.0);
+    }
+}

@@ -1,0 +1,32 @@
+Main constructor
+Container constructor
+Child constructor
+GrandChild constructor
+LeafChild constructor
+Main addFrameScript
+Main frame1
+Child addFrameScript
+Container addFrameScript
+LeafChild addFrameScript
+GrandChild addFrameScript
+Child frame1
+Container frame1
+Child another addFrameScript
+LeafChild frame1
+GrandChild frame1
+Child frame extra
+Main frame2
+Container frame2
+Child frame2
+GrandChild frame2
+LeafChild frame2
+Container frame1
+Child frame extra
+GrandChild frame1
+LeafChild frame1
+Main frame1
+Container frame2
+Child frame2
+GrandChild frame2
+LeafChild frame2
+Main frame2

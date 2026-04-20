@@ -1,0 +1,9 @@
+FAILED: expected: 1 obtained: 0 [runtime_vm_stack_test.c:103] 
+FAILED: expected: 2 obtained: 0 [runtime_vm_stack_test.c:104] 
+FAILED: expected: 3 obtained: 0 [runtime_vm_stack_test.c:105] 
+FAILED: expected: 1 obtained: 0 [runtime_vm_stack_test.c:123] 
+FAILED: expected: 2 obtained: 0 [runtime_vm_stack_test.c:124] 
+FAILED: expected: 3 obtained: 0 [runtime_vm_stack_test.c:125] 
+#passed: 0
+#failed: 6
+#total tests run: 6

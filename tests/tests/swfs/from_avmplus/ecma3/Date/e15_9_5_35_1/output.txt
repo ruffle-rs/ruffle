@@ -1,0 +1,54 @@
+DateString+.getTime() PASSED!
+DateString+.valueOf() PASSED!
+DateString+.getUTCFullYear() PASSED!
+DateString+.getUTCMonth() PASSED!
+DateString+.getUTCDate() PASSED!
+DateString+.getUTCDay() PASSED!
+DateString+.getUTCHours() PASSED!
+DateString+.getUTCMinutes() PASSED!
+DateString+.getUTCSeconds() PASSED!
+DateString+.getUTCMilliseconds() PASSED!
+DateString+.getFullYear() PASSED!
+DateString+.getMonth() PASSED!
+Wed Dec 31 16:00:00 GMT-0800 1969.getDate() PASSED!
+Wed Dec 31 16:00:00 GMT-0800 1969.getDay() PASSED!
+Wed Dec 31 16:00:00 GMT-0800 1969.getHours() PASSED!
+DateString+.getMinutes() PASSED!
+DateString+.getSeconds() PASSED!
+DateString+.getMilliseconds() PASSED!
+DateString+.getTime() PASSED!
+DateString+.valueOf() PASSED!
+DateString+.getUTCFullYear() PASSED!
+DateString+.getUTCMonth() PASSED!
+DateString+.getUTCDate() PASSED!
+DateString+.getUTCDay() PASSED!
+DateString+.getUTCHours() PASSED!
+DateString+.getUTCMinutes() PASSED!
+DateString+.getUTCSeconds() PASSED!
+DateString+.getUTCMilliseconds() PASSED!
+DateString+.getFullYear() PASSED!
+DateString+.getMonth() PASSED!
+Mon Nov 30 16:00:00 GMT-0800 1970.getDate() PASSED!
+Mon Nov 30 16:00:00 GMT-0800 1970.getDay() PASSED!
+Mon Nov 30 16:00:00 GMT-0800 1970.getHours() PASSED!
+DateString+.getMinutes() PASSED!
+DateString+.getSeconds() PASSED!
+DateString+.getMilliseconds() PASSED!
+DateString+.getTime() PASSED!
+DateString+.valueOf() PASSED!
+DateString+.getUTCFullYear() PASSED!
+DateString+.getUTCMonth() PASSED!
+DateString+.getUTCDate() PASSED!
+DateString+.getUTCDay() PASSED!
+DateString+.getUTCHours() PASSED!
+DateString+.getUTCMinutes() PASSED!
+DateString+.getUTCSeconds() PASSED!
+DateString+.getUTCMilliseconds() PASSED!
+DateString+.getFullYear() PASSED!
+DateString+.getMonth() PASSED!
+Fri Apr 3 17:00:00 GMT-0700 1970.getDate() PASSED!
+Fri Apr 3 17:00:00 GMT-0700 1970.getDay() PASSED!
+Fri Apr 3 17:00:00 GMT-0700 1970.getHours() PASSED!
+DateString+.getMinutes() PASSED!
+DateString+.getSeconds() PASSED!
+DateString+.getMilliseconds() PASSED!

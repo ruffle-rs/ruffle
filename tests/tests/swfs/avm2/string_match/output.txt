@@ -39,3 +39,13 @@ AA
 A
 // trace(str.match(ruffle_object));
 null
+// var regexTest:String = "v1";
+// var regex: RegExp = /^\b[A-Za-z]{1,2}/ig;
+// trace(regexTest.match(regex));
+v
+// trace(regex.lastIndex);
+1
+// trace(regexTest.match(regex));
+v
+// trace(regex.lastIndex);
+0

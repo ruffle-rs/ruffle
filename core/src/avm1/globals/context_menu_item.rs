@@ -1,17 +1,24 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::object::TObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::Object;
-use crate::avm1::{ScriptObject, Value};
-use crate::context::GcContext;
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{Object, Value};
 use crate::string::AvmString;
+use ruffle_macros::istr;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "copy" => method(copy; DONT_ENUM | DONT_DELETE);
 };
 
-pub fn constructor<'gc>(
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
@@ -20,7 +27,7 @@ pub fn constructor<'gc>(
         .get(0)
         .unwrap_or(&Value::Undefined)
         .coerce_to_string(activation)?;
-    let callback = args.get(1).map(|v| v.coerce_to_object(activation));
+    let callback = args.get(1).copied();
     let separator_before = args
         .get(2)
         .unwrap_or(&false.into())
@@ -34,17 +41,21 @@ pub fn constructor<'gc>(
         .unwrap_or(&true.into())
         .as_bool(activation.swf_version());
 
-    this.set("caption", caption.into(), activation)?;
+    this.set(istr!("caption"), caption.into(), activation)?;
 
     if let Some(callback) = callback {
-        this.set("onSelect", callback.into(), activation)?;
+        this.set(istr!("onSelect"), callback, activation)?;
     }
 
-    this.set("separatorBefore", separator_before.into(), activation)?;
-    this.set("enabled", enabled.into(), activation)?;
-    this.set("visible", visible.into(), activation)?;
+    this.set(
+        istr!("separatorBefore"),
+        separator_before.into(),
+        activation,
+    )?;
+    this.set(istr!("enabled"), enabled.into(), activation)?;
+    this.set(istr!("visible"), visible.into(), activation)?;
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 pub fn copy<'gc>(
@@ -53,32 +64,28 @@ pub fn copy<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let caption = this
-        .get("caption", activation)?
+        .get(istr!("caption"), activation)?
         .coerce_to_string(activation)?
         .to_string();
     let callback = this
-        .get("onSelect", activation)?
-        .coerce_to_object(activation);
+        .get(istr!("onSelect"), activation)?
+        .coerce_to_object_or_bare(activation)?;
 
     let enabled = this
-        .get("enabled", activation)?
+        .get(istr!("enabled"), activation)?
         .as_bool(activation.swf_version());
     let separator_before = this
-        .get("separator_before", activation)?
+        .get(istr!("separatorBefore"), activation)?
         .as_bool(activation.swf_version());
     let visible = this
-        .get("visible", activation)?
+        .get(istr!("visible"), activation)?
         .as_bool(activation.swf_version());
 
-    let constructor = activation
-        .context
-        .avm1
-        .prototypes()
-        .context_menu_item_constructor;
+    let constructor = activation.prototypes().context_menu_item_constructor;
     let copy = constructor.construct(
         activation,
         &[
-            AvmString::new_utf8(activation.context.gc_context, caption).into(),
+            AvmString::new_utf8(activation.gc(), caption).into(),
             callback.into(),
             separator_before.into(),
             enabled.into(),
@@ -87,14 +94,4 @@ pub fn copy<'gc>(
     )?;
 
     Ok(copy)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
 }

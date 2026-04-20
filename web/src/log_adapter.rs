@@ -20,4 +20,8 @@ impl LogBackend for WebLogBackend {
             let _ = function.call1(function, &JsValue::from_str(message));
         }
     }
+
+    fn avm_warning(&self, message: &str) {
+        tracing::info!(target: "avm_warning", "{}", message);
+    }
 }

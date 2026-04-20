@@ -1,0 +1,21 @@
+_level0.static1 onClipConstruct (place)
+_root.depth3Constructed set to 1
+PASSED: typeof(static1)  ==  'movieclip' [replace_sprites1test.c:159]
+PASSED: static1.name  ==  'static1' [replace_sprites1test.c:162]
+PASSED: static1._target  ==  '/static1' [replace_sprites1test.c:164]
+PASSED: typeof(static1)  ==  'movieclip' [replace_sprites1test.c:197]
+PASSED: static1.name  ==  'static1' [replace_sprites1test.c:198]
+PASSED: static1._target  ==  '/static1' [replace_sprites1test.c:199]
+PASSED: static1._x  ==  130 [replace_sprites1test.c:200]
+PASSED: typeof(static2)  ==  'undefined' [replace_sprites1test.c:203]
+PASSED: static1._x  ==  130 [replace_sprites1test.c:209]
+PASSED: 1 == 1
+PASSED: movieclip == movieclip
+PASSED: static1 == static1
+PASSED: 100 == 100
+#passed: 13
+#failed: 0
+#total tests run: 13
+PASSED: typeof(static1)  ==  'movieclip' [replace_sprites1test.c:159]
+PASSED: static1.name  ==  'static1' [replace_sprites1test.c:162]
+PASSED: static1._target  ==  '/static1' [replace_sprites1test.c:164]

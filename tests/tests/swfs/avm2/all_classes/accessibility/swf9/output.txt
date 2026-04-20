@@ -1,0 +1,73 @@
+<type name="flash.accessibility::Accessibility" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="active" access="readonly" type="Boolean" declaredBy="flash.accessibility::Accessibility"/>
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.accessibility::Accessibility">
+      <extendsClass type="Object"/>
+  </factory>
+  <method name="sendEvent" declaredBy="flash.accessibility::Accessibility" returnType="void">
+      <parameter index="1" type="flash.display::DisplayObject" optional="false"/>
+      <parameter index="2" type="uint" optional="false"/>
+      <parameter index="3" type="uint" optional="false"/>
+      <parameter index="4" type="Boolean" optional="true"/>
+  </method>
+  <method name="updateProperties" declaredBy="flash.accessibility::Accessibility" returnType="void"/>
+</type>
+<type name="flash.accessibility::AccessibilityImplementation" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.accessibility::AccessibilityImplementation">
+      <extendsClass type="Object"/>
+      <method name="accDoDefaultAction" declaredBy="flash.accessibility::AccessibilityImplementation" returnType="void">
+          <parameter index="1" type="uint" optional="false"/>
+    </method>
+      <method name="accLocation" declaredBy="flash.accessibility::AccessibilityImplementation" returnType="*">
+          <parameter index="1" type="uint" optional="false"/>
+    </method>
+      <method name="accSelect" declaredBy="flash.accessibility::AccessibilityImplementation" returnType="void">
+          <parameter index="1" type="uint" optional="false"/>
+          <parameter index="2" type="uint" optional="false"/>
+    </method>
+      <method name="getChildIDArray" declaredBy="flash.accessibility::AccessibilityImplementation" returnType="Array"/>
+      <method name="get_accDefaultAction" declaredBy="flash.accessibility::AccessibilityImplementation" returnType="String">
+          <parameter index="1" type="uint" optional="false"/>
+    </method>
+      <method name="get_accFocus" declaredBy="flash.accessibility::AccessibilityImplementation" returnType="uint"/>
+      <method name="get_accName" declaredBy="flash.accessibility::AccessibilityImplementation" returnType="String">
+          <parameter index="1" type="uint" optional="false"/>
+    </method>
+      <method name="get_accRole" declaredBy="flash.accessibility::AccessibilityImplementation" returnType="uint">
+          <parameter index="1" type="uint" optional="false"/>
+    </method>
+      <method name="get_accSelection" declaredBy="flash.accessibility::AccessibilityImplementation" returnType="Array"/>
+      <method name="get_accState" declaredBy="flash.accessibility::AccessibilityImplementation" returnType="uint">
+          <parameter index="1" type="uint" optional="false"/>
+    </method>
+      <method name="get_accValue" declaredBy="flash.accessibility::AccessibilityImplementation" returnType="String">
+          <parameter index="1" type="uint" optional="false"/>
+    </method>
+      <method name="isLabeledBy" declaredBy="flash.accessibility::AccessibilityImplementation" returnType="Boolean">
+          <parameter index="1" type="flash.geom::Rectangle" optional="false"/>
+    </method>
+      <variable name="errno" type="uint"/>
+      <variable name="stub" type="Boolean"/>
+  </factory>
+</type>
+<type name="flash.accessibility::AccessibilityProperties" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.accessibility::AccessibilityProperties">
+      <extendsClass type="Object"/>
+      <variable name="description" type="String"/>
+      <variable name="forceSimple" type="Boolean"/>
+      <variable name="name" type="String"/>
+      <variable name="noAutoLabeling" type="Boolean"/>
+      <variable name="shortcut" type="String"/>
+      <variable name="silent" type="Boolean"/>
+  </factory>
+</type>
+ISearchableText not accessibile
+ISimpleTextSelection not accessibile

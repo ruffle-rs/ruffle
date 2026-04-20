@@ -1,5 +1,6 @@
 ﻿package {
-	public class test {}
+	import flash.display.MovieClip;
+	public class test extends MovieClip {}
 }
 
 var ruffle_object = {s: "Ruffle Test Object"};
@@ -60,3 +61,17 @@ trace(subject.match("A"));
 
 trace("// trace(str.match(ruffle_object));");
 trace(str.match(ruffle_object));
+
+trace("// var regexTest:String = \"v1\";");
+var regexTest: String = "v1";
+trace("// var regex: RegExp = /^\\b[A-Za-z]{1,2}/ig;");
+var regex = /^\b[A-Za-z]{1,2}/ig;
+
+trace("// trace(regexTest.match(regex));");
+trace(regexTest.match(regex));
+trace("// trace(regex.lastIndex);");
+trace(regex.lastIndex);
+trace("// trace(regexTest.match(regex));");
+trace(regexTest.match(regex));
+trace("// trace(regex.lastIndex);");
+trace(regex.lastIndex);

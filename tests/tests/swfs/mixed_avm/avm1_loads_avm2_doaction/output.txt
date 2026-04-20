@@ -1,0 +1,2 @@
+Hello from outer SWF
+Outer SWF: Called loadMovie

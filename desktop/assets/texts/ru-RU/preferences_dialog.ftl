@@ -17,5 +17,19 @@ log-filename-pattern-with-timestamp = С временной меткой
 storage-backend = Место сохранения файла
 storage-backend-disk = Диск
 storage-backend-memory = Память
-recent-limit = Недавний лимит
+recent-limit = Лимит недавних
 recent-clear = Очистить
+theme = Тема
+theme-system = Как в системе
+theme-light = Светлая
+theme-dark = Тёмная
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
+gamemode-tooltip = GameMode временно добавляет набор оптимизации в твоем компьютере и/или в Ruffle. Ruffle запрашивает GameMode только когда ролик играет.
+gamemode-default = По умолчанию
+gamemode-default-tooltip = GameMode будет включён только при выборе высокой производительности в настройках питания.
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = Метод ввода
+ime-enabled-experimental = (экспериментальный)
+ime-enabled-tooltip = Метод ввода позволяет вводить символы, которые не доступны на клавиатуре, например, китайские, японские или корейские иероглифы.
+ime-enabled-default = По умолчанию

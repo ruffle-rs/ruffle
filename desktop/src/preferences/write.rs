@@ -1,16 +1,25 @@
+use crate::cli::{GameModePreference, OpenUrlMode};
+use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
 use crate::preferences::storage::StorageBackend;
-use crate::preferences::SavedGlobalPreferences;
+use crate::preferences::{GlobalPreferencesWatchers, SavedGlobalPreferences};
 use ruffle_frontend_utils::parse::DocumentHolder;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use toml_edit::value;
 use unic_langid::LanguageIdentifier;
 
-pub struct PreferencesWriter<'a>(&'a mut DocumentHolder<SavedGlobalPreferences>);
+pub struct PreferencesWriter<'a>(
+    &'a mut DocumentHolder<SavedGlobalPreferences>,
+    Option<&'a GlobalPreferencesWatchers>,
+);
 
 impl<'a> PreferencesWriter<'a> {
     pub(super) fn new(preferences: &'a mut DocumentHolder<SavedGlobalPreferences>) -> Self {
-        Self(preferences)
+        Self(preferences, None)
+    }
+
+    pub(super) fn set_watchers(&mut self, watchers: &'a GlobalPreferencesWatchers) {
+        self.1 = Some(watchers);
     }
 
     pub fn set_graphics_backend(&mut self, backend: GraphicsBackend) {
@@ -85,6 +94,53 @@ impl<'a> PreferencesWriter<'a> {
             toml_document["recent_limit"] = value(limit as i64);
             values.recent_limit = limit;
         })
+    }
+
+    pub fn set_theme_preference(&mut self, theme_preference: ThemePreference) {
+        self.0.edit(|values, toml_document| {
+            if let Some(theme_preference) = theme_preference.as_str() {
+                toml_document["theme"] = value(theme_preference);
+            } else {
+                toml_document.remove("theme");
+            }
+            values.theme_preference = theme_preference;
+        });
+        if let Some(watcher) = self.1.map(|w| &w.theme_preference_watcher) {
+            let _ = watcher.send(theme_preference);
+        }
+    }
+
+    pub fn set_gamemode_preference(&mut self, gamemode_preference: GameModePreference) {
+        self.0.edit(|values, toml_document| {
+            if let Some(gamemode_preference) = gamemode_preference.as_str() {
+                toml_document["gamemode"] = value(gamemode_preference);
+            } else {
+                toml_document.remove("gamemode");
+            }
+            values.gamemode_preference = gamemode_preference;
+        });
+    }
+
+    pub fn set_open_url_mode(&mut self, open_url_mode: OpenUrlMode) {
+        self.0.edit(|values, toml_document| {
+            if let Some(open_url_mode) = open_url_mode.as_str() {
+                toml_document["open_url_mode"] = value(open_url_mode);
+            } else {
+                toml_document.remove("open_url_mode");
+            }
+            values.open_url_mode = open_url_mode;
+        });
+    }
+
+    pub fn set_ime_enabled(&mut self, ime_enabled: Option<bool>) {
+        self.0.edit(|values, toml_document| {
+            if let Some(ime_enabled) = ime_enabled {
+                toml_document["ime"]["enabled"] = value(ime_enabled);
+            } else {
+                toml_document["ime"]["enabled"] = toml_edit::Item::None;
+            }
+            values.ime_enabled = ime_enabled;
+        });
     }
 }
 
@@ -238,6 +294,67 @@ mod tests {
             "recent_limit = 5",
             |writer| writer.set_recent_limit(15),
             "recent_limit = 15\n",
+        );
+    }
+
+    #[test]
+    fn set_theme() {
+        test(
+            "theme = 6\n",
+            |writer| writer.set_theme_preference(ThemePreference::Dark),
+            "theme = \"dark\"\n",
+        );
+        test(
+            "theme = \"dark\"",
+            |writer| writer.set_theme_preference(ThemePreference::System),
+            "",
+        );
+    }
+
+    #[test]
+    fn set_gamemode() {
+        test(
+            "gamemode = 6\n",
+            |writer| writer.set_gamemode_preference(GameModePreference::Off),
+            "gamemode = \"off\"\n",
+        );
+        test(
+            "gamemode = \"on\"",
+            |writer| writer.set_gamemode_preference(GameModePreference::Default),
+            "",
+        );
+    }
+
+    #[test]
+    fn set_open_url_mode() {
+        test(
+            "open_url_mode = 6\n",
+            |writer| writer.set_open_url_mode(OpenUrlMode::Allow),
+            "open_url_mode = \"allow\"\n",
+        );
+        test(
+            "open_url_mode = \"deny\"",
+            |writer| writer.set_open_url_mode(OpenUrlMode::Confirm),
+            "",
+        );
+    }
+
+    #[test]
+    fn set_ime_enabled() {
+        test(
+            "ime.enabled = true\n",
+            |writer| writer.set_ime_enabled(Some(false)),
+            "ime.enabled = false\n",
+        );
+        test(
+            "ime = {}",
+            |writer| writer.set_ime_enabled(Some(true)),
+            "ime = { enabled = true }\n",
+        );
+        test(
+            "ime.enabled = false",
+            |writer| writer.set_ime_enabled(None),
+            "",
         );
     }
 }

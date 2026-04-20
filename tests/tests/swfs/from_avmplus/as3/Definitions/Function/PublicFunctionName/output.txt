@@ -1,0 +1,54 @@
+inside class inside package function Name a1() PASSED!
+inside class inside package function Name a_1() PASSED!
+inside class inside package function Name _a1() PASSED!
+inside class inside package function Name __a1() PASSED!
+inside class inside package function Name _a1_() PASSED!
+inside class inside package function Name __a1__() PASSED!
+inside class inside package function Name $a1() PASSED!
+inside class inside package function Name a$1() PASSED!
+inside class inside package function Name a1$() PASSED!
+inside class inside package function Name A1() PASSED!
+inside class inside package function Name cases() PASSED!
+inside class inside package function Name Cases() PASSED!
+inside class inside package function Name all() PASSED!
+inside class inside package function Name constructor different case PASSED!
+outside class inside package a1() PASSED!
+outside class inside package a_1() PASSED!
+outside class inside package function Name _a1() PASSED!
+outside class inside package function Name __a1() PASSED!
+outside class inside package function Name _a1_() PASSED!
+outside class inside package function Name __a1__() PASSED!
+outside class inside package function Name $a1() PASSED!
+outside class inside package function Name a$1() PASSED!
+outside class inside package function Name a1$() PASSED!
+outside class inside package function Name A1() PASSED!
+outside class inside package function Name cases() PASSED!
+outside class inside package function Name Cases() PASSED!
+outside class inside package function Name all() PASSED!
+inside class outside package function Name a1() PASSED!
+inside class outside package function Name a_1() PASSED!
+inside class outside package function Name _a1() PASSED!
+inside class outside package function Name __a1() PASSED!
+inside class outside package function Name _a1_() PASSED!
+inside class outside package function Name __a1__() PASSED!
+inside class outside package function Name $a1() PASSED!
+inside class outside package function Name a$1() PASSED!
+inside class outside package function Name a1$() PASSED!
+inside class outside package function Name A1() PASSED!
+inside class outside package function Name cases() PASSED!
+inside class outside package function Name Cases() PASSED!
+inside class outside package function Name all() PASSED!
+inside class outside package function Name constructor different case PASSED!
+outside class outside package b1() PASSED!
+outside class outside package b_1() PASSED!
+outside class outside package function Name _b1() PASSED!
+outside class outside package function Name __b1() PASSED!
+outside class outside package function Name _b1_() PASSED!
+outside class outside package function Name __b1__() PASSED!
+outside class outside package function Name $b1() PASSED!
+outside class outside package function Name b$1() PASSED!
+outside class outside package function Name b1$() PASSED!
+outside class outside package function Name B1() PASSED!
+outside class outside package function Name bcases() PASSED!
+outside class outside package function Name BCases() PASSED!
+outside class outside package function Name ball() PASSED!

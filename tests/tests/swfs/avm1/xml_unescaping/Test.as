@@ -19,5 +19,37 @@ xml = new XML("<data label=\"A & &thing; B\"></data>");
 trace("");
 trace(xml.firstChild.attributes.label);
 
+xml = new XML("<data>A &&thing; B</data>");
+trace("");
+trace(xml.firstChild.firstChild.nodeValue);
+
+xml = new XML("<data label=\"A &&thing; B\"></data>");
+trace("");
+trace(xml.firstChild.attributes.label);
+
+xml = new XML("<data>A &&&thing; B</data>");
+trace("");
+trace(xml.firstChild.firstChild.nodeValue);
+
+xml = new XML("<data label=\"A &&&thing; B\"></data>");
+trace("");
+trace(xml.firstChild.attributes.label);
+
+xml = new XML("<data>A &&amp; B</data>");
+trace("");
+trace(xml.firstChild.firstChild.nodeValue);
+
+xml = new XML("<data label=\"A &&amp; B\"></data>");
+trace("");
+trace(xml.firstChild.attributes.label);
+
+xml = new XML("<data>A &amp;&amp; B</data>");
+trace("");
+trace(xml.firstChild.firstChild.nodeValue);
+
+xml = new XML("<data label=\"A &amp;&amp; B\"></data>");
+trace("");
+trace(xml.firstChild.attributes.label);
+
     }
 }

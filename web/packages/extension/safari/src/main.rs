@@ -1,15 +1,14 @@
 #[cfg(target_os = "macos")]
 mod macos {
-    use objc::class;
-    use objc::declare::ClassDecl;
-    use objc::runtime::Protocol;
+    use objc2::class;
+    use objc2::runtime::{AnyProtocol, ClassBuilder};
 
     pub fn extension_class() {
-        let mut ruffle = ClassDecl::new("RuffleWebExtension", class!(NSObject))
-            .expect("Couldn't allocate new ClassDecl");
+        let mut ruffle = ClassBuilder::new(c"RuffleWebExtension", class!(NSObject))
+            .expect("Couldn't allocate new class");
 
         ruffle.add_protocol(
-            Protocol::get("NSExtensionRequestHandling")
+            AnyProtocol::get(c"NSExtensionRequestHandling")
                 .expect("Couldn't find NSExtensionRequestHandling"),
         );
 
@@ -17,7 +16,7 @@ mod macos {
     }
 
     #[link(name = "Foundation", kind = "framework")]
-    extern "C" {
+    unsafe extern "C" {
         /// Private function used as the entry point of all app extensions.
         ///
         /// In Obj-C/Swift apps, a linker flag is used to set this as the entry

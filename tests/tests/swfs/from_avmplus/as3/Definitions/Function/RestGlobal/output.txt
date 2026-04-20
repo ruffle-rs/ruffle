@@ -1,0 +1,17 @@
+myRest( ... rest) called with zero Args PASSED!
+myRest( ... rest) called with one Arg PASSED!
+myRest( ... rest) called with multiple Args PASSED!
+myRest( ... rest) called with multiple different Args PASSED!
+anon_myRest( ... rest) called with zero Args PASSED!
+anon_myRest( ... rest) called with one Arg PASSED!
+anon_myRest( ... rest) called with multiple Args PASSED!
+anon_myRest( ... rest) called with multiple different Args PASSED!
+myRest2( a:Array, ... cust) PASSED!
+myRest2( a:Array, ... cust) PASSED!
+myRest2( a:Array, ... cust) PASSED!
+myRest2( a:Array, ... cust) PASSED!
+myRest2( a:Array, ... cust) PASSED!
+myRest2( a:Array, ... cust) PASSED!
+myRest2( a:Array, ... cust) PASSED!
+myRest2( a:Array, ... cust) PASSED!
+myRest2( a:Array, ... cust) PASSED!

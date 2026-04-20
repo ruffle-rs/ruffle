@@ -1,2 +1,3 @@
 dialog-ok = Tamam
-dialog-cancel = Vazgeç
+dialog-cancel = İptal
+dialog-show-all-files = Tüm dosyaları göster

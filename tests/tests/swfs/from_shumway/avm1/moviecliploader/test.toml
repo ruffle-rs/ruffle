@@ -1,0 +1,4 @@
+# Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/avm1/moviecliploader
+
+num_frames = 3
+known_failure = true # https://github.com/ruffle-rs/ruffle/issues/12273

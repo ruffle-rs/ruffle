@@ -1,0 +1,7 @@
+SWF5
+
+[LocalConnection.as debug-22403-05c7ba106]
+FAILED: expected: undefined obtained: [type Function] [./LocalConnection.as:34]
+#passed: 0
+#failed: 1
+#total tests run: 1

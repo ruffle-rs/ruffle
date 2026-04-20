@@ -1,7 +1,7 @@
 use bytemuck::{AnyBitPattern, NoUninit};
 use std::ops::Range;
-use wgpu::util::DeviceExt;
 use wgpu::BufferAddress;
+use wgpu::util::DeviceExt;
 
 pub struct BufferBuilder {
     inner: Vec<u8>,

@@ -1,0 +1,25 @@
+version 1i
+name "logicalnot"
+
+param.in "intInput", int, i1.r
+
+param.out "dst", float4, f0.rgba
+
+ld f2.a, 0.4f
+ld f2.b, 64f
+
+not i1.g, i1.r
+
+i2f f0.r, i1.r
+i2f f0.g, i1.g
+i2f f0.b, i1.g
+
+div f0.r, f2.b
+add f0.r, f2.a
+
+div f0.g, f2.b
+add f0.g, f2.a
+
+div f0.b, f2.b
+
+ld f0.a, 1f

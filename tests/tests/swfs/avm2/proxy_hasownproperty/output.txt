@@ -1,0 +1,8 @@
+// proxy["hasOwnProperty"](123)
+hasProperty: string 123
+false
+// proxy.hasOwnProperty("foobar")
+hasProperty: string foobar
+true
+// Object.prototype.hasOwnProperty.call(proxy, "hello world")
+false

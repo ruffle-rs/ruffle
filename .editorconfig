@@ -1,0 +1,16 @@
+root = true
+
+[*]
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+# Somehow some binary files are failing checks.
+[*.{rgba,pbj}]
+end_of_line = unset
+insert_final_newline = unset
+trim_trailing_whitespace = unset
+
+# Files generated from Crowdin may include trailing whitespace.
+[*.ftl]
+trim_trailing_whitespace = unset

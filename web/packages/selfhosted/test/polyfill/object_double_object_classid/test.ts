@@ -12,7 +12,10 @@ describe("Object using classid with another object tag without classid", () => {
 
     it("polyfills only the second tag with ruffle", async () => {
         await injectRuffleAndWait(browser);
-        const actual = await browser.$("#test-container").getHTML(false);
+        await browser.$("<ruffle-object />").waitForExist();
+        const actual = await browser
+            .$("#test-container")
+            .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",

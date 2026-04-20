@@ -1,0 +1,125 @@
+{
+    "settings_ruffle_enable": {
+        "message": "Reprodukujte Fleš sadržaj u programu Ruffle"
+    },
+    "settings_ignore_optout": {
+        "message": "Reprodukujte Fleš sadržaj čak i na sajtovima koji ne dozvoljavaju Ruffle"
+    },
+    "settings_show_swf_download": {
+        "message": "Prikaži preuzimanje SWF-a u kontekstnom meniju"
+    },
+    "settings_autostart": {
+        "message": "Automatska reprodukcija fleš sadržaja (kliknite da biste uključili zvuk)"
+    },
+    "settings_swf_takeover": {
+        "message": "Reprodukujte SWF datoteke u pregledaču umesto preuzimanja"
+    },
+    "settings_log_level": {
+        "message": "Nivo logova"
+    },
+    "settings_log_level_error": {
+        "message": "Greške"
+    },
+    "settings_log_level_warn": {
+        "message": "Upozorenja"
+    },
+    "settings_log_level_info": {
+        "message": "Informacije"
+    },
+    "settings_log_level_trace": {
+        "message": "Trag"
+    },
+    "settings_max_execution_duration": {
+        "message": "Maksimalno dozvoljeno vreme izvršavanja ActionScript-a (u sekundama)"
+    },
+    "settings_player_version": {
+        "message": "Broj verzije Flash plejera za emulaciju (opseg 1-32)"
+    },
+    "settings_preferred_renderer": {
+        "message": "Preferirani renderer"
+    },
+    "settings_preferred_renderer_auto": {
+        "message": "Automatski"
+    },
+    "settings_device_font_renderer": {
+        "message": "Renderer fontova uređaja"
+    },
+    "device_font_renderer_embedded": {
+        "message": "Ugrađeno"
+    },
+    "settings_advanced_options": {
+        "message": "Napredne funkcije"
+    },
+    "settings_reset": {
+        "message": "Resetuj podešavanja"
+    },
+    "settings_reset_confirm": {
+        "message": "Da li ste sigurni da želite da resetujete podešavanja za Ruffle na njihove originalne podrazumevane vrednosti?"
+    },
+    "status_init": {
+        "message": "Čitanje trenutne kartice…"
+    },
+    "status_no_tabs": {
+        "message": "Nema aktivne kartice."
+    },
+    "status_tabs_error": {
+        "message": "Došlo je do greške prilikom pretraživanja trenutne kartice."
+    },
+    "status_message_init": {
+        "message": "Provera statusa Ruffle-a na vašoj trenutnoj kartici…"
+    },
+    "status_result_running": {
+        "message": "Ruffle je spreman za pokretanje Fleš sadržaja u trenutnoj kartici."
+    },
+    "status_result_running_protected": {
+        "message": "Ruffle je spreman da pokrene Fleš sadržaj koji tražite."
+    },
+    "status_result_optout": {
+        "message": "Učitavanje Ruffle-a nije uspelo jer je trenutna veb stranica označena kao nekompatibilna."
+    },
+    "status_result_disabled": {
+        "message": "Ruffle je onemogućen."
+    },
+    "status_result_error": {
+        "message": "Došlo je do greške prilikom upita za Ruffle instancu na trenutnoj stranici."
+    },
+    "status_result_protected": {
+        "message": "Ruffle se ne može učitati na bezbednim stranicama pregledača."
+    },
+    "action_reload": {
+        "message": "Ponovo učitajte karticu da biste primenili promene"
+    },
+    "open_player_page": {
+        "message": "Otvori SWF plejer"
+    },
+    "open_settings_page": {
+        "message": "Otvori stranicu sa podešavanjima"
+    },
+    "settings_page": {
+        "message": "Stranica sa podešavanjima"
+    },
+    "description": {
+        "message": "Vraća Fleš na veb gde mu je i mesto."
+    },
+    "save_settings": {
+        "message": "Sačuvaj podešavanja"
+    },
+    "onboarding_page": {
+        "message": "Stranica za uvođenje u posao"
+    },
+    "permissions_grant": {
+        "message": "Dozvoli Ruffleu pristup mojim podacima na svim veb-sajtovima"
+    },
+    "permissions_not_granted": {
+        "message": "Moraćete da kliknete na ikonu Ruffle na svakoj veb stranici gde želite da koristite Ruffle"
+    },
+    "grant_single_site_permission": {
+        "message": "Trajno omogući za ovu stranicu"
+    },
+    "permissions_explanation": {
+        "message": "Ekstenzija Ruffle najbolje funkcioniše sa dozvolama za pristup podacima na svim veb-sajtovima. Ovo joj omogućava da se pokrene kada se bilo koja veb-stranica prvi put učita, što joj omogućava da odmah ubedi veb-sajtove koji detektuju Flash Player da dozvole pokretanje Flash sadržaja. Takođe joj daje mogućnost da učita SWF datoteke na svoju internu stranicu plejera sa drugih lokacija na vebu i omogućava automatsko učitavanje direktnih SWF veza do te stranice. Ako ne date ovu dozvolu, moraćete ručno da omogućite Ruffle na svakoj veb-stranici gde želite da ga koristite klikom na ikonu ekstenzije i omogućavanjem za tu veb-stranicu."
+    },
+    "swf_player_permissions": {
+        "message": "Morate dati dozvolu ovom izvoru URL-a da biste učitali SWF datoteke sa njega."
+    }
+}

@@ -1,6 +1,7 @@
 message-cant-embed =
     Ruffle konnte den Flash in dieser Seite nicht ausführen.
     Du kannst versuchen, die Datei in einem separaten Tab zu öffnen, um dieses Problem zu umgehen.
+message-restored-from-bfcache = Dein Browser hat den Flash-Inhalt aus einer vorherigen Sitzung wiederhergestellt. Um von neuem zu beginnen, lade die Seite neu.
 panic-title = Etwas ist schief gelaufen
 more-info = Weitere Informationen
 run-anyway = Trotzdem ausführen
@@ -10,9 +11,21 @@ update-ruffle = Ruffle aktuallisieren
 ruffle-demo = Web-Demo
 ruffle-desktop = Desktop-Anwendung
 ruffle-wiki = Ruffle-Wiki anzeigen
+enable-hardware-acceleration = Es sieht so aus, als ob die Hardwarebeschleunigung deaktiviert ist. Ruffle kann zwar funktionieren, könnte aber sehr langsam sein. Wie Sie die Hardwarebeschleunigung aktivieren können, erfahren Sie unter dem folgenden Link:
+enable-hardware-acceleration-link = FAQ - Chrome Hardwarebeschleunigung
 view-error-details = Fehlerdetails anzeigen
 open-in-new-tab = In einem neuen Tab öffnen
 click-to-unmute = Klicke zum Entmuten
+clipboard-message-title = Kopieren und Einfügen in Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Dein Browser unterstützt keinen vollständigen Zugriff auf die Zwischenablage,
+        [access-denied] Zugriff auf die Zwischenablage wurde verweigert,
+    } aber du kannst stattdessen auch diese Tastenkombinationen verwenden:
+clipboard-message-copy = { " " } zum Kopieren
+clipboard-message-cut = { " " } zum Ausschneiden
+clipboard-message-paste = { " " } zum Einfügen
+error-canvas-reload = Canvas Renderer kann nicht neu geladen werden, während er in Verwendung ist.
 error-file-protocol =
     Es scheint, dass Sie Ruffle auf dem "file:"-Protokoll ausführen.
     Jedoch werden aus Sicherheitsgründen viele Funktionen vom Browser blockiert, weswegen die Datei nicht geladen werden kann.
@@ -57,6 +70,10 @@ error-wasm-disabled-on-edge =
     Um dies zu beheben, versuche die Einstellungen deines Browsers zu öffnen, klicke auf "Privatsphäre, Suche und Dienste", scrollen nach unten und schalte "Verbessere deine Sicherheit im Web" aus.
     Dies erlaubt Ihrem Browser die erforderlichen ".wasm"-Dateien zu laden.
     Wenn das Problem weiterhin besteht, müssen Sie möglicherweise einen anderen Browser verwenden.
+error-wasm-unsupported-browser =
+    Der verwendete Browser unterstützt die WebAssembly Erweiterungen nicht welche Ruffle zur Ausführung benötigt.
+    Bitte verwende einen unterstützen Browser.
+    Du kannst eine Liste der unterstützten Browser in der Wiki finden.
 error-javascript-conflict =
     Ruffle ist auf ein Fehler beim Initialisieren gestoßen.
     Es scheint, als ob diese Seite JavaScript-Code verwendet, der mit Ruffle kollidiert.

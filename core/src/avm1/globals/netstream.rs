@@ -1,9 +1,6 @@
-use crate::avm1::function::{Executable, FunctionObject};
-use crate::avm1::object::{NativeObject, Object, TObject};
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, Error, ScriptObject, Value};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{Activation, Error, NativeObject, Object, Value};
 use crate::avm1_stub;
-use crate::context::GcContext;
 use crate::streams::NetStream;
 
 pub fn constructor<'gc>(
@@ -11,26 +8,47 @@ pub fn constructor<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let netstream = NetStream::new(activation.context.gc_context, Some(this.into()));
-    this.set_native(
-        activation.context.gc_context,
-        NativeObject::NetStream(netstream),
-    );
+    let netstream = NetStream::new_avm1(activation.gc(), this);
+    this.set_native(activation.gc(), NativeObject::NetStream(netstream));
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    "publish" => method(publish; DONT_ENUM | DONT_DELETE);
+    "play" => method(play; DONT_ENUM | DONT_DELETE);
+    "play2" => method(play2; DONT_ENUM | DONT_DELETE);
+    "receiveAudio" => method(receive_audio; DONT_ENUM | DONT_DELETE);
+    "receiveVideo" => method(receive_video; DONT_ENUM | DONT_DELETE);
+    "pause" => method(pause; DONT_ENUM | DONT_DELETE);
+    "seek" => method(seek; DONT_ENUM | DONT_DELETE);
+    "onPeerConnect" => method(on_peer_connect; DONT_ENUM | DONT_DELETE);
+    "close" => method(close; DONT_ENUM | DONT_DELETE);
+    "attachAudio" => method(attach_audio; DONT_ENUM | DONT_DELETE);
+    "attachVideo" => method(attach_video; DONT_ENUM | DONT_DELETE);
+    "send" => method(send; DONT_ENUM | DONT_DELETE);
+    "setBufferTime" => method(set_buffer_time; DONT_ENUM | DONT_DELETE);
+    "getInfo" => method(get_info; DONT_ENUM | DONT_DELETE);
+    "checkPolicyFile" => property(check_policy_file; DONT_ENUM | DONT_DELETE);
+    "maxPauseBufferTime" => property(max_pause_buffer_time; DONT_ENUM | DONT_DELETE);
+    "backBufferTime" => property(back_buffer_time; DONT_ENUM | DONT_DELETE);
+
+    // TODO The following shouldn't be built-in properties.
     "bufferLength" => property(get_buffer_length);
     "bufferTime" => property(get_buffer_time);
     "bytesLoaded" => property(get_bytes_loaded);
     "bytesTotal" => property(get_bytes_total);
     "time" => property(get_time);
-    "play" => method(play; DONT_ENUM | DONT_DELETE);
-    "pause" => method(pause; DONT_ENUM | DONT_DELETE);
-    "seek" => method(seek; DONT_ENUM | DONT_DELETE);
-    "setBufferTime" => method(set_buffer_time; DONT_ENUM | DONT_DELETE);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
 
 fn get_buffer_length<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -94,7 +112,7 @@ fn play<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_string(activation)?;
 
-        ns.play(&mut activation.context, Some(name));
+        ns.play(activation.context, Some(name));
     }
 
     Ok(Value::Undefined)
@@ -110,11 +128,11 @@ fn pause<'gc>(
         let is_pause = action.as_bool(activation.swf_version());
 
         if matches!(action, Value::Undefined) {
-            ns.toggle_paused(&mut activation.context);
+            ns.toggle_paused(activation.context);
         } else if is_pause {
-            ns.pause(&mut activation.context, true);
+            ns.pause(activation.context, true);
         } else {
-            ns.resume(&mut activation.context);
+            ns.resume(activation.context);
         }
     }
 
@@ -133,7 +151,7 @@ fn seek<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_f64(activation)?;
 
-        ns.seek(&mut activation.context, offset * 1000.0, false);
+        ns.seek(activation.context, offset * 1000.0, false);
     }
 
     Ok(Value::Undefined)
@@ -153,7 +171,7 @@ fn set_buffer_time<'gc>(
             .unwrap_or(Value::Undefined)
             .coerce_to_f64(activation)?;
 
-        ns.set_buffer_time(activation.context.gc_context, buffer_time);
+        ns.set_buffer_time(buffer_time);
     }
 
     Ok(Value::Undefined)
@@ -171,26 +189,121 @@ fn get_time<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+fn publish<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "NetStream", "publish");
+    Ok(Value::Undefined)
 }
 
-pub fn create_class<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    netstream_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        netstream_proto,
-    )
+fn play2<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "NetStream", "play2");
+    Ok(Value::Undefined)
+}
+
+fn receive_audio<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "NetStream", "receiveAudio");
+    Ok(Value::Undefined)
+}
+
+fn receive_video<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "NetStream", "receiveVideo");
+    Ok(Value::Undefined)
+}
+
+fn on_peer_connect<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    // TODO This might be a settable property instead, but it needs more
+    //   testing to confirm.
+    avm1_stub!(activation, "NetStream", "onPeerConnect");
+    Ok(Value::Bool(true))
+}
+
+fn close<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "NetStream", "close");
+    Ok(Value::Undefined)
+}
+
+fn attach_audio<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "NetStream", "attachAudio");
+    Ok(Value::Undefined)
+}
+
+fn attach_video<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "NetStream", "attachVideo");
+    Ok(Value::Undefined)
+}
+
+fn send<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "NetStream", "send");
+    Ok(Value::Undefined)
+}
+
+fn get_info<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "NetStream", "getInfo");
+    Ok(Value::Undefined)
+}
+
+fn check_policy_file<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "NetStream", "checkPolicyFile");
+    Ok(Value::Undefined)
+}
+
+fn max_pause_buffer_time<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "NetStream", "maxPauseBufferTime");
+    Ok(Value::Undefined)
+}
+
+fn back_buffer_time<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    _this: Object<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    avm1_stub!(activation, "NetStream", "backBufferTime");
+    Ok(Value::Undefined)
 }

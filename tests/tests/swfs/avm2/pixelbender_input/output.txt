@@ -1,0 +1,104 @@
+
+========== 1 CHANNEL(S) ==========
+
+--- Vector.<Number> ---
+Vector exact (4/4 floats)
+  Success, output: 16 floats
+Vector 1 extra (5/4 floats)
+  Success, output: 16 floats
+Vector 1 extra (1 pixel) (5/4 floats)
+  Success, output: 16 floats
+Vector 1 short (3/4 floats)
+  Error: 2165
+Vector 1 short (1 pixel) (3/4 floats)
+  Error: 2165
+
+--- ByteArray ---
+ByteArray exact (4/4 floats)
+  Success, output: 16 floats
+ByteArray 1 extra (5/4 floats)
+  Success, output: 16 floats
+ByteArray 1 extra (1 pixel) (5/4 floats)
+  Success, output: 16 floats
+ByteArray 1 short (3/4 floats)
+  Error: 2165
+ByteArray 1 short (1 pixel) (3/4 floats)
+  Error: 2165
+
+========== 2 CHANNEL(S) ==========
+
+--- Vector.<Number> ---
+Vector exact (8/8 floats)
+  Success, output: 16 floats
+Vector 1 extra (9/8 floats)
+  Success, output: 16 floats
+Vector 2 extra (1 pixel) (10/8 floats)
+  Success, output: 16 floats
+Vector 1 short (7/8 floats)
+  Error: 2165
+Vector 2 short (1 pixel) (6/8 floats)
+  Error: 2165
+
+--- ByteArray ---
+ByteArray exact (8/8 floats)
+  Success, output: 16 floats
+ByteArray 1 extra (9/8 floats)
+  Success, output: 16 floats
+ByteArray 2 extra (1 pixel) (10/8 floats)
+  Success, output: 16 floats
+ByteArray 1 short (7/8 floats)
+  Error: 2165
+ByteArray 2 short (1 pixel) (6/8 floats)
+  Error: 2165
+
+========== 3 CHANNEL(S) ==========
+
+--- Vector.<Number> ---
+Vector exact (12/12 floats)
+  Success, output: 16 floats
+Vector 1 extra (13/12 floats)
+  Success, output: 16 floats
+Vector 3 extra (1 pixel) (15/12 floats)
+  Success, output: 16 floats
+Vector 1 short (11/12 floats)
+  Error: 2165
+Vector 3 short (1 pixel) (9/12 floats)
+  Error: 2165
+
+--- ByteArray ---
+ByteArray exact (12/12 floats)
+  Success, output: 16 floats
+ByteArray 1 extra (13/12 floats)
+  Success, output: 16 floats
+ByteArray 3 extra (1 pixel) (15/12 floats)
+  Success, output: 16 floats
+ByteArray 1 short (11/12 floats)
+  Error: 2165
+ByteArray 3 short (1 pixel) (9/12 floats)
+  Error: 2165
+
+========== 4 CHANNEL(S) ==========
+
+--- Vector.<Number> ---
+Vector exact (16/16 floats)
+  Success, output: 16 floats
+Vector 1 extra (17/16 floats)
+  Success, output: 16 floats
+Vector 4 extra (1 pixel) (20/16 floats)
+  Success, output: 16 floats
+Vector 1 short (15/16 floats)
+  Error: 2165
+Vector 4 short (1 pixel) (12/16 floats)
+  Error: 2165
+
+--- ByteArray ---
+ByteArray exact (16/16 floats)
+  Success, output: 16 floats
+ByteArray 1 extra (17/16 floats)
+  Success, output: 16 floats
+ByteArray 4 extra (1 pixel) (20/16 floats)
+  Success, output: 16 floats
+ByteArray 1 short (15/16 floats)
+  Error: 2165
+ByteArray 4 short (1 pixel) (12/16 floats)
+  Error: 2165

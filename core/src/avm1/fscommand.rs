@@ -1,8 +1,8 @@
 //! FSCommand handling
 
+use crate::avm_warn;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm_warn;
 use crate::string::WStr;
 
 /// Parse an FSCommand URL.

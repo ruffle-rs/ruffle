@@ -1,0 +1,13 @@
+SWF5
+
+[Mouse.as debug-22403-05c7ba106]
+PASSED: typeof(Mouse) == 'object' [./Mouse.as:28]
+PASSED: mouseObj == undefined [./Mouse.as:32]
+PASSED: typeof(Mouse.__proto__) == 'object' [./Mouse.as:34]
+PASSED: Mouse.__proto__ == Object.prototype [./Mouse.as:35]
+PASSED: typeof(Mouse.hide) == 'function' [./Mouse.as:38]
+PASSED: typeof(Mouse.show) == 'function' [./Mouse.as:39]
+PASSED: typeof(Mouse.show) == 'function' [./Mouse.as:58]
+#passed: 7
+#failed: 0
+#total tests run: 7

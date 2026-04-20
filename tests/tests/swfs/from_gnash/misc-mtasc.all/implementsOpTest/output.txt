@@ -1,0 +1,28 @@
+PASSED: !ImplementationA instanceof SimpleInterface  [implementsOpTest.as:39]
+PASSED: !ImplementationA.prototype instanceof SimpleInterface  [implementsOpTest.as:40]
+PASSED: !ImplementationB instanceof SimpleInterface  [implementsOpTest.as:41]
+PASSED: !ImplementationA.prototype instanceof SimpleInterface  [implementsOpTest.as:42]
+PASSED: !BExtendingImplementation instanceof ImplementationB  [implementsOpTest.as:43]
+PASSED: BExtendingImplementation.prototype instanceof ImplementationB  [implementsOpTest.as:44]
+PASSED: BExtendingImplementation.prototype instanceof SimpleInterface  [implementsOpTest.as:45]
+PASSED: objectA instanceof ImplementationA  [implementsOpTest.as:51]
+PASSED: objectA instanceof SimpleInterface  [implementsOpTest.as:52]
+PASSED: objectB instanceof ImplementationB  [implementsOpTest.as:54]
+PASSED: objectB instanceof SimpleInterface  [implementsOpTest.as:55]
+PASSED: objectC instanceof BExtendingImplementation  [implementsOpTest.as:57]
+PASSED: objectC instanceof ImplementationB  [implementsOpTest.as:58]
+PASSED: objectC instanceof SimpleInterface  [implementsOpTest.as:59]
+PASSED: 100 == 100  [implementsOpTest.as:64]
+PASSED: 100 == 100  [implementsOpTest.as:65]
+PASSED: param1 was foo == param1 was foo  [implementsOpTest.as:67]
+PASSED: 200 == 200  [implementsOpTest.as:69]
+PASSED: param2 was 1 == param2 was 1  [implementsOpTest.as:71]
+PASSED: 200 == 200  [implementsOpTest.as:73]
+PASSED: overriding implementation == overriding implementation  [implementsOpTest.as:75]
+PASSED: ! objectA instanceof ImplementationA  [implementsOpTest.as:81]
+PASSED: ! objectA instanceof SimpleInterface  [implementsOpTest.as:82]
+PASSED: Test run 23 [ [implementsOpTest.as:91]]
+#passed: 24
+#failed: 0
+#total tests run: 24
+__END_OF_TEST__

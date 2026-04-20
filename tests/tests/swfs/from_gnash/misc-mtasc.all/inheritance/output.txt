@@ -1,0 +1,22 @@
+Test constructor called [inheritance.as:9]
+PASSED: function == function  [inheritance.as:46]
+PASSED: [type Function] == [type Function]  [inheritance.as:47]
+PASSED: this.lineTo != super.lineTo  [inheritance.as:48]
+PASSED: function == function  [inheritance.as:49]
+PASSED: function == function  [inheritance.as:50]
+PASSED: object == object  [inheritance.as:38]
+PASSED: function == function  [inheritance.as:39]
+test_laszlo_core called [inheritance.as:40]
+PASSED: this.constructor.prototype.constructor.prototype.test()  [inheritance.as:34]
+PASSED: function == function  [inheritance.as:52]
+PASSED: function == function  [inheritance.as:53]
+This is [object Object] [inheritance.as:19]
+PASSED: arguments.callee.make()  [inheritance.as:21]
+PASSED: function == function  [inheritance.as:55]
+PASSED: function == function  [inheritance.as:56]
+This is [object Object] [inheritance.as:57]
+PASSED: Test run 13 [ [inheritance.as:66]]
+#passed: 14
+#failed: 0
+#total tests run: 14
+__END_OF_TEST__

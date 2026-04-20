@@ -1,0 +1,1125 @@
+//true
+///(digits = 1)
+1
+///(digits = 2)
+1
+///(digits = 3)
+1
+///(digits = 4)
+1
+///(digits = 5)
+1
+///(digits = 6)
+1
+///(digits = 7)
+1
+///(digits = 8)
+1
+///(digits = 9)
+1
+///(digits = 10)
+1
+///(digits = 20)
+1
+///(digits = 21)
+1
+//false
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//null
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//undefined
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//""
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//"str"
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//"true"
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//"false"
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//0.0
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//NaN
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//-0.0
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//Infinity
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//1.0
+///(digits = 1)
+1
+///(digits = 2)
+1
+///(digits = 3)
+1
+///(digits = 4)
+1
+///(digits = 5)
+1
+///(digits = 6)
+1
+///(digits = 7)
+1
+///(digits = 8)
+1
+///(digits = 9)
+1
+///(digits = 10)
+1
+///(digits = 20)
+1
+///(digits = 21)
+1
+//-1.0
+///(digits = 1)
+-1
+///(digits = 2)
+-1
+///(digits = 3)
+-1
+///(digits = 4)
+-1
+///(digits = 5)
+-1
+///(digits = 6)
+-1
+///(digits = 7)
+-1
+///(digits = 8)
+-1
+///(digits = 9)
+-1
+///(digits = 10)
+-1
+///(digits = 20)
+-1
+///(digits = 21)
+-1
+//0xFF1306
+///(digits = 1)
+1e+7
+///(digits = 2)
+1.6e+7
+///(digits = 3)
+1.6699999999999997e+7
+///(digits = 4)
+1.671e+7
+///(digits = 5)
+1.6716e+7
+///(digits = 6)
+1.67165e+7
+///(digits = 7)
+1.671655e+7
+///(digits = 8)
+16716550
+///(digits = 9)
+16716550
+///(digits = 10)
+16716550
+///(digits = 20)
+16716550
+///(digits = 21)
+16716550.000000002
+//1.2315e2
+///(digits = 1)
+1e+2
+///(digits = 2)
+1.2e+2
+///(digits = 3)
+123
+///(digits = 4)
+123
+///(digits = 5)
+123
+///(digits = 6)
+123
+///(digits = 7)
+123
+///(digits = 8)
+123
+///(digits = 9)
+123
+///(digits = 10)
+123
+///(digits = 20)
+123
+///(digits = 21)
+123
+//0x7FFFFFFF
+///(digits = 1)
+1.9999999999999998e+9
+///(digits = 2)
+2.1e+9
+///(digits = 3)
+2.14e+9
+///(digits = 4)
+2.147e+9
+///(digits = 5)
+2.1473999999999998e+9
+///(digits = 6)
+2.14748e+9
+///(digits = 7)
+2.147483e+9
+///(digits = 8)
+2.1474836e+9
+///(digits = 9)
+2.14748364e+9
+///(digits = 10)
+2147483647
+///(digits = 20)
+2147483647
+///(digits = 21)
+2147483647
+//0x80000000
+///(digits = 1)
+-3e+9
+///(digits = 2)
+-2.2e+9
+///(digits = 3)
+-2.15e+9
+///(digits = 4)
+-2.148e+9
+///(digits = 5)
+-2.1475e+9
+///(digits = 6)
+-2.14749e+9
+///(digits = 7)
+-2.147484e+9
+///(digits = 8)
+-2.1474837e+9
+///(digits = 9)
+-2.14748365e+9
+///(digits = 10)
+-2147483648
+///(digits = 20)
+-2147483648
+///(digits = 21)
+-2147483648
+//0x80000001
+///(digits = 1)
+-3e+9
+///(digits = 2)
+-2.2e+9
+///(digits = 3)
+-2.15e+9
+///(digits = 4)
+-2.148e+9
+///(digits = 5)
+-2.1475e+9
+///(digits = 6)
+-2.14749e+9
+///(digits = 7)
+-2.147484e+9
+///(digits = 8)
+-2.1474837e+9
+///(digits = 9)
+-2.14748365e+9
+///(digits = 10)
+-2147483647
+///(digits = 20)
+-2147483647
+///(digits = 21)
+-2147483647
+//0x180000001
+///(digits = 1)
+-3e+9
+///(digits = 2)
+-2.2e+9
+///(digits = 3)
+-2.15e+9
+///(digits = 4)
+-2.148e+9
+///(digits = 5)
+-2.1475e+9
+///(digits = 6)
+-2.14749e+9
+///(digits = 7)
+-2.147484e+9
+///(digits = 8)
+-2.1474837e+9
+///(digits = 9)
+-2.14748365e+9
+///(digits = 10)
+-2147483647
+///(digits = 20)
+-2147483647
+///(digits = 21)
+-2147483647
+//0x100000001
+///(digits = 1)
+1
+///(digits = 2)
+1
+///(digits = 3)
+1
+///(digits = 4)
+1
+///(digits = 5)
+1
+///(digits = 6)
+1
+///(digits = 7)
+1
+///(digits = 8)
+1
+///(digits = 9)
+1
+///(digits = 10)
+1
+///(digits = 20)
+1
+///(digits = 21)
+1
+//-0x7FFFFFFF
+///(digits = 1)
+-3e+9
+///(digits = 2)
+-2.2e+9
+///(digits = 3)
+-2.15e+9
+///(digits = 4)
+-2.148e+9
+///(digits = 5)
+-2.1475e+9
+///(digits = 6)
+-2.14749e+9
+///(digits = 7)
+-2.147484e+9
+///(digits = 8)
+-2.1474837e+9
+///(digits = 9)
+-2.14748365e+9
+///(digits = 10)
+-2147483647
+///(digits = 20)
+-2147483647
+///(digits = 21)
+-2147483647
+//-0x80000000
+///(digits = 1)
+-3e+9
+///(digits = 2)
+-2.2e+9
+///(digits = 3)
+-2.15e+9
+///(digits = 4)
+-2.148e+9
+///(digits = 5)
+-2.1475e+9
+///(digits = 6)
+-2.14749e+9
+///(digits = 7)
+-2.147484e+9
+///(digits = 8)
+-2.1474837e+9
+///(digits = 9)
+-2.14748365e+9
+///(digits = 10)
+-2147483648
+///(digits = 20)
+-2147483648
+///(digits = 21)
+-2147483648
+//-0x80000001
+///(digits = 1)
+1.9999999999999998e+9
+///(digits = 2)
+2.1e+9
+///(digits = 3)
+2.14e+9
+///(digits = 4)
+2.147e+9
+///(digits = 5)
+2.1473999999999998e+9
+///(digits = 6)
+2.14748e+9
+///(digits = 7)
+2.147483e+9
+///(digits = 8)
+2.1474836e+9
+///(digits = 9)
+2.14748364e+9
+///(digits = 10)
+2147483647
+///(digits = 20)
+2147483647
+///(digits = 21)
+2147483647
+//-0x180000001
+///(digits = 1)
+1.9999999999999998e+9
+///(digits = 2)
+2.1e+9
+///(digits = 3)
+2.14e+9
+///(digits = 4)
+2.147e+9
+///(digits = 5)
+2.1473999999999998e+9
+///(digits = 6)
+2.14748e+9
+///(digits = 7)
+2.147483e+9
+///(digits = 8)
+2.1474836e+9
+///(digits = 9)
+2.14748364e+9
+///(digits = 10)
+2147483647
+///(digits = 20)
+2147483647
+///(digits = 21)
+2147483647
+//-0x100000001
+///(digits = 1)
+-1
+///(digits = 2)
+-1
+///(digits = 3)
+-1
+///(digits = 4)
+-1
+///(digits = 5)
+-1
+///(digits = 6)
+-1
+///(digits = 7)
+-1
+///(digits = 8)
+-1
+///(digits = 9)
+-1
+///(digits = 10)
+-1
+///(digits = 20)
+-1
+///(digits = 21)
+-1
+//new Object()
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//"0.0"
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//"NaN"
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//"-0.0"
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//"Infinity"
+///(digits = 1)
+0e+1
+///(digits = 2)
+0
+///(digits = 3)
+0
+///(digits = 4)
+0
+///(digits = 5)
+0
+///(digits = 6)
+0
+///(digits = 7)
+0
+///(digits = 8)
+0
+///(digits = 9)
+0
+///(digits = 10)
+0
+///(digits = 20)
+0
+///(digits = 21)
+0
+//"1.0"
+///(digits = 1)
+1
+///(digits = 2)
+1
+///(digits = 3)
+1
+///(digits = 4)
+1
+///(digits = 5)
+1
+///(digits = 6)
+1
+///(digits = 7)
+1
+///(digits = 8)
+1
+///(digits = 9)
+1
+///(digits = 10)
+1
+///(digits = 20)
+1
+///(digits = 21)
+1
+//"-1.0"
+///(digits = 1)
+-1
+///(digits = 2)
+-1
+///(digits = 3)
+-1
+///(digits = 4)
+-1
+///(digits = 5)
+-1
+///(digits = 6)
+-1
+///(digits = 7)
+-1
+///(digits = 8)
+-1
+///(digits = 9)
+-1
+///(digits = 10)
+-1
+///(digits = 20)
+-1
+///(digits = 21)
+-1
+//"0xFF1306"
+///(digits = 1)
+1e+7
+///(digits = 2)
+1.6e+7
+///(digits = 3)
+1.6699999999999997e+7
+///(digits = 4)
+1.671e+7
+///(digits = 5)
+1.6716e+7
+///(digits = 6)
+1.67165e+7
+///(digits = 7)
+1.671655e+7
+///(digits = 8)
+16716550
+///(digits = 9)
+16716550
+///(digits = 10)
+16716550
+///(digits = 20)
+16716550
+///(digits = 21)
+16716550.000000002
+//"1.2315e2"
+///(digits = 1)
+1e+2
+///(digits = 2)
+1.2e+2
+///(digits = 3)
+123
+///(digits = 4)
+123
+///(digits = 5)
+123
+///(digits = 6)
+123
+///(digits = 7)
+123
+///(digits = 8)
+123
+///(digits = 9)
+123
+///(digits = 10)
+123
+///(digits = 20)
+123
+///(digits = 21)
+123
+//"0x7FFFFFFF"
+///(digits = 1)
+1.9999999999999998e+9
+///(digits = 2)
+2.1e+9
+///(digits = 3)
+2.14e+9
+///(digits = 4)
+2.147e+9
+///(digits = 5)
+2.1473999999999998e+9
+///(digits = 6)
+2.14748e+9
+///(digits = 7)
+2.147483e+9
+///(digits = 8)
+2.1474836e+9
+///(digits = 9)
+2.14748364e+9
+///(digits = 10)
+2147483647
+///(digits = 20)
+2147483647
+///(digits = 21)
+2147483647
+//"0x80000000"
+///(digits = 1)
+-3e+9
+///(digits = 2)
+-2.2e+9
+///(digits = 3)
+-2.15e+9
+///(digits = 4)
+-2.148e+9
+///(digits = 5)
+-2.1475e+9
+///(digits = 6)
+-2.14749e+9
+///(digits = 7)
+-2.147484e+9
+///(digits = 8)
+-2.1474837e+9
+///(digits = 9)
+-2.14748365e+9
+///(digits = 10)
+-2147483648
+///(digits = 20)
+-2147483648
+///(digits = 21)
+-2147483648
+//"0x80000001"
+///(digits = 1)
+-3e+9
+///(digits = 2)
+-2.2e+9
+///(digits = 3)
+-2.15e+9
+///(digits = 4)
+-2.148e+9
+///(digits = 5)
+-2.1475e+9
+///(digits = 6)
+-2.14749e+9
+///(digits = 7)
+-2.147484e+9
+///(digits = 8)
+-2.1474837e+9
+///(digits = 9)
+-2.14748365e+9
+///(digits = 10)
+-2147483647
+///(digits = 20)
+-2147483647
+///(digits = 21)
+-2147483647
+//"0x180000001"
+///(digits = 1)
+-3e+9
+///(digits = 2)
+-2.2e+9
+///(digits = 3)
+-2.15e+9
+///(digits = 4)
+-2.148e+9
+///(digits = 5)
+-2.1475e+9
+///(digits = 6)
+-2.14749e+9
+///(digits = 7)
+-2.147484e+9
+///(digits = 8)
+-2.1474837e+9
+///(digits = 9)
+-2.14748365e+9
+///(digits = 10)
+-2147483647
+///(digits = 20)
+-2147483647
+///(digits = 21)
+-2147483647
+//"0x100000001"
+///(digits = 1)
+1
+///(digits = 2)
+1
+///(digits = 3)
+1
+///(digits = 4)
+1
+///(digits = 5)
+1
+///(digits = 6)
+1
+///(digits = 7)
+1
+///(digits = 8)
+1
+///(digits = 9)
+1
+///(digits = 10)
+1
+///(digits = 20)
+1
+///(digits = 21)
+1
+//"-0x7FFFFFFF"
+///(digits = 1)
+-3e+9
+///(digits = 2)
+-2.2e+9
+///(digits = 3)
+-2.15e+9
+///(digits = 4)
+-2.148e+9
+///(digits = 5)
+-2.1475e+9
+///(digits = 6)
+-2.14749e+9
+///(digits = 7)
+-2.147484e+9
+///(digits = 8)
+-2.1474837e+9
+///(digits = 9)
+-2.14748365e+9
+///(digits = 10)
+-2147483647
+///(digits = 20)
+-2147483647
+///(digits = 21)
+-2147483647
+//"-0x80000000"
+///(digits = 1)
+-3e+9
+///(digits = 2)
+-2.2e+9
+///(digits = 3)
+-2.15e+9
+///(digits = 4)
+-2.148e+9
+///(digits = 5)
+-2.1475e+9
+///(digits = 6)
+-2.14749e+9
+///(digits = 7)
+-2.147484e+9
+///(digits = 8)
+-2.1474837e+9
+///(digits = 9)
+-2.14748365e+9
+///(digits = 10)
+-2147483648
+///(digits = 20)
+-2147483648
+///(digits = 21)
+-2147483648
+//"-0x80000001"
+///(digits = 1)
+1.9999999999999998e+9
+///(digits = 2)
+2.1e+9
+///(digits = 3)
+2.14e+9
+///(digits = 4)
+2.147e+9
+///(digits = 5)
+2.1473999999999998e+9
+///(digits = 6)
+2.14748e+9
+///(digits = 7)
+2.147483e+9
+///(digits = 8)
+2.1474836e+9
+///(digits = 9)
+2.14748364e+9
+///(digits = 10)
+2147483647
+///(digits = 20)
+2147483647
+///(digits = 21)
+2147483647
+//"-0x180000001"
+///(digits = 1)
+1.9999999999999998e+9
+///(digits = 2)
+2.1e+9
+///(digits = 3)
+2.14e+9
+///(digits = 4)
+2.147e+9
+///(digits = 5)
+2.1473999999999998e+9
+///(digits = 6)
+2.14748e+9
+///(digits = 7)
+2.147483e+9
+///(digits = 8)
+2.1474836e+9
+///(digits = 9)
+2.14748364e+9
+///(digits = 10)
+2147483647
+///(digits = 20)
+2147483647
+///(digits = 21)
+2147483647
+//"-0x100000001"
+///(digits = 1)
+-1
+///(digits = 2)
+-1
+///(digits = 3)
+-1
+///(digits = 4)
+-1
+///(digits = 5)
+-1
+///(digits = 6)
+-1
+///(digits = 7)
+-1
+///(digits = 8)
+-1
+///(digits = 9)
+-1
+///(digits = 10)
+-1
+///(digits = 20)
+-1
+///(digits = 21)
+-1

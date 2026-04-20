@@ -1,0 +1,25 @@
+arr.length PASSED!
+
+Returning empty list of value of arr PASSED!
+MyFunction PASSED!
+arr1.length PASSED!
+MyFunction2 with 5 arguments PASSED!
+MyFunction3 with 3 arguments PASSED!
+arr2.length PASSED!
+arr2[0] PASSED!
+arr2[1] PASSED!
+arr2[2] PASSED!
+MyFunction3 with 3 arguments PASSED!
+arr3.length PASSED!
+arr3[0] PASSED!
+arr3[1] PASSED!
+arr3[2] PASSED!
+arr3[3] PASSED!
+arr3[4] PASSED!
+Function with arguments of different data types PASSED!
+Function with arguments of different data types PASSED!
+Function with arguments of different data types PASSED!
+Function with arguments of different data types PASSED!
+Function with arguments of different data types PASSED!
+Function with arguments of different data types PASSED!
+Function with arguments of different data types PASSED!

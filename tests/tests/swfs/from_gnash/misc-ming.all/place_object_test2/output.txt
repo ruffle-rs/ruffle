@@ -1,0 +1,19 @@
+_level0.static_mc1
+1
+_level0.static_mc1
+2
+PASSED: typeof(static_mc1)  ==  'movieclip' [place_object_test2.c:99]
+PASSED: typeof(static_mc2)  ==  'undefined' [place_object_test2.c:103]
+_level0.static_mc1
+3
+PASSED: testvar1  ==  3 [place_object_test2.c:114]
+PASSED: testvar2  ==  0 [place_object_test2.c:115]
+PASSED: typeof(static_mc1)  ==  'movieclip' [place_object_test2.c:132]
+PASSED: typeof(static_mc3)  ==  'undefined' [place_object_test2.c:136]
+PASSED: typeof(static_mc1)  ==  'movieclip' [place_object_test2.c:154]
+PASSED: typeof(static_mc4)  ==  'undefined' [place_object_test2.c:158]
+PASSED: typeof(static_mc1)  ==  'movieclip' [place_object_test2.c:176]
+PASSED: typeof(static_mc5)  ==  'undefined' [place_object_test2.c:180]
+#passed: 10
+#failed: 0
+#total tests run: 10

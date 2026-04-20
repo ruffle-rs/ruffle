@@ -1,0 +1,23 @@
+_level0.static4 constructed
+PASSED: static3.getDepth()  ==  -16381 [displaylist_depths_test9.c:118]
+PASSED: static4.getDepth()  ==  -16380 [displaylist_depths_test9.c:124]
+_level0.dup0 constructed
+PASSED: dup0.getDepth()  ==  -16380 [displaylist_depths_test9.c:126]
+PASSED: dup0.getDepth()  ==  -16380 [displaylist_depths_test9.c:130]
+PASSED: dup1.getDepth()  ==  -10 [displaylist_depths_test9.c:132]
+PASSED: -20 == -20
+PASSED: -30 == -30
+PASSED: typeof(static4)  ==  'undefined' [displaylist_depths_test9.c:151]
+PASSED: typeof(dup0)  ==  'movieclip' [displaylist_depths_test9.c:152]
+PASSED: _root.mc4Constructed  ==  2 [displaylist_depths_test9.c:153]
+_level0.static4 constructed
+PASSED: typeof(static3)  ==  'movieclip' [displaylist_depths_test9.c:155]
+PASSED: typeof(static4)  ==  'movieclip' [displaylist_depths_test9.c:156]
+PASSED: typeof(dup0)  ==  'undefined' [displaylist_depths_test9.c:157]
+PASSED: mc4Constructed  ==  3 [displaylist_depths_test9.c:158]
+PASSED: typeof(dup1)  ==  'undefined' [displaylist_depths_test9.c:159]
+PASSED: typeof(dup2)  ==  'undefined' [displaylist_depths_test9.c:160]
+PASSED: typeof(dup3)  ==  'undefined' [displaylist_depths_test9.c:161]
+#passed: 17
+#failed: 0
+#total tests run: 17

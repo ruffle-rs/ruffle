@@ -2,21 +2,21 @@ package flash.accessibility {
     import flash.geom.Rectangle;
 
     public class AccessibilityImplementation {
-        public var errno: uint;
-        public var stub: Boolean;
+        public var errno:uint;
+        public var stub:Boolean;
 
         public function AccessibilityImplementation() {
             this.errno = 0;
             this.stub = false;
         }
 
-        public function accDoDefaultAction(childID:uint):void { }
+        public function accDoDefaultAction(childID:uint):void {}
 
         public function accLocation(childID:uint):* {
             return null;
         }
 
-        public function accSelect(operation:uint, childID:uint):void { }
+        public function accSelect(operation:uint, childID:uint):void {}
 
         public function get_accDefaultAction(childID:uint):String {
             return null;
@@ -44,14 +44,6 @@ package flash.accessibility {
 
         public function get_accValue(childID:uint):String {
             return null;
-        }
-
-        public function get_selectionActiveIndex():* {
-            return this["selectionActiveIndex"];
-        }
-
-        public function get_selectionAnchorIndex():* {
-            return this["selectionAnchorIndex"];
         }
 
         public function getChildIDArray():Array {

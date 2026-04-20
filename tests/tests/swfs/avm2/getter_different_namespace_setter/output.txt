@@ -1,0 +1,2 @@
+Caught error: ReferenceError: Error #1074: Illegal write to read-only property virtualprop on Subclass.
+Caught error: ReferenceError: Error #1074: Illegal write to read-only property virtualprop on Subclass.

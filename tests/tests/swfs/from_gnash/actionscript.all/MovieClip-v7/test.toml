@@ -1,0 +1,34 @@
+num_frames = 30
+known_failure = true
+
+[subtests.fp9]
+output_path = "output.fp9.txt"
+player_options.version = 9
+
+[subtests.fp10]
+output_path = "output.fp10-14.txt"
+player_options.version = 10
+
+[subtests.fp13]
+output_path = "output.fp13-16-21.txt"
+player_options.version = 13
+
+[subtests.fp14]
+output_path = "output.fp10-14.txt"
+player_options.version = 14
+
+[subtests.fp16]
+output_path = "output.fp13-16-21.txt"
+player_options.version = 16
+[subtests.fp19]
+
+output_path = "output.fp19.txt"
+player_options.version = 19
+
+[subtests.fp21]
+output_path = "output.fp13-16-21.txt"
+player_options.version = 21
+
+[subtests.fp23]
+output_path = "output.fp23.txt"
+player_options.version = 23

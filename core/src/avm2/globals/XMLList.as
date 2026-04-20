@@ -3,15 +3,21 @@ package {
     [Ruffle(CallHandler)]
     public final dynamic class XMLList {
 
-        public function XMLList(value:* = undefined) {
+        public function XMLList(value:* = void 0) {
             this.init(value, XML.ignoreComments, XML.ignoreProcessingInstructions, XML.ignoreWhitespace);
         }
 
-        private native function init(value:*, ignoreComments:Boolean, ignoreProcessingInstructions:Boolean, ignoreWhitespace:Boolean): void;
+        private native function init(
+            value:*,
+            ignoreComments:Boolean,
+            ignoreProcessingInstructions:Boolean,
+            ignoreWhitespace:Boolean
+        ):void;
 
+        [Ruffle(FastCall)]
+        AS3 native function length():int;
         AS3 native function hasComplexContent():Boolean;
         AS3 native function hasSimpleContent():Boolean;
-        AS3 native function length():int;
         AS3 native function child(name:Object):XMLList;
         AS3 native function children():XMLList;
         AS3 native function contains(value:*):Boolean;
@@ -20,7 +26,9 @@ package {
         AS3 native function attributes():XMLList;
         AS3 native function descendants(name:* = "*"):XMLList;
         AS3 native function text():XMLList;
+        [Ruffle(FastCall)]
         AS3 native function toXMLString():String;
+        [Ruffle(FastCall)]
         AS3 native function toString():String;
         AS3 native function comments():XMLList;
         AS3 native function parent():*;
@@ -37,13 +45,13 @@ package {
         AS3 native function insertChildAfter(child1:*, child2:*):*;
         AS3 native function insertChildBefore(child1:*, child2:*):*;
         AS3 native function localName():Object
-        AS3 native function name(): Object;
+        AS3 native function name():Object;
         private native function namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*;
         AS3 function namespace(prefix:* = null):* {
             return namespace_internal_impl(arguments.length > 0, prefix);
         }
         AS3 native function namespaceDeclarations():Array;
-        AS3 native function nodeKind(): String;
+        AS3 native function nodeKind():String;
         AS3 native function prependChild(child:*):XML;
         AS3 native function removeNamespace(ns:*):XML;
         AS3 native function replace(propertyName:*, value:*):XML;
@@ -52,7 +60,7 @@ package {
         AS3 native function setName(name:*):void;
         AS3 native function setNamespace(ns:*):void;
 
-        AS3 function toJSON(k:String) : * {
+        AS3 function toJSON(k:String):* {
             return this.toJSON(k);
         }
 
@@ -154,7 +162,7 @@ package {
             return self.AS3::localName();
         }
 
-        prototype.name = function(): Object {
+        prototype.name = function():Object {
             var self:XMLList = this;
             return self.AS3::name();
         }
@@ -248,6 +256,44 @@ package {
             return self.AS3::normalize();
         }
 
-        public static const length:int = 1;
+        prototype.setPropertyIsEnumerable("hasComplexContent", false);
+        prototype.setPropertyIsEnumerable("hasSimpleContent", false);
+        prototype.setPropertyIsEnumerable("length", false);
+        prototype.setPropertyIsEnumerable("child", false);
+        prototype.setPropertyIsEnumerable("children", false);
+        prototype.setPropertyIsEnumerable("contains", false);
+        prototype.setPropertyIsEnumerable("copy", false);
+        prototype.setPropertyIsEnumerable("attribute", false);
+        prototype.setPropertyIsEnumerable("attributes", false);
+        prototype.setPropertyIsEnumerable("toString", false);
+        prototype.setPropertyIsEnumerable("toXMLString", false);
+        prototype.setPropertyIsEnumerable("addNamespace", false);
+        prototype.setPropertyIsEnumerable("appendChild", false);
+        prototype.setPropertyIsEnumerable("childIndex", false);
+        prototype.setPropertyIsEnumerable("inScopeNamespaces", false);
+        prototype.setPropertyIsEnumerable("insertChildAfter", false);
+        prototype.setPropertyIsEnumerable("insertChildBefore", false);
+        prototype.setPropertyIsEnumerable("localName", false);
+        prototype.setPropertyIsEnumerable("name", false);
+        prototype.setPropertyIsEnumerable("namespace", false);
+        prototype.setPropertyIsEnumerable("namespaceDeclarations", false);
+        prototype.setPropertyIsEnumerable("nodeKind", false);
+        prototype.setPropertyIsEnumerable("prependChild", false);
+        prototype.setPropertyIsEnumerable("removeNamespace", false);
+        prototype.setPropertyIsEnumerable("replace", false);
+        prototype.setPropertyIsEnumerable("setChildren", false);
+        prototype.setPropertyIsEnumerable("setLocalName", false);
+        prototype.setPropertyIsEnumerable("setName", false);
+        prototype.setPropertyIsEnumerable("setNamespace", false);
+        prototype.setPropertyIsEnumerable("descendants", false);
+        prototype.setPropertyIsEnumerable("text", false);
+        prototype.setPropertyIsEnumerable("comments", false);
+        prototype.setPropertyIsEnumerable("parent", false);
+        prototype.setPropertyIsEnumerable("toJSON", false);
+        prototype.setPropertyIsEnumerable("processingInstructions", false);
+        prototype.setPropertyIsEnumerable("elements", false);
+        prototype.setPropertyIsEnumerable("normalize", false);
+
+        public static const length:* = 1;
     }
 }

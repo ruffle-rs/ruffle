@@ -1,7 +1,7 @@
+use crate::VideoStreamHandle;
 use crate::backend::VideoBackend;
 use crate::error::Error;
 use crate::frame::{EncodedFrame, FrameDependency};
-use crate::VideoStreamHandle;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapInfo;
 use slotmap::SlotMap;

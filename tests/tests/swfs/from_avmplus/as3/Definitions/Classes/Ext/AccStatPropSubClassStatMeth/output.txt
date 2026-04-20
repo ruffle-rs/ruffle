@@ -1,0 +1,6 @@
+*** Access the static property via base class *** PASSED!
+BaseClass.i = 12, BaseClass.i PASSED!
+*** Access the static property via sub class using unadorned property name *** PASSED!
+AccStatPropSubClassStatMeth.getInt() PASSED!
+*** Access the static property via sub class using unadorned property name *** PASSED!
+AccStatPropSubClassStatMeth.getBaseInt() PASSED!

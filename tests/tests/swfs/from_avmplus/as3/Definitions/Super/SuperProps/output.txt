@@ -1,0 +1,21 @@
+sanity check base object 1 PASSED!
+sanity check base object 2 PASSED!
+sanity check base object 3 PASSED!
+sanity check base object 4 PASSED!
+sanity check derived object 1 PASSED!
+sanity check derived object 2 PASSED!
+sanity check derived object 3 PASSED!
+sanity check derived object 4 PASSED!
+sanity check derived object 5 PASSED!
+sanity check derived object 6 PASSED!
+sanity check derived object 7 PASSED!
+sanity check derived object 8 PASSED!
+sanity check derived object 9 PASSED!
+check modified property 1 PASSED!
+check modified property 2 PASSED!
+check base property 1 PASSED!
+check base property 2 PASSED!
+check base property 3 PASSED!
+check base property 4 PASSED!
+Set super value via . property PASSED!
+Set super value via index property PASSED!

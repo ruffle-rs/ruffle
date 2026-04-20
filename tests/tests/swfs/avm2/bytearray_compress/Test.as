@@ -1,9 +1,12 @@
+// compiled with mxmlc
+
 package {
+    import flash.display.MovieClip;
     import flash.utils.ByteArray;
     import flash.utils.Endian;
     import flash.utils.CompressionAlgorithm;
 
-    public class Test {
+    public class Test extends MovieClip {
         public function Test() {
             var ba = createByteArray();
 
@@ -36,6 +39,8 @@ package {
 
             ba.uncompress("zlib");
             print("uncompressed (zlib)", ba, true);
+
+            checkZlibPrefix();
         }
 
         function createByteArray(): ByteArray {
@@ -67,6 +72,18 @@ package {
             }
 
             trace("");
+        }
+
+        // Issue 13773: gemcraft labirynth
+        // Requires zlib->base64 values to start with "eN".
+        // (which means binary header [120, 218])
+        function checkZlibPrefix() {
+            trace("Checking zlib header:")
+            var ba = createByteArray();
+            ba.compress("zlib");
+            ba.position = 0;
+            trace(ba.readUnsignedByte());
+            trace(ba.readUnsignedByte());
         }
     }
 }

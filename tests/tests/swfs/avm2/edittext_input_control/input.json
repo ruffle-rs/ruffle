@@ -1,0 +1,20 @@
+[
+  { "type": "KeyDown", "key": "Escape" },
+  { "type": "TextInput", "codepoint": "\u001B" },
+  { "type": "KeyUp", "key": "Escape" },
+  { "type": "KeyDown", "key": "Backspace" },
+  { "type": "TextInput", "codepoint": "\u0008" },
+  { "type": "TextControl", "code": "Backspace" },
+  { "type": "KeyUp", "key": "Backspace" },
+  { "type": "KeyDown", "key": "Delete" },
+  { "type": "TextInput", "codepoint": "\u007F" },
+  { "type": "TextControl", "code": "Delete" },
+  { "type": "KeyUp", "key": "Delete" },
+  { "type": "KeyDown", "key": "Enter" },
+  { "type": "TextInput", "codepoint": "\u000D" },
+  { "type": "TextControl", "code": "Enter" },
+  { "type": "KeyUp", "key": "Enter" },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "TextInput", "codepoint": "\u0009" },
+  { "type": "KeyUp", "key": "Tab" }
+]

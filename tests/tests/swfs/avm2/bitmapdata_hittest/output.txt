@@ -106,3 +106,7 @@ false
 - Error 2007
 // bmd.hitTest(new Point(0, 0), 0, {}, null, 1)
 - Error 2005
+// bmd.hitTest(new Point(0, 0), 0, {}, null, 1)
+- Error 2005
+// bmd.hitTest(new Point(0, 0), 0, null, null, 1)
+- Error 2005

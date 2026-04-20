@@ -1,0 +1,17 @@
+*** Access default method from default method of sub class *** PASSED!
+PUBEXTDCLASS.subSetArray(arr), PUBEXTDCLASS.subGetArray() PASSED!
+*** Access default method from public method of sub class *** PASSED!
+PUBEXTDCLASS.pubSubSetArray(arr), PUBEXTDCLASS.pubSubGetArray() PASSED!
+*** Access default method from private method of sub class *** PASSED!
+PUBEXTDCLASS.testPrivSubArray(arr) PASSED!
+*** Access default method from default method of sub class *** PASSED!
+PUBEXTDCLASS.finSubSetArray(arr), PUBEXTDCLASS.finSubGetArray() PASSED!
+*** Access default property from outside the class *** PASSED!
+*** Access default property from method in sub class *** PASSED!
+PUBEXTDCLASS.subSetDPArray(arr), PUBEXTDCLASS.subGetDPArray() PASSED!
+*** Access default property from public method in sub class *** PASSED!
+PUBEXTDCLASS.pubSubSetDPArray(arr), PUBEXTDCLASS.pubSubGetDPArray() PASSED!
+*** Access default property from private method in sub class *** PASSED!
+PUBEXTDCLASS.privSubSetDPArray(arr), PUBEXTDCLASS.privSubGetDPArray() PASSED!
+*** Access default property from final method in sub class *** PASSED!
+PUBEXTDCLASS.finSubSetDPArray(arr), PUBEXTDCLASS.finSubGetDPArray() PASSED!

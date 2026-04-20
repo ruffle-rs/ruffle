@@ -1,13 +1,13 @@
 use ruffle_render::{
     filters::ShaderFilter as ShaderFilterArgs,
-    pixel_bender::{ImageInputTexture, PixelBenderShaderArgument},
+    pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument},
 };
 
 use crate::{
     backend::RenderTargetMode,
     buffer_pool::TexturePool,
     descriptors::Descriptors,
-    pixel_bender::{run_pixelbender_shader_impl, ShaderMode},
+    pixel_bender::{ShaderMode, run_pixelbender_shader_impl},
     surface::target::CommandTarget,
 };
 
@@ -22,7 +22,6 @@ impl ShaderFilter {
         Self
     }
 
-    #[allow(clippy::too_many_arguments)]
     pub fn apply<'a>(
         &self,
         descriptors: &Descriptors,

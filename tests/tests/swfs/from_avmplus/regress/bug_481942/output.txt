@@ -1,0 +1,1 @@
+This testcase would assert in debug if bug is present. o1 in o2: PASSED!

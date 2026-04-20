@@ -1,0 +1,8 @@
+implements single, extends single PASSED!
+implements single, extends double PASSED!
+implements single, extends single and add PASSED!
+implements single, extends triple (extends single and add) PASSED!
+implements single, extends double (extends single) PASSED!
+implements single, extends double (extends double) PASSED!
+implements single, extends double (extends double, extends single and add) PASSED!
+implements single, extends double (extends double (extends single), extends single and add) PASSED!

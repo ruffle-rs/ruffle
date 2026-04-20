@@ -1,0 +1,13 @@
+a["3.00"] =  three; a.length PASSED!
+a["00010"] =  eight; a.length FAILED! expected: 0 got: 11
+a["37xyz"] =  thirty-five; a.length FAILED! expected: 0 got: 11
+a["5000000000"] =  5; a.length FAILED! expected: 0 got: 11
+a["-2"] =  -3; a.length FAILED! expected: 0 got: 11
+a[10] FAILED! expected: undefined got: eight
+a[3] PASSED!
+a[4] = "four"; a[4] PASSED!
+a["4"] PASSED!
+a["4.00"] PASSED!
+a.length FAILED! expected: 5 got: 11
+a["5000000000"] = 5; a.length FAILED! expected: 5 got: 11
+a["-2"] = -3; a.length FAILED! expected: 5 got: 11

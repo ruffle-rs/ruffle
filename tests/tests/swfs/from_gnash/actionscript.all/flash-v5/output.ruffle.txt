@@ -1,0 +1,10 @@
+SWF5
+
+[ debug-22403-05c7ba106]
+PASSED: typeof(flash) == 'undefined' [./flash.as:30]
+PASSED: MovieClip.prototype.transform == undefined [./flash.as:33]
+PASSED: MovieClip.prototype.hasOwnProperty("transform") [./flash.as:34]
+FAILED: expected: 8 obtained:  [./flash.as:36]
+#passed: 3
+#failed: 1
+#total tests run: 4

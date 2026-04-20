@@ -1,0 +1,65 @@
+Testing: none
+  0,0,100,4
+Testing: add child
+  0,0,100,4
+Testing: invisible + add child + enter frame
+  0,0,100,4
+Testing: add child + invisible + enter frame
+  0,0,100,4
+Tests finished
+Testing: frame constructed
+  0,0,100,4
+Testing: add child + frame constructed
+  0,0,100,4
+Testing: exit frame
+  0,0,100,4
+Testing: add child + exit frame
+  0,0,100,4
+// event exitFrame -> exitFrame
+// 0 -> 0
+Testing: event exitFrame -> exitFrame
+  0,0,100,4
+Testing: enter frame
+  0,0,100,4
+Testing: add child + enter frame
+  48,0,4,4
+Testing: add child + remove child + enter frame
+  0,0,100,4
+// event exitFrame -> exitFrame
+// 0 -> 0
+Testing: event exitFrame -> enterFrame
+  48,0,4,4
+// event exitFrame -> exitFrame
+// 0 -> 0
+Testing: event exitFrame -> enterFrame
+  48,0,4,4
+// event exitFrame -> exitFrame
+// 0 -> 0
+Testing: event exitFrame -> frameConstructed
+  48,0,4,4
+// event exitFrame -> exitFrame
+// 0 -> 0
+Testing: event exitFrame -> frameConstructed
+  48,0,4,4
+// event exitFrame -> exitFrame
+// 0 -> 0
+Testing: event exitFrame -> frameConstructed
+  0,0,100,4
+// event exitFrame -> exitFrame
+// 0 -> 0
+Testing: event exitFrame -> exitFrame
+  48,0,4,4
+// event exitFrame -> exitFrame
+// 0 -> 0
+Testing: event exitFrame -> exitFrame
+  0,0,100,4
+// event exitFrame -> exitFrame
+// 0 -> 0
+Testing: event exitFrame -> enterFrame
+  48,0,4,4
+Testing: set timeout
+  0,0,100,4
+Testing: add child + set timeout
+  48,0,4,4
+Testing: add child + set timeout before construction
+  48,0,4,4

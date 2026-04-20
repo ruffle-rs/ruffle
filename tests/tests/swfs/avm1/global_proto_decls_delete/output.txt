@@ -1,0 +1,4158 @@
+Testing _global.TextSnapshot
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.TextSnapshot.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.PrintJob
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.PrintJob.prototype
+  send, DONT_DELETE
+  addPage, DONT_DELETE
+  start, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.MovieClipLoader
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.MovieClipLoader.prototype
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  unloadClip, DONT_DELETE
+  getProgress, DONT_DELETE
+  loadClip, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.LocalConnection
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.LocalConnection.prototype
+  isPerUser, DONT_DELETE
+  domain, DONT_DELETE
+  close, DONT_DELETE
+  send, DONT_DELETE
+  connect, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.textRenderer
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.textRenderer.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.automation.Configuration
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.automation.Configuration.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.automation.ActionGenerator
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.automation.ActionGenerator.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.automation.StageCapture
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.automation.StageCapture.prototype
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  listenForStageCapture, DONT_DELETE
+  setClipRect, DONT_DELETE
+  getClipRect, DONT_DELETE
+  setFileNameBase, DONT_DELETE
+  getFileNameBase, DONT_DELETE
+  cancel, DONT_DELETE
+  capture, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.automation
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.external.ExternalInterface
+  _toJS, DONT_DELETE
+  _objectToJS, DONT_DELETE
+  _arrayToJS, DONT_DELETE
+  _argumentsToAS, DONT_DELETE
+  _toAS, DONT_DELETE
+  _arrayToAS, DONT_DELETE
+  _objectToAS, DONT_DELETE
+  _toXML, DONT_DELETE
+  _objectToXML, DONT_DELETE
+  _argumentsToXML, DONT_DELETE
+  _arrayToXML, DONT_DELETE
+  _callIn, DONT_DELETE
+  call, DONT_DELETE
+  addCallback, DONT_DELETE
+  available, DONT_DELETE
+  _useSetReturnValueHack, DONT_DELETE
+  _jsQuoteString, DONT_DELETE
+  _unescapeXML, DONT_DELETE
+  _escapeXML, DONT_DELETE
+  _callOut, DONT_DELETE
+  _evalJS, DONT_DELETE
+  _addCallback, DONT_DELETE
+  _objectID, DONT_DELETE
+  _initJS, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.external.ExternalInterface.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.external
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.net.FileReferenceList
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.net.FileReferenceList.prototype
+  browse, DONT_DELETE
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.net.FileReference
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.net.FileReference.prototype
+  deleteConvertedPPT, DONT_DELETE
+  convertToPPT, DONT_DELETE
+  cancel, DONT_DELETE
+  download, DONT_DELETE
+  upload, DONT_DELETE
+  browse, DONT_DELETE
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.net
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.geom.Transform
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.geom.Transform.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.geom.ColorTransform
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.geom.ColorTransform.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.geom.Matrix
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.geom.Matrix.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.geom.Point
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.geom.Point.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.geom.Rectangle
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.geom.Rectangle.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.geom
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.filters.DisplacementMapFilter
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.filters.DisplacementMapFilter.prototype
+  clone, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.filters.ColorMatrixFilter
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.filters.ColorMatrixFilter.prototype
+  clone, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.filters.ConvolutionFilter
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.filters.ConvolutionFilter.prototype
+  clone, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.filters.GradientBevelFilter
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.filters.GradientBevelFilter.prototype
+  clone, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.filters.GradientGlowFilter
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.filters.GradientGlowFilter.prototype
+  clone, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.filters.BevelFilter
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.filters.BevelFilter.prototype
+  clone, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.filters.GlowFilter
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.filters.GlowFilter.prototype
+  clone, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.filters.BlurFilter
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.filters.BlurFilter.prototype
+  clone, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.filters.DropShadowFilter
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.filters.DropShadowFilter.prototype
+  clone, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.flash.filters.BitmapFilter
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.filters.BitmapFilter.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.filters
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.display.BitmapData
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.display.BitmapData.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.display
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.text.TextRenderer
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.flash.text.TextRenderer.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash.text
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.flash
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.privateBytes
+Testing _global.System.IME._listeners
+Testing _global.System.IME.removeListener
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.IME.removeListener.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.IME.addListener
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.IME.addListener.prototype
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.IME.broadcastMessage
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.IME.doConversion
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.IME.setCompositionString
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.IME.setConversionMode
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.IME.getConversionMode
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.IME.setEnabled
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.IME.getEnabled
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.IME.ALPHANUMERIC_FULL
+Testing _global.System.IME.ALPHANUMERIC_HALF
+Testing _global.System.IME.CHINESE
+Testing _global.System.IME.JAPANESE_HIRAGANA
+Testing _global.System.IME.JAPANESE_KATAKANA_FULL
+Testing _global.System.IME.JAPANESE_KATAKANA_HALF
+Testing _global.System.IME.KOREAN
+Testing _global.System.IME.UNKNOWN
+Testing _global.System.IME
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  doConversion, DONT_DELETE
+  setCompositionString, DONT_DELETE
+  setConversionMode, DONT_DELETE
+  getConversionMode, DONT_DELETE
+  setEnabled, DONT_DELETE
+  getEnabled, DONT_DELETE
+  ALPHANUMERIC_FULL, DONT_DELETE
+  ALPHANUMERIC_HALF, DONT_DELETE
+  CHINESE, DONT_DELETE
+  JAPANESE_HIRAGANA, DONT_DELETE
+  JAPANESE_KATAKANA_FULL, DONT_DELETE
+  JAPANESE_KATAKANA_HALF, DONT_DELETE
+  KOREAN, DONT_DELETE
+  UNKNOWN, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.setClipboard
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.security.PolicyFileResolver
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.security.PolicyFileResolver.prototype
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.security.sandboxType
+Testing _global.System.security.escapeDomain
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.security.chooseLocalSwfPath
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.security.loadPolicyFile
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.security.allowInsecureDomain
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.security.allowDomain
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.security.__constructor__
+  registerClass, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.System.security.__constructor__.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.security
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  constructor, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.System.useCodepage
+Testing _global.System.exactSettings
+Testing _global.System.showSettings
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.Product
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.Product.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  installedVersion, DONT_DELETE
+  validate, DONT_DELETE
+  download, DONT_DELETE
+  launch, DONT_DELETE
+  isInstalled, DONT_DELETE
+  isRunning, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.capabilities.toLocaleString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.capabilities.toLocaleString.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.capabilities.isPropertyEnumerable
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.capabilities.isPrototypeOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.capabilities.hasOwnProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.capabilities.toString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.capabilities.valueOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.capabilities.addProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.capabilities.unwatch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.capabilities.watch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System.capabilities._internal
+Testing _global.System.capabilities.supports64BitProcesses
+Testing _global.System.capabilities.supports32BitProcesses
+Testing _global.System.capabilities.hasIME
+Testing _global.System.capabilities.language
+Testing _global.System.capabilities.cpuAddressSize
+Testing _global.System.capabilities.cpuArchitecture
+Testing _global.System.capabilities.os
+Testing _global.System.capabilities.manufacturer
+Testing _global.System.capabilities.isEmbeddedInAcrobat
+Testing _global.System.capabilities.maxLevelIDC
+Testing _global.System.capabilities.windowlessDisable
+Testing _global.System.capabilities.localFileReadDisable
+Testing _global.System.capabilities.avHardwareDisable
+Testing _global.System.capabilities.playerType
+Testing _global.System.capabilities.isDebugger
+Testing _global.System.capabilities.hasScreenBroadcast
+Testing _global.System.capabilities.hasScreenPlayback
+Testing _global.System.capabilities.hasPrinting
+Testing _global.System.capabilities.hasEmbeddedVideo
+Testing _global.System.capabilities.hasStreamingVideo
+Testing _global.System.capabilities.hasStreamingAudio
+Testing _global.System.capabilities.version
+Testing _global.System.capabilities.serverString
+Testing _global.System.capabilities.hasAudio
+Testing _global.System.capabilities.hasMP3
+Testing _global.System.capabilities.hasAudioEncoder
+Testing _global.System.capabilities.hasVideoEncoder
+Testing _global.System.capabilities.hasTLS
+Testing _global.System.capabilities.screenResolutionX
+Testing _global.System.capabilities.screenResolutionY
+Testing _global.System.capabilities.screenDPI
+Testing _global.System.capabilities.screenColor
+Testing _global.System.capabilities.pixelAspectRatio
+Testing _global.System.capabilities.hasAccessibility
+Testing _global.System.capabilities
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  _internal, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.System
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SoundCodec.toLocaleString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SoundCodec.toLocaleString.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SoundCodec.isPropertyEnumerable
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SoundCodec.isPrototypeOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SoundCodec.hasOwnProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SoundCodec.toString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SoundCodec.valueOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SoundCodec.addProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SoundCodec.unwatch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SoundCodec.watch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SoundCodec.NELLYMOSER
+Testing _global.SoundCodec.SPEEX
+Testing _global.SoundCodec
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.toLocaleString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.toLocaleString.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.isPropertyEnumerable
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.isPrototypeOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.hasOwnProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.toString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.valueOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.addProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.unwatch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.watch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.updateProperties
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.sendEvent
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility.isActive
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Accessibility
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  updateProperties, DONT_DELETE
+  sendEvent, DONT_DELETE
+  isActive, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Video
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Video.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  clear, DONT_DELETE
+  attachVideo, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.toLocaleString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.toLocaleString.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.isPropertyEnumerable
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.isPrototypeOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.hasOwnProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.toString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.valueOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.addProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.unwatch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.watch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage._listeners.toLocaleString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage._listeners.toLocaleString.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage._listeners.isPropertyEnumerable
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage._listeners.isPrototypeOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage._listeners.hasOwnProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage._listeners.toString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage._listeners.valueOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage._listeners.addProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage._listeners.unwatch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage._listeners.watch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage._listeners
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.removeListener
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.removeListener.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.addListener
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.addListener.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.broadcastMessage
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Stage.wmodeGPU
+Testing _global.Stage.fullScreenWidth
+Testing _global.Stage.fullScreenHeight
+Testing _global.Stage.fullScreenSourceRect
+Warning: 'i' has no property 'prototype'
+Testing _global.Stage.displayState
+Testing _global.Stage.showMenu
+Testing _global.Stage.width
+Testing _global.Stage.height
+Testing _global.Stage.scaleMode
+Testing _global.Stage.align
+Testing _global.Stage
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.TextFormat
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.TextFormat.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.TextField
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  StyleSheet, DONT_DELETE
+  getFontList, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.TextField.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  replaceText, DONT_DELETE
+  getDepth, DONT_DELETE
+  setNewTextFormat, DONT_DELETE
+  getNewTextFormat, DONT_DELETE
+  removeTextField, DONT_DELETE
+  setTextFormat, DONT_DELETE
+  getTextFormat, DONT_DELETE
+  replaceSel, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Button
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Button.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.toLocaleString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.toLocaleString.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.isPropertyEnumerable
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.isPrototypeOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.hasOwnProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.toString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.valueOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.addProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.unwatch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.watch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key._listeners.toLocaleString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key._listeners.toLocaleString.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key._listeners.isPropertyEnumerable
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key._listeners.isPrototypeOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key._listeners.hasOwnProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key._listeners.toString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key._listeners.valueOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key._listeners.addProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key._listeners.unwatch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key._listeners.watch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key._listeners
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.removeListener
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.removeListener.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.addListener
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.addListener.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.broadcastMessage
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.isAccessible
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.isToggled
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.isDown
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.getCode
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.getAscii
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Key.ALT
+Testing _global.Key.ENTER
+Testing _global.Key.SPACE
+Testing _global.Key.UP
+Testing _global.Key.DOWN
+Testing _global.Key.LEFT
+Testing _global.Key.RIGHT
+Testing _global.Key.PGUP
+Testing _global.Key.PGDN
+Testing _global.Key.HOME
+Testing _global.Key.END
+Testing _global.Key.TAB
+Testing _global.Key.CONTROL
+Testing _global.Key.SHIFT
+Testing _global.Key.ESCAPE
+Testing _global.Key.INSERT
+Testing _global.Key.DELETEKEY
+Testing _global.Key.BACKSPACE
+Testing _global.Key.CAPSLOCK
+Testing _global.Key
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  isAccessible, DONT_DELETE
+  isToggled, DONT_DELETE
+  isDown, DONT_DELETE
+  getCode, DONT_DELETE
+  getAscii, DONT_DELETE
+  ALT, DONT_DELETE
+  ENTER, DONT_DELETE
+  SPACE, DONT_DELETE
+  UP, DONT_DELETE
+  DOWN, DONT_DELETE
+  LEFT, DONT_DELETE
+  RIGHT, DONT_DELETE
+  PGUP, DONT_DELETE
+  PGDN, DONT_DELETE
+  HOME, DONT_DELETE
+  END, DONT_DELETE
+  TAB, DONT_DELETE
+  CONTROL, DONT_DELETE
+  SHIFT, DONT_DELETE
+  ESCAPE, DONT_DELETE
+  INSERT, DONT_DELETE
+  DELETEKEY, DONT_DELETE
+  BACKSPACE, DONT_DELETE
+  CAPSLOCK, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.toLocaleString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.toLocaleString.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.isPropertyEnumerable
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.isPrototypeOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.hasOwnProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.toString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.valueOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.addProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.unwatch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.watch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse._listeners.toLocaleString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse._listeners.toLocaleString.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse._listeners.isPropertyEnumerable
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse._listeners.isPrototypeOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse._listeners.hasOwnProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse._listeners.toString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse._listeners.valueOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse._listeners.addProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse._listeners.unwatch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse._listeners.watch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse._listeners
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.removeListener
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.removeListener.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.addListener
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.addListener.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.broadcastMessage
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.setTrailerMode
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.setTrailerPosition
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.setTrailer
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.hide
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse.show
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Mouse
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  setTrailerMode, DONT_DELETE
+  setTrailerPosition, DONT_DELETE
+  setTrailer, DONT_DELETE
+  hide, DONT_DELETE
+  show, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.toLocaleString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.toLocaleString.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.isPropertyEnumerable
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.isPrototypeOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.hasOwnProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.toString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.valueOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.addProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.unwatch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.watch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection._listeners.toLocaleString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection._listeners.toLocaleString.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection._listeners.isPropertyEnumerable
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection._listeners.isPrototypeOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection._listeners.hasOwnProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection._listeners.toString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection._listeners.valueOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection._listeners.addProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection._listeners.unwatch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection._listeners.watch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection._listeners
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.removeListener
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.removeListener.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.addListener
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.addListener.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.broadcastMessage
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.setSelection
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.setFocus
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.getFocus
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.getCaretIndex
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.getEndIndex
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection.getBeginIndex
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Selection
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  _listeners, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  setSelection, DONT_DELETE
+  setFocus, DONT_DELETE
+  getFocus, DONT_DELETE
+  getCaretIndex, DONT_DELETE
+  getEndIndex, DONT_DELETE
+  getBeginIndex, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.LoadVars
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.LoadVars.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  addRequestHeader, DONT_DELETE
+  onData, DONT_DELETE
+  onLoad, DONT_DELETE
+  contentType, DONT_DELETE
+  toString, DONT_DELETE
+  getBytesTotal, DONT_DELETE
+  getBytesLoaded, DONT_DELETE
+  decode, DONT_DELETE
+  sendAndLoad, DONT_DELETE
+  send, DONT_DELETE
+  load, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.XML
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.XML.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  constructor, DONT_DELETE
+  namespaceURI, DONT_DELETE
+  localName, DONT_DELETE
+  prefix, DONT_DELETE
+  previousSibling, DONT_DELETE
+  parentNode, DONT_DELETE
+  nodeValue, DONT_DELETE
+  nodeType, DONT_DELETE
+  nodeName, DONT_DELETE
+  nextSibling, DONT_DELETE
+  lastChild, DONT_DELETE
+  firstChild, DONT_DELETE
+  childNodes, DONT_DELETE
+  attributes, DONT_DELETE
+  getPrefixForNamespace, DONT_DELETE
+  getNamespaceForPrefix, DONT_DELETE
+  toString, DONT_DELETE
+  hasChildNodes, DONT_DELETE
+  appendChild, DONT_DELETE
+  insertBefore, DONT_DELETE
+  removeNode, DONT_DELETE
+  cloneNode, DONT_DELETE
+Testing _global.XMLNode
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.XMLNode.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  toString, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Sound
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Sound.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  checkPolicyFile, DONT_DELETE
+  areSoundsInaccessible, DONT_DELETE
+  getBytesTotal, DONT_DELETE
+  getBytesLoaded, DONT_DELETE
+  loadSound, DONT_DELETE
+  setPosition, DONT_DELETE
+  getPosition, DONT_DELETE
+  setDuration, DONT_DELETE
+  getDuration, DONT_DELETE
+  start, DONT_DELETE
+  attachSound, DONT_DELETE
+  stop, DONT_DELETE
+  setVolume, DONT_DELETE
+  setTransform, DONT_DELETE
+  setPan, DONT_DELETE
+  getVolume, DONT_DELETE
+  getTransform, DONT_DELETE
+  getPan, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.toLocaleString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.toLocaleString.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.isPropertyEnumerable
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.isPrototypeOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.hasOwnProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.toString
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.valueOf
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.addProperty
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.unwatch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.watch
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.pow
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.acos
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.asin
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.atan
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.ceil
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.floor
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.random
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.round
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.sqrt
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.log
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.exp
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.tan
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.atan2
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.cos
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.sin
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.max
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.min
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.abs
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Math.E
+Testing _global.Math.LN10
+Testing _global.Math.LN2
+Testing _global.Math.LOG10E
+Testing _global.Math.LOG2E
+Testing _global.Math.PI
+Testing _global.Math.SQRT1_2
+Testing _global.Math.SQRT2
+Testing _global.Math
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  pow, DONT_DELETE
+  acos, DONT_DELETE
+  asin, DONT_DELETE
+  atan, DONT_DELETE
+  ceil, DONT_DELETE
+  floor, DONT_DELETE
+  random, DONT_DELETE
+  round, DONT_DELETE
+  sqrt, DONT_DELETE
+  log, DONT_DELETE
+  exp, DONT_DELETE
+  tan, DONT_DELETE
+  atan2, DONT_DELETE
+  cos, DONT_DELETE
+  sin, DONT_DELETE
+  max, DONT_DELETE
+  min, DONT_DELETE
+  abs, DONT_DELETE
+  E, DONT_DELETE
+  LN10, DONT_DELETE
+  LN2, DONT_DELETE
+  LOG10E, DONT_DELETE
+  LOG2E, DONT_DELETE
+  PI, DONT_DELETE
+  SQRT1_2, DONT_DELETE
+  SQRT2, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Array
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Array.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  sortOn, DONT_DELETE
+  reverse, DONT_DELETE
+  sort, DONT_DELETE
+  toString, DONT_DELETE
+  splice, DONT_DELETE
+  join, DONT_DELETE
+  slice, DONT_DELETE
+  unshift, DONT_DELETE
+  shift, DONT_DELETE
+  concat, DONT_DELETE
+  pop, DONT_DELETE
+  push, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.String
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  fromCharCode, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.String.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  substr, DONT_DELETE
+  split, DONT_DELETE
+  substring, DONT_DELETE
+  slice, DONT_DELETE
+  lastIndexOf, DONT_DELETE
+  indexOf, DONT_DELETE
+  concat, DONT_DELETE
+  charCodeAt, DONT_DELETE
+  charAt, DONT_DELETE
+  toLowerCase, DONT_DELETE
+  toUpperCase, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Date
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  UTC, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Date.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  valueOf, DONT_DELETE
+  setUTCMilliseconds, DONT_DELETE
+  setUTCSeconds, DONT_DELETE
+  setUTCMinutes, DONT_DELETE
+  setUTCHours, DONT_DELETE
+  setUTCDate, DONT_DELETE
+  setUTCMonth, DONT_DELETE
+  setUTCFullYear, DONT_DELETE
+  getUTCMilliseconds, DONT_DELETE
+  getUTCSeconds, DONT_DELETE
+  getUTCMinutes, DONT_DELETE
+  getUTCHours, DONT_DELETE
+  getUTCDay, DONT_DELETE
+  getUTCDate, DONT_DELETE
+  getUTCMonth, DONT_DELETE
+  getUTCYear, DONT_DELETE
+  getUTCFullYear, DONT_DELETE
+  setYear, DONT_DELETE
+  toString, DONT_DELETE
+  getTimezoneOffset, DONT_DELETE
+  setTime, DONT_DELETE
+  getTime, DONT_DELETE
+  setMilliseconds, DONT_DELETE
+  setSeconds, DONT_DELETE
+  setMinutes, DONT_DELETE
+  setHours, DONT_DELETE
+  setDate, DONT_DELETE
+  setMonth, DONT_DELETE
+  setFullYear, DONT_DELETE
+  getMilliseconds, DONT_DELETE
+  getSeconds, DONT_DELETE
+  getMinutes, DONT_DELETE
+  getHours, DONT_DELETE
+  getDay, DONT_DELETE
+  getDate, DONT_DELETE
+  getMonth, DONT_DELETE
+  getYear, DONT_DELETE
+  getFullYear, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Boolean
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Boolean.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Number
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  MAX_VALUE, DONT_DELETE
+  MIN_VALUE, DONT_DELETE
+  NEGATIVE_INFINITY, DONT_DELETE
+  POSITIVE_INFINITY, DONT_DELETE
+  NaN, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Number.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.o
+Warning: 'i' has no property 'prototype'
+Testing _global.clearRequestHeaders
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.clearRequestHeaders.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.addRequestHeader
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.addRequestHeader.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.showRedrawRegions
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.setTimeout
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.clearInterval
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.clearTimeout
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.setInterval
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.isFinite
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.isNaN
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.updateAfterEvent
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.trace
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.parseFloat
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.parseInt
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.unescape
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.escape
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ASSetNativeAccessor
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ASSetNative
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ASSetPropFlags
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.RemoteLSOUsage
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.RemoteLSOUsage.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AssetCache
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AssetCache.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AsSetupError
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AsSetupError.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Error
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Error.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  toString, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ContextMenu
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ContextMenu.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  hideBuiltInItems, DONT_DELETE
+  copy, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ContextMenuItem
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ContextMenuItem.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  copy, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SharedObject
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.SharedObject.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  clear, DONT_DELETE
+  setFps, DONT_DELETE
+  getSize, DONT_DELETE
+  close, DONT_DELETE
+  flush, DONT_DELETE
+  send, DONT_DELETE
+  connect, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Microphone
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Microphone.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  setEncodeQuality, DONT_DELETE
+  setFramesPerPacket, DONT_DELETE
+  setCodec, DONT_DELETE
+  setUseEchoSuppression, DONT_DELETE
+  setGain, DONT_DELETE
+  setRate, DONT_DELETE
+  setSilenceLevel, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Camera
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Camera.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  setCursor, DONT_DELETE
+  setLoopback, DONT_DELETE
+  setMotionLevel, DONT_DELETE
+  setKeyFrameInterval, DONT_DELETE
+  setQuality, DONT_DELETE
+  setMode, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.NetStream
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.NetStream.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  backBufferTime, DONT_DELETE
+  maxPauseBufferTime, DONT_DELETE
+  checkPolicyFile, DONT_DELETE
+  getInfo, DONT_DELETE
+  setBufferTime, DONT_DELETE
+  send, DONT_DELETE
+  attachVideo, DONT_DELETE
+  attachAudio, DONT_DELETE
+  close, DONT_DELETE
+  onPeerConnect, DONT_DELETE
+  seek, DONT_DELETE
+  pause, DONT_DELETE
+  receiveVideo, DONT_DELETE
+  receiveAudio, DONT_DELETE
+  play2, DONT_DELETE
+  play, DONT_DELETE
+  publish, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.NetConnection
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.NetConnection.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  farNonce, DONT_DELETE
+  nearNonce, DONT_DELETE
+  addHeader, DONT_DELETE
+  call, DONT_DELETE
+  close, DONT_DELETE
+  connect, DONT_DELETE
+  protocol, DONT_DELETE
+  usingTLS, DONT_DELETE
+  connectedProxyType, DONT_DELETE
+  proxyType, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Color
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Color.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  getTransform, DONT_DELETE
+  getRGB, DONT_DELETE
+  setTransform, DONT_DELETE
+  setRGB, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AsBroadcaster
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  initialize, DONT_DELETE
+  removeListener, DONT_DELETE
+  addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.AsBroadcaster.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.XMLSocket
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.XMLSocket.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  setTimeout, DONT_DELETE
+  getTimeout, DONT_DELETE
+  onData, DONT_DELETE
+  close, DONT_DELETE
+  send, DONT_DELETE
+  connect, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.MovieClip
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.MovieClip.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  getTextSnapshot, DONT_DELETE
+  createTextField, DONT_DELETE
+  beginBitmapFill, DONT_DELETE
+  beginMeshFill, DONT_DELETE
+  lineGradientStyle, DONT_DELETE
+  clear, DONT_DELETE
+  endFill, DONT_DELETE
+  lineStyle, DONT_DELETE
+  curveTo, DONT_DELETE
+  lineTo, DONT_DELETE
+  moveTo, DONT_DELETE
+  beginGradientFill, DONT_DELETE
+  beginFill, DONT_DELETE
+  createEmptyMovieClip, DONT_DELETE
+  getRect, DONT_DELETE
+  attachBitmap, DONT_DELETE
+  getSWFVersion, DONT_DELETE
+  getInstanceAtDepth, DONT_DELETE
+  getNextHighestDepth, DONT_DELETE
+  stopDrag, DONT_DELETE
+  startDrag, DONT_DELETE
+  removeMovieClip, DONT_DELETE
+  duplicateMovieClip, DONT_DELETE
+  gotoAndStop, DONT_DELETE
+  gotoAndPlay, DONT_DELETE
+  prevFrame, DONT_DELETE
+  nextFrame, DONT_DELETE
+  stop, DONT_DELETE
+  play, DONT_DELETE
+  setMask, DONT_DELETE
+  getDepth, DONT_DELETE
+  attachVideo, DONT_DELETE
+  attachAudio, DONT_DELETE
+  getBytesLoaded, DONT_DELETE
+  getBytesTotal, DONT_DELETE
+  getBounds, DONT_DELETE
+  hitTest, DONT_DELETE
+  globalToLocal, DONT_DELETE
+  localToGlobal, DONT_DELETE
+  swapDepths, DONT_DELETE
+  attachMovie, DONT_DELETE
+  loadMovie, DONT_DELETE
+  loadVariables, DONT_DELETE
+  unloadMovie, DONT_DELETE
+  getURL, DONT_DELETE
+  meth, DONT_DELETE
+  scale9Grid, DONT_DELETE
+  forceSmoothing, DONT_DELETE
+  blendMode, DONT_DELETE
+  transform, DONT_DELETE
+  filters, DONT_DELETE
+  scrollRect, DONT_DELETE
+  opaqueBackground, DONT_DELETE
+  cacheAsBitmap, DONT_DELETE
+  _lockroot, DONT_DELETE
+  tabIndex, DONT_DELETE
+  enabled, DONT_DELETE
+  useHandCursor, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Infinity
+Testing _global.NaN
+Testing _global.enableDebugConsole
+Testing _global.Function
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Function.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.Object
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  registerClass, DONT_DELETE
+  __proto__, DONT_DELETE
+  constructor, DONT_DELETE
+  prototype, DONT_DELETE
+Testing _global.Object.prototype
+  toLocaleString, DONT_DELETE
+  isPropertyEnumerable, DONT_DELETE
+  isPrototypeOf, DONT_DELETE
+  hasOwnProperty, DONT_DELETE
+  toString, DONT_DELETE
+  valueOf, DONT_DELETE
+  addProperty, DONT_DELETE
+  unwatch, DONT_DELETE
+  watch, DONT_DELETE
+  constructor, DONT_DELETE
+Testing _global.ASconstructor
+Testing _global.ASnative
+Done

@@ -1,0 +1,36 @@
+{} onebitset PASSED!
+{} onebitoff PASSED!
+{} runzerone PASSED!
+{} runonezer PASSED!
+new Object() onebitset PASSED!
+new Object() onebitoff PASSED!
+new Object() runzerone PASSED!
+new Object() runonezer PASSED!
+[] onebitset PASSED!
+[] onebitoff PASSED!
+[] runzerone PASSED!
+[] runonezer PASSED!
+new Array() onebitset PASSED!
+new Array() onebitoff PASSED!
+new Array() runzerone PASSED!
+new Array() runonezer PASSED!
+new ByteArray() onebitset PASSED!
+new ByteArray() onebitoff PASSED!
+new ByteArray() runzerone PASSED!
+new ByteArray() runonezer PASSED!
+new Vector.<*> onebitset PASSED!
+new Vector.<*> onebitoff PASSED!
+new Vector.<*> runzerone PASSED!
+new Vector.<*> runonezer PASSED!
+new Vector.<int> onebitset PASSED!
+new Vector.<int> onebitoff PASSED!
+new Vector.<int> runzerone PASSED!
+new Vector.<int> runonezer PASSED!
+new Vector.<uint> onebitset PASSED!
+new Vector.<uint> onebitoff PASSED!
+new Vector.<uint> runzerone PASSED!
+new Vector.<uint> runonezer PASSED!
+new Vector.<Number> onebitset PASSED!
+new Vector.<Number> onebitoff PASSED!
+new Vector.<Number> runzerone PASSED!
+new Vector.<Number> runonezer PASSED!

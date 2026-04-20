@@ -7,12 +7,12 @@ use crate::buffer_pool::TexturePool;
 use crate::dynamic_transforms::DynamicTransforms;
 use crate::filters::FilterSource;
 use crate::mesh::Mesh;
-use crate::pixel_bender::{run_pixelbender_shader_impl, ShaderMode};
-use crate::surface::commands::{chunk_blends, Chunk, CommandRenderer};
+use crate::pixel_bender::{ShaderMode, run_pixelbender_shader_impl};
+use crate::surface::commands::{Chunk, CommandRenderer, chunk_blends};
 use crate::utils::{remove_srgb, supported_sample_count};
 use crate::{Descriptors, MaskState, Pipelines};
 use ruffle_render::commands::CommandList;
-use ruffle_render::pixel_bender::{ImageInputTexture, PixelBenderShaderArgument};
+use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
 use ruffle_render::quality::StageQuality;
 use std::sync::Arc;
 use target::CommandTarget;
@@ -65,7 +65,7 @@ impl Surface {
         }
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
     pub fn draw_commands_and_copy_to<'frame, 'global: 'frame>(
         &mut self,
@@ -105,7 +105,7 @@ impl Surface {
         );
     }
 
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
     pub fn draw_commands<'frame, 'global: 'frame>(
         &mut self,
@@ -150,8 +150,12 @@ impl Surface {
 
         for chunk in chunks {
             match chunk {
-                Chunk::Draw(chunk, needs_stencil, transform_buffers) => {
-                    transform_buffers.copy_to(
+                Chunk::Draw {
+                    chunk,
+                    needs_stencil,
+                    transforms,
+                } => {
+                    transforms.copy_to(
                         staging_belt,
                         &descriptors.device,
                         draw_encoder,
@@ -194,11 +198,12 @@ impl Surface {
                     num_masks = renderer.num_masks();
                     mask_state = renderer.mask_state();
                 }
-                Chunk::Blend(texture, ChunkBlendMode::Shader(shader), needs_stencil) => {
-                    assert!(
-                        !needs_stencil,
-                        "Shader blend should not need stencil buffer"
-                    );
+                Chunk::Blend {
+                    texture,
+                    blend_mode: ChunkBlendMode::Shader(shader),
+                    needs_stencil,
+                } => {
+                    assert!(!needs_stencil, "Shader blend mode not implemented in masks");
                     let parent_blend_buffer =
                         target.update_blend_buffer(descriptors, texture_pool, draw_encoder);
                     run_pixelbender_shader_impl(
@@ -229,7 +234,11 @@ impl Surface {
                     )
                     .expect("Failed to run PixelBender blend mode");
                 }
-                Chunk::Blend(texture, ChunkBlendMode::Complex(blend_mode), needs_stencil) => {
+                Chunk::Blend {
+                    texture,
+                    blend_mode: ChunkBlendMode::Complex(blend_mode),
+                    needs_stencil,
+                } => {
                     let parent = match blend_mode {
                         ComplexBlend::Alpha | ComplexBlend::Erase => {
                             match nearest_layer {
@@ -338,7 +347,6 @@ impl Surface {
                     );
 
                     render_pass.draw_indexed(0..6, 0, 0..1);
-                    drop(render_pass);
                 }
             }
         }

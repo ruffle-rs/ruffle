@@ -1,0 +1,384 @@
+Key down:
+  altKey: false
+  charCode: 47
+  ctrlKey: false
+  keyCode: 111
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 47
+  ctrlKey: false
+  keyCode: 111
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 42
+  ctrlKey: false
+  keyCode: 106
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 42
+  ctrlKey: false
+  keyCode: 106
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 45
+  ctrlKey: false
+  keyCode: 109
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 45
+  ctrlKey: false
+  keyCode: 109
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 36
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 36
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 38
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 38
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 33
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 33
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 43
+  ctrlKey: false
+  keyCode: 107
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 43
+  ctrlKey: false
+  keyCode: 107
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 37
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 37
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 39
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 39
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 35
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 35
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 40
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 40
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 34
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 34
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 13
+  ctrlKey: false
+  keyCode: 13
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 13
+  ctrlKey: false
+  keyCode: 13
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 45
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 45
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 127
+  ctrlKey: false
+  keyCode: 46
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 127
+  ctrlKey: false
+  keyCode: 46
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 144
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 0
+  ctrlKey: false
+  keyCode: 144
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 47
+  ctrlKey: false
+  keyCode: 111
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 47
+  ctrlKey: false
+  keyCode: 111
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 42
+  ctrlKey: false
+  keyCode: 106
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 42
+  ctrlKey: false
+  keyCode: 106
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 45
+  ctrlKey: false
+  keyCode: 109
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 45
+  ctrlKey: false
+  keyCode: 109
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 55
+  ctrlKey: false
+  keyCode: 103
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 55
+  ctrlKey: false
+  keyCode: 103
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 56
+  ctrlKey: false
+  keyCode: 104
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 56
+  ctrlKey: false
+  keyCode: 104
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 57
+  ctrlKey: false
+  keyCode: 105
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 57
+  ctrlKey: false
+  keyCode: 105
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 43
+  ctrlKey: false
+  keyCode: 107
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 43
+  ctrlKey: false
+  keyCode: 107
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 52
+  ctrlKey: false
+  keyCode: 100
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 52
+  ctrlKey: false
+  keyCode: 100
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 53
+  ctrlKey: false
+  keyCode: 101
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 53
+  ctrlKey: false
+  keyCode: 101
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 54
+  ctrlKey: false
+  keyCode: 102
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 54
+  ctrlKey: false
+  keyCode: 102
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 49
+  ctrlKey: false
+  keyCode: 97
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 49
+  ctrlKey: false
+  keyCode: 97
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 50
+  ctrlKey: false
+  keyCode: 98
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 50
+  ctrlKey: false
+  keyCode: 98
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 51
+  ctrlKey: false
+  keyCode: 99
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 51
+  ctrlKey: false
+  keyCode: 99
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 13
+  ctrlKey: false
+  keyCode: 13
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 13
+  ctrlKey: false
+  keyCode: 13
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 48
+  ctrlKey: false
+  keyCode: 96
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 48
+  ctrlKey: false
+  keyCode: 96
+  shiftKey: false
+Key down:
+  altKey: false
+  charCode: 46
+  ctrlKey: false
+  keyCode: 110
+  shiftKey: false
+Key up:
+  altKey: false
+  charCode: 46
+  ctrlKey: false
+  keyCode: 110
+  shiftKey: false

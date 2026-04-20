@@ -1,0 +1,3 @@
+foo(1) PASSED!
+foo(2) PASSED!
+foo(2, ["1"]) PASSED!

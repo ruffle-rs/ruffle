@@ -1,9 +1,9 @@
 package flash.display {
-
     [Ruffle(InstanceAllocator)]
     public class Shape extends DisplayObject {
-        public native function get graphics():Graphics;
+        [Ruffle(NativeAccessible)]
+        private var _graphics:Graphics;
 
-        internal var _graphics:Graphics;
+        public native function get graphics():Graphics;
     }
 }

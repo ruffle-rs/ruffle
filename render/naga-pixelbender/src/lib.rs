@@ -1,17 +1,17 @@
-use std::{num::NonZeroU32, sync::OnceLock, vec};
+use std::{num::NonZeroU32, sync::LazyLock, vec};
 
 use anyhow::Result;
 use naga::{
-    valid::{Capabilities, ValidationFlags, Validator},
     AddressSpace, ArraySize, BinaryOperator, Binding, Block, BuiltIn, EntryPoint, Expression,
     Function, FunctionArgument, FunctionResult, GlobalVariable, Handle, ImageClass, ImageDimension,
     ImageQuery, Literal, LocalVariable, MathFunction, Module, RelationalFunction, ResourceBinding,
-    ScalarKind, ShaderStage, Span, Statement, SwizzleComponent, Type, TypeInner, VectorSize,
+    ScalarKind, ShaderStage, Span, Statement, SwizzleComponent, Type, TypeInner, UnaryOperator,
+    VectorSize,
+    valid::{Capabilities, ValidationFlags, Validator},
 };
 use ruffle_render::pixel_bender::{
-    Opcode, Operation, PixelBenderParam, PixelBenderParamQualifier, PixelBenderReg,
+    OUT_COORD_NAME, Opcode, Operation, PixelBenderParam, PixelBenderParamQualifier, PixelBenderReg,
     PixelBenderRegChannel, PixelBenderRegKind, PixelBenderShader, PixelBenderTypeOpcode,
-    OUT_COORD_NAME,
 };
 
 pub const VERTEX_SHADER_ENTRYPOINT: &str = "filter__vertex_entry_point";
@@ -47,6 +47,8 @@ pub struct ShaderBuilder<'a> {
     zerovec4f: Handle<Expression>,
     // The value 1.0f32
     onef32: Handle<Expression>,
+    // The value 1i32
+    onei32: Handle<Expression>,
 
     // A temporary vec4f local variable.
     // Currently used during texture sampling.
@@ -55,7 +57,7 @@ pub struct ShaderBuilder<'a> {
     clamp_nearest: Handle<Expression>,
     clamp_linear: Handle<Expression>,
     // FIXME - implement the corresponding opcode 'Sample'
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     clamp_bilinear: Handle<Expression>,
 
     textures: Vec<Option<Handle<Expression>>>,
@@ -119,17 +121,15 @@ pub const ZEROED_OUT_OF_RANGE_MODE_INDEX: u32 = 5;
 
 pub const TEXTURE_START_BIND_INDEX: u32 = 6;
 
-impl<'a> ShaderBuilder<'a> {
+impl ShaderBuilder<'_> {
     pub fn build(shader: &PixelBenderShader) -> Result<NagaModules> {
         let mut module = Module::default();
 
-        static VERTEX_SHADER: OnceLock<Module> = OnceLock::new();
-        let vertex_shader = VERTEX_SHADER
-            .get_or_init(|| {
-                naga::front::wgsl::parse_str(ruffle_render::shader_source::SHADER_FILTER_COMMON)
-                    .expect("Failed to parse vertex shader")
-            })
-            .clone();
+        static VERTEX_SHADER: LazyLock<Module> = LazyLock::new(|| {
+            naga::front::wgsl::parse_str(ruffle_render::shader_source::SHADER_FILTER_COMMON)
+                .expect("Failed to parse vertex shader")
+        });
+        let vertex_shader = VERTEX_SHADER.clone();
 
         let vec2f = module.types.insert(
             Type {
@@ -239,7 +239,7 @@ impl<'a> ShaderBuilder<'a> {
                 location: 0,
                 interpolation: Some(naga::Interpolation::Perspective),
                 sampling: Some(naga::Sampling::Center),
-                second_blend_source: false,
+                blend_src: None,
             }),
         });
 
@@ -249,35 +249,33 @@ impl<'a> ShaderBuilder<'a> {
                 location: 0,
                 interpolation: None,
                 sampling: None,
-                second_blend_source: false,
+                blend_src: None,
             }),
         });
 
-        let samplers = (0..3)
-            .map(|i| {
-                let var = module.global_variables.append(
-                    GlobalVariable {
-                        name: Some(format!("sampler{}", i)),
-                        space: naga::AddressSpace::Handle,
-                        binding: Some(naga::ResourceBinding {
-                            group: 0,
-                            binding: TEXTURE_SAMPLER_START_BIND_INDEX + i,
-                        }),
-                        ty: module.types.insert(
-                            Type {
-                                name: None,
-                                inner: TypeInner::Sampler { comparison: false },
-                            },
-                            Span::UNDEFINED,
-                        ),
-                        init: None,
-                    },
-                    Span::UNDEFINED,
-                );
-                func.expressions
-                    .append(Expression::GlobalVariable(var), Span::UNDEFINED)
-            })
-            .collect::<Vec<_>>();
+        let samplers: [Handle<Expression>; 3] = core::array::from_fn(|i| {
+            let var = module.global_variables.append(
+                GlobalVariable {
+                    name: Some(format!("sampler{i}")),
+                    space: naga::AddressSpace::Handle,
+                    binding: Some(naga::ResourceBinding {
+                        group: 0,
+                        binding: TEXTURE_SAMPLER_START_BIND_INDEX + i as u32,
+                    }),
+                    ty: module.types.insert(
+                        Type {
+                            name: None,
+                            inner: TypeInner::Sampler { comparison: false },
+                        },
+                        Span::UNDEFINED,
+                    ),
+                    init: None,
+                },
+                Span::UNDEFINED,
+            );
+            func.expressions
+                .append(Expression::GlobalVariable(var), Span::UNDEFINED)
+        });
 
         let zeroi32 = func
             .expressions
@@ -286,6 +284,10 @@ impl<'a> ShaderBuilder<'a> {
         let zerof32 = func
             .expressions
             .append(Expression::Literal(Literal::F32(0.0)), Span::UNDEFINED);
+
+        let onei32 = func
+            .expressions
+            .append(Expression::Literal(Literal::I32(1)), Span::UNDEFINED);
 
         let onef32 = func
             .expressions
@@ -296,9 +298,9 @@ impl<'a> ShaderBuilder<'a> {
         let zerovec4f = evaluate_expr(
             &mut func,
             &mut blocks,
-            Expression::Compose {
-                ty: vec4f,
-                components: vec![zerof32, zerof32, zerof32, zerof32],
+            Expression::Splat {
+                size: VectorSize::Quad,
+                value: zerof32,
             },
         );
 
@@ -329,6 +331,7 @@ impl<'a> ShaderBuilder<'a> {
             zeroi32,
             zerovec4f,
             onef32,
+            onei32,
             temp_vec4f_local,
             clamp_nearest: samplers[SAMPLER_CLAMP_NEAREST as usize],
             clamp_linear: samplers[SAMPLER_CLAMP_LINEAR as usize],
@@ -374,47 +377,50 @@ impl<'a> ShaderBuilder<'a> {
 
         let wrapper_func = builder.make_sampler_wrapper();
 
-        let (float_parameters_buffer_size, int_parameters_buffer_size) = builder.add_arguments()?;
-        builder.process_opcodes(wrapper_func, zeroed_out_of_range_expr)?;
+        let (float_parameters_buffer_size, int_parameters_buffer_size) = builder.add_arguments();
+        builder.process_opcodes(wrapper_func, zeroed_out_of_range_expr);
 
-        let (dst, dst_param_type) = shader
-            .params
-            .iter()
-            .find_map(|p| {
-                if let PixelBenderParam::Normal {
-                    qualifier: PixelBenderParamQualifier::Output,
-                    reg,
-                    param_type,
-                    ..
-                } = p
-                {
-                    Some((reg, param_type))
-                } else {
-                    None
-                }
-            })
-            .expect("Missing destination register!");
+        let (dst, dst_param_type) = shader.output_reg().expect("Missing destination register!");
 
         let expected_dst_channels = match dst_param_type {
             PixelBenderTypeOpcode::TFloat4 => PixelBenderRegChannel::RGBA.as_slice(),
             PixelBenderTypeOpcode::TFloat3 => PixelBenderRegChannel::RGB.as_slice(),
-            _ => panic!("Invalid destination register type: {:?}", dst_param_type),
+            PixelBenderTypeOpcode::TFloat2 => PixelBenderRegChannel::RG.as_slice(),
+            PixelBenderTypeOpcode::TFloat => [PixelBenderRegChannel::R].as_slice(),
+            _ => panic!("Invalid destination register type: {dst_param_type:?}"),
         };
-        assert_eq!(
-            dst.channels, expected_dst_channels,
+        assert!(
+            dst.channels.len() <= 4,
             "Invalid 'dest' parameter register {dst:?}"
         );
 
         // We've emitted all of the opcodes into the function body, so we can now load
         // from the destination register and return it from the function.
-        let dst_load = builder.load_src_register(dst)?;
-        builder.push_statement(Statement::Return {
-            value: Some(dst_load),
-        });
+        let dst_load = builder.load_src_register(dst);
+
+        // Set the alpha channel to 1 if the number of channels is <4.
+        let dst = if expected_dst_channels.len() < 4 {
+            let mut components = Vec::with_capacity(4);
+            for i in 0..3 {
+                components.push(builder.evaluate_expr(Expression::AccessIndex {
+                    base: dst_load,
+                    index: i as u32,
+                }));
+            }
+            components.push(builder.onef32);
+
+            builder.evaluate_expr(Expression::Compose {
+                ty: builder.vec4f,
+                components,
+            })
+        } else {
+            dst_load
+        };
+        builder.push_statement(Statement::Return { value: Some(dst) });
 
         let block = match builder.blocks.pop().unwrap() {
             BlockStackEntry::Normal(block) => block,
-            block => panic!("Unfinished if statement: {:?}", block),
+            block => panic!("Unfinished if statement: {block:?}"),
         };
 
         if !builder.blocks.is_empty() {
@@ -433,6 +439,7 @@ impl<'a> ShaderBuilder<'a> {
             stage: ShaderStage::Fragment,
             early_depth_test: None,
             workgroup_size: [0; 3],
+            workgroup_size_overrides: None,
             function: builder.func,
         });
 
@@ -444,7 +451,7 @@ impl<'a> ShaderBuilder<'a> {
         })
     }
 
-    fn add_arguments(&mut self) -> Result<(u64, u64)> {
+    fn add_arguments(&mut self) -> (u64, u64) {
         let mut num_vec4fs = 0;
         let mut num_vec4is = 0;
 
@@ -486,7 +493,11 @@ impl<'a> ShaderBuilder<'a> {
                             num_vec4fs += 1;
                             (float_offset, ParamKind::Float)
                         }
-                        PixelBenderTypeOpcode::TInt
+                        PixelBenderTypeOpcode::TBool
+                        | PixelBenderTypeOpcode::TBool2
+                        | PixelBenderTypeOpcode::TBool3
+                        | PixelBenderTypeOpcode::TBool4
+                        | PixelBenderTypeOpcode::TInt
                         | PixelBenderTypeOpcode::TInt2
                         | PixelBenderTypeOpcode::TInt3
                         | PixelBenderTypeOpcode::TInt4 => {
@@ -521,7 +532,7 @@ impl<'a> ShaderBuilder<'a> {
                     let index = *index as usize;
                     let global_var = self.module.global_variables.append(
                         GlobalVariable {
-                            name: Some(format!("texture{}", index)),
+                            name: Some(format!("texture{index}")),
                             space: AddressSpace::Handle,
                             binding: Some(ResourceBinding {
                                 group: 0,
@@ -563,7 +574,7 @@ impl<'a> ShaderBuilder<'a> {
                         inner: TypeInner::Array {
                             base: self.vec4f,
                             size: ArraySize::Constant(NonZeroU32::new(num_vec4fs.max(1)).unwrap()),
-                            stride: std::mem::size_of::<f32>() as u32 * 4,
+                            stride: std::mem::size_of::<[f32; 4]>() as u32,
                         },
                     },
                     Span::UNDEFINED,
@@ -587,7 +598,7 @@ impl<'a> ShaderBuilder<'a> {
                         inner: TypeInner::Array {
                             base: self.vec4i,
                             size: ArraySize::Constant(NonZeroU32::new(num_vec4is.max(1)).unwrap()),
-                            stride: std::mem::size_of::<i32>() as u32 * 4,
+                            stride: std::mem::size_of::<[i32; 4]>() as u32,
                         },
                     },
                     Span::UNDEFINED,
@@ -618,17 +629,17 @@ impl<'a> ShaderBuilder<'a> {
                 | PixelBenderRegChannel::M3x3
                 | PixelBenderRegChannel::M4x4 => {
                     let get_vec_ptr = |this: &mut Self, index| {
-                        Ok(this.evaluate_expr(Expression::AccessIndex {
+                        this.evaluate_expr(Expression::AccessIndex {
                             base: global_base,
                             index: offset + index,
-                        }))
+                        })
                     };
-                    self.load_reg_as_matrix(reg.channels[0], get_vec_ptr)?
+                    self.load_reg_as_matrix(reg.channels[0], get_vec_ptr)
                 }
                 _ => self.evaluate_expr(Expression::Load { pointer: src_ptr }),
             };
 
-            self.emit_dest_store(src_expr, reg)?;
+            self.emit_dest_store(src_expr, reg);
         }
 
         // Emit this after all other registers have been initialized
@@ -639,13 +650,13 @@ impl<'a> ShaderBuilder<'a> {
                 .func
                 .expressions
                 .append(Expression::FunctionArgument(0), Span::UNDEFINED);
-            self.emit_dest_store(coord_val, coord_reg)?;
+            self.emit_dest_store(coord_val, coord_reg);
         }
 
-        Ok((
-            num_vec4fs.max(1) as u64 * 4 * std::mem::size_of::<f32>() as u64,
-            num_vec4is.max(1) as u64 * 4 * std::mem::size_of::<i32>() as u64,
-        ))
+        (
+            num_vec4fs.max(1) as u64 * std::mem::size_of::<[f32; 4]>() as u64,
+            num_vec4is.max(1) as u64 * std::mem::size_of::<[i32; 4]>() as u64,
+        )
     }
 
     /// Samples a texture, determining the out-of-range coordinate behavior
@@ -832,6 +843,7 @@ impl<'a> ShaderBuilder<'a> {
                 level: naga::SampleLevel::Auto,
                 depth_ref: None,
                 gather: None,
+                clamp_to_edge: false,
             },
             Span::UNDEFINED,
         );
@@ -854,7 +866,7 @@ impl<'a> ShaderBuilder<'a> {
         &mut self,
         sample_wrapper_func: Handle<Function>,
         zeroed_out_of_range_expr: Handle<Expression>,
-    ) -> Result<()> {
+    ) {
         for op in &self.shader.operations {
             match op {
                 Operation::Normal {
@@ -862,7 +874,7 @@ impl<'a> ShaderBuilder<'a> {
                     dst,
                     src: src_reg,
                 } => {
-                    let src = self.load_src_register(src_reg)?;
+                    let src = self.load_src_register(src_reg);
                     let mut dst = dst.clone();
                     let evaluated = match opcode {
                         Opcode::Mov => src,
@@ -879,14 +891,15 @@ impl<'a> ShaderBuilder<'a> {
                                 right: src,
                             })
                         }
-                        Opcode::Sub | Opcode::Add | Opcode::Mul => {
+                        Opcode::Sub | Opcode::Add | Opcode::Mul | Opcode::Div => {
                             // The destination is also used as the first operand: 'dst = dst <op> src'
-                            let left = self.load_src_register(&dst)?;
+                            let left = self.load_src_register(&dst);
 
                             let op = match opcode {
                                 Opcode::Sub => BinaryOperator::Subtract,
                                 Opcode::Add => BinaryOperator::Add,
                                 Opcode::Mul => BinaryOperator::Multiply,
+                                Opcode::Div => BinaryOperator::Divide,
                                 _ => unreachable!(),
                             };
 
@@ -898,7 +911,7 @@ impl<'a> ShaderBuilder<'a> {
                         }
                         Opcode::LogicalOr | Opcode::LogicalAnd => {
                             // The destination is also used as the first operand: 'dst = dst || src' or 'dst = dst && src'
-                            let left = self.load_src_register(&dst)?;
+                            let left = self.load_src_register(&dst);
                             let left_bool = self.evaluate_expr(Expression::As {
                                 expr: left,
                                 kind: ScalarKind::Bool,
@@ -914,23 +927,21 @@ impl<'a> ShaderBuilder<'a> {
                             // However, Naga currently handles this incorrectly - see https://github.com/gfx-rs/naga/issues/1931
                             // For now, work around this by manually applying it component-wise.
 
-                            let source_components: Vec<_> = (0..4)
-                                .map(|index| {
+                            let source_components: [Handle<Expression>; 4] =
+                                core::array::from_fn(|index| {
                                     self.evaluate_expr(Expression::AccessIndex {
                                         base: left_bool,
-                                        index,
+                                        index: index as u32,
                                     })
-                                })
-                                .collect();
+                                });
 
-                            let dest_components: Vec<_> = (0..4)
-                                .map(|index| {
+                            let dest_components: [Handle<Expression>; 4] =
+                                core::array::from_fn(|index| {
                                     self.evaluate_expr(Expression::AccessIndex {
                                         base: right_bool,
-                                        index,
+                                        index: index as u32,
                                     })
-                                })
-                                .collect();
+                                });
 
                             let binary_op = match opcode {
                                 Opcode::LogicalOr => BinaryOperator::LogicalOr,
@@ -960,6 +971,32 @@ impl<'a> ShaderBuilder<'a> {
                                 components: res_components,
                             })
                         }
+                        Opcode::LogicalNot => {
+                            // [kjarosh] Looks like FP mistakenly implements LogicalNot as a bitwise not.
+                            //
+                            // 1. Pixel Bender Toolkit compiles the ! unary operator into
+                            //    the LogicalNot opcode.
+                            //
+                            // 2. Pixel Bender Toolkit correctly evaluates ! as logical negation.
+                            //
+                            // 2. The ! operator is described as logical operator that operates
+                            //    on booleans (see the Adobe Pixel Bender Reference, Chapter 3:
+                            //    Pixel Bender Data Types, Operators).
+                            //
+                            // Considering points above, it's likely not an issue with naming, but
+                            // a bug in Flash Player.
+                            self.evaluate_expr(Expression::Unary {
+                                op: UnaryOperator::BitwiseNot,
+                                expr: src,
+                            })
+                        }
+                        Opcode::Ceil => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Ceil,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
+                        }),
                         Opcode::Floor => self.evaluate_expr(Expression::Math {
                             fun: MathFunction::Floor,
                             arg: src,
@@ -969,7 +1006,7 @@ impl<'a> ShaderBuilder<'a> {
                         }),
                         Opcode::Length => {
                             // Don't pad the result, as adding extra components changes the length
-                            let src_val = self.load_src_register_with_padding(src_reg, false)?;
+                            let src_val = self.load_src_register_with_padding(src_reg, false);
                             let length = self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Length,
                                 arg: src_val,
@@ -983,7 +1020,7 @@ impl<'a> ShaderBuilder<'a> {
                             })
                         }
                         Opcode::MatVecMul => {
-                            let right = self.load_src_register_with_padding(&dst, false)?;
+                            let right = self.load_src_register_with_padding(&dst, false);
                             // This is always a vector, so no need to use `pad_result`
                             self.evaluate_expr(Expression::Binary {
                                 op: BinaryOperator::Multiply,
@@ -992,7 +1029,7 @@ impl<'a> ShaderBuilder<'a> {
                             })
                         }
                         Opcode::VecMatMul => {
-                            let vec = self.load_src_register_with_padding(&dst, false)?;
+                            let vec = self.load_src_register_with_padding(&dst, false);
                             // This is always a vector, so no need to use `pad_result`
                             self.evaluate_expr(Expression::Binary {
                                 op: BinaryOperator::Multiply,
@@ -1001,8 +1038,8 @@ impl<'a> ShaderBuilder<'a> {
                             })
                         }
                         Opcode::Distance => {
-                            let left = self.load_src_register_with_padding(&dst, false)?;
-                            let right = self.load_src_register_with_padding(src_reg, false)?;
+                            let left = self.load_src_register_with_padding(&dst, false);
+                            let right = self.load_src_register_with_padding(src_reg, false);
                             let dist = self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Distance,
                                 arg: left,
@@ -1017,7 +1054,7 @@ impl<'a> ShaderBuilder<'a> {
                             self.pad_result(res, src_reg.is_scalar())
                         }
                         Opcode::Max => {
-                            let right = self.load_src_register(&dst)?;
+                            let right = self.load_src_register(&dst);
                             self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Max,
                                 arg: src,
@@ -1027,7 +1064,7 @@ impl<'a> ShaderBuilder<'a> {
                             })
                         }
                         Opcode::Min => {
-                            let right = self.load_src_register(&dst)?;
+                            let right = self.load_src_register(&dst);
                             self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Min,
                                 arg: src,
@@ -1036,8 +1073,18 @@ impl<'a> ShaderBuilder<'a> {
                                 arg3: None,
                             })
                         }
+                        Opcode::Step => {
+                            let right = self.load_src_register(&dst);
+                            self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::Step,
+                                arg: src,
+                                arg1: Some(right),
+                                arg2: None,
+                                arg3: None,
+                            })
+                        }
                         Opcode::Normalize => {
-                            let src = self.load_src_register_with_padding(src_reg, false)?;
+                            let src = self.load_src_register_with_padding(src_reg, false);
                             let res = self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Normalize,
                                 arg: src,
@@ -1055,7 +1102,7 @@ impl<'a> ShaderBuilder<'a> {
                             arg3: None,
                         }),
                         Opcode::Pow => {
-                            let dst_val = self.load_src_register(&dst)?;
+                            let dst_val = self.load_src_register(&dst);
                             self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Pow,
                                 arg: dst_val,
@@ -1114,7 +1161,7 @@ impl<'a> ShaderBuilder<'a> {
                             arg3: None,
                         }),
                         Opcode::Atan2 => {
-                            let dst_val = self.load_src_register(&dst)?;
+                            let dst_val = self.load_src_register(&dst);
                             self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Atan2,
                                 arg: dst_val,
@@ -1124,9 +1171,8 @@ impl<'a> ShaderBuilder<'a> {
                             })
                         }
                         Opcode::DotProduct => {
-                            let src_val: Handle<Expression> =
-                                self.load_src_register_with_padding(src_reg, false)?;
-                            let dst_val = self.load_src_register_with_padding(&dst, false)?;
+                            let src_val = self.load_src_register_with_padding(src_reg, false);
+                            let dst_val = self.load_src_register_with_padding(&dst, false);
                             let dot = self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Dot,
                                 arg: dst_val,
@@ -1140,9 +1186,20 @@ impl<'a> ShaderBuilder<'a> {
                             })
                         }
                         Opcode::Sqrt => {
-                            let src_val = self.load_src_register_with_padding(src_reg, false)?;
+                            let src_val = self.load_src_register_with_padding(src_reg, false);
                             let res = self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Sqrt,
+                                arg: src_val,
+                                arg1: None,
+                                arg2: None,
+                                arg3: None,
+                            });
+                            self.pad_result(res, src_reg.is_scalar())
+                        }
+                        Opcode::RSqrt => {
+                            let src_val = self.load_src_register_with_padding(src_reg, false);
+                            let res = self.evaluate_expr(Expression::Math {
+                                fun: MathFunction::InverseSqrt,
                                 arg: src_val,
                                 arg1: None,
                                 arg2: None,
@@ -1161,7 +1218,7 @@ impl<'a> ShaderBuilder<'a> {
                                 Opcode::LessThanEqual => BinaryOperator::LessEqual,
                                 _ => unreachable!(),
                             };
-                            let left = self.load_src_register(&dst)?;
+                            let left = self.load_src_register(&dst);
                             let res = self.evaluate_expr(Expression::Binary {
                                 op: bin_op,
                                 left,
@@ -1183,26 +1240,38 @@ impl<'a> ShaderBuilder<'a> {
                             })
                         }
                         Opcode::Mod => {
-                            let dst_val = self.load_src_register(&dst)?;
+                            let dst_val = self.load_src_register(&dst);
                             self.evaluate_expr(Expression::Binary {
                                 op: BinaryOperator::Modulo,
                                 left: dst_val,
                                 right: src,
                             })
                         }
-                        Opcode::FloatToInt => self.evaluate_expr(Expression::As {
-                            kind: crate::ScalarKind::Sint,
-                            expr: src,
-                            convert: Some(4),
+                        Opcode::FloatToInt => self.evaluate_expr(Expression::Math {
+                            fun: MathFunction::Round,
+                            arg: src,
+                            arg1: None,
+                            arg2: None,
+                            arg3: None,
                         }),
                         Opcode::IntToFloat => self.evaluate_expr(Expression::As {
                             kind: crate::ScalarKind::Float,
                             expr: src,
                             convert: Some(4),
                         }),
+                        Opcode::FloatToBool => self.evaluate_expr(Expression::Binary {
+                            op: BinaryOperator::NotEqual,
+                            left: src,
+                            right: self.zerovec4f,
+                        }),
+                        // [KJ] Seems that casting bool->float is broken in FP and always returns 0
+                        Opcode::BoolToFloat => self.zerovec4f,
+                        // [KJ] Seems that IntToBool is a noop, because the value can be
+                        // observed differently through `if` and `select`.
+                        Opcode::IntToBool => src,
                         Opcode::CrossProduct => {
-                            let src_val = self.load_src_register_with_padding(src_reg, false)?;
-                            let dst_val = self.load_src_register_with_padding(&dst, false)?;
+                            let src_val = self.load_src_register_with_padding(src_reg, false);
+                            let dst_val = self.load_src_register_with_padding(&dst, false);
                             let res = self.evaluate_expr(Expression::Math {
                                 fun: MathFunction::Cross,
                                 arg: dst_val,
@@ -1223,11 +1292,11 @@ impl<'a> ShaderBuilder<'a> {
                             panic!("Unimplemented opcode {opcode:?}");
                         }
                     };
-                    self.emit_dest_store(evaluated, &dst)?;
+                    self.emit_dest_store(evaluated, &dst);
                 }
                 Operation::SampleLinear { dst, src, tf }
                 | Operation::SampleNearest { dst, src, tf } => {
-                    let mut coord = self.load_src_register(src)?;
+                    let mut coord = self.load_src_register(src);
                     coord = self.evaluate_expr(Expression::Swizzle {
                         size: naga::VectorSize::Bi,
                         vector: coord,
@@ -1273,7 +1342,7 @@ impl<'a> ShaderBuilder<'a> {
                         zeroed_out_of_range_expr,
                     );
 
-                    self.emit_dest_store(sample_result, dst)?;
+                    self.emit_dest_store(sample_result, dst);
                 }
                 Operation::LoadFloat { dst, val } => {
                     let val_expr = self
@@ -1284,7 +1353,7 @@ impl<'a> ShaderBuilder<'a> {
                         size: naga::VectorSize::Quad,
                         value: val_expr,
                     });
-                    self.emit_dest_store(const_vec, dst)?;
+                    self.emit_dest_store(const_vec, dst);
                 }
                 Operation::LoadInt { dst, val } => {
                     let val_expr = self
@@ -1295,7 +1364,7 @@ impl<'a> ShaderBuilder<'a> {
                         size: naga::VectorSize::Quad,
                         value: val_expr,
                     });
-                    self.emit_dest_store(const_vec, dst)?;
+                    self.emit_dest_store(const_vec, dst);
                 }
                 Operation::If { src } => {
                     let expr_zero = match src.kind {
@@ -1308,7 +1377,7 @@ impl<'a> ShaderBuilder<'a> {
 
                     // FIXME - `load_src_register` always gives us a vec4 - ideally, we would
                     // have a flag to avoid this pointless splat-and-extract.
-                    let src = self.load_src_register(src)?;
+                    let src = self.load_src_register(src);
                     let first_component = self.evaluate_expr(Expression::AccessIndex {
                         base: src,
                         index: 0,
@@ -1364,7 +1433,7 @@ impl<'a> ShaderBuilder<'a> {
                             });
                         }
                         BlockStackEntry::Normal(block) => {
-                            panic!("Eif opcode without matching 'if': {:?}", block)
+                            panic!("Eif opcode without matching 'if': {block:?}")
                         }
                     }
                 }
@@ -1374,12 +1443,12 @@ impl<'a> ShaderBuilder<'a> {
                     dst,
                     condition,
                 } => {
-                    let src1_expr = self.load_src_register(src1)?;
-                    let src2_expr = self.load_src_register(src2)?;
+                    let src1_expr = self.load_src_register(src1);
+                    let src2_expr = self.load_src_register(src2);
 
-                    let expr_zero: Handle<Expression> = match condition.kind {
-                        PixelBenderRegKind::Float => self.zerof32,
-                        PixelBenderRegKind::Int => self.zeroi32,
+                    let expr_one: Handle<Expression> = match condition.kind {
+                        PixelBenderRegKind::Float => self.onef32,
+                        PixelBenderRegKind::Int => self.onei32,
                     };
                     if condition.channels.len() != 1 {
                         panic!("'Select' condition must be a scalar: {condition:?}");
@@ -1387,16 +1456,16 @@ impl<'a> ShaderBuilder<'a> {
 
                     // FIXME - `load_src_register` always gives us a vec4 - ideally, we would
                     // have a flag to avoid this pointless splat-and-extract.
-                    let cond_expr = self.load_src_register(condition)?;
+                    let cond_expr = self.load_src_register(condition);
                     let first_component = self.evaluate_expr(Expression::AccessIndex {
                         base: cond_expr,
                         index: 0,
                     });
 
                     let is_true = self.evaluate_expr(Expression::Binary {
-                        op: BinaryOperator::NotEqual,
+                        op: BinaryOperator::Equal,
                         left: first_component,
-                        right: expr_zero,
+                        right: expr_one,
                     });
 
                     let select_expr = self.evaluate_expr(Expression::Select {
@@ -1405,17 +1474,16 @@ impl<'a> ShaderBuilder<'a> {
                         reject: src2_expr,
                     });
 
-                    self.emit_dest_store(select_expr, dst)?;
+                    self.emit_dest_store(select_expr, dst);
                 }
                 Operation::Nop => {}
             }
         }
-        Ok(())
     }
 
     /// Gets a pointer to the given register - this does *not* perform a load, so it can
     /// be used with both `Expression::Load` and `Statement::Store`
-    fn register_pointer(&mut self, reg: &PixelBenderReg) -> Result<Handle<Expression>> {
+    fn register_pointer(&mut self, reg: &PixelBenderReg) -> Handle<Expression> {
         let base_index = reg.index as usize;
 
         if matches!(
@@ -1451,10 +1519,10 @@ impl<'a> ShaderBuilder<'a> {
             registers[base_index] = Some(expr);
         }
 
-        Ok(registers[base_index].unwrap())
+        registers[base_index].unwrap()
     }
 
-    fn load_src_register(&mut self, reg: &PixelBenderReg) -> Result<Handle<Expression>> {
+    fn load_src_register(&mut self, reg: &PixelBenderReg) -> Handle<Expression> {
         self.load_src_register_with_padding(reg, true)
     }
 
@@ -1466,7 +1534,7 @@ impl<'a> ShaderBuilder<'a> {
         &mut self,
         reg: &PixelBenderReg,
         padding: bool,
-    ) -> Result<Handle<Expression>> {
+    ) -> Handle<Expression> {
         if matches!(
             reg.channels.as_slice(),
             [PixelBenderRegChannel::M2x2]
@@ -1489,7 +1557,7 @@ impl<'a> ShaderBuilder<'a> {
             return self.load_reg_as_matrix(reg.channels[0], get_vec_ptr);
         }
 
-        let reg_ptr = self.register_pointer(reg)?;
+        let reg_ptr = self.register_pointer(reg);
         let reg_value = self.evaluate_expr(Expression::Load { pointer: reg_ptr });
 
         let mut swizzle_components = reg
@@ -1509,10 +1577,10 @@ impl<'a> ShaderBuilder<'a> {
         } else {
             match reg.channels.len() {
                 1 => {
-                    return Ok(self.evaluate_expr(Expression::AccessIndex {
+                    return self.evaluate_expr(Expression::AccessIndex {
                         base: reg_value,
                         index: swizzle_components[0] as u32,
-                    }))
+                    });
                 }
                 2 => VectorSize::Bi,
                 3 => VectorSize::Tri,
@@ -1527,11 +1595,11 @@ impl<'a> ShaderBuilder<'a> {
             swizzle_components.resize(4_usize, SwizzleComponent::W);
         }
 
-        Ok(self.evaluate_expr(Expression::Swizzle {
+        self.evaluate_expr(Expression::Swizzle {
             size,
             vector: reg_value,
             pattern: swizzle_components.try_into().unwrap(),
-        }))
+        })
     }
 
     /// Creates a `Statement::Emit` covering `expr`
@@ -1563,7 +1631,7 @@ impl<'a> ShaderBuilder<'a> {
     }
 
     // Emits a store of `expr` to the destination register, taking into account the store mask.
-    fn emit_dest_store(&mut self, expr: Handle<Expression>, dst: &PixelBenderReg) -> Result<()> {
+    fn emit_dest_store(&mut self, expr: Handle<Expression>, dst: &PixelBenderReg) {
         if matches!(
             dst.channels.as_slice(),
             [PixelBenderRegChannel::M2x2]
@@ -1607,7 +1675,7 @@ impl<'a> ShaderBuilder<'a> {
                     channels: PixelBenderRegChannel::RGBA.to_vec(),
                     index: dst.index,
                     kind: PixelBenderRegKind::Float,
-                })?;
+                });
                 self.push_statement(Statement::Store {
                     pointer: dst_register,
                     value: combined_vec,
@@ -1632,13 +1700,13 @@ impl<'a> ShaderBuilder<'a> {
                             index: dst.index + i,
                             kind: PixelBenderRegKind::Float,
                         },
-                    )?;
+                    );
                 }
             }
-            return Ok(());
+            return;
         }
 
-        let dst_register = self.register_pointer(dst).unwrap();
+        let dst_register = self.register_pointer(dst);
 
         for (dst_channel, src_channel) in
             dst.channels.iter().zip(PixelBenderRegChannel::RGBA.iter())
@@ -1678,9 +1746,8 @@ impl<'a> ShaderBuilder<'a> {
             self.push_statement(Statement::Store {
                 pointer: dst_component,
                 value: src_cast,
-            })
+            });
         }
-        Ok(())
     }
 
     /// Pushes a statement, taking into account our current 'if' block.
@@ -1694,9 +1761,9 @@ impl<'a> ShaderBuilder<'a> {
     fn load_reg_as_matrix(
         &mut self,
         channel: PixelBenderRegChannel,
-        mut get_vec_ptr: impl FnMut(&mut Self, u32) -> Result<Handle<Expression>>,
-    ) -> Result<Handle<Expression>> {
-        let vec0_ptr = get_vec_ptr(self, 0)?;
+        mut get_vec_ptr: impl FnMut(&mut Self, u32) -> Handle<Expression>,
+    ) -> Handle<Expression> {
+        let vec0_ptr = get_vec_ptr(self, 0);
         let vec0_load = self.evaluate_expr(Expression::Load { pointer: vec0_ptr });
 
         match channel {
@@ -1727,16 +1794,16 @@ impl<'a> ShaderBuilder<'a> {
                     ],
                 });
 
-                Ok(self.evaluate_expr(Expression::Compose {
+                self.evaluate_expr(Expression::Compose {
                     ty: self.mat2x2f,
                     components: vec![col0, col1],
-                }))
+                })
             }
             PixelBenderRegChannel::M3x3 | PixelBenderRegChannel::M4x4 => {
-                let vec1_ptr = get_vec_ptr(self, 1)?;
+                let vec1_ptr = get_vec_ptr(self, 1);
                 let mut col1 = self.evaluate_expr(Expression::Load { pointer: vec1_ptr });
 
-                let vec2_ptr = get_vec_ptr(self, 2)?;
+                let vec2_ptr = get_vec_ptr(self, 2);
                 let mut col2 = self.evaluate_expr(Expression::Load { pointer: vec2_ptr });
 
                 match channel {
@@ -1774,20 +1841,20 @@ impl<'a> ShaderBuilder<'a> {
                             ],
                         });
 
-                        Ok(self.evaluate_expr(Expression::Compose {
+                        self.evaluate_expr(Expression::Compose {
                             ty: self.mat3x3f,
                             components: vec![col0, col1, col2],
-                        }))
+                        })
                     }
                     // FIXME - add tests for this case
                     PixelBenderRegChannel::M4x4 => {
-                        let vec3_ptr = get_vec_ptr(self, 3)?;
+                        let vec3_ptr = get_vec_ptr(self, 3);
                         let col3 = self.evaluate_expr(Expression::Load { pointer: vec3_ptr });
 
-                        Ok(self.evaluate_expr(Expression::Compose {
+                        self.evaluate_expr(Expression::Compose {
                             ty: self.mat4x4f,
                             components: vec![vec0_load, col1, col2, col3],
-                        }))
+                        })
                     }
                     _ => unreachable!(),
                 }
@@ -1797,7 +1864,7 @@ impl<'a> ShaderBuilder<'a> {
     }
 }
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn to_wgsl(module: &naga::Module) -> String {
     let mut out = String::new();
 
@@ -1807,7 +1874,7 @@ fn to_wgsl(module: &naga::Module) -> String {
     );
     let module_info = validator
         .validate(module)
-        .unwrap_or_else(|e| panic!("Validation failed: {:#?}", e));
+        .unwrap_or_else(|e| panic!("Validation failed: {e:#?}"));
 
     let mut writer =
         naga::back::wgsl::Writer::new(&mut out, naga::back::wgsl::WriterFlags::EXPLICIT_TYPES);

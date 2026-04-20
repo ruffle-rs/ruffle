@@ -1,7 +1,7 @@
 //! Any-AVM object references
 
 use crate::avm1::Object as Avm1Object;
-use crate::avm2::Object as Avm2Object;
+use crate::avm2::StageObject as Avm2StageObject;
 use gc_arena::Collect;
 
 /// The VM (or lack thereof) that created a given object.
@@ -38,7 +38,7 @@ pub enum Instantiator {
     Avm1,
 
     /// This object was instantiated by AVM2 code constructing the object. All
-    /// objects should be created as AVM1 objects and any custom constructors
+    /// objects should be created as AVM2 objects and any custom constructors
     /// should resolve on-stack.
     Avm2,
 }
@@ -72,7 +72,7 @@ pub enum AvmObject<'gc> {
 
     /// An object that is exclusively represented as an AVM2 object. Attempts
     /// to access it from AVM1 will fail.
-    Avm2(Avm2Object<'gc>),
+    Avm2(Avm2StageObject<'gc>),
 }
 
 impl<'gc> AvmObject<'gc> {
@@ -87,7 +87,7 @@ impl<'gc> AvmObject<'gc> {
 
     /// Attempt to access the AVM2 claim to this object, returning `None` if
     /// the object cannot be accessed by the VM.
-    pub fn as_avm2_object(&self) -> Option<Avm2Object<'gc>> {
+    pub fn as_avm2_object(&self) -> Option<Avm2StageObject<'gc>> {
         match self {
             Self::Avm1(_) => None,
             Self::Avm2(o) => Some(*o),
@@ -101,8 +101,8 @@ impl<'gc> From<Avm1Object<'gc>> for AvmObject<'gc> {
     }
 }
 
-impl<'gc> From<Avm2Object<'gc>> for AvmObject<'gc> {
-    fn from(t: Avm2Object<'gc>) -> Self {
+impl<'gc> From<Avm2StageObject<'gc>> for AvmObject<'gc> {
+    fn from(t: Avm2StageObject<'gc>) -> Self {
         Self::Avm2(t)
     }
 }

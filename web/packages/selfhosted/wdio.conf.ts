@@ -1,4 +1,4 @@
-import type { Options, Services } from "@wdio/types";
+import type { Services } from "@wdio/types";
 import { BrowserStackCapabilities } from "@wdio/types/build/Capabilities";
 
 const capabilities: WebdriverIO.Capabilities[] = [];
@@ -10,6 +10,7 @@ const firefox = process.argv.includes("--firefox");
 const edge = process.argv.includes("--edge");
 const browserstack = process.argv.includes("--browserstack");
 const oldVersions = process.argv.includes("--oldVersions");
+const maxInstances = process.argv.includes("--parallel") ? 4 : 1;
 
 let user: string | undefined = undefined;
 let key: string | undefined = undefined;
@@ -17,33 +18,31 @@ let setupLogging = async () => {};
 let reportLogging = async () => {};
 
 if (chrome) {
-    const args = ["--disable-gpu"];
+    const args = ["--disable-gpu", "--enable-unsafe-swiftshader"];
     if (headless) {
         args.push("--headless");
     }
     capabilities.push({
-        "wdio:maxInstances": 1,
+        "wdio:maxInstances": maxInstances,
         browserName: "chrome",
         "goog:chromeOptions": {
             args,
         },
     });
-    services.push("chromedriver");
 }
 
 if (edge) {
-    const args = ["--disable-gpu"];
+    const args = ["--disable-gpu", "--enable-unsafe-swiftshader"];
     if (headless) {
         args.push("--headless");
     }
     capabilities.push({
-        "wdio:maxInstances": 1,
+        "wdio:maxInstances": maxInstances,
         browserName: "MicrosoftEdge",
         "ms:edgeOptions": {
             args,
         },
     });
-    services.push("edgedriver");
 }
 
 if (firefox) {
@@ -52,13 +51,12 @@ if (firefox) {
         args.push("-headless");
     }
     capabilities.push({
-        "wdio:maxInstances": 1,
+        "wdio:maxInstances": maxInstances,
         browserName: "firefox",
         "moz:firefoxOptions": {
             args,
         },
     });
-    services.push("geckodriver");
 }
 
 if (browserstack) {
@@ -113,6 +111,11 @@ if (browserstack) {
         "wdio:exclude": [
             "./test/integration_tests/keyboard_input/test.ts", // Doesn't work on iOS at time of writing
             "./test/polyfill/classic_frames_provided/test.ts", // Flaky on iOS
+            // Doesn't work on iOS at time of writing: possibly a browser bug.
+            "./test/integration_tests/programmatic_events/test.ts",
+            // Doesn't work on iOS at time of writing: random wdio bugs
+            // and clipboard permissions need special handling.
+            "./test/integration_tests/context_menu/test.ts",
         ],
     });
 
@@ -132,7 +135,7 @@ if (browserstack) {
             "bstack:options": {
                 os: "Windows",
                 osVersion: "10",
-                browserVersion: "84.0",
+                browserVersion: "94.0",
                 ...bsOptions,
             },
         });
@@ -208,7 +211,7 @@ declare global {
 }
 
 // @ts-expect-error TS2375 Undefined is the same as not specified here
-export const config: Options.Testrunner = {
+export const config: WebdriverIO.Config = {
     user,
     key,
     runner: "local",
@@ -217,9 +220,10 @@ export const config: Options.Testrunner = {
         "./test/js_api/*.ts",
         "./test/integration_tests/**/test.ts",
     ],
-    maxInstances: 10,
+    maxInstances: maxInstances,
     capabilities,
-    logLevel: "info",
+    // wdio produces a lot of spam on info
+    logLevel: "warn",
     bail: 0,
     baseUrl: "http://localhost",
     waitforTimeout: 30000,
@@ -232,6 +236,19 @@ export const config: Options.Testrunner = {
     mochaOpts: {
         ui: "bdd",
         timeout: 120000,
+    },
+
+    async beforeSuite() {
+        if (!browserstack) {
+            await browser.sessionSubscribe({ events: ["log.entryAdded"] });
+            browser.on("log.entryAdded", (entryAdded) => {
+                console.log(
+                    "[Console] [%s] %s",
+                    entryAdded.level,
+                    entryAdded.text,
+                );
+            });
+        }
     },
 
     async beforeTest() {

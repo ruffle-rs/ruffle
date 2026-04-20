@@ -1,0 +1,6 @@
+// stage.frameRate (SWF header = -43.75)
+212.25
+// stage.frameRate = -43.75;
+0.01
+// stage.frameRate = 212.25;
+212.25

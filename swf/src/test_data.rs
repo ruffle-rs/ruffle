@@ -12,7 +12,7 @@ use crate::write::write_swf;
 use std::borrow::Cow;
 use std::fs::File;
 
-#[allow(dead_code)]
+#[expect(dead_code)]
 pub fn echo_swf(filename: &str) {
     let in_data = std::fs::read(filename).unwrap();
     let swf_buf = decompress_swf(&in_data[..]).unwrap();
@@ -376,7 +376,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         align: TextAlign::Justify,
                         left_margin: Twips::from_pixels(3.0),
                         right_margin: Twips::from_pixels(4.0),
-                        indent: Twips::from_pixels(1.0),
+                        indent: Twips::ONE_PX,
                         leading: Twips::from_pixels(2.0),
                     }))
                     .with_variable_name(
@@ -394,7 +394,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             1,
-            Tag::DefineFont(Box::new(FontV1 {
+            Tag::DefineFont(FontV1 {
                 id: 1,
                 glyphs: vec![
                     vec![
@@ -440,7 +440,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         },
                     ],
                 ],
-            })),
+            }),
             read_tag_bytes_from_file("tests/swfs/DefineFont-MX.swf", TagCode::DefineFont),
         ),
         /* TODO: Commented out because Flash MX wrote this file with a CodeTableOffset, but we don't.
@@ -721,9 +721,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                         ],
                     })],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::from_pixels(10.0))
-                        .with_color(Color::from_rgba(0xff00ff00))],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(10.0))
+                            .with_color(Color::from_rgba(0xff00ff00)),
+                    ],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some(Point::from_pixels(20.0, 20.0)),
@@ -810,9 +812,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                         ],
                     })],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::from_pixels(2.0))
-                        .with_color(Color::from_rgba(0xffffff00))],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(2.0))
+                            .with_color(Color::from_rgba(0xffffff00)),
+                    ],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some(Point::from_pixels(20.0, 60.0)),
@@ -920,9 +924,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         },
                         focal_point: Fixed8::from_f64(0.97265625),
                     }],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::from_pixels(10.0))
-                        .with_color(Color::from_rgba(0xff00ff00))],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(10.0))
+                            .with_color(Color::from_rgba(0xff00ff00)),
+                    ],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some(Point::from_pixels(20.0, 20.0)),
@@ -1021,9 +1027,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         },
                         focal_point: Fixed8::from_f64(-0.9921875),
                     }],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::from_pixels(2.0))
-                        .with_color(Color::from_rgba(0xffffff00))],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(2.0))
+                            .with_color(Color::from_rgba(0xffffff00)),
+                    ],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: Some(Point::from_pixels(26.0, 147.35)),
@@ -1076,15 +1084,15 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 flags: DefineMorphShapeFlag::HAS_SCALING_STROKES,
                 start: MorphShape {
                     shape_bounds: Rectangle {
-                        x_min: Twips::from_pixels(0.0),
+                        x_min: Twips::ZERO,
                         x_max: Twips::from_pixels(200.0),
-                        y_min: Twips::from_pixels(0.0),
+                        y_min: Twips::ZERO,
                         y_max: Twips::from_pixels(200.0),
                     },
                     edge_bounds: Rectangle {
-                        x_min: Twips::from_pixels(0.0),
+                        x_min: Twips::ZERO,
                         x_max: Twips::from_pixels(200.0),
-                        y_min: Twips::from_pixels(0.0),
+                        y_min: Twips::ZERO,
                         y_max: Twips::from_pixels(200.0),
                     },
                     fill_styles: vec![FillStyle::RadialGradient(Gradient {
@@ -1119,9 +1127,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                         ],
                     })],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::ZERO)
-                        .with_color(Color::from_rgba(0x00000000))],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::ZERO)
+                            .with_color(Color::from_rgba(0x00000000)),
+                    ],
                     shape: vec![
                         ShapeRecord::StyleChange(Box::new(StyleChangeData {
                             move_to: None,
@@ -1146,15 +1156,15 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 },
                 end: MorphShape {
                     shape_bounds: Rectangle {
-                        x_min: Twips::from_pixels(0.0),
+                        x_min: Twips::ZERO,
                         x_max: Twips::from_pixels(200.0),
-                        y_min: Twips::from_pixels(0.0),
+                        y_min: Twips::ZERO,
                         y_max: Twips::from_pixels(200.0),
                     },
                     edge_bounds: Rectangle {
-                        x_min: Twips::from_pixels(0.0),
+                        x_min: Twips::ZERO,
                         x_max: Twips::from_pixels(200.0),
-                        y_min: Twips::from_pixels(0.0),
+                        y_min: Twips::ZERO,
                         y_max: Twips::from_pixels(200.0),
                     },
                     fill_styles: vec![FillStyle::RadialGradient(Gradient {
@@ -1189,9 +1199,11 @@ pub fn tag_tests() -> Vec<TagTestData> {
                             },
                         ],
                     })],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::ZERO)
-                        .with_color(Color::from_rgba(0x00000000))],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::ZERO)
+                            .with_color(Color::from_rgba(0x00000000)),
+                    ],
                     shape: vec![
                         ShapeRecord::StraightEdge {
                             delta: PointDelta::from_pixels(200.0, 0.0),
@@ -1272,19 +1284,19 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             1,
-            Tag::DefineShape(Shape {
+            Tag::DefineShape(Box::new(Shape {
                 version: 1,
                 id: 1,
                 shape_bounds: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(20.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(20.0),
                 },
                 edge_bounds: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(20.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(20.0),
                 },
                 flags: ShapeFlag::HAS_NON_SCALING_STROKES,
@@ -1318,24 +1330,24 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         delta: PointDelta::from_pixels(0.0, -20.0),
                     },
                 ],
-            }),
+            })),
             read_tag_bytes_from_file("tests/swfs/DefineShape.swf", TagCode::DefineShape),
         ),
         (
             8,
-            Tag::DefineShape(Shape {
+            Tag::DefineShape(Box::new(Shape {
                 version: 3,
                 id: 1,
                 shape_bounds: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(50.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(50.0),
                 },
                 edge_bounds: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(50.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(50.0),
                 },
                 flags: ShapeFlag::HAS_NON_SCALING_STROKES,
@@ -1415,12 +1427,12 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         anchor_delta: PointDelta::from_pixels(0.0, 10.35),
                     },
                 ],
-            }),
+            })),
             read_tag_bytes_from_file("tests/swfs/DefineShape3.swf", TagCode::DefineShape3),
         ),
         (
             8,
-            Tag::DefineShape(Shape {
+            Tag::DefineShape(Box::new(Shape {
                 version: 4,
                 id: 1,
                 shape_bounds: Rectangle {
@@ -1430,9 +1442,9 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     y_max: Twips::from_pixels(110.0),
                 },
                 edge_bounds: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(250.0),
-                    y_min: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
                     y_max: Twips::from_pixels(100.0),
                 },
                 flags: ShapeFlag::HAS_NON_SCALING_STROKES,
@@ -1611,12 +1623,12 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         anchor_delta: PointDelta::from_pixels(0.0, 20.7),
                     },
                 ],
-            }),
+            })),
             read_tag_bytes_from_file("tests/swfs/DefineShape4.swf", TagCode::DefineShape4),
         ),
         (
             4,
-            Tag::DefineSound(Box::new(Sound {
+            Tag::DefineSound(Sound {
                 id: 1,
                 format: SoundFormat {
                     compression: AudioCompression::Uncompressed,
@@ -1629,7 +1641,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     255, 127, 0, 128, 255, 127, 0, 128, 255, 127, 0, 128, 255, 127, 0, 128, 255,
                     127, 0, 128,
                 ],
-            })),
+            }),
             read_tag_bytes_from_file("tests/swfs/DefineSound.swf", TagCode::DefineSound),
         ),
         (
@@ -1947,8 +1959,8 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 action: PlaceObjectAction::Place(1),
                 depth: 1,
                 matrix: Some(Matrix {
-                    tx: Twips::from_pixels(0.0),
-                    ty: Twips::from_pixels(0.0),
+                    tx: Twips::ZERO,
+                    ty: Twips::ZERO,
                     a: Fixed16::ONE,
                     b: Fixed16::ZERO,
                     c: Fixed16::ZERO,
@@ -2180,7 +2192,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         (1, Tag::ShowFrame, vec![0b01_000000, 0]),
         (
             3,
-            Tag::SoundStreamHead2(Box::new(SoundStreamHead {
+            Tag::SoundStreamHead2(SoundStreamHead {
                 stream_format: SoundFormat {
                     compression: AudioCompression::Uncompressed,
                     sample_rate: 5512,
@@ -2195,7 +2207,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                 },
                 num_samples_per_block: 229,
                 latency_seek: 0,
-            })),
+            }),
             read_tag_bytes_from_file("tests/swfs/SoundStreamHead2.swf", TagCode::SoundStreamHead2),
         ),
         (
@@ -2350,7 +2362,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
         ),
         (
             8,
-            Tag::DefineShape(Shape {
+            Tag::DefineShape(Box::new(Shape {
                 version: 4,
                 id: 2,
                 shape_bounds: Rectangle {
@@ -2360,28 +2372,30 @@ pub fn tag_tests() -> Vec<TagTestData> {
                     y_max: Twips::from_pixels(20.0),
                 },
                 edge_bounds: Rectangle {
-                    x_min: Twips::from_pixels(0.0),
+                    x_min: Twips::ZERO,
                     x_max: Twips::from_pixels(200.0),
-                    y_min: Twips::from_pixels(0.0),
-                    y_max: Twips::from_pixels(0.0),
+                    y_min: Twips::ZERO,
+                    y_max: Twips::ZERO,
                 },
                 flags: ShapeFlag::HAS_SCALING_STROKES,
                 styles: ShapeStyles {
                     fill_styles: vec![],
-                    line_styles: vec![LineStyle::new()
-                        .with_width(Twips::from_pixels(40.0))
-                        .with_fill_style(FillStyle::Bitmap {
-                            id: 1,
-                            matrix: Matrix {
-                                a: Fixed16::from_f32(20.0),
-                                d: Fixed16::from_f32(20.0),
-                                tx: Twips::from_pixels(10.0),
-                                ty: Twips::from_pixels(10.0),
-                                ..Default::default()
-                            },
-                            is_smoothed: false,
-                            is_repeating: true,
-                        })],
+                    line_styles: vec![
+                        LineStyle::new()
+                            .with_width(Twips::from_pixels(40.0))
+                            .with_fill_style(FillStyle::Bitmap {
+                                id: 1,
+                                matrix: Matrix {
+                                    a: Fixed16::from_f32(20.0),
+                                    d: Fixed16::from_f32(20.0),
+                                    tx: Twips::from_pixels(10.0),
+                                    ty: Twips::from_pixels(10.0),
+                                    ..Default::default()
+                                },
+                                is_smoothed: false,
+                                is_repeating: true,
+                            }),
+                    ],
                 },
                 shape: vec![
                     ShapeRecord::StyleChange(Box::new(StyleChangeData {
@@ -2395,7 +2409,7 @@ pub fn tag_tests() -> Vec<TagTestData> {
                         delta: PointDelta::from_pixels(200.0, 0.0),
                     },
                 ],
-            }),
+            })),
             read_tag_bytes_from_file("tests/swfs/BitmapLineStyle.swf", TagCode::DefineShape4),
         ),
     ]
@@ -2688,12 +2702,14 @@ pub fn avm2_tests() -> Vec<Avm2TestData> {
                     params: vec![],
                     return_type: Index::new(1),
                     flags: MethodFlags::empty(),
+                    body: Some(Index::new(0)),
                 },
                 Method {
                     name: Index::new(0),
                     params: vec![],
                     return_type: Index::new(0),
                     flags: MethodFlags::empty(),
+                    body: Some(Index::new(1)),
                 },
             ],
             metadata: vec![],

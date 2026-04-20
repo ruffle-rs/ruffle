@@ -1,0 +1,11 @@
+PASSED: true
+PASSED: 0 == 0
+PASSED:  == 
+PASSED: true
+PASSED: 1 == 1
+PASSED: var_defined_at_frame3 == var_defined_at_frame3
+onEnterFrame
+PASSED: ar.toString()  ==  'moo,setTarget,moo' [timeline_var_test.c:146]
+#passed: 7
+#failed: 0
+#total tests run: 7

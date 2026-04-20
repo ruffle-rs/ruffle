@@ -1,0 +1,11 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+// test a variety of super error conditions
+package SuperRuntimeErrorPackage {
+    public class otherPackageBase {
+        internal function otherPackageFunc() : String {
+            return "I'm in another package!";
+        }
+    }
+}

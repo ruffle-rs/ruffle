@@ -1,2 +1,0 @@
-Little endian: ∀x
-Big endian: ∀x

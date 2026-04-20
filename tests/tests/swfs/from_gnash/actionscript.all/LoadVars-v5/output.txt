@@ -1,0 +1,8 @@
+SWF5
+
+[LoadVars.as debug-22405-0e18b8076]
+PASSED: typeof(LoadVars) == 'function' [./LoadVars.as:31]
+PASSED: typeof(loadvarsObj) == 'object' [./LoadVars.as:36]
+#passed: 2
+#failed: 0
+#total tests run: 2

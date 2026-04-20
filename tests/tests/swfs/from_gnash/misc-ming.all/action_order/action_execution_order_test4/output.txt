@@ -1,0 +1,26 @@
+_root onLoad called
+mc1 Construct called
+mc2 Construct called
+mc3 Construct called
+mc1 Load called
+actions in 1st frame of mc1
+mc2 Load called
+actions in 1st frame of mc2
+mc3 Load called
+actions in 1st frame of mc3
+mc3 EnterFrame called
+actions in 2nd frame of mc3
+mc2 EnterFrame called
+actions in 2nd frame of mc2
+mc1 EnterFrame called
+actions in 2nd frame of mc1
+PASSED: _root.x3  ==  'enterFrame_called+_root_frm2_as+enterFrame_called+_root_frm3_as+' [action_execution_order_test4.c:216]
+mc1 Unload called
+mc2 Unload called
+mc3 Unload called
+PASSED: _root.x0  ==  '01+02+03+' [action_execution_order_test4.c:227]
+PASSED: _root.x1  ==  '1+2+3+4+5+6+7+8+9+10+11+12+13+14+15+' [action_execution_order_test4.c:228]
+PASSED: _root.x2  ==  'as_start+as_end+load_called+' [action_execution_order_test4.c:229]
+#passed: 4
+#failed: 0
+#total tests run: 4

@@ -1,0 +1,31 @@
+SWF6
+
+[Error.as debug-22403-05c7ba106]
+PASSED: Error.prototype.hasOwnProperty("name") [./Error.as:30]
+PASSED: Error.prototype.hasOwnProperty("toString") [./Error.as:31]
+PASSED: Error.prototype.hasOwnProperty("message") [./Error.as:32]
+PASSED: typeof(Error.prototype.message) == "string" [./Error.as:35]
+PASSED: typeof(Error.prototype.name) == "string" [./Error.as:36]
+PASSED: typeof(errorObj) == 'object' [./Error.as:41]
+PASSED: typeof(errorObj.toString) == 'function' [./Error.as:44]
+PASSED: e.toString() == "Error" [./Error.as:48]
+PASSED: e.message == "Error" [./Error.as:49]
+PASSED: e.name == "Error" [./Error.as:50]
+PASSED: e.toString() == "NameOfError" [./Error.as:53]
+PASSED: e.name == "Error" [./Error.as:54]
+PASSED: e.message == "NameOfError" [./Error.as:55]
+PASSED: e.toString() == "7.8898" [./Error.as:59]
+PASSED: e.name == "Error" [./Error.as:60]
+PASSED: e.message == "7.8898" [./Error.as:61]
+FAILED: expected: "object" obtained: string [./Error.as:66]
+PASSED: e.toString().toString() == "[object Object]" [./Error.as:67]
+PASSED: e.name == "Error" [./Error.as:68]
+PASSED: typeof(e.message) == "object" [./Error.as:69]
+PASSED: e.name == "ANewName" [./Error.as:72]
+PASSED: e.message == "New message" [./Error.as:74]
+PASSED: e.message == "stringo" [./Error.as:78]
+PASSED: e.name == "Error" [./Error.as:79]
+PASSED: typeof(e) == "undefined" [./Error.as:83]
+#passed: 24
+#failed: 1
+#total tests run: 25

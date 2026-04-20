@@ -1,0 +1,14 @@
+[
+  { "type": "Wait" },
+  { "type": "Wait" },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "KeyUp", "key": "Tab" },
+  { "type": "KeyDown", "key": "Tab" },
+  { "type": "KeyUp", "key": "Tab" },
+  { "type": "MouseDown", "pos": [1, 1], "btn": "Left" },
+  { "type": "MouseUp", "pos": [1, 1], "btn": "Left" }
+]

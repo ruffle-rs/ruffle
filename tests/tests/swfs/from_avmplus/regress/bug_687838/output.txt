@@ -1,0 +1,111 @@
+Arr .proto start1 array        named a PASSED!
+Cls .proto start1 array trans  named b PASSED!
+Cls .proto start1 array immed  named c PASSED!
+Fcn .proto object              named d PASSED!
+Fcn .proto start1 array trans  named d PASSED!
+Fcn .proto object              named e PASSED!
+Fcn .proto start1 array immed  named e PASSED!
+Fcn .proto object              named f PASSED!
+Arr .proto start1 array       ref  1 a PASSED!
+Arr .proto start1 self sparse ref  1 a PASSED!
+Cls .proto start1 array trans ref  1 b PASSED!
+Cls .proto sparse array trans ref  1 b PASSED!
+Cls .proto start1 array immed ref  1 c PASSED!
+Cls .proto sparse array immed ref  1 c PASSED!
+Fcn .proto object             ref  1 d PASSED!
+Fcn .proto start1 array trans ref  1 d PASSED!
+Fcn .proto object             ref  1 e PASSED!
+Fcn .proto start1 array immed ref  1 e PASSED!
+Fcn .proto object             ref  1 f PASSED!
+Arr .proto start1 array       ref 10 a PASSED!
+Cls .proto start1 array trans ref 10 b PASSED!
+Cls .proto sparse array trans ref 10 b PASSED!
+Cls .proto start1 array immed ref 10 c PASSED!
+Cls .proto sparse array immed ref 10 c PASSED!
+Fcn .proto object             ref 10 d PASSED!
+Fcn .proto start1 array trans ref 10 d PASSED!
+Fcn .proto object             ref 10 e PASSED!
+Fcn .proto start1 array immed ref 10 e PASSED!
+Fcn .proto object             ref 10 f PASSED!
+Arr .proto start1 array       ref 1k a PASSED!
+Cls .proto start1 array trans ref 1k b PASSED!
+Cls .proto start1 array immed ref 1k c PASSED!
+Cls .proto sparse array immed ref 1k c PASSED!
+Fcn .proto object             ref 1k d PASSED!
+Fcn .proto object             ref 1k e PASSED!
+Fcn .proto start1 array trans ref 1k d PASSED!
+Fcn .proto start1 array immed ref 1k e PASSED!
+Fcn .proto object             ref 1k f PASSED!
+Arr .proto start0 array        named a PASSED!
+Cls .proto start0 array trans  named b PASSED!
+Cls .proto start0 array immed  named c PASSED!
+Fcn .proto object              named d PASSED!
+Fcn .proto start0 array trans  named d PASSED!
+Fcn .proto object              named e PASSED!
+Fcn .proto start0 array immed  named e PASSED!
+Fcn .proto object              named f PASSED!
+Arr .proto start0 array       ref  1 a PASSED!
+Cls .proto start0 array trans ref  1 b PASSED!
+Cls .proto start0 array immed ref  1 c PASSED!
+Fcn .proto object             ref  1 d PASSED!
+Fcn .proto object             ref  1 e PASSED!
+Fcn .proto start0 array trans ref  1 d PASSED!
+Fcn .proto start0 array immed ref  1 e PASSED!
+Fcn .proto object             ref  1 f PASSED!
+Arr .proto start0 array       ref 10 a PASSED!
+Cls .proto start0 array trans ref 10 b PASSED!
+Cls .proto start0 array immed ref 10 c PASSED!
+Fcn .proto object             ref 10 d PASSED!
+Fcn .proto object             ref 10 e PASSED!
+Fcn .proto start0 array trans ref 10 d PASSED!
+Fcn .proto start0 array immed ref 10 e PASSED!
+Fcn .proto object             ref 10 f PASSED!
+Arr .proto start0 array       ref 1k a PASSED!
+Cls .proto start0 array trans ref 1k b PASSED!
+Cls .proto start0 array immed ref 1k c PASSED!
+Fcn .proto object             ref 1k d PASSED!
+Fcn .proto object             ref 1k e PASSED!
+Fcn .proto start0 array trans ref 1k d PASSED!
+Fcn .proto start0 array immed ref 1k e PASSED!
+Fcn .proto object             ref 1k f PASSED!
+Arr .proto sparse array        named a PASSED!
+Cls .proto sparse array trans  named b PASSED!
+Cls .proto sparse array immed  named c PASSED!
+Fcn .proto object              named d PASSED!
+Fcn .proto sparse array trans  named d PASSED!
+Fcn .proto object              named e PASSED!
+Fcn .proto sparse array immed  named e PASSED!
+Fcn .proto object              named f PASSED!
+Arr .proto sparse array       ref  1 a PASSED!
+Arr .proto+self sparse        ref  1 a PASSED!
+Cls .proto sparse array trans ref  1 b PASSED!
+Cls .proto+self sparse trans  ref  1 b PASSED!
+Cls .proto sparse array immed ref  1 c PASSED!
+Cls .proto+self sparse immed  ref  1 c PASSED!
+Fcn .proto object             ref  1 d PASSED!
+Fcn .proto sparse array trans ref  1 d PASSED!
+Fcn .proto object             ref  1 e PASSED!
+Fcn .proto sparse array immed ref  1 e PASSED!
+Fcn .proto object             ref  1 f PASSED!
+Arr .proto sparse array       ref 10 a PASSED!
+Arr .proto+self sparse        ref 10 a PASSED!
+Cls .proto sparse array trans ref 10 b PASSED!
+Cls .proto+self sparse trans  ref 10 b PASSED!
+Cls .proto sparse array immed ref 10 c PASSED!
+Cls .proto+self sparse immed  ref 10 c PASSED!
+Fcn .proto object             ref 10 d PASSED!
+Fcn .proto sparse array trans ref 10 d PASSED!
+Fcn .proto object             ref 10 e PASSED!
+Fcn .proto sparse array immed ref 10 e PASSED!
+Fcn .proto object             ref 10 f PASSED!
+Arr .proto sparse array       ref 1k a PASSED!
+Arr .proto+self sparse        ref 1k a PASSED!
+Cls .proto sparse array trans ref 1k b PASSED!
+Cls .proto+self sparse trans  ref 1k b PASSED!
+Cls .proto sparse array immed ref 1k c PASSED!
+Cls .proto+self sparse immed  ref 1k c PASSED!
+Fcn .proto object             ref 1k d PASSED!
+Fcn .proto object             ref 1k e PASSED!
+Fcn .proto sparse array trans ref 1k d PASSED!
+Fcn .proto sparse array immed ref 1k e PASSED!
+Fcn .proto object             ref 1k f PASSED!

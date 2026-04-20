@@ -1,0 +1,17 @@
+Press "a" then "b"
+Do not press any other keys!
+mc1
+mc2
+o1
+mc1
+mc2
+o1
+o2
+mc1
+mc2
+o1
+o2
+mc1
+mc2
+o1
+o2

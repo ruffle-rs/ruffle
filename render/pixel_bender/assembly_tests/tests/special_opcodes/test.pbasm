@@ -1,0 +1,12 @@
+version 1i
+name "Test"
+
+nop
+smpl.n  f4.rgba, f0.rg, 3i
+smpl.l  f4.rgba, f0.rg, 2i
+.if     i1.r
+  ld      i1.r, 1i
+.else
+  ld      f1.g, 1f
+.endif
+select  i1.r, i0.r, i2.r, i3.r

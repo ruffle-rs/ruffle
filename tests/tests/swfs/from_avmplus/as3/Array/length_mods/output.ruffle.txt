@@ -1,0 +1,9 @@
+base line PASSED!
+base line PASSED!
+auto small PASSED!
+auto large PASSED!
+length direct 1K PASSED!
+length indirect 1K PASSED!
+length direct wrap PASSED!
+length indirect wrap PASSED!
+pub pop arrays PASSED!

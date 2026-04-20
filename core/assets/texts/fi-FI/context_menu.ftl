@@ -1,0 +1,12 @@
+context-menu-play = Toista
+context-menu-rewind = Kelaa taaksepäin
+context-menu-forward = Kelaa eteenpäin
+context-menu-back = Takaisin
+context-menu-quality-low = Laatu: matala
+context-menu-quality-medium = Laatu: keskitaso
+context-menu-quality-high = Laatu: korkea
+context-menu-cut = Leikkaa
+context-menu-copy = Kopioi
+context-menu-paste = Liitä
+context-menu-delete = Poista
+context-menu-select-all = Valitse kaikki

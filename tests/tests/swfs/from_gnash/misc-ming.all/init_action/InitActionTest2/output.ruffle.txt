@@ -1,0 +1,30 @@
+mc4
+mc5
+mc6
+init7
+init8
+FAILED: expected: undefined obtained: mc4a [InitActionTest2.c:78] 
+FAILED: expected: undefined obtained: mc4a [InitActionTest2.c:84] 
+FAILED: expected: undefined obtained: mc4a [InitActionTest2.c:87] 
+FAILED: expected: undefined obtained: mc4a [InitActionTest2.c:91] 
+FAILED: expected: undefined obtained: mc4a [InitActionTest2.c:95] 
+FAILED: expected: undefined obtained: mc4a [InitActionTest2.c:99] 
+FAILED: expected: undefined obtained: mc4a [InitActionTest2.c:105] 
+PASSED: _global.val4  ==  'mc4a' [InitActionTest2.c:115]
+PASSED: _global.val5  ==  'mc5' [InitActionTest2.c:127]
+PASSED: _global.val5  ==  'mc5' [InitActionTest2.c:133]
+PASSED: _global.val6  ==  'mc6' [InitActionTest2.c:159]
+PASSED: _root.mc7  ==  undefined [InitActionTest2.c:177]
+PASSED: _global.goneBack ||! _root.mc8  ==  true [InitActionTest2.c:180]
+FAILED: expected: undefined obtained: true [InitActionTest2.c:221] 
+FAILED: expected: undefined obtained: true [InitActionTest2.c:222] 
+PASSED: typeof(_root.mc7)  ==  'undefined' [InitActionTest2.c:225]
+PASSED: typeof(_root.mc8)  ==  'movieclip' [InitActionTest2.c:226]
+Going back
+PASSED: _root.mc7  ==  undefined [InitActionTest2.c:177]
+PASSED: _global.goneBack ||! _root.mc8  ==  true [InitActionTest2.c:180]
+PASSED: _global.init7  ==  true [InitActionTest2.c:243]
+PASSED: _global.init8  ==  true [InitActionTest2.c:244]
+#passed: 12
+#failed: 9
+#total tests run: 21

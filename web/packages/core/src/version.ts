@@ -5,7 +5,7 @@ export class Version {
     /**
      * Construct a Version from specific components.
      *
-     * If you wish to parse a string into a Version then please use [[fromSemver]].
+     * If you wish to parse a string into a Version then please use {@link fromSemver}.
      *
      * @param major The major version component.
      * @param minor The minor version component.

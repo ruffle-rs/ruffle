@@ -1,7 +1,7 @@
 use crate::decoder::VideoDecoder;
 use h263_rs::parser::H263Reader;
 use h263_rs::{DecoderOption, H263State, PictureOption, PictureTypeCode};
-use h263_rs_deblock::deblock::{deblock, QUANT_TO_STRENGTH};
+use h263_rs_deblock::deblock::{QUANT_TO_STRENGTH, deblock};
 use ruffle_render::bitmap::BitmapFormat;
 use ruffle_video::error::Error;
 use ruffle_video::frame::{DecodedFrame, EncodedFrame, FrameDependency};

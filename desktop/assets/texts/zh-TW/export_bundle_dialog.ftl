@@ -1,0 +1,12 @@
+export-bundle-dialog-title = 匯出 Ruffle 包裹
+export-bundle-dialog-bundle-name = 包裹名稱：
+export-bundle-dialog-files-description = 選擇要打包的檔案：
+export-bundle-dialog-files-select-all = 全選
+export-bundle-dialog-export = 匯出
+export-bundle-dialog-exporting = 正在匯出...
+export-bundle-dialog-exporting-failed = 匯出失敗。
+export-bundle-dialog-error-user-canceled = 已被使用者取消。
+export-bundle-dialog-error-failed-to-show-picker = 無法顯示檔案選擇器。
+export-bundle-dialog-error-io-error = 寫入封裝時發生錯誤。
+export-bundle-dialog-info-title = 什麼是 Ruffle 包裹？
+export-bundle-dialog-info-description = Ruffle 包裹是一個通用封裝，包含執行 SWF 檔案所需的一切——所有必要資源與設定。使用套件後，您的 SWF 檔案可立即運作——無檔案遺漏、無需手動設定，真正實現即插即用。

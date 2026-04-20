@@ -1,0 +1,5 @@
+PASSED: visible_mc.hitTest(80, 120, true) [RollOverOutTest.c:244]
+PASSED: invisible_mc.hitTest(80, 180, true) [RollOverOutTest.c:246]
+PASSED: static_mask.hitTest(80, 240, true) [RollOverOutTest.c:248]
+PASSED: ! dynamic_mask.hitTest(80, 280, true) [RollOverOutTest.c:250]
+PASSED: maskee.hitTest(80, 280, true) [RollOverOutTest.c:252]

@@ -1,0 +1,35 @@
+mc12 onInitialize called
+PASSED: _level0.mc1.mc12 == _level0.mc1.mc12
+PASSED: [object Object] == [object Object]
+PASSED: [object Object] == [object Object]
+PASSED: [object Object] == [object Object]
+PASSED: [object Object] == [object Object]
+mc1211 onInitialize called
+PASSED: [object Object] == [object Object]
+PASSED: [object Object] == [object Object]
+PASSED: [object Object] == [object Object]
+mc12 onConstruct called
+PASSED: _level0.mc1.mc12 == _level0.mc1.mc12
+PASSED: [object Object] == [object Object]
+PASSED: [object Object] == [object Object]
+PASSED: [object Object] == [object Object]
+PASSED: [object Object] == [object Object]
+mc1 onLoad called
+mc11 onLoad called
+mc12 onLoad called
+mc121 onLoad called
+mc1211 onLoad called
+mc1211 onEnterFrame called
+mc121 onEnterFrame called
+mc12 onEnterFrame called
+mc11 onEnterFrame called
+mc1 onEnterFrame called
+mc1211 onUnload called
+mc121 onUnload called
+mc12 onUnload called
+mc11 onUnload called
+mc1 onUnload called
+PASSED: _root.x1  ==  '1+2+3+4+5+6+7+8+9+10+11+12+13+14+15+' [action_execution_order_test5.c:253]
+#passed: 14
+#failed: 0
+#total tests run: 14

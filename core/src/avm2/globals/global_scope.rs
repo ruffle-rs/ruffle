@@ -4,59 +4,41 @@
 //! public methods, but are the class that the script global scope is an
 //! instance of.
 
-use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
-use crate::avm2::method::Method;
-use crate::avm2::object::Object;
-use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::QName;
-
-/// Implements `global`'s instance constructor.
-pub fn instance_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
-
-/// Implements `global`'s class constructor.
-pub fn class_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    Ok(Value::Undefined)
-}
+use crate::avm2::activation::Activation;
+use crate::avm2::class::{BuiltinType, Class, ClassAttributes};
+use crate::avm2::error::Error;
+use crate::avm2::method::Method;
+use crate::avm2::traits::Trait;
+use ruffle_macros::istr;
 
 /// Construct `global`'s class.
 pub fn create_class<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    object_classdef: Class<'gc>,
-    class_classdef: Class<'gc>,
-) -> Class<'gc> {
-    let mc = activation.context.gc_context;
-    let class = Class::new(
-        QName::new(activation.avm2().public_namespace_base_version, "global"),
-        Some(object_classdef),
-        Method::from_builtin(instance_init, "<global instance initializer>", mc),
-        Method::from_builtin(class_init, "<global class initializer>", mc),
-        class_classdef,
+    init_method: Method<'gc>,
+    traits: Box<[Trait<'gc>]>,
+) -> Result<Class<'gc>, Error<'gc>> {
+    let mc = activation.gc();
+    let class = Class::custom_new(
+        QName::new(activation.avm2().namespaces.public_all(), istr!("global")),
+        Some(activation.avm2().class_defs().object),
+        Some(init_method),
+        traits,
         mc,
     );
 
-    class.mark_traits_loaded(activation.context.gc_context);
+    class.set_attributes(ClassAttributes::FINAL);
+
+    class.validate_class(activation, true)?;
+    class.validate_signatures(activation)?;
+
+    // `global` classes have no interfaces, so use `init_vtable_with_interfaces`
+    // and pass an empty list
     class
-        .init_vtable(&mut activation.context)
-        .expect("Native class's vtable should initialize");
+        .init_vtable_with_interfaces(activation.context, Box::new([]))
+        .map_err(|e| e.into_avm(activation))?;
 
-    let c_class = class.c_class().expect("Class::new returns an i_class");
+    class.mark_builtin_type(BuiltinType::ScriptTraits);
 
-    c_class.mark_traits_loaded(activation.context.gc_context);
-    c_class
-        .init_vtable(&mut activation.context)
-        .expect("Native class's vtable should initialize");
-
-    class
+    Ok(class)
 }

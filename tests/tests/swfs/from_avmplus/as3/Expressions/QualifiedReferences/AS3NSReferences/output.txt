@@ -1,0 +1,3 @@
+f.N1::A() PASSED!
+f.N3::flower1 PASSED!
+f.N4::flower2 PASSED!

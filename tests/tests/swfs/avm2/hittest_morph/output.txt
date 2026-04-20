@@ -1,0 +1,30 @@
+// frame1
+Bounds: (x=-0.3, y=0.1, w=65, h=65)
+Rect: (x=-0.3, y=0.1, w=65, h=65)
+hitTest: false
+hitTestPoint:true
+hitTestPoint Non-Shape:true
+// hitbox.gotoAndStop(2);
+Bounds: (x=-0.3, y=0.1, w=65, h=65)
+Rect: (x=-0.3, y=0.1, w=65, h=65)
+hitTest: false
+hitTestPoint:true
+hitTestPoint Non-Shape:true
+// hitbox.gotoAndStop(3);
+Bounds: (x=-0.3, y=0.1, w=65, h=65)
+Rect: (x=-0.3, y=0.1, w=65, h=65)
+hitTest: false
+hitTestPoint:true
+hitTestPoint Non-Shape:true
+// hitbox.gotoAndStop(4);
+Bounds: (x=-0.3, y=0.1, w=65, h=65)
+Rect: (x=-0.3, y=0.1, w=65, h=65)
+hitTest: false
+hitTestPoint:true
+hitTestPoint Non-Shape:true
+// hitbox.gotoAndStop(5);
+Bounds: (x=-0.3, y=0.1, w=120, h=65)
+Rect: (x=-0.3, y=0.1, w=120, h=65)
+hitTest: true
+hitTestPoint:true
+hitTestPoint Non-Shape:true

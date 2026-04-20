@@ -5,32 +5,30 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, Value};
-use crate::context::GcContext;
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
+use crate::avm1::{Object, Value};
 use crate::display_object::StageDisplayState;
 use crate::string::{AvmString, WStr, WString};
+use ruffle_macros::istr;
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "align" => property(align, set_align);
-    "height" => property(height);
     "scaleMode" => property(scale_mode, set_scale_mode);
-    "displayState" => property(display_state, set_display_state);
-    "showMenu" => property(show_menu, set_show_menu);
+    "height" => property(height);
     "width" => property(width);
+    "showMenu" => property(show_menu, set_show_menu);
+    "displayState" => property(display_state, set_display_state);
 };
 
-pub fn create_stage_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    array_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
+pub fn create<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
     broadcaster_functions: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
 ) -> Object<'gc> {
-    let stage = ScriptObject::new(context.gc_context, Some(proto));
-    broadcaster_functions.initialize(context.gc_context, stage.into(), array_proto);
-    define_properties_on(OBJECT_DECLS, context, stage, fn_proto);
-    stage.into()
+    let stage = Object::new(context.strings, Some(context.object_proto));
+    broadcaster_functions.initialize(context.strings, stage, array_proto);
+    context.define_properties_on(stage, OBJECT_DECLS(context));
+    stage
 }
 
 fn align<'gc>(
@@ -57,7 +55,7 @@ fn align<'gc>(
     if align.contains(StageAlign::BOTTOM) {
         s.push_byte(b'B');
     }
-    let align = AvmString::new(activation.context.gc_context, s);
+    let align = AvmString::new(activation.gc(), s);
     Ok(align.into())
 }
 
@@ -75,7 +73,7 @@ fn set_align<'gc>(
     activation
         .context
         .stage
-        .set_align(&mut activation.context, align);
+        .set_align(activation.context, align);
     Ok(Value::Undefined)
 }
 
@@ -93,8 +91,8 @@ fn scale_mode<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let scale_mode = AvmString::new_utf8(
-        activation.context.gc_context,
-        activation.context.stage.scale_mode().to_string(),
+        activation.gc(),
+        activation.context.stage.scale_mode().to_avm_string(),
     );
     Ok(scale_mode.into())
 }
@@ -113,7 +111,7 @@ fn set_scale_mode<'gc>(
     activation
         .context
         .stage
-        .set_scale_mode(&mut activation.context, scale_mode);
+        .set_scale_mode(activation.context, scale_mode, true);
     Ok(Value::Undefined)
 }
 
@@ -122,11 +120,13 @@ fn display_state<'gc>(
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if activation.context.stage.is_fullscreen() {
-        Ok("fullScreen".into())
+    let state = if activation.context.stage.is_fullscreen() {
+        istr!("fullScreen")
     } else {
-        Ok("normal".into())
-    }
+        istr!("normal")
+    };
+
+    Ok(state.into())
 }
 
 fn set_display_state<'gc>(
@@ -143,12 +143,12 @@ fn set_display_state<'gc>(
         activation
             .context
             .stage
-            .set_display_state(&mut activation.context, StageDisplayState::FullScreen);
+            .set_display_state(activation.context, StageDisplayState::FullScreen);
     } else if display_state.eq_ignore_case(WStr::from_units(b"normal")) {
         activation
             .context
             .stage
-            .set_display_state(&mut activation.context, StageDisplayState::Normal);
+            .set_display_state(activation.context, StageDisplayState::Normal);
     }
 
     Ok(Value::Undefined)
@@ -172,10 +172,7 @@ fn set_show_menu<'gc>(
         .unwrap_or(&true.into())
         .to_owned()
         .as_bool(activation.swf_version());
-    activation
-        .context
-        .stage
-        .set_show_menu(&mut activation.context, show_menu);
+    activation.context.stage.set_show_menu(show_menu);
     Ok(Value::Undefined)
 }
 

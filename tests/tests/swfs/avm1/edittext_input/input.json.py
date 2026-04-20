@@ -13,6 +13,6 @@ print('[')
 for ch in characters:
     print(f'    {{ "type": "TextInput", "codepoint": "{ch}" }},')
 
-print(f'    {{ "type": "KeyDown", "key_code": 27 }}')
+print(f'    {{ "type": "KeyDown", "key": "Escape" }}')
 
 print(']')

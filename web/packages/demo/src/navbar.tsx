@@ -1,13 +1,6 @@
 import ruffleLogo from "/logo.svg";
-import {
-    ChangeEvent,
-    FormEvent,
-    useEffect,
-    useRef,
-    useState,
-    DragEvent,
-} from "react";
-import { BaseLoadOptions } from "ruffle-core";
+import { ChangeEvent, FormEvent, useRef, useState, DragEvent } from "react";
+import type { Config } from "ruffle-core";
 import { DemoSwf, SampleSelection } from "./navbar/samples.tsx";
 
 declare global {
@@ -25,7 +18,7 @@ interface NavbarProps {
     allowSampleSwfs: boolean;
     onToggleMetadata: () => void;
     onReloadMovie: () => void;
-    onSelectUrl: (url: string, options: BaseLoadOptions) => void;
+    onSelectUrl: (url: string, options: Config.BaseLoadOptions) => void;
     onSelectFile: (file: File) => void;
     selectedFilename: string | null;
     setSelectedFilename: (value: string | null) => void;
@@ -60,6 +53,11 @@ export function Navbar({
         onSelectUrl(url, {});
         setSelectedFilename(null);
         setSelectedSample(null);
+        window.history.replaceState(
+            null,
+            "",
+            `${window.location.pathname}${window.location.hash}`,
+        );
         if (sampleSelectionInput.current) {
             sampleSelectionInput.current.selectedIndex = -1;
         }
@@ -69,6 +67,7 @@ export function Navbar({
         onSelectFile(file);
         setSelectedSample(null);
         setSelectedFilename(file.name);
+        window.history.replaceState(null, "", window.location.pathname);
         if (sampleSelectionInput.current) {
             sampleSelectionInput.current.selectedIndex = -1;
         }
@@ -104,15 +103,6 @@ export function Navbar({
         navigator.userAgent.match(/iPhone/i) ||
         (navigator.platform === "MacIntel" &&
             typeof navigator.standalone !== "undefined");
-
-    useEffect(() => {
-        if (selectedFilename != null) {
-            setSelectedSample(null);
-            if (sampleSelectionInput.current) {
-                sampleSelectionInput.current.selectedIndex = -1;
-            }
-        }
-    }, [selectedFilename]);
 
     return (
         <div id="nav">

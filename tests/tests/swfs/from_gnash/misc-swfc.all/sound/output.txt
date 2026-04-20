@@ -1,0 +1,7 @@
+Sound duration is: 
+13740
+Correct value should be 13740 or 13766 (depending on liblame version)
+Now I'll get the position before starting it
+Position is:
+0
+PASSED: snd.position == 0  [sound.sc:39]

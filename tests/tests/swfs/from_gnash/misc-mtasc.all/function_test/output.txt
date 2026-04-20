@@ -1,0 +1,26 @@
+PASSED: object == object  [function_test.as:29]
+PASSED: [type Function] == [type Function]  [function_test.as:32]
+PASSED: [object Object] == [object Object]  [function_test.as:33]
+TestClass constructor called
+PASSED: !arguments.hasOwnProperty('toString')  [function_test.as:11]
+PASSED: 2 == 2  [function_test.as:12]
+PASSED: arguments instanceof Object  [function_test.as:13]
+PASSED: object == object  [function_test.as:14]
+PASSED: function == function  [function_test.as:15]
+PASSED: object == object  [function_test.as:16]
+PASSED: function == function  [function_test.as:17]
+PASSED:  ==   [function_test.as:18]
+PASSED: arguments.__proto__.hasOwnProperty('toString')  [function_test.as:19]
+PASSED: arguments.__proto__.toString != Object.prototype.toString  [function_test.as:20]
+PASSED: arguments.__proto__ != Object.prototype  [function_test.as:21]
+PASSED: arguments.__proto__.constructor.__proto__ != Object.prototype  [function_test.as:22]
+PASSED: arguments.__proto__.constructor.__proto__ != Array.prototype  [function_test.as:23]
+PASSED: called == called  [function_test.as:51]
+PASSED: undefined == undefined  [function_test.as:55]
+PASSED: 2 == 2  [function_test.as:59]
+PASSED: undefined == undefined  [function_test.as:60]
+PASSED: Test run 20 [ [function_test.as:62]]
+#passed: 21
+#failed: 0
+#total tests run: 21
+__END_OF_TEST__

@@ -1,0 +1,9 @@
+arr[2] PASSED!
+delete arr[2] successful PASSED!
+arr[2] PASSED!
+array length after delete arr[2] PASSED!
+array contents after delete arr[2] PASSED!
+delete arr[2] again PASSED!
+arr[2] PASSED!
+delete non-existent arr[3] PASSED!
+arr[3] PASSED!

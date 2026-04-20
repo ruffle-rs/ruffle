@@ -1,9 +1,12 @@
 package {
 import flash.display.Sprite;
 import flash.events.KeyboardEvent;
-import flash.text.TextField;
+import flash.text.*;
 
 public class Test extends Sprite {
+    [Embed(source="NotoSans.ttf", fontName="Noto Sans", embedAsCFF="false", unicodeRange="U+0020-U+007E")]
+    private var notoSans:Class;
+
     private var text1: TextField;
     private var text2: TextField;
     private var text3: TextField;
@@ -21,37 +24,37 @@ public class Test extends Sprite {
     private var text15: TextField;
 
     public function Test() {
-        text1 = new TextField();
+        text1 = newTextField();
         text1.text = "line 1\n line2\n\n line 4\n";
-        text2 = new TextField();
+        text2 = newTextField();
         text2.text = "line 1\n line2";
-        text3 = new TextField();
+        text3 = newTextField();
         text3.text = "";
-        text4 = new TextField();
+        text4 = newTextField();
         text4.text = "\n";
-        text5 = new TextField();
+        text5 = newTextField();
         text5.htmlText = "<p>line</p>";
-        text6 = new TextField();
+        text6 = newTextField();
         text6.htmlText = "<p>line 1</p><p>line 2</p>";
-        text7 = new TextField();
+        text7 = newTextField();
         text7.htmlText = "<p>line 1</p>\n<p>line 2</p>";
-        text8 = new TextField();
+        text8 = newTextField();
         text8.htmlText = "<li>line 1 </li><li> line 2</li>";
-        text9 = new TextField();
+        text9 = newTextField();
         text9.htmlText = "line 1<br/>line 2";
-        text10 = new TextField();
+        text10 = newTextField();
         text10.htmlText = "<li>line 1 </li>\n\n<li> line 2</li>";
-        text11 = new TextField();
+        text11 = newTextField();
         text11.htmlText = "<li>line 1 \n</li>\n<li> li\nne 2</li>";
-        text12 = new TextField();
+        text12 = newTextField();
         text12.htmlText = "a\n\nb\r\rc\t\td\n\re\r\nf\r\n\rg\n\r\nh\n \n ";
-        text13 = new TextField();
+        text13 = newTextField();
         text13.text = "a\n\nb\r\rc\t\td\n\re\r\nf\r\n\rg\n\r\nh\n \n ";
-        text14 = new TextField();
+        text14 = newTextField();
         text14.wordWrap = true;
         text14.width = 50;
         text14.text = "first second\nthird";
-        text15 = new TextField();
+        text15 = newTextField();
         text15.wordWrap = true;
         text15.width = 50;
         text15.htmlText = "<p>first</p> <b>second</b>\n<i>third</i>";
@@ -72,6 +75,13 @@ public class Test extends Sprite {
         addChild(text14);
         addChild(text15);
         printAllValues();
+    }
+
+    private function newTextField():TextField {
+        var text = new TextField();
+        text.embedFonts = true;
+        text.defaultTextFormat = new TextFormat("Noto Sans");
+        return text;
     }
 
     private function printAllValues():void {
@@ -102,7 +112,7 @@ public class Test extends Sprite {
                 trace("  " + name + ".getLineOffset(" + i + ") = " + text.getLineOffset(i));
             });
             if (logError(function(): void {
-                trace("  " + name + ".getLineText(" + i + ") = " + escape(text.getLineText(i)));
+                trace("  " + name + ".getLineText(" + i + ") = \"" + escape(text.getLineText(i)) + "\"");
             }) && i >= 0) {
                 break;
             }

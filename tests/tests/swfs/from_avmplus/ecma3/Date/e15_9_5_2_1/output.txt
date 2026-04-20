@@ -1,0 +1,15 @@
+Date.prototype.toString.length PASSED!
+Math.abs(Date.parse(now.toString()) - now.valueOf()) < 1000 PASSED!
+typeof now.toString() PASSED!
+Date.parse( (new Date(0)).toString() ) PASSED!
+Date.parse( (new Date(+TZ_ADJUST+)).toString() ) PASSED!
+Date.parse( (new Date(+TIME_1900+)).toString() ) PASSED!
+Date.parse( (new Date(+TIME_1900 -TZ_ADJUST+)).toString() ) PASSED!
+Date.parse( (new Date(+TIME_2000+)).toString() ) PASSED!
+Date.parse( (new Date(+TIME_2000 -TZ_ADJUST+)).toString() ) PASSED!
+Date.parse( (new Date(+UTC_29_FEB_2000+)).toString() ) PASSED!
+Date.parse( (new Date(+(UTC_29_FEB_2000-1000)+)).toString() ) PASSED!
+Date.parse( (new Date(+(UTC_29_FEB_2000-TZ_ADJUST)+)).toString() ) PASSED!
+Date.parse( (new Date(+UTC_1_JAN_2005+)).toString() ) PASSED!
+Date.parse( (new Date(+(UTC_1_JAN_2005-1000)+)).toString() ) PASSED!
+Date.parse( (new Date(+(UTC_1_JAN_2005-TZ_ADJUST)+)).toString() ) PASSED!

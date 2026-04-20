@@ -1,0 +1,648 @@
+new Date( 1969,11,31,15,59,59,999).getTime() PASSED!
+new Date( 1969,11,31,15,59,59,999).valueOf() PASSED!
+new Date( 1969,11,31,15,59,59,999).getUTCFullYear() PASSED!
+new Date( 1969,11,31,15,59,59,999).getUTCMonth() PASSED!
+new Date( 1969,11,31,15,59,59,999).getUTCDate() PASSED!
+new Date( 1969,11,31,15,59,59,999).getUTCDay() PASSED!
+new Date( 1969,11,31,15,59,59,999).getUTCHours() PASSED!
+new Date( 1969,11,31,15,59,59,999).getUTCMinutes() PASSED!
+new Date( 1969,11,31,15,59,59,999).getUTCSeconds() PASSED!
+new Date( 1969,11,31,15,59,59,999).getUTCMilliseconds() PASSED!
+new Date( 1969,11,31,15,59,59,999).getFullYear() PASSED!
+new Date( 1969,11,31,15,59,59,999).getMonth() PASSED!
+new Date( 1969,11,31,15,59,59,999).getDate() PASSED!
+new Date( 1969,11,31,15,59,59,999).getDay() PASSED!
+new Date( 1969,11,31,15,59,59,999).getHours() PASSED!
+new Date( 1969,11,31,15,59,59,999).getMinutes() PASSED!
+new Date( 1969,11,31,15,59,59,999).getSeconds() PASSED!
+new Date( 1969,11,31,15,59,59,999).getMilliseconds() PASSED!
+new Date( '1969','11','31','15','59','59','999').getTime() PASSED!
+new Date( '1969','11','31','15','59','59','999').valueOf() PASSED!
+new Date( '1969','11','31','15','59','59','999').getUTCFullYear() PASSED!
+new Date( '1969','11','31','15','59','59','999').getUTCMonth() PASSED!
+new Date( '1969','11','31','15','59','59','999').getUTCDate() PASSED!
+new Date( '1969','11','31','15','59','59','999').getUTCDay() PASSED!
+new Date( '1969','11','31','15','59','59','999').getUTCHours() PASSED!
+new Date( '1969','11','31','15','59','59','999').getUTCMinutes() PASSED!
+new Date( '1969','11','31','15','59','59','999').getUTCSeconds() PASSED!
+new Date( '1969','11','31','15','59','59','999').getUTCMilliseconds() PASSED!
+new Date( '1969','11','31','15','59','59','999').getFullYear() PASSED!
+new Date( '1969','11','31','15','59','59','999').getMonth() PASSED!
+new Date( '1969','11','31','15','59','59','999').getDate() PASSED!
+new Date( '1969','11','31','15','59','59','999').getDay() PASSED!
+new Date( '1969','11','31','15','59','59','999').getHours() PASSED!
+new Date( '1969','11','31','15','59','59','999').getMinutes() PASSED!
+new Date( '1969','11','31','15','59','59','999').getSeconds() PASSED!
+new Date( '1969','11','31','15','59','59','999').getMilliseconds() PASSED!
+new Date( 1969,11,31,23,59,59,999).getTime() PASSED!
+new Date( 1969,11,31,23,59,59,999).valueOf() PASSED!
+new Date( 1969,11,31,23,59,59,999).getUTCFullYear() PASSED!
+new Date( 1969,11,31,23,59,59,999).getUTCMonth() PASSED!
+new Date( 1969,11,31,23,59,59,999).getUTCDate() PASSED!
+new Date( 1969,11,31,23,59,59,999).getUTCDay() PASSED!
+new Date( 1969,11,31,23,59,59,999).getUTCHours() PASSED!
+new Date( 1969,11,31,23,59,59,999).getUTCMinutes() PASSED!
+new Date( 1969,11,31,23,59,59,999).getUTCSeconds() PASSED!
+new Date( 1969,11,31,23,59,59,999).getUTCMilliseconds() PASSED!
+new Date( 1969,11,31,23,59,59,999).getFullYear() PASSED!
+new Date( 1969,11,31,23,59,59,999).getMonth() PASSED!
+new Date( 1969,11,31,23,59,59,999).getDate() PASSED!
+new Date( 1969,11,31,23,59,59,999).getDay() PASSED!
+new Date( 1969,11,31,23,59,59,999).getHours() PASSED!
+new Date( 1969,11,31,23,59,59,999).getMinutes() PASSED!
+new Date( 1969,11,31,23,59,59,999).getSeconds() PASSED!
+new Date( 1969,11,31,23,59,59,999).getMilliseconds() PASSED!
+new Date( 1970,0,1,0,0,0,0).getTime() PASSED!
+new Date( 1970,0,1,0,0,0,0).valueOf() PASSED!
+new Date( 1970,0,1,0,0,0,0).getUTCFullYear() PASSED!
+new Date( 1970,0,1,0,0,0,0).getUTCMonth() PASSED!
+new Date( 1970,0,1,0,0,0,0).getUTCDate() PASSED!
+new Date( 1970,0,1,0,0,0,0).getUTCDay() PASSED!
+new Date( 1970,0,1,0,0,0,0).getUTCHours() PASSED!
+new Date( 1970,0,1,0,0,0,0).getUTCMinutes() PASSED!
+new Date( 1970,0,1,0,0,0,0).getUTCSeconds() PASSED!
+new Date( 1970,0,1,0,0,0,0).getUTCMilliseconds() PASSED!
+new Date( 1970,0,1,0,0,0,0).getFullYear() PASSED!
+new Date( 1970,0,1,0,0,0,0).getMonth() PASSED!
+new Date( 1970,0,1,0,0,0,0).getDate() PASSED!
+new Date( 1970,0,1,0,0,0,0).getDay() PASSED!
+new Date( 1970,0,1,0,0,0,0).getHours() PASSED!
+new Date( 1970,0,1,0,0,0,0).getMinutes() PASSED!
+new Date( 1970,0,1,0,0,0,0).getSeconds() PASSED!
+new Date( 1970,0,1,0,0,0,0).getMilliseconds() PASSED!
+new Date( 1969,11,31,16,0,0,0).getTime() PASSED!
+new Date( 1969,11,31,16,0,0,0).valueOf() PASSED!
+new Date( 1969,11,31,16,0,0,0).getUTCFullYear() PASSED!
+new Date( 1969,11,31,16,0,0,0).getUTCMonth() PASSED!
+new Date( 1969,11,31,16,0,0,0).getUTCDate() PASSED!
+new Date( 1969,11,31,16,0,0,0).getUTCDay() PASSED!
+new Date( 1969,11,31,16,0,0,0).getUTCHours() PASSED!
+new Date( 1969,11,31,16,0,0,0).getUTCMinutes() PASSED!
+new Date( 1969,11,31,16,0,0,0).getUTCSeconds() PASSED!
+new Date( 1969,11,31,16,0,0,0).getUTCMilliseconds() PASSED!
+new Date( 1969,11,31,16,0,0,0).getFullYear() PASSED!
+new Date( 1969,11,31,16,0,0,0).getMonth() PASSED!
+new Date( 1969,11,31,16,0,0,0).getDate() PASSED!
+new Date( 1969,11,31,16,0,0,0).getDay() PASSED!
+new Date( 1969,11,31,16,0,0,0).getHours() PASSED!
+new Date( 1969,11,31,16,0,0,0).getMinutes() PASSED!
+new Date( 1969,11,31,16,0,0,0).getSeconds() PASSED!
+new Date( 1969,11,31,16,0,0,0).getMilliseconds() PASSED!
+new Date(1969,12,1,0,0,0,0).getTime() PASSED!
+new Date(1969,12,1,0,0,0,0).valueOf() PASSED!
+new Date(1969,12,1,0,0,0,0).getUTCFullYear() PASSED!
+new Date(1969,12,1,0,0,0,0).getUTCMonth() PASSED!
+new Date(1969,12,1,0,0,0,0).getUTCDate() PASSED!
+new Date(1969,12,1,0,0,0,0).getUTCDay() PASSED!
+new Date(1969,12,1,0,0,0,0).getUTCHours() PASSED!
+new Date(1969,12,1,0,0,0,0).getUTCMinutes() PASSED!
+new Date(1969,12,1,0,0,0,0).getUTCSeconds() PASSED!
+new Date(1969,12,1,0,0,0,0).getUTCMilliseconds() PASSED!
+new Date(1969,12,1,0,0,0,0).getFullYear() PASSED!
+new Date(1969,12,1,0,0,0,0).getMonth() PASSED!
+new Date(1969,12,1,0,0,0,0).getDate() PASSED!
+new Date(1969,12,1,0,0,0,0).getDay() PASSED!
+new Date(1969,12,1,0,0,0,0).getHours() PASSED!
+new Date(1969,12,1,0,0,0,0).getMinutes() PASSED!
+new Date(1969,12,1,0,0,0,0).getSeconds() PASSED!
+new Date(1969,12,1,0,0,0,0).getMilliseconds() PASSED!
+new Date(1969,11,32,0,0,0,0).getTime() PASSED!
+new Date(1969,11,32,0,0,0,0).valueOf() PASSED!
+new Date(1969,11,32,0,0,0,0).getUTCFullYear() PASSED!
+new Date(1969,11,32,0,0,0,0).getUTCMonth() PASSED!
+new Date(1969,11,32,0,0,0,0).getUTCDate() PASSED!
+new Date(1969,11,32,0,0,0,0).getUTCDay() PASSED!
+new Date(1969,11,32,0,0,0,0).getUTCHours() PASSED!
+new Date(1969,11,32,0,0,0,0).getUTCMinutes() PASSED!
+new Date(1969,11,32,0,0,0,0).getUTCSeconds() PASSED!
+new Date(1969,11,32,0,0,0,0).getUTCMilliseconds() PASSED!
+new Date(1969,11,32,0,0,0,0).getFullYear() PASSED!
+new Date(1969,11,32,0,0,0,0).getMonth() PASSED!
+new Date(1969,11,32,0,0,0,0).getDate() PASSED!
+new Date(1969,11,32,0,0,0,0).getDay() PASSED!
+new Date(1969,11,32,0,0,0,0).getHours() PASSED!
+new Date(1969,11,32,0,0,0,0).getMinutes() PASSED!
+new Date(1969,11,32,0,0,0,0).getSeconds() PASSED!
+new Date(1969,11,32,0,0,0,0).getMilliseconds() PASSED!
+new Date(1969,11,31,24,0,0,0).getTime() PASSED!
+new Date(1969,11,31,24,0,0,0).valueOf() PASSED!
+new Date(1969,11,31,24,0,0,0).getUTCFullYear() PASSED!
+new Date(1969,11,31,24,0,0,0).getUTCMonth() PASSED!
+new Date(1969,11,31,24,0,0,0).getUTCDate() PASSED!
+new Date(1969,11,31,24,0,0,0).getUTCDay() PASSED!
+new Date(1969,11,31,24,0,0,0).getUTCHours() PASSED!
+new Date(1969,11,31,24,0,0,0).getUTCMinutes() PASSED!
+new Date(1969,11,31,24,0,0,0).getUTCSeconds() PASSED!
+new Date(1969,11,31,24,0,0,0).getUTCMilliseconds() PASSED!
+new Date(1969,11,31,24,0,0,0).getFullYear() PASSED!
+new Date(1969,11,31,24,0,0,0).getMonth() PASSED!
+new Date(1969,11,31,24,0,0,0).getDate() PASSED!
+new Date(1969,11,31,24,0,0,0).getDay() PASSED!
+new Date(1969,11,31,24,0,0,0).getHours() PASSED!
+new Date(1969,11,31,24,0,0,0).getMinutes() PASSED!
+new Date(1969,11,31,24,0,0,0).getSeconds() PASSED!
+new Date(1969,11,31,24,0,0,0).getMilliseconds() PASSED!
+new Date(1969,11,31,23,60,0,0).getTime() PASSED!
+new Date(1969,11,31,23,60,0,0).valueOf() PASSED!
+new Date(1969,11,31,23,60,0,0).getUTCFullYear() PASSED!
+new Date(1969,11,31,23,60,0,0).getUTCMonth() PASSED!
+new Date(1969,11,31,23,60,0,0).getUTCDate() PASSED!
+new Date(1969,11,31,23,60,0,0).getUTCDay() PASSED!
+new Date(1969,11,31,23,60,0,0).getUTCHours() PASSED!
+new Date(1969,11,31,23,60,0,0).getUTCMinutes() PASSED!
+new Date(1969,11,31,23,60,0,0).getUTCSeconds() PASSED!
+new Date(1969,11,31,23,60,0,0).getUTCMilliseconds() PASSED!
+new Date(1969,11,31,23,60,0,0).getFullYear() PASSED!
+new Date(1969,11,31,23,60,0,0).getMonth() PASSED!
+new Date(1969,11,31,23,60,0,0).getDate() PASSED!
+new Date(1969,11,31,23,60,0,0).getDay() PASSED!
+new Date(1969,11,31,23,60,0,0).getHours() PASSED!
+new Date(1969,11,31,23,60,0,0).getMinutes() PASSED!
+new Date(1969,11,31,23,60,0,0).getSeconds() PASSED!
+new Date(1969,11,31,23,60,0,0).getMilliseconds() PASSED!
+new Date(1969,11,31,23,59,60,0).getTime() PASSED!
+new Date(1969,11,31,23,59,60,0).valueOf() PASSED!
+new Date(1969,11,31,23,59,60,0).getUTCFullYear() PASSED!
+new Date(1969,11,31,23,59,60,0).getUTCMonth() PASSED!
+new Date(1969,11,31,23,59,60,0).getUTCDate() PASSED!
+new Date(1969,11,31,23,59,60,0).getUTCDay() PASSED!
+new Date(1969,11,31,23,59,60,0).getUTCHours() PASSED!
+new Date(1969,11,31,23,59,60,0).getUTCMinutes() PASSED!
+new Date(1969,11,31,23,59,60,0).getUTCSeconds() PASSED!
+new Date(1969,11,31,23,59,60,0).getUTCMilliseconds() PASSED!
+new Date(1969,11,31,23,59,60,0).getFullYear() PASSED!
+new Date(1969,11,31,23,59,60,0).getMonth() PASSED!
+new Date(1969,11,31,23,59,60,0).getDate() PASSED!
+new Date(1969,11,31,23,59,60,0).getDay() PASSED!
+new Date(1969,11,31,23,59,60,0).getHours() PASSED!
+new Date(1969,11,31,23,59,60,0).getMinutes() PASSED!
+new Date(1969,11,31,23,59,60,0).getSeconds() PASSED!
+new Date(1969,11,31,23,59,60,0).getMilliseconds() PASSED!
+new Date(1969,11,31,23,59,59,1000).getTime() PASSED!
+new Date(1969,11,31,23,59,59,1000).valueOf() PASSED!
+new Date(1969,11,31,23,59,59,1000).getUTCFullYear() PASSED!
+new Date(1969,11,31,23,59,59,1000).getUTCMonth() PASSED!
+new Date(1969,11,31,23,59,59,1000).getUTCDate() PASSED!
+new Date(1969,11,31,23,59,59,1000).getUTCDay() PASSED!
+new Date(1969,11,31,23,59,59,1000).getUTCHours() PASSED!
+new Date(1969,11,31,23,59,59,1000).getUTCMinutes() PASSED!
+new Date(1969,11,31,23,59,59,1000).getUTCSeconds() PASSED!
+new Date(1969,11,31,23,59,59,1000).getUTCMilliseconds() PASSED!
+new Date(1969,11,31,23,59,59,1000).getFullYear() PASSED!
+new Date(1969,11,31,23,59,59,1000).getMonth() PASSED!
+new Date(1969,11,31,23,59,59,1000).getDate() PASSED!
+new Date(1969,11,31,23,59,59,1000).getDay() PASSED!
+new Date(1969,11,31,23,59,59,1000).getHours() PASSED!
+new Date(1969,11,31,23,59,59,1000).getMinutes() PASSED!
+new Date(1969,11,31,23,59,59,1000).getSeconds() PASSED!
+new Date(1969,11,31,23,59,59,1000).getMilliseconds() PASSED!
+new Date( 1999,11,31,15,59,59,999).getTime() PASSED!
+new Date( 1999,11,31,15,59,59,999).valueOf() PASSED!
+new Date( 1999,11,31,15,59,59,999).getUTCFullYear() PASSED!
+new Date( 1999,11,31,15,59,59,999).getUTCMonth() PASSED!
+new Date( 1999,11,31,15,59,59,999).getUTCDate() PASSED!
+new Date( 1999,11,31,15,59,59,999).getUTCDay() PASSED!
+new Date( 1999,11,31,15,59,59,999).getUTCHours() PASSED!
+new Date( 1999,11,31,15,59,59,999).getUTCMinutes() PASSED!
+new Date( 1999,11,31,15,59,59,999).getUTCSeconds() PASSED!
+new Date( 1999,11,31,15,59,59,999).getUTCMilliseconds() PASSED!
+new Date( 1999,11,31,15,59,59,999).getFullYear() PASSED!
+new Date( 1999,11,31,15,59,59,999).getMonth() PASSED!
+new Date( 1999,11,31,15,59,59,999).getDate() PASSED!
+new Date( 1999,11,31,15,59,59,999).getDay() PASSED!
+new Date( 1999,11,31,15,59,59,999).getHours() PASSED!
+new Date( 1999,11,31,15,59,59,999).getMinutes() PASSED!
+new Date( 1999,11,31,15,59,59,999).getSeconds() PASSED!
+new Date( 1999,11,31,15,59,59,999).getMilliseconds() PASSED!
+new Date( 1999,11,31,16,0,0,0).getTime() PASSED!
+new Date( 1999,11,31,16,0,0,0).valueOf() PASSED!
+new Date( 1999,11,31,16,0,0,0).getUTCFullYear() PASSED!
+new Date( 1999,11,31,16,0,0,0).getUTCMonth() PASSED!
+new Date( 1999,11,31,16,0,0,0).getUTCDate() PASSED!
+new Date( 1999,11,31,16,0,0,0).getUTCDay() PASSED!
+new Date( 1999,11,31,16,0,0,0).getUTCHours() PASSED!
+new Date( 1999,11,31,16,0,0,0).getUTCMinutes() PASSED!
+new Date( 1999,11,31,16,0,0,0).getUTCSeconds() PASSED!
+new Date( 1999,11,31,16,0,0,0).getUTCMilliseconds() PASSED!
+new Date( 1999,11,31,16,0,0,0).getFullYear() PASSED!
+new Date( 1999,11,31,16,0,0,0).getMonth() PASSED!
+new Date( 1999,11,31,16,0,0,0).getDate() PASSED!
+new Date( 1999,11,31,16,0,0,0).getDay() PASSED!
+new Date( 1999,11,31,16,0,0,0).getHours() PASSED!
+new Date( 1999,11,31,16,0,0,0).getMinutes() PASSED!
+new Date( 1999,11,31,16,0,0,0).getSeconds() PASSED!
+new Date( 1999,11,31,16,0,0,0).getMilliseconds() PASSED!
+new Date( 1999,11,31,23,59,59,999).getTime() PASSED!
+new Date( 1999,11,31,23,59,59,999).valueOf() PASSED!
+new Date( 1999,11,31,23,59,59,999).getUTCFullYear() PASSED!
+new Date( 1999,11,31,23,59,59,999).getUTCMonth() PASSED!
+new Date( 1999,11,31,23,59,59,999).getUTCDate() PASSED!
+new Date( 1999,11,31,23,59,59,999).getUTCDay() PASSED!
+new Date( 1999,11,31,23,59,59,999).getUTCHours() PASSED!
+new Date( 1999,11,31,23,59,59,999).getUTCMinutes() PASSED!
+new Date( 1999,11,31,23,59,59,999).getUTCSeconds() PASSED!
+new Date( 1999,11,31,23,59,59,999).getUTCMilliseconds() PASSED!
+new Date( 1999,11,31,23,59,59,999).getFullYear() PASSED!
+new Date( 1999,11,31,23,59,59,999).getMonth() PASSED!
+new Date( 1999,11,31,23,59,59,999).getDate() PASSED!
+new Date( 1999,11,31,23,59,59,999).getDay() PASSED!
+new Date( 1999,11,31,23,59,59,999).getHours() PASSED!
+new Date( 1999,11,31,23,59,59,999).getMinutes() PASSED!
+new Date( 1999,11,31,23,59,59,999).getSeconds() PASSED!
+new Date( 1999,11,31,23,59,59,999).getMilliseconds() PASSED!
+new Date( 2000,0,1,0,0,0,0).getTime() PASSED!
+new Date( 2000,0,1,0,0,0,0).valueOf() PASSED!
+new Date( 2000,0,1,0,0,0,0).getUTCFullYear() PASSED!
+new Date( 2000,0,1,0,0,0,0).getUTCMonth() PASSED!
+new Date( 2000,0,1,0,0,0,0).getUTCDate() PASSED!
+new Date( 2000,0,1,0,0,0,0).getUTCDay() PASSED!
+new Date( 2000,0,1,0,0,0,0).getUTCHours() PASSED!
+new Date( 2000,0,1,0,0,0,0).getUTCMinutes() PASSED!
+new Date( 2000,0,1,0,0,0,0).getUTCSeconds() PASSED!
+new Date( 2000,0,1,0,0,0,0).getUTCMilliseconds() PASSED!
+new Date( 2000,0,1,0,0,0,0).getFullYear() PASSED!
+new Date( 2000,0,1,0,0,0,0).getMonth() PASSED!
+new Date( 2000,0,1,0,0,0,0).getDate() PASSED!
+new Date( 2000,0,1,0,0,0,0).getDay() PASSED!
+new Date( 2000,0,1,0,0,0,0).getHours() PASSED!
+new Date( 2000,0,1,0,0,0,0).getMinutes() PASSED!
+new Date( 2000,0,1,0,0,0,0).getSeconds() PASSED!
+new Date( 2000,0,1,0,0,0,0).getMilliseconds() PASSED!
+new Date( 2000,0,1,0,0,0,1).getTime() PASSED!
+new Date( 2000,0,1,0,0,0,1).valueOf() PASSED!
+new Date( 2000,0,1,0,0,0,1).getUTCFullYear() PASSED!
+new Date( 2000,0,1,0,0,0,1).getUTCMonth() PASSED!
+new Date( 2000,0,1,0,0,0,1).getUTCDate() PASSED!
+new Date( 2000,0,1,0,0,0,1).getUTCDay() PASSED!
+new Date( 2000,0,1,0,0,0,1).getUTCHours() PASSED!
+new Date( 2000,0,1,0,0,0,1).getUTCMinutes() PASSED!
+new Date( 2000,0,1,0,0,0,1).getUTCSeconds() PASSED!
+new Date( 2000,0,1,0,0,0,1).getUTCMilliseconds() PASSED!
+new Date( 2000,0,1,0,0,0,1).getFullYear() PASSED!
+new Date( 2000,0,1,0,0,0,1).getMonth() PASSED!
+new Date( 2000,0,1,0,0,0,1).getDate() PASSED!
+new Date( 2000,0,1,0,0,0,1).getDay() PASSED!
+new Date( 2000,0,1,0,0,0,1).getHours() PASSED!
+new Date( 2000,0,1,0,0,0,1).getMinutes() PASSED!
+new Date( 2000,0,1,0,0,0,1).getSeconds() PASSED!
+new Date( 2000,0,1,0,0,0,1).getMilliseconds() PASSED!
+new Date(2000,1,28,16,0,0,0).getTime() PASSED!
+new Date(2000,1,28,16,0,0,0).valueOf() PASSED!
+new Date(2000,1,28,16,0,0,0).getUTCFullYear() PASSED!
+new Date(2000,1,28,16,0,0,0).getUTCMonth() PASSED!
+new Date(2000,1,28,16,0,0,0).getUTCDate() PASSED!
+new Date(2000,1,28,16,0,0,0).getUTCDay() PASSED!
+new Date(2000,1,28,16,0,0,0).getUTCHours() PASSED!
+new Date(2000,1,28,16,0,0,0).getUTCMinutes() PASSED!
+new Date(2000,1,28,16,0,0,0).getUTCSeconds() PASSED!
+new Date(2000,1,28,16,0,0,0).getUTCMilliseconds() PASSED!
+new Date(2000,1,28,16,0,0,0).getFullYear() PASSED!
+new Date(2000,1,28,16,0,0,0).getMonth() PASSED!
+new Date(2000,1,28,16,0,0,0).getDate() PASSED!
+new Date(2000,1,28,16,0,0,0).getDay() PASSED!
+new Date(2000,1,28,16,0,0,0).getHours() PASSED!
+new Date(2000,1,28,16,0,0,0).getMinutes() PASSED!
+new Date(2000,1,28,16,0,0,0).getSeconds() PASSED!
+new Date(2000,1,28,16,0,0,0).getMilliseconds() PASSED!
+new Date(2000,1,29,0,0,0,0).getTime() PASSED!
+new Date(2000,1,29,0,0,0,0).valueOf() PASSED!
+new Date(2000,1,29,0,0,0,0).getUTCFullYear() PASSED!
+new Date(2000,1,29,0,0,0,0).getUTCMonth() PASSED!
+new Date(2000,1,29,0,0,0,0).getUTCDate() PASSED!
+new Date(2000,1,29,0,0,0,0).getUTCDay() PASSED!
+new Date(2000,1,29,0,0,0,0).getUTCHours() PASSED!
+new Date(2000,1,29,0,0,0,0).getUTCMinutes() PASSED!
+new Date(2000,1,29,0,0,0,0).getUTCSeconds() PASSED!
+new Date(2000,1,29,0,0,0,0).getUTCMilliseconds() PASSED!
+new Date(2000,1,29,0,0,0,0).getFullYear() PASSED!
+new Date(2000,1,29,0,0,0,0).getMonth() PASSED!
+new Date(2000,1,29,0,0,0,0).getDate() PASSED!
+new Date(2000,1,29,0,0,0,0).getDay() PASSED!
+new Date(2000,1,29,0,0,0,0).getHours() PASSED!
+new Date(2000,1,29,0,0,0,0).getMinutes() PASSED!
+new Date(2000,1,29,0,0,0,0).getSeconds() PASSED!
+new Date(2000,1,29,0,0,0,0).getMilliseconds() PASSED!
+new Date(2000,1,28,24,0,0,0).getTime() PASSED!
+new Date(2000,1,28,24,0,0,0).valueOf() PASSED!
+new Date(2000,1,28,24,0,0,0).getUTCFullYear() PASSED!
+new Date(2000,1,28,24,0,0,0).getUTCMonth() PASSED!
+new Date(2000,1,28,24,0,0,0).getUTCDate() PASSED!
+new Date(2000,1,28,24,0,0,0).getUTCDay() PASSED!
+new Date(2000,1,28,24,0,0,0).getUTCHours() PASSED!
+new Date(2000,1,28,24,0,0,0).getUTCMinutes() PASSED!
+new Date(2000,1,28,24,0,0,0).getUTCSeconds() PASSED!
+new Date(2000,1,28,24,0,0,0).getUTCMilliseconds() PASSED!
+new Date(2000,1,28,24,0,0,0).getFullYear() PASSED!
+new Date(2000,1,28,24,0,0,0).getMonth() PASSED!
+new Date(2000,1,28,24,0,0,0).getDate() PASSED!
+new Date(2000,1,28,24,0,0,0).getDay() PASSED!
+new Date(2000,1,28,24,0,0,0).getHours() PASSED!
+new Date(2000,1,28,24,0,0,0).getMinutes() PASSED!
+new Date(2000,1,28,24,0,0,0).getSeconds() PASSED!
+new Date(2000,1,28,24,0,0,0).getMilliseconds() PASSED!
+new Date('2000','1','28','16','0','0','0').getTime() PASSED!
+new Date('2000','1','28','16','0','0','0').valueOf() PASSED!
+new Date('2000','1','28','16','0','0','0').getUTCFullYear() PASSED!
+new Date('2000','1','28','16','0','0','0').getUTCMonth() PASSED!
+new Date('2000','1','28','16','0','0','0').getUTCDate() PASSED!
+new Date('2000','1','28','16','0','0','0').getUTCDay() PASSED!
+new Date('2000','1','28','16','0','0','0').getUTCHours() PASSED!
+new Date('2000','1','28','16','0','0','0').getUTCMinutes() PASSED!
+new Date('2000','1','28','16','0','0','0').getUTCSeconds() PASSED!
+new Date('2000','1','28','16','0','0','0').getUTCMilliseconds() PASSED!
+new Date('2000','1','28','16','0','0','0').getFullYear() PASSED!
+new Date('2000','1','28','16','0','0','0').getMonth() PASSED!
+new Date('2000','1','28','16','0','0','0').getDate() PASSED!
+new Date('2000','1','28','16','0','0','0').getDay() PASSED!
+new Date('2000','1','28','16','0','0','0').getHours() PASSED!
+new Date('2000','1','28','16','0','0','0').getMinutes() PASSED!
+new Date('2000','1','28','16','0','0','0').getSeconds() PASSED!
+new Date('2000','1','28','16','0','0','0').getMilliseconds() PASSED!
+new Date('2000','1','29','0','0','0','0').getTime() PASSED!
+new Date('2000','1','29','0','0','0','0').valueOf() PASSED!
+new Date('2000','1','29','0','0','0','0').getUTCFullYear() PASSED!
+new Date('2000','1','29','0','0','0','0').getUTCMonth() PASSED!
+new Date('2000','1','29','0','0','0','0').getUTCDate() PASSED!
+new Date('2000','1','29','0','0','0','0').getUTCDay() PASSED!
+new Date('2000','1','29','0','0','0','0').getUTCHours() PASSED!
+new Date('2000','1','29','0','0','0','0').getUTCMinutes() PASSED!
+new Date('2000','1','29','0','0','0','0').getUTCSeconds() PASSED!
+new Date('2000','1','29','0','0','0','0').getUTCMilliseconds() PASSED!
+new Date('2000','1','29','0','0','0','0').getFullYear() PASSED!
+new Date('2000','1','29','0','0','0','0').getMonth() PASSED!
+new Date('2000','1','29','0','0','0','0').getDate() PASSED!
+new Date('2000','1','29','0','0','0','0').getDay() PASSED!
+new Date('2000','1','29','0','0','0','0').getHours() PASSED!
+new Date('2000','1','29','0','0','0','0').getMinutes() PASSED!
+new Date('2000','1','29','0','0','0','0').getSeconds() PASSED!
+new Date('2000','1','29','0','0','0','0').getMilliseconds() PASSED!
+new Date('2000','1','28','24','0','0','0').getTime() PASSED!
+new Date('2000','1','28','24','0','0','0').valueOf() PASSED!
+new Date('2000','1','28','24','0','0','0').getUTCFullYear() PASSED!
+new Date('2000','1','28','24','0','0','0').getUTCMonth() PASSED!
+new Date('2000','1','28','24','0','0','0').getUTCDate() PASSED!
+new Date('2000','1','28','24','0','0','0').getUTCDay() PASSED!
+new Date('2000','1','28','24','0','0','0').getUTCHours() PASSED!
+new Date('2000','1','28','24','0','0','0').getUTCMinutes() PASSED!
+new Date('2000','1','28','24','0','0','0').getUTCSeconds() PASSED!
+new Date('2000','1','28','24','0','0','0').getUTCMilliseconds() PASSED!
+new Date('2000','1','28','24','0','0','0').getFullYear() PASSED!
+new Date('2000','1','28','24','0','0','0').getMonth() PASSED!
+new Date('2000','1','28','24','0','0','0').getDate() PASSED!
+new Date('2000','1','28','24','0','0','0').getDay() PASSED!
+new Date('2000','1','28','24','0','0','0').getHours() PASSED!
+new Date('2000','1','28','24','0','0','0').getMinutes() PASSED!
+new Date('2000','1','28','24','0','0','0').getSeconds() PASSED!
+new Date('2000','1','28','24','0','0','0').getMilliseconds() PASSED!
+new Date(1899,11,31,16,0,0,0).getTime() PASSED!
+new Date(1899,11,31,16,0,0,0).valueOf() PASSED!
+new Date(1899,11,31,16,0,0,0).getUTCFullYear() PASSED!
+new Date(1899,11,31,16,0,0,0).getUTCMonth() PASSED!
+new Date(1899,11,31,16,0,0,0).getUTCDate() PASSED!
+new Date(1899,11,31,16,0,0,0).getUTCDay() PASSED!
+new Date(1899,11,31,16,0,0,0).getUTCHours() PASSED!
+new Date(1899,11,31,16,0,0,0).getUTCMinutes() PASSED!
+new Date(1899,11,31,16,0,0,0).getUTCSeconds() PASSED!
+new Date(1899,11,31,16,0,0,0).getUTCMilliseconds() PASSED!
+new Date(1899,11,31,16,0,0,0).getFullYear() PASSED!
+new Date(1899,11,31,16,0,0,0).getMonth() PASSED!
+new Date(1899,11,31,16,0,0,0).getDate() PASSED!
+new Date(1899,11,31,16,0,0,0).getDay() PASSED!
+new Date(1899,11,31,16,0,0,0).getHours() PASSED!
+new Date(1899,11,31,16,0,0,0).getMinutes() PASSED!
+new Date(1899,11,31,16,0,0,0).getSeconds() PASSED!
+new Date(1899,11,31,16,0,0,0).getMilliseconds() PASSED!
+new Date('1899','11','31','16','0','0','0').getTime() PASSED!
+new Date('1899','11','31','16','0','0','0').valueOf() PASSED!
+new Date('1899','11','31','16','0','0','0').getUTCFullYear() PASSED!
+new Date('1899','11','31','16','0','0','0').getUTCMonth() PASSED!
+new Date('1899','11','31','16','0','0','0').getUTCDate() PASSED!
+new Date('1899','11','31','16','0','0','0').getUTCDay() PASSED!
+new Date('1899','11','31','16','0','0','0').getUTCHours() PASSED!
+new Date('1899','11','31','16','0','0','0').getUTCMinutes() PASSED!
+new Date('1899','11','31','16','0','0','0').getUTCSeconds() PASSED!
+new Date('1899','11','31','16','0','0','0').getUTCMilliseconds() PASSED!
+new Date('1899','11','31','16','0','0','0').getFullYear() PASSED!
+new Date('1899','11','31','16','0','0','0').getMonth() PASSED!
+new Date('1899','11','31','16','0','0','0').getDate() PASSED!
+new Date('1899','11','31','16','0','0','0').getDay() PASSED!
+new Date('1899','11','31','16','0','0','0').getHours() PASSED!
+new Date('1899','11','31','16','0','0','0').getMinutes() PASSED!
+new Date('1899','11','31','16','0','0','0').getSeconds() PASSED!
+new Date('1899','11','31','16','0','0','0').getMilliseconds() PASSED!
+new Date(1899,11,31,15,59,59,999).getTime() PASSED!
+new Date(1899,11,31,15,59,59,999).valueOf() PASSED!
+new Date(1899,11,31,15,59,59,999).getUTCFullYear() PASSED!
+new Date(1899,11,31,15,59,59,999).getUTCMonth() PASSED!
+new Date(1899,11,31,15,59,59,999).getUTCDate() PASSED!
+new Date(1899,11,31,15,59,59,999).getUTCDay() PASSED!
+new Date(1899,11,31,15,59,59,999).getUTCHours() PASSED!
+new Date(1899,11,31,15,59,59,999).getUTCMinutes() PASSED!
+new Date(1899,11,31,15,59,59,999).getUTCSeconds() PASSED!
+new Date(1899,11,31,15,59,59,999).getUTCMilliseconds() PASSED!
+new Date(1899,11,31,15,59,59,999).getFullYear() PASSED!
+new Date(1899,11,31,15,59,59,999).getMonth() PASSED!
+new Date(1899,11,31,15,59,59,999).getDate() PASSED!
+new Date(1899,11,31,15,59,59,999).getDay() PASSED!
+new Date(1899,11,31,15,59,59,999).getHours() PASSED!
+new Date(1899,11,31,15,59,59,999).getMinutes() PASSED!
+new Date(1899,11,31,15,59,59,999).getSeconds() PASSED!
+new Date(1899,11,31,15,59,59,999).getMilliseconds() PASSED!
+new Date('1899','11','31','15','59','59','999').getTime() PASSED!
+new Date('1899','11','31','15','59','59','999').valueOf() PASSED!
+new Date('1899','11','31','15','59','59','999').getUTCFullYear() PASSED!
+new Date('1899','11','31','15','59','59','999').getUTCMonth() PASSED!
+new Date('1899','11','31','15','59','59','999').getUTCDate() PASSED!
+new Date('1899','11','31','15','59','59','999').getUTCDay() PASSED!
+new Date('1899','11','31','15','59','59','999').getUTCHours() PASSED!
+new Date('1899','11','31','15','59','59','999').getUTCMinutes() PASSED!
+new Date('1899','11','31','15','59','59','999').getUTCSeconds() PASSED!
+new Date('1899','11','31','15','59','59','999').getUTCMilliseconds() PASSED!
+new Date('1899','11','31','15','59','59','999').getFullYear() PASSED!
+new Date('1899','11','31','15','59','59','999').getMonth() PASSED!
+new Date('1899','11','31','15','59','59','999').getDate() PASSED!
+new Date('1899','11','31','15','59','59','999').getDay() PASSED!
+new Date('1899','11','31','15','59','59','999').getHours() PASSED!
+new Date('1899','11','31','15','59','59','999').getMinutes() PASSED!
+new Date('1899','11','31','15','59','59','999').getSeconds() PASSED!
+new Date('1899','11','31','15','59','59','999').getMilliseconds() PASSED!
+new Date(1899,11,31,23,59,59,999).getTime() PASSED!
+new Date(1899,11,31,23,59,59,999).valueOf() PASSED!
+new Date(1899,11,31,23,59,59,999).getUTCFullYear() PASSED!
+new Date(1899,11,31,23,59,59,999).getUTCMonth() PASSED!
+new Date(1899,11,31,23,59,59,999).getUTCDate() PASSED!
+new Date(1899,11,31,23,59,59,999).getUTCDay() PASSED!
+new Date(1899,11,31,23,59,59,999).getUTCHours() PASSED!
+new Date(1899,11,31,23,59,59,999).getUTCMinutes() PASSED!
+new Date(1899,11,31,23,59,59,999).getUTCSeconds() PASSED!
+new Date(1899,11,31,23,59,59,999).getUTCMilliseconds() PASSED!
+new Date(1899,11,31,23,59,59,999).getFullYear() PASSED!
+new Date(1899,11,31,23,59,59,999).getMonth() PASSED!
+new Date(1899,11,31,23,59,59,999).getDate() PASSED!
+new Date(1899,11,31,23,59,59,999).getDay() PASSED!
+new Date(1899,11,31,23,59,59,999).getHours() PASSED!
+new Date(1899,11,31,23,59,59,999).getMinutes() PASSED!
+new Date(1899,11,31,23,59,59,999).getSeconds() PASSED!
+new Date(1899,11,31,23,59,59,999).getMilliseconds() PASSED!
+new Date('1899','11','31','23','59','59','999').getTime() PASSED!
+new Date('1899','11','31','23','59','59','999').valueOf() PASSED!
+new Date('1899','11','31','23','59','59','999').getUTCFullYear() PASSED!
+new Date('1899','11','31','23','59','59','999').getUTCMonth() PASSED!
+new Date('1899','11','31','23','59','59','999').getUTCDate() PASSED!
+new Date('1899','11','31','23','59','59','999').getUTCDay() PASSED!
+new Date('1899','11','31','23','59','59','999').getUTCHours() PASSED!
+new Date('1899','11','31','23','59','59','999').getUTCMinutes() PASSED!
+new Date('1899','11','31','23','59','59','999').getUTCSeconds() PASSED!
+new Date('1899','11','31','23','59','59','999').getUTCMilliseconds() PASSED!
+new Date('1899','11','31','23','59','59','999').getFullYear() PASSED!
+new Date('1899','11','31','23','59','59','999').getMonth() PASSED!
+new Date('1899','11','31','23','59','59','999').getDate() PASSED!
+new Date('1899','11','31','23','59','59','999').getDay() PASSED!
+new Date('1899','11','31','23','59','59','999').getHours() PASSED!
+new Date('1899','11','31','23','59','59','999').getMinutes() PASSED!
+new Date('1899','11','31','23','59','59','999').getSeconds() PASSED!
+new Date('1899','11','31','23','59','59','999').getMilliseconds() PASSED!
+new Date(1900,0,1,0,0,0,0).getTime() PASSED!
+new Date(1900,0,1,0,0,0,0).valueOf() PASSED!
+new Date(1900,0,1,0,0,0,0).getUTCFullYear() PASSED!
+new Date(1900,0,1,0,0,0,0).getUTCMonth() PASSED!
+new Date(1900,0,1,0,0,0,0).getUTCDate() PASSED!
+new Date(1900,0,1,0,0,0,0).getUTCDay() PASSED!
+new Date(1900,0,1,0,0,0,0).getUTCHours() PASSED!
+new Date(1900,0,1,0,0,0,0).getUTCMinutes() PASSED!
+new Date(1900,0,1,0,0,0,0).getUTCSeconds() PASSED!
+new Date(1900,0,1,0,0,0,0).getUTCMilliseconds() PASSED!
+new Date(1900,0,1,0,0,0,0).getFullYear() PASSED!
+new Date(1900,0,1,0,0,0,0).getMonth() PASSED!
+new Date(1900,0,1,0,0,0,0).getDate() PASSED!
+new Date(1900,0,1,0,0,0,0).getDay() PASSED!
+new Date(1900,0,1,0,0,0,0).getHours() PASSED!
+new Date(1900,0,1,0,0,0,0).getMinutes() PASSED!
+new Date(1900,0,1,0,0,0,0).getSeconds() PASSED!
+new Date(1900,0,1,0,0,0,0).getMilliseconds() PASSED!
+new Date('1900','0','1','0','0','0','0').getTime() PASSED!
+new Date('1900','0','1','0','0','0','0').valueOf() PASSED!
+new Date('1900','0','1','0','0','0','0').getUTCFullYear() PASSED!
+new Date('1900','0','1','0','0','0','0').getUTCMonth() PASSED!
+new Date('1900','0','1','0','0','0','0').getUTCDate() PASSED!
+new Date('1900','0','1','0','0','0','0').getUTCDay() PASSED!
+new Date('1900','0','1','0','0','0','0').getUTCHours() PASSED!
+new Date('1900','0','1','0','0','0','0').getUTCMinutes() PASSED!
+new Date('1900','0','1','0','0','0','0').getUTCSeconds() PASSED!
+new Date('1900','0','1','0','0','0','0').getUTCMilliseconds() PASSED!
+new Date('1900','0','1','0','0','0','0').getFullYear() PASSED!
+new Date('1900','0','1','0','0','0','0').getMonth() PASSED!
+new Date('1900','0','1','0','0','0','0').getDate() PASSED!
+new Date('1900','0','1','0','0','0','0').getDay() PASSED!
+new Date('1900','0','1','0','0','0','0').getHours() PASSED!
+new Date('1900','0','1','0','0','0','0').getMinutes() PASSED!
+new Date('1900','0','1','0','0','0','0').getSeconds() PASSED!
+new Date('1900','0','1','0','0','0','0').getMilliseconds() PASSED!
+new Date(1900,0,1,0,0,0,1).getTime() PASSED!
+new Date(1900,0,1,0,0,0,1).valueOf() PASSED!
+new Date(1900,0,1,0,0,0,1).getUTCFullYear() PASSED!
+new Date(1900,0,1,0,0,0,1).getUTCMonth() PASSED!
+new Date(1900,0,1,0,0,0,1).getUTCDate() PASSED!
+new Date(1900,0,1,0,0,0,1).getUTCDay() PASSED!
+new Date(1900,0,1,0,0,0,1).getUTCHours() PASSED!
+new Date(1900,0,1,0,0,0,1).getUTCMinutes() PASSED!
+new Date(1900,0,1,0,0,0,1).getUTCSeconds() PASSED!
+new Date(1900,0,1,0,0,0,1).getUTCMilliseconds() PASSED!
+new Date(1900,0,1,0,0,0,1).getFullYear() PASSED!
+new Date(1900,0,1,0,0,0,1).getMonth() PASSED!
+new Date(1900,0,1,0,0,0,1).getDate() PASSED!
+new Date(1900,0,1,0,0,0,1).getDay() PASSED!
+new Date(1900,0,1,0,0,0,1).getHours() PASSED!
+new Date(1900,0,1,0,0,0,1).getMinutes() PASSED!
+new Date(1900,0,1,0,0,0,1).getSeconds() PASSED!
+new Date(1900,0,1,0,0,0,1).getMilliseconds() PASSED!
+new Date('1900','0','1','0','0','0','1').getTime() PASSED!
+new Date('1900','0','1','0','0','0','1').valueOf() PASSED!
+new Date('1900','0','1','0','0','0','1').getUTCFullYear() PASSED!
+new Date('1900','0','1','0','0','0','1').getUTCMonth() PASSED!
+new Date('1900','0','1','0','0','0','1').getUTCDate() PASSED!
+new Date('1900','0','1','0','0','0','1').getUTCDay() PASSED!
+new Date('1900','0','1','0','0','0','1').getUTCHours() PASSED!
+new Date('1900','0','1','0','0','0','1').getUTCMinutes() PASSED!
+new Date('1900','0','1','0','0','0','1').getUTCSeconds() PASSED!
+new Date('1900','0','1','0','0','0','1').getUTCMilliseconds() PASSED!
+new Date('1900','0','1','0','0','0','1').getFullYear() PASSED!
+new Date('1900','0','1','0','0','0','1').getMonth() PASSED!
+new Date('1900','0','1','0','0','0','1').getDate() PASSED!
+new Date('1900','0','1','0','0','0','1').getDay() PASSED!
+new Date('1900','0','1','0','0','0','1').getHours() PASSED!
+new Date('1900','0','1','0','0','0','1').getMinutes() PASSED!
+new Date('1900','0','1','0','0','0','1').getSeconds() PASSED!
+new Date('1900','0','1','0','0','0','1').getMilliseconds() PASSED!
+new Date(2005,0,1,0,0,0,0).getTime() PASSED!
+new Date(2005,0,1,0,0,0,0).valueOf() PASSED!
+new Date(2005,0,1,0,0,0,0).getUTCFullYear() PASSED!
+new Date(2005,0,1,0,0,0,0).getUTCMonth() PASSED!
+new Date(2005,0,1,0,0,0,0).getUTCDate() PASSED!
+new Date(2005,0,1,0,0,0,0).getUTCDay() PASSED!
+new Date(2005,0,1,0,0,0,0).getUTCHours() PASSED!
+new Date(2005,0,1,0,0,0,0).getUTCMinutes() PASSED!
+new Date(2005,0,1,0,0,0,0).getUTCSeconds() PASSED!
+new Date(2005,0,1,0,0,0,0).getUTCMilliseconds() PASSED!
+new Date(2005,0,1,0,0,0,0).getFullYear() PASSED!
+new Date(2005,0,1,0,0,0,0).getMonth() PASSED!
+new Date(2005,0,1,0,0,0,0).getDate() PASSED!
+new Date(2005,0,1,0,0,0,0).getDay() PASSED!
+new Date(2005,0,1,0,0,0,0).getHours() PASSED!
+new Date(2005,0,1,0,0,0,0).getMinutes() PASSED!
+new Date(2005,0,1,0,0,0,0).getSeconds() PASSED!
+new Date(2005,0,1,0,0,0,0).getMilliseconds() PASSED!
+new Date('2005','0','1','0','0','0','0').getTime() PASSED!
+new Date('2005','0','1','0','0','0','0').valueOf() PASSED!
+new Date('2005','0','1','0','0','0','0').getUTCFullYear() PASSED!
+new Date('2005','0','1','0','0','0','0').getUTCMonth() PASSED!
+new Date('2005','0','1','0','0','0','0').getUTCDate() PASSED!
+new Date('2005','0','1','0','0','0','0').getUTCDay() PASSED!
+new Date('2005','0','1','0','0','0','0').getUTCHours() PASSED!
+new Date('2005','0','1','0','0','0','0').getUTCMinutes() PASSED!
+new Date('2005','0','1','0','0','0','0').getUTCSeconds() PASSED!
+new Date('2005','0','1','0','0','0','0').getUTCMilliseconds() PASSED!
+new Date('2005','0','1','0','0','0','0').getFullYear() PASSED!
+new Date('2005','0','1','0','0','0','0').getMonth() PASSED!
+new Date('2005','0','1','0','0','0','0').getDate() PASSED!
+new Date('2005','0','1','0','0','0','0').getDay() PASSED!
+new Date('2005','0','1','0','0','0','0').getHours() PASSED!
+new Date('2005','0','1','0','0','0','0').getMinutes() PASSED!
+new Date('2005','0','1','0','0','0','0').getSeconds() PASSED!
+new Date('2005','0','1','0','0','0','0').getMilliseconds() PASSED!
+new Date(2004,11,31,16,0,0,0).getTime() PASSED!
+new Date(2004,11,31,16,0,0,0).valueOf() PASSED!
+new Date(2004,11,31,16,0,0,0).getUTCFullYear() PASSED!
+new Date(2004,11,31,16,0,0,0).getUTCMonth() PASSED!
+new Date(2004,11,31,16,0,0,0).getUTCDate() PASSED!
+new Date(2004,11,31,16,0,0,0).getUTCDay() PASSED!
+new Date(2004,11,31,16,0,0,0).getUTCHours() PASSED!
+new Date(2004,11,31,16,0,0,0).getUTCMinutes() PASSED!
+new Date(2004,11,31,16,0,0,0).getUTCSeconds() PASSED!
+new Date(2004,11,31,16,0,0,0).getUTCMilliseconds() PASSED!
+new Date(2004,11,31,16,0,0,0).getFullYear() PASSED!
+new Date(2004,11,31,16,0,0,0).getMonth() PASSED!
+new Date(2004,11,31,16,0,0,0).getDate() PASSED!
+new Date(2004,11,31,16,0,0,0).getDay() PASSED!
+new Date(2004,11,31,16,0,0,0).getHours() PASSED!
+new Date(2004,11,31,16,0,0,0).getMinutes() PASSED!
+new Date(2004,11,31,16,0,0,0).getSeconds() PASSED!
+new Date(2004,11,31,16,0,0,0).getMilliseconds() PASSED!
+new Date('2004','11','31','16','0','0','0').getTime() PASSED!
+new Date('2004','11','31','16','0','0','0').valueOf() PASSED!
+new Date('2004','11','31','16','0','0','0').getUTCFullYear() PASSED!
+new Date('2004','11','31','16','0','0','0').getUTCMonth() PASSED!
+new Date('2004','11','31','16','0','0','0').getUTCDate() PASSED!
+new Date('2004','11','31','16','0','0','0').getUTCDay() PASSED!
+new Date('2004','11','31','16','0','0','0').getUTCHours() PASSED!
+new Date('2004','11','31','16','0','0','0').getUTCMinutes() PASSED!
+new Date('2004','11','31','16','0','0','0').getUTCSeconds() PASSED!
+new Date('2004','11','31','16','0','0','0').getUTCMilliseconds() PASSED!
+new Date('2004','11','31','16','0','0','0').getFullYear() PASSED!
+new Date('2004','11','31','16','0','0','0').getMonth() PASSED!
+new Date('2004','11','31','16','0','0','0').getDate() PASSED!
+new Date('2004','11','31','16','0','0','0').getDay() PASSED!
+new Date('2004','11','31','16','0','0','0').getHours() PASSED!
+new Date('2004','11','31','16','0','0','0').getMinutes() PASSED!
+new Date('2004','11','31','16','0','0','0').getSeconds() PASSED!
+new Date('2004','11','31','16','0','0','0').getMilliseconds() PASSED!

@@ -1,26 +1,66 @@
 use naga::valid::{Capabilities, ValidationFlags, Validator};
 use naga_agal::{Filter, SamplerConfig, Wrapping};
 use ruffle_render::backend::{
-    Context3DTextureFilter, Context3DTriangleFace, Context3DVertexBufferFormat, Context3DWrapMode,
-    Texture,
+    Context3DCompareMode, Context3DStencilAction, Context3DTextureFilter, Context3DTriangleFace,
+    Context3DVertexBufferFormat, Context3DWrapMode, Texture,
 };
 
 use wgpu::{
     BindGroupEntry, BindingResource, BufferDescriptor, BufferUsages, FrontFace, TextureView,
 };
-use wgpu::{Buffer, DepthStencilState, StencilFaceState};
+use wgpu::{Buffer, DepthStencilState};
 use wgpu::{ColorTargetState, RenderPipelineDescriptor, TextureFormat, VertexState};
+
+pub(super) trait IntoWgpu {
+    type WgpuType;
+
+    fn into_wgpu(self) -> Self::WgpuType;
+}
+
+impl IntoWgpu for Context3DCompareMode {
+    type WgpuType = wgpu::CompareFunction;
+
+    fn into_wgpu(self) -> wgpu::CompareFunction {
+        match self {
+            Context3DCompareMode::Always => wgpu::CompareFunction::Always,
+            Context3DCompareMode::Equal => wgpu::CompareFunction::Equal,
+            Context3DCompareMode::Greater => wgpu::CompareFunction::Greater,
+            Context3DCompareMode::GreaterEqual => wgpu::CompareFunction::GreaterEqual,
+            Context3DCompareMode::Less => wgpu::CompareFunction::Less,
+            Context3DCompareMode::LessEqual => wgpu::CompareFunction::LessEqual,
+            Context3DCompareMode::Never => wgpu::CompareFunction::Never,
+            Context3DCompareMode::NotEqual => wgpu::CompareFunction::NotEqual,
+        }
+    }
+}
+
+impl IntoWgpu for Context3DStencilAction {
+    type WgpuType = wgpu::StencilOperation;
+
+    fn into_wgpu(self) -> wgpu::StencilOperation {
+        match self {
+            Context3DStencilAction::DecrementSaturate => wgpu::StencilOperation::DecrementClamp,
+            Context3DStencilAction::DecrementWrap => wgpu::StencilOperation::DecrementWrap,
+            Context3DStencilAction::IncrementSaturate => wgpu::StencilOperation::IncrementClamp,
+            Context3DStencilAction::IncrementWrap => wgpu::StencilOperation::IncrementWrap,
+            Context3DStencilAction::Invert => wgpu::StencilOperation::Invert,
+            Context3DStencilAction::Keep => wgpu::StencilOperation::Keep,
+            Context3DStencilAction::Set => wgpu::StencilOperation::Replace,
+            Context3DStencilAction::Zero => wgpu::StencilOperation::Zero,
+        }
+    }
+}
 
 use std::cell::Cell;
 use std::num::NonZeroU64;
 use std::rc::Rc;
 
 use crate::bitmaps::WgpuSamplerConfig;
-use crate::context3d::shader_pair::{ShaderCompileData, ShaderTextureInfo};
 use crate::context3d::VertexBufferWrapper;
+use crate::context3d::shader_pair::{ShaderCompileData, ShaderTextureInfo};
 use crate::descriptors::Descriptors;
 
-use super::{ShaderPairAgal, VertexAttributeInfo, MAX_VERTEX_ATTRIBUTES};
+use super::{MAX_VERTEX_ATTRIBUTES, ShaderPairAgal, VertexAttributeInfo};
 
 const AGAL_NUM_VERTEX_CONSTANTS: u64 = 128;
 const AGAL_NUM_FRAGMENT_CONSTANTS: u64 = 28;
@@ -64,6 +104,11 @@ pub struct CurrentPipeline {
     depth_mask: bool,
     pass_compare_mode: wgpu::CompareFunction,
 
+    /// Stencil test configuration (face operations, compare functions, masks), set via `setStencilActions`.
+    stencil: wgpu::StencilState,
+    /// Reference value used for stencil comparison and operations, set via `setStencilReferenceValue`.
+    stencil_ref_value: u32,
+
     color_component: wgpu::BlendComponent,
     alpha_component: wgpu::BlendComponent,
 
@@ -88,7 +133,7 @@ pub struct BoundTextureData {
     /// it's used with `setRenderToTexture`. The actual shader binding
     /// uses `view`
     pub id: Rc<dyn Texture>,
-    pub view: Rc<TextureView>,
+    pub view: TextureView,
     pub cube: bool,
 }
 
@@ -122,6 +167,15 @@ impl CurrentPipeline {
 
             depth_mask: true,
             pass_compare_mode: wgpu::CompareFunction::LessEqual,
+
+            stencil: wgpu::StencilState {
+                front: wgpu::StencilFaceState::IGNORE,
+                back: wgpu::StencilFaceState::IGNORE,
+                read_mask: u32::MAX,
+                write_mask: u32::MAX,
+            },
+            stencil_ref_value: 0,
+
             color_component: wgpu::BlendComponent::REPLACE,
             alpha_component: wgpu::BlendComponent::REPLACE,
             sample_count: 1,
@@ -131,6 +185,11 @@ impl CurrentPipeline {
             sampler_configs: [SamplerConfig::default(); 8],
         }
     }
+
+    pub fn stencil_ref_value(&self) -> u32 {
+        self.stencil_ref_value
+    }
+
     pub fn set_shaders(&mut self, shaders: Option<Rc<ShaderPairAgal>>) {
         self.dirty.set(true);
         self.shaders = shaders;
@@ -333,7 +392,6 @@ impl CurrentPipeline {
             descriptors,
             ShaderCompileData {
                 vertex_attributes: agal_attributes,
-                sampler_configs: self.sampler_configs,
                 texture_infos,
             },
         );
@@ -446,13 +504,7 @@ impl CurrentPipeline {
                 format: TextureFormat::Depth24PlusStencil8,
                 depth_write_enabled: self.depth_mask,
                 depth_compare: self.pass_compare_mode,
-                // FIXME - implement this
-                stencil: wgpu::StencilState {
-                    front: StencilFaceState::IGNORE,
-                    back: StencilFaceState::IGNORE,
-                    read_mask: !0,
-                    write_mask: !0,
-                },
+                stencil: self.stencil.clone(),
                 bias: Default::default(),
             })
         } else {
@@ -490,13 +542,13 @@ impl CurrentPipeline {
                 layout: Some(&pipeline_layout),
                 vertex: VertexState {
                     module: &compiled_shaders.vertex_module,
-                    entry_point: naga_agal::SHADER_ENTRY_POINT,
+                    entry_point: Some(naga_agal::SHADER_ENTRY_POINT),
                     buffers: &wgpu_vertex_buffers,
                     compilation_options: Default::default(),
                 },
                 fragment: Some(wgpu::FragmentState {
                     module: &compiled_shaders.fragment_module,
-                    entry_point: naga_agal::SHADER_ENTRY_POINT,
+                    entry_point: Some(naga_agal::SHADER_ENTRY_POINT),
                     targets: &[Some(ColorTargetState {
                         format: self.target_format,
                         blend: Some(wgpu::BlendState {
@@ -521,6 +573,7 @@ impl CurrentPipeline {
                     alpha_to_coverage_enabled: false,
                 },
                 multiview: Default::default(),
+                cache: None,
             });
         Some((compiled, bind_group))
     }
@@ -569,17 +622,63 @@ impl CurrentPipeline {
         self.dirty.set(true);
         self.sampler_configs[sampler] = sampler_config;
     }
+
+    pub fn update_stencil_actions(
+        &mut self,
+        triangle_face: Context3DTriangleFace,
+        compare_mode: Context3DCompareMode,
+        on_both_pass: Context3DStencilAction,
+        on_depth_fail: Context3DStencilAction,
+        on_depth_pass_stencil_fail: Context3DStencilAction,
+    ) {
+        let stencil_state = wgpu::StencilFaceState {
+            compare: compare_mode.into_wgpu(),
+            fail_op: on_depth_pass_stencil_fail.into_wgpu(),
+            depth_fail_op: on_depth_fail.into_wgpu(),
+            pass_op: on_both_pass.into_wgpu(),
+        };
+
+        let (front, back) = match triangle_face {
+            Context3DTriangleFace::None => (
+                wgpu::StencilFaceState::IGNORE,
+                wgpu::StencilFaceState::IGNORE,
+            ),
+            Context3DTriangleFace::Front => (stencil_state, wgpu::StencilFaceState::IGNORE),
+            Context3DTriangleFace::Back => (wgpu::StencilFaceState::IGNORE, stencil_state),
+            Context3DTriangleFace::FrontAndBack => (stencil_state, stencil_state),
+        };
+
+        self.stencil.front = front;
+        self.stencil.back = back;
+
+        self.dirty.set(true);
+    }
+
+    pub fn update_stencil_reference_value(
+        &mut self,
+        reference_value: u32,
+        read_mask: u32,
+        write_mask: u32,
+    ) {
+        if self.stencil.read_mask != read_mask || self.stencil.write_mask != write_mask {
+            self.dirty.set(true);
+            self.stencil.read_mask = read_mask;
+            self.stencil.write_mask = write_mask;
+        }
+
+        self.stencil_ref_value = reference_value;
+    }
 }
 
 // This is useful for debugging shader issues
-#[allow(dead_code)]
+#[expect(dead_code)]
 fn to_wgsl(module: &naga::Module) -> String {
     let mut out = String::new();
 
     let mut validator = Validator::new(ValidationFlags::all(), Capabilities::all());
     let module_info = validator
         .validate(module)
-        .unwrap_or_else(|e| panic!("Validation failed: {:#?}", e));
+        .unwrap_or_else(|e| panic!("Validation failed: {e:#?}"));
 
     let mut writer =
         naga::back::wgsl::Writer::new(&mut out, naga::back::wgsl::WriterFlags::EXPLICIT_TYPES);

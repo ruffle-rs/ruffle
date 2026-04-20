@@ -1,0 +1,13 @@
+PASSED: _root.sh1  ==  undefined [place_and_remove_object_test.c:81]
+PASSED: _root.sh2  ==  undefined [place_and_remove_object_test.c:82]
+PASSED: _root.sh1  ==  undefined [place_and_remove_object_test.c:88]
+PASSED: _root.sh2 != undefined [place_and_remove_object_test.c:89]
+PASSED: _root.sh1 != undefined [place_and_remove_object_test.c:76]
+PASSED: _root.sh2  ==  undefined [place_and_remove_object_test.c:77]
+PASSED: _root.sh1  ==  undefined [place_and_remove_object_test.c:81]
+PASSED: _root.sh2  ==  undefined [place_and_remove_object_test.c:82]
+PASSED: _root.sh1  ==  undefined [place_and_remove_object_test.c:88]
+PASSED: _root.sh2 != undefined [place_and_remove_object_test.c:89]
+#passed: 10
+#failed: 0
+#total tests run: 10

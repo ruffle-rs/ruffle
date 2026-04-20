@@ -4,9 +4,11 @@
 num_frames = 5
 
 [image_comparisons.output]
-tolerance = 2
+tolerance = 8
 # FIXME - figure out why this needs to be so high
 max_outliers = 117
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, quality = "low" }
+# TODO Fix this test. It shouldn't depend on the default font.
+with_default_font = true

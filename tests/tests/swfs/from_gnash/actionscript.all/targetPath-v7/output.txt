@@ -1,0 +1,23 @@
+SWF7
+
+[targetPath.as debug-22403-05c7ba106]
+PASSED: targetPath(_root) == "_level0" [./targetPath.as:35]
+PASSED: typeof(a) == 'undefined' [./targetPath.as:46]
+PASSED: typeof(a) == 'undefined' [./targetPath.as:55]
+PASSED: typeof(a) == 'undefined' [./targetPath.as:64]
+PASSED: typeof(a) == 'undefined' [./targetPath.as:73]
+PASSED: typeof(a) == 'undefined' [./targetPath.as:83]
+PASSED: _target == '/' [./targetPath.as:101]
+PASSED: checkpoint == undefined [./targetPath.as:110]
+PASSED: _target == '/' [./targetPath.as:115]
+PASSED: checkpoint == undefined [./targetPath.as:124]
+PASSED: _target == '/' [./targetPath.as:129]
+PASSED: checkpoint == undefined [./targetPath.as:138]
+PASSED: checkpoint == '/' [./targetPath.as:148]
+PASSED: _target == '/mc' [./targetPath.as:151]
+PASSED: _target == '/' [./targetPath.as:153]
+PASSED: _target == '/mc/mc' [./targetPath.as:156]
+PASSED: _target == '/' [./targetPath.as:158]
+#passed: 17
+#failed: 0
+#total tests run: 17

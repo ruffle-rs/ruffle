@@ -192,12 +192,12 @@ where
 
 impl<Type, Description: BufferDescription> Drop for PoolEntry<Type, Description> {
     fn drop(&mut self) {
-        if let Some(item) = self.item.take() {
-            if let Some(pool) = self.pool.upgrade() {
-                pool.lock()
-                    .expect("Should not be able to lock recursively")
-                    .push((item, self.description.clone()))
-            }
+        if let Some(item) = self.item.take()
+            && let Some(pool) = self.pool.upgrade()
+        {
+            pool.lock()
+                .expect("Should not be able to lock recursively")
+                .push((item, self.description.clone()))
         }
     }
 }

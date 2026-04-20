@@ -58,11 +58,29 @@ align-bottom-right = Bottom-Right
 align-force = Force
 
 scale-mode = Scale Mode
-scale-mode-exactfit = Exact Fit
-scale-mode-noborder = No Border
-scale-mode-noscale = No Scale
-scale-mode-showall = Show All
+scale-mode-noscale = Unscaled (100%)
+scale-mode-noscale-tooltip =
+    Displays the movie at its original size, without any zoom.
+
+    Corresponds to StageScaleMode.NO_SCALE
+scale-mode-showall = Zoom to Fit
+scale-mode-showall-tooltip =
+    Zooms the movie to fill the window as much as possible without cropping, maintaining aspect ratio.
+
+    Corresponds to StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Stretch to Fit
+scale-mode-exactfit-tooltip =
+    Ensures the movie fills the entire window, disregarding aspect ratio.
+
+    Corresponds to StageScaleMode.EXACT_FIT
+scale-mode-noborder = Crop to Fit
+scale-mode-noborder-tooltip =
+    Fills the entire window while maintaining aspect ratio, cropping the movie if necessary.
+
+    Corresponds to StageScaleMode.NO_BORDER
 scale-mode-force = Force
+scale-mode-force-tooltip =
+    Prevents the movie from changing the scale mode, locking it to the selected setting.
 
 player-version = Player Version
 

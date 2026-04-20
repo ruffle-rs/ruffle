@@ -1,0 +1,19 @@
+Testing: addChild
+  0,0,100,4
+Testing: contains
+  0,0,100,4
+Testing: hitTestObject as argument
+  48,0,4,4
+Testing: setting focus
+  48,0,4,4
+Testing: resetting focus
+  48,0,4,4
+Testing: setting maskee
+  0,0,100,4
+// getBounds = (x=0, y=0, w=0, h=0)
+Testing: getBounds relative
+  0,0,100,4
+// getRect = (x=0, y=0, w=0, h=0)
+Testing: getRect relative
+  0,0,100,4
+Tests finished

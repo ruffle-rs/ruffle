@@ -1,0 +1,3 @@
+VerifyError Error #1032: Cpool index 0 is out of range 38.
+VerifyError Error #1032: Cpool index 64 is out of range 38.
+VerifyError Error #1032: Cpool index 64 is out of range 21.

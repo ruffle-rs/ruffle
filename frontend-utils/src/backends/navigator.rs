@@ -1,21 +1,21 @@
 mod fetch;
 
-use crate::backends::executor::{spawn_tokio, FutureSpawner};
 use crate::backends::navigator::fetch::{Response, ResponseBody};
 use crate::content::PlayingContent;
 use async_channel::{Receiver, Sender, TryRecvError};
 use async_io::Timer;
 use futures_lite::FutureExt;
-use reqwest::{cookie, header, Proxy};
+use reqwest::{Proxy, cookie, header};
 use ruffle_core::backend::navigator::{
-    async_return, create_fetch_error, get_encoding, ErrorResponse, NavigationMethod,
-    NavigatorBackend, OpenURLMode, OwnedFuture, Request, SocketMode, SuccessResponse,
+    ErrorResponse, NavigationMethod, NavigatorBackend, OwnedFuture, Request, SocketMode,
+    SuccessResponse, async_return, create_fetch_error, get_encoding,
 };
 use ruffle_core::indexmap::IndexMap;
 use ruffle_core::loader::Error;
 use ruffle_core::socket::{ConnectionState, SocketAction, SocketHandle};
 use std::collections::HashSet;
 use std::fs::File;
+use std::future::Future;
 use std::io;
 use std::io::ErrorKind;
 use std::path::Path;
@@ -28,9 +28,9 @@ use tracing::warn;
 use url::{ParseError, Url};
 
 pub trait NavigatorInterface: Clone + Send + 'static {
-    fn confirm_website_navigation(&self, url: &Url) -> bool;
+    fn navigate_to_website(&self, url: Url);
 
-    fn open_file(&self, path: &Path) -> io::Result<File>;
+    fn open_file(&self, path: &Path) -> impl std::future::Future<Output = io::Result<File>> + Send;
 
     fn confirm_socket(
         &self,
@@ -39,9 +39,13 @@ pub trait NavigatorInterface: Clone + Send + 'static {
     ) -> impl std::future::Future<Output = bool> + Send;
 }
 
+pub trait FutureSpawner<Err> {
+    fn spawn(&self, future: OwnedFuture<(), Err>);
+}
+
 /// Implementation of `NavigatorBackend` for non-web environments that can call
 /// out to a web browser.
-pub struct ExternalNavigatorBackend<F: FutureSpawner, I: NavigatorInterface> {
+pub struct ExternalNavigatorBackend<F: FutureSpawner<Error>, I: NavigatorInterface> {
     /// Sink for tasks sent to us through `spawn_future`.
     future_spawner: F,
 
@@ -57,16 +61,14 @@ pub struct ExternalNavigatorBackend<F: FutureSpawner, I: NavigatorInterface> {
 
     upgrade_to_https: bool,
 
-    open_url_mode: OpenURLMode,
-
     content: Rc<PlayingContent>,
 
     interface: I,
 }
 
-impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
+impl<F: FutureSpawner<Error>, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
     /// Construct a navigator backend with fetch and async capability.
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
         mut base_url: Url,
         referer: Option<Url>,
@@ -74,7 +76,6 @@ impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
         future_spawner: F,
         proxy: Option<Url>,
         upgrade_to_https: bool,
-        open_url_mode: OpenURLMode,
         socket_allowed: HashSet<String>,
         socket_mode: SocketMode,
         content: Rc<PlayingContent>,
@@ -125,7 +126,6 @@ impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
             client,
             base_url,
             upgrade_to_https,
-            open_url_mode,
             socket_allowed,
             socket_mode,
             content,
@@ -134,7 +134,7 @@ impl<F: FutureSpawner, I: NavigatorInterface> ExternalNavigatorBackend<F, I> {
     }
 }
 
-impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
+impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
     for ExternalNavigatorBackend<F, I>
 {
     fn navigate_to_url(
@@ -182,26 +182,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
             return;
         }
 
-        if self.open_url_mode == OpenURLMode::Confirm {
-            if !self.interface.confirm_website_navigation(&modified_url) {
-                tracing::info!("SWF tried to open a website, but the user declined the request");
-                return;
-            }
-        } else if self.open_url_mode == OpenURLMode::Deny {
-            tracing::warn!("SWF tried to open a website, but opening a website is not allowed");
-            return;
-        }
-
-        // If the user confirmed or if in Allow mode, open the website
-
-        // TODO: This opens local files in the browser while flash opens them
-        // in the default program for the respective filetype.
-        // This especially includes mailto links. Ruffle opens the browser which opens
-        // the preferred program while flash opens the preferred program directly.
-        match webbrowser::open(modified_url.as_ref()) {
-            Ok(_output) => {}
-            Err(e) => tracing::error!("Could not open URL {}: {}", modified_url.as_str(), e),
-        };
+        self.interface.navigate_to_website(modified_url);
     }
 
     fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse> {
@@ -209,7 +190,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
         let mut processed_url = match self.resolve_url(request.url()) {
             Ok(url) => url,
             Err(e) => {
-                return async_return(create_fetch_error(request.url(), e));
+                return async_return(Err(create_fetch_error(request.url(), e)));
             }
         };
 
@@ -228,8 +209,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
                     // when we actually load a filesystem url, strip them out.
                     processed_url.set_query(None);
 
-                    let contents =
-                        content.get_local_file(&processed_url, |path| interface.open_file(path));
+                    let contents = content.get_local_file(&processed_url, interface).await;
 
                     let response: Box<dyn SuccessResponse> = Box::new(Response {
                         url: response_url.to_string(),
@@ -282,7 +262,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
                 let redirected = *response.url() != processed_url;
                 if !response.status().is_success() {
                     let error = Error::HttpNotOk(
-                        format!("HTTP status is not ok, got {}", response.status()),
+                        format!("Got {}", response.status()),
                         status,
                         redirected,
                         response.content_length().unwrap_or_default(),
@@ -329,7 +309,19 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
         receiver: Receiver<Vec<u8>>,
         sender: Sender<SocketAction>,
     ) {
-        let addr = format!("{}:{}", host, port);
+        /// Tries to send the given action properly handling failures.
+        ///
+        /// Returns `true` when the action has been sent properly,
+        /// `false` when the channel is closed.
+        async fn send_action(sender: &Sender<SocketAction>, action: SocketAction) -> bool {
+            sender
+                .send(action)
+                .await
+                .inspect_err(|err| tracing::warn!("Failed to send SocketAction: {}", err))
+                .is_ok()
+        }
+
+        let addr = format!("{host}:{port}");
         let is_allowed = self.socket_allowed.contains(&addr);
         let socket_mode = self.socket_mode;
         let interface = self.interface.clone();
@@ -339,9 +331,8 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
                 (false, SocketMode::Allow) | (true, _) => {} // the process is allowed to continue. just dont do anything.
                 (false, SocketMode::Deny) => {
                     // Just fail the connection.
-                    sender
-                        .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
-                        .expect("working channel send");
+                    let action = SocketAction::Connect(handle, ConnectionState::Failed);
+                    let _ = send_action(&sender, action).await;
 
                     tracing::warn!(
                         "SWF tried to open a socket, but opening a socket is not allowed"
@@ -354,10 +345,8 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
 
                     if !attempt_sandbox_connect {
                         // fail the connection.
-                        sender
-                            .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
-                            .expect("working channel send");
-
+                        let action = SocketAction::Connect(handle, ConnectionState::Failed);
+                        let _ = send_action(&sender, action).await;
                         return;
                     }
                 }
@@ -373,23 +362,21 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
             let mut stream = match TcpStream::connect((host, port)).or(timeout).await {
                 Err(e) if e.kind() == ErrorKind::TimedOut => {
                     warn!("Connection to {}:{} timed out", host2, port);
-                    sender
-                        .try_send(SocketAction::Connect(handle, ConnectionState::TimedOut))
-                        .expect("working channel send");
+                    let action = SocketAction::Connect(handle, ConnectionState::TimedOut);
+                    let _ = send_action(&sender, action).await;
                     return;
                 }
                 Ok(stream) => {
-                    sender
-                        .try_send(SocketAction::Connect(handle, ConnectionState::Connected))
-                        .expect("working channel send");
-
+                    let action = SocketAction::Connect(handle, ConnectionState::Connected);
+                    if !send_action(&sender, action).await {
+                        return;
+                    }
                     stream
                 }
                 Err(err) => {
                     warn!("Failed to connect to {}:{}, error: {}", host2, port, err);
-                    sender
-                        .try_send(SocketAction::Connect(handle, ConnectionState::Failed))
-                        .expect("working channel send");
+                    let action = SocketAction::Connect(handle, ConnectionState::Failed);
+                    let _ = send_action(&sender, action).await;
                     return;
                 }
             };
@@ -406,17 +393,16 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
                     match read.read(&mut buffer).await {
                         Err(e) if e.kind() == ErrorKind::TimedOut => {} // try again later.
                         Err(_) | Ok(0) => {
-                            sender
-                                .try_send(SocketAction::Close(handle))
-                                .expect("working channel send");
+                            let _ = send_action(&sender, SocketAction::Close(handle)).await;
                             break;
                         }
                         Ok(read) => {
                             let buffer = buffer.into_iter().take(read).collect::<Vec<_>>();
 
-                            sender
-                                .try_send(SocketAction::Data(handle, buffer))
-                                .expect("working channel send");
+                            let action = SocketAction::Data(handle, buffer);
+                            if !send_action(&sender, action).await {
+                                return;
+                            }
                         }
                     };
                 }
@@ -445,9 +431,7 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
                         match write.write(&pending_write).await {
                             Err(e) if e.kind() == ErrorKind::TimedOut => {} // try again later.
                             Err(_) => {
-                                sender2
-                                    .try_send(SocketAction::Close(handle))
-                                    .expect("working channel send");
+                                let _ = send_action(&sender2, SocketAction::Close(handle)).await;
                                 return;
                             }
                             Ok(written) => {
@@ -487,8 +471,21 @@ impl<F: FutureSpawner + 'static, I: NavigatorInterface> NavigatorBackend
     }
 }
 
+/// Spawns a new asynchronous task in a tokio runtime, without the current executor needing to belong to tokio
+pub async fn spawn_tokio<F>(future: F) -> F::Output
+where
+    F: Future + Send + 'static,
+    F::Output: Send + 'static,
+{
+    let (sender, receiver) = tokio::sync::oneshot::channel();
+    tokio::spawn(async move { sender.send(future.await) });
+    tokio::task::unconstrained(receiver)
+        .await
+        .expect("Oneshot should succeed")
+}
+
 #[cfg(test)]
-#[allow(clippy::unwrap_used)]
+#[expect(clippy::unwrap_used)]
 mod tests {
     use ruffle_core::socket::SocketAction::{Close, Connect, Data};
     use std::net::SocketAddr;
@@ -496,14 +493,14 @@ mod tests {
     use tokio::net::TcpListener;
     use tokio::task;
 
+    use crate::content::ContentDescriptor;
+
     use super::*;
 
     impl NavigatorInterface for () {
-        fn confirm_website_navigation(&self, _url: &Url) -> bool {
-            true
-        }
+        fn navigate_to_website(&self, _url: Url) {}
 
-        fn open_file(&self, path: &Path) -> io::Result<File> {
+        async fn open_file(&self, path: &Path) -> io::Result<File> {
             File::open(path)
         }
 
@@ -519,8 +516,8 @@ mod tests {
 
     struct TestFutureSpawner;
 
-    impl FutureSpawner for TestFutureSpawner {
-        fn spawn(&self, future: OwnedFuture<(), Error>) {
+    impl<E: 'static> FutureSpawner<E> for TestFutureSpawner {
+        fn spawn(&self, future: OwnedFuture<(), E>) {
             task::spawn_local(future);
         }
     }
@@ -570,14 +567,16 @@ mod tests {
             TestFutureSpawner,
             None,
             false,
-            OpenURLMode::Allow,
             Default::default(),
             if socket_allow {
                 SocketMode::Allow
             } else {
                 SocketMode::Deny
             },
-            Rc::new(PlayingContent::DirectFile(url)),
+            Rc::new(PlayingContent::DirectFile(ContentDescriptor {
+                url,
+                root_content_path: None,
+            })),
             (),
         )
     }
@@ -627,9 +626,7 @@ mod tests {
         let mut buffer = [0; 4096];
 
         let read = match server_socket.read(&mut buffer).await {
-            Err(e) => {
-                panic!("server read error: {}", e);
-            }
+            Err(e) => panic!("server read error: {e}"),
             Ok(read) => read,
         };
 

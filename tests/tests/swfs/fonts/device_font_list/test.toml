@@ -1,0 +1,9 @@
+num_ticks = 1
+
+[fonts.a]
+family = "TestFontA"
+path = "TestFontA.ttf"
+
+[fonts.b]
+family = "TestFontB"
+path = "TestFontB.ttf"

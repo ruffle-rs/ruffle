@@ -1,0 +1,83 @@
+Test 0
+// request.url
+http://localhost:8000
+
+// request.data
+
+
+// request.method
+POST
+
+// loader.load(request)
+undefined
+Navigator::fetch:
+  URL: http://localhost:8000
+  Method: GET
+
+Test 1
+// request.url
+http://localhost:8000
+
+// request.data
+[object Object]
+
+// request.method
+POST
+
+// loader.load(request)
+undefined
+Navigator::fetch:
+  URL: http://localhost:8000
+  Method: POST
+  Mime-Type: application/x-www-form-urlencoded
+  Body: [object Object]
+
+Test 2
+// request.url
+http://localhost:8000
+
+// request.data
+
+
+// request.method
+POST
+
+// loader.load(request)
+undefined
+Navigator::fetch:
+  URL: http://localhost:8000
+  Method: GET
+
+Test 3
+// request.url
+http://localhost:8000
+
+// request.data
+
+
+// request.method
+POST
+
+// loader.load(request)
+undefined
+Navigator::fetch:
+  URL: http://localhost:8000
+  Method: GET
+
+Test 4
+// request.url
+http://localhost:8000
+
+// request.data
+
+
+// request.method
+POST
+
+// loader.load(request)
+undefined
+Navigator::fetch:
+  URL: http://localhost:8000
+  Method: GET
+
+Test 5

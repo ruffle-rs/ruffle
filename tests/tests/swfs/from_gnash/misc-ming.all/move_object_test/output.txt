@@ -1,0 +1,11 @@
+PASSED: typeof(instance1)  ==  'movieclip' [move_object_test.c:87]
+PASSED: typeof(instance2)  ==  'movieclip' [move_object_test.c:90]
+PASSED: instance2._x  ==  700 [move_object_test.c:91]
+PASSED: typeof(instance2)  ==  'movieclip' [move_object_test.c:79]
+PASSED: instance2._x  ==  0 [move_object_test.c:80]
+PASSED: typeof(instance1)  ==  'movieclip' [move_object_test.c:87]
+PASSED: typeof(instance2)  ==  'movieclip' [move_object_test.c:90]
+PASSED: instance2._x  ==  700 [move_object_test.c:91]
+#passed: 8
+#failed: 0
+#total tests run: 8

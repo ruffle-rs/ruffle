@@ -154,7 +154,7 @@ impl<'a> ScriptData<'a> {
 #[cfg(test)]
 mod tests {
     use crate::reader::FlvReader;
-    use crate::script::{parse_string, ScriptData, Value, Variable};
+    use crate::script::{ScriptData, Value, Variable, parse_string};
 
     #[test]
     fn read_string() {

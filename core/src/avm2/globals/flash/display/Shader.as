@@ -3,8 +3,11 @@ package flash.display {
     import __ruffle__.stub_setter;
     import flash.utils.ByteArray;
 
+    [API("662")]
     public class Shader {
+        [Ruffle(NativeAccessible)]
         private var _data:ShaderData;
+
         private var _precisionHint:String = ShaderPrecision.FULL;
 
         public function Shader(bytecode:ByteArray = null) {
@@ -36,4 +39,3 @@ package flash.display {
         }
     }
 }
-

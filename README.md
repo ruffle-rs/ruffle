@@ -4,6 +4,7 @@
 <p align="center">
   <a href="https://github.com/ruffle-rs/ruffle/actions"><img alt="Rust Build Status" src="https://img.shields.io/github/actions/workflow/status/ruffle-rs/ruffle/test_rust.yml?label=Rust%20Build&logo=github&branch=master" /></a>
   <a href="https://github.com/ruffle-rs/ruffle/actions/workflows/test_web.yml"><img alt="Web Build Status" src="https://img.shields.io/github/actions/workflow/status/ruffle-rs/ruffle/test_web.yml?label=Web%20Build&logo=github&branch=master" /></a>
+  <a href="https://flathub.org/apps/rs.ruffle.Ruffle"><img alt="Ruffle Flathub" src="https://img.shields.io/flathub/v/rs.ruffle.Ruffle?color=007acc&logo=flathub" /></a>
   <a href="https://www.npmjs.com/package/@ruffle-rs/ruffle"><img alt="Ruffle npm" src="https://img.shields.io/npm/v/@ruffle-rs/ruffle?color=007acc&logo=npm" /></a>
   <a href="https://aur.archlinux.org/packages/ruffle-nightly-bin"><img alt="Ruffle AUR" src="https://img.shields.io/aur/version/ruffle-nightly-bin?logo=archlinux" /></a>
   <a href="https://discord.gg/ruffle"><img alt="Ruffle Discord" src="https://img.shields.io/discord/610531541889581066?label=&color=7389d8&labelColor=6a7ec2&logoColor=ffffff&logo=discord" /></a>
@@ -58,17 +59,15 @@ For more detailed instructions, see our [wiki page](https://github.com/ruffle-rs
 
 The following are typical dependencies for Linux:
 
-* libasound2-dev
-* libxcb-shape0-dev
-* libxcb-xfixes0-dev
-* libgtk-3-dev
-* libudev-dev
-* libxcb-xinput-dev
-* libxcb-xkb-dev
-* libxcb-cursor-dev
-* default-jre-headless
-* cmake
-* g++
+* Ubuntu/Debian:
+  ```shell
+  sudo apt install pkg-config libasound2-dev libudev-dev default-jre-headless g++
+  ```
+
+* Fedora/RHEL:
+  ```shell
+  sudo dnf install pkgconf-pkg-config alsa-lib-devel systemd-devel java-latest-openjdk-headless gcc-c++
+  ```
 
 ### Desktop
 

@@ -1,0 +1,1145 @@
+child loaded
+child loaded
+child loaded
+child loaded
+child loaded
+Testing SWF5
+  s1.global:          undefined
+  s1.global2:         undefined
+  s1.anObject:        [object Object]
+  s1.anArray:         1,2,3
+  s1.aFunction:       [type Function]
+  s1.anObjectClass:   [type Function]
+  s1.aMovieClipClass: [type Function]
+  s1.aBooleanClass:   [type Function]
+  typeof s1.global:          object
+  typeof s1.global2:         undefined
+  typeof s1.anObject:        object
+  typeof s1.anArray:         object
+  typeof s1.aFunction:       function
+  typeof s1.anObjectClass:   function
+  typeof s1.aMovieClipClass: function
+  typeof s1.aBooleanClass:   function
+  typeof s1.global.prototype:          undefined
+  typeof s1.global2.prototype:         undefined
+  typeof s1.anObject.prototype:        undefined
+  typeof s1.anArray.prototype:         undefined
+  typeof s1.aFunction.prototype:       object
+  typeof s1.anObjectClass.prototype:   object
+  typeof s1.aMovieClipClass.prototype: object
+  typeof s1.aBooleanClass.prototype:   object
+  true instanceof s1.aBooleanClass:    false
+  _root instanceof s1.aMovieClipClass: false
+  {} instanceof s1.anObjectClass:      false
+Testing SWF6
+  s1.global:          undefined
+  s1.global2:         undefined
+  s1.anObject:        [object Object]
+  s1.anArray:         1,2,3
+  s1.aFunction:       [type Function]
+  s1.anObjectClass:   [type Function]
+  s1.aMovieClipClass: [type Function]
+  s1.aBooleanClass:   [type Function]
+  typeof s1.global:          object
+  typeof s1.global2:         object
+  typeof s1.anObject:        object
+  typeof s1.anArray:         object
+  typeof s1.aFunction:       function
+  typeof s1.anObjectClass:   function
+  typeof s1.aMovieClipClass: function
+  typeof s1.aBooleanClass:   function
+  typeof s1.global.prototype:          undefined
+  typeof s1.global2.prototype:         undefined
+  typeof s1.anObject.prototype:        undefined
+  typeof s1.anArray.prototype:         undefined
+  typeof s1.aFunction.prototype:       object
+  typeof s1.anObjectClass.prototype:   object
+  typeof s1.aMovieClipClass.prototype: object
+  typeof s1.aBooleanClass.prototype:   object
+  true instanceof s1.aBooleanClass:    false
+  _root instanceof s1.aMovieClipClass: false
+  {} instanceof s1.anObjectClass:      false
+Testing SWF7
+  s1.global:          undefined
+  s1.global2:         undefined
+  s1.anObject:        [object Object]
+  s1.anArray:         1,2,3
+  s1.aFunction:       [type Function]
+  s1.anObjectClass:   [type Function]
+  s1.aMovieClipClass: [type Function]
+  s1.aBooleanClass:   [type Function]
+  typeof s1.global:          object
+  typeof s1.global2:         object
+  typeof s1.anObject:        object
+  typeof s1.anArray:         object
+  typeof s1.aFunction:       function
+  typeof s1.anObjectClass:   function
+  typeof s1.aMovieClipClass: function
+  typeof s1.aBooleanClass:   function
+  typeof s1.global.prototype:          undefined
+  typeof s1.global2.prototype:         undefined
+  typeof s1.anObject.prototype:        undefined
+  typeof s1.anArray.prototype:         undefined
+  typeof s1.aFunction.prototype:       object
+  typeof s1.anObjectClass.prototype:   object
+  typeof s1.aMovieClipClass.prototype: object
+  typeof s1.aBooleanClass.prototype:   object
+  true instanceof s1.aBooleanClass:    false
+  _root instanceof s1.aMovieClipClass: true
+  {} instanceof s1.anObjectClass:      true
+Testing SWF8
+  s1.global:          undefined
+  s1.global2:         undefined
+  s1.anObject:        [object Object]
+  s1.anArray:         1,2,3
+  s1.aFunction:       [type Function]
+  s1.anObjectClass:   [type Function]
+  s1.aMovieClipClass: [type Function]
+  s1.aBooleanClass:   [type Function]
+  typeof s1.global:          object
+  typeof s1.global2:         object
+  typeof s1.anObject:        object
+  typeof s1.anArray:         object
+  typeof s1.aFunction:       function
+  typeof s1.anObjectClass:   function
+  typeof s1.aMovieClipClass: function
+  typeof s1.aBooleanClass:   function
+  typeof s1.global.prototype:          undefined
+  typeof s1.global2.prototype:         undefined
+  typeof s1.anObject.prototype:        undefined
+  typeof s1.anArray.prototype:         undefined
+  typeof s1.aFunction.prototype:       object
+  typeof s1.anObjectClass.prototype:   object
+  typeof s1.aMovieClipClass.prototype: object
+  typeof s1.aBooleanClass.prototype:   object
+  true instanceof s1.aBooleanClass:    false
+  _root instanceof s1.aMovieClipClass: true
+  {} instanceof s1.anObjectClass:      true
+Testing SWF9
+  s1.global:          undefined
+  s1.global2:         undefined
+  s1.anObject:        [object Object]
+  s1.anArray:         1,2,3
+  s1.aFunction:       [type Function]
+  s1.anObjectClass:   [type Function]
+  s1.aMovieClipClass: [type Function]
+  s1.aBooleanClass:   [type Function]
+  typeof s1.global:          object
+  typeof s1.global2:         undefined
+  typeof s1.anObject:        object
+  typeof s1.anArray:         object
+  typeof s1.aFunction:       function
+  typeof s1.anObjectClass:   function
+  typeof s1.aMovieClipClass: function
+  typeof s1.aBooleanClass:   function
+  typeof s1.global.prototype:          undefined
+  typeof s1.global2.prototype:         undefined
+  typeof s1.anObject.prototype:        undefined
+  typeof s1.anArray.prototype:         undefined
+  typeof s1.aFunction.prototype:       object
+  typeof s1.anObjectClass.prototype:   object
+  typeof s1.aMovieClipClass.prototype: object
+  typeof s1.aBooleanClass.prototype:   object
+  true instanceof s1.aBooleanClass:    false
+  _root instanceof s1.aMovieClipClass: false
+  {} instanceof s1.anObjectClass:      false
+Comparing SWF5 and SWF6
+  s1.global          == s2.global:          true
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   true
+  s1.aMovieClipClass == s2.aMovieClipClass: true
+  s1.aBooleanClass   == s2.aBooleanClass:   true
+  s1.global          === s2.global:          true
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   true
+  s1.aMovieClipClass === s2.aMovieClipClass: true
+  s1.aBooleanClass   === s2.aBooleanClass:   true
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   true
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   true
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        true
+  s1.anArray.__proto__         == s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   true
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        true
+  s1.anArray.__proto__         === s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   true
+  s1.anObject instanceof s2.anObjectClass: true
+Comparing SWF5 and SWF7
+  s1.global          == s2.global:          false
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   false
+  s1.aMovieClipClass == s2.aMovieClipClass: false
+  s1.aBooleanClass   == s2.aBooleanClass:   false
+  s1.global          === s2.global:          false
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   false
+  s1.aMovieClipClass === s2.aMovieClipClass: false
+  s1.aBooleanClass   === s2.aBooleanClass:   false
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   false
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   false
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        false
+  s1.anArray.__proto__         == s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   false
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        false
+  s1.anArray.__proto__         === s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   false
+  s1.anObject instanceof s2.anObjectClass: false
+Comparing SWF5 and SWF8
+  s1.global          == s2.global:          false
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   false
+  s1.aMovieClipClass == s2.aMovieClipClass: false
+  s1.aBooleanClass   == s2.aBooleanClass:   false
+  s1.global          === s2.global:          false
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   false
+  s1.aMovieClipClass === s2.aMovieClipClass: false
+  s1.aBooleanClass   === s2.aBooleanClass:   false
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   false
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   false
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        false
+  s1.anArray.__proto__         == s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   false
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        false
+  s1.anArray.__proto__         === s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   false
+  s1.anObject instanceof s2.anObjectClass: false
+Comparing SWF5 and SWF9
+  s1.global          == s2.global:          true
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   true
+  s1.aMovieClipClass == s2.aMovieClipClass: true
+  s1.aBooleanClass   == s2.aBooleanClass:   true
+  s1.global          === s2.global:          true
+  s1.global2         === s2.global2:         true
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   true
+  s1.aMovieClipClass === s2.aMovieClipClass: true
+  s1.aBooleanClass   === s2.aBooleanClass:   true
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   true
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   true
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        true
+  s1.anArray.__proto__         == s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   true
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        true
+  s1.anArray.__proto__         === s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   true
+  s1.anObject instanceof s2.anObjectClass: true
+Comparing SWF6 and SWF5
+  s1.global          == s2.global:          true
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   true
+  s1.aMovieClipClass == s2.aMovieClipClass: true
+  s1.aBooleanClass   == s2.aBooleanClass:   true
+  s1.global          === s2.global:          true
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   true
+  s1.aMovieClipClass === s2.aMovieClipClass: true
+  s1.aBooleanClass   === s2.aBooleanClass:   true
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   true
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   true
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        true
+  s1.anArray.__proto__         == s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   true
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        true
+  s1.anArray.__proto__         === s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   true
+  s1.anObject instanceof s2.anObjectClass: true
+Comparing SWF6 and SWF7
+  s1.global          == s2.global:          false
+  s1.global2         == s2.global2:         false
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   false
+  s1.aMovieClipClass == s2.aMovieClipClass: false
+  s1.aBooleanClass   == s2.aBooleanClass:   false
+  s1.global          === s2.global:          false
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   false
+  s1.aMovieClipClass === s2.aMovieClipClass: false
+  s1.aBooleanClass   === s2.aBooleanClass:   false
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   false
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   false
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        false
+  s1.anArray.__proto__         == s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   false
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        false
+  s1.anArray.__proto__         === s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   false
+  s1.anObject instanceof s2.anObjectClass: false
+Comparing SWF6 and SWF8
+  s1.global          == s2.global:          false
+  s1.global2         == s2.global2:         false
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   false
+  s1.aMovieClipClass == s2.aMovieClipClass: false
+  s1.aBooleanClass   == s2.aBooleanClass:   false
+  s1.global          === s2.global:          false
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   false
+  s1.aMovieClipClass === s2.aMovieClipClass: false
+  s1.aBooleanClass   === s2.aBooleanClass:   false
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   false
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   false
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        false
+  s1.anArray.__proto__         == s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   false
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        false
+  s1.anArray.__proto__         === s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   false
+  s1.anObject instanceof s2.anObjectClass: false
+Comparing SWF6 and SWF9
+  s1.global          == s2.global:          true
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   true
+  s1.aMovieClipClass == s2.aMovieClipClass: true
+  s1.aBooleanClass   == s2.aBooleanClass:   true
+  s1.global          === s2.global:          true
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   true
+  s1.aMovieClipClass === s2.aMovieClipClass: true
+  s1.aBooleanClass   === s2.aBooleanClass:   true
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   true
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   true
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        true
+  s1.anArray.__proto__         == s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   true
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        true
+  s1.anArray.__proto__         === s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   true
+  s1.anObject instanceof s2.anObjectClass: true
+Comparing SWF7 and SWF5
+  s1.global          == s2.global:          false
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   false
+  s1.aMovieClipClass == s2.aMovieClipClass: false
+  s1.aBooleanClass   == s2.aBooleanClass:   false
+  s1.global          === s2.global:          false
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   false
+  s1.aMovieClipClass === s2.aMovieClipClass: false
+  s1.aBooleanClass   === s2.aBooleanClass:   false
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   false
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   false
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        false
+  s1.anArray.__proto__         == s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   false
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        false
+  s1.anArray.__proto__         === s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   false
+  s1.anObject instanceof s2.anObjectClass: false
+Comparing SWF7 and SWF6
+  s1.global          == s2.global:          false
+  s1.global2         == s2.global2:         false
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   false
+  s1.aMovieClipClass == s2.aMovieClipClass: false
+  s1.aBooleanClass   == s2.aBooleanClass:   false
+  s1.global          === s2.global:          false
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   false
+  s1.aMovieClipClass === s2.aMovieClipClass: false
+  s1.aBooleanClass   === s2.aBooleanClass:   false
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   false
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   false
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        false
+  s1.anArray.__proto__         == s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   false
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        false
+  s1.anArray.__proto__         === s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   false
+  s1.anObject instanceof s2.anObjectClass: false
+Comparing SWF7 and SWF8
+  s1.global          == s2.global:          true
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   true
+  s1.aMovieClipClass == s2.aMovieClipClass: true
+  s1.aBooleanClass   == s2.aBooleanClass:   true
+  s1.global          === s2.global:          true
+  s1.global2         === s2.global2:         true
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   true
+  s1.aMovieClipClass === s2.aMovieClipClass: true
+  s1.aBooleanClass   === s2.aBooleanClass:   true
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   true
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   true
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        true
+  s1.anArray.__proto__         == s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   true
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        true
+  s1.anArray.__proto__         === s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   true
+  s1.anObject instanceof s2.anObjectClass: true
+Comparing SWF7 and SWF9
+  s1.global          == s2.global:          false
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   false
+  s1.aMovieClipClass == s2.aMovieClipClass: false
+  s1.aBooleanClass   == s2.aBooleanClass:   false
+  s1.global          === s2.global:          false
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   false
+  s1.aMovieClipClass === s2.aMovieClipClass: false
+  s1.aBooleanClass   === s2.aBooleanClass:   false
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   false
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   false
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        false
+  s1.anArray.__proto__         == s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   false
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        false
+  s1.anArray.__proto__         === s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   false
+  s1.anObject instanceof s2.anObjectClass: false
+Comparing SWF8 and SWF5
+  s1.global          == s2.global:          false
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   false
+  s1.aMovieClipClass == s2.aMovieClipClass: false
+  s1.aBooleanClass   == s2.aBooleanClass:   false
+  s1.global          === s2.global:          false
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   false
+  s1.aMovieClipClass === s2.aMovieClipClass: false
+  s1.aBooleanClass   === s2.aBooleanClass:   false
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   false
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   false
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        false
+  s1.anArray.__proto__         == s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   false
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        false
+  s1.anArray.__proto__         === s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   false
+  s1.anObject instanceof s2.anObjectClass: false
+Comparing SWF8 and SWF6
+  s1.global          == s2.global:          false
+  s1.global2         == s2.global2:         false
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   false
+  s1.aMovieClipClass == s2.aMovieClipClass: false
+  s1.aBooleanClass   == s2.aBooleanClass:   false
+  s1.global          === s2.global:          false
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   false
+  s1.aMovieClipClass === s2.aMovieClipClass: false
+  s1.aBooleanClass   === s2.aBooleanClass:   false
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   false
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   false
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        false
+  s1.anArray.__proto__         == s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   false
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        false
+  s1.anArray.__proto__         === s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   false
+  s1.anObject instanceof s2.anObjectClass: false
+Comparing SWF8 and SWF7
+  s1.global          == s2.global:          true
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   true
+  s1.aMovieClipClass == s2.aMovieClipClass: true
+  s1.aBooleanClass   == s2.aBooleanClass:   true
+  s1.global          === s2.global:          true
+  s1.global2         === s2.global2:         true
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   true
+  s1.aMovieClipClass === s2.aMovieClipClass: true
+  s1.aBooleanClass   === s2.aBooleanClass:   true
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   true
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   true
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        true
+  s1.anArray.__proto__         == s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   true
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        true
+  s1.anArray.__proto__         === s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   true
+  s1.anObject instanceof s2.anObjectClass: true
+Comparing SWF8 and SWF9
+  s1.global          == s2.global:          false
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   false
+  s1.aMovieClipClass == s2.aMovieClipClass: false
+  s1.aBooleanClass   == s2.aBooleanClass:   false
+  s1.global          === s2.global:          false
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   false
+  s1.aMovieClipClass === s2.aMovieClipClass: false
+  s1.aBooleanClass   === s2.aBooleanClass:   false
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   false
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   false
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        false
+  s1.anArray.__proto__         == s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   false
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        false
+  s1.anArray.__proto__         === s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   false
+  s1.anObject instanceof s2.anObjectClass: false
+Comparing SWF9 and SWF5
+  s1.global          == s2.global:          true
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   true
+  s1.aMovieClipClass == s2.aMovieClipClass: true
+  s1.aBooleanClass   == s2.aBooleanClass:   true
+  s1.global          === s2.global:          true
+  s1.global2         === s2.global2:         true
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   true
+  s1.aMovieClipClass === s2.aMovieClipClass: true
+  s1.aBooleanClass   === s2.aBooleanClass:   true
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   true
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   true
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        true
+  s1.anArray.__proto__         == s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   true
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        true
+  s1.anArray.__proto__         === s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   true
+  s1.anObject instanceof s2.anObjectClass: true
+Comparing SWF9 and SWF6
+  s1.global          == s2.global:          true
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   true
+  s1.aMovieClipClass == s2.aMovieClipClass: true
+  s1.aBooleanClass   == s2.aBooleanClass:   true
+  s1.global          === s2.global:          true
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   true
+  s1.aMovieClipClass === s2.aMovieClipClass: true
+  s1.aBooleanClass   === s2.aBooleanClass:   true
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   true
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   true
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: true
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   true
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        true
+  s1.anArray.__proto__         == s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   true
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        true
+  s1.anArray.__proto__         === s2.anArray.__proto__:         true
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       true
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   true
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: true
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   true
+  s1.anObject instanceof s2.anObjectClass: true
+Comparing SWF9 and SWF7
+  s1.global          == s2.global:          false
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   false
+  s1.aMovieClipClass == s2.aMovieClipClass: false
+  s1.aBooleanClass   == s2.aBooleanClass:   false
+  s1.global          === s2.global:          false
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   false
+  s1.aMovieClipClass === s2.aMovieClipClass: false
+  s1.aBooleanClass   === s2.aBooleanClass:   false
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   false
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   false
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        false
+  s1.anArray.__proto__         == s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   false
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        false
+  s1.anArray.__proto__         === s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   false
+  s1.anObject instanceof s2.anObjectClass: false
+Comparing SWF9 and SWF8
+  s1.global          == s2.global:          false
+  s1.global2         == s2.global2:         true
+  s1.anObject        == s2.anObject:        false
+  s1.anArray         == s2.anArray:         false
+  s1.aFunction       == s2.aFunction:       false
+  s1.anObjectClass   == s2.anObjectClass:   false
+  s1.aMovieClipClass == s2.aMovieClipClass: false
+  s1.aBooleanClass   == s2.aBooleanClass:   false
+  s1.global          === s2.global:          false
+  s1.global2         === s2.global2:         false
+  s1.anObject        === s2.anObject:        false
+  s1.anArray         === s2.anArray:         false
+  s1.aFunction       === s2.aFunction:       false
+  s1.anObjectClass   === s2.anObjectClass:   false
+  s1.aMovieClipClass === s2.aMovieClipClass: false
+  s1.aBooleanClass   === s2.aBooleanClass:   false
+  s1.global.prototype          == s2.global.prototype:          true
+  s1.global2.prototype         == s2.global2.prototype:         true
+  s1.anObject.prototype        == s2.anObject.prototype:        true
+  s1.anArray.prototype         == s2.anArray.prototype:         true
+  s1.aFunction.prototype       == s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   == s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype == s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   == s2.aBooleanClass.prototype:   false
+  s1.global.prototype          === s2.global.prototype:          true
+  s1.global2.prototype         === s2.global2.prototype:         true
+  s1.anObject.prototype        === s2.anObject.prototype:        true
+  s1.anArray.prototype         === s2.anArray.prototype:         true
+  s1.aFunction.prototype       === s2.aFunction.prototype:       false
+  s1.anObjectClass.prototype   === s2.anObjectClass.prototype:   false
+  s1.aMovieClipClass.prototype === s2.aMovieClipClass.prototype: false
+  s1.aBooleanClass.prototype   === s2.aBooleanClass.prototype:   false
+  s1.global.__proto__          == s2.global.__proto__:          true
+  s1.global2.__proto__         == s2.global2.__proto__:         true
+  s1.anObject.__proto__        == s2.anObject.__proto__:        false
+  s1.anArray.__proto__         == s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       == s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   == s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ == s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   == s2.aBooleanClass.__proto__:   false
+  s1.global.__proto__          === s2.global.__proto__:          true
+  s1.global2.__proto__         === s2.global2.__proto__:         true
+  s1.anObject.__proto__        === s2.anObject.__proto__:        false
+  s1.anArray.__proto__         === s2.anArray.__proto__:         false
+  s1.aFunction.__proto__       === s2.aFunction.__proto__:       false
+  s1.anObjectClass.__proto__   === s2.anObjectClass.__proto__:   false
+  s1.aMovieClipClass.__proto__ === s2.aMovieClipClass.__proto__: false
+  s1.aBooleanClass.__proto__   === s2.aBooleanClass.__proto__:   false
+  s1.anObject instanceof s2.anObjectClass: false

@@ -1,14 +1,14 @@
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::{Hint, Value};
-use crate::avm2::Error;
+use crate::avm2::object::{ClassObject, Object, TObject};
+use crate::avm2::value::Hint;
+use crate::context::UpdateContext;
 use chrono::{DateTime, Utc};
 use core::fmt;
-use gc_arena::barrier::unlock;
-use gc_arena::lock::RefLock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
-use std::cell::{Cell, Ref, RefMut};
+use gc_arena::{Collect, Gc, GcWeak};
+use ruffle_common::utils::HasPrefixField;
+use std::cell::Cell;
 
 /// A class instance allocator that allocates Date objects.
 pub fn date_allocator<'gc>(
@@ -18,7 +18,7 @@ pub fn date_allocator<'gc>(
     Ok(DateObject(Gc::new(
         activation.gc(),
         DateObjectData {
-            base: RefLock::new(ScriptObjectData::new(class)),
+            base: ScriptObjectData::new(class),
             date_time: Cell::new(None),
         },
     ))
@@ -42,25 +42,43 @@ impl fmt::Debug for DateObject<'_> {
 
 impl<'gc> DateObject<'gc> {
     pub fn from_date_time(
-        activation: &mut Activation<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         date_time: DateTime<Utc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let class = activation.avm2().classes().date;
-        let base = RefLock::new(ScriptObjectData::new(class));
+    ) -> Object<'gc> {
+        let class = context.avm2.classes().date;
+        let base = ScriptObjectData::new(class);
 
-        let instance: Object<'gc> = DateObject(Gc::new(
-            activation.context.gc_context,
+        DateObject(Gc::new(
+            context.gc(),
             DateObjectData {
                 base,
                 date_time: Cell::new(Some(date_time)),
             },
         ))
+        .into()
+    }
+
+    pub fn for_prototype(
+        context: &mut UpdateContext<'gc>,
+        date_class: ClassObject<'gc>,
+    ) -> Object<'gc> {
+        let object_class = context.avm2.classes().object;
+        let base = ScriptObjectData::custom_new(
+            date_class.inner_class_definition(),
+            Some(object_class.prototype()),
+            date_class.instance_vtable(),
+        );
+
+        let instance: Object<'gc> = DateObject(Gc::new(
+            context.gc(),
+            DateObjectData {
+                base,
+                date_time: Cell::new(None),
+            },
+        ))
         .into();
-        instance.install_instance_slots(activation.context.gc_context);
 
-        class.call_native_init(instance.into(), &[], activation)?;
-
-        Ok(instance)
+        instance
     }
 
     pub fn date_time(self) -> Option<DateTime<Utc>> {
@@ -72,41 +90,22 @@ impl<'gc> DateObject<'gc> {
     }
 }
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct DateObjectData<'gc> {
     /// Base script object
-    base: RefLock<ScriptObjectData<'gc>>,
+    base: ScriptObjectData<'gc>,
 
     date_time: Cell<Option<DateTime<Utc>>>,
 }
 
 impl<'gc> TObject<'gc> for DateObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        self.0.base.borrow()
-    }
-
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        unlock!(Gc::write(mc, self.0), DateObjectData, base).borrow_mut()
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        Gc::as_ptr(self.0) as *const ObjectPtr
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        if let Some(date) = self.date_time() {
-            Ok((date.timestamp_millis() as f64).into())
-        } else {
-            Ok(f64::NAN.into())
-        }
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 
     fn default_hint(&self) -> Hint {
         Hint::String
-    }
-
-    fn as_date_object(&self) -> Option<DateObject<'gc>> {
-        Some(*self)
     }
 }

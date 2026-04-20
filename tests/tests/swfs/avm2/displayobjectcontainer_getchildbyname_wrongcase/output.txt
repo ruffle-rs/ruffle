@@ -1,0 +1,5 @@
+//this.getChildByName("child_CLIP")
+null
+//this.addChild(newChild)
+//this.getChildByName("new_CHILD")
+null

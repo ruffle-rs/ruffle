@@ -25,24 +25,26 @@ pub fn external_interface_avm1(
         .player()
         .lock()
         .unwrap()
-        .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
+        .set_external_interface_provider(Some(Box::new(ExternalInterfaceTestProvider::new())));
 
     let mut first = true;
 
     loop {
-        runner.tick();
-        match runner.test()? {
+        match runner.tick()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
             TestStatus::Finished => break,
+        }
+
+        if !runner.is_preloaded() {
+            continue;
         }
 
         if first {
             first = false;
             let mut player_locked = runner.player().lock().unwrap();
 
-            let parroted =
-                player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
+            let parroted = player_locked.call_internal_interface("parrot", ["Hello World!".into()]);
             player_locked.log_backend().avm_trace(&format!(
                 "After calling `parrot` with a string: {parroted:?}",
             ));
@@ -66,8 +68,8 @@ pub fn external_interface_avm1(
             root.insert("false".to_string(), false.into());
             root.insert("null".to_string(), ExternalValue::Null);
             root.insert("nested".to_string(), nested.into());
-            let result = player_locked
-                .call_internal_interface("callWith", vec!["trace".into(), root.into()]);
+            let result =
+                player_locked.call_internal_interface("callWith", ["trace".into(), root.into()]);
             player_locked.log_backend().avm_trace(&format!(
                 "After calling `callWith` with a complex payload: {result:?}",
             ));
@@ -93,29 +95,46 @@ pub fn external_interface_avm2(
         .player()
         .lock()
         .unwrap()
-        .add_external_interface(Box::new(ExternalInterfaceTestProvider::new()));
+        .set_external_interface_provider(Some(Box::new(ExternalInterfaceTestProvider::new())));
 
     let mut first = true;
 
     loop {
-        runner.tick();
-        match runner.test()? {
+        match runner.tick()? {
             TestStatus::Continue => {}
             TestStatus::Sleep(duration) => sleep(duration),
             TestStatus::Finished => break,
+        }
+
+        if !runner.is_preloaded() {
+            continue;
         }
 
         if first {
             first = false;
             let mut player_locked = runner.player().lock().unwrap();
 
-            let parroted =
-                player_locked.call_internal_interface("parrot", vec!["Hello World!".into()]);
+            let parroted = player_locked.call_internal_interface("parrot", ["Hello World!".into()]);
             player_locked.log_backend().avm_trace(&format!(
                 "After calling `parrot` with a string: {parroted:?}",
             ));
 
-            player_locked.call_internal_interface("freestanding", vec!["Hello World!".into()]);
+            let map = BTreeMap::from([("a".into(), 100.into()), ("b".into(), "string".into())]);
+            let parroted =
+                player_locked.call_internal_interface("parrot", [ExternalValue::Object(map)]);
+            player_locked.log_backend().avm_trace(&format!(
+                "After calling `parrot` with an object: {parroted:?}",
+            ));
+
+            player_locked.call_internal_interface("freestanding", ["Hello World!".into()]);
+
+            player_locked
+                .log_backend()
+                .avm_trace("Before calling `removeMe`");
+            let removed = player_locked.call_internal_interface("removeMe", []);
+            player_locked
+                .log_backend()
+                .avm_trace(&format!("After calling `removeMe`: {removed:?}",));
 
             let root: ExternalValue = vec![
                 "string".into(),
@@ -125,8 +144,7 @@ pub fn external_interface_avm2(
             ]
             .into();
 
-            let result =
-                player_locked.call_internal_interface("callWith", vec!["trace".into(), root]);
+            let result = player_locked.call_internal_interface("callWith", ["trace".into(), root]);
             player_locked.log_backend().avm_trace(&format!(
                 "After calling `callWith` with a complex payload: {result:?}",
             ));

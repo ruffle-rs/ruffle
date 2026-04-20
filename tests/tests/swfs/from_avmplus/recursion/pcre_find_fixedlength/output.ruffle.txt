@@ -1,0 +1,20 @@
+strOriginal.search(re) PASSED!
+strOriginal.match(re) PASSED!
+strOriginal.replace(re, strReplace) PASSED!
+strOriginal.search(re) FAILED! expected: -1 got: 4
+strOriginal.match(re) FAILED! expected: null got: hello,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah,blah
+strOriginal.replace(re, strReplace) FAILED! expected: blahhello got: blahgoodbye
+"bbbla".search(new RegExp((?<=a{3,})bla)) PASSED!
+"bla".search(new RegExp((?<=a?)bla)) FAILED! expected: -1 got: 0
+"abla".search(new RegExp((?<=a?)bla)) FAILED! expected: -1 got: 1
+"abla".search(new RegExp((?<=a+)bla)) FAILED! expected: -1 got: 1
+"abla".search(new RegExp((?<=a*)bla)) FAILED! expected: -1 got: 1
+"aaabla".search(new RegExp((?<=a{3}|b{2})bla)) PASSED!
+"bbbla".search(new RegExp((?<=a{3}|b{2})bla)) PASSED!
+"bbbla".search(new RegExp((?<=(a{3}|b{2}))bla)) FAILED! expected: -1 got: 2
+"bbbla".search(new RegExp((?<=(((a{3}|b{2}))))bla)) FAILED! expected: -1 got: 2
+"bbbla".search(new RegExp((?<=(((((a{3}|b{2}))))))bla)) FAILED! expected: -1 got: 2
+"bbbbla".search(new RegExp((?<=(a{3}|b{2}b))bla)) PASSED!
+"xacbla".search(new RegExp((?<=(x(a|b)c|bbb))bla)) PASSED!
+"bbbbla".search(new RegExp((?<=(x(a|b)c|bbb))bla)) PASSED!
+"abxbabla".search(new RegExp((?<=a(x(a|b)c|b(b|x)b)a)bla)) PASSED!

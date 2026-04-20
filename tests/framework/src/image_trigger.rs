@@ -21,7 +21,7 @@ impl<'de> Deserialize<'de> for ImageTrigger {
 
 struct ImageTriggerVisitor;
 
-impl<'de> Visitor<'de> for ImageTriggerVisitor {
+impl Visitor<'_> for ImageTriggerVisitor {
     type Value = ImageTrigger;
 
     fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
@@ -35,7 +35,7 @@ impl<'de> Visitor<'de> for ImageTriggerVisitor {
         if value >= 0 && value <= i64::from(u32::MAX) {
             Ok(ImageTrigger::SpecificIteration(value as u32))
         } else {
-            Err(E::custom(format!("i64 out of range: {}", value)))
+            Err(E::custom(format!("i64 out of range: {value}")))
         }
     }
 
@@ -46,7 +46,7 @@ impl<'de> Visitor<'de> for ImageTriggerVisitor {
         if value <= u64::from(u32::MAX) {
             Ok(ImageTrigger::SpecificIteration(value as u32))
         } else {
-            Err(E::custom(format!("u64 out of range: {}", value)))
+            Err(E::custom(format!("u64 out of range: {value}")))
         }
     }
 

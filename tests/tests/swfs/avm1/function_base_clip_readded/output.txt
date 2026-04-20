@@ -1,0 +1,12 @@
+/// test called!
+this == undefined
+_parent == _level0.one
+
+/// test called!
+this == undefined
+_parent == undefined
+
+/// test called!
+this == undefined
+_parent == _level0.one
+

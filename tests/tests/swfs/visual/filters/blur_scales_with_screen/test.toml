@@ -4,5 +4,5 @@ num_frames = 1
 tolerance = 2
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, quality = "low" }
 viewport_dimensions = { width = 400, height = 400, scale_factor = 1.0 }

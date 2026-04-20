@@ -1,0 +1,8 @@
+Class1 protected variable classItem1 PASSED!
+Class1 protected const variable classItem2 PASSED!
+Class1 protected static variable classItem3 PASSED!
+Class1 protected static const variable classItem4 PASSED!
+Class2 protected variable classItem1 PASSED!
+Class2 protected const variable classItem2 PASSED!
+Class2 protected static variable classItem3 PASSED!
+Class2 protected static const variable classItem4 PASSED!

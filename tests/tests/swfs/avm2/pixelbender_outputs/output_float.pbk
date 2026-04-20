@@ -1,0 +1,17 @@
+<languageVersion : 1.0;>
+
+kernel output_float
+<   namespace : "Ruffle Tests";
+    vendor : "Kamil Jarosz";
+    version : 1;
+>
+{
+    input image4 src;
+    output float dst;
+
+    void
+    evaluatePixel()
+    {
+        dst = 1.0;
+    }
+}

@@ -1,29 +1,21 @@
-use crate::avm2::activation::Activation;
-use crate::avm2::class::Class;
-use crate::avm2::method::Method;
-use crate::avm2::object::Object;
-use crate::avm2::value::Value;
-use crate::avm2::Error;
 use crate::avm2::QName;
-
-fn void_init<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    unreachable!()
-}
+use crate::avm2::activation::Activation;
+use crate::avm2::class::{Class, ClassAttributes};
+use ruffle_macros::istr;
 
 pub fn create_class<'gc>(activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
-    let mc = activation.context.gc_context;
+    let mc = activation.gc();
     let class = Class::custom_new(
-        QName::new(activation.avm2().public_namespace_base_version, "void"),
+        QName::new(activation.avm2().namespaces.public_all(), istr!("void")),
         None,
-        Method::from_builtin(void_init, "", mc),
+        None,
+        Box::new([]),
         mc,
     );
+    class.set_attributes(ClassAttributes::FINAL | ClassAttributes::SEALED);
 
-    class.mark_traits_loaded(activation.context.gc_context);
+    // The `void` class has no interfaces or traits, so use `init_empty_vtable`
+    class.init_empty_vtable(activation.gc());
 
     class
 }

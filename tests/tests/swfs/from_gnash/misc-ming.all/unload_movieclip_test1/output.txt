@@ -1,0 +1,6 @@
+PASSED: movieclip == movieclip
+PASSED: _level0.mc == _level0.mc
+PASSED: _root.x  ==  1 [unload_movieclip_test1.c:102]
+#passed: 3
+#failed: 0
+#total tests run: 3

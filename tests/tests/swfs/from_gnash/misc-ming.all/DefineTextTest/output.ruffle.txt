@@ -1,0 +1,16 @@
+Follow the instructions. Click means press and release
+Move the mouse onto the green O
+PASSED: mc.stext1  ==  mc [DefineTextTest.c:150]
+PASSED: typeof(mc.stext1)  ==  'movieclip' [DefineTextTest.c:151]
+PASSED: mc.stext1._target  ==  '/mc' [DefineTextTest.c:152]
+PASSED: mc._width  ==  288.05 [DefineTextTest.c:154]
+Click
+Move the mouse to the centre of the O
+Click as much as you like then move back onto the green O
+Click
+Move outside the green O
+FAILED: expected: 2 obtained: 7 [DefineTextTest.c:161] 
+FAILED: expected: 4 obtained: 6 [DefineTextTest.c:162] 
+#passed: 4
+#failed: 2
+#total tests run: 6

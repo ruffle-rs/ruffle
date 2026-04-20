@@ -1,20 +1,23 @@
+use std::any::Any;
+
 use crate::{
-    avm1::SoundObject,
+    avm1::{NativeObject, Object as Avm1Object},
     avm2::{Avm2, EventObject as Avm2EventObject, SoundChannelObject},
-    buffer::Substream,
     context::UpdateContext,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
+    string::AvmString,
 };
-use downcast_rs::Downcast;
 use gc_arena::Collect;
-use slotmap::{new_key_type, Key, SlotMap};
+pub use ruffle_common::buffer::Substream;
+use ruffle_common::duration::FloatDuration;
+use slotmap::{Key, SlotMap, new_key_type};
 
 #[cfg(feature = "audio")]
 pub mod decoders;
 pub mod swf {
     pub use swf::{
-        read, AudioCompression, CharacterId, Sound, SoundEnvelope, SoundEnvelopePoint, SoundEvent,
-        SoundFormat, SoundInfo, SoundStreamHead,
+        AudioCompression, CharacterId, Sound, SoundEnvelope, SoundEnvelopePoint, SoundEvent,
+        SoundFormat, SoundInfo, SoundStreamHead, read,
     };
 }
 
@@ -83,7 +86,7 @@ pub enum RegisterError {
     ShortMp3,
 }
 
-pub trait AudioBackend: Downcast {
+pub trait AudioBackend: Any {
     fn play(&mut self);
     fn pause(&mut self);
 
@@ -141,9 +144,9 @@ pub trait AudioBackend: Downcast {
     /// Returns `None` if the sound is not/no longer playing
     fn get_sound_position(&self, instance: SoundInstanceHandle) -> Option<f64>;
 
-    /// Get the duration of a sound in milliseconds.
+    /// Get the duration of a sound.
     /// Returns `None` if the sound is not registered.
-    fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64>;
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<FloatDuration>;
 
     /// Get the size of the data stored within a given sound.
     ///
@@ -193,12 +196,10 @@ pub trait AudioBackend: Downcast {
     }
 }
 
-impl_downcast!(AudioBackend);
-
 /// Information about a sound provided to `NullAudioBackend`.
 struct NullSound {
-    /// The duration of the sound in milliseconds.
-    duration: f64,
+    /// The duration of the sound.
+    duration: FloatDuration,
 
     /// The compressed size of the sound data, excluding MP3 latency seek data.
     size: u32,
@@ -236,7 +237,7 @@ impl AudioBackend for NullAudioBackend {
         // AS duration does not subtract `skip_sample_frames`.
         let num_sample_frames: f64 = sound.num_samples.into();
         let sample_rate: f64 = sound.format.sample_rate.into();
-        let duration = num_sample_frames * 1000.0 / sample_rate;
+        let duration = FloatDuration::from_millis(num_sample_frames * 1000.0 / sample_rate);
 
         Ok(self.sounds.insert(NullSound {
             duration,
@@ -248,7 +249,7 @@ impl AudioBackend for NullAudioBackend {
     fn register_mp3(&mut self, _data: &[u8]) -> Result<SoundHandle, DecodeError> {
         Ok(self.sounds.insert(NullSound {
             size: 0,
-            duration: 0.0,
+            duration: FloatDuration::ZERO,
             format: swf::SoundFormat {
                 compression: swf::AudioCompression::Mp3,
                 sample_rate: 44100,
@@ -288,7 +289,7 @@ impl AudioBackend for NullAudioBackend {
     fn get_sound_position(&self, _instance: SoundInstanceHandle) -> Option<f64> {
         Some(0.0)
     }
-    fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64> {
+    fn get_sound_duration(&self, sound: SoundHandle) -> Option<FloatDuration> {
         if let Some(sound) = self.sounds.get(sound) {
             Some(sound.duration)
         } else {
@@ -378,7 +379,9 @@ impl<'gc> AudioManager<'gc> {
     }
 
     /// Update state of active sounds. Should be called once per frame.
-    pub fn update_sounds(context: &mut UpdateContext<'_, 'gc>) {
+    pub fn update_sounds(context: &mut UpdateContext<'gc>) {
+        let mc = context.gc();
+
         // We can't use 'context' to construct an event inside the
         // 'retain()' closure, so we queue the events up here, and fire
         // them after running 'retain()'
@@ -389,8 +392,11 @@ impl<'gc> AudioManager<'gc> {
             if let Some(pos) = context.audio.get_sound_position(sound.instance) {
                 // Sounds still playing; update position for AVM1 sounds.
                 // AVM2 sounds do not update position and instead grab the position on demand.
-                if let Some(avm1_object) = sound.avm1_object {
-                    avm1_object.set_position(context.gc_context, pos.round() as u32);
+
+                if let Some(object) = sound.avm1_object
+                    && let NativeObject::Sound(sound) = object.native()
+                {
+                    sound.set_position(pos.round() as u32);
                 }
                 true
             } else {
@@ -400,15 +406,19 @@ impl<'gc> AudioManager<'gc> {
                     .and_then(|sound| context.audio.get_sound_duration(sound))
                     .unwrap_or_default();
                 if let Some(object) = sound.avm1_object {
-                    object.set_position(context.gc_context, duration.round() as u32);
+                    if let NativeObject::Sound(sound) = object.native() {
+                        sound.set_position(duration.as_millis().round() as u32);
+                    }
 
                     // Fire soundComplete event.
                     if let Some(root) = context.stage.root_clip() {
+                        let method_name = AvmString::new_ascii_static(mc, b"onSoundComplete");
+
                         context.action_queue.queue_action(
                             root,
                             crate::context::ActionType::Method {
-                                object: object.into(),
-                                name: "onSoundComplete",
+                                object,
+                                name: method_name,
                                 args: vec![],
                             },
                             false,
@@ -440,12 +450,16 @@ impl<'gc> AudioManager<'gc> {
         audio: &mut dyn AudioBackend,
         sound: SoundHandle,
         settings: &swf::SoundInfo,
+        transform: Option<display_object::SoundTransform>,
         display_object: Option<DisplayObject<'gc>>,
-        avm1_object: Option<SoundObject<'gc>>,
+        avm1_object: Option<Avm1Object<'gc>>,
     ) -> Option<SoundInstanceHandle> {
         if self.sounds.len() < Self::MAX_SOUNDS {
-            let handle = audio.start_sound(sound, settings).ok()?;
-            let instance = SoundInstance {
+            let handle = audio
+                .start_sound(sound, settings)
+                .map_err(|e| tracing::warn!("Cannot start sound: {e}"))
+                .ok()?;
+            let mut instance = SoundInstance {
                 sound: Some(sound),
                 instance: handle,
                 display_object,
@@ -454,6 +468,11 @@ impl<'gc> AudioManager<'gc> {
                 avm2_object: None,
                 stream_start_frame: None,
             };
+
+            if let Some(transform) = transform {
+                instance.transform = transform;
+            }
+
             audio.set_sound_transform(handle, self.transform_for_sound(&instance));
             self.sounds.push(instance);
             Some(handle)
@@ -522,6 +541,26 @@ impl<'gc> AudioManager<'gc> {
                     audio.stop_sound(sound.instance);
                     return false;
                 }
+            }
+            true
+        });
+    }
+
+    /// Stops any sound associated with the given Display Object and its children. The DO must represent the parent.
+    /// Sounds associated with DOs are an AVM1/Timeline concept and should not be called from AVM2 scripts.
+    pub fn stop_sounds_on_parent_and_children(
+        &mut self,
+        audio: &mut dyn AudioBackend,
+        display_object: DisplayObject<'gc>,
+    ) {
+        self.sounds.retain(move |sound| {
+            let mut other = sound.display_object;
+            while let Some(other_do) = other {
+                if DisplayObject::ptr_eq(other_do, display_object) {
+                    audio.stop_sound(sound.instance);
+                    return false;
+                }
+                other = other_do.parent();
             }
             true
         });
@@ -704,14 +743,13 @@ impl<'gc> AudioManager<'gc> {
     }
 
     fn transform_for_sound(&self, sound: &SoundInstance<'gc>) -> SoundTransform {
-        let mut transform = sound.transform.clone();
+        let mut transform = sound.transform;
         let mut parent = sound.display_object;
         while let Some(display_object) = parent {
-            transform.concat(display_object.base().sound_transform());
+            transform = transform.concat(display_object.base().sound_transform());
             parent = display_object.parent();
         }
-        transform.concat(&self.global_sound_transform);
-        transform.into()
+        transform.concat(self.global_sound_transform).into()
     }
 
     /// Update the sound transforms for all sounds.
@@ -731,7 +769,7 @@ impl<'gc> AudioManager<'gc> {
 
     pub fn perform_sound_event(
         display_object: DisplayObject<'gc>,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         character_id: CharacterId,
         sound_info: &SoundInfo,
     ) {
@@ -745,13 +783,20 @@ impl<'gc> AudioManager<'gc> {
             match sound_info.event {
                 // "Event" sounds always play, independent of the timeline.
                 SoundEvent::Event => {
-                    let _ = context.start_sound(handle, sound_info, Some(display_object), None);
+                    let _ =
+                        context.start_sound(handle, sound_info, None, Some(display_object), None);
                 }
 
                 // "Start" sounds only play if an instance of the same sound is not already playing.
                 SoundEvent::Start => {
                     if !context.is_sound_playing_with_handle(handle) {
-                        let _ = context.start_sound(handle, sound_info, Some(display_object), None);
+                        let _ = context.start_sound(
+                            handle,
+                            sound_info,
+                            None,
+                            Some(display_object),
+                            None,
+                        );
                     }
                 }
 
@@ -762,7 +807,7 @@ impl<'gc> AudioManager<'gc> {
     }
 }
 
-impl<'gc> Default for AudioManager<'gc> {
+impl Default for AudioManager<'_> {
     fn default() -> Self {
         Self::new()
     }
@@ -793,7 +838,7 @@ pub struct SoundInstance<'gc> {
     transform: display_object::SoundTransform,
 
     /// The AVM1 `Sound` object associated with this sound, if any.
-    avm1_object: Option<SoundObject<'gc>>,
+    avm1_object: Option<Avm1Object<'gc>>,
 
     /// The AVM2 `SoundChannel` object associated with this sound, if any.
     avm2_object: Option<SoundChannelObject<'gc>>,

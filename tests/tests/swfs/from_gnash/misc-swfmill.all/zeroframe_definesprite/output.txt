@@ -1,0 +1,3 @@
+a00b11c22d000
+PASSED: got a00b11c22d000      
+END OF TEST

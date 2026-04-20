@@ -1,0 +1,12 @@
+context-menu-play = เล่น
+context-menu-rewind = ก่อนหน้า
+context-menu-forward = ถัดไป
+context-menu-back = ย้อนกลับ
+context-menu-quality-low = คุณภาพ: ต่ำ
+context-menu-quality-medium = คุณภาพ: กลาง
+context-menu-quality-high = คุณภาพ: สูง
+context-menu-cut = ตัด
+context-menu-copy = คัดลอก
+context-menu-paste = วาง
+context-menu-delete = ลบ
+context-menu-select-all = เลือกทั้งหมด

@@ -36,16 +36,13 @@ pub fn extract_swz(input: &[u8]) -> Result<Vec<u8>> {
         simple_asn1::from_der(input).map_err(|_| Error::invalid_data("Invalid ASN1 blob"))?;
     if let Some(ASN1Block::Sequence(_, s)) = asn1_blocks.into_iter().next() {
         for t in s {
-            if let ASN1Block::Explicit(_, _, _, block) = t {
-                if let ASN1Block::Sequence(_, s) = *block {
-                    if let Some(ASN1Block::Sequence(_, s)) = s.into_iter().nth(2) {
-                        if let Some(ASN1Block::Explicit(_, _, _, octet)) = s.into_iter().nth(1) {
-                            if let ASN1Block::OctetString(_, bytes) = *octet {
-                                return Ok(bytes);
-                            }
-                        }
-                    }
-                }
+            if let ASN1Block::Explicit(_, _, _, block) = t
+                && let ASN1Block::Sequence(_, s) = *block
+                && let Some(ASN1Block::Sequence(_, s)) = s.into_iter().nth(2)
+                && let Some(ASN1Block::Explicit(_, _, _, octet)) = s.into_iter().nth(1)
+                && let ASN1Block::OctetString(_, bytes) = *octet
+            {
+                return Ok(bytes);
             }
         }
     }
@@ -89,19 +86,13 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         Compression::None => Box::new(input),
         Compression::Zlib => {
             if version < 6 {
-                log::warn!(
-                    "zlib compressed SWF is version {} but minimum version is 6",
-                    version
-                );
+                log::warn!("zlib compressed SWF is version {version} but minimum version is 6");
             }
             make_zlib_reader(input)?
         }
         Compression::Lzma => {
             if version < 13 {
-                log::warn!(
-                    "LZMA compressed SWF is version {} but minimum version is 13",
-                    version
-                );
+                log::warn!("LZMA compressed SWF is version {version} but minimum version is 13");
             }
             // Uncompressed length includes the 4-byte header and 4-byte uncompressed length itself,
             // subtract it here.
@@ -112,7 +103,7 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
     // Decompress the entire SWF.
     let mut data = Vec::with_capacity(uncompressed_len as usize);
     if let Err(e) = decompress_stream.read_to_end(&mut data) {
-        log::error!("Error decompressing SWF: {}", e);
+        log::error!("Error decompressing SWF: {e}");
     }
 
     // Some SWF streams may not be compressed correctly,
@@ -136,7 +127,12 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         frame_rate,
         num_frames,
     };
-    let data = reader.get_ref().to_vec();
+    let offset = reader.as_slice().as_ptr() as usize - data.as_ptr() as usize;
+    // Remove the header.
+    // As an alternative we could return the entire original buffer with header length,
+    // but that's a nontrivial API change, probably not worth the effort.
+    data.drain(..offset);
+    let mut reader = Reader::new(&data, version);
 
     // Parse the first two tags, searching for the FileAttributes and SetBackgroundColor tags.
     // This metadata is useful, so we want to return it along with the header.
@@ -256,10 +252,22 @@ impl<'a, 'b> BitReader<'a, 'b> {
         self.bits.read_bit()
     }
 
+    /// A variant of `read_ubits` for when the number of bits to read is
+    /// a *c*ompile-*t*ime constant. This should be more efficient.
+    #[inline]
+    fn read_ubits_ct<const NUM_BITS: u32>(&mut self) -> io::Result<u32> {
+        if NUM_BITS > 0 {
+            self.bits.read::<NUM_BITS, u32>()
+        } else {
+            Ok(0)
+        }
+    }
+
+    /// If `num_bits` is a compile-time constant, consider `read_ubits_ct` instead.
     #[inline]
     fn read_ubits(&mut self, num_bits: u32) -> io::Result<u32> {
         if num_bits > 0 {
-            self.bits.read(num_bits)
+            self.bits.read_var(num_bits)
         } else {
             Ok(0)
         }
@@ -268,7 +276,7 @@ impl<'a, 'b> BitReader<'a, 'b> {
     #[inline]
     fn read_sbits(&mut self, num_bits: u32) -> io::Result<i32> {
         if num_bits > 0 {
-            self.bits.read_signed(num_bits)
+            self.bits.read_signed_var(num_bits)
         } else {
             Ok(0)
         }
@@ -395,13 +403,11 @@ impl<'a> Reader<'a> {
                 Tag::DefineBinaryData(tag_reader.read_define_binary_data()?)
             }
             TagCode::DefineBits => {
-                let id = tag_reader.read_u16()?;
-                let jpeg_data = tag_reader.read_slice_to_end();
+                let (id, jpeg_data) = tag_reader.read_define_bits()?;
                 Tag::DefineBits { id, jpeg_data }
             }
             TagCode::DefineBitsJpeg2 => {
-                let id = tag_reader.read_u16()?;
-                let jpeg_data = tag_reader.read_slice_to_end();
+                let (id, jpeg_data) = tag_reader.read_define_bits_jpeg_2()?;
                 Tag::DefineBitsJpeg2 { id, jpeg_data }
             }
             TagCode::DefineBitsJpeg3 => {
@@ -425,7 +431,7 @@ impl<'a> Reader<'a> {
             TagCode::DefineEditText => {
                 Tag::DefineEditText(Box::new(tag_reader.read_define_edit_text()?))
             }
-            TagCode::DefineFont => Tag::DefineFont(Box::new(tag_reader.read_define_font_1()?)),
+            TagCode::DefineFont => Tag::DefineFont(tag_reader.read_define_font_1()?),
             TagCode::DefineFont2 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(2)?)),
             TagCode::DefineFont3 => Tag::DefineFont2(Box::new(tag_reader.read_define_font_2(3)?)),
             TagCode::DefineFont4 => Tag::DefineFont4(tag_reader.read_define_font_4()?),
@@ -443,11 +449,11 @@ impl<'a> Reader<'a> {
             TagCode::DefineMorphShape2 => {
                 Tag::DefineMorphShape(Box::new(tag_reader.read_define_morph_shape(2)?))
             }
-            TagCode::DefineShape => Tag::DefineShape(tag_reader.read_define_shape(1)?),
-            TagCode::DefineShape2 => Tag::DefineShape(tag_reader.read_define_shape(2)?),
-            TagCode::DefineShape3 => Tag::DefineShape(tag_reader.read_define_shape(3)?),
-            TagCode::DefineShape4 => Tag::DefineShape(tag_reader.read_define_shape(4)?),
-            TagCode::DefineSound => Tag::DefineSound(Box::new(tag_reader.read_define_sound()?)),
+            TagCode::DefineShape => Tag::DefineShape(Box::new(tag_reader.read_define_shape(1)?)),
+            TagCode::DefineShape2 => Tag::DefineShape(Box::new(tag_reader.read_define_shape(2)?)),
+            TagCode::DefineShape3 => Tag::DefineShape(Box::new(tag_reader.read_define_shape(3)?)),
+            TagCode::DefineShape4 => Tag::DefineShape(Box::new(tag_reader.read_define_shape(4)?)),
+            TagCode::DefineSound => Tag::DefineSound(tag_reader.read_define_sound()?),
             TagCode::DefineText => Tag::DefineText(Box::new(tag_reader.read_define_text(1)?)),
             TagCode::DefineText2 => Tag::DefineText2(Box::new(tag_reader.read_define_text(2)?)),
             TagCode::DefineVideoStream => {
@@ -493,11 +499,11 @@ impl<'a> Reader<'a> {
 
             TagCode::SoundStreamHead => Tag::SoundStreamHead(
                 // TODO: Disallow certain compressions.
-                Box::new(tag_reader.read_sound_stream_head()?),
+                tag_reader.read_sound_stream_head()?,
             ),
 
             TagCode::SoundStreamHead2 => {
-                Tag::SoundStreamHead2(Box::new(tag_reader.read_sound_stream_head()?))
+                Tag::SoundStreamHead2(tag_reader.read_sound_stream_head()?)
             }
 
             TagCode::StartSound => Tag::StartSound(tag_reader.read_start_sound_1()?),
@@ -613,7 +619,7 @@ impl<'a> Reader<'a> {
             // But sometimes tools will export SWF tags that are larger than they should be.
             // TODO: It might be worthwhile to have a "strict mode" to determine
             // whether this should error or not.
-            log::warn!("Data remaining in buffer when parsing {:?}", tag_code);
+            log::warn!("Data remaining in buffer when parsing {tag_code:?}");
         }
 
         Ok(tag)
@@ -621,7 +627,7 @@ impl<'a> Reader<'a> {
 
     pub fn read_rectangle(&mut self) -> Result<Rectangle<Twips>> {
         let mut bits = self.bits();
-        let num_bits = bits.read_ubits(5)?;
+        let num_bits = bits.read_ubits_ct::<5>()?;
         Ok(Rectangle {
             x_min: bits.read_sbits_twips(num_bits)?,
             x_max: bits.read_sbits_twips(num_bits)?,
@@ -654,7 +660,7 @@ impl<'a> Reader<'a> {
         let mut bits = self.bits();
         let has_add = bits.read_bit()?;
         let has_mult = bits.read_bit()?;
-        let num_bits = bits.read_ubits(4)?;
+        let num_bits = bits.read_ubits_ct::<4>()?;
         let mut color_transform = ColorTransform::default();
         if has_mult {
             color_transform.r_multiply = bits.read_sbits_fixed8(num_bits)?;
@@ -680,18 +686,18 @@ impl<'a> Reader<'a> {
         let mut m = Matrix::IDENTITY;
         // Scale
         if bits.read_bit()? {
-            let num_bits = bits.read_ubits(5)?;
+            let num_bits = bits.read_ubits_ct::<5>()?;
             m.a = bits.read_fbits(num_bits)?;
             m.d = bits.read_fbits(num_bits)?;
         }
         // Rotate/Skew
         if bits.read_bit()? {
-            let num_bits = bits.read_ubits(5)?;
+            let num_bits = bits.read_ubits_ct::<5>()?;
             m.b = bits.read_fbits(num_bits)?;
             m.c = bits.read_fbits(num_bits)?;
         }
         // Translate (always present)
-        let num_bits = bits.read_ubits(5)?;
+        let num_bits = bits.read_ubits_ct::<5>()?;
         m.tx = bits.read_sbits_twips(num_bits)?;
         m.ty = bits.read_sbits_twips(num_bits)?;
         Ok(m)
@@ -712,6 +718,10 @@ impl<'a> Reader<'a> {
             tags.push(tag);
         }
         Ok(tags)
+    }
+
+    pub fn read_tag_code(&mut self) -> Result<u16> {
+        Ok(self.read_u16()? >> 6)
     }
 
     pub fn read_tag_code_and_length(&mut self) -> Result<(u16, usize)> {
@@ -1076,7 +1086,7 @@ impl<'a> Reader<'a> {
             let leading = self.read_i16()?;
 
             for glyph in &mut glyphs {
-                glyph.advance = self.read_i16()?;
+                glyph.advance = self.read_u16()?;
             }
 
             // Some older SWFs end the tag here, as this data isn't used until v7.
@@ -1236,8 +1246,8 @@ impl<'a> Reader<'a> {
             end_edge_bounds = self.read_rectangle()?;
             flags = DefineMorphShapeFlag::from_bits_truncate(self.read_u8()?);
         } else {
-            start_edge_bounds = start_shape_bounds.clone();
-            end_edge_bounds = end_shape_bounds.clone();
+            start_edge_bounds = start_shape_bounds;
+            end_edge_bounds = end_shape_bounds;
             flags = DefineMorphShapeFlag::HAS_NON_SCALING_STROKES;
         }
 
@@ -1273,8 +1283,8 @@ impl<'a> Reader<'a> {
         let mut shape_context = ShapeContext {
             swf_version,
             shape_version: version,
-            num_fill_bits: bits.read_ubits(4)? as u8,
-            num_line_bits: bits.read_ubits(4)? as u8,
+            num_fill_bits: bits.read_ubits_ct::<4>()? as u8,
+            num_line_bits: bits.read_ubits_ct::<4>()? as u8,
         };
         let mut start_shape = Vec::new();
         while let Some(record) = Self::read_shape_record(&mut bits, &mut shape_context)? {
@@ -1483,7 +1493,7 @@ impl<'a> Reader<'a> {
             edge_bounds = self.read_rectangle()?;
             flags = ShapeFlag::from_bits_truncate(self.read_u8()?);
         } else {
-            edge_bounds = shape_bounds.clone();
+            edge_bounds = shape_bounds;
             flags = ShapeFlag::HAS_NON_SCALING_STROKES;
         }
 
@@ -1724,7 +1734,7 @@ impl<'a> Reader<'a> {
         let is_edge_record = bits.read_bit()?;
         let shape_record = if is_edge_record {
             let is_straight_edge = bits.read_bit()?;
-            let num_bits = bits.read_ubits(4)? + 2;
+            let num_bits = bits.read_ubits_ct::<4>()? + 2;
             if is_straight_edge {
                 // StraightEdge
                 let is_axis_aligned = !bits.read_bit()?;
@@ -1754,13 +1764,13 @@ impl<'a> Reader<'a> {
                 })
             }
         } else {
-            let flags = ShapeRecordFlag::from_bits_truncate(bits.read_ubits(5)? as u8);
+            let flags = ShapeRecordFlag::from_bits_truncate(bits.read_ubits_ct::<5>()? as u8);
             if !flags.is_empty() {
                 // StyleChange
                 let num_fill_bits = context.num_fill_bits as u32;
                 let num_line_bits = context.num_line_bits as u32;
                 let move_to = if flags.contains(ShapeRecordFlag::MOVE_TO) {
-                    let num_bits = bits.read_ubits(5)?;
+                    let num_bits = bits.read_ubits_ct::<5>()?;
                     let move_x = bits.read_sbits_twips(num_bits)?;
                     let move_y = bits.read_sbits_twips(num_bits)?;
                     Some(Point::new(move_x, move_y))
@@ -2405,7 +2415,9 @@ impl<'a> Reader<'a> {
                     .ok_or_else(|| Error::invalid_data("Invalid edit text alignment"))?,
                 left_margin: Twips::new(self.read_u16()?.into()),
                 right_margin: Twips::new(self.read_u16()?.into()),
-                indent: Twips::new(self.read_u16()?.into()),
+                // Note: the documentation says that indent is UI16,
+                //       in reality it seems to be SI16.
+                indent: Twips::new(self.read_i16()?.into()),
                 leading: Twips::new(self.read_i16()?.into()),
             }
         } else {
@@ -2470,7 +2482,19 @@ impl<'a> Reader<'a> {
         })
     }
 
-    fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
+    pub fn read_define_bits(&mut self) -> Result<(CharacterId, &'a [u8])> {
+        let id = self.read_character_id()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok((id, jpeg_data))
+    }
+
+    pub fn read_define_bits_jpeg_2(&mut self) -> Result<(CharacterId, &'a [u8])> {
+        let id = self.read_character_id()?;
+        let jpeg_data = self.read_slice_to_end();
+        Ok((id, jpeg_data))
+    }
+
+    pub fn read_define_bits_jpeg_3(&mut self, version: u8) -> Result<DefineBitsJpeg3<'a>> {
         let id = self.read_character_id()?;
         let data_size = self.read_u32()? as usize;
         let deblocking = if version >= 4 {
@@ -2565,7 +2589,7 @@ pub fn read_compression_type<R: Read>(mut input: R) -> Result<Compression> {
 }
 
 #[cfg(test)]
-#[allow(clippy::unusual_byte_groupings)]
+#[expect(clippy::unusual_byte_groupings)]
 pub mod tests {
     use super::*;
     use crate::test_data;
@@ -2695,6 +2719,19 @@ pub mod tests {
     }
 
     #[test]
+    fn read_ubits_ct() {
+        let buf: &[u8] = &[0b01010101, 0b00100101];
+        let mut reader = Reader::new(buf, 1);
+        let mut bits = reader.bits();
+        assert_eq!(
+            (0..8)
+                .map(|_| bits.read_ubits_ct::<2>().unwrap())
+                .collect::<Vec<_>>(),
+            [1, 1, 1, 1, 0, 2, 1, 1]
+        );
+    }
+
+    #[test]
     fn read_ubits() {
         let buf: &[u8] = &[0b01010101, 0b00100101];
         let mut reader = Reader::new(buf, 1);
@@ -2811,10 +2848,10 @@ pub mod tests {
         assert_eq!(
             rectangle,
             Rectangle {
-                x_min: Twips::from_pixels(-1.0),
-                y_min: Twips::from_pixels(-1.0),
-                x_max: Twips::from_pixels(1.0),
-                y_max: Twips::from_pixels(1.0),
+                x_min: -Twips::ONE_PX,
+                y_min: -Twips::ONE_PX,
+                x_max: Twips::ONE_PX,
+                y_max: Twips::ONE_PX,
             }
         );
     }
@@ -2828,8 +2865,8 @@ pub mod tests {
             assert_eq!(
                 matrix,
                 Matrix {
-                    tx: Twips::from_pixels(0.0),
-                    ty: Twips::from_pixels(0.0),
+                    tx: Twips::ZERO,
+                    ty: Twips::ZERO,
                     a: Fixed16::ONE,
                     b: Fixed16::ZERO,
                     c: Fixed16::ZERO,
@@ -2931,7 +2968,7 @@ pub mod tests {
         );
 
         let mut matrix = Matrix::IDENTITY;
-        matrix.tx = Twips::from_pixels(1.0);
+        matrix.tx = Twips::ONE_PX;
         let fill_style = FillStyle::Bitmap {
             id: 33,
             matrix,
@@ -2948,7 +2985,7 @@ pub mod tests {
     fn read_line_style() {
         // DefineShape1 and 2 read RGB colors.
         let line_style = LineStyle::new()
-            .with_width(Twips::from_pixels(0.0))
+            .with_width(Twips::ZERO)
             .with_color(Color::from_rgba(0xffff0000));
         assert_eq!(
             reader(&[0, 0, 255, 0, 0]).read_line_style(2).unwrap(),
@@ -3059,8 +3096,8 @@ pub mod tests {
                 b: Fixed16::ZERO,
                 c: Fixed16::ZERO,
                 d: Fixed16::ONE,
-                tx: Twips::from_pixels(0.0),
-                ty: Twips::from_pixels(0.0),
+                tx: Twips::ZERO,
+                ty: Twips::ZERO,
             }),
             color_transform: None,
             ratio: None,

@@ -36,18 +36,18 @@ impl Twips {
     /// # Examples
     ///
     /// ```rust
-    /// assert_eq!(swf::Twips::ONE.to_pixels(), 1.0);
+    /// assert_eq!(swf::Twips::ONE_PX.to_pixels(), 1.0);
     /// ```
-    pub const ONE: Self = Self(Self::TWIPS_PER_PIXEL);
+    pub const ONE_PX: Self = Self(Self::TWIPS_PER_PIXEL);
 
     /// The `Twips` object with a value of `0.5` pixels.
     ///
     /// # Examples
     ///
     /// ```rust
-    /// assert_eq!(swf::Twips::HALF.to_pixels(), 0.5);
+    /// assert_eq!(swf::Twips::HALF_PX.to_pixels(), 0.5);
     /// ```
-    pub const HALF: Self = Self(Self::TWIPS_PER_PIXEL / 2);
+    pub const HALF_PX: Self = Self(Self::TWIPS_PER_PIXEL / 2);
 
     /// Creates a new `Twips` object. Note that the `twips` value is in twips,
     /// not pixels. Use the [`from_pixels`] method to convert from pixel units.

@@ -1,0 +1,1 @@
+s.replace() FAILED! expected: %20*%20foo%0A%20*%20bar%0A%20*%20%0A%20*%20baz%0A got: %20*%20foo%0A%20*%20bar%0A%20*%20%0A%20*%20baz%0A%20*%20

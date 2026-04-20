@@ -1,0 +1,12 @@
+Focus: null
+Selection: test -> |test
+Focus: _level0.text
+Selection: text -> |
+Focus: _level0.text
+Selection: text -> |
+Focus: _level0.text
+Selection: text -> t|ext
+Focus: _level0.text
+Selection: text -> te|xt
+Focus: _level0.text
+Selection: text -> |

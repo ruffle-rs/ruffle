@@ -1,0 +1,2 @@
+as Type Error: (x as notAValidType) PASSED!
+as Type Error: temp='hello'; (x as temp) PASSED!

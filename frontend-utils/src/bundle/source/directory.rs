@@ -32,7 +32,7 @@ impl BundleSourceImpl for Path {
 mod tests {
     use crate::bundle::source::BundleSourceImpl;
     use std::io::{ErrorKind, Read, Write};
-    use tempfile::{tempdir, NamedTempFile};
+    use tempfile::{NamedTempFile, tempdir};
 
     /*
     [NA] Careful with panicking in these tests.

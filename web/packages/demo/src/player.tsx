@@ -1,16 +1,11 @@
 import React, { ReactNode, DragEvent } from "react";
-import {
-    PublicAPI,
-    RufflePlayer,
-    MovieMetadata,
-    BaseLoadOptions,
-} from "ruffle-core";
+import { Setup, Player as RufflePlayer, Config } from "ruffle-core";
 
 export interface PlayerAttributes {
     id?: string | undefined;
     children?: ReactNode;
-    onLoadedMetadata: (metadata: MovieMetadata) => void;
-    baseConfig?: BaseLoadOptions;
+    onLoadedMetadata: (metadata: RufflePlayer.MovieMetadata) => void;
+    baseConfig?: Config.BaseLoadOptions;
     onDragEnter: (event: DragEvent<HTMLElement>) => void;
     onDragLeave: (event: DragEvent<HTMLElement>) => void;
     onDragOver: (event: DragEvent<HTMLElement>) => void;
@@ -18,8 +13,8 @@ export interface PlayerAttributes {
 }
 
 export class Player extends React.Component<PlayerAttributes> {
-    private readonly container: React.RefObject<HTMLDivElement>;
-    private player: RufflePlayer | null = null;
+    private readonly container: React.RefObject<HTMLDivElement | null>;
+    private player: RufflePlayer.PlayerElement | null = null;
 
     // [NA] Ruffle has a bug where if you load a swf whilst it's already loading another swf, it breaks
     // Combine this with React testing everything by loading things twice to catch bugs - well, they caught the bug for sure.
@@ -33,13 +28,13 @@ export class Player extends React.Component<PlayerAttributes> {
     }
 
     componentDidMount() {
-        this.player = (window.RufflePlayer as PublicAPI)
+        this.player = (window.RufflePlayer as Setup.PublicAPI)
             .newest()!
             .createPlayer()!;
         this.player.id = "player";
         this.player.addEventListener("loadedmetadata", () => {
             if (this.props.onLoadedMetadata) {
-                this.props.onLoadedMetadata(this.player!.metadata!);
+                this.props.onLoadedMetadata(this.player!.ruffle().metadata!);
             }
         });
         this.isLoading = false;
@@ -72,17 +67,21 @@ export class Player extends React.Component<PlayerAttributes> {
     reload() {
         if (!this.isLoading) {
             this.isLoading = true;
-            this.player?.reload().finally(() => {
-                this.isLoading = false;
-            });
+            this.player
+                ?.ruffle()
+                .reload()
+                .finally(() => {
+                    this.isLoading = false;
+                });
         }
     }
 
-    loadUrl(url: string, options: BaseLoadOptions) {
+    loadUrl(url: string, options: Config.BaseLoadOptions) {
         if (!this.isLoading) {
             this.isLoading = true;
             this.player
-                ?.load({ url, ...this.props.baseConfig, ...options }, false)
+                ?.ruffle()
+                .load({ url, ...this.props.baseConfig, ...options })
                 .finally(() => {
                     this.isLoading = false;
                 });
@@ -95,10 +94,10 @@ export class Player extends React.Component<PlayerAttributes> {
             new Response(file)
                 .arrayBuffer()
                 .then((data) => {
-                    return this.player?.load(
-                        { data, ...this.props.baseConfig },
-                        false,
-                    );
+                    return this.player?.ruffle().load({
+                        data,
+                        ...this.props.baseConfig,
+                    });
                 })
                 .finally(() => {
                     this.isLoading = false;

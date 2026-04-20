@@ -1,0 +1,4 @@
+new Date('1/1/1999 12:30 AM').toString() PASSED!
+new Date('1/1/1999 12:30 PM').toString() PASSED!
+new Date('1/1/1999 13:30 AM') PASSED!
+new Date('1/1/1999 13:30 PM') PASSED!

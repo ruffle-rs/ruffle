@@ -1,0 +1,13 @@
+PASSED: true
+PASSED: movieclip == movieclip
+PASSED: movieclip == movieclip
+PASSED: true
+PASSED: object == object
+PASSED:  == 
+PASSED: movieclip == movieclip
+PASSED: movieclip == movieclip
+PASSED: movieclip == movieclip
+PASSED: number == number
+#passed: 10
+#failed: 0
+#total tests run: 10

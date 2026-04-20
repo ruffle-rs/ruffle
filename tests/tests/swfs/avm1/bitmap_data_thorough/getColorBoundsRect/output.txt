@@ -1,0 +1,288 @@
+-- Transparent --
+// getColorBoundsRect()
+-1
+
+// getColorBoundsRect(16777215)
+-1
+
+// getColorBoundsRect(16777215, 16711680)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(16777215, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(null, 16711680, false)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(undefined, 16711680, false)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect({}, 16711680, false)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(objLooksLikeNum, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(-1, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(-2, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(10, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, null, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, undefined, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, {}, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, objLooksLikeNum, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, -1, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, -2, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, 10, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, 16711680, null)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, 16711680, undefined)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, 16711680, {})
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(1, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(1, 16711680, true)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(0, 16711680, false)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(0, 16711680, true)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(0, 221, true)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(0, 221, false)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(255, 221, true)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(255, 221, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(4278190080, 2852126720, true)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(4278190080, 2852126720, false)
+{ height=0, width=0, x=0, y=0 }
+
+
+
+-- Opaque --
+// getColorBoundsRect()
+-1
+
+// getColorBoundsRect(16777215)
+-1
+
+// getColorBoundsRect(16777215, 16711680)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(16777215, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(null, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(undefined, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect({}, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(objLooksLikeNum, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(-1, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(-2, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(10, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, null, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, undefined, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, {}, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, objLooksLikeNum, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, -1, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, -2, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, 10, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, 16711680, null)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, 16711680, undefined)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(16777215, 16711680, {})
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(1, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(1, 16711680, true)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(0, 16711680, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(0, 16711680, true)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(0, 221, true)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(0, 221, false)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(255, 221, true)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(255, 221, false)
+{ height=0, width=0, x=0, y=0 }
+
+// getColorBoundsRect(4278190080, 2852126720, true)
+{ height=3, width=3, x=0, y=0 }
+
+// getColorBoundsRect(4278190080, 2852126720, false)
+{ height=0, width=0, x=0, y=0 }
+
+
+
+-- Disposed --
+// getColorBoundsRect()
+-1
+
+// getColorBoundsRect(16777215)
+-1
+
+// getColorBoundsRect(16777215, 16711680)
+-1
+
+// getColorBoundsRect(16777215, 16711680, false)
+-1
+
+// getColorBoundsRect(null, 16711680, false)
+-1
+
+// getColorBoundsRect(undefined, 16711680, false)
+-1
+
+// getColorBoundsRect({}, 16711680, false)
+-1
+
+// getColorBoundsRect(objLooksLikeNum, 16711680, false)
+-1
+
+// getColorBoundsRect(-1, 16711680, false)
+-1
+
+// getColorBoundsRect(-2, 16711680, false)
+-1
+
+// getColorBoundsRect(10, 16711680, false)
+-1
+
+// getColorBoundsRect(16777215, null, false)
+-1
+
+// getColorBoundsRect(16777215, undefined, false)
+-1
+
+// getColorBoundsRect(16777215, {}, false)
+-1
+
+// getColorBoundsRect(16777215, objLooksLikeNum, false)
+-1
+
+// getColorBoundsRect(16777215, -1, false)
+-1
+
+// getColorBoundsRect(16777215, -2, false)
+-1
+
+// getColorBoundsRect(16777215, 10, false)
+-1
+
+// getColorBoundsRect(16777215, 16711680, null)
+-1
+
+// getColorBoundsRect(16777215, 16711680, undefined)
+-1
+
+// getColorBoundsRect(16777215, 16711680, {})
+-1
+
+// getColorBoundsRect(1, 16711680, false)
+-1
+
+// getColorBoundsRect(1, 16711680, true)
+-1
+
+// getColorBoundsRect(0, 16711680, false)
+-1
+
+// getColorBoundsRect(0, 16711680, true)
+-1
+
+// getColorBoundsRect(0, 221, true)
+-1
+
+// getColorBoundsRect(0, 221, false)
+-1
+
+// getColorBoundsRect(255, 221, true)
+-1
+
+// getColorBoundsRect(255, 221, false)
+-1
+
+// getColorBoundsRect(4278190080, 2852126720, true)
+-1
+
+// getColorBoundsRect(4278190080, 2852126720, false)
+-1
+
+
+

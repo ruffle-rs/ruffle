@@ -1,8 +1,8 @@
-import { MovieMetadata } from "ruffle-core";
+import { Player } from "ruffle-core";
 
 interface MetadataProps {
     visible: boolean;
-    metadata: MovieMetadata | null;
+    metadata: Player.MovieMetadata | null;
 }
 
 const swfToFlashVersion: { [key: number]: string } = {
@@ -68,7 +68,7 @@ export function MetadataPanel({ visible, metadata }: MetadataProps) {
                 <span>FP Version</span>
                 <span id="flashVersion">
                     {metadata
-                        ? swfToFlashVersion[metadata.swfVersion] ?? "Unknown"
+                        ? (swfToFlashVersion[metadata.swfVersion] ?? "Unknown")
                         : ""}
                 </span>
             </div>

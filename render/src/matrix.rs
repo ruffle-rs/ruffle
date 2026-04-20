@@ -1,6 +1,6 @@
 use swf::{Fixed16, Point, PointDelta, Rectangle, Twips};
 
-/// TODO: Consider using portable SIMD when it's stable (https://doc.rust-lang.org/std/simd/index.html).
+// TODO: Consider using portable SIMD when it's stable (https://doc.rust-lang.org/std/simd/index.html).
 
 /// The transformation matrix used by Flash display objects.
 #[derive(Copy, Clone, Debug, PartialEq)]
@@ -120,6 +120,15 @@ impl Matrix {
             d: rotation.cos() * scale_y,
             ty: translate_y,
         }
+    }
+
+    pub fn create_box_from_rectangle(rect: &Rectangle<Twips>) -> Self {
+        Self::create_box(
+            rect.width().to_pixels() as f32,
+            rect.height().to_pixels() as f32,
+            rect.x_min,
+            rect.y_min,
+        )
     }
 
     pub fn create_gradient_box(
@@ -306,7 +315,7 @@ fn round_to_i32(f: f32) -> i32 {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use approx::{assert_ulps_eq, AbsDiffEq, UlpsEq};
+    use approx::{AbsDiffEq, UlpsEq, assert_ulps_eq};
 
     macro_rules! test_inverse {
         ($test: ident, $($args: expr),* $(,)?) => {
@@ -428,7 +437,7 @@ mod tests {
             Matrix {
                 a: 1.5,
                 c: 1.2,
-                tx: Twips::from_pixels(1.0),
+                tx: Twips::ONE_PX,
                 b: -2.7,
                 d: 3.4,
                 ty: Twips::from_pixels(-2.4),

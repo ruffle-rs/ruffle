@@ -1,0 +1,57 @@
+// watch("variable", plusOne)
+true
+
+// addProperty("variable", getter, setter)
+true
+
+// variable = 10
+plusOne: variable changed from undefined to 10 with userdata undefined
+setter: ignoring new value of 11
+// variable
+getter: returning 5
+5
+
+// variable = 4
+plusOne: variable changed from 11 to 4 with userdata undefined
+setter: ignoring new value of 5
+// variable
+getter: returning 5
+5
+
+// unwatch("variable")
+true
+
+// variable = 10
+setter: ignoring new value of 10
+// variable
+getter: returning 5
+5
+
+// variable = 4
+setter: ignoring new value of 4
+// variable
+getter: returning 5
+5
+
+// watch("variable", plusOne)
+true
+
+// variable = 10
+plusOne: variable changed from 4 to 10 with userdata undefined
+setter: ignoring new value of 11
+// variable
+getter: returning 5
+5
+
+// variable = 4
+plusOne: variable changed from 11 to 4 with userdata undefined
+setter: ignoring new value of 5
+// variable
+getter: returning 5
+5
+
+// delete(variable)
+
+// addProperty("variable", getter, null)
+true
+

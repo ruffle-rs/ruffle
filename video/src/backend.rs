@@ -1,6 +1,6 @@
+use crate::VideoStreamHandle;
 use crate::error::Error;
 use crate::frame::{EncodedFrame, FrameDependency};
-use crate::VideoStreamHandle;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::BitmapInfo;
 use swf::{VideoCodec, VideoDeblocking};

@@ -65,3 +65,19 @@ Non-matching list descendants
 
 Non-matching list descendants operator
 
+ns xml without default namespace:
+nsXml..vertices length: 0
+ns xml with default namespace set:
+nsXml..vertices length: 1
+nsXml..vertices.@id: v1
+ns xml direct child access:
+nsXml.vertices length: 1
+ns xml after reset:
+nsXml..vertices length: 0
+ns xml explicit namespace:
+nsXml..ns::vertices length: 1
+ns xml nested descendants:
+nsXml2..target length: 1
+nsXml2..target.@id: deep
+ns XMLList descendants:
+nsList..target length: 1

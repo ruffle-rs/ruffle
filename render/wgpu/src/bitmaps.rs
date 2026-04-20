@@ -27,7 +27,7 @@ fn create_sampler(
     filter: wgpu::FilterMode,
     sampler_label: Option<String>,
 ) -> wgpu::Sampler {
-    let sampler = device.create_sampler(&wgpu::SamplerDescriptor {
+    device.create_sampler(&wgpu::SamplerDescriptor {
         label: sampler_label.as_deref(),
         address_mode_u,
         address_mode_v,
@@ -41,8 +41,7 @@ fn create_sampler(
         compare: None,
         anisotropy_clamp: 1,
         border_color: None,
-    });
-    sampler
+    })
 }
 
 impl BitmapSamplers {

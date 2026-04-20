@@ -1,0 +1,12 @@
+=== DoInitAction #1
+this: _level0
+is root: true
+=== Child DoInitAction #1
+this: _level0.child
+is root: false
+=== Assets DoInitAction #1 (not imported)
+this: _level0.child
+is root: false
+=== Assets DoInitAction #2
+this: _level0.child
+is root: false

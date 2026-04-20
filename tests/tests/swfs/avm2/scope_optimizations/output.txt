@@ -1,0 +1,4 @@
+Without coerce:
+0
+With coerce:
+[class field]

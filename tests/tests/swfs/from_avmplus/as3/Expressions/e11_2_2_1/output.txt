@@ -1,0 +1,4 @@
+(new TestFunction(0,1,2,3,4,5)).length PASSED!
+new operator used to create objects PASSED!
+new operator used to create objects PASSED!
+new operator used to create objects PASSED!

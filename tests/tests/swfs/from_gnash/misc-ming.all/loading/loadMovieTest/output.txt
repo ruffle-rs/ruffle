@@ -1,0 +1,80 @@
+PASSED: movieclip == movieclip
+PASSED: movieclip == movieclip
+0.0: Click on the first image. Wait for it to appear on the right, then click on it.
+PASSED: true
+PASSED: true
+PASSED: true
+PASSED: true
+PASSED: test.swf == test.swf (loadMovieTest.c:202)
+PASSED: -16376 == -16376
+PASSED: 160 == 160
+PASSED: true
+FAILED: expected: MovieClip.loadMovie , obtained:
+0.1: Click on the second image. Wait for it to appear on the right, then click on it.
+PASSED: true
+PASSED: true
+PASSED: test.swf == test.swf (loadMovieTest.c:202)
+PASSED: -16376 == -16376
+PASSED: 160 == 160
+PASSED: true
+FAILED: expected: MovieClip.loadMovie , obtained:
+0.2: Click on the third image. Wait for it to appear on the right, then click on it.
+PASSED: true
+PASSED: true
+PASSED: test.swf == test.swf (loadMovieTest.c:202)
+PASSED: -16376 == -16376
+PASSED: 160 == 160
+PASSED: true
+FAILED: expected: MovieClip.loadMovie , obtained:
+1.0: Click on the first image. Wait for it to appear on the right, then click on it.
+PASSED: true
+PASSED: true
+PASSED: test.swf == test.swf (loadMovieTest.c:202)
+PASSED: -16376 == -16376
+PASSED: 160 == 160
+PASSED: true
+FAILED: expected: GETURL, target:_level0.cont.coverart , obtained:
+1.1: Click on the second image. Wait for it to appear on the right, then click on it.
+PASSED: true
+PASSED: true
+PASSED: test.swf == test.swf (loadMovieTest.c:202)
+PASSED: -16376 == -16376
+PASSED: 160 == 160
+PASSED: true
+FAILED: expected: GETURL, target:_level0.cont.coverart , obtained:
+1.2: Click on the third image. Wait for it to appear on the right, then click on it.
+PASSED: true
+PASSED: true
+PASSED: test.swf == test.swf (loadMovieTest.c:202)
+PASSED: -16376 == -16376
+PASSED: 160 == 160
+PASSED: true
+FAILED: expected: GETURL, target:_level0.cont.coverart , obtained:
+2.0: Click on the first image. Wait for it to appear on the right, then click on it.
+PASSED: true
+PASSED: true
+PASSED: test.swf == test.swf (loadMovieTest.c:202)
+PASSED: -16376 == -16376
+PASSED: 160 == 160
+PASSED: true
+FAILED: expected: GETURL, target:/cont/coverart , obtained:
+2.1: Click on the second image. Wait for it to appear on the right, then click on it.
+PASSED: true
+PASSED: true
+PASSED: test.swf == test.swf (loadMovieTest.c:202)
+PASSED: -16376 == -16376
+PASSED: 160 == 160
+PASSED: true
+FAILED: expected: GETURL, target:/cont/coverart , obtained:
+2.2: Click on the third image. Wait for it to appear on the right, then click on it.
+PASSED: true
+PASSED: true
+PASSED: test.swf == test.swf (loadMovieTest.c:202)
+PASSED: -16376 == -16376
+PASSED: 160 == 160
+PASSED: true
+FAILED: expected: GETURL, target:/cont/coverart , obtained:
+The test is over
+#passed: 58
+#failed: 9
+#total tests run: 67

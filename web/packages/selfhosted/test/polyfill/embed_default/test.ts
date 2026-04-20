@@ -12,7 +12,10 @@ describe("Embed tag", () => {
 
     it("polyfills with ruffle", async () => {
         await injectRuffleAndWait(browser);
-        const actual = await browser.$("#test-container").getHTML(false);
+        await browser.$("<ruffle-embed />").waitForExist();
+        const actual = await browser
+            .$("#test-container")
+            .getHTML({ includeSelectorTag: false, pierceShadowRoot: false });
         const expected = fs.readFileSync(
             `${import.meta.dirname}/expected.html`,
             "utf8",

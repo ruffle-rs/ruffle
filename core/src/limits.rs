@@ -71,11 +71,7 @@ impl ExecutionLimit {
     /// been breached, this returns `true`. Otherwise, this returns `false`,
     /// and if the operation limit was exhausted, it will be returned to the
     /// starting maximum.
-    pub fn did_ops_breach_limit(
-        &mut self,
-        context: &mut UpdateContext<'_, '_>,
-        ops: usize,
-    ) -> bool {
+    pub fn did_ops_breach_limit(&mut self, context: &mut UpdateContext<'_>, ops: usize) -> bool {
         if let Some(oplimit) = &mut self.current_oplimit {
             *oplimit = oplimit.saturating_sub(ops);
 

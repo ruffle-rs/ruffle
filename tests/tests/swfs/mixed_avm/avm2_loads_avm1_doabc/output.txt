@@ -1,0 +1,4 @@
+Finished constructor of class of root MovieClip
+Hello from DoAction tag on frame 1 of avm1.swf
+Hello from DoAction tag on frame 2 of avm1.swf
+Hello from DoAction tag on frame 1 of avm1.swf

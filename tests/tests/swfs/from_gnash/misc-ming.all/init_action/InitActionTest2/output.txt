@@ -1,0 +1,29 @@
+PASSED: _global.val4  ==  undefined [InitActionTest2.c:78]
+PASSED: _global.val4  ==  undefined [InitActionTest2.c:84]
+PASSED: _global.val4  ==  undefined [InitActionTest2.c:87]
+PASSED: _global.val4  ==  undefined [InitActionTest2.c:91]
+PASSED: _global.val4  ==  undefined [InitActionTest2.c:95]
+PASSED: _global.val4  ==  undefined [InitActionTest2.c:99]
+PASSED: _global.val4  ==  undefined [InitActionTest2.c:105]
+PASSED: _global.val4  ==  'mc4a' [InitActionTest2.c:115]
+mc5
+PASSED: _global.val5  ==  'mc5' [InitActionTest2.c:127]
+PASSED: _global.val5  ==  'mc5' [InitActionTest2.c:133]
+mc6
+PASSED: _global.val6  ==  'mc6' [InitActionTest2.c:159]
+PASSED: _root.mc7  ==  undefined [InitActionTest2.c:177]
+PASSED: _global.goneBack ||! _root.mc8  ==  true [InitActionTest2.c:180]
+PASSED: _global.init7  ==  undefined [InitActionTest2.c:221]
+PASSED: _global.init8  ==  undefined [InitActionTest2.c:222]
+PASSED: typeof(_root.mc7)  ==  'undefined' [InitActionTest2.c:225]
+PASSED: typeof(_root.mc8)  ==  'movieclip' [InitActionTest2.c:226]
+Going back
+init7
+init8
+PASSED: _root.mc7  ==  undefined [InitActionTest2.c:177]
+PASSED: _global.goneBack ||! _root.mc8  ==  true [InitActionTest2.c:180]
+PASSED: _global.init7  ==  true [InitActionTest2.c:243]
+PASSED: _global.init8  ==  true [InitActionTest2.c:244]
+#passed: 21
+#failed: 0
+#total tests run: 21

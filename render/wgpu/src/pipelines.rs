@@ -2,9 +2,8 @@ use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
 use crate::{MaskState, PosColorVertex, PosVertex};
-use enum_map::{enum_map, Enum, EnumMap};
-use std::collections::HashMap;
-use wgpu::{vertex_attr_array, BlendState, PrimitiveTopology};
+use enum_map::{Enum, EnumMap, enum_map};
+use wgpu::{BlendState, PrimitiveTopology, vertex_attr_array};
 
 pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
     [wgpu::VertexBufferLayout {
@@ -47,6 +46,7 @@ pub struct Pipelines {
     pub bitmap: EnumMap<TrivialBlend, ShapePipeline>,
     pub gradients: ShapePipeline,
     pub complex_blends: EnumMap<ComplexBlend, ShapePipeline>,
+    pub alpha_mask: ShapePipeline,
 }
 
 impl ShapePipeline {
@@ -65,14 +65,11 @@ impl ShapePipeline {
         stencilless: wgpu::RenderPipeline,
         mut f: impl FnMut(MaskState) -> wgpu::RenderPipeline,
     ) -> Self {
-        let mask_array: [wgpu::RenderPipeline; MaskState::LENGTH] = (0..MaskState::LENGTH)
-            .map(|mask_enum| {
+        let mask_array: [wgpu::RenderPipeline; MaskState::LENGTH] =
+            std::array::from_fn(|mask_enum| {
                 let mask_state = MaskState::from_usize(mask_enum);
                 f(mask_state)
-            })
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+            });
         ShapePipeline {
             pipelines: EnumMap::from_array(mask_array),
             stencilless,
@@ -162,8 +159,8 @@ impl Pipelines {
             &bind_layouts.bitmap,
         ];
 
-        let bitmap_pipelines: [ShapePipeline; TrivialBlend::LENGTH] = (0..TrivialBlend::LENGTH)
-            .map(|blend| {
+        let bitmap_pipelines: [ShapePipeline; TrivialBlend::LENGTH] =
+            std::array::from_fn(|blend| {
                 let blend = TrivialBlend::from_usize(blend);
                 let name = format!("Bitmap ({blend:?})");
                 create_shape_pipeline(
@@ -178,10 +175,7 @@ impl Pipelines {
                     &[],
                     PrimitiveTopology::TriangleList,
                 )
-            })
-            .collect::<Vec<_>>()
-            .try_into()
-            .unwrap();
+            });
 
         let bitmap_opaque_pipeline_layout_label =
             create_debug_label!("Opaque bitmap pipeline layout");
@@ -205,7 +199,7 @@ impl Pipelines {
             })],
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             msaa_sample_count,
-            &[("late_saturate".to_owned(), 1.0)].into(),
+            &[("late_saturate", 1.0)],
             PrimitiveTopology::TriangleList,
         ));
 
@@ -233,9 +227,28 @@ impl Pipelines {
             })],
             &VERTEX_BUFFERS_DESCRIPTION_POS,
             msaa_sample_count,
-            &Default::default(),
+            &[],
             PrimitiveTopology::TriangleList,
         ));
+
+        let alpha_mask_bindings = vec![
+            &bind_layouts.globals,
+            &bind_layouts.transforms,
+            &bind_layouts.alpha_mask,
+        ];
+
+        let alpha_mask_pipeline = create_shape_pipeline(
+            "Alpha Mask",
+            device,
+            format,
+            &shaders.alpha_mask_shader,
+            msaa_sample_count,
+            &VERTEX_BUFFERS_DESCRIPTION_POS,
+            &alpha_mask_bindings,
+            BlendState::PREMULTIPLIED_ALPHA_BLENDING,
+            &[],
+            PrimitiveTopology::TriangleList,
+        );
 
         Self {
             color: color_pipelines,
@@ -245,11 +258,12 @@ impl Pipelines {
             bitmap_opaque_dummy_stencil: bitmap_opaque_dummy_depth,
             gradients: gradient_pipeline,
             complex_blends: complex_blend_pipelines,
+            alpha_mask: alpha_mask_pipeline,
         }
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn create_pipeline_descriptor<'a>(
     label: Option<&'a str>,
     vertex_shader: &'a wgpu::ShaderModule,
@@ -259,7 +273,7 @@ fn create_pipeline_descriptor<'a>(
     color_target_state: &'a [Option<wgpu::ColorTargetState>],
     vertex_buffer_layout: &'a [wgpu::VertexBufferLayout<'a>],
     msaa_sample_count: u32,
-    fragment_constants: &'a HashMap<String, f64>,
+    fragment_constants: &'a [(&str, f64)],
     primitive_topology: PrimitiveTopology,
 ) -> wgpu::RenderPipelineDescriptor<'a> {
     wgpu::RenderPipelineDescriptor {
@@ -267,13 +281,13 @@ fn create_pipeline_descriptor<'a>(
         layout: Some(pipeline_layout),
         vertex: wgpu::VertexState {
             module: vertex_shader,
-            entry_point: "main_vertex",
+            entry_point: Some("main_vertex"),
             buffers: vertex_buffer_layout,
             compilation_options: Default::default(),
         },
         fragment: Some(wgpu::FragmentState {
             module: fragment_shader,
-            entry_point: "main_fragment",
+            entry_point: Some("main_fragment"),
             targets: color_target_state,
             compilation_options: wgpu::PipelineCompilationOptions {
                 constants: fragment_constants,
@@ -296,10 +310,11 @@ fn create_pipeline_descriptor<'a>(
             alpha_to_coverage_enabled: false,
         },
         multiview: None,
+        cache: None,
     }
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 fn create_shape_pipeline(
     name: &str,
     device: &wgpu::Device,
@@ -344,7 +359,7 @@ fn create_shape_pipeline(
             })],
             vertex_buffers_layout,
             msaa_sample_count,
-            &Default::default(),
+            &[],
             primitive_topology,
         ))
     };
@@ -363,7 +378,7 @@ fn create_shape_pipeline(
             })],
             vertex_buffers_layout,
             msaa_sample_count,
-            &Default::default(),
+            &[],
             primitive_topology,
         )),
         |mask_state| match mask_state {

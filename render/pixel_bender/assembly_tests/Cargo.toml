@@ -1,0 +1,26 @@
+[package]
+name = "pixel_bender_assembly_tests"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+pixel_bender = { path = "..", features = ["assembly"]}
+ruffle_fs_tests_runner = { path = "../../../tests/fs-tests-runner" }
+libtest-mimic = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+toml = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true }
+vfs = { workspace = true }
+
+[[test]]
+name = "assembly_tests"
+harness = false
+path = "src/runner.rs"

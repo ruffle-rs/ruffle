@@ -1,27 +1,39 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::object::Object;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ScriptObject, Value};
-use crate::context::GcContext;
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
+use crate::avm1::{Object, Value};
+use crate::string::AvmString;
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
-    "ALPHANUMERIC_FULL" => string("ALPHANUMERIC_FULL"; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "ALPHANUMERIC_HALF" => string("ALPHANUMERIC_HALF"; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "CHINESE" => string("CHINESE"; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "JAPANESE_HIRAGANA" => string("JAPANESE_HIRAGANA"; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "JAPENESE_KATAKANA_FULL" => string("JAPENESE_KATAKANA_FULL"; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "KOREAN" => string("KOREAN"; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "UNKNOWN" => string("UNKNOWN"; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "onIMEComposition" => method(on_ime_composition; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "doConversion" => method(do_conversion; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "getConversionMode" => method(get_conversion_mode; DONT_ENUM | DONT_DELETE | READ_ONLY);
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
+    "UNKNOWN" => value("UNKNOWN"; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "KOREAN" => value("KOREAN"; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "JAPANESE_KATAKANA_HALF" => value("JAPANESE_KATAKANA_HALF"; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "JAPANESE_KATAKANA_FULL" => value("JAPANESE_KATAKANA_FULL"; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "JAPANESE_HIRAGANA" => value("JAPANESE_HIRAGANA"; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "CHINESE" => value("CHINESE"; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "ALPHANUMERIC_HALF" => value("ALPHANUMERIC_HALF"; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "ALPHANUMERIC_FULL" => value("ALPHANUMERIC_FULL"; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getEnabled" => method(get_enabled; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setCompositionString" => method(set_composition_string; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setConversionMode" => method(set_conversion_mode; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "setEnabled" => method(set_enabled; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "getConversionMode" => method(get_conversion_mode; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setConversionMode" => method(set_conversion_mode; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setCompositionString" => method(set_composition_string; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "doConversion" => method(do_conversion; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    // TODO: onIMEComposition doesn't look like it's a built-in property.
+    "onIMEComposition" => method(on_ime_composition; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
+
+pub fn create<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    broadcaster_functions: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
+) -> Object<'gc> {
+    let ime = Object::new(context.strings, Some(context.object_proto));
+    broadcaster_functions.initialize(context.strings, ime, array_proto);
+    context.define_properties_on(ime, OBJECT_DECLS(context));
+    ime
+}
 
 fn on_ime_composition<'gc>(
     _activation: &mut Activation<'_, 'gc>,
@@ -40,11 +52,11 @@ fn do_conversion<'gc>(
 }
 
 fn get_conversion_mode<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
+    activation: &mut Activation<'_, 'gc>,
     _this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    Ok("KOREAN".into())
+    Ok(AvmString::new_ascii_static(activation.gc(), b"KOREAN").into())
 }
 
 fn get_enabled<'gc>(
@@ -77,17 +89,4 @@ fn set_enabled<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     Ok(false.into())
-}
-
-pub fn create<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-    broadcaster_functions: BroadcasterFunctions<'gc>,
-    array_proto: Object<'gc>,
-) -> Object<'gc> {
-    let ime = ScriptObject::new(context.gc_context, Some(proto));
-    broadcaster_functions.initialize(context.gc_context, ime.into(), array_proto);
-    define_properties_on(OBJECT_DECLS, context, ime, fn_proto);
-    ime.into()
 }

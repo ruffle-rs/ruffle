@@ -23,6 +23,5 @@ package flash.system {
         public static function get MIN_DOMAIN_MEMORY_LENGTH():uint {
             return 1024;
         }
-
     }
 }

@@ -1,0 +1,17 @@
+const variable item1 PASSED!
+package const variable packageItem1 PASSED!
+package const variable packageItem2 PASSED!
+package const variable packageItem3 PASSED!
+package const variable packageItem4 PASSED!
+package const variable packageItem5 PASSED!
+Class1 const variable classItem1 PASSED!
+Class1 const variable classItem2 PASSED!
+Class1 const variable classItem3 PASSED!
+Class1 const variable classItem4 PASSED!
+Class1 const variable classItem5 PASSED!
+Class1 const variable classItem6 PASSED!
+Class1 const variable classItem7 PASSED!
+Class1 const variable classItem8 PASSED!
+ReferenceError: Error #1074: Illegal write to read-only property Package1:ns1::classItem7 on Package1.Class2.
+	at Package1::Class2()
+	at global$init()

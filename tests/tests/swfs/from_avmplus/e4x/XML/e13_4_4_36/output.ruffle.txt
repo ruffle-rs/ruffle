@@ -1,0 +1,15 @@
+2 PASSED!
+MYXML = new XML(xmlDoc), MYXML.setNamespace('http://xyx.org/xml'),MYXML.toString() PASSED!
+MYXML = new XML(xmlDoc), MYXML.setNamespace('http://xyx.org/xml'),MYXML.getNamespace() PASSED!
+MYXML = new XML(xmlDoc), MYXML.setNamespace('http://zxz.org/xml'),MYXML.toString() FAILED! expected: <a xmlns="http://foo"><b><aaa:c xmlns:aaa="http://bar">d</aaa:c></b></a> got: <a xmlns="http://foo"><b><c xmlns="http://bar">d</c></b></a>
+Adding two namespaces by uri FAILED! expected: <a xmlns="http://www.zzz.com"><aaa:b xmlns:aaa="http://www.zzz.org">c</aaa:b></a> got: <a xmlns="http://www.zzz.com"><b xmlns="http://www.zzz.org">c</b></a>
+Adding two namespaces with prefix 'zzz' PASSED!
+Adding two namespaces with prefix 'zzz' PASSED!
+Calling setNamespace() on an attribute PASSED!
+Calling setNamespace() on an attribute with conflicting namespace prefix PASSED!
+Calling setNamespace() on an attribute with conflicting namespace prefix PASSED!
+Calling setNamespace() on an attribute with conflicting namespace prefix PASSED!
+Calling setNamespace() on an attribute with conflicting namespace PASSED!
+Calling setNamespace() on an attribute with conflicting namespace prefix PASSED!
+Calling setNamespace() on an attribute with conflicting namespace PASSED!
+Calling setNamespace() on an attribute with no existing namespace PASSED!

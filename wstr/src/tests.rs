@@ -41,7 +41,6 @@ fn roundtrip() {
 
 #[test]
 #[rustfmt::skip]
-#[allow(clippy::eq_op)]
 fn eq() {
     let a1 = bstr!(b"hello");
     let b1 = bstr!(b"world");
@@ -56,7 +55,6 @@ fn eq() {
 
 #[test]
 #[rustfmt::skip]
-#[allow(clippy::eq_op)]
 fn cmp() {
     let a1 = bstr!(b"hello");
     let b1 = bstr!(b"world");

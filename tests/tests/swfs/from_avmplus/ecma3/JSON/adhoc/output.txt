@@ -1,0 +1,40 @@
+JSON.parse(1) PASSED!
+JSON.parse(-1.75e12) PASSED!
+JSON.parse(-1.75) PASSED!
+JSON.parse(1.75) PASSED!
+JSON.parse(-1e-12) PASSED!
+JSON.parse(-1e+12) PASSED!
+JSON.parse(supercallifragilistic) PASSED!
+JSON.parse(null) PASSED!
+JSON.parse(true) PASSED!
+JSON.parse(false) PASSED!
+JSON.parse([1,2,3,true,false,null]) PASSED!
+JSON.parse({a:10,b:20}) PASSED!
+JSON.parse({c:[1,2,3]}},a:{b:20}) PASSED!
+JSON.parse(1,reviver) PASSED!
+JSON.parse([1,-2,3],negate reviver) PASSED!
+JSON.parse([1,-2,3],undef neg reviver) PASSED!
+JSON.parse([1,-2,3],undef 1 reviver) PASSED!
+JSON.parse({a:{"1":20},c:[1,2,3]}) PASSED!
+JSON.stringify(1) PASSED!
+JSON.stringify(-1.75e12) PASSED!
+JSON.stringify(-1.75) PASSED!
+JSON.stringify(1.75) PASSED!
+JSON.stringify(-1e-12) PASSED!
+JSON.stringify(-1e+12) PASSED!
+JSON.stringify(supercallifragilistic) PASSED!
+JSON.stringify(null) PASSED!
+JSON.stringify(true) PASSED!
+JSON.stringify(false) PASSED!
+JSON.stringify(array) PASSED!
+JSON.stringify(object) PASSED!
+JSON.stringify(nested object) PASSED!
+JSON.stringify(array,replacer=null,space) PASSED!
+JSON.stringify(object,replacer=null,space) PASSED!
+JSON.stringify(array,replacer=array) PASSED!
+JSON.stringify(object,replacer=array) PASSED!
+JSON.stringify(array,replacer=function) PASSED!
+JSON.stringify(object,replacer=function) PASSED!
+JSON.stringify(circular structure) PASSED!
+test Quote on escaped characters: JSON.stringify(\b,\t,\f,\r) PASSED!
+test Quote on double quote PASSED!

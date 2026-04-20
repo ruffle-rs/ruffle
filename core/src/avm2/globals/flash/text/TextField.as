@@ -1,14 +1,14 @@
 package flash.text {
-    import flash.display.InteractiveObject;
-    import flash.display.DisplayObject;
-    import flash.geom.Rectangle;
     import __ruffle__.stub_getter;
     import __ruffle__.stub_setter;
     import __ruffle__.stub_method;
 
+    import flash.display.InteractiveObject;
+    import flash.display.DisplayObject;
+    import flash.geom.Rectangle;
+
     [Ruffle(InstanceAllocator)]
     public class TextField extends InteractiveObject {
-        internal var _styleSheet:StyleSheet;
         internal var _useRichTextClipboard:Boolean;
 
         public native function get alwaysShowSelection():Boolean;
@@ -73,13 +73,8 @@ package flash.text {
         public native function get selectable():Boolean;
         public native function set selectable(value:Boolean):void;
 
-        public function get styleSheet():StyleSheet {
-            return this._styleSheet;
-        }
-        public function set styleSheet(value:StyleSheet):void {
-            this._styleSheet = value;
-            stub_setter("flash.text.TextField", "styleSheet");
-        }
+        public native function get styleSheet():StyleSheet;
+        public native function set styleSheet(value:StyleSheet):void;
 
         public native function get text():String;
         public native function set text(value:String):void;
@@ -120,10 +115,10 @@ package flash.text {
 
         public native function get numLines():int;
 
-        public native function get caretIndex(): int;
+        public native function get caretIndex():int;
 
-        public native function get selectionBeginIndex(): int;
-        public native function get selectionEndIndex(): int;
+        public native function get selectionBeginIndex():int;
+        public native function get selectionEndIndex():int;
 
         public native function appendText(text:String):void;
         public native function getLineMetrics(lineIndex:int):TextLineMetrics;
@@ -148,10 +143,7 @@ package flash.text {
 
         public native function getLineOffset(lineIndex:int):int;
 
-        public function getCharBoundaries(charIndex:int):Rectangle {
-            stub_method("flash.text.TextField", "getCharBoundaries");
-            return new Rectangle(0, 0, 1, 1);
-        }
+        public native function getCharBoundaries(charIndex:int):Rectangle;
 
         public native function getFirstCharInParagraph(charIndex:int):int;
 
@@ -171,6 +163,7 @@ package flash.text {
             return true;
         }
 
+        [API("670")]
         public function get textInteractionMode():String {
             stub_getter("flash.text.TextField", "textInteractionMode");
             return TextInteractionMode.NORMAL;

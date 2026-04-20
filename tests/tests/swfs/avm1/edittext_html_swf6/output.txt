@@ -1036,6 +1036,24 @@ is multiline after enabling: true
     HTML get ml: <!-- the same -->
     Text get:    text\r
     ===============
+    HTML set:    <p align="justify">text</p>
+    HTML get:    <P ALIGN="JUSTIFY"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text\r
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    ===============
+    HTML set:    <p align="center">text</p>
+    HTML get:    <P ALIGN="CENTER"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text\r
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    ===============
+    HTML set:    <p align="unknown">text</p>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text\r
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    ===============
     HTML set:    <a href="http://example.com"><p align="right"></p></a>
     HTML get:    <P ALIGN="RIGHT"><FONT FACE="Noto Sans" SIZE="6" COLOR="#000000" LETTERSPACING="0" KERNING="0"></FONT></P>
     Text get:    \r
@@ -2809,6 +2827,24 @@ is multiline after enabling: true
     HTML get ml: <!-- the same -->
     Text get:    text\r
     ===============
+    HTML set:    <p align="justify">text</p>
+    HTML get:    <P ALIGN="JUSTIFY"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text\r
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    ===============
+    HTML set:    <p align="center">text</p>
+    HTML get:    <P ALIGN="CENTER"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text\r
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    ===============
+    HTML set:    <p align="unknown">text</p>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text\r
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    ===============
     HTML set:    <a href="http://example.com"><p align="right"></p></a>
     HTML get:    <P ALIGN="RIGHT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#CC00CC" LETTERSPACING="0" KERNING="0"></FONT></P>
     Text get:    \r
@@ -4578,6 +4614,24 @@ is multiline after enabling: true
     ===============
     HTML set:    <u><p align="right">text</p></u>
     HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="RIGHT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0"><U>text</U></FONT></P></TEXTFORMAT>
+    Text get:    text\r
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    ===============
+    HTML set:    <p align="justify">text</p>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="JUSTIFY"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P></TEXTFORMAT>
+    Text get:    text\r
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    ===============
+    HTML set:    <p align="center">text</p>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="CENTER"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P></TEXTFORMAT>
+    Text get:    text\r
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    ===============
+    HTML set:    <p align="unknown">text</p>
+    HTML get:    <TEXTFORMAT RIGHTMARGIN="2" LEADING="2"><P ALIGN="LEFT"><FONT FACE="Noto Sans" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P></TEXTFORMAT>
     Text get:    text\r
     HTML get ml: <!-- the same -->
     Text get:    text\r

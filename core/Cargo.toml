@@ -12,76 +12,81 @@ workspace = true
 
 [dependencies]
 linkme = { version = "0.3", optional = true }
-byteorder = "1.5"
-bitstream-io = "2.5.0"
+byteorder = { workspace = true }
+bitstream-io = { workspace = true }
 flate2 = { workspace = true }
-fnv = "1.0.7"
-gc-arena = { package = "ruffle_gc_arena", path = "../ruffle_gc_arena" }
+fnv = { workspace = true }
+gc-arena = { workspace = true }
 slotmap = { workspace = true }
-indexmap = "2.2.6"
+indexmap = { workspace = true }
 tracing = { workspace = true }
+ruffle_common = { path = "common" }
+ruffle_macros = { path = "macros" }
+naga-agal = { path = "../render/naga-agal" }
 ruffle_render = { path = "../render", features = ["tessellator"] }
 ruffle_video = { path = "../video" }
-ruffle_macros = { path = "macros" }
 ruffle_wstr = { path = "../wstr" }
 swf = { path = "../swf" }
 bitflags = { workspace = true }
-smallvec = { version = "1.13.2", features = ["union"] }
+smallvec = { workspace = true }
 num-traits = { workspace = true }
 num-derive = { workspace = true }
-quick-xml = "0.36.0"
-downcast-rs = "1.2.1"
+quick-xml = { workspace = true }
 url = { workspace = true }
 weak-table = "0.3.2"
-percent-encoding = "2.3.1"
+percent-encoding = { workspace = true }
 thiserror = { workspace = true }
 chrono = { workspace = true, features = ["clock"] }
 web-time = "1.1.0"
-encoding_rs = "0.8.34"
-rand = { version = "0.8.5", features = ["std", "small_rng"], default-features = false }
+encoding_rs = { workspace = true }
+rand = { version = "0.9.1", features = ["std", "os_rng"], default-features = false }
 serde = { workspace = true }
-serde_json = { version = "1.0", features = ["preserve_order"] }
-nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "754b1184037aa9952a907107284fb73897e26adc", optional = true }
-regress = "0.10"
-flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "f9e3de59a86df1c954fecba6b4b752df61cad73a" }
-lzma-rs = {version = "0.3.0", optional = true }
+serde_json = { workspace = true, features = ["preserve_order"] }
+nellymoser-rs = { git = "https://github.com/ruffle-rs/nellymoser", rev = "073eb48d907201f46dea0c8feb4e8d9a1d92208c", optional = true }
+regress = { workspace = true }
+flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "998f47c926b9986aabd518fbb7394ff56936d0b0" }
+lzma-rs = { workspace = true, optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
-symphonia = { version = "0.5.4", default-features = false, features = ["mp3"], optional = true }
-enumset = "1.1.4"
-bytemuck = { workspace = true }
+symphonia = { version = "0.5.5", default-features = false, optional = true }
+enumset = "1.1.10"
+bytemuck = { workspace = true, features = ["derive"] }
 clap = { workspace = true, optional=true }
-realfft = "3.3.0"
-hashbrown = { version = "0.14.5", features = ["raw"] }
+realfft = "3.5.0"
+hashbrown = { workspace = true }
 scopeguard = "1.2.0"
-fluent-templates = "0.9.4"
+fluent-templates = { workspace = true }
 egui = { workspace = true, optional = true }
-egui_extras = { version = "0.28.1", default-features = false, optional = true }
-png = { version = "0.17.13", optional = true }
+egui_extras = { version = "0.33.3", default-features = false, optional = true }
+png = { version = "0.18.1", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
-jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "db88651220688d2883a90d5477048071507b0493", optional = true }
+jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "2074e32a174ad45443dcf00f795a86d65cf0153a", optional = true }
 image = { workspace = true, features = ["tiff"] }
 enum-map = { workspace = true }
-ttf-parser = "0.24"
+ttf-parser = "0.25"
 num-bigint = "0.4"
-unic-segment = "0.9.0"
-id3 = "1.14.0"
-either = "1.13.0"
+unicode-segmentation = "1.13.2"
+id3 = "1.16.4"
+either = "1.15.0"
 chardetng = "0.1.17"
+tracy-client = { version = "0.18.2", optional = true, default-features = false }
+itertools = "0.14.0"
 
 [target.'cfg(not(target_family = "wasm"))'.dependencies.futures]
 workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
-version = "0.4.42"
+version = "0.4.58"
 
 [features]
 default = []
 lzma = ["lzma-rs", "swf/lzma"]
 avm_debug = []
+tracy_avm = ["dep:tracy-client"]
 deterministic = []
 timeline_debug = []
-mp3 = ["symphonia"]
+mp3 = ["symphonia", "symphonia/mp3"]
+aac = ["symphonia", "symphonia/aac"]
 nellymoser = ["nellymoser-rs"]
 audio = ["dasp"]
 known_stubs = ["linkme", "serde"]
@@ -89,7 +94,6 @@ default_compatibility_rules = []
 egui = ["dep:egui", "dep:egui_extras", "png"]
 jpegxr = ["dep:jpegxr", "lzma"]
 default_font = []
-test_only_as3 = []
 serde = ["serde/derive"]
 
 [build-dependencies]

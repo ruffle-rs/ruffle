@@ -13,6 +13,48 @@ undefined
 undefined
 
 
+// splice = original.splice(undefined)
+// original
+a,b,c,d,e
+
+// original.length
+5
+
+// splice
+undefined
+
+// splice.length
+undefined
+
+
+// splice = original.splice(0)
+// original
+
+
+// original.length
+0
+
+// splice
+a,b,c,d,e
+
+// splice.length
+5
+
+
+// splice = original.splice(null)
+// original
+
+
+// original.length
+0
+
+// splice
+a,b,c,d,e
+
+// splice.length
+5
+
+
 // splice = original.splice(2)
 // original
 a,b
@@ -53,6 +95,20 @@ c,d
 
 // splice.length
 2
+
+
+// splice = original.splice(2, undefined)
+// original
+a,b,c,d,e
+
+// original.length
+5
+
+// splice
+undefined
+
+// splice.length
+undefined
 
 
 // splice = original.splice(2, 8)

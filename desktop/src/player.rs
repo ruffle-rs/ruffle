@@ -1,26 +1,30 @@
 use crate::backends::{
-    CpalAudioBackend, DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopUiBackend,
-    RfdNavigatorInterface,
+    DesktopExternalInterfaceProvider, DesktopFSCommandProvider, DesktopNavigatorInterface,
+    DesktopUiBackend, PathAllowList,
 };
+use crate::cli::FilesystemAccessMode;
+use crate::cli::GameModePreference;
 use crate::custom_event::RuffleEvent;
-use crate::gui::MovieView;
+use crate::gui::{FilePicker, MovieView};
 use crate::preferences::GlobalPreferences;
 use crate::{CALLSTACK, RENDER_INFO, SWF_INFO};
 use anyhow::anyhow;
-use ruffle_core::backend::navigator::{OpenURLMode, SocketMode};
+use ruffle_core::backend::navigator::{OwnedFuture, SocketMode};
 use ruffle_core::config::Letterbox;
 use ruffle_core::events::{GamepadButton, KeyCode};
-use ruffle_core::{DefaultFont, LoadBehavior, Player, PlayerBuilder, PlayerEvent};
-use ruffle_frontend_utils::backends::executor::{AsyncExecutor, PollRequester};
-use ruffle_frontend_utils::backends::navigator::ExternalNavigatorBackend;
+use ruffle_core::font::DefaultFont;
+use ruffle_core::{LoadBehavior, Player, PlayerBuilder, PlayerEvent};
+use ruffle_frontend_utils::backends::audio::CpalAudioBackend;
+use ruffle_frontend_utils::backends::navigator::{ExternalNavigatorBackend, FutureSpawner};
 use ruffle_frontend_utils::bundle::source::BundleSourceError;
 use ruffle_frontend_utils::bundle::{Bundle, BundleError};
-use ruffle_frontend_utils::content::PlayingContent;
+use ruffle_frontend_utils::content::{ContentDescriptor, PlayingContent};
 use ruffle_frontend_utils::player_options::PlayerOptions;
 use ruffle_frontend_utils::recents::Recent;
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
 use ruffle_render_wgpu::backend::WgpuRenderBackend;
+use ruffle_render_wgpu::clap::PowerPreference;
 use ruffle_render_wgpu::descriptors::Descriptors;
 use std::borrow::Cow;
 use std::collections::{HashMap, HashSet};
@@ -43,7 +47,8 @@ pub struct LaunchOptions {
     pub tcp_connections: Option<SocketMode>,
     pub fullscreen: bool,
     pub save_directory: PathBuf,
-    pub open_url_mode: OpenURLMode,
+    pub cache_directory: PathBuf,
+    pub filesystem_access_mode: FilesystemAccessMode,
     pub gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
     pub avm2_optimizer_enabled: bool,
 }
@@ -90,7 +95,8 @@ impl From<&GlobalPreferences> for LaunchOptions {
             proxy: value.cli.proxy.clone(),
             fullscreen: value.cli.fullscreen,
             save_directory: value.cli.save_directory.clone(),
-            open_url_mode: value.cli.open_url_mode,
+            cache_directory: value.cli.cache_directory.clone(),
+            filesystem_access_mode: value.cli.filesystem_access_mode,
             socket_allowed: HashSet::from_iter(value.cli.socket_allow.iter().cloned()),
             tcp_connections: value.cli.tcp_connections,
             gamepad_button_mapping: HashMap::from_iter(value.cli.gamepad_button.iter().cloned()),
@@ -99,39 +105,33 @@ impl From<&GlobalPreferences> for LaunchOptions {
     }
 }
 
-#[derive(Clone)]
-struct WinitWaker(EventLoopProxy<RuffleEvent>);
-
-impl PollRequester for WinitWaker {
-    fn request_poll(&self) {
-        if self.0.send_event(RuffleEvent::TaskPoll).is_err() {
-            tracing::error!("Couldn't request poll - event loop is closed");
-        }
-    }
-}
-
 /// Represents a current Player and any associated state with that player,
 /// which may be lost when this Player is closed (dropped)
 struct ActivePlayer {
+    id: PlayerId,
     player: Arc<Mutex<Player>>,
-    executor: Arc<AsyncExecutor<WinitWaker>>,
+
+    #[cfg(target_os = "linux")]
+    _gamemode_session: crate::dbus::GameModeSession,
 }
 
 impl ActivePlayer {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn new(
         opt: &LaunchOptions,
         event_loop: EventLoopProxy<RuffleEvent>,
-        movie_url: &Url,
-        window: Rc<Window>,
+        content_descriptor: &ContentDescriptor,
+        window: Arc<Window>,
         descriptors: Arc<Descriptors>,
         movie_view: MovieView,
         font_database: Rc<fontdb::Database>,
         preferences: GlobalPreferences,
+        file_picker: FilePicker,
     ) -> Self {
+        let player_id = PlayerId::new();
         let mut builder = PlayerBuilder::new();
 
-        match CpalAudioBackend::new(&preferences) {
+        match CpalAudioBackend::new(preferences.output_device_name().as_deref()) {
             Ok(audio) => {
                 builder = builder.with_audio(audio);
             }
@@ -140,30 +140,30 @@ impl ActivePlayer {
             }
         };
 
-        let mut content = PlayingContent::DirectFile(movie_url.clone());
-        if movie_url.scheme() == "file" {
-            if let Ok(path) = movie_url.to_file_path() {
-                match Bundle::from_path(&path) {
-                    Ok(bundle) => {
-                        if bundle.warnings().is_empty() {
-                            tracing::info!("Opening bundle at {path:?}");
-                        } else {
-                            // TODO: Show warnings to user (toast?)
-                            tracing::warn!("Opening bundle at {path:?} with warnings");
-                            for warning in bundle.warnings() {
-                                tracing::warn!("{warning}");
-                            }
+        let mut content = PlayingContent::DirectFile(content_descriptor.clone());
+        if content_descriptor.url.scheme() == "file"
+            && let Ok(path) = content_descriptor.url.to_file_path()
+        {
+            match Bundle::from_path(&path) {
+                Ok(bundle) => {
+                    if bundle.warnings().is_empty() {
+                        tracing::info!("Opening bundle at {path:?}");
+                    } else {
+                        // TODO: Show warnings to user (toast?)
+                        tracing::warn!("Opening bundle at {path:?} with warnings");
+                        for warning in bundle.warnings() {
+                            tracing::warn!("{warning}");
                         }
-                        content = PlayingContent::Bundle(movie_url.clone(), bundle);
                     }
-                    Err(BundleError::BundleDoesntExist)
-                    | Err(BundleError::InvalidSource(BundleSourceError::UnknownSource)) => {
-                        // Do nothing and carry on opening it as a swf - this likely isn't a bundle at all
-                    }
-                    Err(e) => {
-                        // TODO: Visible popup when a bundle (or regular file) fails to open
-                        tracing::error!("Couldn't open bundle at {path:?}: {e}");
-                    }
+                    content = PlayingContent::Bundle(content_descriptor.clone(), Box::new(bundle));
+                }
+                Err(BundleError::BundleDoesntExist)
+                | Err(BundleError::InvalidSource(BundleSourceError::UnknownSource)) => {
+                    // Do nothing and carry on opening it as a swf - this likely isn't a bundle at all
+                }
+                Err(e) => {
+                    // TODO: Visible popup when a bundle (or regular file) fails to open
+                    tracing::error!("Couldn't open bundle at {path:?}: {e}");
                 }
             }
         }
@@ -172,7 +172,7 @@ impl ActivePlayer {
         if let Err(e) = preferences.write_recents(|writer| {
             writer.push(
                 Recent {
-                    url: movie_url.clone(),
+                    content_descriptor: content_descriptor.clone(),
                     name: content.name(),
                 },
                 recent_limit,
@@ -193,16 +193,21 @@ impl ActivePlayer {
                     tcp_connections: opt.tcp_connections,
                     fullscreen: opt.fullscreen,
                     save_directory: opt.save_directory.clone(),
-                    open_url_mode: opt.open_url_mode,
+                    cache_directory: opt.cache_directory.clone(),
+                    filesystem_access_mode: opt.filesystem_access_mode,
                     gamepad_button_mapping: opt.gamepad_button_mapping.clone(),
                     avm2_optimizer_enabled: opt.avm2_optimizer_enabled,
                 })
             }
         };
 
-        let (executor, future_spawner) = AsyncExecutor::new(WinitWaker(event_loop.clone()));
+        let future_spawner = WinitExecutor {
+            event_loop: event_loop.clone(),
+            player_id,
+        };
         let movie_url = content.initial_swf_url().clone();
         let readable_name = content.name();
+        let initial_allow_list = PathAllowList::new(content_descriptor);
         let navigator = ExternalNavigatorBackend::new(
             opt.player
                 .base
@@ -213,27 +218,34 @@ impl ActivePlayer {
             future_spawner,
             opt.proxy.clone(),
             opt.player.upgrade_to_https.unwrap_or_default(),
-            opt.open_url_mode,
             opt.socket_allowed.clone(),
             opt.tcp_connections.unwrap_or(SocketMode::Ask),
             Rc::new(content),
-            RfdNavigatorInterface,
+            DesktopNavigatorInterface::new(
+                preferences.clone(),
+                event_loop.clone(),
+                initial_allow_list,
+                opt.filesystem_access_mode,
+            ),
         );
 
         if cfg!(feature = "external_video") && preferences.openh264_enabled() {
             #[cfg(feature = "external_video")]
             {
-                use ruffle_video_external::backend::ExternalVideoBackend;
-                let path = tokio::task::block_in_place(ExternalVideoBackend::get_openh264);
-                let openh264_path = match path {
-                    Ok(path) => Some(path),
+                use ruffle_video_external::{
+                    backend::ExternalVideoBackend, decoder::openh264::OpenH264Codec,
+                };
+                let openh264 = tokio::task::block_in_place(|| {
+                    OpenH264Codec::load(&opt.cache_directory.join("video"))
+                });
+                let backend = match openh264 {
+                    Ok(codec) => ExternalVideoBackend::new_with_openh264(codec),
                     Err(e) => {
-                        tracing::error!("Couldn't get OpenH264: {}", e);
-                        None
+                        tracing::error!("Failed to load OpenH264: {}", e);
+                        ExternalVideoBackend::new()
                     }
                 };
-
-                builder = builder.with_video(ExternalVideoBackend::new(openh264_path));
+                builder = builder.with_video(backend);
             }
         } else {
             #[cfg(feature = "software_video")]
@@ -242,6 +254,20 @@ impl ActivePlayer {
                     builder.with_video(ruffle_video_software::backend::SoftwareVideoBackend::new());
             }
         }
+
+        #[cfg_attr(not(target_os = "linux"), allow(unused))]
+        let gamemode_enable = match preferences.gamemode_preference() {
+            GameModePreference::Default => {
+                preferences.graphics_power_preference() == PowerPreference::High
+            }
+            GameModePreference::On => {
+                if cfg!(not(target_os = "linux")) {
+                    tracing::warn!("Cannot enable GameMode, as it is supported only on Linux");
+                }
+                true
+            }
+            GameModePreference::Off => false,
+        };
 
         let renderer = WgpuRenderBackend::new(descriptors, movie_view)
             .map_err(|e| anyhow!(e.to_string()))
@@ -258,20 +284,34 @@ impl ActivePlayer {
             builder = builder.with_gamepad_button_mapping(opt.gamepad_button_mapping.clone());
         }
 
+        let (notification_sender, notification_recv) = async_channel::unbounded();
+
+        let event_loop2 = event_loop.clone();
+        tokio::spawn(async move {
+            while let Ok(notification) = notification_recv.recv().await {
+                let event = RuffleEvent::PlayerNotification(notification);
+                match event_loop2.send_event(event) {
+                    Ok(_) => continue,
+                    Err(_) => break,
+                }
+            }
+        });
+
         builder = builder
             .with_navigator(navigator)
             .with_renderer(renderer)
             .with_storage(preferences.storage_backend().create_backend(&opt))
+            .with_notification_sender(notification_sender)
             .with_fs_commands(Box::new(DesktopFSCommandProvider {
                 event_loop: event_loop.clone(),
-                window: window.clone(),
             }))
             .with_ui(
                 DesktopUiBackend::new(
                     window.clone(),
-                    opt.open_url_mode,
+                    event_loop.clone(),
                     font_database,
                     preferences,
+                    file_picker,
                 )
                 .expect("Couldn't create ui backend"),
             )
@@ -372,7 +412,12 @@ impl ActivePlayer {
             );
         }
 
-        Self { player, executor }
+        Self {
+            id: player_id,
+            player,
+            #[cfg(target_os = "linux")]
+            _gamemode_session: crate::dbus::GameModeSession::new(gamemode_enable),
+        }
     }
 }
 
@@ -381,19 +426,21 @@ impl ActivePlayer {
 pub struct PlayerController {
     player: Option<ActivePlayer>,
     event_loop: EventLoopProxy<RuffleEvent>,
-    window: Rc<Window>,
+    window: Arc<Window>,
     descriptors: Arc<Descriptors>,
     font_database: Rc<fontdb::Database>,
     preferences: GlobalPreferences,
+    file_picker: FilePicker,
 }
 
 impl PlayerController {
     pub fn new(
         event_loop: EventLoopProxy<RuffleEvent>,
-        window: Rc<Window>,
+        window: Arc<Window>,
         descriptors: Arc<Descriptors>,
         font_database: fontdb::Database,
         preferences: GlobalPreferences,
+        file_picker: FilePicker,
     ) -> Self {
         Self {
             player: None,
@@ -402,19 +449,26 @@ impl PlayerController {
             descriptors,
             font_database: Rc::new(font_database),
             preferences,
+            file_picker,
         }
     }
 
-    pub fn create(&mut self, opt: &LaunchOptions, movie_url: &Url, movie_view: MovieView) {
+    pub fn create(
+        &mut self,
+        opt: &LaunchOptions,
+        content_descriptor: &ContentDescriptor,
+        movie_view: MovieView,
+    ) {
         self.player = Some(ActivePlayer::new(
             opt,
             self.event_loop.clone(),
-            movie_url,
+            content_descriptor,
             self.window.clone(),
             self.descriptors.clone(),
             movie_view,
             self.font_database.clone(),
             self.preferences.clone(),
+            self.file_picker.clone(),
         ));
     }
 
@@ -422,7 +476,7 @@ impl PlayerController {
         self.player = None;
     }
 
-    pub fn get(&self) -> Option<MutexGuard<Player>> {
+    pub fn get(&self) -> Option<MutexGuard<'_, Player>> {
         match &self.player {
             None => None,
             // We don't want to return None when the lock fails to grab as that's a fatal error, not a lack of player
@@ -436,18 +490,76 @@ impl PlayerController {
     }
 
     pub fn handle_event(&self, event: PlayerEvent) -> bool {
-        if let Some(mut player) = self.get() {
-            if player.is_playing() {
-                return player.handle_event(event);
-            }
+        if let Some(mut player) = self.get()
+            && player.is_playing()
+        {
+            return player.handle_event(event);
         }
 
         false
     }
 
-    pub fn poll(&self) {
-        if let Some(player) = &self.player {
-            player.executor.poll_all()
+    pub fn poll(&self, task: PlayerRunnable) {
+        // Only run the task if it matches our current player;
+        // otherwise it is stale, and should be cancelled (which
+        // happens implicitly on drop).
+        if let Some(player) = &self.player
+            && *task.0.metadata() == player.id
+        {
+            task.0.run();
         }
+    }
+}
+
+/// A unique identifier for a given `Player` instance.
+/// Used to track which player any currently executing future is bound to.
+#[derive(Copy, Clone, Eq, PartialEq)]
+struct PlayerId(i64);
+
+impl PlayerId {
+    fn new() -> Self {
+        use std::sync::atomic::{AtomicI64, Ordering};
+
+        static NEXT: AtomicI64 = AtomicI64::new(0);
+        let id = NEXT.fetch_add(1, Ordering::Relaxed);
+        assert!(id >= 0, "PlayerId overflowed!");
+        Self(id)
+    }
+}
+
+/// A `Player`-bound future that is currently running.
+pub struct PlayerRunnable(async_task::Runnable<PlayerId>);
+
+/// A bare-bones executor that schedules tasks on the winit event loop.
+struct WinitExecutor {
+    event_loop: EventLoopProxy<RuffleEvent>,
+    player_id: PlayerId,
+}
+
+impl<E: std::error::Error + 'static> FutureSpawner<E> for WinitExecutor {
+    fn spawn(&self, future: OwnedFuture<(), E>) {
+        // Discard any errors.
+        let future = async {
+            if let Err(e) = future.await {
+                tracing::error!("Async error: {}", e);
+            }
+        };
+
+        let event_loop = self.event_loop.clone();
+        let scheduler = move |task| {
+            let event = RuffleEvent::TaskPoll(PlayerRunnable(task));
+            if event_loop.send_event(event).is_err() {
+                tracing::error!("Couldn't schedule task - event loop is closed");
+            }
+        };
+
+        let (runnable, task) = async_task::Builder::new()
+            .metadata(self.player_id)
+            .spawn_local(|_| future, scheduler);
+
+        // The future should run in the background.
+        task.detach();
+        // Immediately schedule the future to be polled for the first time.
+        runnable.schedule();
     }
 }

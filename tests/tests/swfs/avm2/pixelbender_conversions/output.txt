@@ -1,0 +1,270 @@
+bool->float 0
+Result: ffff0000
+=================
+int->bool 0
+Result: ffff0000
+=================
+int->float 0
+Result: ffff0000
+=================
+float->bool 0
+Result: ffff0000
+=================
+float->int 0
+Result: ffff0000
+=================
+bool->float 0.1
+Result: ffff0000
+=================
+int->bool 0.1
+Result: ffff0000
+=================
+int->float 0.1
+Result: ffff0000
+=================
+float->bool 0.1
+Result: ffffff00
+=================
+float->int 0.1
+Result: ffff0000
+=================
+bool->float 0.5
+Result: ffff0000
+=================
+int->bool 0.5
+Result: ffff0000
+=================
+int->float 0.5
+Result: ffff0000
+=================
+float->bool 0.5
+Result: ffffff00
+=================
+float->int 0.5
+Result: ffff0000
+=================
+bool->float 0.9
+Result: ffff0000
+=================
+int->bool 0.9
+Result: ffff0000
+=================
+int->float 0.9
+Result: ffff0000
+=================
+float->bool 0.9
+Result: ffffff00
+=================
+float->int 0.9
+Result: ffff0200
+=================
+bool->float 1
+Result: ffff0000
+=================
+int->bool 1
+Result: ffffffff
+=================
+int->float 1
+Result: ffff0200
+=================
+float->bool 1
+Result: ffffff00
+=================
+float->int 1
+Result: ffff0200
+=================
+bool->float 1.1
+Result: ffff0000
+=================
+int->bool 1.1
+Result: ffffffff
+=================
+int->float 1.1
+Result: ffff0200
+=================
+float->bool 1.1
+Result: ffffff00
+=================
+float->int 1.1
+Result: ffff0200
+=================
+bool->float 1.5
+Result: ffff0000
+=================
+int->bool 1.5
+Result: ffffffff
+=================
+int->float 1.5
+Result: ffff0200
+=================
+float->bool 1.5
+Result: ffffff00
+=================
+float->int 1.5
+Result: ffff0400
+=================
+bool->float 1.9
+Result: ffff0000
+=================
+int->bool 1.9
+Result: ffffffff
+=================
+int->float 1.9
+Result: ffff0200
+=================
+float->bool 1.9
+Result: ffffff00
+=================
+float->int 1.9
+Result: ffff0400
+=================
+bool->float 2
+Result: ffff0000
+=================
+int->bool 2
+Result: ffffff00
+=================
+int->float 2
+Result: ffff0400
+=================
+float->bool 2
+Result: ffffff00
+=================
+float->int 2
+Result: ffff0400
+=================
+bool->float 2.5
+Result: ffff0000
+=================
+int->bool 2.5
+Result: ffffff00
+=================
+int->float 2.5
+Result: ffff0400
+=================
+float->bool 2.5
+Result: ffffff00
+=================
+float->int 2.5
+Result: ffff0400
+=================
+bool->float -0.1
+Result: ffff0000
+=================
+int->bool -0.1
+Result: ffff0000
+=================
+int->float -0.1
+Result: ffff0000
+=================
+float->bool -0.1
+Result: ffffff00
+=================
+float->int -0.1
+Result: ffff0000
+=================
+bool->float -0.5
+Result: ffff0000
+=================
+int->bool -0.5
+Result: ffff0000
+=================
+int->float -0.5
+Result: ffff0000
+=================
+float->bool -0.5
+Result: ffffff00
+=================
+float->int -0.5
+Result: ffff0000
+=================
+bool->float -0.9
+Result: ffff0000
+=================
+int->bool -0.9
+Result: ffff0000
+=================
+int->float -0.9
+Result: ffff0000
+=================
+float->bool -0.9
+Result: ffffff00
+=================
+float->int -0.9
+Result: ffff0000
+=================
+bool->float -1
+Result: ffff0000
+=================
+int->bool -1
+Result: ffffff00
+=================
+int->float -1
+Result: ffff0000
+=================
+float->bool -1
+Result: ffffff00
+=================
+float->int -1
+Result: ffff0000
+=================
+bool->float -1.1
+Result: ffff0000
+=================
+int->bool -1.1
+Result: ffffff00
+=================
+int->float -1.1
+Result: ffff0000
+=================
+float->bool -1.1
+Result: ffffff00
+=================
+float->int -1.1
+Result: ffff0000
+=================
+bool->float -1.5
+Result: ffff0000
+=================
+int->bool -1.5
+Result: ffffff00
+=================
+int->float -1.5
+Result: ffff0000
+=================
+float->bool -1.5
+Result: ffffff00
+=================
+float->int -1.5
+Result: ffff0000
+=================
+bool->float -2
+Result: ffff0000
+=================
+int->bool -2
+Result: ffffff00
+=================
+int->float -2
+Result: ffff0000
+=================
+float->bool -2
+Result: ffffff00
+=================
+float->int -2
+Result: ffff0000
+=================
+bool->float -2.5
+Result: ffff0000
+=================
+int->bool -2.5
+Result: ffffff00
+=================
+int->float -2.5
+Result: ffff0000
+=================
+float->bool -2.5
+Result: ffffff00
+=================
+float->int -2.5
+Result: ffff0000
+=================

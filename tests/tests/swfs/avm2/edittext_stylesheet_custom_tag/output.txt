@@ -1,0 +1,76 @@
+======================================
+  Setting HTML: <red>r</red>
+  HTML get:     <red>r</red>
+  Text get:     r\r
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">r</FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <blue>b</blue>
+  HTML get:     <blue>b</blue>
+  Text get:     b\r
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">b</FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <blue>b<red>r</red></blue>
+  HTML get:     <blue>b<red>r</red></blue>
+  Text get:     br\r
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">br</FONT></P>
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <red>r<blue>b</blue></red>
+  HTML get:     <red>r<blue>b</blue></red>
+  Text get:     rb\r
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">rb</FONT></P>
+  Text runs (1):
+    from 0 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <red>r</red>
+  HTML get:     <red>r</red>
+  Text get:     r\r
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=true, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0"><B>r</B></FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=true, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <blue>b</blue>
+  HTML get:     <blue>b</blue>
+  Text get:     b\r
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">b</FONT></P>
+  Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <blue>b<red>r</red></blue>
+  HTML get:     <blue>b<red>r</red></blue>
+  Text get:     br\r
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=true, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#000000" LETTERSPACING="0" KERNING="0">b<FONT COLOR="#FF0000"><B>r</B></FONT></FONT></P>
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    from 1 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=true, italic=false, bullet=false, underline=false
+======================================
+  Setting HTML: <red>r<blue>b</blue></red>
+  HTML get:     <red>r<blue>b</blue></red>
+  Text get:     rb\r
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=true, italic=false, bullet=false, underline=false
+    from 1 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=true, italic=false, bullet=false, underline=false
+  Style reset:  <P ALIGN="LEFT"><FONT FACE="FontName" SIZE="10" COLOR="#FF0000" LETTERSPACING="0" KERNING="0"><B>r</B><FONT COLOR="#000000"><B>b</B></FONT></FONT></P>
+  Text runs (2):
+    from 0 to 1: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=16711680, bold=true, italic=false, bullet=false, underline=false
+    from 1 to 3: size=10, blockIndent=0, font=FontName, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=true, italic=false, bullet=false, underline=false

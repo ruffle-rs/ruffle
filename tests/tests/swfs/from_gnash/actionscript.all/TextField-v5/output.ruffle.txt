@@ -1,0 +1,12 @@
+SWF5
+
+[TextField.as debug-22405-0e18b8076]
+PASSED: typeof(TextField) == 'function' [./TextField.as:51]
+FAILED: expected: undefined obtained: [object Object] [./TextField.as:52]
+PASSED: typeof(tf) == "movieclip" [./TextField.as:54]
+PASSED: tf.__proto__.toString() == "[object Object]" [./TextField.as:55]
+PASSED: !tf instanceOf TextField [./TextField.as:56]
+PASSED: tf instanceOf TextField [./TextField.as:59]
+#passed: 5
+#failed: 1
+#total tests run: 6

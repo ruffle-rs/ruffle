@@ -5,14 +5,26 @@ panic-title = Något gick fel :(
 more-info = Mer info
 run-anyway = Kör ändå
 continue = Fortsätt
-report-bug = Rapportera Bugg
+report-bug = Rapportera bugg
 update-ruffle = Uppdatera Ruffle
 ruffle-demo = Webbdemo
 ruffle-desktop = Skrivbordsprogram
 ruffle-wiki = Se Ruffle-wiki
-view-error-details = Visa Felinformation
+enable-hardware-acceleration = Det ser ut som att hårdvaruacceleration är avstängt. På grund av det kan Ruffle fungera långsamt. Du kan ta reda på hur man sätter på hårdvaruacceleration genom länken nedan:
+enable-hardware-acceleration-link = FAQ - Chrome hårdvaruacceleration
+view-error-details = Visa felinformation
 open-in-new-tab = Öppna i en ny flik
 click-to-unmute = Klicka för ljud
+clipboard-message-title = Kopierar och klistrar in i Ruffle
+clipboard-message-description =
+    { $variant ->
+       *[unsupported] Din webbläsare har inte fullständig åtkomst till urklipp,
+        [access-denied] Urklippsåtkomst har nekats,
+    } men du kan använda dom här kortkommandon istället:
+clipboard-message-copy = { " " } för att kopiera
+clipboard-message-cut = { " " } för att klippa
+clipboard-message-paste = { " " } för att klistra in
+error-canvas-reload = Kan inte ladda om med canvas render:aren när den redan används.
 error-file-protocol =
     Det verkar som att du kör Ruffle på "fil:"-protokollet.
     Detta fungerar inte eftersom webbläsare blockerar många funktioner från att fungera av säkerhetsskäl.
@@ -57,6 +69,10 @@ error-wasm-disabled-on-edge =
     För att åtgärda detta försök att öppna webbläsarens inställningar, klicka på "Sekretess, sökning och tjänster", bläddra ner och stäng av "Förbättra säkerheten på webben".
     Detta tillåter din webbläsare att ladda ".wasm"-filerna.
     Om problemet kvarstår kan du behöva använda en annan webbläsare.
+error-wasm-unsupported-browser =
+    Webbläsaren du använder stöder inte de WebAssembly tilläggen som Ruffle behöver för att köra.
+    Vänligen byt till en webbläsare som stöds.
+    Du kan hitta en lista över webbläsare som stöds på Wikin.
 error-javascript-conflict =
     Ruffle har stött på ett stort fel under initialiseringen.
     Det verkar som att den här sidan använder JavaScript-kod som stör Ruffle.

@@ -1,0 +1,12 @@
+Math.min(Number.NaN, 2, 1) PASSED!
+Math.min(1, Number.NaN, 1) PASSED!
+1.0/Math.min(-0.0, 0.0) PASSED!
+1.0/Math.min(-0.0, -0.0) PASSED!
+1.0/Math.min(0.0, 0.0) PASSED!
+Math.min(2, 2, 1) PASSED!
+Math.min(1, 2, 2) PASSED!
+Math.min(1, 2, 1) PASSED!
+1.0/Math.min(0.0, 2, 0.0) PASSED!
+1.0/Math.min(-0.0, 2, -0.0) PASSED!
+1.0/Math.min(-0.0, 2, 0.0) PASSED!
+1.0/Math.min(3, 2, 1, 0, 0.0, -0.0) PASSED!

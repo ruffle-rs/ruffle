@@ -14,4 +14,4 @@ image_comparisons."output.06a".trigger = 11
 image_comparisons."output.06b".trigger = 12
 
 [player_options]
-with_renderer = { optional = false, sample_count = 1 }
+with_renderer = { optional = false, quality = "low" }

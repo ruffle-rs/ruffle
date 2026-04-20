@@ -1,0 +1,35 @@
+Main constructor
+Container constructor
+Child constructor
+GrandChild constructor
+GrandChild addFrameScript
+Child addFrameScript
+LeafChild constructor
+LeafChild addFrameScript
+Container addFrameScript
+Main addFrameScript
+Main frame1
+Container frame1
+Child frame1
+GrandChild frame1
+LeafChild frame1
+entered frame 2
+calling goto on grandchild
+Main frame2
+Container frame2
+Child frame2
+GrandChild frame1
+LeafChild frame2
+calling goto on child
+Child frame1
+adding frame-script to grandchild
+secret reached!
+entered frame 1
+Container frame1
+Child frame2
+LeafChild frame1
+entered frame 2
+Main frame1
+Container frame2
+LeafChild frame2
+Main frame2

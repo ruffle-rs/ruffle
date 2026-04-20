@@ -1,8 +1,8 @@
 use crate::buffer_pool::TexturePool;
 use crate::descriptors::Descriptors;
+use crate::filters::FilterSource;
 use crate::filters::blur::BlurFilter;
 use crate::filters::glow::GlowFilter;
-use crate::filters::FilterSource;
 use crate::surface::target::CommandTarget;
 use swf::DropShadowFilter as DropShadowFilterArgs;
 use wgpu::util::StagingBelt;
@@ -13,7 +13,7 @@ use wgpu::util::StagingBelt;
 pub struct DropShadowFilter;
 
 impl DropShadowFilter {
-    #[allow(clippy::too_many_arguments)]
+    #[expect(clippy::too_many_arguments)]
     pub fn apply(
         descriptors: &Descriptors,
         texture_pool: &mut TexturePool,

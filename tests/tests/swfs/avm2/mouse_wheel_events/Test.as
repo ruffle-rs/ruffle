@@ -1,13 +1,13 @@
 package {
-import flash.display.InteractiveObject;
-import flash.display.MovieClip;
-import flash.display.Shape;
-import flash.display.Sprite;
+import flash.display.*;
 import flash.events.MouseEvent;
-import flash.text.TextField;
+import flash.text.*;
 
 [SWF(width="300", height="200")]
 public class Test extends MovieClip {
+    [Embed(source="NotoSans.ttf", fontName="Noto Sans", embedAsCFF="false", unicodeRange="U+0020,U+0078,U+0030-U+0039")]
+    private var notoSans:Class;
+
     private var currentColor:int = 0;
     private var colors:Array = [
         0xFF0000,
@@ -76,8 +76,10 @@ public class Test extends MovieClip {
 
     private function newText(): TextField {
         var tf:TextField = new TextField();
+        tf.embedFonts = true;
         tf.multiline = true;
-        tf.text = "line 1\nline 2\nline 3\nline 4\nline 5\nline 6\nline 7\nline 8\nline 9\nline 10\nline 11\nline 12\nline 13\n"
+        tf.defaultTextFormat = new TextFormat("Noto Sans");
+        tf.text = "xxxx 1\nxxxx 2\nxxxx 3\nxxxx 4\nxxxx 5\nxxxx 6\nxxxx 7\nxxxx 8\nxxxx 9\nxxxx 10\nxxxx 11\nxxxx 12\nxxxx 13\n"
         tf.mouseWheelEnabled = true;
         addChild(tf);
         return tf;

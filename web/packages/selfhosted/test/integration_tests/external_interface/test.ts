@@ -1,13 +1,15 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
 import {
-    getTraceOutput,
+    assertNoMoreTraceOutput,
+    expectTraceOutput,
     injectRuffleAndWait,
     openTest,
     playAndMonitor,
 } from "../../utils.js";
 import { expect, use } from "chai";
 import chaiHtml from "chai-html";
+import { Player } from "ruffle-core";
 
 use(chaiHtml);
 
@@ -22,29 +24,39 @@ interface RuffleTest {
 }
 
 declare global {
-    // eslint-disable-next-line @typescript-eslint/no-namespace
-    namespace WebdriverIO {
-        interface Element {
-            // ExternalInterface makes whatever functions exist "magically" - so let's just declare here for type's sake
+    interface HTMLElement {
+        // ExternalInterface makes whatever functions exist "magically" - so let's just declare here for type's sake
 
-            // Logs all arguments to trace
-            log: (...args: unknown[]) => void;
+        // Logs all arguments to trace
+        log: (...args: unknown[]) => void;
 
-            // Calls `ExternalInterface.call(name, ...args)` after a delay (to avoid reentrancy)
-            callMethodWithDelay: (name: string, ...args: unknown[]) => void;
+        // Calls `ExternalInterface.call(name, ...args)` after a delay (to avoid reentrancy)
+        callMethodWithDelay: (name: string, ...args: unknown[]) => void;
 
-            // Calls `ExternalInterface.call(name, ...args)` immediately (causing reentrancy)
-            callMethodImmediately: (name: string, ...args: unknown[]) => void;
+        // Calls `ExternalInterface.call(name, ...args)` immediately (causing reentrancy)
+        callMethodImmediately: (name: string, ...args: unknown[]) => void;
 
-            // Returns `value`
-            returnAValue: <T>(value: T) => T;
+        // Returns `value`
+        returnAValue: <T>(value: T) => T;
 
-            // Should return an exception...
-            throwAnException: () => void;
+        // Should return an exception...
+        throwAnException: () => void;
 
-            // Calls `ExternalInterface.marshallExceptions = value`
-            setMarshallExceptions: (value: boolean) => void;
-        }
+        // Calls `ExternalInterface.marshallExceptions = value`
+        setMarshallExceptions: (value: boolean) => void;
+
+        // Calls `ExternalInterface.addCallback(name, function() { return returnValue; })`
+        addAnotherCallback: (name: string, returnValue: unknown) => void;
+
+        // Going to be redefined as part of a test
+        redefinedMethod: () => string;
+
+        // isPlaying method defined by EI
+        isPlaying: () => string;
+
+        ruffle<V extends keyof Player.APIVersions = 1>(
+            version?: V,
+        ): Player.APIVersions[V];
     }
 
     interface Window {
@@ -64,13 +76,10 @@ describe("ExternalInterface", () => {
         await openTest(browser, "integration_tests/external_interface");
         await injectRuffleAndWait(browser);
         const player = await browser.$("<ruffle-object>");
-        await playAndMonitor(
-            browser,
-            player,
-            `ExternalInterface.available: true
-ExternalInterface.objectID: "flash_name"
-`,
-        );
+        await playAndMonitor(browser, player, [
+            "ExternalInterface.available: true",
+            'ExternalInterface.objectID: "flash_name"',
+        ]);
 
         // Set up callbacks
         await browser.execute(() => {
@@ -91,11 +100,9 @@ ExternalInterface.objectID: "flash_name"
                     return called;
                 },
                 log: function (...args: any[]) {
-                    (
-                        document.getElementById(
-                            "flash_id",
-                        ) as unknown as WebdriverIO.Element
-                    ).log(...args);
+                    (document.getElementById("flash_id") as HTMLElement).log(
+                        ...args,
+                    );
                 },
             };
         });
@@ -112,10 +119,9 @@ ExternalInterface.objectID: "flash_name"
             player,
         );
 
-        const actualOutput = await getTraceOutput(browser, player);
-        expect(actualOutput).to.eql(
-            `log called with 2 arguments
-  [
+        await expectTraceOutput(browser, player, [
+            "log called with 2 arguments",
+            `  [
     "Hello world!"
     Object {
         key = "value"
@@ -124,12 +130,11 @@ ExternalInterface.objectID: "flash_name"
           "b"
         ]
       }
-  ]
-`,
-        );
+  ]`,
+        ]);
     });
 
-    it("returns a value", async () => {
+    it("returns a value with legacy API", async () => {
         const player = await browser.$("<ruffle-object>");
         const returned = await browser.execute(
             (player) => player.returnAValue(123.4),
@@ -138,14 +143,30 @@ ExternalInterface.objectID: "flash_name"
 
         expect(returned).to.eql(123.4);
 
-        const actualOutput = await getTraceOutput(browser, player);
-        expect(actualOutput).to.eql(
-            `returnAValue called with 123.4
-  [
+        await expectTraceOutput(browser, player, [
+            "returnAValue called with 123.4",
+            `  [
     123.4
-  ]
-`,
+  ]`,
+        ]);
+    });
+
+    it("returns a value with V1 API", async () => {
+        const player = await browser.$("<ruffle-object>");
+        const returned = await browser.execute(
+            (player) =>
+                player.ruffle().callExternalInterface("returnAValue", 123.4),
+            player,
         );
+
+        expect(returned).to.eql(123.4);
+
+        await expectTraceOutput(browser, player, [
+            "returnAValue called with 123.4",
+            `  [
+    123.4
+  ]`,
+        ]);
     });
 
     it("calls a method with delay", async () => {
@@ -158,16 +179,14 @@ ExternalInterface.objectID: "flash_name"
         const actualValue = await getCalledValue(browser);
         expect(actualValue).to.eql([true]);
 
-        const actualOutput = await getTraceOutput(browser, player);
-        expect(actualOutput).to.eql(
-            `callMethodWithDelay called with 2 arguments
-  [
+        await expectTraceOutput(browser, player, [
+            "callMethodWithDelay called with 2 arguments",
+            `  [
     "window.RuffleTest.set"
     true
-  ]
-  call(window.RuffleTest.set, ...) = "success!"
-`,
-        );
+  ]`,
+            '  call(window.RuffleTest.set, ...) = "success!"',
+        ]);
     });
 
     // [NA] Broken on Ruffle at time of writing
@@ -185,10 +204,9 @@ ExternalInterface.objectID: "flash_name"
             nested: { object: { complex: true } },
         });
 
-        const actualOutput = await getTraceOutput(browser, player);
-        expect(actualOutput).to.eql(
-            `callMethodImmediately called with 2 arguments
-  [
+        await expectTraceOutput(browser, player, [
+            "callMethodImmediately called with 2 arguments",
+            `  [
     "window.RuffleTest.set"
     Object {
         nested = Object {
@@ -197,10 +215,9 @@ ExternalInterface.objectID: "flash_name"
           }
         }
       }
-  ]
-  call(window.RuffleTest.set, ...) = "success!"
-`,
-        );
+  ]`,
+            '  call(window.RuffleTest.set, ...) = "success!"',
+        ]);
     });
 
     it("calls a reentrant Flash method", async () => {
@@ -213,20 +230,18 @@ ExternalInterface.objectID: "flash_name"
         // [NA] Because of the delay, if we fetch immediately we *may* just get part of the log.
         await browser.pause(200);
 
-        const actualOutput = await getTraceOutput(browser, player);
-        expect(actualOutput).to.eql(
-            `callMethodWithDelay called with 2 arguments
-  [
+        await expectTraceOutput(browser, player, [
+            "callMethodWithDelay called with 2 arguments",
+            `  [
     "window.RuffleTest.log"
     "Reentrant!"
-  ]
-log called with 1 argument
-  [
+  ]`,
+            "log called with 1 argument",
+            `  [
     "Reentrant!"
-  ]
-  call(window.RuffleTest.log, ...) = undefined
-`,
-        );
+  ]`,
+            "  call(window.RuffleTest.log, ...) = undefined",
+        ]);
     });
 
     it("supports a JS function as name", async () => {
@@ -244,16 +259,14 @@ log called with 1 argument
         const actualValue = await getCalledValue(browser);
         expect(actualValue).to.eql(["test"]);
 
-        const actualOutput = await getTraceOutput(browser, player);
-        expect(actualOutput).to.eql(
-            `callMethodWithDelay called with 2 arguments
-  [
+        await expectTraceOutput(browser, player, [
+            "callMethodWithDelay called with 2 arguments",
+            `  [
     "function(name){window.RuffleTest.set(name)}"
     "test"
-  ]
-  call(function(name){window.RuffleTest.set(name)}, ...) = undefined
-`,
-        );
+  ]`,
+            "  call(function(name){window.RuffleTest.set(name)}, ...) = undefined",
+        ]);
     });
 
     it("supports calling a method that doesn't exist", async () => {
@@ -265,15 +278,13 @@ log called with 1 argument
         // [NA] Because of the delay, if we fetch immediately we *may* just get part of the log.
         await browser.pause(200);
 
-        const actualOutput = await getTraceOutput(browser, player);
-        expect(actualOutput).to.eql(
-            `callMethodWithDelay called with 1 argument
-  [
+        await expectTraceOutput(browser, player, [
+            "callMethodWithDelay called with 1 argument",
+            `  [
     "does.not.exist"
-  ]
-  call(does.not.exist, ...) = undefined
-`,
-        );
+  ]`,
+            "  call(does.not.exist, ...) = undefined",
+        ]);
     });
 
     it("doesn't enforce Strict Mode", async () => {
@@ -287,14 +298,71 @@ log called with 1 argument
         // [NA] Because of the delay, if we fetch immediately we *may* just get part of the log.
         await browser.pause(200);
 
-        const actualOutput = await getTraceOutput(browser, player);
-        expect(actualOutput).to.eql(
-            `callMethodWithDelay called with 1 argument
-  [
+        await expectTraceOutput(browser, player, [
+            "callMethodWithDelay called with 1 argument",
+            `  [
     "function(){return aPropertyThatDoesntExist = 'success!'}"
-  ]
-  call(function(){return aPropertyThatDoesntExist = 'success!'}, ...) = "success!"
-`,
-        );
+  ]`,
+            "  call(function(){return aPropertyThatDoesntExist = 'success!'}, ...) = \"success!\"",
+        ]);
+    });
+
+    it("allows overriding a Ruffle method", async () => {
+        const player = await browser.$("<ruffle-object>");
+        await browser.execute((player) => {
+            player.addAnotherCallback("isPlaying", "isPlaying from EI");
+        }, player);
+
+        await expectTraceOutput(browser, player, [
+            'addAnotherCallback called for "isPlaying" to return "isPlaying from EI"',
+        ]);
+
+        const isPlayingResult = await browser.execute((player) => {
+            return player.isPlaying();
+        }, player);
+        expect(isPlayingResult).to.eql("isPlaying from EI");
+
+        await expectTraceOutput(browser, player, [`isPlaying called`]);
+    });
+
+    it("allows redefining a method", async () => {
+        const player = await browser.$("<ruffle-object>");
+
+        // First definition
+        await browser.execute((player) => {
+            player.addAnotherCallback("redefinedMethod", "first definition");
+        }, player);
+
+        await expectTraceOutput(browser, player, [
+            'addAnotherCallback called for "redefinedMethod" to return "first definition"',
+        ]);
+
+        let methodResult = await browser.execute((player) => {
+            return player.redefinedMethod();
+        }, player);
+        expect(methodResult).to.eql("first definition");
+
+        await expectTraceOutput(browser, player, [`redefinedMethod called`]);
+
+        // Second definition
+        await browser.execute((player) => {
+            player.addAnotherCallback("redefinedMethod", "second definition");
+        }, player);
+
+        await expectTraceOutput(browser, player, [
+            'addAnotherCallback called for "redefinedMethod" to return "second definition"',
+        ]);
+
+        methodResult = await browser.execute((player) => {
+            return player.redefinedMethod();
+        }, player);
+        expect(methodResult).to.eql("second definition");
+
+        await expectTraceOutput(browser, player, ["redefinedMethod called"]);
+    });
+
+    it("no more traces", async function () {
+        const player = await browser.$("<ruffle-object>");
+        assertNoMoreTraceOutput(browser, player);
     });
 });

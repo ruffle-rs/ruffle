@@ -1,0 +1,4 @@
+PASSED: typeof(_root.x)  ==  'undefined' [action_execution_order_test9.c:98]
+#passed: 1
+#failed: 0
+#total tests run: 1

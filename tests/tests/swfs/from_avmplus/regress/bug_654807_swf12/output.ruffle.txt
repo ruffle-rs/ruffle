@@ -1,0 +1,170 @@
+dynamic get_length PASSED!
+dynamic push PASSED!
+dynamic get_length PASSED!
+dynamic unshift PASSED!
+dynamic get_length PASSED!
+dynamic concat PASSED!
+dynamic get_length PASSED!
+dynamic reverse PASSED!
+dynamic get_length PASSED!
+dynamic shift PASSED!
+dynamic get_length PASSED!
+dynamic splice PASSED!
+dynamic get_length PASSED!
+dynamic pop PASSED!
+dynamic get_length PASSED!
+dynamic set_length PASSED!
+dynamic getprop PASSED!
+dynamic setprop PASSED!
+dynamic hasprop PASSED!
+dynamic delprop PASSED!
+dynamic splice PASSED!
+dynamic join PASSED!
+dynamic toString PASSED!
+dynamic toLocaleString PASSED!
+dynamic sort PASSED!
+dynamic indexOf PASSED!
+dynamic lastIndexOf PASSED!
+dynamic every PASSED!
+dynamic filter PASSED!
+dynamic forEach PASSED!
+dynamic some PASSED!
+dynamic map PASSED!
+dynamic for...in PASSED!
+dynamic for each...in PASSED!
+semisealed get_length PASSED!
+semisealed push PASSED!
+semisealed get_length PASSED!
+semisealed unshift PASSED!
+semisealed get_length PASSED!
+semisealed concat PASSED!
+semisealed get_length PASSED!
+semisealed reverse PASSED!
+semisealed get_length PASSED!
+semisealed shift PASSED!
+semisealed get_length PASSED!
+semisealed splice PASSED!
+semisealed get_length PASSED!
+semisealed pop PASSED!
+semisealed get_length PASSED!
+semisealed set_length FAILED! expected: 5:9,1,0,6,5 got: 3:9,1,0
+semisealed getprop FAILED! expected: ReferenceError: Error #1069 got: 9
+semisealed setprop FAILED! expected: ReferenceError: Error #1056 got: undefined
+semisealed hasprop FAILED! expected: false got: true
+semisealed delprop PASSED!
+semisealed splice FAILED! expected: ReferenceError: Error #1069 got: 9,1,0
+semisealed join FAILED! expected: ReferenceError: Error #1069 got: 9~1~0
+semisealed toString FAILED! expected: ReferenceError: Error #1069 got: 9,1,0
+semisealed toLocaleString FAILED! expected: ReferenceError: Error #1069 got: 9,1,0
+semisealed sort FAILED! expected: ReferenceError: Error #1069 got: 0,1,9
+semisealed indexOf FAILED! expected: ReferenceError: Error #1069 got: 2
+semisealed lastIndexOf FAILED! expected: ReferenceError: Error #1069 got: 2
+semisealed every FAILED! expected: ReferenceError: Error #1069 got: true
+semisealed filter FAILED! expected: ReferenceError: Error #1069 got: 0,9
+semisealed forEach FAILED! expected: ReferenceError: Error #1069 got: undefined
+semisealed some FAILED! expected: ReferenceError: Error #1069 got: true
+semisealed map FAILED! expected: ReferenceError: Error #1069 got: 1,2,10
+semisealed for...in FAILED! expected: 0,1,2,3,4, got: 0,1,2,
+semisealed for each...in FAILED! expected: 9,1,0,6,5, got: 0,1,9,
+dynamic get_length PASSED!
+dynamic push PASSED!
+dynamic get_length PASSED!
+dynamic unshift PASSED!
+dynamic get_length PASSED!
+dynamic concat PASSED!
+dynamic get_length PASSED!
+dynamic reverse PASSED!
+dynamic get_length PASSED!
+dynamic shift PASSED!
+dynamic get_length PASSED!
+dynamic splice PASSED!
+dynamic get_length PASSED!
+dynamic pop PASSED!
+dynamic get_length PASSED!
+dynamic set_length PASSED!
+dynamic getprop PASSED!
+dynamic setprop PASSED!
+dynamic hasprop PASSED!
+dynamic delprop PASSED!
+dynamic splice PASSED!
+dynamic join PASSED!
+dynamic toString PASSED!
+dynamic toLocaleString PASSED!
+dynamic sort PASSED!
+dynamic indexOf PASSED!
+dynamic lastIndexOf PASSED!
+dynamic every PASSED!
+dynamic filter PASSED!
+dynamic forEach PASSED!
+dynamic some PASSED!
+dynamic map PASSED!
+dynamic for...in PASSED!
+dynamic for each...in PASSED!
+dynamic get_length PASSED!
+dynamic push PASSED!
+dynamic get_length PASSED!
+dynamic unshift PASSED!
+dynamic get_length PASSED!
+dynamic concat PASSED!
+dynamic get_length PASSED!
+dynamic reverse PASSED!
+dynamic get_length PASSED!
+dynamic shift PASSED!
+dynamic get_length PASSED!
+dynamic splice PASSED!
+dynamic get_length PASSED!
+dynamic pop PASSED!
+dynamic get_length PASSED!
+dynamic set_length PASSED!
+dynamic getprop PASSED!
+dynamic setprop PASSED!
+dynamic hasprop PASSED!
+dynamic delprop PASSED!
+dynamic splice PASSED!
+dynamic join PASSED!
+dynamic toString PASSED!
+dynamic toLocaleString PASSED!
+dynamic sort PASSED!
+dynamic indexOf PASSED!
+dynamic lastIndexOf PASSED!
+dynamic every PASSED!
+dynamic filter PASSED!
+dynamic forEach PASSED!
+dynamic some PASSED!
+dynamic map PASSED!
+dynamic for...in PASSED!
+dynamic for each...in PASSED!
+semisealed get_length PASSED!
+semisealed push PASSED!
+semisealed get_length PASSED!
+semisealed unshift PASSED!
+semisealed get_length PASSED!
+semisealed concat PASSED!
+semisealed get_length PASSED!
+semisealed reverse PASSED!
+semisealed get_length PASSED!
+semisealed shift PASSED!
+semisealed get_length PASSED!
+semisealed splice PASSED!
+semisealed get_length PASSED!
+semisealed pop PASSED!
+semisealed get_length PASSED!
+semisealed set_length FAILED! expected: 5:9,1,0,6,5 got: 3:9,1,0
+semisealed getprop FAILED! expected: ReferenceError: Error #1069 got: 9
+semisealed setprop FAILED! expected: ReferenceError: Error #1056 got: undefined
+semisealed hasprop FAILED! expected: false got: true
+semisealed delprop PASSED!
+semisealed splice FAILED! expected: ReferenceError: Error #1069 got: 9,1,0
+semisealed join FAILED! expected: ReferenceError: Error #1069 got: 9~1~0
+semisealed toString FAILED! expected: ReferenceError: Error #1069 got: 9,1,0
+semisealed toLocaleString FAILED! expected: ReferenceError: Error #1069 got: 9,1,0
+semisealed sort FAILED! expected: ReferenceError: Error #1069 got: 0,1,9
+semisealed indexOf FAILED! expected: ReferenceError: Error #1069 got: 2
+semisealed lastIndexOf FAILED! expected: ReferenceError: Error #1069 got: 2
+semisealed every FAILED! expected: ReferenceError: Error #1069 got: true
+semisealed filter FAILED! expected: ReferenceError: Error #1069 got: 0,9
+semisealed forEach FAILED! expected: ReferenceError: Error #1069 got: undefined
+semisealed some FAILED! expected: ReferenceError: Error #1069 got: true
+semisealed map FAILED! expected: ReferenceError: Error #1069 got: 1,2,10
+semisealed for...in FAILED! expected: 0,1,2,3,4, got: 0,1,2,
+semisealed for each...in FAILED! expected: 9,1,0,6,5, got: 0,1,9,

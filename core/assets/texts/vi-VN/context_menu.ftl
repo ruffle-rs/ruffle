@@ -1,0 +1,12 @@
+context-menu-play = Chạy
+context-menu-rewind = Tua ngược
+context-menu-forward = Tua tiếp
+context-menu-back = Quay lại
+context-menu-quality-low = Chất lượng: Thấp
+context-menu-quality-medium = Chất lượng: Trung bình
+context-menu-quality-high = Chất lượng: Cao
+context-menu-cut = Cắt
+context-menu-copy = Sao chép
+context-menu-paste = Dán
+context-menu-delete = Xoá
+context-menu-select-all = Chọn tất cả

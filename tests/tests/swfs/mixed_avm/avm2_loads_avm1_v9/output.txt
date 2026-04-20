@@ -1,0 +1,8 @@
+Content before load: null
+Content after load: [object AVM1Movie]
+Num children of main MC: 1
+Second child of main MC after adding: [object AVM1Movie]
+Num children of main MC after adding: 2
+Content after adding: [object AVM1Movie]
+Content X after setting x: 99
+(inner swf) x set, new value: 99

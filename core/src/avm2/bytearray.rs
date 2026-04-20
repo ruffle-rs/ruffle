@@ -1,9 +1,10 @@
-use crate::avm2::error::{eof_error, make_error_2006};
 use crate::avm2::Activation;
 use crate::avm2::Error;
+use crate::avm2::error::{make_error_2006, make_error_2030};
+use crate::context::UpdateContext;
 use crate::string::{FromWStr, WStr};
-use flate2::read::*;
 use flate2::Compression;
+use flate2::read::*;
 use gc_arena::Collect;
 use std::cell::Cell;
 use std::cmp;
@@ -35,14 +36,7 @@ impl ByteArrayError {
     #[inline(never)]
     pub fn to_avm<'gc>(self, activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
         match self {
-            ByteArrayError::EndOfFile => match eof_error(
-                activation,
-                "Error #2030: End of file was encountered.",
-                2030,
-            ) {
-                Ok(e) => Error::AvmError(e),
-                Err(e) => e,
-            },
+            ByteArrayError::EndOfFile => make_error_2030(activation),
             ByteArrayError::IndexOutOfBounds => make_error_2006(activation),
         }
     }
@@ -60,8 +54,7 @@ impl Display for CompressionAlgorithm {
 }
 
 impl FromWStr for CompressionAlgorithm {
-    // FIXME - this should be an `Error<'gc>`
-    type Err = Box<dyn std::error::Error>;
+    type Err = ();
 
     fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
         if s == b"zlib" {
@@ -71,7 +64,7 @@ impl FromWStr for CompressionAlgorithm {
         } else if s == b"lzma" {
             Ok(CompressionAlgorithm::Lzma)
         } else {
-            Err("Unknown compression algorithm".into())
+            Err(())
         }
     }
 }
@@ -83,8 +76,7 @@ pub enum ObjectEncoding {
     Amf3 = 3,
 }
 
-#[derive(Clone, Collect, Debug)]
-#[collect(no_drop)]
+#[derive(Clone, Debug)]
 pub struct ByteArrayStorage {
     /// Underlying ByteArray
     bytes: Vec<u8>,
@@ -101,22 +93,22 @@ pub struct ByteArrayStorage {
 
 impl ByteArrayStorage {
     /// Create a new ByteArrayStorage
-    pub fn new() -> ByteArrayStorage {
+    pub fn new(context: &mut UpdateContext<'_>) -> ByteArrayStorage {
         ByteArrayStorage {
             bytes: Vec::new(),
             position: Cell::new(0),
             endian: Endian::Big,
-            object_encoding: ObjectEncoding::Amf3,
+            object_encoding: context.avm2.default_bytearray_encoding,
         }
     }
 
     /// Create a new ByteArrayStorage using an already existing vector
-    pub fn from_vec(bytes: Vec<u8>) -> ByteArrayStorage {
+    pub fn from_vec(context: &mut UpdateContext<'_>, bytes: Vec<u8>) -> ByteArrayStorage {
         ByteArrayStorage {
             bytes,
             position: Cell::new(0),
             endian: Endian::Big,
-            object_encoding: ObjectEncoding::Amf3,
+            object_encoding: context.avm2.default_bytearray_encoding,
         }
     }
 
@@ -230,11 +222,13 @@ impl ByteArrayStorage {
         let mut buffer = Vec::new();
         let error: Option<Box<dyn std::error::Error>> = match algorithm {
             CompressionAlgorithm::Zlib => {
-                let mut encoder = ZlibEncoder::new(&*self.bytes, Compression::fast());
+                // Note: some content is sensitive to compression type
+                // (as it's visible in the header)
+                let mut encoder = ZlibEncoder::new(&*self.bytes, Compression::best());
                 encoder.read_to_end(&mut buffer).err().map(|e| e.into())
             }
             CompressionAlgorithm::Deflate => {
-                let mut encoder = DeflateEncoder::new(&*self.bytes, Compression::fast());
+                let mut encoder = DeflateEncoder::new(&*self.bytes, Compression::best());
                 encoder.read_to_end(&mut buffer).err().map(|e| e.into())
             }
             #[cfg(feature = "lzma")]
@@ -332,6 +326,13 @@ impl ByteArrayStorage {
         *self.bytes.get_mut(item).unwrap() = value;
     }
 
+    /// Swap all data stored in this bytearray with the passed `Vec<u8>`. This
+    /// method sets the bytearray's `position` to 0.
+    pub fn swap_storage_with(&mut self, new_data: &mut Vec<u8>) {
+        self.position.set(0);
+        std::mem::swap(&mut self.bytes, new_data);
+    }
+
     /// Write a single byte at any offset in the bytearray, panicking if out of bounds.
     pub fn set_nongrowing(&mut self, item: usize, value: u8) {
         self.bytes[item] = value;
@@ -396,9 +397,8 @@ impl ByteArrayStorage {
 
 impl Write for ByteArrayStorage {
     fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        self.write_bytes(buf).map_err(|_| {
-            io::Error::new(io::ErrorKind::Other, "Failed to write to ByteArrayStorage")
-        })?;
+        self.write_bytes(buf)
+            .map_err(|_| io::Error::other("Failed to write to ByteArrayStorage"))?;
 
         Ok(buf.len())
     }
@@ -412,9 +412,7 @@ impl Read for ByteArrayStorage {
     fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
         let bytes = self
             .read_bytes(cmp::min(buf.len(), self.bytes_available()))
-            .map_err(|_| {
-                io::Error::new(io::ErrorKind::Other, "Failed to read from ByteArrayStorage")
-            })?;
+            .map_err(|_| io::Error::other("Failed to read from ByteArrayStorage"))?;
         buf[..bytes.len()].copy_from_slice(bytes);
         Ok(bytes.len())
     }
@@ -490,9 +488,3 @@ macro_rules! impl_read{
 
 impl_write!(write_float f32, write_double f64, write_int i32, write_unsigned_int u32, write_short i16, write_unsigned_short u16);
 impl_read!(read_float read_float_at 4; f32, read_double read_double_at 8; f64, read_int read_int_at 4; i32, read_unsigned_int read_unsigned_int_at 4; u32, read_short read_short_at 2; i16, read_unsigned_short read_unsigned_short_at 2; u16, read_byte read_byte_at 1; i8, read_unsigned_byte read_unsigned_byte_at 1; u8);
-
-impl Default for ByteArrayStorage {
-    fn default() -> Self {
-        Self::new()
-    }
-}

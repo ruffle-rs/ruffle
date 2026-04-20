@@ -34,7 +34,7 @@ pub use color_matrix_filter::ColorMatrixFilter;
 pub use color_transform::ColorTransform;
 pub use convolution_filter::{ConvolutionFilter, ConvolutionFilterFlags};
 pub use drop_shadow_filter::{DropShadowFilter, DropShadowFilterFlags};
-pub use fixed::{Fixed16, Fixed8};
+pub use fixed::{Fixed8, Fixed16};
 pub use glow_filter::{GlowFilter, GlowFilterFlags};
 pub use gradient_filter::{GradientFilter, GradientFilterFlags};
 pub use matrix::Matrix;
@@ -276,7 +276,7 @@ bitflags! {
 
         /// Whether this SWF should be placed in the network sandbox when run locally.
         ///
-        /// SWFs in the network sandbox can only access network resources,  not local resources.
+        /// SWFs in the network sandbox can only access network resources, not local resources.
         /// SWFs in the local sandbox can only access local resources, not network resources.
         const USE_NETWORK_SANDBOX = 1 << 0;
     }
@@ -529,7 +529,7 @@ pub enum Tag<'a> {
     DefineButtonColorTransform(ButtonColorTransform),
     DefineButtonSound(Box<ButtonSounds>),
     DefineEditText(Box<EditText<'a>>),
-    DefineFont(Box<FontV1>),
+    DefineFont(FontV1),
     DefineFont2(Box<Font<'a>>),
     DefineFont4(Font4<'a>),
     DefineFontAlignZones {
@@ -548,8 +548,8 @@ pub enum Tag<'a> {
         id: CharacterId,
         splitter_rect: Rectangle<Twips>,
     },
-    DefineShape(Shape),
-    DefineSound(Box<Sound<'a>>),
+    DefineShape(Box<Shape>),
+    DefineSound(Sound<'a>),
     DefineSprite(Sprite<'a>),
     DefineText(Box<Text>),
     DefineText2(Box<Text>),
@@ -579,8 +579,8 @@ pub enum Tag<'a> {
         tab_index: u16,
     },
     SoundStreamBlock(SoundStreamBlock<'a>),
-    SoundStreamHead(Box<SoundStreamHead>),
-    SoundStreamHead2(Box<SoundStreamHead>),
+    SoundStreamHead(SoundStreamHead),
+    SoundStreamHead2(SoundStreamHead),
     StartSound(StartSound),
     StartSound2 {
         class_name: &'a SwfStr,
@@ -611,7 +611,7 @@ pub struct ExportedAsset<'a> {
     pub name: &'a SwfStr,
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct RemoveObject {
     pub depth: Depth,
     pub character_id: Option<CharacterId>,
@@ -1026,6 +1026,9 @@ pub enum AudioCompression {
     Nellymoser16Khz = 4,
     Nellymoser8Khz = 5,
     Nellymoser = 6,
+    G711ALawPCM = 7,
+    G711MuLawPCM = 8,
+    Aac = 10,
     Speex = 11,
 }
 
@@ -1216,7 +1219,7 @@ pub struct Font4<'a> {
 pub struct Glyph {
     pub shape_records: Vec<ShapeRecord>,
     pub code: u16,
-    pub advance: i16,
+    pub advance: u16,
     pub bounds: Option<Rectangle<Twips>>,
 }
 
@@ -1377,10 +1380,10 @@ impl<'a> EditText<'a> {
     }
 
     #[inline]
-    pub fn color(&self) -> Option<&Color> {
+    pub fn color(&self) -> Option<Color> {
         self.flags
             .contains(EditTextFlag::HAS_TEXT_COLOR)
-            .then_some(&self.color)
+            .then_some(self.color)
     }
 
     #[inline]
@@ -1575,7 +1578,7 @@ impl<'a> EditText<'a> {
     }
 }
 
-impl<'a> Default for EditText<'a> {
+impl Default for EditText<'_> {
     fn default() -> Self {
         Self {
             id: Default::default(),
@@ -1785,7 +1788,8 @@ pub type DoAction<'a> = &'a [u8];
 
 pub type JpegTables<'a> = &'a [u8];
 
-/// `ProductInfo` contains information about the software used to generate the SWF.
+/// Contains information about the software used to generate the SWF.
+///
 /// Not documented in the SWF19 reference. Emitted by mxmlc.
 /// See <http://wahlers.com.br/claus/blog/undocumented-swf-tags-written-by-mxmlc/>
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -1816,26 +1820,35 @@ mod tests {
 
     #[test]
     fn button_conditions_match() {
-        assert!(ButtonActionCondition::OVER_DOWN_TO_OVER_UP
-            .matches(ButtonActionCondition::OVER_DOWN_TO_OVER_UP));
+        assert!(
+            ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+                .matches(ButtonActionCondition::OVER_DOWN_TO_OVER_UP)
+        );
 
-        assert!(!ButtonActionCondition::OVER_DOWN_TO_OVER_UP
-            .matches(ButtonActionCondition::IDLE_TO_OVER_UP));
+        assert!(
+            !ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+                .matches(ButtonActionCondition::IDLE_TO_OVER_UP)
+        );
 
-        assert!((ButtonActionCondition::OVER_DOWN_TO_OVER_UP
-            | ButtonActionCondition::IDLE_TO_OVER_UP)
-            .matches(ButtonActionCondition::IDLE_TO_OVER_UP));
+        assert!(
+            (ButtonActionCondition::OVER_DOWN_TO_OVER_UP | ButtonActionCondition::IDLE_TO_OVER_UP)
+                .matches(ButtonActionCondition::IDLE_TO_OVER_UP)
+        );
 
-        assert!((ButtonActionCondition::OVER_DOWN_TO_OVER_UP
-            | ButtonActionCondition::from_key_code(3))
-        .matches(ButtonActionCondition::OVER_DOWN_TO_OVER_UP));
+        assert!(
+            (ButtonActionCondition::OVER_DOWN_TO_OVER_UP | ButtonActionCondition::from_key_code(3))
+                .matches(ButtonActionCondition::OVER_DOWN_TO_OVER_UP)
+        );
 
-        assert!((ButtonActionCondition::OVER_DOWN_TO_OVER_UP
-            | ButtonActionCondition::from_key_code(3))
-        .matches(ButtonActionCondition::from_key_code(3)));
+        assert!(
+            (ButtonActionCondition::OVER_DOWN_TO_OVER_UP | ButtonActionCondition::from_key_code(3))
+                .matches(ButtonActionCondition::from_key_code(3))
+        );
 
-        assert!(!(ButtonActionCondition::OVER_DOWN_TO_OVER_UP
-            | ButtonActionCondition::from_key_code(3))
-        .matches(ButtonActionCondition::from_key_code(1)));
+        assert!(
+            !(ButtonActionCondition::OVER_DOWN_TO_OVER_UP
+                | ButtonActionCondition::from_key_code(3))
+            .matches(ButtonActionCondition::from_key_code(1))
+        );
     }
 }

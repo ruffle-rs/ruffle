@@ -1,0 +1,9 @@
+loader constructed
+loading started
+loading progress 0,821
+loading progress 821,821
+from loadee: loaded
+enterFrame
+loadee initialized
+loading complete
+bytes loaded: 821

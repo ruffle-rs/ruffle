@@ -1,0 +1,3 @@
+Use descendant operator on an array PASSED!
+Use descendant operator on an object PASSED!
+Use descendant operator on a string PASSED!

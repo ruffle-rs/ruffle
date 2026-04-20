@@ -1,0 +1,21 @@
+Default
+block
+Various values
+block
+block
+block
+block
+block
+block
+block
+Proper values
+inline
+block
+none
+block
+Resetting to null
+inline
+block
+Resetting to undefined
+inline
+block

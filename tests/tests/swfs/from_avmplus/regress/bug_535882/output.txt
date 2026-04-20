@@ -1,0 +1,1 @@
+Bug 535882 -  XMLParser incorrectly converts attribute values containing entities PASSED!

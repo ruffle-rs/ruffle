@@ -145,7 +145,7 @@ These commands are run at the root of the project. The compiled XPI will be in w
 \n\
 Note that the wasm files may not match, but we have been informed previously by Mozilla that this is allowed. The JavaScript and all other files should match.
 \n\
-The compiled version of this extension was built on Ubuntu 22.04 by our CI runner.\n\
+The compiled version of this extension was built on Ubuntu 24.04 by our CI runner.\n\
 \n\
 As this is indeed a complicated build process, please let me know if there is anything I can do to assist.`,
         },

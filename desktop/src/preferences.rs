@@ -3,18 +3,21 @@ mod write;
 
 pub mod storage;
 
-use crate::cli::Opt;
+use crate::cli::{GameModePreference, OpenUrlMode, Opt};
+use crate::gui::ThemePreference;
 use crate::log::FilenamePattern;
 use crate::preferences::read::read_preferences;
 use crate::preferences::write::PreferencesWriter;
 use anyhow::{Context, Error};
 use ruffle_core::backend::ui::US_ENGLISH;
-use ruffle_frontend_utils::bookmarks::{read_bookmarks, Bookmarks, BookmarksWriter};
+use ruffle_frontend_utils::bookmarks::{Bookmarks, BookmarksWriter, read_bookmarks};
 use ruffle_frontend_utils::parse::DocumentHolder;
-use ruffle_frontend_utils::recents::{read_recents, Recents, RecentsWriter};
+use ruffle_frontend_utils::recents::{Recents, RecentsWriter, read_recents};
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::sync::{Arc, Mutex};
 use sys_locale::get_locale;
+use tokio::sync::broadcast;
+use tokio::sync::broadcast::{Receiver, Sender};
 use unic_langid::LanguageIdentifier;
 
 /// The preferences that relate to the application itself.
@@ -42,6 +45,8 @@ pub struct GlobalPreferences {
     bookmarks: Arc<Mutex<DocumentHolder<Bookmarks>>>,
 
     recents: Arc<Mutex<DocumentHolder<Recents>>>,
+
+    watchers: GlobalPreferencesWatchers,
 }
 
 impl GlobalPreferences {
@@ -92,6 +97,7 @@ impl GlobalPreferences {
             preferences: Arc::new(Mutex::new(preferences)),
             bookmarks: Arc::new(Mutex::new(bookmarks)),
             recents: Arc::new(Mutex::new(recents)),
+            watchers: Default::default(),
         })
     }
 
@@ -110,6 +116,15 @@ impl GlobalPreferences {
                 .lock()
                 .expect("Preferences is not reentrant")
                 .graphics_power_preference
+        })
+    }
+
+    pub fn gamemode_preference(&self) -> GameModePreference {
+        self.cli.gamemode.unwrap_or_else(|| {
+            self.preferences
+                .lock()
+                .expect("Non-poisoned preferences")
+                .gamemode_preference
         })
     }
 
@@ -187,6 +202,33 @@ impl GlobalPreferences {
             .recent_limit
     }
 
+    pub fn theme_preference(&self) -> ThemePreference {
+        self.preferences
+            .lock()
+            .expect("Non-poisoned preferences")
+            .theme_preference
+    }
+
+    pub fn theme_preference_watcher(&self) -> Receiver<ThemePreference> {
+        self.watchers.theme_preference_watcher.subscribe()
+    }
+
+    pub fn open_url_mode(&self) -> OpenUrlMode {
+        self.cli.open_url_mode.unwrap_or_else(|| {
+            self.preferences
+                .lock()
+                .expect("Non-poisoned preferences")
+                .open_url_mode
+        })
+    }
+
+    pub fn ime_enabled(&self) -> Option<bool> {
+        self.preferences
+            .lock()
+            .expect("Non-poisoned preferences")
+            .ime_enabled
+    }
+
     pub fn recents<R>(&self, fun: impl FnOnce(&Recents) -> R) -> R {
         fun(&self.recents.lock().expect("Recents is not reentrant"))
     }
@@ -198,6 +240,7 @@ impl GlobalPreferences {
             .expect("Preferences is not reentrant");
 
         let mut writer = PreferencesWriter::new(&mut preferences);
+        writer.set_watchers(&self.watchers);
         fun(&mut writer);
 
         let serialized = preferences.serialize();
@@ -232,6 +275,7 @@ impl GlobalPreferences {
 pub struct SavedGlobalPreferences {
     pub graphics_backend: GraphicsBackend,
     pub graphics_power_preference: PowerPreference,
+    pub gamemode_preference: GameModePreference,
     pub language: LanguageIdentifier,
     pub output_device: Option<String>,
     pub mute: bool,
@@ -240,6 +284,9 @@ pub struct SavedGlobalPreferences {
     pub recent_limit: usize,
     pub log: LogPreferences,
     pub storage: StoragePreferences,
+    pub theme_preference: ThemePreference,
+    pub open_url_mode: OpenUrlMode,
+    pub ime_enabled: Option<bool>,
 }
 
 impl Default for SavedGlobalPreferences {
@@ -248,9 +295,11 @@ impl Default for SavedGlobalPreferences {
         let locale = preferred_locale
             .and_then(|l| l.parse().ok())
             .unwrap_or_else(|| US_ENGLISH.clone());
+
         Self {
             graphics_backend: Default::default(),
             graphics_power_preference: Default::default(),
+            gamemode_preference: Default::default(),
             language: locale,
             output_device: None,
             mute: false,
@@ -259,6 +308,9 @@ impl Default for SavedGlobalPreferences {
             recent_limit: 10,
             log: Default::default(),
             storage: Default::default(),
+            theme_preference: Default::default(),
+            open_url_mode: Default::default(),
+            ime_enabled: None,
         }
     }
 }
@@ -271,4 +323,17 @@ pub struct LogPreferences {
 #[derive(PartialEq, Debug, Default)]
 pub struct StoragePreferences {
     pub backend: storage::StorageBackend,
+}
+
+#[derive(Clone)]
+pub struct GlobalPreferencesWatchers {
+    theme_preference_watcher: Arc<Sender<ThemePreference>>,
+}
+
+impl Default for GlobalPreferencesWatchers {
+    fn default() -> Self {
+        Self {
+            theme_preference_watcher: Arc::new(broadcast::channel(1).0),
+        }
+    }
 }

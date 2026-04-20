@@ -1,0 +1,22 @@
+This is a very simple test. Do anything you like with the buttons and you should get no failures
+PASSED: instance2 == instance2
+PASSED: square1.button.getDepth()  ==  -16383 [ButtonPropertiesTest.c:177]
+PASSED:  == 
+FAILED: expected: instance3 , obtained: instance4
+PASSED:  == 
+FAILED: expected: instance4 , obtained: instance5
+PASSED:  == 
+FAILED: expected: instance5 , obtained: instance6
+PASSED:  == 
+FAILED: expected: instance6 , obtained: instance7
+PASSED:  == 
+FAILED: expected: instance7 , obtained: instance8
+PASSED:  == 
+FAILED: expected: instance8 , obtained: instance9
+PASSED:  == 
+FAILED: expected: instance9 , obtained: instance10
+PASSED:  == 
+FAILED: expected: instance10 , obtained: instance11
+PASSED:  == 
+FAILED: expected: instance11 , obtained: instance12
+PASSED:  == 

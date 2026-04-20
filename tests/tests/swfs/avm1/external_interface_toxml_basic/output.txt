@@ -1,0 +1,179 @@
+  _arrayToXML: <array></array> (string)
+  _argumentsToXML: <arguments></arguments> (string)
+  _objectToXML: <object></object> (string)
+  _toXML: <undefined/> (string)
+true (boolean):
+  _arrayToXML: true -> <array></array> (string)
+  _argumentsToXML: true -> <arguments></arguments> (string)
+  _objectToXML: true -> <object></object> (string)
+  _toXML: true -> <true/> (string)
+false (boolean):
+  _arrayToXML: false -> <array></array> (string)
+  _argumentsToXML: false -> <arguments></arguments> (string)
+  _objectToXML: false -> <object></object> (string)
+  _toXML: false -> <false/> (string)
+null (null):
+  _arrayToXML: null -> <array></array> (string)
+  _argumentsToXML: null -> <arguments></arguments> (string)
+  _objectToXML: null -> <object></object> (string)
+  _toXML: null -> <null/> (string)
+undefined (undefined):
+  _arrayToXML: undefined -> <array></array> (string)
+  _argumentsToXML: undefined -> <arguments></arguments> (string)
+  _objectToXML: undefined -> <object></object> (string)
+  _toXML: undefined -> <undefined/> (string)
+[object Object] (object):
+  _arrayToXML: [object Object] -> <array></array> (string)
+  _argumentsToXML: [object Object] -> <arguments></arguments> (string)
+  _objectToXML: [object Object] -> <object></object> (string)
+  _toXML: [object Object] -> <object></object> (string)
+4 (number):
+  _arrayToXML: 4 -> <array></array> (string)
+  _argumentsToXML: 4 -> <arguments></arguments> (string)
+  _objectToXML: 4 -> <object></object> (string)
+  _toXML: 4 -> <number>4</number> (string)
+-2 (number):
+  _arrayToXML: -2 -> <array></array> (string)
+  _argumentsToXML: -2 -> <arguments></arguments> (string)
+  _objectToXML: -2 -> <object></object> (string)
+  _toXML: -2 -> <number>-2</number> (string)
+Infinity (number):
+  _arrayToXML: Infinity -> <array></array> (string)
+  _argumentsToXML: Infinity -> <arguments></arguments> (string)
+  _objectToXML: Infinity -> <object></object> (string)
+  _toXML: Infinity -> <number>Infinity</number> (string)
+-Infinity (number):
+  _arrayToXML: -Infinity -> <array></array> (string)
+  _argumentsToXML: -Infinity -> <arguments></arguments> (string)
+  _objectToXML: -Infinity -> <object></object> (string)
+  _toXML: -Infinity -> <number>-Infinity</number> (string)
+NaN (number):
+  _arrayToXML: NaN -> <array></array> (string)
+  _argumentsToXML: NaN -> <arguments></arguments> (string)
+  _objectToXML: NaN -> <object></object> (string)
+  _toXML: NaN -> <number>NaN</number> (string)
+ (object):
+  _arrayToXML:  -> <array></array> (string)
+  _argumentsToXML:  -> <arguments></arguments> (string)
+  _objectToXML:  -> <object></object> (string)
+  _toXML:  -> <array></array> (string)
+true (object):
+  _arrayToXML: true -> <array><property id="0"><true/></property></array> (string)
+  _argumentsToXML: true -> <arguments></arguments> (string)
+  _objectToXML: true -> <object><property id="0"><true/></property></object> (string)
+  _toXML: true -> <array><property id="0"><true/></property></array> (string)
+false (object):
+  _arrayToXML: false -> <array><property id="0"><false/></property></array> (string)
+  _argumentsToXML: false -> <arguments></arguments> (string)
+  _objectToXML: false -> <object><property id="0"><false/></property></object> (string)
+  _toXML: false -> <array><property id="0"><false/></property></array> (string)
+null (object):
+  _arrayToXML: null -> <array><property id="0"><null/></property></array> (string)
+  _argumentsToXML: null -> <arguments></arguments> (string)
+  _objectToXML: null -> <object><property id="0"><null/></property></object> (string)
+  _toXML: null -> <array><property id="0"><null/></property></array> (string)
+undefined (object):
+  _arrayToXML: undefined -> <array><property id="0"><undefined/></property></array> (string)
+  _argumentsToXML: undefined -> <arguments></arguments> (string)
+  _objectToXML: undefined -> <object><property id="0"><undefined/></property></object> (string)
+  _toXML: undefined -> <array><property id="0"><undefined/></property></array> (string)
+ (object):
+  _arrayToXML:  -> <array><property id="0"><string>null</string></property></array> (string)
+  _argumentsToXML:  -> <arguments></arguments> (string)
+  _objectToXML:  -> <object><property id="0"><string>null</string></property></object> (string)
+  _toXML:  -> <array><property id="0"><string>null</string></property></array> (string)
+0 (object):
+  _arrayToXML: 0 -> <array><property id="0"><number>0</number></property></array> (string)
+  _argumentsToXML: 0 -> <arguments></arguments> (string)
+  _objectToXML: 0 -> <object><property id="0"><number>0</number></property></object> (string)
+  _toXML: 0 -> <array><property id="0"><number>0</number></property></array> (string)
+0 (object):
+  _arrayToXML: 0 -> <array><property id="0"><number>0</number></property></array> (string)
+  _argumentsToXML: 0 -> <arguments></arguments> (string)
+  _objectToXML: 0 -> <object><property id="0"><number>0</number></property></object> (string)
+  _toXML: 0 -> <array><property id="0"><number>0</number></property></array> (string)
+5.6 (object):
+  _arrayToXML: 5.6 -> <array><property id="0"><number>5.6</number></property></array> (string)
+  _argumentsToXML: 5.6 -> <arguments></arguments> (string)
+  _objectToXML: 5.6 -> <object><property id="0"><number>5.6</number></property></object> (string)
+  _toXML: 5.6 -> <array><property id="0"><number>5.6</number></property></array> (string)
+[object Object] (object):
+  _arrayToXML: [object Object] -> <array><property id="0"><object></object></property></array> (string)
+  _argumentsToXML: [object Object] -> <arguments></arguments> (string)
+  _objectToXML: [object Object] -> <object><property id="0"><object></object></property></object> (string)
+  _toXML: [object Object] -> <array><property id="0"><object></object></property></array> (string)
+ (object):
+  _arrayToXML:  -> <array><property id="0"><array></array></property></array> (string)
+  _argumentsToXML:  -> <arguments></arguments> (string)
+  _objectToXML:  -> <object><property id="0"><array></array></property></object> (string)
+  _toXML:  -> <array><property id="0"><array></array></property></array> (string)
+true (object):
+  _arrayToXML: true -> <array><property id="0"><array><property id="0"><true/></property></array></property></array> (string)
+  _argumentsToXML: true -> <arguments></arguments> (string)
+  _objectToXML: true -> <object><property id="0"><array><property id="0"><true/></property></array></property></object> (string)
+  _toXML: true -> <array><property id="0"><array><property id="0"><true/></property></array></property></array> (string)
+ (string):
+  _arrayToXML:  -> <array></array> (string)
+  _argumentsToXML:  -> <arguments></arguments> (string)
+  _objectToXML:  -> <object></object> (string)
+  _toXML:  -> <string>null</string> (string)
+test (string):
+  _arrayToXML: test -> <array><property id="0"><undefined/></property><property id="1"><undefined/></property><property id="2"><undefined/></property><property id="3"><undefined/></property></array> (string)
+  _argumentsToXML: test -> <arguments><undefined/><undefined/><undefined/></arguments> (string)
+  _objectToXML: test -> <object></object> (string)
+  _toXML: test -> <string>test</string> (string)
+[object Object] (object):
+  _arrayToXML: [object Object] -> <array></array> (string)
+  _argumentsToXML: [object Object] -> <arguments></arguments> (string)
+  _objectToXML: [object Object] -> <object><property id="x"><string>y</string></property></object> (string)
+  _toXML: [object Object] -> <object><property id="x"><string>y</string></property></object> (string)
+[object Object] (object):
+  _arrayToXML: [object Object] -> <array></array> (string)
+  _argumentsToXML: [object Object] -> <arguments></arguments> (string)
+  _objectToXML: [object Object] -> <object></object> (string)
+  _toXML: [object Object] -> <object></object> (string)
+[object Object] (object):
+  _arrayToXML: [object Object] -> <array></array> (string)
+  _argumentsToXML: [object Object] -> <arguments></arguments> (string)
+  _objectToXML: [object Object] -> <object><property id="x"><string>&amp;amp;&lt;test&gt;</string></property></object> (string)
+  _toXML: [object Object] -> <object><property id="x"><string>&amp;amp;&lt;test&gt;</string></property></object> (string)
+&amp;<test> (string):
+  _arrayToXML: &amp;<test> -> <array><property id="0"><undefined/></property><property id="1"><undefined/></property><property id="2"><undefined/></property><property id="3"><undefined/></property><property id="4"><undefined/></property><property id="5"><undefined/></property><property id="6"><undefined/></property><property id="7"><undefined/></property><property id="8"><undefined/></property><property id="9"><undefined/></property><property id="10"><undefined/></property></array> (string)
+  _argumentsToXML: &amp;<test> -> <arguments><undefined/><undefined/><undefined/><undefined/><undefined/><undefined/><undefined/><undefined/><undefined/><undefined/></arguments> (string)
+  _objectToXML: &amp;<test> -> <object></object> (string)
+  _toXML: &amp;<test> -> <string>&amp;amp;&lt;test&gt;</string> (string)
+undefined,undefined,2,3,undefined,5 (object):
+  _arrayToXML: undefined,undefined,2,3,undefined,5 -> <array><property id="0"><undefined/></property><property id="1"><undefined/></property><property id="2"><number>2</number></property><property id="3"><number>3</number></property><property id="4"><undefined/></property><property id="5"><number>5</number></property></array> (string)
+  _argumentsToXML: undefined,undefined,2,3,undefined,5 -> <arguments><undefined/><number>2</number><number>3</number><undefined/><number>5</number></arguments> (string)
+  _objectToXML: undefined,undefined,2,3,undefined,5 -> <object><property id="3"><number>3</number></property><property id="2"><number>2</number></property><property id="5"><number>5</number></property></object> (string)
+  _toXML: undefined,undefined,2,3,undefined,5 -> <array><property id="0"><undefined/></property><property id="1"><undefined/></property><property id="2"><number>2</number></property><property id="3"><number>3</number></property><property id="4"><undefined/></property><property id="5"><number>5</number></property></array> (string)
+[object Object] (object):
+  _arrayToXML: [object Object] -> <array></array> (string)
+  _argumentsToXML: [object Object] -> <arguments></arguments> (string)
+  _objectToXML: [object Object] -> <object><property id="<>&test;"'"><string>&lt;&gt;&amp;test;&quot;&apos;</string></property></object> (string)
+  _toXML: [object Object] -> <object><property id="<>&test;"'"><string>&lt;&gt;&amp;test;&quot;&apos;</string></property></object> (string)
+ (object):
+  _arrayToXML:  -> <array></array> (string)
+  _argumentsToXML:  -> <arguments></arguments> (string)
+  _objectToXML:  -> <object></object> (string)
+  _toXML:  -> <array></array> (string)
+undefined (object):
+  _arrayToXML: undefined -> <array><property id="0"><undefined/></property></array> (string)
+  _argumentsToXML: undefined -> <arguments></arguments> (string)
+  _objectToXML: undefined -> <object><property id="0"><undefined/></property></object> (string)
+  _toXML: undefined -> <array><property id="0"><undefined/></property></array> (string)
+,true, (object):
+  _arrayToXML: ,true, -> <array><property id="0"><array></array></property><property id="1"><true/></property><property id="2"><string>null</string></property></array> (string)
+  _argumentsToXML: ,true, -> <arguments><true/><string>null</string></arguments> (string)
+  _objectToXML: ,true, -> <object><property id="2"><string>null</string></property><property id="1"><true/></property><property id="0"><array></array></property></object> (string)
+  _toXML: ,true, -> <array><property id="0"><array></array></property><property id="1"><true/></property><property id="2"><string>null</string></property></array> (string)
+[type Function] (function):
+  _arrayToXML: [type Function] -> <array></array> (string)
+  _argumentsToXML: [type Function] -> <arguments></arguments> (string)
+  _objectToXML: [type Function] -> <object></object> (string)
+  _toXML: [type Function] -> <null/> (string)
+[type Function] (function):
+  _arrayToXML: [type Function] -> <array></array> (string)
+  _argumentsToXML: [type Function] -> <arguments></arguments> (string)
+  _objectToXML: [type Function] -> <object></object> (string)
+  _toXML: [type Function] -> <null/> (string)

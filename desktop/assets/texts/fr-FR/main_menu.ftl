@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Fichier
-file-menu-open-quick = Ouvrir...
 file-menu-open-advanced = Ouvrir avec options...
 file-menu-close = Fermer
 file-menu-reload = Recharger
@@ -17,9 +16,11 @@ file-menu-recents = Fichiers récents
 file-menu-recents-empty = Aucun fichier récent
 file-menu-preferences = Préférences...
 file-menu-exit = Quitter
+file-menu-export = Exporter...
 controls-menu = Contrôles
 controls-menu-suspend = Suspendre
 controls-menu-resume = Reprendre
+controls-menu-step-once = Pas à pas
 controls-menu-volume = Volume
 help-menu = Aide
 help-menu-join-discord = Rejoindre Discord
@@ -32,7 +33,10 @@ bookmarks-menu-add = Ajouter...
 bookmarks-menu-manage = Gérer les favoris...
 debug-menu = Outils de débogage
 debug-menu-open-stage = Informations de la scène
+debug-menu-open-root-movie-clip = Voir le MovieClip principal
 debug-menu-open-movie = Informations du film
 debug-menu-open-movie-list = Liste des films connus
 debug-menu-open-domain-list = Liste des domaines
 debug-menu-search-display-objects = Rechercher des objets d'affichage...
+view-menu = Affichage
+view-menu-fullscreen = Plein écran

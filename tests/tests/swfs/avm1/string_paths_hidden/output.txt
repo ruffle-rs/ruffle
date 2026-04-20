@@ -1,0 +1,54 @@
+// get('shape0')
+_level0
+// get('clip1.shape1')
+_level0.clip1
+// get('clip1.clip2.shape2')
+_level0.clip1.clip2
+// get('clip1.clip2.clip3.shape3')
+_level0.clip1.clip2.clip3
+// get('clip1.clip2.clip3.clip4.shape4')
+_level0.clip1.clip2.clip3.clip4
+// get('_root/shape0')
+_level0
+// get('clip1/shape1')
+_level0.clip1
+// get('clip1/clip2.shape2')
+_level0.clip1.clip2
+// get('clip1/clip2.clip3.shape3')
+undefined
+// get('clip1/clip2.clip3.clip4.shape4')
+undefined
+// get('_level0/shape0')
+_level0
+// get('clip1/shape1')
+_level0.clip1
+// get('clip1.clip2/shape2')
+undefined
+// get('clip1.clip2.clip3/shape3')
+undefined
+// get('clip1.clip2.clip3.clip4/shape4')
+undefined
+// get('clip1.clip2/clip3.shape3')
+_level0.clip1.clip2.clip3
+// get('clip1.clip2/clip3.clip4.shape4')
+undefined
+// get('_level0:shape0')
+_level0
+// get('clip1:shape1')
+_level0.clip1
+// get('clip1.clip2:shape2')
+_level0.clip1.clip2
+// get('clip1:clip2.clip3:shape3')
+_level0.clip1.clip2.clip3
+// get('clip1.clip2:clip3.clip4:shape4')
+_level0.clip1.clip2.clip3.clip4
+// get('shape0._parent')
+undefined
+// get('clip1.shape1._parent')
+_level0
+// get('clip1.clip2.shape2._parent')
+_level0.clip1
+// get('clip1.clip2.shape2._parent.clip2')
+_level0.clip1.clip2
+// get('clip1.clip2.shape2._parent/clip2')
+undefined

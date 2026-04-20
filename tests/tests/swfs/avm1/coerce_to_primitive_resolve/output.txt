@@ -1,0 +1,17 @@
+// obj1: methods as members
+valueOf called!
+obj1 as num: 1
+toString called!
+[obj as string]
+
+// obj2: methods as properties
+valueOf property called!
+valueOf called!
+obj2 as num: 1
+toString property called!
+toString called!
+[obj as string]
+
+// obj3: methods through __resolve
+obj3 as num: NaN
+[type Object]

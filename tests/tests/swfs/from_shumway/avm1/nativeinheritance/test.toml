@@ -1,0 +1,3 @@
+# Test adapted from Shumway at https://github.com/mozilla/shumway/tree/master/test/swfs/avm1/nativeinheritance
+
+num_frames = 1

@@ -1,0 +1,3 @@
+Error: Error #1000: The system is out of memory.
+	at flash.utils::ByteArray/set length()
+	at global$init()

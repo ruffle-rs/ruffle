@@ -1,8 +1,0 @@
-Element placed on frame 1
-Masked: true
-New object placed on frame 2: false
-Masked: false
-New object placed on frame 3: true
-Masked: false
-New object placed on frame 1: false
-Masked: true

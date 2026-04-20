@@ -1,0 +1,12 @@
+PASSED: square0._x  ==  0 [attachMovieTest.c:173]
+PASSED: square1._x  ==  70 [attachMovieTest.c:183]
+PASSED: square2._x  ==  140 [attachMovieTest.c:193]
+PASSED: square3._x  ==  210 [attachMovieTest.c:203]
+_level0.butatt
+_level0.butatt
+PASSED: butatt.f  ==  undefined [attachMovieTest.c:222]
+PASSED: butatt.t  ==  undefined [attachMovieTest.c:223]
+PASSED: butatt.s  ==  37 [attachMovieTest.c:224]
+#passed: 7
+#failed: 0
+#total tests run: 7

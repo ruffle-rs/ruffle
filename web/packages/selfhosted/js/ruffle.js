@@ -1,15 +1,13 @@
 // eslint-disable-next-line no-unused-vars
 /* global __webpack_public_path__:writable */
 
-import { installRuffle } from "ruffle-core";
+import { Setup } from "ruffle-core";
 
 let currentScriptURL = null;
 
 try {
     if (
-        document.currentScript !== undefined &&
-        document.currentScript !== null &&
-        "src" in document.currentScript &&
+        document.currentScript instanceof HTMLScriptElement &&
         document.currentScript.src !== ""
     ) {
         let src = document.currentScript.src;
@@ -22,9 +20,8 @@ try {
 
         currentScriptURL = new URL(".", src);
     }
-    // eslint-disable-next-line no-unused-vars
-} catch (_e) {
-    console.warn("Unable to get currentScript URL");
+} catch (e) {
+    console.warn("Unable to get currentScript URL", e);
 }
 
 function publicPath(config) {
@@ -46,7 +43,7 @@ function publicPath(config) {
     return path;
 }
 
-installRuffle("local", {
+Setup.installRuffle("local", {
     onFirstLoad: () => {
         __webpack_public_path__ = publicPath(window.RufflePlayer?.config);
     },

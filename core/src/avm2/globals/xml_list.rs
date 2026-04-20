@@ -2,12 +2,13 @@
 
 pub use crate::avm2::object::xml_list_allocator;
 use crate::avm2::{
-    e4x::{name_to_multiname, simple_content_to_string, E4XNode, E4XNodeKind},
+    Activation, Error, TObject, Value,
+    e4x::{E4XNode, E4XNodeKind, name_to_multiname, simple_content_to_string},
     error::make_error_1086,
+    globals::methods::xml as xml_methods,
     multiname::Multiname,
     object::{E4XOrXml, XmlListObject, XmlObject},
     parameters::ParametersExt,
-    Activation, Error, Object, TObject, Value,
 };
 use crate::string::AvmString;
 
@@ -29,11 +30,13 @@ fn has_simple_content_inner(children: &[E4XOrXml<'_>]) -> bool {
 
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_xml_list_object().unwrap();
-    let value = args[0];
+    let value = args.get_value(0);
     let ignore_comments = args.get_bool(1);
     let ignore_processing_instructions = args.get_bool(2);
     let ignore_whitespace = args.get_bool(3);
@@ -44,7 +47,7 @@ pub fn init<'gc>(
             // `this[0] === xmlObjArg` true.
             // This logic does *not* go in `E4XNode::parse`, as it does not apply
             // to the `XML` constructor: `new XML(xmlObj) === xmlObj` is false.
-            this.set_children(activation.context.gc_context, vec![E4XOrXml::Xml(xml)]);
+            this.set_children(activation.gc(), vec![E4XOrXml::Xml(xml)]);
             return Ok(Value::Undefined);
         }
     }
@@ -58,14 +61,14 @@ pub fn init<'gc>(
     ) {
         Ok(nodes) => {
             this.set_children(
-                activation.context.gc_context,
+                activation.gc(),
                 nodes.into_iter().map(E4XOrXml::E4X).collect(),
             );
         }
         Err(e) => {
-            return Err(Error::RustError(
+            return Err(Error::rust_error(
                 format!("Failed to parse XML: {e:?}").into(),
-            ))
+            ));
         }
     }
 
@@ -74,35 +77,36 @@ pub fn init<'gc>(
 
 pub fn call_handler<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.len() == 1 {
         // We do *not* create a new object when AS does 'XMLList(someXMLList)'
-        if let Some(obj) = args.try_get_object(activation, 0) {
+        if let Some(obj) = args.get_value(0).as_object() {
             if let Some(xml_list) = obj.as_xml_list_object() {
                 return Ok(xml_list.into());
             }
         }
     }
 
-    Ok(activation
+    activation
         .avm2()
         .classes()
         .xml_list
-        .construct(activation, args)?
-        .into())
+        .construct(activation, args)
 }
 
 // ECMA-357 13.5.4.11 XMLList.prototype.elements ([name])
 pub fn elements<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_xml_list_object().unwrap();
     // 2. Let name = ToXMLName(name)
-    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let multiname = name_to_multiname(activation, args.get_value(0), false)?;
 
     // 3. Let m = a new XMLList with m.[[TargetObject]] = list and m.[[TargetProperty]] = name
     let list = XmlListObject::new(activation, Some(this.into()), Some(multiname.clone()));
@@ -130,9 +134,11 @@ pub fn elements<'gc>(
 
 pub fn has_complex_content<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let list = this.as_xml_list_object().unwrap();
     let children = list.children();
     Ok(has_complex_content_inner(&children).into())
@@ -140,9 +146,11 @@ pub fn has_complex_content<'gc>(
 
 pub fn has_simple_content<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let list = this.as_xml_list_object().unwrap();
     let children = list.children();
     Ok(has_simple_content_inner(&children).into())
@@ -150,44 +158,52 @@ pub fn has_simple_content<'gc>(
 
 pub fn to_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let list = this.as_xml_list_object().unwrap();
     let children = list.children();
     if has_simple_content_inner(&children) {
         Ok(simple_content_to_string(children.iter().cloned(), activation).into())
     } else {
-        to_xml_string(activation, this, args)
+        to_xml_string(activation, Value::Object(this), args)
     }
 }
 
 pub fn to_xml_string<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let list = this.as_xml_list_object().unwrap();
     Ok(list.as_xml_string(activation).into())
 }
 
 pub fn length<'gc>(
     _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let list = this.as_xml_list_object().unwrap();
     let children = list.children();
-    Ok(children.len().into())
+    Ok(Value::from_usize_lossy(children.len()))
 }
 
 pub fn child<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let this = this.as_xml_list_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let multiname = name_to_multiname(activation, args.get_value(0), false)?;
     let mut children = this.children_mut(activation.gc());
 
     // 1. Let m be a new XMLList with m.[[TargetObject]] = list
@@ -210,14 +226,16 @@ pub fn child<'gc>(
 
 pub fn children<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let list = this.as_xml_list_object().unwrap();
     let children = list.children();
     let mut sub_children = Vec::new();
     for child in &*children {
-        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+        if let E4XNodeKind::Element { children, .. } = &*child.node().kind() {
             sub_children.extend(children.iter().map(|node| E4XOrXml::E4X(*node)));
         }
     }
@@ -226,7 +244,7 @@ pub fn children<'gc>(
         activation,
         sub_children,
         Some(list.into()),
-        Some(Multiname::any(activation.gc())),
+        Some(Multiname::any()),
     )
     .into())
 }
@@ -234,9 +252,11 @@ pub fn children<'gc>(
 /// 13.5.4.8 XMLList.prototype.contains (value)
 pub fn contains<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let list = this.as_xml_list_object().unwrap();
     let value = args.get_value(0);
     let length = list.length();
@@ -260,27 +280,30 @@ pub fn contains<'gc>(
 
 pub fn copy<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let list = this.as_xml_list_object().unwrap();
     Ok(list.deep_copy(activation).into())
 }
 
 pub fn attribute<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let list = this.as_xml_list_object().unwrap();
 
-    let name = args[0];
-    let multiname = name_to_multiname(activation, &name, true)?;
+    let multiname = name_to_multiname(activation, args.get_value(0), true)?;
 
     let children = list.children();
     let mut sub_children = Vec::new();
     for child in &*children {
-        if let E4XNodeKind::Element { ref attributes, .. } = &*child.node().kind() {
+        if let E4XNodeKind::Element { attributes, .. } = &*child.node().kind() {
             if let Some(found) = attributes
                 .iter()
                 .find(|node| node.matches_name(&multiname))
@@ -303,14 +326,16 @@ pub fn attribute<'gc>(
 
 pub fn attributes<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let list = this.as_xml_list_object().unwrap();
 
     let mut child_attrs = Vec::new();
     for child in list.children().iter() {
-        if let E4XNodeKind::Element { ref attributes, .. } = &*child.node().kind() {
+        if let E4XNodeKind::Element { attributes, .. } = &*child.node().kind() {
             child_attrs.extend(attributes.iter().map(|node| E4XOrXml::E4X(*node)));
         }
     }
@@ -320,17 +345,19 @@ pub fn attributes<'gc>(
         activation,
         child_attrs,
         Some(list.into()),
-        Some(Multiname::any_attribute(activation.gc())),
+        Some(Multiname::any_attribute()),
     )
     .into())
 }
 
 pub fn descendants<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let this = this.as_object().unwrap();
+
+    let multiname = name_to_multiname(activation, args.get_value(0), false)?;
     if let Some(descendants) = this.xml_descendants(activation, &multiname) {
         Ok(descendants.into())
     } else {
@@ -341,13 +368,15 @@ pub fn descendants<'gc>(
 // ECMA-357 13.5.4.20 XMLList.prototype.text ( )
 pub fn text<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let xml_list = this.as_xml_list_object().unwrap();
     let mut nodes = Vec::new();
     for child in xml_list.children().iter() {
-        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+        if let E4XNodeKind::Element { children, .. } = &*child.node().kind() {
             nodes.extend(
                 children
                     .iter()
@@ -363,13 +392,15 @@ pub fn text<'gc>(
 
 pub fn comments<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let xml_list = this.as_xml_list_object().unwrap();
     let mut nodes = Vec::new();
     for child in xml_list.children().iter() {
-        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+        if let E4XNodeKind::Element { children, .. } = &*child.node().kind() {
             nodes.extend(
                 children
                     .iter()
@@ -387,9 +418,11 @@ pub fn comments<'gc>(
 // ECMA-357 13.5.4.17 XMLList.prototype.parent ( )
 pub fn parent<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let list = this.as_xml_list_object().unwrap();
 
     // 1. If list.[[Length]] = 0, return undefined
@@ -423,14 +456,16 @@ pub fn parent<'gc>(
 
 pub fn processing_instructions<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let xml_list = this.as_xml_list_object().unwrap();
-    let multiname = name_to_multiname(activation, &args[0], false)?;
+    let multiname = name_to_multiname(activation, args.get_value(0), false)?;
     let mut nodes = Vec::new();
     for child in xml_list.children().iter() {
-        if let E4XNodeKind::Element { ref children, .. } = &*child.node().kind() {
+        if let E4XNodeKind::Element { children, .. } = &*child.node().kind() {
             nodes.extend(
                 children
                     .iter()
@@ -450,11 +485,13 @@ pub fn processing_instructions<'gc>(
 
 pub fn normalize<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    let namespaces = activation.avm2().namespaces;
     let list = this.as_xml_list_object().unwrap();
-    let public_namespace = activation.avm2().public_namespace_base_version;
 
     // 1. Let i = 0
     let mut index = 0;
@@ -504,13 +541,13 @@ pub fn normalize<'gc>(
                     list.delete_property_local(
                         activation,
                         &Multiname::new(
-                            public_namespace,
+                            namespaces.public_all(),
                             AvmString::new_utf8(activation.gc(), (index + 1).to_string()),
                         ),
                     )?;
                 }
 
-                text.len() == 0
+                text.is_empty()
             };
 
             // ii. If list[i].[[Value]].length == 0
@@ -519,7 +556,7 @@ pub fn normalize<'gc>(
                 list.delete_property_local(
                     activation,
                     &Multiname::new(
-                        public_namespace,
+                        namespaces.public_all(),
                         AvmString::new_utf8(activation.gc(), index.to_string()),
                     ),
                 )?;
@@ -540,21 +577,23 @@ pub fn normalize<'gc>(
 }
 
 macro_rules! define_xml_proxy {
-    ( $( ($rust_name:ident, $as_name:expr) ),*, ) => {
+    ( $( ($rust_name:ident, $method_id:ident, $as_name:expr) ),*, ) => {
         $(
             pub fn $rust_name<'gc>(
                 activation: &mut Activation<'_, 'gc>,
-                this: Object<'gc>,
+                this: Value<'gc>,
                 args: &[Value<'gc>],
             ) -> Result<Value<'gc>, Error<'gc>> {
+                let this = this.as_object().unwrap();
+
                 let list = this.as_xml_list_object().unwrap();
 
-                let mut children = list.children_mut(activation.context.gc_context);
+                let mut children = list.children_mut(activation.gc());
                 match &mut children[..] {
                     [child] => {
-                        child
-                            .get_or_create_xml(activation)
-                            .call_property(&Multiname::new(activation.avm2().as3_namespace, $as_name), args, activation)
+                        let child = child.get_or_create_xml(activation);
+
+                        Value::from(child).call_method(xml_methods::$method_id, args, activation)
                     }
                     _ => Err(make_error_1086(activation, $as_name)),
                 }
@@ -564,44 +603,55 @@ macro_rules! define_xml_proxy {
 }
 
 define_xml_proxy!(
-    (add_namespace, "addNamespace"),
-    (append_child, "appendChild"),
-    (child_index, "childIndex"),
-    (in_scope_namespaces, "inScopeNamespaces"),
-    (insert_child_after, "insertChildAfter"),
-    (insert_child_before, "insertChildBefore"),
-    (local_name, "localName"),
-    (name, "name"),
-    (namespace_declarations, "namespaceDeclarations"),
-    (node_kind, "nodeKind"),
-    (prepend_child, "prependChild"),
-    (remove_namespace, "removeNamespace"),
-    (replace, "replace"),
-    (set_children, "setChildren"),
-    (set_local_name, "setLocalName"),
-    (set_name, "setName"),
-    (set_namespace, "setNamespace"),
+    (add_namespace, ADD_NAMESPACE, "addNamespace"),
+    (append_child, APPEND_CHILD, "appendChild"),
+    (child_index, CHILD_INDEX, "childIndex"),
+    (
+        in_scope_namespaces,
+        IN_SCOPE_NAMESPACES,
+        "inScopeNamespaces"
+    ),
+    (insert_child_after, INSERT_CHILD_AFTER, "insertChildAfter"),
+    (
+        insert_child_before,
+        INSERT_CHILD_BEFORE,
+        "insertChildBefore"
+    ),
+    (local_name, LOCAL_NAME, "localName"),
+    (name, NAME, "name"),
+    (
+        namespace_declarations,
+        NAMESPACE_DECLARATIONS,
+        "namespaceDeclarations"
+    ),
+    (node_kind, NODE_KIND, "nodeKind"),
+    (prepend_child, PREPEND_CHILD, "prependChild"),
+    (remove_namespace, REMOVE_NAMESPACE, "removeNamespace"),
+    (replace, REPLACE, "replace"),
+    (set_children, SET_CHILDREN, "setChildren"),
+    (set_local_name, SET_LOCAL_NAME, "setLocalName"),
+    (set_name, SET_NAME, "setName"),
+    (set_namespace, SET_NAMESPACE, "setNamespace"),
 );
 
 // Special case since the XMLObject's method has to know if prefix was passed or not.
 // namespace_internal_impl(hasPrefix:Boolean, prefix:String = null):*
 pub fn namespace_internal_impl<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let list = this.as_xml_list_object().unwrap();
-    let mut children = list.children_mut(activation.context.gc_context);
+    let this = this.as_object().unwrap();
 
-    let args = if args[0] == Value::Bool(true) {
-        &args[1..]
-    } else {
-        &[]
-    };
+    let list = this.as_xml_list_object().unwrap();
+    let mut children = list.children_mut(activation.gc());
+
+    let has_prefix = args.get_bool(0);
+    let args = if has_prefix { &args[1..] } else { &[] };
 
     match &mut children[..] {
-        [child] => child.get_or_create_xml(activation).call_property(
-            &Multiname::new(activation.avm2().as3_namespace, "namespace"),
+        [child] => Value::from(child.get_or_create_xml(activation)).call_method(
+            xml_methods::NAMESPACE,
             args,
             activation,
         ),

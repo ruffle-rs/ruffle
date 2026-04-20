@@ -13,3 +13,14 @@ global reg 0: 0
 global reg 1: 1
 global reg 2: 2
 global reg 3: 9
+Function start g(...), RegisterCount = 1, PreloadRoot, PreloadArgs
+Function reg 0: undefined
+Function reg 1: 1
+Function reg 2: 2
+Function reg 3: 9
+Changing registers to 8.
+Function end
+global reg 0: 0
+global reg 1: 8
+global reg 2: 8
+global reg 3: 8

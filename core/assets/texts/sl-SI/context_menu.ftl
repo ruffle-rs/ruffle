@@ -1,0 +1,12 @@
+context-menu-play = Predvajaj
+context-menu-rewind = Previj nazaj
+context-menu-forward = Naprej
+context-menu-back = Nazaj
+context-menu-quality-low = Kakovost: nizka
+context-menu-quality-medium = Kakovost: srednja
+context-menu-quality-high = Kakovost: visoka
+context-menu-cut = Izreži
+context-menu-copy = Kopiraj
+context-menu-paste = Prilepi
+context-menu-delete = Izbriši
+context-menu-select-all = Izberi vse

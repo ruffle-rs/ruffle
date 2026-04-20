@@ -1,0 +1,17 @@
+PASSED: typeof(nestedMovieClip) == movieclip  [movieclip_destruction_test3.sc:97]
+PASSED: nestedMovieClip.getDepth() == 10  [movieclip_destruction_test3.sc:98]
+PASSED: typeof(nestedMovieClip.mc11) == movieclip  [movieclip_destruction_test3.sc:99]
+PASSED: typeof(nestedMovieClip.mc11.mc111) == movieclip  [movieclip_destruction_test3.sc:100]
+PASSED: typeof(nestedMovieClip.mc11.mc111.mc1111) == movieclip  [movieclip_destruction_test3.sc:101]
+nestedMovieClip removed at frame 10 [movieclip_destruction_test3.sc:63]
+PASSED: nestedMovieClip.getDepth() == -32779  [movieclip_destruction_test3.sc:116]
+PASSED: _root.x == 300  [movieclip_destruction_test3.sc:123]
+PASSED: typeof(nestedMovieClip) == undefined  [movieclip_destruction_test3.sc:124]
+PASSED: _root.as_order == 0+1+2+  [movieclip_destruction_test3.sc:125]
+PASSED: mcARef.getDepth() == -32779  [movieclip_destruction_test3.sc:137]
+PASSED: mcARef['_root'] == _level0  [movieclip_destruction_test3.sc:138]
+PASSED: mcA['_root'] == _level0  [movieclip_destruction_test3.sc:134]
+Total tests run: 12 typeof expected: number
+#passed: 12
+#failed: 0
+__END_OF_TEST__

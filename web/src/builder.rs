@@ -1,24 +1,24 @@
 use crate::external_interface::JavascriptInterface;
-use crate::navigator::WebNavigatorBackend;
+use crate::navigator::{OpenUrlMode, WebNavigatorBackend};
 use crate::{
-    audio, log_adapter, storage, ui, JavascriptPlayer, RuffleHandle, SocketProxy,
-    RUFFLE_GLOBAL_PANIC,
+    DeviceFontRenderer, JavascriptPlayer, RUFFLE_GLOBAL_PANIC, RuffleHandle, ScrollingBehavior,
+    SocketProxy, audio, log_adapter, storage, ui,
 };
-use js_sys::Promise;
+use js_sys::{Promise, RegExp};
 use ruffle_core::backend::audio::{AudioBackend, NullAudioBackend};
-use ruffle_core::backend::navigator::OpenURLMode;
 use ruffle_core::backend::storage::{MemoryStorageBackend, StorageBackend};
 use ruffle_core::backend::ui::FontDefinition;
 use ruffle_core::compatibility_rules::CompatibilityRules;
 use ruffle_core::config::{Letterbox, NetworkingAccessMode};
-use ruffle_core::{
-    swf, Color, DefaultFont, Player, PlayerBuilder, PlayerRuntime, SandboxType, StageAlign,
-    StageScaleMode,
-};
+use ruffle_core::events::{GamepadButton, KeyCode};
+use ruffle_core::font::{DefaultFont, FontFileData};
+use ruffle_core::ttf_parser;
+use ruffle_core::{Color, Player, PlayerBuilder, PlayerRuntime, StageAlign, StageScaleMode, swf};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::quality::StageQuality;
-use ruffle_video_software::backend::SoftwareVideoBackend;
+use ruffle_video_external::backend::ExternalVideoBackend;
 use ruffle_web_common::JsResult;
+use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::error::Error;
@@ -26,8 +26,8 @@ use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use tracing_subscriber::layer::{Layered, SubscriberExt};
 use tracing_subscriber::Registry;
+use tracing_subscriber::layer::{Layered, SubscriberExt};
 use tracing_wasm::{WASMLayer, WASMLayerConfigBuilder};
 use wasm_bindgen::prelude::*;
 use web_sys::{HtmlCanvasElement, HtmlElement};
@@ -54,7 +54,7 @@ pub struct RuffleInstanceBuilder {
     pub(crate) max_execution_duration: Duration,
     pub(crate) player_version: Option<u8>,
     pub(crate) preferred_renderer: Option<String>, // TODO: Enumify?
-    pub(crate) open_url_mode: OpenURLMode,
+    pub(crate) open_url_mode: OpenUrlMode,
     pub(crate) allow_networking: NetworkingAccessMode,
     pub(crate) socket_proxy: Vec<SocketProxy>,
     pub(crate) credential_allow_list: Vec<String>,
@@ -62,6 +62,10 @@ pub struct RuffleInstanceBuilder {
     pub(crate) volume: f32,
     pub(crate) default_fonts: HashMap<DefaultFont, Vec<String>>,
     pub(crate) custom_fonts: Vec<(String, Vec<u8>)>,
+    pub(crate) gamepad_button_mapping: HashMap<GamepadButton, KeyCode>,
+    pub(crate) url_rewrite_rules: Vec<(RegExp, String)>,
+    pub(crate) scrolling_behavior: ScrollingBehavior,
+    pub(crate) device_font_renderer: DeviceFontRenderer,
 }
 
 impl Default for RuffleInstanceBuilder {
@@ -90,7 +94,7 @@ impl Default for RuffleInstanceBuilder {
             max_execution_duration: Duration::from_secs_f64(15.0),
             player_version: None,
             preferred_renderer: None,
-            open_url_mode: OpenURLMode::Allow,
+            open_url_mode: OpenUrlMode::Allow,
             allow_networking: NetworkingAccessMode::All,
             socket_proxy: vec![],
             credential_allow_list: vec![],
@@ -98,6 +102,10 @@ impl Default for RuffleInstanceBuilder {
             volume: 1.0,
             default_fonts: HashMap::new(),
             custom_fonts: vec![],
+            gamepad_button_mapping: HashMap::new(),
+            url_rewrite_rules: vec![],
+            scrolling_behavior: ScrollingBehavior::Smart,
+            device_font_renderer: DeviceFontRenderer::Embedded,
         }
     }
 }
@@ -248,9 +256,9 @@ impl RuffleInstanceBuilder {
     #[wasm_bindgen(js_name = "setOpenUrlMode")]
     pub fn set_open_url_mode(&mut self, value: &str) {
         self.open_url_mode = match value {
-            "allow" => OpenURLMode::Allow,
-            "confirm" => OpenURLMode::Confirm,
-            "deny" => OpenURLMode::Deny,
+            "allow" => OpenUrlMode::Allow,
+            "confirm" => OpenUrlMode::Confirm,
+            "deny" => OpenUrlMode::Deny,
             _ => return,
         };
     }
@@ -318,9 +326,41 @@ impl RuffleInstanceBuilder {
         );
     }
 
+    #[wasm_bindgen(js_name = "addGamepadButtonMapping")]
+    pub fn add_gampepad_button_mapping(&mut self, button: &str, keycode: u32) {
+        if let Ok(button) = GamepadButton::from_str(button) {
+            self.gamepad_button_mapping
+                .insert(button, KeyCode::from_code(keycode));
+        }
+    }
+
+    #[wasm_bindgen(js_name = "addUrlRewriteRule")]
+    pub fn add_url_rewrite_rules(&mut self, regexp: RegExp, replacement: String) {
+        self.url_rewrite_rules.push((regexp, replacement));
+    }
+
+    #[wasm_bindgen(js_name = "setScrollingBehavior")]
+    pub fn set_scrolling_behavior(&mut self, scrolling_behavior: String) {
+        self.scrolling_behavior = match scrolling_behavior.as_str() {
+            "always" => ScrollingBehavior::Always,
+            "never" => ScrollingBehavior::Never,
+            "smart" => ScrollingBehavior::Smart,
+            _ => return,
+        };
+    }
+
+    #[wasm_bindgen(js_name = "setDeviceFontRenderer")]
+    pub fn set_device_font_renderer(&mut self, device_font_renderer: String) {
+        self.device_font_renderer = match device_font_renderer.as_str() {
+            "embedded" => DeviceFontRenderer::Embedded,
+            "canvas" => DeviceFontRenderer::Canvas,
+            _ => return,
+        };
+    }
+
     // TODO: This should be split into two methods that either load url or load data
     // Right now, that's done immediately afterwards in TS
-    pub async fn build(&self, parent: HtmlElement, js_player: JavascriptPlayer) -> Promise {
+    pub fn build(&self, parent: HtmlElement, js_player: JavascriptPlayer) -> Promise {
         let copy = self.clone();
         wasm_bindgen_futures::future_to_promise(async move {
             if RUFFLE_GLOBAL_PANIC.is_completed() {
@@ -331,7 +371,7 @@ impl RuffleInstanceBuilder {
 
             let ruffle = RuffleHandle::new_internal(parent, js_player, copy)
                 .await
-                .map_err(|err| JsValue::from(format!("Error creating player: {}", err)))?;
+                .map_err(|err| JsValue::from(format!("Error creating player: {err}")))?;
             Ok(JsValue::from(ruffle))
         })
     }
@@ -340,13 +380,37 @@ impl RuffleInstanceBuilder {
 impl RuffleInstanceBuilder {
     pub fn setup_fonts(&self, player: &mut Player) {
         for (font_name, bytes) in &self.custom_fonts {
-            if let Ok(swf_stream) = swf::decompress_swf(&bytes[..]) {
-                if let Ok(swf) = swf::parse_swf(&swf_stream) {
+            let bytes_slice = &bytes[..];
+            if let Ok(face) = ttf_parser::Face::parse(bytes_slice, 0) {
+                tracing::debug!("Loading font {font_name} as TTF/OTF/TTC/OTC font");
+
+                // Check if font collection
+                let number_of_fonts = ttf_parser::fonts_in_collection(bytes_slice).unwrap_or(1u32);
+
+                Self::register_ttf_face_by_name(font_name, bytes.clone(), face, 0, player);
+
+                // Register all remaining fonts in the collection if it is a collection
+                for i in 1u32..number_of_fonts {
+                    if let Ok(face) = ttf_parser::Face::parse(bytes_slice, i) {
+                        Self::register_ttf_face_by_name(font_name, bytes.clone(), face, i, player);
+                    } else {
+                        tracing::warn!(
+                            "Failed to parse font {font_name} at index {i} in font collection"
+                        );
+                    }
+                }
+            } else {
+                tracing::debug!("Loading font {font_name} as SWF font");
+                if let Ok(swf_stream) = swf::decompress_swf(&bytes[..])
+                    && let Ok(swf) = swf::parse_swf(&swf_stream)
+                {
                     let encoding = swf::SwfStr::encoding_for_version(swf.header.version());
                     for tag in swf.tags {
                         match tag {
                             swf::Tag::DefineFont(_font) => {
-                                tracing::warn!("DefineFont1 tag is not yet supported by Ruffle, inside font swf {font_name}");
+                                tracing::warn!(
+                                    "DefineFont1 tag is not yet supported by Ruffle, inside font swf {font_name}"
+                                );
                             }
                             swf::Tag::DefineFont2(font) => {
                                 tracing::debug!(
@@ -364,7 +428,9 @@ impl RuffleInstanceBuilder {
                                         name: name.to_string(),
                                         is_bold: font.is_bold,
                                         is_italic: font.is_italic,
-                                        data: data.to_vec(),
+                                        // TODO remove when https://github.com/rust-lang/rust-clippy/issues/15252 is fixed
+                                        #[expect(clippy::unnecessary_to_owned)]
+                                        data: FontFileData::new(data.to_vec()),
                                         index: 0,
                                     })
                                 } else {
@@ -378,13 +444,46 @@ impl RuffleInstanceBuilder {
                     }
                     continue;
                 }
+                tracing::warn!("Font source {font_name} was not recognised (not a valid SWF?)");
             }
-            tracing::warn!("Font source {font_name} was not recognised (not a valid SWF?)");
         }
 
         for (default, names) in &self.default_fonts {
             player.set_default_font(*default, names.clone());
         }
+    }
+
+    #[inline]
+    fn register_ttf_face_by_name(
+        url: &String,
+        bytes: Vec<u8>,
+        face: ttf_parser::Face<'_>,
+        index: u32,
+        player: &mut Player,
+    ) {
+        // TODO A font may have multiple full names, what then?
+        let full_name = face
+            .names()
+            .into_iter()
+            // Currently only unicode names are supported
+            .filter(|name| name.is_unicode())
+            .find(|name| name.name_id == ttf_parser::name_id::FULL_NAME)
+            .and_then(|name| name.to_string());
+
+        let name = if let Some(full_name) = full_name {
+            full_name
+        } else {
+            tracing::warn!("Font {url} at index {index} has no full name, using URL as font name");
+            url.to_string()
+        };
+
+        player.register_device_font(FontDefinition::FontFile {
+            name,
+            is_bold: face.is_bold(),
+            is_italic: face.is_italic(),
+            data: FontFileData::new(bytes),
+            index,
+        });
     }
 
     pub fn create_log_subscriber(&self) -> Arc<Layered<WASMLayer, Registry>> {
@@ -397,6 +496,7 @@ impl RuffleInstanceBuilder {
         Arc::new(tracing_subscriber::registry().with(layer))
     }
 
+    #[allow(clippy::unused_async)]
     pub async fn create_renderer(
         &self,
     ) -> Result<(Box<dyn RenderBackend>, HtmlCanvasElement), Box<dyn Error>> {
@@ -531,7 +631,7 @@ impl RuffleInstanceBuilder {
         &self,
         log_subscriber: Arc<Layered<WASMLayer, Registry>>,
     ) -> Box<dyn AudioBackend> {
-        if let Ok(audio) = audio::WebAudioBackend::new(log_subscriber.clone()) {
+        if let Ok(audio) = audio::WebAudioBackend::new(log_subscriber) {
             Box::new(audio)
         } else {
             tracing::error!("Unable to create audio backend. No audio will be played.");
@@ -547,8 +647,9 @@ impl RuffleInstanceBuilder {
             self.allow_script_access,
             self.allow_networking,
             self.upgrade_to_https,
+            self.url_rewrite_rules.clone(),
             self.base_url.clone(),
-            log_subscriber.clone(),
+            log_subscriber,
             self.open_url_mode,
             self.socket_proxy.clone(),
             self.credential_allow_list.clone(),
@@ -588,11 +689,20 @@ impl RuffleInstanceBuilder {
                 .with_fs_commands(interface);
         }
 
-        let trace_observer = Rc::new(RefCell::new(JsValue::UNDEFINED));
+        let trace_observer: Rc<RefCell<JsValue>> = Rc::new(RefCell::new(JsValue::UNDEFINED));
+        let use_canvas_font_renderer =
+            matches!(self.device_font_renderer, DeviceFontRenderer::Canvas);
         let core = builder
             .with_log(log_adapter::WebLogBackend::new(trace_observer.clone()))
-            .with_ui(ui::WebUiBackend::new(js_player.clone(), &canvas))
-            .with_video(SoftwareVideoBackend::new())
+            .with_ui(ui::WebUiBackend::new(
+                js_player.clone(),
+                &canvas,
+                use_canvas_font_renderer,
+            ))
+            // `ExternalVideoBackend` has an internal `SoftwareVideoBackend` that it uses for any non-H.264 video.
+            .with_video(ExternalVideoBackend::new_with_webcodecs(
+                log_subscriber.clone(),
+            ))
             .with_letterbox(self.letterbox)
             .with_max_execution_duration(self.max_execution_duration)
             .with_player_version(self.player_version)
@@ -602,9 +712,8 @@ impl RuffleInstanceBuilder {
             .with_align(self.stage_align, self.force_align)
             .with_scale_mode(self.scale, self.force_scale)
             .with_frame_rate(self.frame_rate)
-            // FIXME - should this be configurable?
-            .with_sandbox_type(SandboxType::Remote)
             .with_page_url(window.location().href().ok())
+            .with_gamepad_button_mapping(self.gamepad_button_mapping.clone())
             .build();
 
         let player_weak = Arc::downgrade(&core);
@@ -613,8 +722,7 @@ impl RuffleInstanceBuilder {
             let mut core = core
                 .lock()
                 .expect("Failed to lock player after construction");
-            core.navigator_mut()
-                .downcast_mut::<WebNavigatorBackend>()
+            <dyn Any>::downcast_mut::<WebNavigatorBackend>(core.navigator_mut())
                 .expect("Expected WebNavigatorBackend")
                 .set_player(player_weak);
             // Set config parameters.
@@ -623,7 +731,10 @@ impl RuffleInstanceBuilder {
             core.set_show_menu(self.show_menu);
             core.set_allow_fullscreen(self.allow_fullscreen);
             core.set_window_mode(self.wmode.as_deref().unwrap_or("window"));
-            self.setup_fonts(&mut core);
+
+            if matches!(self.device_font_renderer, DeviceFontRenderer::Embedded) {
+                self.setup_fonts(&mut core);
+            }
         }
 
         Ok(BuiltPlayer {

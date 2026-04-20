@@ -1,0 +1,170 @@
+dynamic get_length PASSED!
+dynamic push PASSED!
+dynamic get_length PASSED!
+dynamic unshift PASSED!
+dynamic get_length PASSED!
+dynamic concat PASSED!
+dynamic get_length PASSED!
+dynamic reverse PASSED!
+dynamic get_length PASSED!
+dynamic shift PASSED!
+dynamic get_length PASSED!
+dynamic splice PASSED!
+dynamic get_length PASSED!
+dynamic pop PASSED!
+dynamic get_length PASSED!
+dynamic set_length PASSED!
+dynamic getprop PASSED!
+dynamic setprop PASSED!
+dynamic hasprop PASSED!
+dynamic delprop PASSED!
+dynamic splice PASSED!
+dynamic join PASSED!
+dynamic toString PASSED!
+dynamic toLocaleString PASSED!
+dynamic sort PASSED!
+dynamic indexOf PASSED!
+dynamic lastIndexOf PASSED!
+dynamic every PASSED!
+dynamic filter PASSED!
+dynamic forEach PASSED!
+dynamic some PASSED!
+dynamic map PASSED!
+dynamic for...in PASSED!
+dynamic for each...in PASSED!
+sealed get_length PASSED!
+sealed push FAILED! expected: ReferenceError: Error #1056 got: 0,1,2
+sealed get_length FAILED! expected: 0 got: 3
+sealed unshift FAILED! expected: ReferenceError: Error #1056 got: 4,5,6,0,1,2
+sealed get_length FAILED! expected: 0 got: 6
+sealed concat FAILED! expected:  got: 4,5,6,0,1,2,4,5,6,0,1,2
+sealed get_length FAILED! expected: 0 got: 6
+sealed reverse FAILED! expected:  got: 2,1,0,6,5,4
+sealed get_length FAILED! expected: 0 got: 6
+sealed shift FAILED! expected: undefined: got: 2:1,0,6,5,4
+sealed get_length FAILED! expected: 0 got: 5
+sealed splice FAILED! expected: ReferenceError: Error #1056 got: 9,1,0,6,5,4
+sealed get_length FAILED! expected: 0 got: 6
+sealed pop FAILED! expected: undefined: got: 4:9,1,0,6,5
+sealed get_length FAILED! expected: 0 got: 5
+sealed set_length FAILED! expected: 0: got: 3:9,1,0
+sealed getprop FAILED! expected: ReferenceError: Error #1069 got: 9
+sealed setprop FAILED! expected: ReferenceError: Error #1056 got: undefined
+sealed hasprop FAILED! expected: false got: true
+sealed delprop PASSED!
+sealed splice FAILED! expected: ReferenceError: Error #1056 got: 9,1,0
+sealed join FAILED! expected:  got: 9~1~0
+sealed toString FAILED! expected:  got: 9,1,0
+sealed toLocaleString FAILED! expected:  got: 9,1,0
+sealed sort FAILED! expected:  got: 0,1,9
+sealed indexOf FAILED! expected: -1 got: 2
+sealed lastIndexOf FAILED! expected: -1 got: 2
+sealed every PASSED!
+sealed filter FAILED! expected:  got: 0,9
+sealed forEach PASSED!
+sealed some FAILED! expected: false got: true
+sealed map FAILED! expected:  got: 1,2,10
+sealed for...in FAILED! expected:  got: 0,1,2,
+sealed for each...in FAILED! expected:  got: 0,1,9,
+dynamic get_length PASSED!
+dynamic push PASSED!
+dynamic get_length PASSED!
+dynamic unshift PASSED!
+dynamic get_length PASSED!
+dynamic concat PASSED!
+dynamic get_length PASSED!
+dynamic reverse PASSED!
+dynamic get_length PASSED!
+dynamic shift PASSED!
+dynamic get_length PASSED!
+dynamic splice PASSED!
+dynamic get_length PASSED!
+dynamic pop PASSED!
+dynamic get_length PASSED!
+dynamic set_length PASSED!
+dynamic getprop PASSED!
+dynamic setprop PASSED!
+dynamic hasprop PASSED!
+dynamic delprop PASSED!
+dynamic splice PASSED!
+dynamic join PASSED!
+dynamic toString PASSED!
+dynamic toLocaleString PASSED!
+dynamic sort PASSED!
+dynamic indexOf PASSED!
+dynamic lastIndexOf PASSED!
+dynamic every PASSED!
+dynamic filter PASSED!
+dynamic forEach PASSED!
+dynamic some PASSED!
+dynamic map PASSED!
+dynamic for...in PASSED!
+dynamic for each...in PASSED!
+dynamic get_length PASSED!
+dynamic push PASSED!
+dynamic get_length PASSED!
+dynamic unshift PASSED!
+dynamic get_length PASSED!
+dynamic concat PASSED!
+dynamic get_length PASSED!
+dynamic reverse PASSED!
+dynamic get_length PASSED!
+dynamic shift PASSED!
+dynamic get_length PASSED!
+dynamic splice PASSED!
+dynamic get_length PASSED!
+dynamic pop PASSED!
+dynamic get_length PASSED!
+dynamic set_length PASSED!
+dynamic getprop PASSED!
+dynamic setprop PASSED!
+dynamic hasprop PASSED!
+dynamic delprop PASSED!
+dynamic splice PASSED!
+dynamic join PASSED!
+dynamic toString PASSED!
+dynamic toLocaleString PASSED!
+dynamic sort PASSED!
+dynamic indexOf PASSED!
+dynamic lastIndexOf PASSED!
+dynamic every PASSED!
+dynamic filter PASSED!
+dynamic forEach PASSED!
+dynamic some PASSED!
+dynamic map PASSED!
+dynamic for...in PASSED!
+dynamic for each...in PASSED!
+sealed get_length PASSED!
+sealed push FAILED! expected: ReferenceError: Error #1056 got: 0,1,2
+sealed get_length FAILED! expected: 0 got: 3
+sealed unshift FAILED! expected: ReferenceError: Error #1056 got: 4,5,6,0,1,2
+sealed get_length FAILED! expected: 0 got: 6
+sealed concat FAILED! expected:  got: 4,5,6,0,1,2,4,5,6,0,1,2
+sealed get_length FAILED! expected: 0 got: 6
+sealed reverse FAILED! expected:  got: 2,1,0,6,5,4
+sealed get_length FAILED! expected: 0 got: 6
+sealed shift FAILED! expected: undefined: got: 2:1,0,6,5,4
+sealed get_length FAILED! expected: 0 got: 5
+sealed splice FAILED! expected: ReferenceError: Error #1056 got: 9,1,0,6,5,4
+sealed get_length FAILED! expected: 0 got: 6
+sealed pop FAILED! expected: undefined: got: 4:9,1,0,6,5
+sealed get_length FAILED! expected: 0 got: 5
+sealed set_length FAILED! expected: 0: got: 3:9,1,0
+sealed getprop FAILED! expected: ReferenceError: Error #1069 got: 9
+sealed setprop FAILED! expected: ReferenceError: Error #1056 got: undefined
+sealed hasprop FAILED! expected: false got: true
+sealed delprop PASSED!
+sealed splice FAILED! expected: ReferenceError: Error #1056 got: 9,1,0
+sealed join FAILED! expected:  got: 9~1~0
+sealed toString FAILED! expected:  got: 9,1,0
+sealed toLocaleString FAILED! expected:  got: 9,1,0
+sealed sort FAILED! expected:  got: 0,1,9
+sealed indexOf FAILED! expected: -1 got: 2
+sealed lastIndexOf FAILED! expected: -1 got: 2
+sealed every PASSED!
+sealed filter FAILED! expected:  got: 0,9
+sealed forEach PASSED!
+sealed some FAILED! expected: false got: true
+sealed map FAILED! expected:  got: 1,2,10
+sealed for...in FAILED! expected:  got: 0,1,2,
+sealed for each...in FAILED! expected:  got: 0,1,9,

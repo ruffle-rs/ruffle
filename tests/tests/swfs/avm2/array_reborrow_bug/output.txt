@@ -1,0 +1,6 @@
+before splice: a,b,c,d
+valueOf for index called
+array length during valueOf: 4
+valueOf for count called
+array length during valueOf: 4
+after splice: a,new,d

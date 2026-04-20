@@ -1,4 +1,4 @@
-use crate::{BlurFilter, BlurFilterFlags, Color, Fixed16, Fixed8, Rectangle, Twips};
+use crate::{BlurFilter, BlurFilterFlags, Color, Fixed8, Fixed16, Rectangle, Twips};
 use bitflags::bitflags;
 
 #[derive(Clone, Debug, Eq, PartialEq)]

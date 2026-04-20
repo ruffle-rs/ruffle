@@ -1,0 +1,24 @@
+Timeline objects:
+_level0.timeline_button
+_level0.timeline_edittext
+_level0
+_level0.timeline_sprite
+_level0
+_level0
+undefined
+_level0.timeline_video
+Timeline clones:
+_level0.timeline_button_2
+_level0.timeline_edittext_2
+undefined
+_level0.timeline_sprite_2
+undefined
+undefined
+undefined
+_level0.timeline_video_2
+Script objects:
+_level0.script_movieclip
+_level0.script_textfield
+Script clones:
+_level0.script_movieclip_2
+_level0.script_textfield_2

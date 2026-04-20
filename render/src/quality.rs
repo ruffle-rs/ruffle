@@ -103,6 +103,11 @@ impl FromStr for StageQuality {
             "low" => StageQuality::Low,
             "medium" => StageQuality::Medium,
             "high" => StageQuality::High,
+            "best" => StageQuality::Best,
+            "8x8" => StageQuality::High8x8,
+            "8x8linear" => StageQuality::High8x8Linear,
+            "16x16" => StageQuality::High16x16,
+            "16x16linear" => StageQuality::High16x16Linear,
             _ => return Err(StageQualityError),
         };
         Ok(quality)

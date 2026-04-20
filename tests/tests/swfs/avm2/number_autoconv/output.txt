@@ -1,0 +1,21 @@
+Number
+int
+int
+Number
+int
+// int overflow
+int
+int
+Number
+// int underflow
+int
+int
+int
+Number
+// should work the same for describeType
+<type name="int" base="Object" isDynamic="false" isFinal="true" isStatic="false">
+  <extendsClass type="Object"/>
+  <constructor>
+    <parameter index="1" type="*" optional="true"/>
+  </constructor>
+</type>

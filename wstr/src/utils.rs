@@ -1,7 +1,7 @@
 //! Utilities for operating on strings in SWF files.
 
-use super::tables::{LOWERCASE_TABLE, UPPERCASE_TABLE};
 use super::Units;
+use super::tables::{LOWERCASE_TABLE, UPPERCASE_TABLE};
 use alloc::vec::Vec;
 
 fn is_surrogate_pair_at(us: &[u16], pos: usize) -> bool {
@@ -110,6 +110,50 @@ pub fn swf_to_uppercase(c: u16) -> u16 {
     }
 }
 
+#[inline]
+pub fn swf_is_ascii_hexdigit(c: u16) -> bool {
+    u8::try_from(c).is_ok_and(|c| c.is_ascii_hexdigit())
+}
+
+#[inline(always)]
+pub fn swf_is_cjk_like(c: char) -> bool {
+    // NOTE: not guaranteed to be equivalent to FP's set.
+    matches!(c, '\u{2300}'..)
+}
+
+#[rustfmt::skip]
+pub fn swf_is_opening(c: char) -> bool {
+    // NOTE: not guaranteed to be equivalent to FP's set.
+    matches!(c,
+        '(' | '[' | '{'
+        | '（' | '［' | '｛' | '〈' | '《' | '「' | '⁅' | '『'
+        | '【' | '〖' | '〚'
+        | '﴾'
+        | '﹙'
+        | '〝'
+        | '︻' | '﹁' | '﹃'
+        | '︵'
+    )
+}
+
+#[rustfmt::skip]
+pub fn swf_is_closing(c: char) -> bool {
+    // NOTE: not guaranteed to be equivalent to FP's set.
+    matches!(c,
+        ')' | ']' | '}'
+        | '）' | '］' | '｝' | '〉' | '》'
+        | '?' | '!' | ';' | ':' | ',' | '.' | '」' | '⁆' | '』'
+        | '】' | '〕' | '〙' | '﹞'
+        | '﴿'
+        | '﹚'
+        | '？' | '！' | '；' | '：' | '，' | '．'
+        | '、' | '。'
+        | '〜'
+        | '︺' | '﹀' | '﹂' | '﹄' | '︶'
+        | '〟'
+    )
+}
+
 /// This is the same idea as std::str::Chars, except it uses flash's weird UTF-8 decoding rules,
 /// and works on raw bytes. It also does not return `char`, but raw u32's that may or may not be valid chars.
 ///
@@ -131,7 +175,7 @@ impl<'a> DecodeAvmUtf8<'a> {
     }
 }
 
-impl<'a> Iterator for DecodeAvmUtf8<'a> {
+impl Iterator for DecodeAvmUtf8<'_> {
     type Item = u32;
     fn next(&mut self) -> Option<Self::Item> {
         let first = *self.src.get(self.index)?;
@@ -143,7 +187,7 @@ impl<'a> Iterator for DecodeAvmUtf8<'a> {
         }
 
         let mb_count = core::cmp::min(ones - 1, 3);
-        let bm = u8::MAX >> ones;
+        let bm = u8::MAX.checked_shr(ones).unwrap_or(0);
         let mut ch = (bm & first) as u32;
         match self
             .src

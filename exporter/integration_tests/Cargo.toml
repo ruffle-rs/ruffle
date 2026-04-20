@@ -1,0 +1,27 @@
+[package]
+name = "exporter_integration_tests"
+authors.workspace = true
+edition.workspace = true
+homepage.workspace = true
+license.workspace = true
+repository.workspace = true
+version.workspace = true
+
+[lints]
+workspace = true
+
+[dev-dependencies]
+exporter = { path = ".." }
+ruffle_fs_tests_runner = { path = "../../tests/fs-tests-runner" }
+libtest-mimic = { workspace = true }
+serde = { workspace = true, features = ["derive"] }
+toml = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true }
+vfs = { workspace = true }
+image = { workspace = true }
+
+[[test]]
+name = "integration_tests"
+harness = false
+path = "src/runner.rs"

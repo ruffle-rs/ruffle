@@ -1,0 +1,26 @@
+_level0.static3 onClipConstruct
+PASSED: movieclip == movieclip
+_root.depth3Constructed set to 1
+PASSED: 10 == 10
+PASSED: guess == guess
+PASSED: -16381 == -16381
+PASSED: 50 == 50
+PASSED: -16381 == -16381
+PASSED: guess == guess
+PASSED: 200 == 200
+PASSED: -16381 == -16381
+PASSED: guess == guess
+PASSED: guess == guess
+PASSED: -16381 == -16381
+PASSED: 50 == 50
+PASSED: guess == guess
+PASSED: -16381 == -16381
+PASSED: movieclip == movieclip
+PASSED: 50 == 50
+PASSED: _level0.static3 == _level0.static3
+PASSED: 1 == 1
+#passed: 19
+#failed: 0
+#total tests run: 19
+PASSED: 50 == 50
+PASSED: -16381 == -16381

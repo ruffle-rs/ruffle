@@ -1,19 +1,31 @@
+use ruffle_macros::istr;
+
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, Value};
-use crate::context::GcContext;
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations};
+use crate::avm1::{Object, Value};
 use crate::display_object::{EditText, TDisplayObject, TInteractiveObject, TextSelection};
 
-const OBJECT_DECLS: &[Declaration] = declare_properties! {
+const OBJECT_DECLS: StaticDeclarations = declare_static_properties! {
     "getBeginIndex" => method(get_begin_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getEndIndex" => method(get_end_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getCaretIndex" => method(get_caret_index; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setSelection" => method(set_selection; DONT_ENUM | DONT_DELETE | READ_ONLY);
-    "setFocus" => method(set_focus; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getFocus" => method(get_focus; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setFocus" => method(set_focus; DONT_ENUM | DONT_DELETE | READ_ONLY);
+    "setSelection" => method(set_selection; DONT_ENUM | DONT_DELETE | READ_ONLY);
 };
+
+pub fn create<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    broadcaster_fns: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
+) -> Object<'gc> {
+    let selection = Object::new(context.strings, Some(context.object_proto));
+    broadcaster_fns.initialize(context.strings, selection, array_proto);
+    context.define_properties_on(selection, OBJECT_DECLS(context));
+    selection
+}
 
 pub fn get_begin_index<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -89,7 +101,7 @@ pub fn set_selection<'gc>(
             .unwrap_or(i32::MAX)
             .max(0);
         let selection = TextSelection::for_range(start as usize, end as usize);
-        edit_box.set_selection(Some(selection), activation.context.gc_context);
+        edit_box.set_selection(Some(selection));
     }
     Ok(Value::Undefined)
 }
@@ -103,9 +115,9 @@ pub fn get_focus<'gc>(
     Ok(match focus {
         Some(focus) => focus
             .as_displayobject()
-            .object()
+            .object1_or_undef()
             .coerce_to_string(activation)
-            .unwrap_or_default()
+            .unwrap_or_else(|_| istr!(""))
             .into(),
         None => Value::Null,
     })
@@ -120,37 +132,20 @@ pub fn set_focus<'gc>(
     match args.get(0) {
         None => Ok(false.into()),
         Some(Value::Undefined | Value::Null) => {
-            tracker.set(None, &mut activation.context);
+            tracker.set(None, activation.context);
             Ok(true.into())
         }
         Some(focus) => {
             let start_clip = activation.target_clip_or_root();
             let object = activation.resolve_target_display_object(start_clip, *focus, false)?;
-            if let Some(object) = object.and_then(|o| o.as_interactive()) {
-                if object.is_focusable(&mut activation.context) {
-                    tracker.set(Some(object), &mut activation.context);
-                    return Ok(true.into());
-                }
+            if let Some(object) = object
+                && let Some(object) = object.as_interactive()
+                && object.is_focusable(activation.context)
+            {
+                tracker.set(Some(object), activation.context);
+                return Ok(true.into());
             }
             Ok(false.into())
         }
     }
-}
-
-pub fn create_selection_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-    broadcaster_functions: BroadcasterFunctions<'gc>,
-    array_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
-    broadcaster_functions.initialize(context.gc_context, object.into(), array_proto);
-    define_properties_on(OBJECT_DECLS, context, object, fn_proto);
-    object.into()
-}
-
-pub fn create_proto<'gc>(context: &mut GcContext<'_, 'gc>, proto: Object<'gc>) -> Object<'gc> {
-    // It's a custom prototype but it's empty.
-    ScriptObject::new(context.gc_context, Some(proto)).into()
 }

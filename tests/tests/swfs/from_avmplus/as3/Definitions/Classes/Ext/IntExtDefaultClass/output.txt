@@ -1,0 +1,22 @@
+access 'default' method from 'default' method of sub class PASSED!
+access 'default' method from 'public' method of sub class PASSED!
+access 'default' method from 'final' method of sub class PASSED!
+access 'default' method from 'public final' method of sub class PASSED!
+access 'default' method from 'private final' method of sub class PASSED!
+access 'default' method from 'private' method of sub class PASSED!
+access 'default' method from 'virtual' method of sub class PASSED!
+access 'default' method from 'public virtual' method of sub class PASSED!
+access 'default' method from 'private virtual' method of sub class PASSED!
+access 'default' method from 'static' method of the sub class PASSED!
+access 'default' property from 'default' method of sub class PASSED!
+access 'default' property from 'final' method of sub class PASSED!
+access 'default' property from 'virtual' method of sub class PASSED!
+access 'default' property from 'public' method of sub class PASSED!
+access 'default' property from 'private' method of sub class PASSED!
+access 'default' property from 'public final' method of sub class PASSED!
+access 'default' property from 'public virtual' method of sub class PASSED!
+access 'default' property from 'private final' method of sub class PASSED!
+access 'default' property from 'private virtual' method of sub class PASSED!
+*** Add new property to parent prototype object, verify child class inherits it *** PASSED!
+*** Try overriding parent property through prototype object, verify child object has correct value *** PASSED!
+access default property from static public method of sub class PASSED!

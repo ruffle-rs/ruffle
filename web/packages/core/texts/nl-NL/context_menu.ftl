@@ -9,4 +9,4 @@ context-menu-about-ruffle =
 context-menu-hide = Verberg dit menu
 context-menu-exit-fullscreen = Verlaat volledig scherm
 context-menu-enter-fullscreen = Naar volledig scherm
-context-menu-volume-controls = Geluidsniveaus
+context-menu-volume-controls = Volumeregelaars

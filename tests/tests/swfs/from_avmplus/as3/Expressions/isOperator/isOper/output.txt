@@ -1,0 +1,429 @@
+{} is String PASSED!
+{} is Number PASSED!
+{} is int PASSED!
+{} is uint PASSED!
+{} is Boolean PASSED!
+{} is Object PASSED!
+{} is Function PASSED!
+{} is TestClassA PASSED!
+{} is TestClassB PASSED!
+{} is TestClassC PASSED!
+{} is TestInterface PASSED!
+{} is Date PASSED!
+{} is Array PASSED!
+"string" is String PASSED!
+"string" is Number PASSED!
+"string" is int PASSED!
+"string" is uint PASSED!
+"string" is Boolean PASSED!
+"string" is Object PASSED!
+"string" is Function PASSED!
+"string" is TestClassA PASSED!
+"string" is TestClassB PASSED!
+"string" is TestClassC PASSED!
+"string" is TestInterface PASSED!
+"string" is Date PASSED!
+"string" is Array PASSED!
+"10" is String PASSED!
+"10" is Number PASSED!
+"10" is int PASSED!
+"10" is uint PASSED!
+"10" is Boolean PASSED!
+"10" is Object PASSED!
+"10" is Function PASSED!
+"10" is TestClassA PASSED!
+"10" is TestClassB PASSED!
+"10" is TestClassC PASSED!
+"10" is TestInterface PASSED!
+"10" is Date PASSED!
+"10" is Array PASSED!
+null is String PASSED!
+null is Number PASSED!
+null is int PASSED!
+null is uint PASSED!
+null is Boolean PASSED!
+null is Object PASSED!
+null is Function PASSED!
+null is TestClassA PASSED!
+null is TestClassB PASSED!
+null is TestClassC PASSED!
+null is TestInterface PASSED!
+null is Date PASSED!
+null is Array PASSED!
+undefined is String PASSED!
+undefined is Number PASSED!
+undefined is int PASSED!
+undefined is uint PASSED!
+undefined is Boolean PASSED!
+undefined is Object PASSED!
+undefined is Function PASSED!
+undefined is TestClassA PASSED!
+undefined is TestClassB PASSED!
+undefined is TestClassC PASSED!
+undefined is TestInterface PASSED!
+undefined is Date PASSED!
+undefined is Array PASSED!
+true is String PASSED!
+true is Number PASSED!
+true is int PASSED!
+true is uint PASSED!
+true is Boolean PASSED!
+true is Object PASSED!
+true is Function PASSED!
+true is TestClassA PASSED!
+true is TestClassB PASSED!
+true is TestClassC PASSED!
+true is TestInterface PASSED!
+true is Date PASSED!
+true is Array PASSED!
+false is String PASSED!
+false is Number PASSED!
+false is int PASSED!
+false is uint PASSED!
+false is Boolean PASSED!
+false is Object PASSED!
+false is Function PASSED!
+false is TestClassA PASSED!
+false is TestClassB PASSED!
+false is TestClassC PASSED!
+false is TestInterface PASSED!
+false is Date PASSED!
+false is Array PASSED!
+0 is String PASSED!
+0 is Number PASSED!
+0 is int PASSED!
+0 is uint PASSED!
+0 is Boolean PASSED!
+0 is Object PASSED!
+0 is Function PASSED!
+0 is TestClassA PASSED!
+0 is TestClassB PASSED!
+0 is TestClassC PASSED!
+0 is TestInterface PASSED!
+0 is Date PASSED!
+0 is Array PASSED!
+1 is String PASSED!
+1 is Number PASSED!
+1 is int PASSED!
+1 is uint PASSED!
+1 is Boolean PASSED!
+1 is Object PASSED!
+1 is Function PASSED!
+1 is TestClassA PASSED!
+1 is TestClassB PASSED!
+1 is TestClassC PASSED!
+1 is TestInterface PASSED!
+1 is Date PASSED!
+1 is Array PASSED!
+-1 is String PASSED!
+-1 is Number PASSED!
+-1 is int PASSED!
+-1 is uint PASSED!
+-1 is Boolean PASSED!
+-1 is Object PASSED!
+-1 is Function PASSED!
+-1 is TestClassA PASSED!
+-1 is TestClassB PASSED!
+-1 is TestClassC PASSED!
+-1 is TestInterface PASSED!
+-1 is Date PASSED!
+-1 is Array PASSED!
+1.23 is String PASSED!
+1.23 is Number PASSED!
+1.23 is int PASSED!
+1.23 is uint PASSED!
+1.23 is Boolean PASSED!
+1.23 is Object PASSED!
+1.23 is Function PASSED!
+1.23 is TestClassA PASSED!
+1.23 is TestClassB PASSED!
+1.23 is TestClassC PASSED!
+1.23 is TestInterface PASSED!
+1.23 is Date PASSED!
+1.23 is Array PASSED!
+-1.23 is String PASSED!
+-1.23 is Number PASSED!
+-1.23 is int PASSED!
+-1.23 is uint PASSED!
+-1.23 is Boolean PASSED!
+-1.23 is Object PASSED!
+-1.23 is Function PASSED!
+-1.23 is TestClassA PASSED!
+-1.23 is TestClassB PASSED!
+-1.23 is TestClassC PASSED!
+-1.23 is TestInterface PASSED!
+-1.23 is Date PASSED!
+-1.23 is Array PASSED!
+NaN is String PASSED!
+NaN is Number PASSED!
+NaN is int PASSED!
+NaN is uint PASSED!
+NaN is Boolean PASSED!
+NaN is Object PASSED!
+NaN is Function PASSED!
+NaN is TestClassA PASSED!
+NaN is TestClassB PASSED!
+NaN is TestClassC PASSED!
+NaN is TestInterface PASSED!
+NaN is Date PASSED!
+NaN is Array PASSED!
+Infinity is String PASSED!
+Infinity is Number PASSED!
+Infinity is int PASSED!
+Infinity is uint PASSED!
+Infinity is Boolean PASSED!
+Infinity is Object PASSED!
+Infinity is Function PASSED!
+Infinity is TestClassA PASSED!
+Infinity is TestClassB PASSED!
+Infinity is TestClassC PASSED!
+Infinity is TestInterface PASSED!
+Infinity is Date PASSED!
+Infinity is Array PASSED!
+emptyFunction is String PASSED!
+emptyFunction is Number PASSED!
+emptyFunction is int PASSED!
+emptyFunction is uint PASSED!
+emptyFunction is Boolean PASSED!
+emptyFunction is Object PASSED!
+emptyFunction is Function PASSED!
+emptyFunction is TestClassA PASSED!
+emptyFunction is TestClassB PASSED!
+emptyFunction is TestClassC PASSED!
+emptyFunction is TestInterface PASSED!
+emptyFunction is Date PASSED!
+emptyFunction is Array PASSED!
+emptyObject is String PASSED!
+emptyObject is Number PASSED!
+emptyObject is int PASSED!
+emptyObject is uint PASSED!
+emptyObject is Boolean PASSED!
+emptyObject is Object PASSED!
+emptyObject is Function PASSED!
+emptyObject is TestClassA PASSED!
+emptyObject is TestClassB PASSED!
+emptyObject is TestClassC PASSED!
+emptyObject is TestInterface PASSED!
+emptyObject is Date PASSED!
+emptyObject is Array PASSED!
+myClassA is String PASSED!
+myClassA is Number PASSED!
+myClassA is int PASSED!
+myClassA is uint PASSED!
+myClassA is Boolean PASSED!
+myClassA is Object PASSED!
+myClassA is Function PASSED!
+myClassA is TestClassA PASSED!
+myClassA is TestClassB PASSED!
+myClassA is TestClassC PASSED!
+myClassA is TestInterface PASSED!
+myClassA is Date PASSED!
+myClassA is Array PASSED!
+myClassB is String PASSED!
+myClassB is Number PASSED!
+myClassB is int PASSED!
+myClassB is uint PASSED!
+myClassB is Boolean PASSED!
+myClassB is Object PASSED!
+myClassB is Function PASSED!
+myClassB is TestClassA PASSED!
+myClassB is TestClassB PASSED!
+myClassB is TestClassC PASSED!
+myClassB is TestInterface PASSED!
+myClassB is Date PASSED!
+myClassB is Array PASSED!
+myClassC is String PASSED!
+myClassC is Number PASSED!
+myClassC is int PASSED!
+myClassC is uint PASSED!
+myClassC is Boolean PASSED!
+myClassC is Object PASSED!
+myClassC is Function PASSED!
+myClassC is TestClassA PASSED!
+myClassC is TestClassB PASSED!
+myClassC is TestClassC PASSED!
+myClassC is TestInterface PASSED!
+myClassC is Date PASSED!
+myClassC is Array PASSED!
+myDate is String PASSED!
+myDate is Number PASSED!
+myDate is int PASSED!
+myDate is uint PASSED!
+myDate is Boolean PASSED!
+myDate is Object PASSED!
+myDate is Function PASSED!
+myDate is TestClassA PASSED!
+myDate is TestClassB PASSED!
+myDate is TestClassC PASSED!
+myDate is TestInterface PASSED!
+myDate is Date PASSED!
+myDate is Array PASSED!
+Number.MAX_VALUE is String PASSED!
+Number.MAX_VALUE is Number PASSED!
+Number.MAX_VALUE is int PASSED!
+Number.MAX_VALUE is uint PASSED!
+Number.MAX_VALUE is Boolean PASSED!
+Number.MAX_VALUE is Object PASSED!
+Number.MAX_VALUE is Function PASSED!
+Number.MAX_VALUE is TestClassA PASSED!
+Number.MAX_VALUE is TestClassB PASSED!
+Number.MAX_VALUE is TestClassC PASSED!
+Number.MAX_VALUE is TestInterface PASSED!
+Number.MAX_VALUE is Date PASSED!
+Number.MAX_VALUE is Array PASSED!
+Number.MIN_VALUE is String PASSED!
+Number.MIN_VALUE is Number PASSED!
+Number.MIN_VALUE is int PASSED!
+Number.MIN_VALUE is uint PASSED!
+Number.MIN_VALUE is Boolean PASSED!
+Number.MIN_VALUE is Object PASSED!
+Number.MIN_VALUE is Function PASSED!
+Number.MIN_VALUE is TestClassA PASSED!
+Number.MIN_VALUE is TestClassB PASSED!
+Number.MIN_VALUE is TestClassC PASSED!
+Number.MIN_VALUE is TestInterface PASSED!
+Number.MIN_VALUE is Date PASSED!
+Number.MIN_VALUE is Array PASSED!
+Number.NEGATIVE_INFINITY is String PASSED!
+Number.NEGATIVE_INFINITY is Number PASSED!
+Number.NEGATIVE_INFINITY is int PASSED!
+Number.NEGATIVE_INFINITY is uint PASSED!
+Number.NEGATIVE_INFINITY is Boolean PASSED!
+Number.NEGATIVE_INFINITY is Object PASSED!
+Number.NEGATIVE_INFINITY is Function PASSED!
+Number.NEGATIVE_INFINITY is TestClassA PASSED!
+Number.NEGATIVE_INFINITY is TestClassB PASSED!
+Number.NEGATIVE_INFINITY is TestClassC PASSED!
+Number.NEGATIVE_INFINITY is TestInterface PASSED!
+Number.NEGATIVE_INFINITY is Date PASSED!
+Number.NEGATIVE_INFINITY is Array PASSED!
+Number.POSITIVE_INFINITY is String PASSED!
+Number.POSITIVE_INFINITY is Number PASSED!
+Number.POSITIVE_INFINITY is int PASSED!
+Number.POSITIVE_INFINITY is uint PASSED!
+Number.POSITIVE_INFINITY is Boolean PASSED!
+Number.POSITIVE_INFINITY is Object PASSED!
+Number.POSITIVE_INFINITY is Function PASSED!
+Number.POSITIVE_INFINITY is TestClassA PASSED!
+Number.POSITIVE_INFINITY is TestClassB PASSED!
+Number.POSITIVE_INFINITY is TestClassC PASSED!
+Number.POSITIVE_INFINITY is TestInterface PASSED!
+Number.POSITIVE_INFINITY is Date PASSED!
+Number.POSITIVE_INFINITY is Array PASSED!
+uint.MAX_VALUE is String PASSED!
+uint.MAX_VALUE is Number PASSED!
+uint.MAX_VALUE is int PASSED!
+uint.MAX_VALUE is uint PASSED!
+uint.MAX_VALUE is Boolean PASSED!
+uint.MAX_VALUE is Object PASSED!
+uint.MAX_VALUE is Function PASSED!
+uint.MAX_VALUE is TestClassA PASSED!
+uint.MAX_VALUE is TestClassB PASSED!
+uint.MAX_VALUE is TestClassC PASSED!
+uint.MAX_VALUE is TestInterface PASSED!
+uint.MAX_VALUE is Date PASSED!
+uint.MAX_VALUE is Array PASSED!
+uint.MIN_VALUE is String PASSED!
+uint.MIN_VALUE is Number PASSED!
+uint.MIN_VALUE is int PASSED!
+uint.MIN_VALUE is uint PASSED!
+uint.MIN_VALUE is Boolean PASSED!
+uint.MIN_VALUE is Object PASSED!
+uint.MIN_VALUE is Function PASSED!
+uint.MIN_VALUE is TestClassA PASSED!
+uint.MIN_VALUE is TestClassB PASSED!
+uint.MIN_VALUE is TestClassC PASSED!
+uint.MIN_VALUE is TestInterface PASSED!
+uint.MIN_VALUE is Date PASSED!
+uint.MIN_VALUE is Array PASSED!
+int.MAX_VALUE is String PASSED!
+int.MAX_VALUE is Number PASSED!
+int.MAX_VALUE is int PASSED!
+int.MAX_VALUE is uint PASSED!
+int.MAX_VALUE is Boolean PASSED!
+int.MAX_VALUE is Object PASSED!
+int.MAX_VALUE is Function PASSED!
+int.MAX_VALUE is TestClassA PASSED!
+int.MAX_VALUE is TestClassB PASSED!
+int.MAX_VALUE is TestClassC PASSED!
+int.MAX_VALUE is TestInterface PASSED!
+int.MAX_VALUE is Date PASSED!
+int.MAX_VALUE is Array PASSED!
+int.MIN_VALUE is String PASSED!
+int.MIN_VALUE is Number PASSED!
+int.MIN_VALUE is int PASSED!
+int.MIN_VALUE is uint PASSED!
+int.MIN_VALUE is Boolean PASSED!
+int.MIN_VALUE is Object PASSED!
+int.MIN_VALUE is Function PASSED!
+int.MIN_VALUE is TestClassA PASSED!
+int.MIN_VALUE is TestClassB PASSED!
+int.MIN_VALUE is TestClassC PASSED!
+int.MIN_VALUE is TestInterface PASSED!
+int.MIN_VALUE is Date PASSED!
+int.MIN_VALUE is Array PASSED!
+"" (empty string) is String PASSED!
+"" (empty string) is Number PASSED!
+"" (empty string) is int PASSED!
+"" (empty string) is uint PASSED!
+"" (empty string) is Boolean PASSED!
+"" (empty string) is Object PASSED!
+"" (empty string) is Function PASSED!
+"" (empty string) is TestClassA PASSED!
+"" (empty string) is TestClassB PASSED!
+"" (empty string) is TestClassC PASSED!
+"" (empty string) is TestInterface PASSED!
+"" (empty string) is Date PASSED!
+"" (empty string) is Array PASSED!
+empty * Obj is String PASSED!
+empty * Obj is Number PASSED!
+empty * Obj is int PASSED!
+empty * Obj is uint PASSED!
+empty * Obj is Boolean PASSED!
+empty * Obj is Object PASSED!
+empty * Obj is Function PASSED!
+empty * Obj is TestClassA PASSED!
+empty * Obj is TestClassB PASSED!
+empty * Obj is TestClassC PASSED!
+empty * Obj is TestInterface PASSED!
+empty * Obj is Date PASSED!
+empty * Obj is Array PASSED!
+undefinedVar is String PASSED!
+undefinedVar is Number PASSED!
+undefinedVar is int PASSED!
+undefinedVar is uint PASSED!
+undefinedVar is Boolean PASSED!
+undefinedVar is Object PASSED!
+undefinedVar is Function PASSED!
+undefinedVar is TestClassA PASSED!
+undefinedVar is TestClassB PASSED!
+undefinedVar is TestClassC PASSED!
+undefinedVar is TestInterface PASSED!
+undefinedVar is Date PASSED!
+undefinedVar is Array PASSED!
+filled Array is String PASSED!
+filled Array is Number PASSED!
+filled Array is int PASSED!
+filled Array is uint PASSED!
+filled Array is Boolean PASSED!
+filled Array is Object PASSED!
+filled Array is Function PASSED!
+filled Array is TestClassA PASSED!
+filled Array is TestClassB PASSED!
+filled Array is TestClassC PASSED!
+filled Array is TestInterface PASSED!
+filled Array is Date PASSED!
+filled Array is Array PASSED!
+empty Array is String PASSED!
+empty Array is Number PASSED!
+empty Array is int PASSED!
+empty Array is uint PASSED!
+empty Array is Boolean PASSED!
+empty Array is Object PASSED!
+empty Array is Function PASSED!
+empty Array is TestClassA PASSED!
+empty Array is TestClassB PASSED!
+empty Array is TestClassC PASSED!
+empty Array is TestInterface PASSED!
+empty Array is Date PASSED!
+empty Array is Array PASSED!

@@ -197,6 +197,25 @@ styleSheet.getStyle("key") = {
 }
 styleSheet.getStyle("nonexistant") = {}
 
+/// parseCSS: last property without semicolon trimmed correctly
+styleSheet.getStyle("a") = {
+    "key1" = string "value"
+    "key2" = string "value "
+}
+styleSheet.getStyle("b") = {
+    "key3" = string "value "
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: comment
+styleSheet.getStyle("a") = {
+    "key" = string "value"
+}
+styleSheet.getStyle("nonexistant") = {}
+
+/// parseCSS: unclosed comment
+styleSheet.getStyle("nonexistant") = {}
+
 /// transform
 styleSheet.getStyle("anything") = {}
 styleSheet.getStyle("nonexistant") = {}

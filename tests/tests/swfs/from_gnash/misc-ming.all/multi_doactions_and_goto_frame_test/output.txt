@@ -1,0 +1,6 @@
+PASSED: x1  ==  'as_in_doAction_tag1' [multi_doactions_and_goto_frame_test.c:71]
+PASSED: x2  ==  'as_in_doAction_tag2' [multi_doactions_and_goto_frame_test.c:72]
+PASSED: x3  ==  'as_in_doAction_tag3' [multi_doactions_and_goto_frame_test.c:73]
+#passed: 3
+#failed: 0
+#total tests run: 3

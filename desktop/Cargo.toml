@@ -12,53 +12,73 @@ workspace = true
 
 [dependencies]
 clap = { workspace = true }
-cpal = "0.15.3"
+cpal = { workspace = true }
 egui = { workspace = true }
-egui_extras = { version = "0.28.1", default-features = false, features = ["image"] }
-egui-wgpu = { version = "0.28.1", features = ["winit"] }
+egui_extras = { version = "0.33.3", default-features = false, features = ["image"] }
+egui-wgpu = { version = "0.33.3", features = ["winit"] }
 image = { workspace = true, features = ["png"] }
-egui-winit = "0.28.1"
-fontdb = "0.20"
-ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "nellymoser", "default_compatibility_rules", "egui"] }
+egui-winit = "0.33.3"
+fontdb = "0.23"
+ruffle_core = { path = "../core", features = ["audio", "clap", "mp3", "aac", "nellymoser", "default_compatibility_rules", "egui"] }
 ruffle_render = { path = "../render", features = ["clap"] }
 ruffle_render_wgpu = { path = "../render/wgpu", features = ["clap"] }
 ruffle_video_software = { path = "../video/software", optional = true }
-ruffle_video_external = { path = "../video/external", optional = true }
-ruffle_frontend_utils = { path = "../frontend-utils" }
+ruffle_video_external = { path = "../video/external", features = ["openh264"], optional = true }
+ruffle_frontend_utils = { path = "../frontend-utils", features = ["cpal", "fs", "navigator"] }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-tracing-appender = "0.2.3"
-winit = "0.29.15"
-webbrowser = "1.0.1"
+tracing-appender = "0.2.4"
+winit = "0.30.13"
+webbrowser = "1.1.0"
 url = { workspace = true }
-dirs = "5.0"
-rfd = "0.14.1"
+dirs = "6.0"
+rfd = { workspace = true }
 anyhow = { workspace = true }
 bytemuck = { workspace = true }
 os_info = { version = "3", default-features = false }
-unic-langid = "0.9.5"
-sys-locale = "0.3.1"
+unic-langid = "0.9.6"
+sys-locale = "0.3.2"
 wgpu = { workspace = true }
 futures = { workspace = true }
 chrono = { workspace = true }
-fluent-templates = "0.9.4"
-toml_edit = { version = "0.22.16", features = ["parse"] }
-gilrs = "0.10"
-tokio = { workspace = true, features = ["rt-multi-thread", "macros"]}
+fluent-templates = { workspace = true }
+toml_edit = { workspace = true, features = ["parse"] }
+gilrs = "0.11"
+tokio = { workspace = true, features = ["rt-multi-thread", "macros", "fs"] }
 
-# Deliberately held back to match tracy client used by profiling crate
-tracing-tracy = { version = "=0.10.4", optional = true }
-rand = "0.8.5"
+tracing-tracy = { version = "0.11.3", optional = true, features = ["demangle"] }
+rand = "0.9.1"
+thiserror.workspace = true
+async-channel.workspace = true
+unicode-bidi = "0.3.18"
+fontconfig = { version = "0.10.0", optional = true, features = ["dlopen"]}
+memmap2.workspace = true
+walkdir.workspace = true
+async-task = "4.7.1"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+ashpd = "0.12.1"
 
 [target.'cfg(windows)'.dependencies]
-winapi = "0.3.9"
+windows-sys = { version = "0.61.2", features = ["Win32_System_Console", "Win32_Storage_FileSystem"] }
 
 [build-dependencies]
-embed-resource = "2"
-vergen = { version = "8.3.2", features = ["build", "git", "gitcl", "cargo"] }
+vergen = { version = "9.1.0", features = ["build", "cargo"] }
+vergen-gitcl = { version = "9.1.0" }
+winresource = "0.1"
+
+[package.metadata.winresource]
+# https://learn.microsoft.com/en-us/windows/win32/menurc/stringfileinfo-block
+ProductName = "Ruffle"
+FileDescription = "Adobe Flash Player emulator"
+CompanyName = "Ruffle LLC"
+LegalCopyright = "Copyright © 2018 Ruffle LLC and Ruffle contributors"
+# InternalName should be the same as the module name
+InternalName = "ruffle_desktop"
+OriginalFilename = "ruffle.exe"
 
 [features]
-default = ["software_video", "external_video"]
+default = ["software_video", "external_video", "lzma", "fontconfig"]
 jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
@@ -67,11 +87,10 @@ lzma = ["ruffle_core/lzma"]
 software_video = ["ruffle_video_software"]
 external_video = ["ruffle_video_external"]
 tracy = ["tracing-tracy", "ruffle_render_wgpu/profile-with-tracy"]
+fontconfig = ["dep:fontconfig"]
 
 # wgpu features
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
-render_trace = ["ruffle_render_wgpu/render_trace"]
 
 # sandboxing
 sandbox = []
-

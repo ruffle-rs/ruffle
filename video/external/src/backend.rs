@@ -1,18 +1,23 @@
 use crate::decoder::VideoDecoder;
-use bzip2::read::BzDecoder;
-use md5::{Digest, Md5};
+#[cfg(feature = "openh264")]
+use crate::decoder::openh264::OpenH264Codec;
+
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{BitmapHandle, BitmapInfo, PixelRegion};
+use ruffle_video::VideoStreamHandle;
 use ruffle_video::backend::VideoBackend;
 use ruffle_video::error::Error;
 use ruffle_video::frame::{EncodedFrame, FrameDependency};
-use ruffle_video::VideoStreamHandle;
 use ruffle_video_software::backend::SoftwareVideoBackend;
 use slotmap::SlotMap;
-use std::fs::File;
-use std::io::copy;
-use std::path::PathBuf;
+
 use swf::{VideoCodec, VideoDeblocking};
+
+// Just to avoid the several conditional imports.
+#[cfg(feature = "webcodecs")]
+type LogSubscriberArc = std::sync::Arc<
+    tracing_subscriber::layer::Layered<tracing_wasm::WASMLayer, tracing_subscriber::Registry>,
+>;
 
 enum ProxyOrStream {
     /// These streams are passed through to the wrapped software
@@ -28,95 +33,72 @@ enum ProxyOrStream {
 /// except for H.264, for which it uses an external decoder.
 pub struct ExternalVideoBackend {
     streams: SlotMap<VideoStreamHandle, ProxyOrStream>,
-    openh264_lib_filepath: Option<PathBuf>,
+    #[cfg(feature = "openh264")]
+    openh264_codec: Option<OpenH264Codec>,
+    // Needed for the callbacks in the `webcodecs` backend.
+    #[cfg(feature = "webcodecs")]
+    log_subscriber: Option<LogSubscriberArc>,
     software: SoftwareVideoBackend,
 }
 
 impl Default for ExternalVideoBackend {
     fn default() -> Self {
-        Self::new(None)
+        Self::new()
     }
 }
 
 impl ExternalVideoBackend {
-    fn get_openh264_data() -> Result<(&'static str, &'static str), Box<dyn std::error::Error>> {
-        // Source: https://github.com/cisco/openh264/releases/tag/v2.4.1
-        match (std::env::consts::OS, std::env::consts::ARCH) {
-            ("linux", "x86") => Ok((
-                "libopenh264-2.4.1-linux32.7.so",
-                "dd0743066117d63e1b2abc56a86506e5",
-            )),
-            ("linux", "x86_64") => Ok((
-                "libopenh264-2.4.1-linux64.7.so",
-                "19c561386a9564f8510fcb7586b9d402",
-            )),
-            ("linux", "arm") => Ok((
-                "libopenh264-2.4.1-linux-arm.7.so",
-                "2274a1bbd13f32b7afe22092e44fa2b5",
-            )),
-            ("linux", "aarch64") => Ok((
-                "libopenh264-2.4.1-linux-arm64.7.so",
-                "2aa205f08077aa2d049032e0b56c5b84",
-            )),
-            ("macos", "x86_64") => Ok((
-                "libopenh264-2.4.1-mac-x64.dylib",
-                "9fefa1e0279a49b8a4e9cf6fc148bc0c",
-            )),
-            ("macos", "aarch64") => Ok((
-                "libopenh264-2.4.1-mac-arm64.dylib",
-                "41f59bb5696ffeadbfba3a8a95ec39b7",
-            )),
-            ("windows", "x86") => Ok((
-                "openh264-2.4.1-win32.dll",
-                "a9360e6dd1e24320c3d65a0c65bf14a4",
-            )),
-            ("windows", "x86_64") => Ok((
-                "openh264-2.4.1-win64.dll",
-                "c85406e6b73812ec3fb9da5f898c6a9e",
-            )),
-            (os, arch) => Err(format!("Unsupported OS/ARCH: {} {}", os, arch).into()),
+    fn make_decoder(&mut self) -> Result<Box<dyn VideoDecoder>, Error> {
+        #[cfg(feature = "openh264")]
+        if let Some(h264_codec) = self.openh264_codec.as_ref() {
+            let decoder = Box::new(crate::decoder::openh264::H264Decoder::new(h264_codec));
+            return Ok(decoder);
         }
+
+        #[cfg(feature = "webcodecs")]
+        {
+            let log_subscriber = self
+                .log_subscriber
+                .clone()
+                .ok_or(Error::DecoderError("log subscriber not set".into()))?;
+            let decoder = crate::decoder::webcodecs::H264Decoder::new(log_subscriber);
+            return decoder.map(|decoder| Box::new(decoder) as Box<dyn VideoDecoder>);
+        }
+
+        #[allow(unreachable_code)]
+        Err(Error::DecoderError("No H.264 decoder available".into()))
     }
 
-    pub fn get_openh264() -> Result<PathBuf, Box<dyn std::error::Error>> {
-        // See the license at: https://www.openh264.org/BINARY_LICENSE.txt
-        const URL_BASE: &str = "http://ciscobinary.openh264.org/";
-        const URL_SUFFIX: &str = ".bz2";
-
-        let (filename, md5sum) = Self::get_openh264_data()?;
-
-        let filepath = std::env::current_exe()?
-            .parent()
-            .ok_or("Could not determine Ruffle location.")?
-            .join(filename);
-
-        // If the binary doesn't exist in the expected location, download it.
-        if !filepath.is_file() {
-            let url = format!("{}{}{}", URL_BASE, filename, URL_SUFFIX);
-            let response = reqwest::blocking::get(url)?;
-            let bytes = response.bytes()?;
-            let mut bzip2_reader = BzDecoder::new(bytes.as_ref());
-
-            let mut file = File::create(filepath.clone())?;
-            copy(&mut bzip2_reader, &mut file)?;
-        }
-
-        // Regardless of whether the library was already there, or we just downloaded it, let's check the MD5 hash.
-        let mut md5 = Md5::new();
-        copy(&mut File::open(filepath.clone())?, &mut md5)?;
-        let result: [u8; 16] = md5.finalize().into();
-
-        if result[..] != hex::decode(md5sum)?[..] {
-            return Err(format!("MD5 checksum mismatch for {}", filename).into());
-        }
-
-        Ok(filepath)
-    }
-
-    pub fn new(openh264_lib_filepath: Option<PathBuf>) -> Self {
+    // Neither the `openh264` nor the `webcodecs` backend will be available.
+    pub fn new() -> Self {
         Self {
             streams: SlotMap::with_key(),
-            openh264_lib_filepath,
+            #[cfg(feature = "openh264")]
+            openh264_codec: None,
+            #[cfg(feature = "webcodecs")]
+            log_subscriber: None,
+            software: SoftwareVideoBackend::new(),
+        }
+    }
+
+    #[cfg(feature = "openh264")]
+    pub fn new_with_openh264(openh264_codec: OpenH264Codec) -> Self {
+        Self {
+            streams: SlotMap::with_key(),
+            openh264_codec: Some(openh264_codec),
+            #[cfg(feature = "webcodecs")]
+            log_subscriber: None,
+            software: SoftwareVideoBackend::new(),
+        }
+    }
+
+    #[cfg(feature = "webcodecs")]
+    pub fn new_with_webcodecs(log_subscriber: LogSubscriberArc) -> Self {
+        Self {
+            streams: SlotMap::with_key(),
+            #[cfg(feature = "openh264")]
+            openh264_codec: None,
+            log_subscriber: Some(log_subscriber),
             software: SoftwareVideoBackend::new(),
         }
     }
@@ -133,15 +115,9 @@ impl VideoBackend for ExternalVideoBackend {
         filter: VideoDeblocking,
     ) -> Result<VideoStreamHandle, Error> {
         let proxy_or_stream = if codec == VideoCodec::H264 {
-            let openh264 = &self.openh264_lib_filepath;
-            if let Some(openh264) = openh264 {
-                tracing::info!("Using OpenH264 at {:?}", openh264);
-                let decoder = Box::new(crate::decoder::openh264::H264Decoder::new(openh264));
-                let stream = VideoStream::new(decoder);
-                ProxyOrStream::Owned(stream)
-            } else {
-                return Err(Error::DecoderError("No OpenH264".into()));
-            }
+            let decoder = self.make_decoder()?;
+            let stream = VideoStream::new(decoder);
+            ProxyOrStream::Owned(stream)
         } else {
             ProxyOrStream::Proxied(
                 self.software
@@ -207,11 +183,15 @@ impl VideoBackend for ExternalVideoBackend {
             ProxyOrStream::Owned(stream) => {
                 let frame = stream.decoder.decode_frame(encoded_frame)?;
 
-                let w = frame.width();
-                let h = frame.height();
+                let width = frame.width();
+                let height = frame.height();
 
                 let handle = if let Some(bitmap) = stream.bitmap.clone() {
-                    renderer.update_texture(&bitmap, frame, PixelRegion::for_whole_size(w, h))?;
+                    renderer.update_texture(
+                        &bitmap,
+                        frame,
+                        PixelRegion::for_whole_size(width, height),
+                    )?;
                     bitmap
                 } else {
                     renderer.register_bitmap(frame)?
@@ -220,8 +200,8 @@ impl VideoBackend for ExternalVideoBackend {
 
                 Ok(BitmapInfo {
                     handle,
-                    width: w as u16,
-                    height: h as u16,
+                    width,
+                    height,
                 })
             }
         }

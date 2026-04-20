@@ -18,24 +18,24 @@
         "checkTypes": "tsc --noemit && tsc --noemit -p tools"
     },
     "dependencies": {
-        "wasm-feature-detect": "^1.6.2"
+        "wasm-feature-detect": "^1.8.0"
     },
     "devDependencies": {
-        "@fluent/bundle": "^0.18.0",
+        "@fluent/bundle": "^0.19.1",
         "@fluent/langneg": "^0.7.0",
-        "@tsconfig/strictest": "^2.0.5",
-        "@types/mocha": "^10.0.7",
-        "autoprefixer": "^10.4.19",
-        "cssnano": "^7.0.4",
-        "cssnano-preset-advanced": "^7.0.4",
-        "mocha": "^10.7.0",
-        "postcss": "^8.4.39",
-        "postcss-nesting": "^12.1.5",
-        "replace-in-file": "^8.1.0",
-        "tsx": "^4.16.2",
-        "tsx-dom": "^3.0.1",
-        "typedoc": "^0.26.5",
-        "typescript": "^5.5.4"
+        "@tsconfig/strictest": "^2.0.8",
+        "@types/mocha": "^10.0.10",
+        "autoprefixer": "^10.4.27",
+        "cssnano": "^7.1.3",
+        "cssnano-preset-advanced": "^7.0.11",
+        "mocha": "^11.7.5",
+        "postcss": "^8.5.8",
+        "postcss-nesting": "^14.0.0",
+        "replace-in-file": "^8.4.0",
+        "tsx": "^4.21.0",
+        "tsx-dom": "^3.1.0",
+        "typedoc": "^0.28.17",
+        "typescript": "^5.9.3"
     },
     "sideEffects": false
 }

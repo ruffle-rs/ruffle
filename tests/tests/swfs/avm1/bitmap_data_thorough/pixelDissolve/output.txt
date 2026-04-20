@@ -1,0 +1,1374 @@
+-- Transparent --
+// pixelDissolve()
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(null, rect, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(undefined, rect, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve({}, rect, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(opaqueBmd, rect, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(disposedBmd, rect, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, null, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, undefined, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, {}, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, zeroSizedRect, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rectAsObj, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rectWithoutWidth, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, null)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, undefined)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, {})
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, pointOutsideBmd)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, pointAsObj)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, pointWithoutY)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, 2557891634)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(null, rect, point, 100, 40, 2557891634)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(undefined, rect, point, 100, 40, 2557891634)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve({}, rect, point, 100, 40, 2557891634)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(opaqueBmd, rect, point, 100, 40, 2557891634)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff345678 0xff345678
+0xaabbccdc 0xff345678 0xff345678
+--
+
+// pixelDissolve(disposedBmd, rect, point, 100, 40, 2557891634)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, null, point, 100, 40, 2557891634)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, undefined, point, 100, 40, 2557891634)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, {}, point, 100, 40, 2557891634)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, zeroSizedRect, point, 100, 40, 2557891634)
+100
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rectAsObj, point, 100, 40, 2557891634)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rectWithoutWidth, point, 100, 40, 2557891634)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, null, 100, 40, 2557891634)
+1
+--
+0x12395571 0x12395571 0xaabbccdc
+0x12395571 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, undefined, 100, 40, 2557891634)
+1
+--
+0x12395571 0x12395571 0xaabbccdc
+0x12395571 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, {}, 100, 40, 2557891634)
+1
+--
+0x12395571 0x12395571 0xaabbccdc
+0x12395571 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, pointOutsideBmd, 100, 40, 2557891634)
+100
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, pointAsObj, 100, 40, 2557891634)
+1
+--
+0x12395571 0x12395571 0xaabbccdc
+0x12395571 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, pointWithoutY, 100, 40, 2557891634)
+1
+--
+0x12395571 0x12395571 0xaabbccdc
+0x12395571 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, point, null, 40, 2557891634)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, undefined, 40, 2557891634)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, {}, 40, 2557891634)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, objLooksLikeNum, 40, 2557891634)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, -1, 40, 2557891634)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, -2, 40, 2557891634)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 0, 40, 2557891634)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 10, 40, 2557891634)
+3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, null, 2557891634)
+100
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, undefined, 2557891634)
+100
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, {}, 2557891634)
+100
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, objLooksLikeNum, 2557891634)
+3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, -1, 2557891634)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, -2, 2557891634)
+3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 0, 2557891634)
+100
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 10, 2557891634)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, null)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, undefined)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, {})
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, objLooksLikeNum)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, -1)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, -2)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, 0)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, 10)
+1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x12395571 0x12395571
+0xaabbccdc 0x12395571 0x12395571
+--
+
+
+
+-- Opaque --
+// pixelDissolve()
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(null, rect, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(undefined, rect, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve({}, rect, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(opaqueBmd, rect, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(disposedBmd, rect, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, null, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, undefined, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, {}, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, zeroSizedRect, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rectAsObj, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rectWithoutWidth, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, null)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, undefined)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, {})
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, pointOutsideBmd)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, pointAsObj)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, pointWithoutY)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, 2557891634)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(null, rect, point, 100, 40, 2557891634)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(undefined, rect, point, 100, 40, 2557891634)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve({}, rect, point, 100, 40, 2557891634)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(opaqueBmd, rect, point, 100, 40, 2557891634)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff345678 0xff345678
+0xffbbccdd 0xff345678 0xff345678
+--
+
+// pixelDissolve(disposedBmd, rect, point, 100, 40, 2557891634)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, null, point, 100, 40, 2557891634)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, undefined, point, 100, 40, 2557891634)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, {}, point, 100, 40, 2557891634)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, zeroSizedRect, point, 100, 40, 2557891634)
+100
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rectAsObj, point, 100, 40, 2557891634)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rectWithoutWidth, point, 100, 40, 2557891634)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, null, 100, 40, 2557891634)
+1
+--
+0x12040608 0x12040608 0xffbbccdd
+0x12040608 0x12040608 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, undefined, 100, 40, 2557891634)
+1
+--
+0x12040608 0x12040608 0xffbbccdd
+0x12040608 0x12040608 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, {}, 100, 40, 2557891634)
+1
+--
+0x12040608 0x12040608 0xffbbccdd
+0x12040608 0x12040608 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, pointOutsideBmd, 100, 40, 2557891634)
+100
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, pointAsObj, 100, 40, 2557891634)
+1
+--
+0x12040608 0x12040608 0xffbbccdd
+0x12040608 0x12040608 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, pointWithoutY, 100, 40, 2557891634)
+1
+--
+0x12040608 0x12040608 0xffbbccdd
+0x12040608 0x12040608 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, point, null, 40, 2557891634)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, undefined, 40, 2557891634)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, {}, 40, 2557891634)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, objLooksLikeNum, 40, 2557891634)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, -1, 40, 2557891634)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, -2, 40, 2557891634)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 0, 40, 2557891634)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 10, 40, 2557891634)
+3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, null, 2557891634)
+100
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, undefined, 2557891634)
+100
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, {}, 2557891634)
+100
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, objLooksLikeNum, 2557891634)
+3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, -1, 2557891634)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, -2, 2557891634)
+3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 0, 2557891634)
+100
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 10, 2557891634)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, null)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, undefined)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, {})
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, objLooksLikeNum)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, -1)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, -2)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, 0)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, 10)
+1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x12040608 0x12040608
+0xffbbccdd 0x12040608 0x12040608
+--
+
+
+
+-- Disposed --
+// pixelDissolve()
+-1
+--
+--
+
+// pixelDissolve(transparentBmd)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point)
+-1
+--
+--
+
+// pixelDissolve(null, rect, point)
+-1
+--
+--
+
+// pixelDissolve(undefined, rect, point)
+-1
+--
+--
+
+// pixelDissolve({}, rect, point)
+-1
+--
+--
+
+// pixelDissolve(opaqueBmd, rect, point)
+-1
+--
+--
+
+// pixelDissolve(disposedBmd, rect, point)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, null, point)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, undefined, point)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, {}, point)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, zeroSizedRect, point)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rectAsObj, point)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rectWithoutWidth, point)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, null)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, undefined)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, {})
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, pointOutsideBmd)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, pointAsObj)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, pointWithoutY)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(null, rect, point, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(undefined, rect, point, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve({}, rect, point, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(opaqueBmd, rect, point, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(disposedBmd, rect, point, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, null, point, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, undefined, point, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, {}, point, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, zeroSizedRect, point, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rectAsObj, point, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rectWithoutWidth, point, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, null, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, undefined, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, {}, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, pointOutsideBmd, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, pointAsObj, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, pointWithoutY, 100, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, null, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, undefined, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, {}, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, objLooksLikeNum, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, -1, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, -2, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 0, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 10, 40, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, null, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, undefined, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, {}, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, objLooksLikeNum, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, -1, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, -2, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 0, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 10, 2557891634)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, null)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, undefined)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, {})
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, objLooksLikeNum)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, -1)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, -2)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, 0)
+-1
+--
+--
+
+// pixelDissolve(transparentBmd, rect, point, 100, 40, 10)
+-1
+--
+--
+
+
+

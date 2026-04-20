@@ -1,0 +1,522 @@
+-- Transparent --
+// hitTest()
+-1
+
+// hitTest(point)
+-1
+
+// hitTest(point, 100)
+-1
+
+// hitTest(point, 100, point)
+true
+
+// hitTest(null, 100, point)
+-2
+
+// hitTest(undefined, 100, point)
+-2
+
+// hitTest({}, 100, point)
+-2
+
+// hitTest(pointOutsideBmd, 100, point)
+false
+
+// hitTest(pointAsObj, 100, point)
+true
+
+// hitTest(pointWithoutY, 100, point)
+-2
+
+// hitTest(point, null, point)
+true
+
+// hitTest(point, undefined, point)
+true
+
+// hitTest(point, {}, point)
+true
+
+// hitTest(point, objLooksLikeNum, point)
+true
+
+// hitTest(point, -1, point)
+true
+
+// hitTest(point, -2, point)
+true
+
+// hitTest(point, 10, point)
+true
+
+// hitTest(point, 100, null)
+-3
+
+// hitTest(point, 100, undefined)
+-3
+
+// hitTest(point, 100, {})
+-3
+
+// hitTest(point, 100, pointOutsideBmd)
+false
+
+// hitTest(point, 100, pointAsObj)
+false
+
+// hitTest(point, 100, pointWithoutY)
+-3
+
+// hitTest(point, 100, transparentBmd)
+true
+
+// hitTest(point, 100, transparentBmd, point)
+true
+
+// hitTest(point, 100, transparentBmd, point, 100)
+false
+
+// hitTest(null, 100, transparentBmd, point, 100)
+-2
+
+// hitTest(undefined, 100, transparentBmd, point, 100)
+-2
+
+// hitTest({}, 100, transparentBmd, point, 100)
+-2
+
+// hitTest(pointOutsideBmd, 100, transparentBmd, point, 100)
+false
+
+// hitTest(pointAsObj, 100, transparentBmd, point, 100)
+false
+
+// hitTest(pointWithoutY, 100, transparentBmd, point, 100)
+-2
+
+// hitTest(point, null, transparentBmd, point, 100)
+false
+
+// hitTest(point, undefined, transparentBmd, point, 100)
+false
+
+// hitTest(point, {}, transparentBmd, point, 100)
+false
+
+// hitTest(point, objLooksLikeNum, transparentBmd, point, 100)
+false
+
+// hitTest(point, -1, transparentBmd, point, 100)
+false
+
+// hitTest(point, -2, transparentBmd, point, 100)
+false
+
+// hitTest(point, 10, transparentBmd, point, 100)
+false
+
+// hitTest(point, 100, null, point, 100)
+-3
+
+// hitTest(point, 100, undefined, point, 100)
+-3
+
+// hitTest(point, 100, {}, point, 100)
+-3
+
+// hitTest(point, 100, opaqueBmd, point, 100)
+true
+
+// hitTest(point, 100, disposedBmd, point, 100)
+-3
+
+// hitTest(point, 100, transparentBmd, null, 100)
+-4
+
+// hitTest(point, 100, transparentBmd, undefined, 100)
+-4
+
+// hitTest(point, 100, transparentBmd, {}, 100)
+-4
+
+// hitTest(point, 100, transparentBmd, pointOutsideBmd, 100)
+false
+
+// hitTest(point, 100, transparentBmd, pointAsObj, 100)
+false
+
+// hitTest(point, 100, transparentBmd, pointWithoutY, 100)
+-4
+
+// hitTest(point, 100, transparentBmd, point, null)
+true
+
+// hitTest(point, 100, transparentBmd, point, undefined)
+true
+
+// hitTest(point, 100, transparentBmd, point, {})
+true
+
+// hitTest(point, 100, transparentBmd, point, objLooksLikeNum)
+true
+
+// hitTest(point, 100, transparentBmd, point, -1)
+true
+
+// hitTest(point, 100, transparentBmd, point, -2)
+true
+
+// hitTest(point, 100, transparentBmd, point, 10)
+true
+
+
+
+-- Opaque --
+// hitTest()
+-1
+
+// hitTest(point)
+-1
+
+// hitTest(point, 100)
+-1
+
+// hitTest(point, 100, point)
+true
+
+// hitTest(null, 100, point)
+-2
+
+// hitTest(undefined, 100, point)
+-2
+
+// hitTest({}, 100, point)
+-2
+
+// hitTest(pointOutsideBmd, 100, point)
+false
+
+// hitTest(pointAsObj, 100, point)
+true
+
+// hitTest(pointWithoutY, 100, point)
+-2
+
+// hitTest(point, null, point)
+true
+
+// hitTest(point, undefined, point)
+true
+
+// hitTest(point, {}, point)
+true
+
+// hitTest(point, objLooksLikeNum, point)
+true
+
+// hitTest(point, -1, point)
+true
+
+// hitTest(point, -2, point)
+true
+
+// hitTest(point, 10, point)
+true
+
+// hitTest(point, 100, null)
+-3
+
+// hitTest(point, 100, undefined)
+-3
+
+// hitTest(point, 100, {})
+-3
+
+// hitTest(point, 100, pointOutsideBmd)
+false
+
+// hitTest(point, 100, pointAsObj)
+false
+
+// hitTest(point, 100, pointWithoutY)
+-3
+
+// hitTest(point, 100, transparentBmd)
+true
+
+// hitTest(point, 100, transparentBmd, point)
+true
+
+// hitTest(point, 100, transparentBmd, point, 100)
+false
+
+// hitTest(null, 100, transparentBmd, point, 100)
+-2
+
+// hitTest(undefined, 100, transparentBmd, point, 100)
+-2
+
+// hitTest({}, 100, transparentBmd, point, 100)
+-2
+
+// hitTest(pointOutsideBmd, 100, transparentBmd, point, 100)
+false
+
+// hitTest(pointAsObj, 100, transparentBmd, point, 100)
+false
+
+// hitTest(pointWithoutY, 100, transparentBmd, point, 100)
+-2
+
+// hitTest(point, null, transparentBmd, point, 100)
+false
+
+// hitTest(point, undefined, transparentBmd, point, 100)
+false
+
+// hitTest(point, {}, transparentBmd, point, 100)
+false
+
+// hitTest(point, objLooksLikeNum, transparentBmd, point, 100)
+false
+
+// hitTest(point, -1, transparentBmd, point, 100)
+false
+
+// hitTest(point, -2, transparentBmd, point, 100)
+false
+
+// hitTest(point, 10, transparentBmd, point, 100)
+false
+
+// hitTest(point, 100, null, point, 100)
+-3
+
+// hitTest(point, 100, undefined, point, 100)
+-3
+
+// hitTest(point, 100, {}, point, 100)
+-3
+
+// hitTest(point, 100, opaqueBmd, point, 100)
+true
+
+// hitTest(point, 100, disposedBmd, point, 100)
+-3
+
+// hitTest(point, 100, transparentBmd, null, 100)
+-4
+
+// hitTest(point, 100, transparentBmd, undefined, 100)
+-4
+
+// hitTest(point, 100, transparentBmd, {}, 100)
+-4
+
+// hitTest(point, 100, transparentBmd, pointOutsideBmd, 100)
+false
+
+// hitTest(point, 100, transparentBmd, pointAsObj, 100)
+false
+
+// hitTest(point, 100, transparentBmd, pointWithoutY, 100)
+-4
+
+// hitTest(point, 100, transparentBmd, point, null)
+true
+
+// hitTest(point, 100, transparentBmd, point, undefined)
+true
+
+// hitTest(point, 100, transparentBmd, point, {})
+true
+
+// hitTest(point, 100, transparentBmd, point, objLooksLikeNum)
+true
+
+// hitTest(point, 100, transparentBmd, point, -1)
+true
+
+// hitTest(point, 100, transparentBmd, point, -2)
+true
+
+// hitTest(point, 100, transparentBmd, point, 10)
+true
+
+
+
+-- Disposed --
+// hitTest()
+-1
+
+// hitTest(point)
+-1
+
+// hitTest(point, 100)
+-1
+
+// hitTest(point, 100, point)
+-1
+
+// hitTest(null, 100, point)
+-1
+
+// hitTest(undefined, 100, point)
+-1
+
+// hitTest({}, 100, point)
+-1
+
+// hitTest(pointOutsideBmd, 100, point)
+-1
+
+// hitTest(pointAsObj, 100, point)
+-1
+
+// hitTest(pointWithoutY, 100, point)
+-1
+
+// hitTest(point, null, point)
+-1
+
+// hitTest(point, undefined, point)
+-1
+
+// hitTest(point, {}, point)
+-1
+
+// hitTest(point, objLooksLikeNum, point)
+-1
+
+// hitTest(point, -1, point)
+-1
+
+// hitTest(point, -2, point)
+-1
+
+// hitTest(point, 10, point)
+-1
+
+// hitTest(point, 100, null)
+-1
+
+// hitTest(point, 100, undefined)
+-1
+
+// hitTest(point, 100, {})
+-1
+
+// hitTest(point, 100, pointOutsideBmd)
+-1
+
+// hitTest(point, 100, pointAsObj)
+-1
+
+// hitTest(point, 100, pointWithoutY)
+-1
+
+// hitTest(point, 100, transparentBmd)
+-1
+
+// hitTest(point, 100, transparentBmd, point)
+-1
+
+// hitTest(point, 100, transparentBmd, point, 100)
+-1
+
+// hitTest(null, 100, transparentBmd, point, 100)
+-1
+
+// hitTest(undefined, 100, transparentBmd, point, 100)
+-1
+
+// hitTest({}, 100, transparentBmd, point, 100)
+-1
+
+// hitTest(pointOutsideBmd, 100, transparentBmd, point, 100)
+-1
+
+// hitTest(pointAsObj, 100, transparentBmd, point, 100)
+-1
+
+// hitTest(pointWithoutY, 100, transparentBmd, point, 100)
+-1
+
+// hitTest(point, null, transparentBmd, point, 100)
+-1
+
+// hitTest(point, undefined, transparentBmd, point, 100)
+-1
+
+// hitTest(point, {}, transparentBmd, point, 100)
+-1
+
+// hitTest(point, objLooksLikeNum, transparentBmd, point, 100)
+-1
+
+// hitTest(point, -1, transparentBmd, point, 100)
+-1
+
+// hitTest(point, -2, transparentBmd, point, 100)
+-1
+
+// hitTest(point, 10, transparentBmd, point, 100)
+-1
+
+// hitTest(point, 100, null, point, 100)
+-1
+
+// hitTest(point, 100, undefined, point, 100)
+-1
+
+// hitTest(point, 100, {}, point, 100)
+-1
+
+// hitTest(point, 100, opaqueBmd, point, 100)
+-1
+
+// hitTest(point, 100, disposedBmd, point, 100)
+-1
+
+// hitTest(point, 100, transparentBmd, null, 100)
+-1
+
+// hitTest(point, 100, transparentBmd, undefined, 100)
+-1
+
+// hitTest(point, 100, transparentBmd, {}, 100)
+-1
+
+// hitTest(point, 100, transparentBmd, pointOutsideBmd, 100)
+-1
+
+// hitTest(point, 100, transparentBmd, pointAsObj, 100)
+-1
+
+// hitTest(point, 100, transparentBmd, pointWithoutY, 100)
+-1
+
+// hitTest(point, 100, transparentBmd, point, null)
+-1
+
+// hitTest(point, 100, transparentBmd, point, undefined)
+-1
+
+// hitTest(point, 100, transparentBmd, point, {})
+-1
+
+// hitTest(point, 100, transparentBmd, point, objLooksLikeNum)
+-1
+
+// hitTest(point, 100, transparentBmd, point, -1)
+-1
+
+// hitTest(point, 100, transparentBmd, point, -2)
+-1
+
+// hitTest(point, 100, transparentBmd, point, 10)
+-1
+
+
+

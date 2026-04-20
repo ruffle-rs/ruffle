@@ -1,4 +1,6 @@
 package flash.display {
+    import __ruffle__.stub_getter;
+
     import flash.accessibility.AccessibilityProperties;
     import flash.geom.ColorTransform;
     import flash.geom.Matrix;
@@ -9,13 +11,8 @@ package flash.display {
     import flash.display.InteractiveObject;
     import flash.text.TextSnapshot;
 
-    [Ruffle(NativeInstanceInit)]
+    [Ruffle(Abstract)]
     public class DisplayObjectContainer extends InteractiveObject {
-
-        public function DisplayObjectContainer() {
-            throw new Error("You cannot construct DisplayObjectContainer directly.");
-        }
-
         public native function get numChildren():int;
         public native function get mouseChildren():Boolean;
         public native function set mouseChildren(value:Boolean):void;

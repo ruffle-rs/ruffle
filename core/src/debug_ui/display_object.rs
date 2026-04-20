@@ -3,17 +3,20 @@ mod search;
 use ruffle_render::blend::ExtendedBlendMode;
 pub use search::DisplayObjectSearchWindow;
 
-use crate::avm1::TObject as _;
 use crate::avm2::object::TObject as _;
+use crate::bitmap::bitmap_data::DirtyState;
 use crate::context::UpdateContext;
+use crate::debug_ui::Message;
 use crate::debug_ui::handle::{AVM1ObjectHandle, AVM2ObjectHandle, DisplayObjectHandle};
 use crate::debug_ui::movie::open_movie_button;
-use crate::debug_ui::Message;
 use crate::display_object::{
-    AutoSizeMode, Bitmap, DisplayObject, EditText, InteractiveObject, MovieClip, Stage,
-    TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+    AutoSizeMode, Avm2Button, Bitmap, BoundsMode, ButtonState, DisplayObject, EditText,
+    InteractiveObject, LayoutDebugBoxesFlag, MovieClip, RenderMask, Stage, TDisplayObject,
+    TDisplayObjectContainer, TInteractiveObject,
 };
 use crate::focus_tracker::Highlight;
+use crate::font::{FontDescriptor, FontLike};
+use crate::html::{LayoutBox, LayoutContent, LayoutLine, TextFormat};
 use egui::collapsing_header::CollapsingState;
 use egui::{
     Button, Checkbox, CollapsingHeader, ComboBox, DragValue, Grid, Id, Label, Sense, TextEdit, Ui,
@@ -21,7 +24,10 @@ use egui::{
 };
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
+use std::ops::RangeInclusive;
 use swf::{Color, ColorTransform, Fixed8, Rectangle, Twips};
+
+use super::common::show_text_format;
 
 const DEFAULT_DEBUG_COLORS: [[f32; 3]; 10] = [
     [0.00, 0.39, 0.00], // "darkgreen" / #006400
@@ -55,7 +61,7 @@ const ALL_BLEND_MODES: [ExtendedBlendMode; 15] = [
 ];
 
 #[derive(Debug, Eq, PartialEq, Hash, Default, Copy, Clone)]
-enum Panel {
+pub enum Panel {
     #[default]
     Position,
     Display,
@@ -72,6 +78,12 @@ pub struct DisplayObjectWindow {
     hovered_debug_rect: Option<DisplayObjectHandle>,
     hovered_bounds: Option<Rectangle<Twips>>,
     search: String,
+    track_current_frame: bool,
+    /// Which frame to scroll to in the frame list, if any
+    scroll_to_frame: Option<usize>,
+
+    /// A buffer for editing EditText
+    html_text: String,
 }
 
 impl Default for DisplayObjectWindow {
@@ -88,11 +100,20 @@ impl Default for DisplayObjectWindow {
             hovered_debug_rect: None,
             hovered_bounds: None,
             search: Default::default(),
+            track_current_frame: false,
+            scroll_to_frame: None,
+            html_text: Default::default(),
         }
     }
 }
 
 impl DisplayObjectWindow {
+    pub fn with_panel(panel: Panel) -> Self {
+        Self {
+            open_panel: panel,
+            ..Default::default()
+        }
+    }
     pub fn debug_rect_color(&self) -> Option<Color> {
         if self.debug_rect_visible {
             Some(Color {
@@ -111,13 +132,13 @@ impl DisplayObjectWindow {
     }
 
     pub fn hovered_bounds(&self) -> Option<Rectangle<Twips>> {
-        self.hovered_bounds.clone()
+        self.hovered_bounds
     }
 
     pub fn show<'gc>(
         &mut self,
         egui_ctx: &egui::Context,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) -> bool {
@@ -146,14 +167,14 @@ impl DisplayObjectWindow {
                             display_object_type(object),
                         );
                     }
-                    if let Some(ctr) = object.as_container() {
-                        if !ctr.is_empty() {
-                            ui.selectable_value(
-                                &mut self.open_panel,
-                                Panel::Children,
-                                format!("Children ({})", ctr.num_children()),
-                            );
-                        }
+                    if let Some(ctr) = object.as_container()
+                        && !ctr.is_empty()
+                    {
+                        ui.selectable_value(
+                            &mut self.open_panel,
+                            Panel::Children,
+                            format!("Children ({})", ctr.num_children()),
+                        );
                     }
                 });
                 ui.separator();
@@ -166,11 +187,13 @@ impl DisplayObjectWindow {
                         if let DisplayObject::MovieClip(object) = object {
                             self.show_movieclip(ui, context, object)
                         } else if let DisplayObject::EditText(object) = object {
-                            self.show_edit_text(ui, context, object)
+                            self.show_edit_text(ui, context, object, messages)
                         } else if let DisplayObject::Bitmap(object) = object {
                             self.show_bitmap(ui, context, object)
                         } else if let DisplayObject::Stage(object) = object {
                             self.show_stage(ui, context, object, messages)
+                        } else if let DisplayObject::Avm2Button(object) = object {
+                            self.show_avm2_button(ui, context, object, messages)
                         }
                     }
                     Panel::Interactive => {
@@ -186,7 +209,7 @@ impl DisplayObjectWindow {
     pub fn show_interactive<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: InteractiveObject<'gc>,
     ) {
         Grid::new(ui.id().with("interactive"))
@@ -197,7 +220,7 @@ impl DisplayObjectWindow {
                     let mut enabled = object.mouse_enabled();
                     Checkbox::new(&mut enabled, "Enabled").ui(ui);
                     if enabled != object.mouse_enabled() {
-                        object.set_mouse_enabled(context.gc_context, enabled);
+                        object.set_mouse_enabled(enabled);
                     }
                 });
                 ui.end_row();
@@ -207,7 +230,7 @@ impl DisplayObjectWindow {
                     let mut enabled = object.double_click_enabled();
                     Checkbox::new(&mut enabled, "Enabled").ui(ui);
                     if enabled != object.double_click_enabled() {
-                        object.set_double_click_enabled(context.gc_context, enabled);
+                        object.set_double_click_enabled(enabled);
                     }
                 });
                 ui.end_row();
@@ -229,9 +252,9 @@ impl DisplayObjectWindow {
                     Checkbox::without_text(&mut enabled).ui(ui);
                     if enabled != tab_index.is_some() {
                         if enabled {
-                            object.set_tab_index(context, Some(0));
+                            object.set_tab_index(Some(0));
                         } else {
-                            object.set_tab_index(context, None);
+                            object.set_tab_index(None);
                         }
                     }
 
@@ -239,7 +262,7 @@ impl DisplayObjectWindow {
                         let mut new_tab_index: usize = tab_index;
                         DragValue::new(&mut new_tab_index).ui(ui);
                         if new_tab_index != tab_index {
-                            object.set_tab_index(context, Some(new_tab_index as i32));
+                            object.set_tab_index(Some(new_tab_index as i32));
                         }
                     } else {
                         ui.label("None");
@@ -250,7 +273,7 @@ impl DisplayObjectWindow {
                 ui.label("Focus Rect");
                 let focus_rect = object.focus_rect();
                 let mut new_focus_rect = focus_rect;
-                ComboBox::from_id_source(ui.id().with("focus_rect"))
+                ComboBox::from_id_salt(ui.id().with("focus_rect"))
                     .selected_text(optional_boolean_switch_value(focus_rect))
                     .show_ui(ui, |ui| {
                         for value in [None, Some(true), Some(false)] {
@@ -262,7 +285,7 @@ impl DisplayObjectWindow {
                         }
                     });
                 if new_focus_rect != focus_rect {
-                    object.set_focus_rect(context.gc(), new_focus_rect);
+                    object.set_focus_rect(new_focus_rect);
                 }
                 ui.end_row();
 
@@ -296,23 +319,32 @@ impl DisplayObjectWindow {
     pub fn show_edit_text<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: EditText<'gc>,
+        messages: &mut Vec<Message>,
     ) {
         Grid::new(ui.id().with("edittext"))
             .num_columns(2)
             .show(ui, |ui| {
+                ui.label("Is FTE");
+                if object.is_fte() {
+                    ui.label("Yes");
+                } else {
+                    ui.label("No");
+                }
+                ui.end_row();
+
                 ui.label("Border");
                 ui.horizontal(|ui| {
                     let mut has_border = object.has_border();
                     Checkbox::without_text(&mut has_border).ui(ui);
                     if has_border != object.has_border() {
-                        object.set_has_border(context.gc(), has_border);
+                        object.set_has_border(has_border);
                     }
                     let mut border_color = object.border_color();
                     color_edit_button(ui, &mut border_color);
                     if border_color != object.border_color() {
-                        object.set_border_color(context.gc(), border_color);
+                        object.set_border_color(border_color);
                     }
                 });
                 ui.end_row();
@@ -322,14 +354,18 @@ impl DisplayObjectWindow {
                     let mut has_background = object.has_background();
                     Checkbox::without_text(&mut has_background).ui(ui);
                     if has_background != object.has_background() {
-                        object.set_has_background(context.gc(), has_background);
+                        object.set_has_background(has_background);
                     }
                     let mut background_color = object.background_color();
                     color_edit_button(ui, &mut background_color);
                     if background_color != object.background_color() {
-                        object.set_background_color(context.gc(), background_color);
+                        object.set_background_color(background_color);
                     }
                 });
+                ui.end_row();
+
+                ui.label("Font Type");
+                ui.label(format!("{:?}", object.font_type()));
                 ui.end_row();
 
                 ui.label("Editable");
@@ -337,7 +373,7 @@ impl DisplayObjectWindow {
                     let mut editable = object.is_editable();
                     ui.checkbox(&mut editable, "Enabled");
                     if editable != object.is_editable() {
-                        object.set_editable(editable, context);
+                        object.set_editable(editable);
                     }
                 });
                 ui.end_row();
@@ -347,7 +383,7 @@ impl DisplayObjectWindow {
                     let mut is_html = object.is_html();
                     ui.checkbox(&mut is_html, "Enabled");
                     if is_html != object.is_html() {
-                        object.set_is_html(context, is_html);
+                        object.set_is_html(is_html);
                     }
                 });
                 ui.end_row();
@@ -357,7 +393,7 @@ impl DisplayObjectWindow {
                     let mut selectable = object.is_selectable();
                     ui.checkbox(&mut selectable, "Enabled");
                     if selectable != object.is_selectable() {
-                        object.set_selectable(selectable, context);
+                        object.set_selectable(selectable);
                     }
                 });
                 ui.end_row();
@@ -392,11 +428,62 @@ impl DisplayObjectWindow {
                 });
                 ui.end_row();
 
+                ui.label("Always Show Selection");
+                ui.horizontal(|ui| {
+                    let mut always_show_selection = object.always_show_selection();
+                    ui.checkbox(&mut always_show_selection, "Enabled");
+                    if always_show_selection != object.always_show_selection() {
+                        object.set_always_show_selection(always_show_selection);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("Condense White");
+                ui.horizontal(|ui| {
+                    let mut condense_white = object.condense_white();
+                    ui.checkbox(&mut condense_white, "Enabled");
+                    if condense_white != object.condense_white() {
+                        object.set_condense_white(condense_white);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("H Scroll");
+                ui.horizontal(|ui| {
+                    let max = object.maxhscroll();
+                    let mut hscroll = object.hscroll();
+                    DragValue::new(&mut hscroll)
+                        .suffix("px")
+                        .range(RangeInclusive::new(0.0, max))
+                        .ui(ui);
+                    ui.weak(format!("(max {max}px)"));
+
+                    if hscroll != object.hscroll() {
+                        object.set_hscroll(hscroll);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("V Scroll");
+                ui.horizontal(|ui| {
+                    let max = object.maxscroll();
+                    let mut scroll = object.scroll();
+                    DragValue::new(&mut scroll)
+                        .range(RangeInclusive::new(1, max))
+                        .ui(ui);
+                    ui.weak(format!("(max {max})"));
+
+                    if scroll != object.scroll() {
+                        object.set_scroll(scroll as f64);
+                    }
+                });
+                ui.end_row();
+
                 ui.label("Autosize");
                 ui.horizontal(|ui| {
                     let mut autosize = object.autosize();
-                    ComboBox::from_id_source(ui.id().with("autosize"))
-                        .selected_text(format!("{:?}", autosize))
+                    ComboBox::from_id_salt(ui.id().with("autosize"))
+                        .selected_text(format!("{autosize:?}"))
                         .show_ui(ui, |ui| {
                             for value in [
                                 AutoSizeMode::None,
@@ -404,7 +491,7 @@ impl DisplayObjectWindow {
                                 AutoSizeMode::Center,
                                 AutoSizeMode::Right,
                             ] {
-                                ui.selectable_value(&mut autosize, value, format!("{:?}", value));
+                                ui.selectable_value(&mut autosize, value, format!("{value:?}"));
                             }
                         });
                     if autosize != object.autosize() {
@@ -418,7 +505,7 @@ impl DisplayObjectWindow {
                     let mut max_chars = object.max_chars();
                     DragValue::new(&mut max_chars).ui(ui);
                     if max_chars != object.max_chars() {
-                        object.set_max_chars(max_chars, context);
+                        object.set_max_chars(max_chars);
                     }
                 });
                 ui.end_row();
@@ -436,7 +523,7 @@ impl DisplayObjectWindow {
                         } else {
                             None
                         };
-                        object.set_restrict(new_restrict, context);
+                        object.set_restrict(new_restrict);
                     }
 
                     if let Some(original_restrict) = restrict {
@@ -444,7 +531,7 @@ impl DisplayObjectWindow {
                         let mut restrict = original_restrict.clone();
                         ui.text_edit_singleline(&mut restrict);
                         if restrict != original_restrict {
-                            object.set_restrict(Some(&WString::from_utf8(&restrict)), context);
+                            object.set_restrict(Some(&WString::from_utf8(&restrict)));
                         }
                     } else {
                         ui.weak("Disabled");
@@ -464,85 +551,460 @@ impl DisplayObjectWindow {
                 }
                 ui.end_row();
 
-                ui.label("Draw Layout Boxes");
+                ui.label("Default Text Format");
                 ui.horizontal(|ui| {
-                    let mut draw_layout_boxes = object.draw_layout_boxes();
-                    ui.checkbox(&mut draw_layout_boxes, "Enabled");
-                    if draw_layout_boxes != object.draw_layout_boxes() {
-                        object.set_draw_layout_boxes(context, draw_layout_boxes);
+                    show_text_format_hover(ui, object.spans().default_format());
+                });
+                ui.end_row();
+
+                ui.label("Style Sheet");
+                if let Some(style_sheet) = object.style_sheet_avm1() {
+                    if ui.button(format!("{:p}", style_sheet.as_ptr())).clicked() {
+                        messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
+                            context,
+                            style_sheet,
+                        )));
+                    }
+                } else if let Some(style_sheet) = object.style_sheet_avm2() {
+                    if ui.button(format!("{:p}", style_sheet.as_ptr())).clicked() {
+                        messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(
+                            context,
+                            crate::avm2::Object::StyleSheetObject(style_sheet),
+                        )));
+                    }
+                } else {
+                    ui.weak("None");
+                }
+                ui.end_row();
+
+                ui.label("Text Width");
+                ui.label(format!("{}", object.measure_text(context).0.to_pixels()));
+                ui.end_row();
+
+                ui.label("Text Height");
+                ui.label(format!("{}", object.measure_text(context).1.to_pixels()));
+                ui.end_row();
+
+                ui.label("Layout Debug Boxes");
+                ui.vertical(|ui| {
+                    for (name, flag) in [
+                        ("Text", LayoutDebugBoxesFlag::TEXT),
+                        ("Line", LayoutDebugBoxesFlag::LINE),
+                        ("Box", LayoutDebugBoxesFlag::BOX),
+                        ("Character", LayoutDebugBoxesFlag::CHAR),
+                    ] {
+                        let old_value = object.layout_debug_boxes_flag(flag);
+                        let mut value = old_value;
+                        ui.checkbox(&mut value, name);
+                        if value != old_value {
+                            object.set_layout_debug_boxes_flag(flag, value);
+                        }
+                    }
+                });
+                ui.end_row();
+
+                ui.label("Actions");
+                ui.vertical(|ui| {
+                    if ui.button("Relayout").clicked() {
+                        object.relayout(context);
                     }
                 });
                 ui.end_row();
             });
 
         CollapsingHeader::new("Span List")
-            .id_source(ui.id().with("spans"))
+            .id_salt(ui.id().with("spans"))
             .show(ui, |ui| {
                 Grid::new(ui.id().with("spans"))
                     .num_columns(7)
                     .striped(true)
                     .show(ui, |ui| {
-                        ui.label("Start");
-                        ui.label("End");
-                        ui.label("Length");
-                        ui.label("URL");
-                        ui.label("Font");
-                        ui.label("Style");
+                        ui.label("Span");
+                        ui.label("Text Format");
                         ui.label("Text");
                         ui.end_row();
 
                         for (start, end, text, format) in object.spans().iter_spans() {
-                            ui.label(start.to_string());
-                            ui.label(end.to_string());
+                            ui.label(format!("{}–{} ({})", start, end, format.span_length));
 
-                            ui.label(format.span_length.to_string());
-                            ui.label(format.url.to_string());
-                            ui.label(format.font.face.to_string());
-
-                            if format.style.bold && format.style.italic {
-                                ui.label("Bold Italic");
-                            } else if format.style.bold {
-                                ui.label("Bold");
-                            } else if format.style.italic {
-                                ui.label("Italic");
-                            } else {
-                                ui.label("Regular");
-                            }
+                            ui.horizontal(|ui| {
+                                show_text_format_hover(ui, &format.get_text_format());
+                            });
 
                             ui.label(text.to_string());
                             ui.end_row();
                         }
                     });
             });
+
+        CollapsingHeader::new("Layout")
+            .id_salt(ui.id().with("layout"))
+            .show(ui, |ui| {
+                let text = object.spans().text().to_owned();
+                let layout = object.layout();
+
+                Grid::new(ui.id().with("layout-props"))
+                    .num_columns(2)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        let text_bounds = layout.bounds();
+                        let text_size = layout.text_size();
+
+                        ui.label("Bounds");
+                        bounds_label(ui, text_bounds.into(), &mut None);
+                        ui.end_row();
+
+                        ui.label("Text Size");
+                        ui.label(format!(
+                            "{:.2}, {:.2}",
+                            text_size.width(),
+                            text_size.height()
+                        ));
+                        ui.end_row();
+                    });
+
+                for line in layout.lines() {
+                    self.show_edit_text_layout_line(ui, &text, line);
+                }
+            });
+
+        let html_text_response = CollapsingHeader::new("HTML Text")
+            .id_salt(ui.id().with("html-text"))
+            .show(ui, |ui| {
+                ui.add_sized(
+                    ui.available_size(),
+                    TextEdit::multiline(&mut self.html_text),
+                );
+                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                    if ui.button("Set").clicked() {
+                        object.set_html_text(&WString::from_utf8(&self.html_text), context);
+                    }
+                    if ui.button("Reset").clicked() {
+                        self.html_text = object.html_text().to_string();
+                    }
+                });
+            });
+        if html_text_response.fully_closed() {
+            self.html_text = object.html_text().to_string();
+        }
+    }
+
+    fn show_edit_text_layout_line<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        text: &WStr,
+        line: &LayoutLine<'gc>,
+    ) {
+        let line_index = line.index();
+        let line_text = serde_json::to_string(
+            &text
+                .slice(line.text_range())
+                .map(|s| s.to_string())
+                .unwrap_or_default(),
+        )
+        .expect("Serializing string shouldn't fail");
+        CollapsingHeader::new(format!("Line {line_index:0>2} ({line_text})"))
+            .id_salt(ui.id().with("line").with(line_index))
+            .show(ui, |ui| {
+                Grid::new(ui.id().with("line-props"))
+                    .num_columns(2)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        let line_bounds = line.bounds();
+
+                        ui.label("Bounds");
+                        bounds_label(ui, line_bounds.into(), &mut None);
+                        ui.end_row();
+
+                        ui.label("Range");
+                        ui.label(format!("{}–{}", line.start(), line.end()));
+                        ui.end_row();
+
+                        ui.label("Ascent");
+                        ui.label(format!("{:.2}", line.ascent()));
+                        ui.end_row();
+
+                        ui.label("Descent");
+                        ui.label(format!("{:.2}", line.descent()));
+                        ui.end_row();
+
+                        ui.label("Leading");
+                        ui.label(format!("{:.2}", line.leading()));
+                        ui.end_row();
+                    });
+
+                self.show_edit_text_layout_characters(ui, text, line);
+
+                for (index, lbox) in line.boxes_iter().enumerate() {
+                    self.show_edit_text_layout_box(ui, text, index, lbox);
+                }
+            });
+    }
+
+    fn show_edit_text_layout_characters<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        text: &WStr,
+        line: &LayoutLine<'gc>,
+    ) {
+        CollapsingHeader::new("Characters")
+            .id_salt(ui.id().with("chars"))
+            .show(ui, |ui| {
+                Grid::new(ui.id().with("box-props"))
+                    .num_columns(2)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        ui.label("Index");
+                        ui.label("Code");
+                        ui.label("Char");
+                        ui.label("Font");
+                        ui.label("Text Format");
+                        ui.end_row();
+
+                        for lbox in line.boxes_iter() {
+                            if let Some((text, format, font_set, _, _)) =
+                                lbox.as_renderable_text(text)
+                            {
+                                for i in 0..text.len() {
+                                    let code = text.at(i);
+                                    let ch = char::from_u32(code as u32).unwrap_or_default();
+                                    ui.label(format!("{}", line.start() + i));
+                                    ui.label(
+                                        egui::RichText::new(format!("{code:#x}"))
+                                            .text_style(egui::TextStyle::Monospace),
+                                    );
+                                    ui.label(format!("{ch}"));
+                                    if let Some(resolution) = font_set.resolve_glyph(ch) {
+                                        ui.label(format_font_descriptor(
+                                            resolution.font.descriptor(),
+                                        ));
+                                    } else {
+                                        ui.weak("None");
+                                    }
+                                    ui.horizontal(|ui| {
+                                        show_text_format_hover(ui, format);
+                                    });
+                                    ui.end_row();
+                                }
+                            }
+                        }
+                    });
+            });
+    }
+
+    fn show_edit_text_layout_box<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        text: &WStr,
+        index: usize,
+        lbox: &LayoutBox<'gc>,
+    ) {
+        let box_type = match lbox.content() {
+            LayoutContent::Text { .. } => "Text box",
+            LayoutContent::Bullet { .. } => "Bullet box",
+            LayoutContent::Drawing { .. } => "Drawing box",
+        };
+
+        let box_text = serde_json::to_string(
+            &text
+                .slice(lbox.text_range())
+                .map(|s| s.to_string())
+                .unwrap_or_default(),
+        )
+        .expect("Serializing string shouldn't fail");
+
+        CollapsingHeader::new(format!("{box_type} {index:0>2} ({box_text})"))
+            .id_salt(ui.id().with("box").with(index))
+            .show(ui, |ui| {
+                Grid::new(ui.id().with("box-props"))
+                    .num_columns(2)
+                    .striped(true)
+                    .show(ui, |ui| {
+                        let line_bounds = lbox.bounds();
+
+                        ui.label("Bounds");
+                        bounds_label(ui, line_bounds.into(), &mut None);
+                        ui.end_row();
+
+                        ui.label("Range");
+                        ui.label(format!("{}–{}", lbox.start(), lbox.end()));
+                        ui.end_row();
+
+                        if let Some((_, _, font_set, _, _)) = lbox.as_renderable_text(text) {
+                            ui.label("Main Font");
+                            ui.label(format_font_descriptor(font_set.main_font().descriptor()));
+                            ui.end_row();
+
+                            for (i, fallback_font) in font_set.fallback_fonts().iter().enumerate() {
+                                ui.label(format!("Fallback Font {i}"));
+                                ui.label(format_font_descriptor(fallback_font.descriptor()));
+                                ui.end_row();
+                            }
+
+                            if font_set.fallback_fonts().is_empty() {
+                                ui.label("Fallback Fonts");
+                                ui.weak("None");
+                                ui.end_row();
+                            }
+                        }
+                    });
+            });
+    }
+
+    pub fn show_avm2_button<'gc>(
+        &mut self,
+        ui: &mut Ui,
+        context: &mut UpdateContext<'gc>,
+        object: Avm2Button<'gc>,
+        messages: &mut Vec<Message>,
+    ) {
+        Grid::new(ui.id().with("avm2_button"))
+            .num_columns(2)
+            .show(ui, |ui| {
+                ui.label("Enabled");
+                ui.horizontal(|ui| {
+                    let mut enabled = object.enabled();
+                    ui.checkbox(&mut enabled, "Enabled");
+                    if enabled != object.enabled() {
+                        object.set_enabled(context, enabled);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("State");
+                ui.horizontal(|ui| {
+                    let original_state = object.state();
+                    let mut state = original_state;
+                    ComboBox::from_id_salt(ui.id().with("state"))
+                        .selected_text(format!("{state:?}"))
+                        .show_ui(ui, |ui| {
+                            for value in [ButtonState::Up, ButtonState::Over, ButtonState::Down] {
+                                ui.selectable_value(&mut state, value, format!("{value:?}"));
+                            }
+                        });
+                    if state != original_state {
+                        object.set_state(context, state);
+                    }
+                });
+                ui.end_row();
+
+                ui.label("Use Hand Cursor");
+                ui.horizontal(|ui| {
+                    let mut use_hand_cursor = object.use_hand_cursor();
+                    ui.checkbox(&mut use_hand_cursor, "Enabled");
+                    if use_hand_cursor != object.use_hand_cursor() {
+                        object.set_use_hand_cursor(use_hand_cursor);
+                    }
+                });
+                ui.end_row();
+
+                for (label, state) in [
+                    ("Hit Test", swf::ButtonState::HIT_TEST),
+                    ("Up State", swf::ButtonState::UP),
+                    ("Over State", swf::ButtonState::OVER),
+                    ("Down State", swf::ButtonState::DOWN),
+                ] {
+                    ui.label(label);
+                    ui.horizontal(|ui| {
+                        if let Some(state_child) = object.get_state_child(state) {
+                            open_display_object_button(
+                                ui,
+                                context,
+                                messages,
+                                state_child,
+                                &mut self.hovered_debug_rect,
+                            );
+                        } else {
+                            ui.label("None");
+                        }
+                    });
+                    ui.end_row();
+                }
+            });
     }
 
     pub fn show_bitmap<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: Bitmap<'gc>,
     ) {
-        let bitmap_data = object.bitmap_data(context.renderer);
-        let bitmap_data = bitmap_data.read();
-        let mut egui_texture = bitmap_data.egui_texture.borrow_mut();
-        let texture = egui_texture.get_or_insert_with(|| {
-            let image = egui::ColorImage::from_rgba_premultiplied(
-                [bitmap_data.width() as usize, bitmap_data.height() as usize],
-                &bitmap_data.pixels_rgba(),
-            );
-            ui.ctx().load_texture(
-                format!("bitmap-{:?}", object.as_ptr()),
-                image,
-                Default::default(),
-            )
-        });
-        ui.image((texture.id(), texture.size_vec2()));
+        Grid::new(ui.id().with("bitmap"))
+            .num_columns(2)
+            .show(ui, |ui| {
+                let bitmap_data = object.bitmap_data();
+                let bitmap_data = bitmap_data.sync(context.renderer).borrow();
+
+                ui.label("Width");
+                ui.label(format!("{} px", bitmap_data.width()));
+                ui.end_row();
+
+                ui.label("Height");
+                ui.label(format!("{} px", bitmap_data.height()));
+                ui.end_row();
+
+                ui.label("Transparency");
+                if bitmap_data.transparency() {
+                    ui.label("Yes");
+                } else {
+                    ui.label("No");
+                }
+                ui.end_row();
+
+                ui.label("Disposed");
+                if bitmap_data.disposed() {
+                    ui.label("Yes");
+                } else {
+                    ui.label("No");
+                }
+                ui.end_row();
+
+                ui.label("Dirty State");
+                match bitmap_data.dirty_state() {
+                    DirtyState::Clean => ui.label("Clean"),
+                    DirtyState::CpuModified(region) => ui.label(format!(
+                        "CPU Modified ({},{} to {},{})",
+                        region.x_min, region.y_min, region.x_max, region.y_max
+                    )),
+                    DirtyState::GpuModified(_, region) => ui.label(format!(
+                        "GPU Modified ({},{} to {},{})",
+                        region.x_min, region.y_min, region.x_max, region.y_max
+                    )),
+                };
+                ui.end_row();
+            });
+
+        CollapsingHeader::new("Preview")
+            .id_salt(ui.id().with("bitmap-preview"))
+            .show(ui, |ui| {
+                let bitmap_data = object.bitmap_data();
+                let bitmap_data = bitmap_data.sync(context.renderer).borrow();
+
+                if bitmap_data.width() == 0 || bitmap_data.height() == 0 {
+                    ui.weak("(no pixels)");
+                    return;
+                }
+
+                let mut egui_texture = bitmap_data.egui_texture.borrow_mut();
+                let texture = egui_texture.get_or_insert_with(|| {
+                    let image = egui::ColorImage::from_rgba_premultiplied(
+                        [bitmap_data.width() as usize, bitmap_data.height() as usize],
+                        bitmap_data.pixels_rgba(),
+                    );
+                    ui.ctx().load_texture(
+                        format!("bitmap-{:?}", object.as_ptr()),
+                        image,
+                        Default::default(),
+                    )
+                });
+                ui.image((texture.id(), texture.size_vec2()));
+            });
     }
 
     pub fn show_movieclip<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: MovieClip<'gc>,
     ) {
         Grid::new(ui.id().with("movieclip"))
@@ -563,7 +1025,7 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("Total Frames");
-                ui.label(object.total_frames().to_string());
+                ui.label(object.header_frames().to_string());
                 ui.end_row();
 
                 ui.label("Flags");
@@ -582,7 +1044,7 @@ impl DisplayObjectWindow {
                 ui.label("Controls");
                 ui.horizontal(|ui| {
                     if ui.button("Play").clicked() {
-                        object.play(context);
+                        object.play();
                     }
                     if ui.button("Stop").clicked() {
                         object.stop(context);
@@ -598,23 +1060,83 @@ impl DisplayObjectWindow {
             });
 
         CollapsingHeader::new("Frame List")
-            .id_source(ui.id().with("frames"))
+            .id_salt(ui.id().with("frames"))
             .show(ui, |ui| {
-                Grid::new(ui.id().with("frames"))
-                    .num_columns(5)
-                    .show(ui, |ui| {
-                        let num_frames = object.total_frames();
-                        let scenes = object.scenes();
-
+                ui.checkbox(&mut self.track_current_frame, "Track current");
+                // Height of a table row. 2.0 is used for text "padding" between rows
+                let row_h = ui.text_style_height(&egui::TextStyle::Body) + 2.0;
+                let scenes = object.scenes();
+                // This makes sure labels don't wrap in the table, which interferes
+                // with layouting and looks ugly.
+                ui.style_mut().wrap_mode = Some(egui::TextWrapMode::Extend);
+                let mut table = egui_extras::TableBuilder::new(ui)
+                    .columns(egui_extras::Column::auto(), 4)
+                    .column(egui_extras::Column::remainder())
+                    .cell_layout(egui::Layout::left_to_right(egui::Align::Center))
+                    .auto_shrink(false);
+                if self.track_current_frame {
+                    table = table
+                        .scroll_to_row(object.current_frame() as usize, Some(egui::Align::Center));
+                }
+                // Due to an API limitation of `Table`, we can't scroll to a row inside the
+                // table UI code, instead, we store which frame to scroll to, and do the scrolling
+                // here.
+                if let Some(frame) = self.scroll_to_frame.take() {
+                    table = table.scroll_to_row(frame, Some(egui::Align::Center))
+                }
+                let mut table = table.header(row_h, |mut row| {
+                    row.col(|ui| {
                         ui.label("#");
-                        ui.label("Scene");
-                        ui.label("Label");
+                    });
+                    row.col(|ui| {
+                        ui.menu_button("Scene", |ui| {
+                            egui::ScrollArea::vertical().show(ui, |ui| {
+                                if scenes.is_empty() {
+                                    ui.label("<no scenes>");
+                                } else {
+                                    for scene in &scenes {
+                                        if ui.button(scene.name.to_string()).clicked() {
+                                            ui.close();
+                                            self.scroll_to_frame = Some(usize::from(scene.start));
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    });
+                    row.col(|ui| {
+                        ui.menu_button("Label", |ui| {
+                            egui::ScrollArea::vertical().show(ui, |ui| {
+                                let labels = object.labels_in_range(0, u16::MAX);
+                                if labels.is_empty() {
+                                    ui.label("<no labels>");
+                                } else {
+                                    for (name, frame) in labels {
+                                        if ui.button(name.to_string()).clicked() {
+                                            ui.close();
+                                            self.scroll_to_frame = Some(usize::from(frame));
+                                        }
+                                    }
+                                }
+                            });
+                        });
+                    });
+                    row.col(|ui| {
                         ui.label("Has Script");
+                    });
+                    row.col(|ui| {
                         ui.label("Goto-and-");
-                        ui.end_row();
-
-                        for frame in 1..=num_frames {
+                    });
+                });
+                table.ui_mut().separator();
+                table.body(|body| {
+                    body.rows(row_h, usize::from(object.header_frames()), |mut row| {
+                        let frame = (row.index() + 1) as u16;
+                        row.set_selected(object.current_frame() == frame);
+                        row.col(|ui| {
                             ui.label(frame.to_string());
+                        });
+                        row.col(|ui| {
                             ui.label(
                                 scenes
                                     .iter()
@@ -622,6 +1144,8 @@ impl DisplayObjectWindow {
                                     .map(|s| s.name.to_string())
                                     .unwrap_or_default(),
                             );
+                        });
+                        row.col(|ui| {
                             ui.label(
                                 object
                                     .labels_in_range(frame, frame + 1)
@@ -629,11 +1153,15 @@ impl DisplayObjectWindow {
                                     .map(|(l, _)| l.to_string())
                                     .unwrap_or_default(),
                             );
+                        });
+                        row.col(|ui| {
                             if object.has_frame_script(frame) {
                                 ui.add_enabled(false, Button::new("AVM2 Script"));
                             } else {
                                 ui.label("");
                             }
+                        });
+                        row.col(|ui| {
                             if object.current_frame() != frame {
                                 ui.horizontal(|ui| {
                                     if ui.button("Stop").clicked() {
@@ -646,16 +1174,16 @@ impl DisplayObjectWindow {
                             } else {
                                 ui.label("(current)");
                             }
-                            ui.end_row();
-                        }
+                        });
                     });
+                });
             });
     }
 
     pub fn show_stage<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: Stage<'gc>,
         messages: &mut Vec<Message>,
     ) {
@@ -668,7 +1196,7 @@ impl DisplayObjectWindow {
                 let mut new_stage_focus_rect = object.stage_focus_rect();
                 ui.checkbox(&mut new_stage_focus_rect, "Enabled");
                 if new_stage_focus_rect != object.stage_focus_rect() {
-                    object.set_stage_focus_rect(context.gc(), new_stage_focus_rect);
+                    object.set_stage_focus_rect(new_stage_focus_rect);
                 }
                 ui.end_row();
 
@@ -714,8 +1242,8 @@ impl DisplayObjectWindow {
         } else {
             "automatic"
         };
-        CollapsingHeader::new(format!("Tab Order ({})", tab_order_suffix))
-            .id_source(ui.id().with("tab_order"))
+        CollapsingHeader::new(format!("Tab Order ({tab_order_suffix})"))
+            .id_salt(ui.id().with("tab_order"))
             .show(ui, |ui| {
                 Grid::new(ui.id().with("tab_order_grid"))
                     .num_columns(3)
@@ -756,7 +1284,7 @@ impl DisplayObjectWindow {
     pub fn show_display<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
@@ -778,7 +1306,7 @@ impl DisplayObjectWindow {
                 ui.end_row();
 
                 ui.label("AVM1 Root");
-                if object.avm1_root().as_ptr() != object.as_ptr() {
+                if !std::ptr::eq(object.avm1_root().as_ptr(), object.as_ptr()) {
                     open_display_object_button(
                         ui,
                         context,
@@ -793,7 +1321,7 @@ impl DisplayObjectWindow {
 
                 ui.label("AVM2 Root");
                 if let Some(other) = object.avm2_root() {
-                    if object.as_ptr() != object.as_ptr() {
+                    if !std::ptr::eq(other.as_ptr(), object.as_ptr()) {
                         open_display_object_button(
                             ui,
                             context,
@@ -817,20 +1345,32 @@ impl DisplayObjectWindow {
                 }
                 ui.end_row();
 
-                if let Some(other) = object.masker() {
-                    ui.label("Masker");
-                    open_display_object_button(
-                        ui,
-                        context,
-                        messages,
-                        other,
-                        &mut self.hovered_debug_rect,
-                    );
-                    ui.end_row();
+                ui.label("Mask");
+                match object.get_render_mask() {
+                    RenderMask::None => {
+                        ui.weak("None");
+                    }
+                    RenderMask::Stencil(mask) | RenderMask::Alpha(mask) => {
+                        ui.horizontal(|ui| {
+                            open_display_object_button(
+                                ui,
+                                context,
+                                messages,
+                                mask,
+                                &mut self.hovered_debug_rect,
+                            );
+                            match object.get_render_mask() {
+                                RenderMask::None => unreachable!(),
+                                RenderMask::Stencil(_) => ui.weak("(stencil)"),
+                                RenderMask::Alpha(_) => ui.weak("(alpha)"),
+                            };
+                        });
+                    }
                 }
+                ui.end_row();
 
+                ui.label("Maskee");
                 if let Some(other) = object.maskee() {
-                    ui.label("Maskee");
                     open_display_object_button(
                         ui,
                         context,
@@ -838,8 +1378,10 @@ impl DisplayObjectWindow {
                         other,
                         &mut self.hovered_debug_rect,
                     );
-                    ui.end_row();
+                } else {
+                    ui.weak("None");
                 }
+                ui.end_row();
 
                 ui.label("Cache as Bitmap");
                 ui.horizontal(|ui| {
@@ -847,13 +1389,13 @@ impl DisplayObjectWindow {
                         let mut enabled = object.is_bitmap_cached_preference();
                         Checkbox::new(&mut enabled, "Enabled").ui(ui);
                         if enabled != object.is_bitmap_cached_preference() {
-                            object.set_bitmap_cached_preference(context.gc_context, enabled);
+                            object.set_bitmap_cached_preference(enabled);
                         }
                     } else {
                         ui.label("Forced due to filters");
                     }
                     if ui.button("Invalidate").clicked() {
-                        object.invalidate_cached_bitmap(context.gc_context);
+                        object.invalidate_cached_bitmap();
                     }
                 });
                 ui.end_row();
@@ -877,7 +1419,7 @@ impl DisplayObjectWindow {
                 ui.label("Blend mode");
                 let old_blend = object.blend_mode();
                 let mut new_blend = old_blend;
-                ComboBox::from_id_source(ui.id().with("blendmode"))
+                ComboBox::from_id_salt(ui.id().with("blendmode"))
                     .selected_text(blend_mode_name(old_blend))
                     .show_ui(ui, |ui| {
                         for mode in ALL_BLEND_MODES {
@@ -886,10 +1428,10 @@ impl DisplayObjectWindow {
                     });
                 ui.end_row();
                 if new_blend != old_blend {
-                    object.set_blend_mode(context.gc_context, new_blend);
+                    object.set_blend_mode(new_blend);
                 }
 
-                let color_transform = *object.base().color_transform();
+                let color_transform = object.base().color_transform();
                 ui.label("Color Transform");
                 ui.label(summary_color_transform(color_transform));
                 ui.end_row();
@@ -900,7 +1442,7 @@ impl DisplayObjectWindow {
                         let mut enabled = obj.raw_container().mouse_children();
                         Checkbox::new(&mut enabled, "Enabled").ui(ui);
                         if enabled != obj.raw_container().mouse_children() {
-                            obj.raw_container_mut(context.gc_context)
+                            obj.raw_container_mut(context.gc())
                                 .set_mouse_children(enabled);
                         }
                     });
@@ -921,10 +1463,10 @@ impl DisplayObjectWindow {
         let filters = object.filters();
         if !filters.is_empty() {
             CollapsingHeader::new(format!("Filters ({})", filters.len()))
-                .id_source(ui.id().with("filters"))
+                .id_salt(ui.id().with("filters"))
                 .show(ui, |ui| {
-                    for filter in filters {
-                        ui.label(format!("{:?}", filter));
+                    for filter in &*filters {
+                        ui.label(format!("{filter:?}"));
                     }
                 });
         }
@@ -933,7 +1475,7 @@ impl DisplayObjectWindow {
     pub fn show_position<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
@@ -943,10 +1485,12 @@ impl DisplayObjectWindow {
                 ui.label("Name");
                 // &mut of a temporary thing because we don't want to actually be able to change this
                 // If we disable it, the user can't highlight or interact with it, so this makes it readonly but enabled
-                ui.text_edit_singleline(&mut object.name().to_string());
+                ui.text_edit_singleline(
+                    &mut object.name().map(|s| s.to_string()).unwrap_or_default(),
+                );
                 ui.end_row();
 
-                if let crate::avm1::Value::Object(object) = object.object() {
+                if let Some(object) = object.object1() {
                     ui.label("AVM1 Object");
                     if ui.button(format!("{:p}", object.as_ptr())).clicked() {
                         messages.push(Message::TrackAVM1Object(AVM1ObjectHandle::new(
@@ -956,11 +1500,12 @@ impl DisplayObjectWindow {
                     ui.end_row();
                 }
 
-                if let crate::avm2::Value::Object(object) = object.object2() {
+                if let Some(object) = object.object2() {
                     ui.label("AVM2 Object");
                     if ui.button(format!("{:p}", object.as_ptr())).clicked() {
                         messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(
-                            context, object,
+                            context,
+                            object.into(),
                         )));
                     }
                     ui.end_row();
@@ -973,13 +1518,9 @@ impl DisplayObjectWindow {
                         .library
                         .library_for_movie(object.movie())
                         .and_then(|l| {
-                            l.export_characters().iter().find_map(|(k, v)| {
-                                if *v == id {
-                                    Some(k)
-                                } else {
-                                    None
-                                }
-                            })
+                            l.export_characters()
+                                .iter()
+                                .find_map(|(k, v)| if *v == id { Some(k) } else { None })
                         })
                 {
                     ui.label(format!("{id} {name}"));
@@ -1004,16 +1545,8 @@ impl DisplayObjectWindow {
                 ui.label(object.clip_depth().to_string());
                 ui.end_row();
 
-                ui.label("World Bounds");
-                bounds_label(ui, object.world_bounds(), &mut self.hovered_bounds);
-                ui.end_row();
-
-                ui.label("Local Bounds");
-                bounds_label(ui, object.local_bounds(), &mut None);
-                ui.end_row();
-
                 ui.label("Self Bounds");
-                bounds_label(ui, object.self_bounds(), &mut None);
+                bounds_label(ui, object.self_bounds(BoundsMode::Engine), &mut None);
                 ui.end_row();
 
                 ui.label("Scroll Rect");
@@ -1023,26 +1556,60 @@ impl DisplayObjectWindow {
                     ui.label("None");
                 }
                 ui.end_row();
+            });
 
-                let matrix = *object.base().matrix();
-                ui.label("Local Position");
+        self.show_matrix_properties(
+            ui,
+            "World Matrix",
+            object,
+            &object.local_to_global_matrix(),
+            true,
+        );
+        self.show_matrix_properties(ui, "Local Matrix", object, &object.base().matrix(), false);
+    }
+
+    fn show_matrix_properties(
+        &mut self,
+        ui: &mut Ui,
+        name: &str,
+        object: DisplayObject<'_>,
+        matrix: &ruffle_render::matrix::Matrix,
+        hoverable_bounds: bool,
+    ) {
+        ui.collapsing(name, |ui| {
+            Grid::new(ui.id().with(name)).num_columns(2).show(ui, |ui| {
+                ui.label("Bounds");
+                let no_hover = &mut None;
+                bounds_label(
+                    ui,
+                    object.bounds_with_transform(matrix, BoundsMode::Engine),
+                    if hoverable_bounds {
+                        &mut self.hovered_bounds
+                    } else {
+                        no_hover
+                    },
+                );
+                ui.end_row();
+
+                ui.label("Position");
                 ui.label(format!("{:.2}, {:.2}", matrix.tx, matrix.ty));
                 ui.end_row();
 
-                ui.label("Local Rotation");
+                ui.label("Rotation");
                 ui.label(format!("{}, {}", matrix.b, matrix.c));
                 ui.end_row();
 
-                ui.label("Local Scale");
+                ui.label("Scale");
                 ui.label(format!("{}, {}", matrix.a, matrix.d));
                 ui.end_row();
             });
+        });
     }
 
     pub fn show_children<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
     ) {
@@ -1062,7 +1629,7 @@ impl DisplayObjectWindow {
     pub fn show_display_tree<'gc>(
         &mut self,
         ui: &mut Ui,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         object: DisplayObject<'gc>,
         messages: &mut Vec<Message>,
         search: &WStr,
@@ -1104,7 +1671,14 @@ impl DisplayObjectWindow {
 }
 
 fn matches_search(object: DisplayObject, search: &WStr) -> bool {
-    if object.name().to_ascii_lowercase().contains(search) {
+    if search.is_empty() {
+        return true;
+    }
+
+    if object
+        .name()
+        .is_some_and(|n| n.to_ascii_lowercase().contains(search))
+    {
         return true;
     }
 
@@ -1171,6 +1745,7 @@ fn has_type_specific_tab(object: DisplayObject) -> bool {
         object,
         DisplayObject::MovieClip(_)
             | DisplayObject::EditText(_)
+            | DisplayObject::Avm2Button(_)
             | DisplayObject::Bitmap(_)
             | DisplayObject::Stage(_)
     )
@@ -1180,10 +1755,10 @@ fn summary_name(object: DisplayObject) -> Cow<'static, str> {
     let do_type = display_object_type(object);
     let name = object.name();
 
-    if name.is_empty() {
-        Cow::Borrowed(do_type)
-    } else {
+    if let Some(name) = name {
         Cow::Owned(format!("{do_type} \"{name}\""))
+    } else {
+        Cow::Borrowed(do_type)
     }
 }
 
@@ -1260,9 +1835,16 @@ fn bounds_label(ui: &mut Ui, bounds: Rectangle<Twips>, hover: &mut Option<Rectan
     }
 }
 
+fn show_text_format_hover(ui: &mut Ui, tf: &TextFormat) {
+    ui.weak("(hover)").on_hover_ui(|ui| {
+        ui.style_mut().interaction.selectable_labels = true;
+        show_text_format(ui, tf, false);
+    });
+}
+
 pub fn open_display_object_button<'gc>(
     ui: &mut Ui,
-    context: &mut UpdateContext<'_, 'gc>,
+    context: &mut UpdateContext<'gc>,
     messages: &mut Vec<Message>,
     object: DisplayObject<'gc>,
     hover: &mut Option<DisplayObjectHandle>,
@@ -1275,5 +1857,15 @@ pub fn open_display_object_button<'gc>(
         messages.push(Message::TrackDisplayObject(DisplayObjectHandle::new(
             context, object,
         )));
+    }
+}
+
+fn format_font_descriptor(desc: &FontDescriptor) -> Cow<'_, str> {
+    let name = desc.name();
+    match (desc.bold(), desc.italic()) {
+        (true, true) => Cow::Owned(format!("{name} (bold, italic)")),
+        (true, false) => Cow::Owned(format!("{name} (bold)")),
+        (false, true) => Cow::Owned(format!("{name} (italic)")),
+        (false, false) => Cow::Borrowed(name),
     }
 }

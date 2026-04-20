@@ -17,7 +17,9 @@ use ruffle_render::quality::StageQuality;
 use ruffle_render::shape_utils::{DistilledShape, DrawCommand, LineScaleMode, LineScales};
 use ruffle_render::transform::Transform;
 use ruffle_web_common::{JsError, JsResult};
+use std::any::Any;
 use std::borrow::Cow;
+use std::num::NonZeroU32;
 use std::sync::Arc;
 use swf::{BlendMode, Color, ColorTransform, Point, Twips};
 use wasm_bindgen::{Clamped, JsCast, JsValue};
@@ -52,8 +54,7 @@ struct ShapeData(Vec<CanvasDrawCommand>);
 impl ShapeHandleImpl for ShapeData {}
 
 fn as_shape_data(handle: &ShapeHandle) -> &ShapeData {
-    <dyn ShapeHandleImpl>::downcast_ref(&*handle.0)
-        .expect("Shape handle must be a Canvas ShapeData")
+    <dyn Any>::downcast_ref(&*handle.0).expect("Shape handle must be a Canvas ShapeData")
 }
 
 #[derive(Debug)]
@@ -144,9 +145,9 @@ struct CanvasBitmap {
     smoothed: bool,
 }
 
-#[allow(dead_code)]
 #[derive(Debug)]
 struct BitmapData {
+    #[expect(dead_code)]
     image_data: ImageData,
     canvas: HtmlCanvasElement,
     context: CanvasRenderingContext2d,
@@ -155,8 +156,7 @@ struct BitmapData {
 impl BitmapHandleImpl for BitmapData {}
 
 fn as_bitmap_data(handle: &BitmapHandle) -> &BitmapData {
-    <dyn BitmapHandleImpl>::downcast_ref(&*handle.0)
-        .expect("Bitmap handle must be a Canvas BitmapData")
+    <dyn Any>::downcast_ref(&*handle.0).expect("Bitmap handle must be a Canvas BitmapData")
 }
 
 impl BitmapData {
@@ -199,7 +199,7 @@ impl BitmapData {
         })
     }
 
-    fn update_pixels(&self, bitmap: Bitmap) -> Result<(), JsValue> {
+    fn update_pixels(&self, bitmap: Bitmap<'_>) -> Result<(), JsValue> {
         let bitmap = bitmap.to_rgba();
         let image_data =
             ImageData::new_with_u8_clamped_array(Clamped(bitmap.data()), bitmap.width())
@@ -323,7 +323,6 @@ impl WebCanvasRenderBackend {
         Ok(renderer)
     }
 
-    #[allow(clippy::float_cmp)]
     #[inline]
     fn set_transform(&mut self, matrix: &Matrix) {
         self.context
@@ -338,7 +337,6 @@ impl WebCanvasRenderBackend {
             .warn_on_error();
     }
 
-    #[allow(clippy::float_cmp)]
     #[inline]
     fn set_color_filter(&self, transform: &Transform) {
         let color_transform = &transform.color_transform;
@@ -381,16 +379,13 @@ impl WebCanvasRenderBackend {
         self.context.set_line_cap("butt");
         self.context.set_line_width(1.0);
         self.context.set_line_join("miter");
-        self.context.set_stroke_style(
-            &format!(
-                "rgba({},{},{},{})",
-                color.r,
-                color.g,
-                color.b,
-                f32::from(color.a) / 255.0,
-            )
-            .into(),
-        );
+        self.context.set_stroke_style_str(&format!(
+            "rgba({},{},{},{})",
+            color.r,
+            color.g,
+            color.b,
+            f32::from(color.a) / 255.0,
+        ));
     }
 
     fn apply_blend_mode(&mut self, blend: RenderBlendMode) {
@@ -429,7 +424,7 @@ impl WebCanvasRenderBackend {
 
         if clear.a > 0 {
             let color = format!("rgba({}, {}, {}, {})", clear.r, clear.g, clear.b, clear.a);
-            self.context.set_fill_style(&color.into());
+            self.context.set_fill_style_str(&color);
             let _ = self.context.set_global_composite_operation("copy");
             self.context
                 .fill_rect(0.0, 0.0, width.into(), height.into());
@@ -462,8 +457,8 @@ impl WebCanvasRenderBackend {
     }
 
     fn draw_lines(&mut self, color: Color, mut matrix: Matrix, rect: bool) {
-        matrix.tx += Twips::HALF;
-        matrix.ty += Twips::HALF;
+        matrix.tx += Twips::HALF_PX;
+        matrix.ty += Twips::HALF_PX;
         let dom_matrix = matrix.to_dom_matrix();
         let stroke = if rect { &self.line_rect } else { &self.line };
         match &self.mask_state {
@@ -534,7 +529,7 @@ impl RenderBackend for WebCanvasRenderBackend {
         commands.execute(self);
     }
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error> {
+    fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, Error> {
         let bitmap_data = BitmapData::with_bitmap(bitmap).map_err(Error::JavascriptError)?;
         Ok(BitmapHandle(Arc::new(bitmap_data)))
     }
@@ -542,7 +537,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        bitmap: Bitmap,
+        bitmap: Bitmap<'_>,
         _region: PixelRegion,
     ) -> Result<(), Error> {
         let data = as_bitmap_data(handle);
@@ -555,9 +550,6 @@ impl RenderBackend for WebCanvasRenderBackend {
         _profile: Context3DProfile,
     ) -> Result<Box<dyn Context3D>, Error> {
         Err(Error::Unimplemented("createContext3D".into()))
-    }
-    fn context3d_present(&mut self, _context: &mut dyn Context3D) -> Result<(), Error> {
-        Err(Error::Unimplemented("Context3D.present".into()))
     }
 
     fn debug_info(&self) -> Cow<'static, str> {
@@ -580,7 +572,7 @@ impl RenderBackend for WebCanvasRenderBackend {
     fn run_pixelbender_shader(
         &mut self,
         _handle: ruffle_render::pixel_bender::PixelBenderShaderHandle,
-        _arguments: &[ruffle_render::pixel_bender::PixelBenderShaderArgument],
+        _arguments: &[ruffle_render::pixel_bender_support::PixelBenderShaderArgument],
         _target: &PixelBenderTarget,
     ) -> Result<PixelBenderOutput, Error> {
         Err(Error::Unimplemented("run_pixelbender_shader".into()))
@@ -594,8 +586,13 @@ impl RenderBackend for WebCanvasRenderBackend {
         Err(Error::Unimplemented("Sync handle resolution".into()))
     }
 
-    fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error> {
-        let bitmap_data = BitmapData::empty(width, height).map_err(Error::JavascriptError)?;
+    fn create_empty_texture(
+        &mut self,
+        width: NonZeroU32,
+        height: NonZeroU32,
+    ) -> Result<BitmapHandle, Error> {
+        let bitmap_data =
+            BitmapData::empty(width.get(), height.get()).map_err(Error::JavascriptError)?;
         Ok(BitmapHandle(Arc::new(bitmap_data)))
     }
 }
@@ -617,9 +614,14 @@ impl CommandHandler for WebCanvasRenderBackend {
         self.set_transform(&transform.matrix);
         self.set_color_filter(&transform);
         let bitmap = as_bitmap_data(&bitmap);
-        let _ = self
-            .context
-            .draw_image_with_html_canvas_element(&bitmap.canvas, 0.0, 0.0);
+        let bitmap_canvas = &bitmap.canvas;
+
+        if bitmap_canvas.width() > 0 && bitmap_canvas.height() > 0 {
+            let _ = self
+                .context
+                .draw_image_with_html_canvas_element(bitmap_canvas, 0.0, 0.0);
+        }
+
         self.clear_color_filter();
     }
 
@@ -651,7 +653,7 @@ impl CommandHandler for WebCanvasRenderBackend {
                             match fill_style {
                                 CanvasFillStyle::Color(color) => {
                                     let color = color.color_transform(&transform.color_transform);
-                                    self.context.set_fill_style(&color.1.into());
+                                    self.context.set_fill_style_str(&color.1);
                                     self.context.fill_with_path_2d_and_winding(
                                         path,
                                         CanvasWindingRule::Evenodd,
@@ -659,7 +661,8 @@ impl CommandHandler for WebCanvasRenderBackend {
                                 }
                                 CanvasFillStyle::Gradient(gradient) => {
                                     self.set_color_filter(&transform);
-                                    self.context.set_fill_style(&gradient.gradient);
+                                    self.context
+                                        .set_fill_style_canvas_gradient(&gradient.gradient);
 
                                     if let Some(gradient_transform) = &gradient.transform {
                                         // Canvas has no easy way to draw gradients with an arbitrary transform,
@@ -693,7 +696,7 @@ impl CommandHandler for WebCanvasRenderBackend {
                                 CanvasFillStyle::Bitmap(bitmap) => {
                                     self.set_color_filter(&transform);
                                     self.context.set_image_smoothing_enabled(bitmap.smoothed);
-                                    self.context.set_fill_style(&bitmap.pattern);
+                                    self.context.set_fill_style_canvas_pattern(&bitmap.pattern);
                                     self.context.fill_with_path_2d_and_winding(
                                         path,
                                         CanvasWindingRule::Evenodd,
@@ -731,7 +734,7 @@ impl CommandHandler for WebCanvasRenderBackend {
                             match stroke_style {
                                 CanvasStrokeStyle::Color(color) => {
                                     let color = color.color_transform(&transform.color_transform);
-                                    self.context.set_stroke_style(&color.1.into());
+                                    self.context.set_stroke_style_str(&color.1);
                                     self.context.stroke_with_path(&transformed_path);
                                 }
                                 CanvasStrokeStyle::Gradient(gradient, focal_point) => {
@@ -759,7 +762,8 @@ impl CommandHandler for WebCanvasRenderBackend {
                                     };
                                     if let Ok(gradient) = gradient {
                                         self.set_color_filter(&transform);
-                                        self.context.set_stroke_style(&gradient.gradient);
+                                        self.context
+                                            .set_stroke_style_canvas_gradient(&gradient.gradient);
                                         self.context.stroke_with_path(&transformed_path);
                                         self.clear_color_filter();
                                     }
@@ -774,7 +778,8 @@ impl CommandHandler for WebCanvasRenderBackend {
                                     );
                                     self.set_color_filter(&transform);
                                     self.context.set_image_smoothing_enabled(bitmap.smoothed);
-                                    self.context.set_stroke_style(&bitmap.pattern);
+                                    self.context
+                                        .set_stroke_style_canvas_pattern(&bitmap.pattern);
                                     self.context.stroke_with_path(&transformed_path);
                                     self.clear_color_filter();
                                 }
@@ -807,16 +812,13 @@ impl CommandHandler for WebCanvasRenderBackend {
             MaskState::DrawContent => {
                 self.set_transform(&matrix);
                 self.clear_color_filter();
-                self.context.set_fill_style(
-                    &format!(
-                        "rgba({},{},{},{})",
-                        color.r,
-                        color.g,
-                        color.b,
-                        f32::from(color.a) / 255.0
-                    )
-                    .into(),
-                );
+                self.context.set_fill_style_str(&format!(
+                    "rgba({},{},{},{})",
+                    color.r,
+                    color.g,
+                    color.b,
+                    f32::from(color.a) / 255.0
+                ));
                 self.context.fill_rect(0.0, 0.0, 1.0, 1.0);
             }
             MaskState::DrawMask(mask_path) => {
@@ -883,6 +885,11 @@ impl CommandHandler for WebCanvasRenderBackend {
         self.push_blend_mode(blend);
         commands.execute(self);
         self.pop_blend_mode();
+    }
+
+    fn render_alpha_mask(&mut self, maskee_commands: CommandList, _mask_commands: CommandList) {
+        // TODO Add support for alpha masks
+        maskee_commands.execute(self);
     }
 }
 
@@ -987,16 +994,14 @@ fn swf_shape_to_canvas_commands(
                         is_smoothed,
                         is_repeating,
                     } => {
-                        let bitmap = if let Some(bitmap) = create_bitmap_pattern(
+                        let Some(bitmap) = create_bitmap_pattern(
                             *id,
                             *matrix,
                             *is_smoothed,
                             *is_repeating,
                             bitmap_source,
                             backend,
-                        ) {
-                            bitmap
-                        } else {
+                        ) else {
                             continue;
                         };
                         CanvasFillStyle::Bitmap(bitmap)
@@ -1037,16 +1042,14 @@ fn swf_shape_to_canvas_commands(
                         is_smoothed,
                         is_repeating,
                     } => {
-                        let bitmap = if let Some(bitmap) = create_bitmap_pattern(
+                        let Some(bitmap) = create_bitmap_pattern(
                             *id,
                             *matrix,
                             *is_smoothed,
                             *is_repeating,
                             bitmap_source,
                             backend,
-                        ) {
-                            bitmap
-                        } else {
+                        ) else {
                             continue;
                         };
                         CanvasStrokeStyle::Bitmap(bitmap)
@@ -1307,7 +1310,7 @@ fn create_bitmap_pattern(
         {
             Ok(Some(pattern)) => pattern,
             _ => {
-                log::warn!("Unable to create bitmap pattern for bitmap ID {}", id);
+                log::warn!("Unable to create bitmap pattern for bitmap ID {id}");
                 return None;
             }
         };
@@ -1318,7 +1321,7 @@ fn create_bitmap_pattern(
             smoothed: is_smoothed,
         })
     } else {
-        log::warn!("Couldn't fill shape with unknown bitmap {}", id);
+        log::warn!("Couldn't fill shape with unknown bitmap {id}");
         None
     }
 }

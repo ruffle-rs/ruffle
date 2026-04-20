@@ -1,14 +1,13 @@
-use crate::avm1::function::FunctionObject;
-use crate::avm1::object::{NativeObject, Object};
-use crate::avm1::property_decl::define_properties_on;
-use crate::avm1::{property_decl::Declaration, ScriptObject};
-use crate::avm1::{Activation, Error, Executable, ExecutionReason, TObject, Value};
-use crate::context::{GcContext, UpdateContext};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{Activation, Error, ExecutionReason, NativeObject, Object, Value};
+use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::socket::SocketHandle;
 use crate::string::AvmString;
 use gc_arena::{Collect, Gc};
+use ruffle_macros::istr;
 use std::cell::{Cell, RefCell, RefMut};
+use std::collections::VecDeque;
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
@@ -16,46 +15,46 @@ struct XmlSocketData {
     handle: Cell<Option<SocketHandle>>,
     /// Connection timeout in milliseconds.
     timeout: Cell<u32>,
-    read_buffer: RefCell<Vec<u8>>,
+    read_buffer: RefCell<VecDeque<u8>>,
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 pub struct XmlSocket<'gc>(Gc<'gc, XmlSocketData>);
 
 impl<'gc> XmlSocket<'gc> {
-    pub fn handle(&self) -> Option<SocketHandle> {
+    pub fn handle(self) -> Option<SocketHandle> {
         self.0.handle.get()
     }
 
-    pub fn set_handle(&self, handle: SocketHandle) -> Option<SocketHandle> {
+    pub fn set_handle(self, handle: SocketHandle) -> Option<SocketHandle> {
         self.0.handle.replace(Some(handle))
     }
 
-    pub fn timeout(&self) -> u32 {
+    pub fn timeout(self) -> u32 {
         self.0.timeout.get()
     }
 
-    pub fn set_timeout(&self, new_timeout: u32) {
+    pub fn set_timeout(self, new_timeout: u32) {
         // FIXME: Check if flash player clamps this to 250 milliseconds like AS3 sockets.
         self.0.timeout.set(new_timeout);
     }
 
-    pub fn read_buffer(&self) -> RefMut<'_, Vec<u8>> {
+    pub fn read_buffer(&self) -> RefMut<'_, VecDeque<u8>> {
         self.0.read_buffer.borrow_mut()
     }
 
     pub fn cast(value: Value<'gc>) -> Option<Self> {
-        if let Value::Object(object) = value {
-            if let NativeObject::XmlSocket(xml_socket) = object.native() {
-                return Some(xml_socket);
-            }
+        if let Value::Object(object) = value
+            && let NativeObject::XmlSocket(xml_socket) = object.native()
+        {
+            return Some(xml_socket);
         }
         None
     }
 }
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "timeout" => property(get_timeout, set_timeout);
     "close" => method(close);
     "connect" => method(connect);
@@ -65,6 +64,15 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "onData" => method(on_data; DONT_ENUM | DONT_DELETE);
     "onXML" => method(on_xml; DONT_ENUM | DONT_DELETE);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
 
 fn get_timeout<'gc>(
     _activation: &mut Activation<'_, 'gc>,
@@ -100,10 +108,10 @@ pub fn close<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(xml_socket) = XmlSocket::cast(this.into()) {
-        if let Some(handle) = xml_socket.handle() {
-            activation.context.sockets.close(handle)
-        }
+    if let Some(xml_socket) = XmlSocket::cast(this.into())
+        && let Some(handle) = xml_socket.handle()
+    {
+        activation.context.sockets.close(handle)
     }
 
     Ok(Value::Undefined)
@@ -123,12 +131,12 @@ pub fn connect<'gc>(
 
                 if let Ok(url) = url::Url::parse(movie.url()) {
                     if url.scheme() == "file" {
-                        "localhost".into()
+                        istr!("localhost").into()
                     } else if let Some(domain) = url.domain() {
-                        AvmString::new_utf8(activation.context.gc_context, domain).into()
+                        AvmString::new_utf8(activation.gc(), domain).into()
                     } else {
                         // no domain?
-                        "localhost".into()
+                        istr!("localhost").into()
                     }
                 } else {
                     Value::Undefined
@@ -142,7 +150,7 @@ pub fn connect<'gc>(
 
         let UpdateContext {
             sockets, navigator, ..
-        } = &mut activation.context;
+        } = activation.context;
 
         sockets.connect_avm1(*navigator, this, host.to_utf8_lossy().into_owned(), port);
 
@@ -159,20 +167,20 @@ pub fn send<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(xml_socket) = XmlSocket::cast(this.into()) {
-        if let Some(handle) = xml_socket.handle() {
-            let mut data = args
-                .get(0)
-                .unwrap_or(&Value::Undefined)
-                .coerce_to_string(activation)?
-                .to_string()
-                .into_bytes();
+    if let Some(xml_socket) = XmlSocket::cast(this.into())
+        && let Some(handle) = xml_socket.handle()
+    {
+        let mut data = args
+            .get(0)
+            .unwrap_or(&Value::Undefined)
+            .coerce_to_string(activation)?
+            .to_string()
+            .into_bytes();
 
-            // The string needs to end with a null byte.
-            data.push(0);
+        // The string needs to end with a null byte.
+        data.push(0);
 
-            activation.context.sockets.send(handle, data);
-        }
+        activation.context.sockets.send(handle, data);
     }
 
     Ok(Value::Undefined)
@@ -201,15 +209,10 @@ fn on_data<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let xml_constructor = activation.context.avm1.prototypes().xml_constructor;
+    let xml_constructor = activation.prototypes().xml_constructor;
 
     if let Ok(xml) = xml_constructor.construct(activation, args) {
-        let _ = this.call_method(
-            "onXML".into(),
-            &[xml],
-            activation,
-            ExecutionReason::FunctionCall,
-        )?;
+        let _ = this.call_method(istr!("onXML"), &[xml], activation, ExecutionReason::Special)?;
     } else {
         tracing::warn!("default XMLSocket.onData() received invalid XML; message ignored");
     }
@@ -226,7 +229,7 @@ fn on_xml<'gc>(
     Ok(Value::Undefined)
 }
 
-pub fn constructor<'gc>(
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
@@ -237,35 +240,11 @@ pub fn constructor<'gc>(
             handle: Cell::new(None),
             // Default timeout is 20_000 milliseconds (20 seconds)
             timeout: Cell::new(20000),
-            read_buffer: RefCell::new(Vec::new()),
+            read_buffer: RefCell::new(VecDeque::new()),
         },
     ));
 
     this.set_native(activation.gc(), NativeObject::XmlSocket(xml_socket));
 
-    Ok(this.into())
-}
-
-pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let xml_socket_proto = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, xml_socket_proto, fn_proto);
-    xml_socket_proto.into()
-}
-
-pub fn create_class<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    xml_socket_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        xml_socket_proto,
-    )
+    Ok(Value::Undefined)
 }

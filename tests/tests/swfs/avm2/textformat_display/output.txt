@@ -1,0 +1,14 @@
+block
+none
+inline
+block
+null
+inline
+TypeError: Error #2007: Parameter display must be non-null.
+	at flash.text::TextFormat/set display()
+	at Test()
+inline
+TypeError: Error #2007: Parameter display must be non-null.
+	at flash.text::TextFormat/set display()
+	at Test()
+inline

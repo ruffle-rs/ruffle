@@ -3,39 +3,45 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::object::script_object::ScriptObject;
-use crate::avm1::object::TObject;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{ArrayObject, Object, Value};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{ArrayBuilder, Object, Value};
 use crate::backend::navigator::Request;
-use crate::context::GcContext;
 use crate::display_object::TDisplayObject;
 use crate::loader::MovieLoaderVMData;
+use ruffle_macros::istr;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "loadClip" => method(load_clip; DONT_ENUM | DONT_DELETE);
     "unloadClip" => method(unload_clip; DONT_ENUM | DONT_DELETE);
     "getProgress" => method(get_progress; DONT_ENUM | DONT_DELETE);
 };
 
-pub fn constructor<'gc>(
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+    broadcaster_fns: BroadcasterFunctions<'gc>,
+    array_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    broadcaster_fns.initialize(context.strings, class.proto, array_proto);
+    class
+}
+
+fn constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let listeners = ArrayObject::new(
-        activation.context.gc_context,
-        activation.context.avm1.prototypes().array,
-        [this.into()],
-    );
+    let listeners = ArrayBuilder::new(activation).with([this.into()]);
     this.define_value(
-        activation.context.gc_context,
-        "_listeners",
-        Value::Object(listeners.into()),
+        activation.gc(),
+        istr!("_listeners"),
+        Value::Object(listeners),
         Attribute::DONT_ENUM,
     );
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 fn load_clip<'gc>(
@@ -56,17 +62,20 @@ fn load_clip<'gc>(
                     Some(activation.get_or_create_level(*level_id as i32))
                 }
                 Value::Object(object) => object.as_display_object(),
-                Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
+                Value::MovieClip(_) => target
+                    .coerce_to_object_or_bare(activation)?
+                    .as_display_object(),
                 _ => None,
             };
             if let Some(target) = target {
                 let future = activation.context.load_manager.load_movie_into_clip(
-                    activation.context.player.clone(),
+                    activation.context.player_handle(),
                     target,
                     Request::get(url.to_utf8_lossy().into_owned()),
                     None,
                     MovieLoaderVMData::Avm1 {
                         broadcaster: Some(this),
+                        base_clip: activation.base_clip(),
                     },
                 );
                 activation.context.navigator.spawn_future(future);
@@ -98,7 +107,9 @@ fn unload_clip<'gc>(
                 activation.get_level(*level_id as i32)
             }
             Value::Object(object) => object.as_display_object(),
-            Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
+            Value::MovieClip(_) => target
+                .coerce_to_object_or_bare(activation)?
+                .as_display_object(),
             _ => None,
         };
         if let Some(target) = target {
@@ -106,9 +117,9 @@ fn unload_clip<'gc>(
             // does Flash also wait a frame to execute avm1_unload? Is avm1_unload_movie
             // the correct call?
             if let Some(mc) = target.as_movie_clip() {
-                mc.avm1_unload_movie(&mut activation.context);
+                mc.avm1_unload_movie(activation.context);
             } else {
-                target.avm1_unload(&mut activation.context);
+                target.avm1_unload(activation.context);
             }
             return Ok(true.into());
         }
@@ -138,20 +149,22 @@ fn get_progress<'gc>(
             Value::Object(object) if object.as_display_object().is_some() => {
                 object.as_display_object()
             }
-            Value::MovieClip(_) => target.coerce_to_object(activation).as_display_object(),
+            Value::MovieClip(_) => target
+                .coerce_to_object_or_bare(activation)?
+                .as_display_object(),
             _ => return Ok(Value::Undefined),
         };
-        let result = ScriptObject::new(activation.context.gc_context, None);
+        let result = Object::new_without_proto(activation.gc());
         if let Some(target) = target {
             result.define_value(
-                activation.context.gc_context,
-                "bytesLoaded",
+                activation.gc(),
+                istr!("bytesLoaded"),
                 target.movie().compressed_len().into(),
                 Attribute::empty(),
             );
             result.define_value(
-                activation.context.gc_context,
-                "bytesTotal",
+                activation.gc(),
+                istr!("bytesTotal"),
                 target.movie().compressed_len().into(),
                 Attribute::empty(),
             );
@@ -160,17 +173,4 @@ fn get_progress<'gc>(
     }
 
     Ok(Value::Undefined)
-}
-
-pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-    array_proto: Object<'gc>,
-    broadcaster_functions: BroadcasterFunctions<'gc>,
-) -> Object<'gc> {
-    let mcl_proto = ScriptObject::new(context.gc_context, Some(proto));
-    broadcaster_functions.initialize(context.gc_context, mcl_proto.into(), array_proto);
-    define_properties_on(PROTO_DECLS, context, mcl_proto, fn_proto);
-    mcl_proto.into()
 }

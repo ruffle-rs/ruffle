@@ -1,0 +1,6 @@
+version 1i
+name "param_qualifier"
+
+param.out "dst", float4, f0.rgba
+
+ld f0.a, 1f

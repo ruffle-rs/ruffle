@@ -1,6 +1,6 @@
 use ruffle_core::backend::audio::{
-    swf, AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
-    SoundStreamInfo, SoundTransform,
+    AudioBackend, AudioMixer, DecodeError, RegisterError, SoundHandle, SoundInstanceHandle,
+    SoundStreamInfo, SoundTransform, swf,
 };
 use ruffle_core::impl_audio_mixer_backend;
 
@@ -21,6 +21,12 @@ impl Default for TestAudioBackend {
 impl TestAudioBackend {
     const NUM_CHANNELS: u8 = 2;
     const SAMPLE_RATE: u32 = 44100;
+}
+
+impl TestAudioBackend {
+    pub fn buffer(&self) -> &[f32] {
+        &self.buffer
+    }
 }
 
 impl AudioBackend for TestAudioBackend {

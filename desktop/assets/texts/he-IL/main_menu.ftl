@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = קובץ
-file-menu-open-quick = פתח...
 file-menu-open-advanced = פתיחה מתקדמת...
 file-menu-close = סגירה
 file-menu-reload = רענון
@@ -20,6 +19,7 @@ file-menu-exit = יציאה
 controls-menu = פקדים
 controls-menu-suspend = השעייה
 controls-menu-resume = המשך
+controls-menu-step-once = התקדמות יחידה
 controls-menu-volume = בקרת עוצמת קול
 help-menu = עזרה
 help-menu-join-discord = הצטרף לדיסקורד
@@ -36,3 +36,5 @@ debug-menu-open-movie = הצג סרט
 debug-menu-open-movie-list = הצג סרטים ידועים
 debug-menu-open-domain-list = הצג דומיינים
 debug-menu-search-display-objects = חפש אובייקטי תצוגה...
+view-menu = הצג
+view-menu-fullscreen = מסך מלא

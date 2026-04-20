@@ -1,0 +1,2 @@
+Hello from invalid UTF-8 class name!
+Class loaded successfully

@@ -1,0 +1,1311 @@
+-- Transparent --
+// threshold()
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, point, "==")
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(null, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(undefined, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold({}, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(opaqueBmd, rect, point, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff345678 0xff345678
+0xaabbccdc 0xff345678 0xffffffff
+--
+
+// threshold(disposedBmd, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, null, point, "==", 858993459, 2863311530, 16711680, true)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, undefined, point, "==", 858993459, 2863311530, 16711680, true)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, {}, point, "==", 858993459, 2863311530, 16711680, true)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, zeroSizedRect, point, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rectAsObj, point, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rectWithoutWidth, point, "==", 858993459, 2863311530, 16711680, true)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, null, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffffffff 0x12395571 0xaabbccdc
+0x12395571 0xffffffff 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, undefined, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffffffff 0x12395571 0xaabbccdc
+0x12395571 0xffffffff 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, {}, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffffffff 0x12395571 0xaabbccdc
+0x12395571 0xffffffff 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, pointOutsideBmd, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, pointAsObj, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffffffff 0x12395571 0xaabbccdc
+0x12395571 0xffffffff 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, pointWithoutY, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffffffff 0x12395571 0xaabbccdc
+0x12395571 0xffffffff 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, point, null, 858993459, 2863311530, 16711680, true)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0xaaa9a9a9
+0xaabbccdc 0xaaa9a9a9 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, undefined, 858993459, 2863311530, 16711680, true)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0xaaa9a9a9
+0xaabbccdc 0xaaa9a9a9 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, {}, 858993459, 2863311530, 16711680, true)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0xaaa9a9a9
+0xaabbccdc 0xaaa9a9a9 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "<", 858993459, 2863311530, 16711680, true)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0xaaa9a9a9
+0xaabbccdc 0xaaa9a9a9 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "<=", 858993459, 2863311530, 16711680, true)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0xaaa9a9a9
+0xaabbccdc 0xaaa9a9a9 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, ">", 858993459, 2863311530, 16711680, true)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9a9a9 0x12395571
+0xaabbccdc 0x12395571 0xaaa9a9a9
+--
+
+// threshold(transparentBmd, rect, point, ">=", 858993459, 2863311530, 16711680, true)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9a9a9 0x12395571
+0xaabbccdc 0x12395571 0xaaa9a9a9
+--
+
+// threshold(transparentBmd, rect, point, "!=", 858993459, 2863311530, 16711680, true)
+4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9a9a9 0xaaa9a9a9
+0xaabbccdc 0xaaa9a9a9 0xaaa9a9a9
+--
+
+// threshold(transparentBmd, rect, point, ">=(", 858993459, 2863311530, 16711680, true)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0xaaa9a9a9
+0xaabbccdc 0xaaa9a9a9 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", null, 2863311530, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", undefined, 2863311530, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", {}, 2863311530, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", objLooksLikeNum, 2863311530, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", -1, 2863311530, 16711680, true)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9a9a9 0x12395571
+0xaabbccdc 0x12395571 0xaaa9a9a9
+--
+
+// threshold(transparentBmd, rect, point, "==", -2, 2863311530, 16711680, true)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9a9a9 0x12395571
+0xaabbccdc 0x12395571 0xaaa9a9a9
+--
+
+// threshold(transparentBmd, rect, point, "==", 0, 2863311530, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 10, 2863311530, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, null, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, undefined, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, {}, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, objLooksLikeNum, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, -1, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, -2, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 0, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 10, 16711680, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, null, true)
+4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9a9a9 0xaaa9a9a9
+0xaabbccdc 0xaaa9a9a9 0xaaa9a9a9
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, undefined, true)
+4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9a9a9 0xaaa9a9a9
+0xaabbccdc 0xaaa9a9a9 0xaaa9a9a9
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, {}, true)
+4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9a9a9 0xaaa9a9a9
+0xaabbccdc 0xaaa9a9a9 0xaaa9a9a9
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, objLooksLikeNum, true)
+2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9a9a9 0x12395571
+0xaabbccdc 0x12395571 0xaaa9a9a9
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, -1, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, -2, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 0, true)
+4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaaa9a9a9 0xaaa9a9a9
+0xaabbccdc 0xaaa9a9a9 0xaaa9a9a9
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 10, true)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680, null)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680, undefined)
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680, {})
+0
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xffffffff 0x12395571
+0xaabbccdc 0x12395571 0xffffffff
+--
+
+
+
+-- Opaque --
+// threshold()
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, point, "==")
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(null, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(undefined, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold({}, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(opaqueBmd, rect, point, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff345678 0xff345678
+0xffbbccdd 0xff345678 0xffffffff
+--
+
+// threshold(disposedBmd, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, null, point, "==", 858993459, 2863311530, 16711680, true)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, undefined, point, "==", 858993459, 2863311530, 16711680, true)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, {}, point, "==", 858993459, 2863311530, 16711680, true)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, zeroSizedRect, point, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rectAsObj, point, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rectWithoutWidth, point, "==", 858993459, 2863311530, 16711680, true)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, null, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffffffff 0x12040608 0xffbbccdd
+0x12040608 0xffffffff 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, undefined, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffffffff 0x12040608 0xffbbccdd
+0x12040608 0xffffffff 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, {}, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffffffff 0x12040608 0xffbbccdd
+0x12040608 0xffffffff 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, pointOutsideBmd, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, pointAsObj, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffffffff 0x12040608 0xffbbccdd
+0x12040608 0xffffffff 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, pointWithoutY, "==", 858993459, 2863311530, 16711680, true)
+0
+--
+0xffffffff 0x12040608 0xffbbccdd
+0x12040608 0xffffffff 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, point, null, 858993459, 2863311530, 16711680, true)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0xaa717171
+0xffbbccdd 0xaa717171 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, undefined, 858993459, 2863311530, 16711680, true)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0xaa717171
+0xffbbccdd 0xaa717171 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, {}, 858993459, 2863311530, 16711680, true)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0xaa717171
+0xffbbccdd 0xaa717171 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "<", 858993459, 2863311530, 16711680, true)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0xaa717171
+0xffbbccdd 0xaa717171 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "<=", 858993459, 2863311530, 16711680, true)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0xaa717171
+0xffbbccdd 0xaa717171 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, ">", 858993459, 2863311530, 16711680, true)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xaa717171 0x12040608
+0xffbbccdd 0x12040608 0xaa717171
+--
+
+// threshold(transparentBmd, rect, point, ">=", 858993459, 2863311530, 16711680, true)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xaa717171 0x12040608
+0xffbbccdd 0x12040608 0xaa717171
+--
+
+// threshold(transparentBmd, rect, point, "!=", 858993459, 2863311530, 16711680, true)
+4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xaa717171 0xaa717171
+0xffbbccdd 0xaa717171 0xaa717171
+--
+
+// threshold(transparentBmd, rect, point, ">=(", 858993459, 2863311530, 16711680, true)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0xaa717171
+0xffbbccdd 0xaa717171 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", null, 2863311530, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", undefined, 2863311530, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", {}, 2863311530, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", objLooksLikeNum, 2863311530, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", -1, 2863311530, 16711680, true)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xaa717171 0x12040608
+0xffbbccdd 0x12040608 0xaa717171
+--
+
+// threshold(transparentBmd, rect, point, "==", -2, 2863311530, 16711680, true)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xaa717171 0x12040608
+0xffbbccdd 0x12040608 0xaa717171
+--
+
+// threshold(transparentBmd, rect, point, "==", 0, 2863311530, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 10, 2863311530, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, null, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, undefined, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, {}, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, objLooksLikeNum, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, -1, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, -2, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 0, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 10, 16711680, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, null, true)
+4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xaa717171 0xaa717171
+0xffbbccdd 0xaa717171 0xaa717171
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, undefined, true)
+4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xaa717171 0xaa717171
+0xffbbccdd 0xaa717171 0xaa717171
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, {}, true)
+4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xaa717171 0xaa717171
+0xffbbccdd 0xaa717171 0xaa717171
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, objLooksLikeNum, true)
+2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xaa717171 0x12040608
+0xffbbccdd 0x12040608 0xaa717171
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, -1, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, -2, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 0, true)
+4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xaa717171 0xaa717171
+0xffbbccdd 0xaa717171 0xaa717171
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 10, true)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680, null)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680, undefined)
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680, {})
+0
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffffffff 0x12040608
+0xffbbccdd 0x12040608 0xffffffff
+--
+
+
+
+-- Disposed --
+// threshold()
+-1
+--
+--
+
+// threshold(transparentBmd)
+-1
+--
+--
+
+// threshold(transparentBmd, rect)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==")
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(null, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(undefined, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold({}, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(opaqueBmd, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(disposedBmd, rect, point, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, null, point, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, undefined, point, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, {}, point, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, zeroSizedRect, point, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rectAsObj, point, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rectWithoutWidth, point, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, null, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, undefined, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, {}, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, pointOutsideBmd, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, pointAsObj, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, pointWithoutY, "==", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, null, 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, undefined, 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, {}, 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "<", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "<=", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, ">", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, ">=", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "!=", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, ">=(", 858993459, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", null, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", undefined, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", {}, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", objLooksLikeNum, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", -1, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", -2, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 0, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 10, 2863311530, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, null, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, undefined, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, {}, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, objLooksLikeNum, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, -1, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, -2, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 0, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 10, 16711680, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, null, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, undefined, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, {}, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, objLooksLikeNum, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, -1, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, -2, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 0, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 10, true)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680, null)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680, undefined)
+-1
+--
+--
+
+// threshold(transparentBmd, rect, point, "==", 858993459, 2863311530, 16711680, {})
+-1
+--
+--
+
+
+

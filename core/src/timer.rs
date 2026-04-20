@@ -5,18 +5,22 @@
 //! is ready to tick each frame.
 
 use crate::avm1::ExecutionReason;
-use crate::avm1::{
-    Activation, ActivationIdentifier, Object as Avm1Object, TObject as _, Value as Avm1Value,
+use crate::avm1::{Activation, ActivationIdentifier, Object as Avm1Object, Value as Avm1Value};
+use crate::avm2::error::make_null_or_undefined_error;
+use crate::avm2::object::FunctionObject as Avm2FunctionObject;
+use crate::avm2::{
+    Activation as Avm2Activation, Avm2, Error as Avm2Error, FunctionArgs, Value as Avm2Value,
 };
-use crate::avm2::object::TObject;
-use crate::avm2::{Activation as Avm2Activation, Object as Avm2Object, Value as Avm2Value};
 use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject};
 use crate::string::AvmString;
 use gc_arena::Collect;
-use std::collections::{binary_heap::PeekMut, BinaryHeap};
+use ruffle_common::duration::FloatDuration;
+use std::collections::{BinaryHeap, binary_heap::PeekMut};
 
 /// Manages the collection of timers.
+#[derive(Collect)]
+#[collect(no_drop)]
 pub struct Timers<'gc> {
     /// The collection of active timers.
     timers: BinaryHeap<Timer<'gc>>,
@@ -30,11 +34,11 @@ pub struct Timers<'gc> {
 
 impl<'gc> Timers<'gc> {
     /// Ticks all timers and runs necessary callbacks.
-    pub fn update_timers(context: &mut UpdateContext<'_, 'gc>, dt: f64) -> Option<f64> {
+    pub fn update_timers(context: &mut UpdateContext<'gc>, dt: FloatDuration) -> Option<f64> {
         context.timers.cur_time = context
             .timers
             .cur_time
-            .wrapping_add((dt * Self::TIMER_SCALE) as u64);
+            .wrapping_add((dt.as_millis() * Self::TIMER_SCALE) as u64);
 
         if context.timers.is_empty() {
             return None;
@@ -71,12 +75,12 @@ impl<'gc> Timers<'gc> {
                 TimerCallback::Avm1Function { func, params } => {
                     if let Some(level0) = level0 {
                         let mut avm1_activation = Activation::from_nothing(
-                            context.reborrow(),
+                            context,
                             ActivationIdentifier::root("[Timer Callback]"),
                             level0,
                         );
                         let result = func.call(
-                            "[Timer Callback]".into(),
+                            "[Timer Callback]",
                             &mut avm1_activation,
                             Avm1Value::Undefined,
                             &params,
@@ -102,21 +106,18 @@ impl<'gc> Timers<'gc> {
 
                     let mut removed = false;
 
-                    // We can't use as_display_object + as_movie_clip here as we explicitly don't want to convert `SuperObjects`
-                    if let Avm1Object::StageObject(s) = this {
-                        let d_o = s.as_display_object().unwrap();
-                        if let DisplayObject::MovieClip(mc) = d_o {
-                            // Note that we don't want to fire the timer here
-                            if mc.avm1_removed() {
-                                removed = true;
-                            }
+                    // We can't use as_display_object + as_movie_clip here as we explicitly don't want to convert `super`s
+                    if let Some(DisplayObject::MovieClip(mc)) = this.as_display_object_no_super() {
+                        // Note that we don't want to fire the timer here
+                        if mc.avm1_removed() {
+                            removed = true;
                         }
                     }
 
                     if !removed {
                         if let Some(level0) = level0 {
                             let mut avm1_activation = Activation::from_nothing(
-                                context.reborrow(),
+                                context,
                                 ActivationIdentifier::root("[Timer Callback]"),
                                 level0,
                             );
@@ -141,12 +142,31 @@ impl<'gc> Timers<'gc> {
                 }
                 TimerCallback::Avm2Callback { closure, params } => {
                     let domain = context.avm2.stage_domain();
-                    let mut avm2_activation =
-                        Avm2Activation::from_domain(context.reborrow(), domain);
-                    match closure.call(Avm2Value::Null, &params, &mut avm2_activation) {
+                    let mut avm2_activation = Avm2Activation::from_domain(context, domain);
+
+                    let mut run_closure = || -> Result<Avm2Value<'gc>, Avm2Error<'gc>> {
+                        // Reproduce FP's behavior
+                        let Some(closure) = closure else {
+                            return Err(make_null_or_undefined_error(
+                                &mut avm2_activation,
+                                Avm2Value::Null,
+                                None,
+                            ));
+                        };
+
+                        let params = FunctionArgs::from_slice(&params);
+                        closure.call(&mut avm2_activation, Avm2Value::Null, params)
+                    };
+
+                    match run_closure() {
                         Ok(v) => v.coerce_to_boolean(),
-                        Err(e) => {
-                            tracing::error!("Unhandled AVM2 error in timer callback: {e:?}",);
+                        Err(err) => {
+                            Avm2::uncaught_error(
+                                &mut avm2_activation,
+                                None, // TODO do we need to set this?
+                                err,
+                                "Error in AVM2 timer callback",
+                            );
                             false
                         }
                     }
@@ -279,6 +299,7 @@ impl<'gc> Timers<'gc> {
         if let Some(mut timer) = timer {
             self.remove(id);
             timer.interval = interval;
+            timer.tick_time = self.cur_time + interval;
             self.timers.push(timer);
         } else {
             panic!("Changing delay of non-existent timer");
@@ -304,13 +325,6 @@ impl Default for Timers<'_> {
     }
 }
 
-unsafe impl<'gc> Collect for Timers<'gc> {
-    fn trace(&self, cc: &gc_arena::Collection) {
-        for timer in &self.timers {
-            timer.trace(cc);
-        }
-    }
-}
 /// A timer created via `setInterval`/`setTimeout`.
 /// Runs a callback when it ticks.
 #[derive(Clone, Collect)]
@@ -371,7 +385,7 @@ pub enum TimerCallback<'gc> {
     },
 
     Avm2Callback {
-        closure: Avm2Object<'gc>,
+        closure: Option<Avm2FunctionObject<'gc>>,
         params: Vec<Avm2Value<'gc>>,
     },
 }

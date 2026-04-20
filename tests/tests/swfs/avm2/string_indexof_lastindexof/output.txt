@@ -1,20 +1,87 @@
-// // indexOf 
+// var s = "aaatestFOOtestaaanull"
+// // indexOf
 // s.indexOf("a")
+0
 // s.indexOf("a", 16)
+16
 // s.indexOf("a", 14)
+14
 // s.indexOf("a", 13)
+14
 // s.indexOf("a", 0)
+0
 // s.indexOf("test")
+3
 // s.indexOf("test", 4)
+10
 // s.indexOf("test", 100)
+-1
 // s.indexOf("test", -1)
+3
 // s.indexOf("test", 4294967300)
+-1
 // s.indexOf("test", null)
+3
 // s.indexOf("test", undefined)
+3
 // s.indexOf("")
+0
 // s.indexOf("", 5)
+5
 // s.indexOf("", 100)
+21
 // s.indexOf()
+-1
 // s.indexOf(null)
+-1
 // s.indexOf(undefined)
+-1
 // "hello undefined hi".indexOf(undefined)
+-1
+// "".indexOf(null)
+-1
+// "".indexOf(undefined)
+-1
+// // lastIndexOf
+// s.lastIndexOf("a")
+16
+// s.lastIndexOf("a", 16)
+16
+// s.lastIndexOf("a", 14)
+14
+// s.lastIndexOf("a", 13)
+2
+// s.lastIndexOf("a", 0)
+0
+// s.lastIndexOf("test")
+10
+// s.lastIndexOf("test", 4)
+3
+// s.lastIndexOf("test", 100)
+10
+// s.lastIndexOf("test", -1)
+-1
+// s.lastIndexOf("test", 4294967300)
+10
+// s.lastIndexOf("test", null)
+-1
+// s.lastIndexOf("test", undefined)
+10
+// s.lastIndexOf("")
+21
+// s.lastIndexOf("", 5)
+5
+// s.lastIndexOf("", 100)
+21
+// s.lastIndexOf()
+-1
+// s.lastIndexOf(null)
+-1
+// s.lastIndexOf(undefined)
+-1
+// "hello undefined hi".lastIndexOf(undefined)
+-1
+// "".lastIndexOf(null)
+-1
+// "".lastIndexOf(undefined)
+-1

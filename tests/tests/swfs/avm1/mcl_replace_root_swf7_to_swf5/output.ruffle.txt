@@ -1,0 +1,57 @@
+Loading child movie
+onLoadStart
+  d=closure var
+  rest=undefined
+  _target=/
+  _name=
+  _url=file:///child.swf
+  mc=_level0
+  mc._target=/
+  mc._name=
+  mc._url=file:///child.swf
+onLoadProgress
+  d=
+  loaded=97
+  total=97
+  rest=
+  _target=/
+  _name=
+  _url=file:///child.swf
+  mc=_level0
+  mc._target=/
+  mc._name=
+  mc._url=file:///child.swf
+onLoadProgress
+  d=
+  loaded=97
+  total=97
+  rest=
+  _target=/
+  _name=
+  _url=file:///child.swf
+  mc=_level0
+  mc._target=/
+  mc._name=
+  mc._url=file:///child.swf
+onLoadComplete
+  d=
+  status=0
+  rest=
+  _target=/
+  _name=
+  _url=file:///child.swf
+  mc=_level0
+  mc._target=/
+  mc._name=
+  mc._url=file:///child.swf
+Loaded version 5
+onLoadInit
+  d=
+  rest=
+  _target=/
+  _name=root movie 5
+  _url=file:///child.swf
+  mc=_level0
+  mc._target=/
+  mc._name=root movie 5
+  mc._url=file:///child.swf

@@ -1,0 +1,16 @@
+PASSED: _root._currentframe == 1  [action_execution_order_test10.sc:63]
+PASSED: _root.as_order1 == 0+1+2+3+4+5+6+7+8+9+10+  [action_execution_order_test10.sc:166]
+PASSED: _root.as_order2 == 0+1+2+3+  [action_execution_order_test10.sc:167]
+mc4 init actions [action_execution_order_test10.sc:185]
+PASSED: typeof(mc4) == movieclip  [action_execution_order_test10.sc:186]
+PASSED:  [action_execution_order_test10.sc:194]
+PASSED:  [action_execution_order_test10.sc:195]
+PASSED: mc4.__proto__ == [object Object]  [action_execution_order_test10.sc:196]
+mc4 user defined onConstruct [action_execution_order_test10.sc:203]
+mc5 user defined onConstruct [action_execution_order_test10.sc:219]
+PASSED: mc4_onConstruct_executed == true  [action_execution_order_test10.sc:231]
+PASSED: mc5_onConstruct_executed == true  [action_execution_order_test10.sc:232]
+Total tests run: 9 typeof expected: number
+#passed: 9
+#failed: 0
+__END_OF_TEST__

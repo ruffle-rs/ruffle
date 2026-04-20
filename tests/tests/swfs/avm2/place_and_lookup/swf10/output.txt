@@ -1,0 +1,33 @@
+[object Shape]
+[object MorphShape]
+[object MovieClip]
+[object Video]
+[object SimpleButton]
+[object StaticText]
+[object Shape]
+instanceXX
+[object Shape]
+placedShape
+[object MorphShape]
+instanceXX
+[object MorphShape]
+placedMorph
+[object MovieClip]
+instanceXX
+[object MovieClip]
+placedSprite
+[object StaticText]
+instanceXX
+[object StaticText]
+placedText
+[object Video]
+instanceXX
+[object Video]
+placedVideo
+[object SimpleButton]
+instanceXX
+[object SimpleButton]
+placedButton
+instanceXX
+instanceXX
+instanceXX

@@ -11,6 +11,9 @@
     "settings_autostart": {
         "message": "Spustit automaticky bez úvodní obrazovky (pak kliknutím zrušíte ztlumení)"
     },
+    "settings_swf_takeover": {
+        "message": "Přehrát SWF soubory v prohlížeči namísto stahování"
+    },
     "settings_log_level": {
         "message": "Úroveň logu"
     },
@@ -23,6 +26,12 @@
     "settings_log_level_info": {
         "message": "Info"
     },
+    "settings_log_level_debug": {
+        "message": "Ladění"
+    },
+    "settings_log_level_trace": {
+        "message": "Trasování"
+    },
     "settings_max_execution_duration": {
         "message": "Maximální povolená doba spuštění ActionScript (v sekundách)"
     },
@@ -34,6 +43,9 @@
     },
     "settings_preferred_renderer_auto": {
         "message": "Automatický"
+    },
+    "settings_device_font_renderer": {
+        "message": "Vykreslování systémových fontů"
     },
     "settings_advanced_options": {
         "message": "Pokročilá nastavení"
@@ -108,6 +120,9 @@
         "message": "Trvale povolit pro tuto stránku"
     },
     "permissions_explanation": {
-        "message": "Rozšíření Ruffle funguje nejlépe s možností přístupu k údajům na všech webových stránkách. To mu umožňuje spustit se při prvním načtení jakékoli webové stránky a zároveň přesvědčit webové stránky, které zjišťují přítomnost Flash přehrávače, aby spustily obsah Flash. Poskytuje také možnost načíst soubory SWF do interní stránky přehrávače z jiných umístění na webu. Pokud toto povolení neudělíte, budete muset Ruffle povolit manuálně na každé webové stránce, na které jej chcete používat, a to kliknutím na ikonu rozšíření a jeho povolením pro danou webovou stránku."
+        "message": "Rozšíření Ruffle funguje nejlépe s možností přístupu k datům na všech webových stránkách. To mu umožňuje se spustit při prvním načtení libovolné webové stránky, a proto může přesvědčit webové stránky, které provádějí detekci Flash Playeru, aby okamžitě nechaly spustit obsah Flash. Dává mu to také možnost načítat soubory SWF do své interní stránky přehrávače z jiných míst na webu a umožňuje mu to automaticky načítat přímé odkazy SWF do této stránky. Pokud toto oprávnění neudělíte, budete muset Ruffle povolit ručně na každé webové stránce, na které jej chcete používat, kliknutím na ikonu rozšíření a jeho povolením pro danou webovou stránku."
+    },
+    "swf_player_permissions": {
+        "message": "Chcete-li z této URL adresy načíst soubory typu SWF, musíte jí udělit oprávnění."
     }
 }

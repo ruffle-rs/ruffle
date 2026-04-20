@@ -42,5 +42,5 @@ pub trait RenderInterface {
     /// Capture the stage rendered out by the given render backend.
     ///
     /// The provided backend is guaranteed to be the same one paired with this interface.
-    fn capture(&self, renderer: &mut Box<dyn RenderBackend>) -> image::RgbaImage;
+    fn capture(&self, renderer: &mut dyn RenderBackend) -> image::RgbaImage;
 }

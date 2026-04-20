@@ -1,10 +1,17 @@
-use crate::tag_utils::{SwfMovie, SwfSlice};
+use gc_arena::Collect;
+use ruffle_common::tag_utils::{SwfMovie, SwfSlice};
 use std::sync::Arc;
 
-pub type BinaryData = SwfSlice;
+#[derive(Collect, Debug)]
+#[collect(require_static)]
+pub struct BinaryData(SwfSlice);
 
 impl BinaryData {
     pub fn from_swf_tag(movie: Arc<SwfMovie>, tag: &swf::DefineBinaryData) -> Self {
-        SwfSlice::from(movie).to_subslice(tag.data)
+        Self(SwfSlice::from(movie).to_subslice(tag.data))
+    }
+
+    pub fn to_vec(&self) -> Vec<u8> {
+        SwfSlice::as_ref(&self.0).to_vec()
     }
 }

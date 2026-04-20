@@ -1,0 +1,5 @@
+Clicked at: 19 29 on: [object Loader] (firstLoader)
+Clicked at: 71 26 on: [object Stage] (null)
+Clicked at: 19 175 on: [object Sprite] (LoaderWrapper)
+Clicked at: 20 324 on: [object Loader] (thirdLoader)
+Clicked at: 25 477 on: [object Sprite] (LoaderWrapper)

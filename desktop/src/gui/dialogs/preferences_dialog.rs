@@ -1,8 +1,10 @@
-use crate::gui::{available_languages, optional_text, text};
+use crate::cli::{GameModePreference, OpenUrlMode};
+use crate::gui::{ThemePreference, available_languages, optional_text, text};
 use crate::log::FilenamePattern;
-use crate::preferences::{storage::StorageBackend, GlobalPreferences};
+use crate::preferences::{GlobalPreferences, storage::StorageBackend};
 use cpal::traits::{DeviceTrait, HostTrait};
 use egui::{Align2, Button, Checkbox, ComboBox, DragValue, Grid, Ui, Widget, Window};
+use ruffle_render_wgpu::backend::create_wgpu_instance;
 use ruffle_render_wgpu::clap::{GraphicsBackend, PowerPreference};
 use std::borrow::Cow;
 use unic_langid::LanguageIdentifier;
@@ -18,6 +20,10 @@ pub struct PreferencesDialog {
     power_preference: PowerPreference,
     power_preference_readonly: bool,
     power_preference_changed: bool,
+
+    gamemode_preference: GameModePreference,
+    gamemode_preference_readonly: bool,
+    gamemode_preference_changed: bool,
 
     language: LanguageIdentifier,
     language_changed: bool,
@@ -39,6 +45,16 @@ pub struct PreferencesDialog {
     storage_backend: StorageBackend,
     storage_backend_readonly: bool,
     storage_backend_changed: bool,
+
+    theme_preference: ThemePreference,
+    theme_preference_changed: bool,
+
+    open_url_mode: OpenUrlMode,
+    open_url_mode_readonly: bool,
+    open_url_mode_changed: bool,
+
+    ime_enabled: Option<bool>,
+    ime_enabled_changed: bool,
 }
 
 impl PreferencesDialog {
@@ -65,6 +81,10 @@ impl PreferencesDialog {
             power_preference_readonly: preferences.cli.power.is_some(),
             power_preference_changed: false,
 
+            gamemode_preference: preferences.gamemode_preference(),
+            gamemode_preference_readonly: preferences.cli.gamemode.is_some(),
+            gamemode_preference_changed: false,
+
             language: preferences.language(),
             language_changed: false,
 
@@ -85,6 +105,16 @@ impl PreferencesDialog {
             storage_backend: preferences.storage_backend(),
             storage_backend_readonly: preferences.cli.storage.is_some(),
             storage_backend_changed: false,
+
+            theme_preference: preferences.theme_preference(),
+            theme_preference_changed: false,
+
+            open_url_mode: preferences.open_url_mode(),
+            open_url_mode_readonly: preferences.cli.open_url_mode.is_some(),
+            open_url_mode_changed: false,
+
+            ime_enabled: preferences.ime_enabled(),
+            ime_enabled_changed: false,
 
             preferences,
         }
@@ -108,7 +138,17 @@ impl PreferencesDialog {
                         .show(ui, |ui| {
                             self.show_graphics_preferences(locale, &locked_text, ui);
 
+                            if cfg!(target_os = "linux") {
+                                self.show_gamemode_preferences(locale, &locked_text, ui);
+                            }
+
+                            self.show_open_url_mode_preferences(locale, &locked_text, ui);
+
+                            self.show_ime_preferences(locale, ui);
+
                             self.show_language_preferences(locale, ui);
+
+                            self.show_theme_preferences(locale, ui);
 
                             self.show_audio_preferences(locale, ui);
 
@@ -163,7 +203,7 @@ impl PreferencesDialog {
                 .on_hover_text(locked_text);
         } else {
             let previous = self.graphics_backend;
-            ComboBox::from_id_source("graphics-backend")
+            ComboBox::from_id_salt("graphics-backend")
                 .selected_text(graphics_backend_name(locale, self.graphics_backend))
                 .show_ui(ui, |ui| {
                     ui.selectable_value(
@@ -212,7 +252,7 @@ impl PreferencesDialog {
                 .on_hover_text(locked_text);
         } else {
             let previous = self.power_preference;
-            ComboBox::from_id_source("graphics-power")
+            ComboBox::from_id_salt("graphics-power")
                 .selected_text(graphics_power_name(locale, self.power_preference))
                 .show_ui(ui, |ui| {
                     ui.selectable_value(
@@ -236,7 +276,7 @@ impl PreferencesDialog {
     fn show_language_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.label(text(locale, "language"));
         let previous = self.language.clone();
-        ComboBox::from_id_source("language")
+        ComboBox::from_id_salt("language")
             .selected_text(language_name(&self.language))
             .show_ui(ui, |ui| {
                 for language in available_languages() {
@@ -253,12 +293,144 @@ impl PreferencesDialog {
         ui.end_row();
     }
 
+    fn show_theme_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        ui.label(text(locale, "theme"));
+        let previous = self.theme_preference;
+        ComboBox::from_id_salt("theme")
+            .selected_text(theme_preference_name(locale, self.theme_preference))
+            .show_ui(ui, |ui| {
+                ui.selectable_value(
+                    &mut self.theme_preference,
+                    ThemePreference::System,
+                    theme_preference_name(locale, ThemePreference::System),
+                );
+                ui.selectable_value(
+                    &mut self.theme_preference,
+                    ThemePreference::Light,
+                    theme_preference_name(locale, ThemePreference::Light),
+                );
+                ui.selectable_value(
+                    &mut self.theme_preference,
+                    ThemePreference::Dark,
+                    theme_preference_name(locale, ThemePreference::Dark),
+                );
+            });
+        if self.theme_preference != previous {
+            self.theme_preference_changed = true;
+        }
+        ui.end_row();
+    }
+
+    fn show_gamemode_preferences(
+        &mut self,
+        locale: &LanguageIdentifier,
+        locked_text: &str,
+        ui: &mut Ui,
+    ) {
+        ui.label(text(locale, "gamemode"))
+            .on_hover_text_at_pointer(text(locale, "gamemode-tooltip"));
+        if self.gamemode_preference_readonly {
+            ui.label(gamemode_preference_name(locale, self.gamemode_preference))
+                .on_hover_text(locked_text);
+        } else {
+            let previous = self.gamemode_preference;
+            ComboBox::from_id_salt("gamemode")
+                .selected_text(gamemode_preference_name(locale, self.gamemode_preference))
+                .show_ui(ui, |ui| {
+                    let values = [
+                        GameModePreference::Default,
+                        GameModePreference::On,
+                        GameModePreference::Off,
+                    ];
+                    for value in values {
+                        let response = ui.selectable_value(
+                            &mut self.gamemode_preference,
+                            value,
+                            gamemode_preference_name(locale, value),
+                        );
+
+                        if let Some(tooltip) = gamemode_preference_tooltip(locale, value) {
+                            response.on_hover_text_at_pointer(tooltip);
+                        }
+                    }
+                });
+            if self.gamemode_preference != previous {
+                self.gamemode_preference_changed = true;
+            }
+        }
+        ui.end_row();
+    }
+
+    fn show_open_url_mode_preferences(
+        &mut self,
+        locale: &LanguageIdentifier,
+        locked_text: &str,
+        ui: &mut Ui,
+    ) {
+        ui.label(text(locale, "open-url-mode"));
+        if self.open_url_mode_readonly {
+            ui.label(open_url_mode_preference_name(locale, self.open_url_mode))
+                .on_hover_text(locked_text);
+        } else {
+            let previous: OpenUrlMode = self.open_url_mode;
+            ComboBox::from_id_salt("open-url-mode")
+                .selected_text(open_url_mode_preference_name(locale, self.open_url_mode))
+                .show_ui(ui, |ui| {
+                    ui.selectable_value(
+                        &mut self.open_url_mode,
+                        OpenUrlMode::Confirm,
+                        open_url_mode_preference_name(locale, OpenUrlMode::Confirm),
+                    );
+                    ui.selectable_value(
+                        &mut self.open_url_mode,
+                        OpenUrlMode::Allow,
+                        open_url_mode_preference_name(locale, OpenUrlMode::Allow),
+                    );
+                    ui.selectable_value(
+                        &mut self.open_url_mode,
+                        OpenUrlMode::Deny,
+                        open_url_mode_preference_name(locale, OpenUrlMode::Deny),
+                    );
+                });
+            if self.open_url_mode != previous {
+                self.open_url_mode_changed = true;
+            }
+        }
+        ui.end_row();
+    }
+
+    fn show_ime_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+        ui.label(format!(
+            "{} {}",
+            text(locale, "ime-enabled"),
+            text(locale, "ime-enabled-experimental")
+        ))
+        .on_hover_text_at_pointer(text(locale, "ime-enabled-tooltip"));
+        let previous = self.ime_enabled;
+        ComboBox::from_id_salt("ime-enabled")
+            .selected_text(ime_enabled_name(locale, self.ime_enabled))
+            .show_ui(ui, |ui| {
+                let values = [None, Some(true), Some(false)];
+                for value in values {
+                    ui.selectable_value(
+                        &mut self.ime_enabled,
+                        value,
+                        ime_enabled_name(locale, value),
+                    );
+                }
+            });
+        if self.ime_enabled != previous {
+            self.ime_enabled_changed = true;
+        }
+        ui.end_row();
+    }
+
     fn show_audio_preferences(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.label(text(locale, "audio-output-device"));
 
         let previous = self.output_device.clone();
         let default = text(locale, "audio-output-device-default");
-        ComboBox::from_id_source("audio-output-device")
+        ComboBox::from_id_salt("audio-output-device")
             .selected_text(self.output_device.as_deref().unwrap_or(default.as_ref()))
             .show_ui(ui, |ui| {
                 ui.selectable_value(&mut self.output_device, None, default);
@@ -314,7 +486,7 @@ impl PreferencesDialog {
         ui.label(text(locale, "log-filename-pattern"));
 
         let previous = self.log_filename_pattern;
-        ComboBox::from_id_source("log-filename-pattern")
+        ComboBox::from_id_salt("log-filename-pattern")
             .selected_text(filename_pattern_name(locale, self.log_filename_pattern))
             .show_ui(ui, |ui| {
                 ui.selectable_value(
@@ -347,7 +519,7 @@ impl PreferencesDialog {
                 .on_hover_text(locked_text);
         } else {
             let previous = self.storage_backend;
-            ComboBox::from_id_source("storage-backend")
+            ComboBox::from_id_salt("storage-backend")
                 .selected_text(storage_backend_name(locale, self.storage_backend))
                 .show_ui(ui, |ui| {
                     ui.selectable_value(
@@ -381,12 +553,12 @@ impl PreferencesDialog {
                 self.recent_limit_changed = true;
             }
 
-            if ui.button(text(locale, "recent-clear")).clicked() {
-                if let Err(e) = self.preferences.write_recents(|writer| {
+            if ui.button(text(locale, "recent-clear")).clicked()
+                && let Err(e) = self.preferences.write_recents(|writer| {
                     writer.clear();
-                }) {
-                    tracing::warn!("Couldn't update recents: {e}");
-                }
+                })
+            {
+                tracing::warn!("Couldn't update recents: {e}");
             }
         });
 
@@ -420,6 +592,18 @@ impl PreferencesDialog {
             if self.recent_limit_changed {
                 preferences.set_recent_limit(self.recent_limit);
             }
+            if self.theme_preference_changed {
+                preferences.set_theme_preference(self.theme_preference);
+            }
+            if self.gamemode_preference_changed {
+                preferences.set_gamemode_preference(self.gamemode_preference);
+            }
+            if self.open_url_mode_changed {
+                preferences.set_open_url_mode(self.open_url_mode);
+            }
+            if self.ime_enabled_changed {
+                preferences.set_ime_enabled(self.ime_enabled);
+            }
         }) {
             // [NA] TODO: Better error handling... everywhere in desktop, really
             tracing::error!("Could not save preferences: {e}");
@@ -427,7 +611,7 @@ impl PreferencesDialog {
     }
 }
 
-fn graphics_backend_name(locale: &LanguageIdentifier, backend: GraphicsBackend) -> Cow<str> {
+fn graphics_backend_name(locale: &LanguageIdentifier, backend: GraphicsBackend) -> Cow<'_, str> {
     match backend {
         GraphicsBackend::Default => text(locale, "graphics-backend-default"),
         GraphicsBackend::Vulkan => Cow::Borrowed("Vulkan"),
@@ -437,7 +621,10 @@ fn graphics_backend_name(locale: &LanguageIdentifier, backend: GraphicsBackend) 
     }
 }
 
-fn graphics_power_name(locale: &LanguageIdentifier, power_preference: PowerPreference) -> Cow<str> {
+fn graphics_power_name(
+    locale: &LanguageIdentifier,
+    power_preference: PowerPreference,
+) -> Cow<'_, str> {
     match power_preference {
         PowerPreference::Low => text(locale, "graphics-power-low"),
         PowerPreference::High => text(locale, "graphics-power-high"),
@@ -445,22 +632,71 @@ fn graphics_power_name(locale: &LanguageIdentifier, power_preference: PowerPrefe
 }
 
 fn language_name(language: &LanguageIdentifier) -> String {
-    optional_text(language, "language-name")
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| language.to_string())
+    optional_text(language, "language-name").unwrap_or_else(|| language.to_string())
 }
 
-fn filename_pattern_name(locale: &LanguageIdentifier, pattern: FilenamePattern) -> Cow<str> {
+fn theme_preference_name(
+    locale: &LanguageIdentifier,
+    theme_preference: ThemePreference,
+) -> Cow<'_, str> {
+    match theme_preference {
+        ThemePreference::System => text(locale, "theme-system"),
+        ThemePreference::Light => text(locale, "theme-light"),
+        ThemePreference::Dark => text(locale, "theme-dark"),
+    }
+}
+
+fn gamemode_preference_name(
+    locale: &LanguageIdentifier,
+    gamemode_preference: GameModePreference,
+) -> Cow<'_, str> {
+    match gamemode_preference {
+        GameModePreference::Default => text(locale, "gamemode-default"),
+        GameModePreference::On => text(locale, "enable"),
+        GameModePreference::Off => text(locale, "disable"),
+    }
+}
+
+fn gamemode_preference_tooltip(
+    locale: &LanguageIdentifier,
+    gamemode_preference: GameModePreference,
+) -> Option<Cow<'_, str>> {
+    Some(match gamemode_preference {
+        GameModePreference::Default => text(locale, "gamemode-default-tooltip"),
+        _ => return None,
+    })
+}
+
+fn open_url_mode_preference_name(
+    locale: &LanguageIdentifier,
+    open_url_mode: OpenUrlMode,
+) -> Cow<'_, str> {
+    match open_url_mode {
+        OpenUrlMode::Allow => text(locale, "open-url-mode-allow"),
+        OpenUrlMode::Confirm => text(locale, "open-url-mode-confirm"),
+        OpenUrlMode::Deny => text(locale, "open-url-mode-deny"),
+    }
+}
+
+fn filename_pattern_name(locale: &LanguageIdentifier, pattern: FilenamePattern) -> Cow<'_, str> {
     match pattern {
         FilenamePattern::SingleFile => text(locale, "log-filename-pattern-single-file"),
         FilenamePattern::WithTimestamp => text(locale, "log-filename-pattern-with-timestamp"),
     }
 }
 
-fn storage_backend_name(locale: &LanguageIdentifier, backend: StorageBackend) -> Cow<str> {
+fn storage_backend_name(locale: &LanguageIdentifier, backend: StorageBackend) -> Cow<'_, str> {
     match backend {
         StorageBackend::Disk => text(locale, "storage-backend-disk"),
         StorageBackend::Memory => text(locale, "storage-backend-memory"),
+    }
+}
+
+fn ime_enabled_name(locale: &LanguageIdentifier, ime_enabled: Option<bool>) -> Cow<'_, str> {
+    match ime_enabled {
+        None => text(locale, "ime-enabled-default"),
+        Some(true) => text(locale, "enable"),
+        Some(false) => text(locale, "disable"),
     }
 }
 
@@ -477,11 +713,7 @@ fn find_available_graphics_backends() -> wgpu::Backends {
 
     // We have to make a new instance here, as the one created for the entire application may not have
     // all backends enabled
-    let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
-        backends: wgpu::Backends::all(),
-        flags: wgpu::InstanceFlags::default().with_env(),
-        ..Default::default()
-    });
+    let instance = create_wgpu_instance(wgpu::Backends::all(), wgpu::BackendOptions::default());
 
     available_backends |= backend_availability(&instance, wgpu::Backends::VULKAN);
     available_backends |= backend_availability(&instance, wgpu::Backends::GL);

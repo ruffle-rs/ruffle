@@ -1,0 +1,954 @@
+-- Transparent --
+// paletteMap()
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, rect)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, rect, point)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff005744 0xff005744
+0xaabbccdc 0xff005744 0xff00bce1
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff00019a 0xff00019a
+0xaabbccdc 0xff00019a 0xff00019d
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff0001aa 0xff0001aa
+0xaabbccdc 0xff0001aa 0xff000147
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(null, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(undefined, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap({}, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-2
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(transparentBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(disposedBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-3
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, null, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, undefined, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, {}, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, zeroSizedRect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, rectAsObj, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rectWithoutWidth, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-4
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, rect, null, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0x00000000 0x00000000 0xaabbccdc
+0x00000000 0x00000000 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, rect, undefined, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0x00000000 0x00000000 0xaabbccdc
+0x00000000 0x00000000 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, rect, {}, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0x00000000 0x00000000 0xaabbccdc
+0x00000000 0x00000000 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, rect, pointOutsideBmd, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, rect, pointAsObj, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0x00000000 0x00000000 0xaabbccdc
+0x00000000 0x00000000 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, rect, pointWithoutY, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0x00000000 0x00000000 0xaabbccdc
+0x00000000 0x00000000 0xaabbccdc
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+--
+
+// paletteMap(opaqueBmd, rect, point, null, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, undefined, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, {}, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayOnlySpecificPixels, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayTwoFiveSixToFiveTwelve, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, null, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, undefined, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, {}, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayZeroToTwoFiveSix, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayOnlySpecificPixels, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, null, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, undefined, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, {}, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayOnlySpecificPixels, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayTwoFiveSixToFiveTwelve, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, null)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff0001aa 0xff0001aa
+0xaabbccdc 0xff0001aa 0xff000147
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, undefined)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0xff0001aa 0xff0001aa
+0xaabbccdc 0xff0001aa 0xff000147
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, {})
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayZeroToTwoFiveSix)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayOnlySpecificPixels)
+-1
+--
+0xaabbccdc 0xaabbccdc 0xaabbccdc
+0xaabbccdc 0x00000000 0x00000000
+0xaabbccdc 0x00000000 0x00000000
+--
+
+
+
+-- Opaque --
+// paletteMap()
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, rect)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, rect, point)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff005744 0xff005744
+0xffbbccdd 0xff005744 0xff00bce1
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff00019a 0xff00019a
+0xffbbccdd 0xff00019a 0xff00019d
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff0001aa 0xff0001aa
+0xffbbccdd 0xff0001aa 0xff000147
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(null, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(undefined, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap({}, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-2
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(transparentBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(disposedBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-3
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, null, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, undefined, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, {}, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, zeroSizedRect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, rectAsObj, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rectWithoutWidth, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-4
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, rect, null, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0x00000000 0x00000000 0xffbbccdd
+0x00000000 0x00000000 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, rect, undefined, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0x00000000 0x00000000 0xffbbccdd
+0x00000000 0x00000000 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, rect, {}, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0x00000000 0x00000000 0xffbbccdd
+0x00000000 0x00000000 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, rect, pointOutsideBmd, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, rect, pointAsObj, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0x00000000 0x00000000 0xffbbccdd
+0x00000000 0x00000000 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, rect, pointWithoutY, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0x00000000 0x00000000 0xffbbccdd
+0x00000000 0x00000000 0xffbbccdd
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+--
+
+// paletteMap(opaqueBmd, rect, point, null, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, undefined, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, {}, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayOnlySpecificPixels, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayTwoFiveSixToFiveTwelve, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, null, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, undefined, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, {}, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayZeroToTwoFiveSix, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayOnlySpecificPixels, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, null, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, undefined, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, {}, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayOnlySpecificPixels, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayTwoFiveSixToFiveTwelve, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, null)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff0001aa 0xff0001aa
+0xffbbccdd 0xff0001aa 0xff000147
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, undefined)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0xff0001aa 0xff0001aa
+0xffbbccdd 0xff0001aa 0xff000147
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, {})
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayZeroToTwoFiveSix)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayOnlySpecificPixels)
+-1
+--
+0xffbbccdd 0xffbbccdd 0xffbbccdd
+0xffbbccdd 0x00000000 0x00000000
+0xffbbccdd 0x00000000 0x00000000
+--
+
+
+
+-- Disposed --
+// paletteMap()
+-1
+--
+--
+
+// paletteMap(opaqueBmd)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(null, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(undefined, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap({}, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(transparentBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(disposedBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, null, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, undefined, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, {}, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, zeroSizedRect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rectAsObj, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rectWithoutWidth, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, null, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, undefined, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, {}, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, pointOutsideBmd, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, pointAsObj, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, pointWithoutY, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, null, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, undefined, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, {}, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayOnlySpecificPixels, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayTwoFiveSixToFiveTwelve, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, null, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, undefined, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, {}, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayZeroToTwoFiveSix, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayOnlySpecificPixels, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, null, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, undefined, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, {}, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayOnlySpecificPixels, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayTwoFiveSixToFiveTwelve, arrayTwoFiveSixToFiveTwelve)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, null)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, undefined)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, {})
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayZeroToTwoFiveSix)
+-1
+--
+--
+
+// paletteMap(opaqueBmd, rect, point, arrayZeroToTwoFiveSix, arrayTwoFiveSixToFiveTwelve, arrayZeroToTwoFiveSix, arrayOnlySpecificPixels)
+-1
+--
+--
+
+
+

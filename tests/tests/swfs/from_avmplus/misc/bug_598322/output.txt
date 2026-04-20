@@ -1,0 +1,120 @@
+charCodeAt(1) PASSED!
+charCodeAt(1) PASSED!
+charCodeAt(1) PASSED!
+charCodeAt(1) PASSED!
+charCodeAt(1) PASSED!
+charCodeAt(1) PASSED!
+charCodeAt(-1) PASSED!
+charCodeAt(-1) PASSED!
+charCodeAt(-1) PASSED!
+charCodeAt(-1) PASSED!
+charCodeAt(-1) PASSED!
+charCodeAt(-1) PASSED!
+charCodeAt(11) PASSED!
+charCodeAt(11) PASSED!
+charCodeAt(11) PASSED!
+charCodeAt(11) PASSED!
+charCodeAt(11) PASSED!
+charCodeAt(11) PASSED!
+charAt(1) PASSED!
+charAt(1) PASSED!
+charAt(1) PASSED!
+charAt(-1) PASSED!
+charAt(-1) PASSED!
+charAt(-1) PASSED!
+charAt(11) PASSED!
+charAt(11) PASSED!
+charAt(11) PASSED!
+charCodeAt(100) == 10 PASSED!
+9 == charCodeAt(100) PASSED!
+charCodeAt(100 < 8) PASSED!
+charCodeAt(100) <= 7 PASSED!
+charCodeAt(100) > 6 PASSED!
+charCodeAt(100) >= 5 PASSED!
+charCodeAt(100) == -10 PASSED!
+-9 = charCodeAt(100) PASSED!
+charCodeAt(100) < -8 PASSED!
+charCodeAt(100) <= -7 PASSED!
+charCodeAt(100) > -6 PASSED!
+charCodeAt(100) >= -5 PASSED!
+charCodeAt(100) == 0 PASSED!
+0 == charCodeAt(100) PASSED!
+charCodeAt(100) < 0 PASSED!
+charCodeAt(100) <= 0 PASSED!
+charCodeAt(100) > 0 PASSED!
+charCodeAt(100) >= 0 PASSED!
+charCodeAt(1) == 114 PASSED!
+114 = charCodeAt(1) PASSED!
+charCodeAt(1) < 114 PASSED!
+charCodeAt(1) <= 114 PASSED!
+charCodeAt(1) > 114 PASSED!
+charCodeAt(1) >= 114 PASSED!
+charCodeAt(1) == i_index PASSED!
+i_index == charCodeAt(1) PASSED!
+charCodeAt(1) < i_index PASSED!
+charCodeAt(1) <= i_index PASSED!
+charCodeAt(1) > i_index PASSED!
+charCodeAt(1) >= i_index PASSED!
+charCodeAt(100) == 10 PASSED!
+9 == charCodeAt(100) PASSED!
+charCodeAt(100 < 8) PASSED!
+charCodeAt(100) <= 7 PASSED!
+charCodeAt(100) > 6 PASSED!
+charCodeAt(100) >= 5 PASSED!
+charCodeAt(100) == -10 PASSED!
+-9 = charCodeAt(100) PASSED!
+charCodeAt(100) < -8 PASSED!
+charCodeAt(100) <= -7 PASSED!
+charCodeAt(100) > -6 PASSED!
+charCodeAt(100) >= -5 PASSED!
+charCodeAt(100) == 0 PASSED!
+0 == charCodeAt(100) PASSED!
+charCodeAt(100) < 0 PASSED!
+charCodeAt(100) <= 0 PASSED!
+charCodeAt(100) > 0 PASSED!
+charCodeAt(100) >= 0 PASSED!
+charCodeAt(1) == 114 PASSED!
+114 = charCodeAt(1) PASSED!
+charCodeAt(1) < 114 PASSED!
+charCodeAt(1) <= 114 PASSED!
+charCodeAt(1) > 114 PASSED!
+charCodeAt(1) >= 114 PASSED!
+charCodeAt(1) == u_index PASSED!
+u_index == charCodeAt(1) PASSED!
+charCodeAt(1) < u_index PASSED!
+charCodeAt(1) <= u_index PASSED!
+charCodeAt(1) > u_index PASSED!
+charCodeAt(1) >= u_index PASSED!
+charCodeAt(100) == 10 PASSED!
+9 == charCodeAt(100) PASSED!
+charCodeAt(100 < 8) PASSED!
+charCodeAt(100) <= 7 PASSED!
+charCodeAt(100) > 6 PASSED!
+charCodeAt(100) >= 5 PASSED!
+charCodeAt(100) == -10 PASSED!
+-9 = charCodeAt(100) PASSED!
+charCodeAt(100) < -8 PASSED!
+charCodeAt(100) <= -7 PASSED!
+charCodeAt(100) > -6 PASSED!
+charCodeAt(100) >= -5 PASSED!
+charCodeAt(100) == 0 PASSED!
+0 == charCodeAt(100) PASSED!
+charCodeAt(100) < 0 PASSED!
+charCodeAt(100) <= 0 PASSED!
+charCodeAt(100) > 0 PASSED!
+charCodeAt(100) >= 0 PASSED!
+charCodeAt(1) == 114 PASSED!
+114 = charCodeAt(1) PASSED!
+charCodeAt(1) < 114 PASSED!
+charCodeAt(1) <= 114 PASSED!
+charCodeAt(1) > 114 PASSED!
+charCodeAt(1) >= 114 PASSED!
+charCodeAt(1) == f_index PASSED!
+f_index == charCodeAt(1) PASSED!
+charCodeAt(1) < f_index PASSED!
+charCodeAt(1) <= f_index PASSED!
+charCodeAt(1) > f_index PASSED!
+charCodeAt(1) >= f_index PASSED!
+s.charAt(int) in switch PASSED!
+s.charAt(uint) in switch PASSED!
+s.charAt(Number) in switch PASSED!

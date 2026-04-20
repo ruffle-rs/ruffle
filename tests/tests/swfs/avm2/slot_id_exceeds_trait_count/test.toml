@@ -1,0 +1,5 @@
+# Class C extends A, where C has slot_id=2 but only 1 trait.
+# Flash Player throws VerifyError #1107 because ne.id (2) > nameCount (1).
+# https://github.com/adobe/avmplus/blob/858d034/core/Traits.cpp#L800
+num_frames = 1
+known_failure = true

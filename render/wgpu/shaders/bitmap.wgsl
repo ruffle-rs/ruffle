@@ -25,7 +25,7 @@ fn main_fragment(in: VertexOutput) -> @location(0) vec4<f32> {
     var color: vec4<f32> = textureSample(texture, texture_sampler, in.uv);
     // Texture is premultiplied by alpha.
     // Unmultiply alpha, apply color transform, remultiply alpha.
-    if( color.a > 0.0 ) {
+    if (color.a > 0.0) {
         color = vec4<f32>(color.rgb / color.a, color.a);
         color = color * transforms.mult_color + transforms.add_color;
         if (!late_saturate) {

@@ -1,0 +1,90 @@
+Listeners before initialization: undefined (undefined)
+Listeners after initialization: 0 ()
+
+// broadcaster.addListener()
+true
+Listeners: 1 (undefined)
+
+// broadcaster.addListener(undefined)
+true
+Listeners: 1 (undefined)
+
+// broadcaster.addListener(null)
+true
+Listeners: 1 (null)
+
+// broadcaster.addListener(false)
+true
+Listeners: 2 (null,false)
+
+// broadcaster.removeListener(false)
+true
+Listeners: 1 (null)
+
+// broadcaster.removeListener(false)
+false
+Listeners: 1 (null)
+
+// broadcaster.removeListener()
+true
+Listeners: 0 ()
+
+// broadcaster.addListener(null)
+true
+Listeners: 1 (null)
+
+// broadcaster.addListener(false)
+true
+Listeners: 2 (null,false)
+
+// broadcaster.removeListener(undefined)
+true
+Listeners: 1 (false)
+
+// broadcaster._listeners = null
+
+// broadcaster.addListener()
+true
+Listeners: 1 (undefined)
+
+// broadcaster._listeners = []
+
+// broadcaster.addListener(traceListener)
+true
+Listeners: 1 ([type Function])
+
+// broadcaster.broadcastMessage()
+undefined
+
+// broadcaster.broadcastMessage(true)
+traceListener["true"] called with 0 args ()
+true
+
+// broadcaster.broadcastMessage(false)
+traceListener["false"] called with 0 args ()
+true
+
+// broadcaster.broadcastMessage("1234")
+traceListener["1234"] called with 0 args ()
+true
+
+// broadcaster.broadcastMessage(" ")
+traceListener[" "] called with 0 args ()
+true
+
+// broadcaster.broadcastMessage("")
+traceListener was called as a function with 0 args ()
+true
+
+// broadcaster.broadcastMessage(undefined)
+traceListener["undefined"] called with 0 args ()
+true
+
+// broadcaster.broadcastMessage(null)
+traceListener["null"] called with 0 args ()
+true
+
+// broadcaster.broadcastMessage(123)
+traceListener["123"] called with 0 args ()
+true
+

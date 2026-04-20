@@ -1,31 +1,32 @@
 //! AVM2 object impl for the display hierarchy.
 
-use crate::avm2::activation::Activation;
-use crate::avm2::object::script_object::ScriptObjectData;
-use crate::avm2::object::{ClassObject, Object, ObjectPtr, TObject};
-use crate::avm2::value::Value;
 use crate::avm2::Error;
+use crate::avm2::activation::Activation;
+use crate::avm2::function::FunctionArgs;
+use crate::avm2::object::script_object::ScriptObjectData;
+use crate::avm2::object::{ClassObject, TObject};
 use crate::display_object::DisplayObject;
-use gc_arena::{Collect, GcCell, GcWeakCell, Mutation};
-use std::cell::{Ref, RefMut};
+use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use ruffle_common::utils::HasPrefixField;
 use std::fmt::Debug;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct StageObject<'gc>(pub GcCell<'gc, StageObjectData<'gc>>);
+pub struct StageObject<'gc>(pub Gc<'gc, StageObjectData<'gc>>);
 
 #[derive(Clone, Collect, Copy, Debug)]
 #[collect(no_drop)]
-pub struct StageObjectWeak<'gc>(pub GcWeakCell<'gc, StageObjectData<'gc>>);
+pub struct StageObjectWeak<'gc>(pub GcWeak<'gc, StageObjectData<'gc>>);
 
-#[derive(Clone, Collect)]
+#[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
+#[repr(C, align(8))]
 pub struct StageObjectData<'gc> {
     /// The base data common to all AVM2 objects.
     base: ScriptObjectData<'gc>,
 
-    /// The associated display object, if one exists.
-    display_object: Option<DisplayObject<'gc>>,
+    /// The associated display object.
+    display_object: DisplayObject<'gc>,
 }
 
 impl<'gc> StageObject<'gc> {
@@ -40,20 +41,17 @@ impl<'gc> StageObject<'gc> {
     /// Display objects that do not need to use this flow should use
     /// `for_display_object_childless`.
     pub fn for_display_object(
-        activation: &mut Activation<'_, 'gc>,
+        mc: &Mutation<'gc>,
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
-    ) -> Result<Self, Error<'gc>> {
-        let instance = Self(GcCell::new(
-            activation.context.gc_context,
+    ) -> Self {
+        Self(Gc::new(
+            mc,
             StageObjectData {
                 base: ScriptObjectData::new(class),
-                display_object: Some(display_object),
+                display_object,
             },
-        ));
-        instance.install_instance_slots(activation.context.gc_context);
-
-        Ok(instance)
+        ))
     }
 
     /// Allocate and construct the AVM2 side of a display object intended to be
@@ -66,24 +64,9 @@ impl<'gc> StageObject<'gc> {
         display_object: DisplayObject<'gc>,
         class: ClassObject<'gc>,
     ) -> Result<Self, Error<'gc>> {
-        let this = Self::for_display_object(activation, display_object, class)?;
+        let this = Self::for_display_object(activation.gc(), display_object, class);
 
-        class.call_native_init(this.into(), &[], activation)?;
-
-        Ok(this)
-    }
-
-    /// Same as for_display_object_childless, but allows passing
-    /// constructor arguments.
-    pub fn for_display_object_childless_with_args(
-        activation: &mut Activation<'_, 'gc>,
-        display_object: DisplayObject<'gc>,
-        class: ClassObject<'gc>,
-        args: &[Value<'gc>],
-    ) -> Result<Self, Error<'gc>> {
-        let this = Self::for_display_object(activation, display_object, class)?;
-
-        class.call_native_init(this.into(), args, activation)?;
+        class.call_init(this.into(), FunctionArgs::empty(), activation)?;
 
         Ok(this)
     }
@@ -92,60 +75,36 @@ impl<'gc> StageObject<'gc> {
     pub fn graphics(
         activation: &mut Activation<'_, 'gc>,
         display_object: DisplayObject<'gc>,
-    ) -> Result<Self, Error<'gc>> {
-        let class = activation.avm2().classes().graphics;
-        let this = Self(GcCell::new(
-            activation.context.gc_context,
-            StageObjectData {
-                base: ScriptObjectData::new(class),
-                display_object: Some(display_object),
-            },
-        ));
-        this.install_instance_slots(activation.context.gc_context);
-
+    ) -> Self {
         // note: for Graphics, there's no need to call init.
 
-        Ok(this)
+        let class = activation.avm2().classes().graphics;
+        Self(Gc::new(
+            activation.gc(),
+            StageObjectData {
+                base: ScriptObjectData::new(class),
+                display_object,
+            },
+        ))
+    }
+
+    pub fn display_object(self) -> DisplayObject<'gc> {
+        self.0.display_object
     }
 }
 
 impl<'gc> TObject<'gc> for StageObject<'gc> {
-    fn base(&self) -> Ref<ScriptObjectData<'gc>> {
-        Ref::map(self.0.read(), |read| &read.base)
-    }
-
-    fn base_mut(&self, mc: &Mutation<'gc>) -> RefMut<ScriptObjectData<'gc>> {
-        RefMut::map(self.0.write(mc), |write| &mut write.base)
-    }
-
-    fn as_ptr(&self) -> *const ObjectPtr {
-        self.0.as_ptr() as *const ObjectPtr
-    }
-
-    fn as_display_object(&self) -> Option<DisplayObject<'gc>> {
-        self.0.read().display_object
-    }
-
-    fn value_of(&self, _mc: &Mutation<'gc>) -> Result<Value<'gc>, Error<'gc>> {
-        Ok(Value::Object(Object::from(*self)))
+    fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
+        HasPrefixField::as_prefix_gc(self.0)
     }
 }
 
-impl<'gc> Debug for StageObject<'gc> {
+impl Debug for StageObject<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> Result<(), std::fmt::Error> {
-        match self.0.try_read() {
-            Ok(obj) => f
-                .debug_struct("StageObject")
-                .field("name", &obj.base.debug_class_name())
-                // .field("display_object", &obj.display_object) TODO(moulins)
-                .field("ptr", &self.0.as_ptr())
-                .finish(),
-            Err(err) => f
-                .debug_struct("StageObject")
-                .field("name", &err)
-                .field("display_object", &err)
-                .field("ptr", &self.0.as_ptr())
-                .finish(),
-        }
+        f.debug_struct("StageObject")
+            .field("name", &self.base().class_name())
+            // .field("display_object", &self.0.display_object) TODO(moulins)
+            .field("ptr", &Gc::as_ptr(self.0))
+            .finish()
     }
 }

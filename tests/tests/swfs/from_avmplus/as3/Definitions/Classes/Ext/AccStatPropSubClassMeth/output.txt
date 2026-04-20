@@ -1,0 +1,6 @@
+*** Access the static property via base class *** PASSED!
+BaseClass.boolean PASSED!
+*** Access the static property via sub class using unadorned property name *** PASSED!
+obj.getBoolean() PASSED!
+*** Access the static property via sub class using unadorned property name *** PASSED!
+obj.getBaseDate() PASSED!

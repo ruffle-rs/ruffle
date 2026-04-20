@@ -1,0 +1,10 @@
+test concat spoofing=true FAILED! expected: 1,2,3,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,4,5,6 got: 1,2,3,4,5,6
+test concat spoofing=false PASSED!
+test pop spoofing=true PASSED!
+test pop spoofing=false PASSED!
+test reverse spoofing=true PASSED!
+test reverse spoofing=false PASSED!
+test shift spoofing=true FAILED! expected: ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,, got: 
+test shift spoofing=false PASSED!
+test splice spoofing=true FAILED! expected: ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,1,2,3,4,5,,,,, got: 1,2,3,4,5
+test splice spoofing=false FAILED! expected: ,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,,1,2,3,4,5,,,,,,,,,, got: 1,2,3,4,5

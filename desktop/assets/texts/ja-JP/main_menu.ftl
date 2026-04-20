@@ -9,7 +9,8 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = ファイル
-file-menu-open-quick = 開く
+file-menu-open-file = ファイルを開く…
+file-menu-open-directory = フォルダを開く…
 file-menu-open-advanced = ファイルと設定
 file-menu-close = 閉じる
 file-menu-reload = 再読み込み
@@ -17,9 +18,11 @@ file-menu-recents = 履歴
 file-menu-recents-empty = 最近のエントリはありません
 file-menu-preferences = 設定..
 file-menu-exit = 終了
+file-menu-export = 出力…
 controls-menu = 操作
 controls-menu-suspend = 一時停止
 controls-menu-resume = 再開
+controls-menu-step-once = 1ステップ進める
 controls-menu-volume = 音量
 help-menu = ヘルプ
 help-menu-join-discord = Discordに参加
@@ -32,7 +35,10 @@ bookmarks-menu-add = 追加...
 bookmarks-menu-manage = ブックマークの管理...
 debug-menu = デバッグツール
 debug-menu-open-stage = ステージ情報
+debug-menu-open-root-movie-clip = ルートクリップ情報
 debug-menu-open-movie = 映像情報
 debug-menu-open-movie-list = 既存の映像情報
-debug-menu-open-domain-list = ドメインを表示
+debug-menu-open-domain-list = ドメイン一覧
 debug-menu-search-display-objects = 表示オブジェクトを検索...
+view-menu = 表示
+view-menu-fullscreen = 全画面表示

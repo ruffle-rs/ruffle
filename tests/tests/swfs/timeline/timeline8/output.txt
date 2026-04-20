@@ -1,3 +1,0 @@
-Root Frame Action: currentFrame: 1
-Spinner Frame Action: 1
-Spinner Frame Action: 2

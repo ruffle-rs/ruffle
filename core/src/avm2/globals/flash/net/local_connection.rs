@@ -1,8 +1,9 @@
 use crate::avm2::amf::serialize_value;
-use crate::avm2::error::{argument_error, make_error_2004, make_error_2085, Error2004Type};
-use crate::avm2::object::TObject;
+use crate::avm2::error::{
+    Error2004Type, make_error_2004, make_error_2082, make_error_2083, make_error_2085,
+};
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::{Activation, Error, Object, Value};
+use crate::avm2::{Activation, Error, Value};
 use crate::string::AvmString;
 use flash_lso::types::{AMFVersion, Value as AmfValue};
 
@@ -12,24 +13,23 @@ use crate::local_connection::LocalConnections;
 /// Implements `domain` getter
 pub fn get_domain<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let movie = &activation.context.swf;
+    let movie = &activation.context.root_swf;
     let domain = LocalConnections::get_domain(movie.url());
 
-    Ok(Value::String(AvmString::new_utf8(
-        activation.context.gc_context,
-        domain,
-    )))
+    Ok(Value::String(AvmString::new_utf8(activation.gc(), domain)))
 }
 
 /// Implements `LocalConnection.send`
 pub fn send<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let connection_name = args.get_string_non_null(activation, 0, "connectionName")?;
     let method_name = args.get_string_non_null(activation, 1, "methodName")?;
 
@@ -59,7 +59,7 @@ pub fn send<'gc>(
 
     if let Some(local_connection) = this.as_local_connection_object() {
         activation.context.local_connections.send(
-            &LocalConnections::get_domain(activation.context.swf.url()),
+            &LocalConnections::get_domain(activation.context.root_swf.url()),
             (activation.domain(), local_connection),
             connection_name,
             method_name,
@@ -73,9 +73,11 @@ pub fn send<'gc>(
 /// Implements `LocalConnection.connect`
 pub fn connect<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let connection_name = args.get_string_non_null(activation, 0, "connectionName")?;
     if connection_name.is_empty() {
         return Err(make_error_2085(activation, "connectionName"));
@@ -88,11 +90,7 @@ pub fn connect<'gc>(
         if !local_connection.connect(activation, connection_name) {
             // This triggers both if this object is already connected, OR there's something else taking the name
             // (The error message is misleading, in that case!)
-            return Err(Error::AvmError(argument_error(
-                activation,
-                "Error #2082: Connect failed because the object is already connected.",
-                2082,
-            )?));
+            return Err(make_error_2082(activation));
         }
     }
 
@@ -102,19 +100,51 @@ pub fn connect<'gc>(
 /// Implements `LocalConnection.close`
 pub fn close<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     if let Some(local_connection) = this.as_local_connection_object() {
         if !local_connection.is_connected() {
-            return Err(Error::AvmError(argument_error(
-                activation,
-                "Error #2083: Close failed because the object is not connected.",
-                2083,
-            )?));
+            return Err(make_error_2083(activation));
         }
 
         local_connection.disconnect(activation);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_client<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(local_connection) = this.as_local_connection_object() {
+        Ok(local_connection.client().into())
+    } else {
+        Ok(Value::Undefined)
+    }
+}
+
+pub fn set_client<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(local_connection) = this.as_local_connection_object() {
+        let client_obj = args.try_get_object(0);
+
+        if let Some(client_obj) = client_obj {
+            local_connection.set_client(activation.gc(), client_obj);
+        } else {
+            return Err(make_error_2004(activation, Error2004Type::TypeError));
+        }
     }
 
     Ok(Value::Undefined)

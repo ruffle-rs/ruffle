@@ -1,0 +1,6 @@
+Error #-1
+Error #0
+Error #1
+Error #42
+Error #100
+Error #10000

@@ -1,0 +1,3 @@
+timer: [TimerEvent type="timer" bubbles=false cancelable=false eventPhase=2]
+timer: [TimerEvent type="timer" bubbles=false cancelable=false eventPhase=2]
+timerComplete: [TimerEvent type="timerComplete" bubbles=false cancelable=false eventPhase=2]

@@ -1,48 +1,51 @@
 //! flash.filters.GradientBevelFilter and flash.filters.GradientGlowFilter objects
 
 use crate::avm1::clamp::Clamp;
-use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::bevel_filter::BevelFilterType;
 use crate::avm1::object::NativeObject;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Activation, ArrayObject, Error, Object, ScriptObject, TObject, Value};
-use crate::context::{GcContext, UpdateContext};
-use crate::string::{AvmString, WStr};
-use gc_arena::{Collect, GcCell, Mutation};
-use std::ops::Deref;
-use swf::{Color, Fixed16, Fixed8, GradientFilterFlags, GradientRecord};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{Activation, ArrayBuilder, Error, Object, Value};
+use gc_arena::{Collect, Gc, Mutation};
+use ruffle_macros::istr;
+use std::cell::{Cell, RefCell};
+use swf::{Color, Fixed8, Fixed16, GradientFilterFlags, GradientRecord};
 
 const MAX_COLORS: usize = 16;
 
 #[derive(Clone, Debug, Collect)]
 #[collect(require_static)]
 struct GradientFilterData {
-    distance: f64,
+    distance: Cell<f64>,
     // TODO: Introduce `Angle<Radians>` struct.
-    angle: f64,
-    colors: [GradientRecord; MAX_COLORS],
-    num_colors: usize,
-    blur_x: f64,
-    blur_y: f64,
+    angle: Cell<f64>,
+    colors: RefCell<[GradientRecord; MAX_COLORS]>,
+    num_colors: Cell<usize>,
+    blur_x: Cell<f64>,
+    blur_y: Cell<f64>,
     // TODO: Introduce unsigned `Fixed8`?
-    strength: u16,
-    quality: i32,
-    type_: BevelFilterType,
-    knockout: bool,
+    strength: Cell<u16>,
+    quality: Cell<i32>,
+    type_: Cell<BevelFilterType>,
+    knockout: Cell<bool>,
 }
 
 impl From<&GradientFilterData> for swf::GradientFilter {
     fn from(filter: &GradientFilterData) -> swf::GradientFilter {
         let mut flags = GradientFilterFlags::COMPOSITE_SOURCE;
-        flags |= GradientFilterFlags::from_passes(filter.quality as u8);
-        flags |= filter.type_.as_gradient_flags();
-        flags.set(GradientFilterFlags::KNOCKOUT, filter.knockout);
+        flags |= GradientFilterFlags::from_passes(filter.quality.get() as u8);
+        flags |= filter.type_.get().as_gradient_flags();
+        flags.set(GradientFilterFlags::KNOCKOUT, filter.knockout.get());
         swf::GradientFilter {
-            colors: filter.colors.into_iter().take(filter.num_colors).collect(),
-            blur_x: Fixed16::from_f64(filter.blur_x),
-            blur_y: Fixed16::from_f64(filter.blur_y),
-            angle: Fixed16::from_f64(filter.angle),
-            distance: Fixed16::from_f64(filter.distance),
+            colors: filter
+                .colors
+                .borrow()
+                .into_iter()
+                .take(filter.num_colors.get())
+                .collect(),
+            blur_x: Fixed16::from_f64(filter.blur_x.get()),
+            blur_y: Fixed16::from_f64(filter.blur_y.get()),
+            angle: Fixed16::from_f64(filter.angle.get()),
+            distance: Fixed16::from_f64(filter.distance.get()),
             strength: Fixed8::from_f64(filter.strength()),
             flags,
         }
@@ -60,59 +63,57 @@ impl From<swf::GradientFilter> for GradientFilterData {
         let quality = filter.num_passes().into();
         let knockout = filter.is_knockout();
         Self {
-            distance: filter.distance.into(),
-            angle: filter.angle.into(),
-            colors,
-            num_colors,
-            quality,
-            strength: (filter.strength.to_f64() * 256.0) as u16,
-            knockout,
-            blur_x: filter.blur_x.into(),
-            blur_y: filter.blur_y.into(),
-            type_: filter.flags.into(),
+            distance: Cell::new(filter.distance.into()),
+            angle: Cell::new(filter.angle.into()),
+            colors: RefCell::new(colors),
+            num_colors: Cell::new(num_colors),
+            quality: Cell::new(quality),
+            strength: Cell::new((filter.strength.to_f64() * 256.0) as u16),
+            knockout: Cell::new(knockout),
+            blur_x: Cell::new(filter.blur_x.into()),
+            blur_y: Cell::new(filter.blur_y.into()),
+            type_: Cell::new(filter.flags.into()),
         }
     }
 }
 
 impl Default for GradientFilterData {
-    #[allow(clippy::approx_constant)]
+    #[expect(clippy::approx_constant)]
     fn default() -> Self {
         Self {
-            distance: 4.0,
-            angle: 0.785398163, // ~45 degrees
+            distance: Cell::new(4.0),
+            angle: Cell::new(0.785398163), // ~45 degrees
             colors: Default::default(),
-            num_colors: 0,
-            blur_x: 4.0,
-            blur_y: 4.0,
-            strength: 1 << 8,
-            quality: 1,
-            type_: BevelFilterType::Inner,
-            knockout: false,
+            num_colors: Cell::new(0),
+            blur_x: Cell::new(4.0),
+            blur_y: Cell::new(4.0),
+            strength: Cell::new(1 << 8),
+            quality: Cell::new(1),
+            type_: Cell::new(BevelFilterType::Inner),
+            knockout: Cell::new(false),
         }
     }
 }
 
 impl GradientFilterData {
     pub fn strength(&self) -> f64 {
-        f64::from(self.strength) / 256.0
+        f64::from(self.strength.get()) / 256.0
     }
 
-    pub fn set_strength(&mut self, strength: f64) {
-        self.strength = ((strength * 256.0) as u16).clamp(0, 0xFF00)
+    pub fn set_strength(&self, strength: f64) {
+        let strength = ((strength * 256.0) as u16).clamp(0, 0xFF00);
+        self.strength.set(strength);
     }
 }
 
-#[derive(Clone, Debug, Collect)]
+#[derive(Copy, Clone, Debug, Collect)]
 #[collect(no_drop)]
 #[repr(transparent)]
-pub struct GradientFilter<'gc>(GcCell<'gc, GradientFilterData>);
+pub struct GradientFilter<'gc>(Gc<'gc, GradientFilterData>);
 
 impl<'gc> GradientFilter<'gc> {
     fn new(activation: &mut Activation<'_, 'gc>, args: &[Value<'gc>]) -> Result<Self, Error<'gc>> {
-        let gradient_bevel_filter = Self(GcCell::new(
-            activation.context.gc_context,
-            Default::default(),
-        ));
+        let gradient_bevel_filter = Self(Gc::new(activation.gc(), Default::default()));
         gradient_bevel_filter.set_distance(activation, args.get(0))?;
         gradient_bevel_filter.set_angle(activation, args.get(1))?;
         gradient_bevel_filter.set_colors(activation, args.get(2))?;
@@ -128,58 +129,56 @@ impl<'gc> GradientFilter<'gc> {
     }
 
     pub fn from_filter(gc_context: &Mutation<'gc>, filter: swf::GradientFilter) -> Self {
-        Self(GcCell::new(gc_context, filter.into()))
+        Self(Gc::new(gc_context, filter.into()))
     }
 
-    pub(crate) fn duplicate(&self, gc_context: &Mutation<'gc>) -> Self {
-        Self(GcCell::new(gc_context, self.0.read().clone()))
+    pub(crate) fn duplicate(self, gc_context: &Mutation<'gc>) -> Self {
+        Self(Gc::new(gc_context, self.0.as_ref().clone()))
     }
 
-    fn distance(&self) -> f64 {
-        self.0.read().distance
+    fn distance(self) -> f64 {
+        self.0.distance.get()
     }
 
     fn set_distance(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let distance = value.coerce_to_f64(activation)?;
-            self.0.write(activation.context.gc_context).distance = distance;
+            self.0.distance.set(distance);
         }
         Ok(())
     }
 
-    fn angle(&self) -> f64 {
-        self.0.read().angle.to_degrees()
+    fn angle(self) -> f64 {
+        self.0.angle.get().to_degrees()
     }
 
     fn set_angle(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let angle = (value.coerce_to_f64(activation)? % 360.0).to_radians();
-            self.0.write(activation.context.gc_context).angle = angle;
+            self.0.angle.set(angle);
         }
         Ok(())
     }
 
-    fn colors(&self, context: &mut UpdateContext<'_, 'gc>) -> ArrayObject<'gc> {
-        let read = self.0.read();
-        ArrayObject::new(
-            context.gc_context,
-            context.avm1.prototypes().array,
-            read.colors[..read.num_colors]
+    fn colors(self, activation: &Activation<'_, 'gc>) -> Object<'gc> {
+        let num_colors = self.0.num_colors.get();
+        ArrayBuilder::new(activation).with(
+            self.0.colors.borrow()[..num_colors]
                 .iter()
                 .map(|r| r.color.to_rgb().into()),
         )
     }
 
     fn set_colors(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
@@ -188,44 +187,43 @@ impl<'gc> GradientFilter<'gc> {
         // FP 11 and FP 32 behave differently here: in FP 11, only "true" objects resize
         // the matrix, but in FP 32 strings will too (and so fill the matrix with `NaN`
         // values, as they have a `length` but no actual elements).
-        let object = value.coerce_to_object(activation);
+        let object = value.coerce_to_object_or_bare(activation)?;
         let length = usize::try_from(object.length(activation)?).unwrap_or_default();
         let num_colors = length.min(MAX_COLORS);
 
-        self.0.write(activation.gc()).num_colors = num_colors;
+        self.0.num_colors.set(num_colors);
 
+        let mut colors = self.0.colors.borrow_mut();
         for i in 0..num_colors {
             let rgb = object
                 .get_element(activation, i as i32)
                 .coerce_to_i32(activation)? as u32;
-            let mut write = self.0.write(activation.gc());
-            let alpha = write.colors[i].color.a;
-            write.colors[i].color = Color::from_rgb(rgb, alpha);
+            let alpha = colors[i].color.a;
+            colors[i].color = Color::from_rgb(rgb, alpha);
         }
         Ok(())
     }
 
-    fn alphas(&self, context: &mut UpdateContext<'_, 'gc>) -> ArrayObject<'gc> {
-        let read = self.0.read();
-        ArrayObject::new(
-            context.gc_context,
-            context.avm1.prototypes().array,
-            read.colors[..read.num_colors]
+    fn alphas(self, activation: &Activation<'_, 'gc>) -> Object<'gc> {
+        let num_colors = self.0.num_colors.get();
+        ArrayBuilder::new(activation).with(
+            self.0.colors.borrow()[..num_colors]
                 .iter()
                 .map(|r| (f64::from(r.color.a) / 255.0).into()),
         )
     }
 
     fn set_alphas(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(Value::Object(object)) = value {
             // Note that unlike `colors` and `ratios`, setting `alphas` doesn't change
             // the number of colors in the gradient.
-            let num_colors = self.0.read().num_colors;
+            let num_colors = self.0.num_colors.get();
             let length = usize::try_from(object.length(activation)?).unwrap_or_default();
+            let mut colors = self.0.colors.borrow_mut();
             for i in 0..num_colors {
                 let alpha = if i < length {
                     let alpha = object
@@ -239,204 +237,234 @@ impl<'gc> GradientFilter<'gc> {
                 } else {
                     u8::MAX
                 };
-                self.0.write(activation.gc()).colors[i].color.a = alpha;
+                colors[i].color.a = alpha;
             }
         }
         Ok(())
     }
 
-    fn ratios(&self, context: &mut UpdateContext<'_, 'gc>) -> ArrayObject<'gc> {
-        let read = self.0.read();
-        ArrayObject::new(
-            context.gc_context,
-            context.avm1.prototypes().array,
-            read.colors[..read.num_colors]
+    fn ratios(self, activation: &Activation<'_, 'gc>) -> Object<'gc> {
+        let num_colors = self.0.num_colors.get();
+        ArrayBuilder::new(activation).with(
+            self.0.colors.borrow()[..num_colors]
                 .iter()
                 .map(|r| r.ratio.into()),
         )
     }
 
     fn set_ratios(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(Value::Object(object)) = value {
             let num_colors = usize::try_from(object.length(activation)?).unwrap_or_default();
-            let mut write = self.0.write(activation.context.gc_context);
-            // Modifying `ratios` can only reduce the number of colors, never increase it.
-            let num_colors = num_colors.min(write.num_colors);
-            write.num_colors = num_colors;
-            drop(write);
 
+            // Modifying `ratios` can only reduce the number of colors, never increase it.
+            let num_colors = num_colors.min(self.0.num_colors.get());
+            self.0.num_colors.set(num_colors);
+
+            let mut colors = self.0.colors.borrow_mut();
             for i in 0..num_colors {
                 let ratio = object
                     .get_element(activation, i as i32)
                     .coerce_to_i32(activation)?
                     .clamp(0, u8::MAX.into()) as u8;
-                self.0.write(activation.context.gc_context).colors[i].ratio = ratio;
+                colors[i].ratio = ratio;
             }
         }
         Ok(())
     }
 
-    fn blur_x(&self) -> f64 {
-        self.0.read().blur_x
+    fn blur_x(self) -> f64 {
+        self.0.blur_x.get()
     }
 
     fn set_blur_x(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_x = value.coerce_to_f64(activation)?.clamp_also_nan(0.0, 255.0);
-            self.0.write(activation.context.gc_context).blur_x = blur_x;
+            self.0.blur_x.set(blur_x);
         }
         Ok(())
     }
 
-    fn blur_y(&self) -> f64 {
-        self.0.read().blur_y
+    fn blur_y(self) -> f64 {
+        self.0.blur_y.get()
     }
 
     fn set_blur_y(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let blur_y = value.coerce_to_f64(activation)?.clamp_also_nan(0.0, 255.0);
-            self.0.write(activation.context.gc_context).blur_y = blur_y;
+            self.0.blur_y.set(blur_y);
         }
         Ok(())
     }
 
-    fn strength(&self) -> f64 {
-        self.0.read().strength()
+    fn strength(self) -> f64 {
+        self.0.strength()
     }
 
     fn set_strength(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            self.0
-                .write(activation.context.gc_context)
-                .set_strength(value.coerce_to_f64(activation)?);
+            self.0.set_strength(value.coerce_to_f64(activation)?);
         }
         Ok(())
     }
 
-    fn quality(&self) -> i32 {
-        self.0.read().quality
+    fn quality(self) -> i32 {
+        self.0.quality.get()
     }
 
     fn set_quality(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let quality = value.coerce_to_i32(activation)?.clamp(0, 15);
-            self.0.write(activation.context.gc_context).quality = quality;
+            self.0.quality.set(quality);
         }
         Ok(())
     }
 
-    fn type_(&self) -> BevelFilterType {
-        self.0.read().type_
+    fn type_(self) -> BevelFilterType {
+        self.0.type_.get()
     }
 
     fn set_type(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
-            let type_ = value.coerce_to_string(activation)?.as_wstr().into();
-            self.0.write(activation.context.gc_context).type_ = type_;
+            let type_ = value.coerce_to_string(activation)?;
+
+            let type_ = if &type_ == b"inner" {
+                BevelFilterType::Inner
+            } else if &type_ == b"outer" {
+                BevelFilterType::Outer
+            } else {
+                BevelFilterType::Full
+            };
+
+            self.0.type_.set(type_);
         }
         Ok(())
     }
 
-    fn knockout(&self) -> bool {
-        self.0.read().knockout
+    fn knockout(self) -> bool {
+        self.0.knockout.get()
     }
 
     fn set_knockout(
-        &self,
+        self,
         activation: &mut Activation<'_, 'gc>,
         value: Option<&Value<'gc>>,
     ) -> Result<(), Error<'gc>> {
         if let Some(value) = value {
             let knockout = value.as_bool(activation.swf_version());
-            self.0.write(activation.context.gc_context).knockout = knockout;
+            self.0.knockout.set(knockout);
         }
         Ok(())
     }
 
-    pub fn filter(&self) -> swf::GradientFilter {
-        self.0.read().deref().into()
+    pub fn filter(self) -> swf::GradientFilter {
+        self.0.as_ref().into()
     }
 }
 
-macro_rules! gradient_filter_method {
-    ($index:literal) => {
-        |activation, this, args| method(activation, this, args, $index)
-    };
-}
-
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "distance" => property(gradient_filter_method!(1), gradient_filter_method!(2); VERSION_8);
-    "angle" => property(gradient_filter_method!(3), gradient_filter_method!(4); VERSION_8);
-    "colors" => property(gradient_filter_method!(5), gradient_filter_method!(6); VERSION_8);
-    "alphas" => property(gradient_filter_method!(7), gradient_filter_method!(8); VERSION_8);
-    "ratios" => property(gradient_filter_method!(9), gradient_filter_method!(10); VERSION_8);
-    "blurX" => property(gradient_filter_method!(11), gradient_filter_method!(12); VERSION_8);
-    "blurY" => property(gradient_filter_method!(13), gradient_filter_method!(14); VERSION_8);
-    "quality" => property(gradient_filter_method!(15), gradient_filter_method!(16); VERSION_8);
-    "strength" => property(gradient_filter_method!(17), gradient_filter_method!(18); VERSION_8);
-    "knockout" => property(gradient_filter_method!(19), gradient_filter_method!(20); VERSION_8);
-    "type" => property(gradient_filter_method!(21), gradient_filter_method!(22); VERSION_8);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
+    use fn method;
+    "distance" => property(GET_DISTANCE, SET_DISTANCE; VERSION_8);
+    "angle" => property(GET_ANGLE, SET_ANGLE; VERSION_8);
+    "colors" => property(GET_COLORS, SET_COLORS; VERSION_8);
+    "alphas" => property(GET_ALPHAS, SET_ALPHAS; VERSION_8);
+    "ratios" => property(GET_RATIOS, SET_RATIOS; VERSION_8);
+    "blurX" => property(GET_BLUR_X, SET_BLUR_X; VERSION_8);
+    "blurY" => property(GET_BLUR_Y, SET_BLUR_Y; VERSION_8);
+    "quality" => property(GET_QUALITY, SET_QUALITY; VERSION_8);
+    "strength" => property(GET_STRENGTH, SET_STRENGTH; VERSION_8);
+    "knockout" => property(GET_KNOCKOUT, SET_KNOCKOUT; VERSION_8);
+    "type" => property(GET_TYPE, SET_TYPE; VERSION_8);
 };
 
-fn method<'gc>(
+pub fn create_bevel_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(
+        table_constructor!(method, BEVEL_CONSTRUCTOR),
+        None,
+        super_proto,
+    );
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+pub fn create_glow_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.native_class(
+        table_constructor!(method, GLOW_CONSTRUCTOR),
+        None,
+        super_proto,
+    );
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
+
+pub mod method {
+    pub const GLOW_CONSTRUCTOR: u16 = 0;
+    pub const GET_DISTANCE: u16 = 1;
+    pub const SET_DISTANCE: u16 = 2;
+    pub const GET_ANGLE: u16 = 3;
+    pub const SET_ANGLE: u16 = 4;
+    pub const GET_COLORS: u16 = 5;
+    pub const SET_COLORS: u16 = 6;
+    pub const GET_ALPHAS: u16 = 7;
+    pub const SET_ALPHAS: u16 = 8;
+    pub const GET_RATIOS: u16 = 9;
+    pub const SET_RATIOS: u16 = 10;
+    pub const GET_BLUR_X: u16 = 11;
+    pub const SET_BLUR_X: u16 = 12;
+    pub const GET_BLUR_Y: u16 = 13;
+    pub const SET_BLUR_Y: u16 = 14;
+    pub const GET_QUALITY: u16 = 15;
+    pub const SET_QUALITY: u16 = 16;
+    pub const GET_STRENGTH: u16 = 17;
+    pub const SET_STRENGTH: u16 = 18;
+    pub const GET_KNOCKOUT: u16 = 19;
+    pub const SET_KNOCKOUT: u16 = 20;
+    pub const GET_TYPE: u16 = 21;
+    pub const SET_TYPE: u16 = 22;
+    pub const BEVEL_CONSTRUCTOR: u16 = 1000;
+}
+
+pub fn method<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Object<'gc>,
     args: &[Value<'gc>],
     index: u16,
 ) -> Result<Value<'gc>, Error<'gc>> {
-    const GLOW_CONSTRUCTOR: u16 = 0;
-    const GET_DISTANCE: u16 = 1;
-    const SET_DISTANCE: u16 = 2;
-    const GET_ANGLE: u16 = 3;
-    const SET_ANGLE: u16 = 4;
-    const GET_COLORS: u16 = 5;
-    const SET_COLORS: u16 = 6;
-    const GET_ALPHAS: u16 = 7;
-    const SET_ALPHAS: u16 = 8;
-    const GET_RATIOS: u16 = 9;
-    const SET_RATIOS: u16 = 10;
-    const GET_BLUR_X: u16 = 11;
-    const SET_BLUR_X: u16 = 12;
-    const GET_BLUR_Y: u16 = 13;
-    const SET_BLUR_Y: u16 = 14;
-    const GET_QUALITY: u16 = 15;
-    const SET_QUALITY: u16 = 16;
-    const GET_STRENGTH: u16 = 17;
-    const SET_STRENGTH: u16 = 18;
-    const GET_KNOCKOUT: u16 = 19;
-    const SET_KNOCKOUT: u16 = 20;
-    const GET_TYPE: u16 = 21;
-    const SET_TYPE: u16 = 22;
-    const BEVEL_CONSTRUCTOR: u16 = 1000;
+    use method::*;
 
     if index == BEVEL_CONSTRUCTOR {
         let gradient_bevel_filter = GradientFilter::new(activation, args)?;
         this.set_native(
-            activation.context.gc_context,
+            activation.gc(),
             NativeObject::GradientBevelFilter(gradient_bevel_filter),
         );
         return Ok(this.into());
@@ -444,7 +472,7 @@ fn method<'gc>(
     if index == GLOW_CONSTRUCTOR {
         let gradient_glow_filter = GradientFilter::new(activation, args)?;
         this.set_native(
-            activation.context.gc_context,
+            activation.gc(),
             NativeObject::GradientGlowFilter(gradient_glow_filter),
         );
         return Ok(this.into());
@@ -467,17 +495,17 @@ fn method<'gc>(
             this.set_angle(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_COLORS => this.colors(&mut activation.context).into(),
+        GET_COLORS => this.colors(activation).into(),
         SET_COLORS => {
             this.set_colors(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_ALPHAS => this.alphas(&mut activation.context).into(),
+        GET_ALPHAS => this.alphas(activation).into(),
         SET_ALPHAS => {
             this.set_alphas(activation, args.get(0))?;
             Value::Undefined
         }
-        GET_RATIOS => this.ratios(&mut activation.context).into(),
+        GET_RATIOS => this.ratios(activation).into(),
         SET_RATIOS => {
             this.set_ratios(activation, args.get(0))?;
             Value::Undefined
@@ -508,8 +536,13 @@ fn method<'gc>(
             Value::Undefined
         }
         GET_TYPE => {
-            let type_: &WStr = this.type_().into();
-            AvmString::from(type_).into()
+            let type_ = match this.type_() {
+                BevelFilterType::Inner => istr!("inner"),
+                BevelFilterType::Outer => istr!("outer"),
+                BevelFilterType::Full => istr!("full"),
+            };
+
+            type_.into()
         }
         SET_TYPE => {
             this.set_type(activation, args.get(0))?;
@@ -517,52 +550,4 @@ fn method<'gc>(
         }
         _ => Value::Undefined,
     })
-}
-
-pub fn create_bevel_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let gradient_bevel_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
-    gradient_bevel_filter_proto.into()
-}
-
-pub fn create_bevel_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(gradient_filter_method!(1000)),
-        constructor_to_fn!(gradient_filter_method!(1000)),
-        fn_proto,
-        proto,
-    )
-}
-
-pub fn create_glow_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let gradient_bevel_filter_proto = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, gradient_bevel_filter_proto, fn_proto);
-    gradient_bevel_filter_proto.into()
-}
-
-pub fn create_glow_constructor<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(gradient_filter_method!(0)),
-        constructor_to_fn!(gradient_filter_method!(0)),
-        fn_proto,
-        proto,
-    )
 }

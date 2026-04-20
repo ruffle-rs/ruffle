@@ -1,0 +1,28 @@
+_level0.mc1 initialized
+_level0.mc2 initialized
+_level0.mc1 unloaded
+_level0.mc3 initialized
+_level0.mc2 unloaded
+_level0.mc1 initialized
+_level0.mc2 initialized
+_level0.mc1 unloaded
+_level0.mc2 unloaded
+PASSED: mc1Initialized  ==  2 [loop_test10.c:221]
+PASSED: mc2Initialized  ==  2 [loop_test10.c:222]
+PASSED: mc3Initialized  ==  1 [loop_test10.c:223]
+PASSED: mc1Unloaded  ==  2 [loop_test10.c:224]
+PASSED: mc2Unloaded  ==  2 [loop_test10.c:225]
+PASSED: mc3Unloaded  ==  0 [loop_test10.c:226]
+PASSED: asOrder  ==  '0+1+2+3+4+5+1+2+3+5+' [loop_test10.c:228]
+PASSED: /instance3 == /instance3
+PASSED: /instance3/instance4 == /instance3/instance4
+PASSED: /instance3 == /instance3
+PASSED: /instance3/instance5 == /instance3/instance5
+PASSED: /instance6 == /instance6
+PASSED: /instance6/instance7 == /instance6/instance7
+PASSED: /instance6 == /instance6
+PASSED: /instance6/instance7 == /instance6/instance7
+PASSED: /instance9 == /instance9
+#passed: 16
+#failed: 0
+#total tests run: 16

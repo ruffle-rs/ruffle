@@ -1,11 +1,13 @@
-use crate::gui::text;
-use crate::gui::widgets::PathOrUrlField;
+use crate::gui::widgets::path_or_url_field::PathOrUrlField;
+use crate::gui::{FilePicker, LocalizableText, text};
 use crate::preferences::GlobalPreferences;
+use crate::{custom_event::RuffleEvent, player::LaunchOptions};
 use egui::{Align2, Button, Grid, Label, Layout, Sense, Ui, Widget, Window};
 use egui_extras::{Column, TableBuilder};
 use ruffle_frontend_utils::bookmarks::Bookmark;
+use ruffle_frontend_utils::content::ContentDescriptor;
 use unic_langid::LanguageIdentifier;
-use url::Url;
+use winit::event_loop::EventLoopProxy;
 
 pub struct BookmarkAddDialog {
     preferences: GlobalPreferences,
@@ -14,20 +16,29 @@ pub struct BookmarkAddDialog {
 }
 
 impl BookmarkAddDialog {
-    pub fn new(preferences: GlobalPreferences, initial_url: Option<Url>) -> Self {
+    pub fn new(
+        preferences: GlobalPreferences,
+        content_descriptor: Option<ContentDescriptor>,
+        picker: FilePicker,
+    ) -> Self {
         Self {
             preferences,
-            name: initial_url
+            name: content_descriptor
                 .as_ref()
-                .map(|x| ruffle_frontend_utils::url_to_readable_name(x).into_owned())
+                .map(|desc| &desc.url)
+                .map(|url| ruffle_frontend_utils::url_to_readable_name(url).into_owned())
                 .unwrap_or_default(),
-            // TODO: hint.
-            url: PathOrUrlField::new(initial_url, ""),
+            // TODO: Hint.
+            url: PathOrUrlField::new(
+                content_descriptor,
+                LocalizableText::NonLocalizedText("".into()),
+                picker,
+            ),
         }
     }
 
     fn is_valid(&self) -> bool {
-        self.url.value().is_some() && !self.name.is_empty()
+        self.url.result().is_some() && !self.name.is_empty()
     }
 
     pub fn show(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) -> bool {
@@ -64,10 +75,9 @@ impl BookmarkAddDialog {
                             if let Err(e) = self.preferences.write_bookmarks(|writer| {
                                 writer.add(Bookmark {
                                     name: self.name.clone(),
-                                    url: self
+                                    content_descriptor: self
                                         .url
-                                        .value()
-                                        .cloned()
+                                        .result()
                                         .expect("is_valid() ensured value exists"),
                                 })
                             }) {
@@ -93,13 +103,21 @@ struct SelectedBookmark {
 }
 
 pub struct BookmarksDialog {
+    event_loop: EventLoopProxy<RuffleEvent>,
+    picker: FilePicker,
     preferences: GlobalPreferences,
     selected_bookmark: Option<SelectedBookmark>,
 }
 
 impl BookmarksDialog {
-    pub fn new(preferences: GlobalPreferences) -> Self {
+    pub fn new(
+        preferences: GlobalPreferences,
+        picker: FilePicker,
+        event_loop: EventLoopProxy<RuffleEvent>,
+    ) -> Self {
         Self {
+            picker,
+            event_loop,
             preferences,
             selected_bookmark: None,
         }
@@ -107,7 +125,7 @@ impl BookmarksDialog {
 
     pub fn show(&mut self, locale: &LanguageIdentifier, egui_ctx: &egui::Context) -> bool {
         let mut keep_open = true;
-        let should_close = false;
+        let mut should_close = false;
 
         Window::new(text(locale, "bookmarks-dialog"))
             .open(&mut keep_open)
@@ -122,7 +140,7 @@ impl BookmarksDialog {
                     .min_height(100.0)
                     .show_inside(ui, |ui| {
                         if self.preferences.have_bookmarks() {
-                            self.show_bookmark_table(locale, ui);
+                            should_close = self.show_bookmark_table(locale, ui);
                         } else {
                             ui.centered_and_justified(|ui| {
                                 ui.label(text(locale, "bookmarks-dialog-no-bookmarks"));
@@ -136,7 +154,7 @@ impl BookmarksDialog {
         keep_open && !should_close
     }
 
-    fn show_bookmark_table(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+    fn show_bookmark_table(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) -> bool {
         let text_height = egui::TextStyle::Body
             .resolve(ui.style())
             .size
@@ -144,6 +162,7 @@ impl BookmarksDialog {
 
         enum BookmarkAction {
             Remove(usize),
+            Start(ContentDescriptor),
         }
 
         let mut action = None;
@@ -183,7 +202,7 @@ impl BookmarksDialog {
                             });
                             row.col(|ui| {
                                 ui.add(
-                                    Label::new(bookmark.url.as_str())
+                                    Label::new(bookmark.content_descriptor.url.as_str())
                                         .selectable(false)
                                         .wrap_mode(egui::TextWrapMode::Extend),
                                 );
@@ -191,34 +210,58 @@ impl BookmarksDialog {
 
                             let response = row.response();
                             response.context_menu(|ui| {
+                                if ui.button(text(locale, "start")).clicked() {
+                                    ui.close();
+                                    action = Some(BookmarkAction::Start(
+                                        bookmark.content_descriptor.clone(),
+                                    ))
+                                }
                                 if ui.button(text(locale, "remove")).clicked() {
-                                    ui.close_menu();
+                                    ui.close();
                                     action = Some(BookmarkAction::Remove(index));
                                 }
                             });
                             if response.clicked() {
                                 self.selected_bookmark = Some(SelectedBookmark {
                                     index,
-                                    // TODO: set hint
+                                    // TODO: Hint.
                                     name: bookmark.name.clone(),
-                                    url: PathOrUrlField::new(Some(bookmark.url.clone()), ""),
+                                    url: PathOrUrlField::new(
+                                        Some(bookmark.content_descriptor.clone()),
+                                        LocalizableText::NonLocalizedText("".into()),
+                                        self.picker.clone(),
+                                    ),
                                 });
+                            }
+                            if response.double_clicked() {
+                                action = Some(BookmarkAction::Start(
+                                    bookmark.content_descriptor.clone(),
+                                ));
                             }
                         });
                     }
                 });
             });
 
-        if let Some(action) = action {
-            if let Err(e) = self.preferences.write_bookmarks(|writer| match action {
-                BookmarkAction::Remove(index) => {
+        match action {
+            Some(BookmarkAction::Remove(index)) => {
+                if let Err(e) = self.preferences.write_bookmarks(|writer| {
                     // TODO: Recalculate the index for the selected bookmark, if it survives, otherwise just set to None.
                     self.selected_bookmark = None;
                     writer.remove(index);
+                }) {
+                    tracing::warn!("Couldn't update bookmarks: {e}");
                 }
-            }) {
-                tracing::warn!("Couldn't update bookmarks: {e}");
+                false
             }
+            Some(BookmarkAction::Start(content_descriptor)) => {
+                let _ = self.event_loop.send_event(RuffleEvent::Open(
+                    content_descriptor,
+                    Box::new(LaunchOptions::from(&self.preferences)),
+                ));
+                true
+            }
+            None => false,
         }
     }
 
@@ -228,30 +271,31 @@ impl BookmarksDialog {
                 .num_columns(2)
                 .show(ui, |ui| {
                     ui.label(text(locale, "bookmarks-dialog-name"));
-                    if ui.text_edit_singleline(&mut bookmark.name).lost_focus() {
-                        if let Err(e) = self.preferences.write_bookmarks(|writer| {
+                    if ui.text_edit_singleline(&mut bookmark.name).lost_focus()
+                        && let Err(e) = self.preferences.write_bookmarks(|writer| {
                             writer.set_name(bookmark.index, bookmark.name.clone());
-                        }) {
-                            tracing::warn!("Couldn't update bookmarks: {e}");
-                        }
+                        })
+                    {
+                        tracing::warn!("Couldn't update bookmarks: {e}");
                     }
                     ui.end_row();
 
-                    let previous_url = bookmark.url.value().cloned();
+                    // TODO Do not ignore root content directory.
+                    let previous_desc = bookmark.url.result();
 
                     ui.label(text(locale, "bookmarks-dialog-location"));
-                    let current_url = bookmark.url.ui(locale, ui).value();
+                    let current_desc = bookmark.url.ui(locale, ui).result();
 
-                    // TOOD: Change the UrlOrPathField widget to return a response instead, so we can update when we lose the focus, removes the need to clone every redraw.
-                    if previous_url.as_ref() != current_url {
-                        if let Some(url) = current_url {
-                            if let Err(e) = self.preferences.write_bookmarks(|writer| {
-                                writer.set_url(bookmark.index, url.clone());
-                            }) {
-                                tracing::warn!("Couldn't update bookmarks: {e}");
-                            }
-                        }
+                    // TODO: Change the UrlOrPathField widget to return a response instead, so we can update when we lose the focus, removes the need to clone every redraw.
+                    if previous_desc != current_desc
+                        && let Some(content_descriptor) = current_desc
+                        && let Err(e) = self.preferences.write_bookmarks(|writer| {
+                            writer.set_content_descriptor(bookmark.index, content_descriptor);
+                        })
+                    {
+                        tracing::warn!("Couldn't update bookmarks: {e}");
                     }
+
                     ui.end_row();
                 });
         } else {

@@ -22,7 +22,7 @@ impl FromStr for FilenamePattern {
 }
 
 impl FilenamePattern {
-    pub fn create_path(&self, directory: &Path) -> PathBuf {
+    pub fn create_path(self, directory: &Path) -> PathBuf {
         match self {
             FilenamePattern::SingleFile => directory.join("ruffle.log"),
             FilenamePattern::WithTimestamp => {
@@ -31,7 +31,7 @@ impl FilenamePattern {
         }
     }
 
-    pub fn as_str(&self) -> &'static str {
+    pub fn as_str(self) -> &'static str {
         match self {
             FilenamePattern::SingleFile => "single_file",
             FilenamePattern::WithTimestamp => "with_timestamp",

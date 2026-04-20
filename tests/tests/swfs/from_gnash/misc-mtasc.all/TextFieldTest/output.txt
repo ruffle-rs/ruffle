@@ -1,0 +1,8 @@
+PASSED: 100 == 100  [TextFieldTest.as:32]
+textfield height is 17.05 [TextFieldTest.as:38]
+PASSED: height < 50  [TextFieldTest.as:39]
+PASSED: Test run 2 [ [TextFieldTest.as:40]]
+#passed: 3
+#failed: 0
+#total tests run: 3
+__END_OF_TEST__

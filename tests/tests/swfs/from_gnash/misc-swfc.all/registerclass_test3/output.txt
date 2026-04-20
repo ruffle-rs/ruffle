@@ -1,0 +1,27 @@
+root first InitAction of frame1 (where we check if object placed after is visible) [registerclass_test3.sc:67]
+PASSED: typeof(player.movie) == movieclip  [registerclass_test3.sc:68]
+PASSED: player.movie.__proto__ == [object Object]  [registerclass_test3.sc:69]
+root second InitAction of frame1 (where the class is defined) [registerclass_test3.sc:81]
+PASSED: typeof(player.movie) == movieclip  [registerclass_test3.sc:82]
+PASSED: player.movie.__proto__ == [object Object]  [registerclass_test3.sc:83]
+root third InitAction of frame1 (where registerClass is invoked) [registerclass_test3.sc:91]
+root DoAction of frame1 [registerclass_test3.sc:54]
+PASSED: typeof(player.movie) == movieclip  [registerclass_test3.sc:55]
+PASSED: player.movie.__proto__ == [object Object]  [registerclass_test3.sc:56]
+PASSED: _root.testvar == 100  [registerclass_test3.sc:58]
+PASSED: typeof(clip1) == movieclip  [registerclass_test3.sc:126]
+PASSED: clip1.__proto__ == [object Object]  [registerclass_test3.sc:127]
+PASSED: typeof(dup1) == movieclip  [registerclass_test3.sc:130]
+PASSED: dup1.__proto__ == [object Object]  [registerclass_test3.sc:131]
+PASSED: dup1.testvar == 60  [registerclass_test3.sc:132]
+PASSED: typeof(libItem1) == undefined  [registerclass_test3.sc:135]
+PASSED: typeof(libItem2) == movieclip  [registerclass_test3.sc:143]
+PASSED: libItem2.__proto__ == [object Object]  [registerclass_test3.sc:144]
+PASSED: libItem2.__proto__ == [object Object]  [registerclass_test3.sc:145]
+PASSED: typeof(libItem2.child2) == movieclip  [registerclass_test3.sc:149]
+PASSED: libItem2.__proto__ == [object Object]  [registerclass_test3.sc:117]
+PASSED: libItem2.__proto__ == [object Object]  [registerclass_test3.sc:156]
+Total tests run: 19 typeof expected: number
+#passed: 19
+#failed: 0
+__END_OF_TEST__

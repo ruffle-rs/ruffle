@@ -1,0 +1,15 @@
+typeof g6: object
+typeof g7: object
+typeof g8: object
+g7 === g8: true
+g6 === g7: false
+typeof g6.Object.prototype: object
+typeof g7.Object.prototype: object
+g6.Object.prototype === g7.Object.prototype: false
+g6.OBJECT: undefined
+swf6.anObject: [object Object]
+swf6.anObject instanceof g6.Object: true
+swf6.anObject instanceof g7.Object: false
+swf6.anArray: 1,2,3
+swf6.anArray instanceof g6.Array: true
+swf6.anArray instanceof g7.Array: false

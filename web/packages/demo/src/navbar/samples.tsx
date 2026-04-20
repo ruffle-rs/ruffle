@@ -6,7 +6,7 @@ import {
     useEffect,
     useState,
 } from "react";
-import { BaseLoadOptions } from "ruffle-core";
+import type { Config } from "ruffle-core";
 
 type SampleCategory = "Animation" | "Game";
 
@@ -20,16 +20,16 @@ export interface DemoSwf {
     title?: string;
     author?: string;
     authorLink?: string;
-    config?: BaseLoadOptions;
-    type: SampleCategory | null;
+    config?: Config.BaseLoadOptions;
+    type?: SampleCategory;
 }
 
 interface SampleSelectionProperties {
-    sampleSelectionInput: RefObject<HTMLSelectElement>;
+    sampleSelectionInput: RefObject<HTMLSelectElement | null>;
     selectedSample: DemoSwf | null;
     setSelectedSample: (value: DemoSwf | null) => void;
     setSelectedFilename: (name: string | null) => void;
-    onSelectUrl: (url: string, config: BaseLoadOptions) => void;
+    onSelectUrl: (url: string, config: Config.BaseLoadOptions) => void;
 }
 
 export function SampleSelection({
@@ -46,6 +46,11 @@ export function SampleSelection({
         const index = parseInt(eventTarget.value, 10);
         if (availableSamples[index]) {
             loadSample(availableSamples[index]);
+            window.history.replaceState(
+                null,
+                "",
+                `${window.location.pathname}?file=${availableSamples[index].location}`,
+            );
         }
     };
 
@@ -63,20 +68,40 @@ export function SampleSelection({
             const response = await fetch("swfs.json");
 
             if (response.ok) {
-                const data: { swfs: [DemoSwf] } = await response.json();
+                const data: { swfs: DemoSwf[] } = await response.json();
                 setAvailableSamples(data.swfs);
 
                 if (data.swfs.length > 0) {
-                    loadSample(data.swfs[0]);
+                    const params = new URLSearchParams(window.location.search);
+                    const fileParam = params.get("file");
+
+                    let sampleIndex = 0;
+
+                    if (fileParam) {
+                        sampleIndex = data.swfs.findIndex(
+                            (swf) => swf.location === fileParam,
+                        );
+                        if (sampleIndex === -1) {
+                            sampleIndex = 0;
+                        }
+                    }
+
+                    loadSample(data.swfs[sampleIndex]);
+                    requestAnimationFrame(() => {
+                        if (sampleSelectionInput.current) {
+                            sampleSelectionInput.current.selectedIndex =
+                                sampleIndex;
+                        }
+                    });
                 }
             }
         })();
-    }, [loadSample]);
+    }, [loadSample, sampleSelectionInput]);
 
     return (
         <div
             id="sample-swfs-container"
-            className={availableSamples.length == 0 ? "hidden" : ""}
+            className={availableSamples.length === 0 ? "hidden" : ""}
         >
             <span id="sample-swfs-label">Sample SWF:</span>
             <select
@@ -87,7 +112,7 @@ export function SampleSelection({
             >
                 {availableSamples.map((sample, i) => (
                     <Fragment key={i}>
-                        {sample.type == null && (
+                        {sample.type === undefined && (
                             <option value={i}>{sample.title}</option>
                         )}
                     </Fragment>
@@ -99,7 +124,7 @@ export function SampleSelection({
                     >
                         {availableSamples.map((sample, i) => (
                             <Fragment key={i}>
-                                {sample.type == category && (
+                                {sample.type === category && (
                                     <option value={i}>{sample.title}</option>
                                 )}
                             </Fragment>

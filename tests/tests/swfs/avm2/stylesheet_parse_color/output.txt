@@ -1,0 +1,69 @@
+CSS: .s { color: #ff0000 ;}
+  string color: #ff0000 
+  parsed color: ff0000
+CSS: .s { color: #ff0000 0;}
+  string color: #ff0000 0
+  parsed color: 0
+CSS: .s { color: #ff0000  }
+  string color: #ff0000  
+  parsed color: ff0000
+CSS: .s { color: #ff0000  0}
+  string color: #ff0000  0
+  parsed color: 0
+CSS: .s { color: #ff0000	 }
+  string color: #ff0000	 
+  parsed color: ff0000
+CSS: .s { color: #ff0000	 0}
+  string color: #ff0000	 0
+  parsed color: 0
+CSS: .s { color: #ff0000 \n }
+  string color: #ff0000 
+  parsed color: ff0000
+CSS: .s { color: 	#ff0000;}
+  string color: #ff0000
+  parsed color: ff0000
+CSS: .s { color: 	 #ff0000;}
+  string color: #ff0000
+  parsed color: ff0000
+CSS: .s { color:	 #ff0000;}
+  string color: #ff0000
+  parsed color: ff0000
+CSS: .s { color:\n #ff0000;}
+  string color: #ff0000
+  parsed color: ff0000
+CSS: .s { color: \n #ff0000;}
+  string color: #ff0000
+  parsed color: ff0000
+CSS: .s { color: \n#ff0000;}
+  string color: #ff0000
+  parsed color: ff0000
+CSS: .s { color: #6;}
+  string color: #6
+  parsed color: 6
+CSS: .s { color: #66;}
+  string color: #66
+  parsed color: 66
+CSS: .s { color: #666;}
+  string color: #666
+  parsed color: 666
+CSS: .s { color: #6666;}
+  string color: #6666
+  parsed color: 6666
+CSS: .s { color: #66666;}
+  string color: #66666
+  parsed color: 66666
+CSS: .s { color: #666666;}
+  string color: #666666
+  parsed color: 666666
+CSS: .s { color: #6666666;}
+  string color: #6666666
+  parsed color: 0
+CSS: .s { color: #66666666;}
+  string color: #66666666
+  parsed color: 0
+CSS: .s { color: #666666666;}
+  string color: #666666666
+  parsed color: 0
+CSS: .s { color: 666666;}
+  string color: 666666
+  parsed color: 0

@@ -10,14 +10,19 @@ mod app;
 mod backends;
 mod cli;
 mod custom_event;
+mod dbus;
 mod gui;
 mod log;
 mod player;
 mod preferences;
+#[cfg(feature = "tracy")]
+mod tracy;
 mod util;
+#[cfg(windows)]
+mod windows;
 
 use crate::preferences::GlobalPreferences;
-use anyhow::Error;
+use anyhow::{Context, Error};
 use app::App;
 use clap::Parser;
 use cli::Opt;
@@ -26,11 +31,10 @@ use ruffle_core::StaticCallstack;
 use std::cell::RefCell;
 use std::env;
 use std::fs::File;
-use std::panic::PanicInfo;
+use std::panic::PanicHookInfo;
 use tracing_subscriber::fmt::Layer;
 use tracing_subscriber::layer::SubscriberExt;
 use tracing_subscriber::util::SubscriberInitExt;
-
 use url::Url;
 
 thread_local! {
@@ -55,42 +59,15 @@ static RUFFLE_VERSION: &str = concat!(
     ")"
 );
 
-fn init() {
-    // When linked with the windows subsystem windows won't automatically attach
-    // to the console of the parent process, so we do it explicitly. This fails
-    // silently if the parent has no console.
-    #[cfg(windows)]
-    unsafe {
-        use winapi::um::wincon::{AttachConsole, ATTACH_PARENT_PROCESS};
-        AttachConsole(ATTACH_PARENT_PROCESS);
-    }
-
-    let prev_hook = std::panic::take_hook();
-    std::panic::set_hook(Box::new(move |info| {
-        prev_hook(info);
-        panic_hook(info);
-    }));
-}
-
-fn panic_hook(info: &PanicInfo) {
+fn panic_hook(info: &PanicHookInfo) {
     CALLSTACK.with(|callstack| {
         if let Some(callstack) = &*callstack.borrow() {
             callstack.avm2(|callstack| println!("AVM2 stack trace: {callstack}"))
         }
     });
 
-    // [NA] Let me just point out that PanicInfo::message() exists but isn't stable and that sucks.
-    let panic_text = info.to_string();
-    let message = if let Some(text) = panic_text.strip_prefix("panicked at '") {
-        let location = info.location().map(|l| l.to_string()).unwrap_or_default();
-        if let Some(text) = text.strip_suffix(&format!("', {location}")) {
-            text.trim()
-        } else {
-            text.trim()
-        }
-    } else {
-        panic_text.trim()
-    };
+    let message = info.payload_as_str().unwrap_or("panic occurred");
+
     if rfd::MessageDialog::new()
         .set_level(rfd::MessageLevel::Error)
         .set_title("Ruffle")
@@ -132,32 +109,39 @@ fn panic_hook(info: &PanicInfo) {
         if !extra_info.is_empty() {
             params.push(("extra_info", extra_info.join("\n")));
         }
-        if let Ok(url) = Url::parse_with_params("https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml", &params) {
+        if let Ok(url) = Url::parse_with_params(
+            "https://github.com/ruffle-rs/ruffle/issues/new?assignees=&labels=bug&template=crash_report.yml",
+            &params,
+        ) {
             let _ = webbrowser::open(url.as_str());
         }
     }
 }
 
-fn shutdown() {
-    // Without explicitly detaching the console cmd won't redraw it's prompt.
-    #[cfg(windows)]
-    unsafe {
-        winapi::um::wincon::FreeConsole();
-    }
-}
+fn main() -> Result<(), Error> {
+    let prev_hook = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        prev_hook(info);
+        panic_hook(info);
+    }));
 
-#[tokio::main]
-async fn main() -> Result<(), Error> {
-    init();
+    #[cfg(windows)]
+    let _console = windows::Console::attach();
 
     let opt = Opt::parse();
-    let preferences = GlobalPreferences::load(opt.clone())?;
+    let preferences = GlobalPreferences::load(opt)?;
+
+    let logs_path = &preferences.cli.cache_directory.join("log");
+    let log_path = preferences.log_filename_pattern().create_path(logs_path);
+    if let Some(parent) = log_path.parent() {
+        std::fs::create_dir_all(parent)?;
+    }
+    if let Err(err) = migrate_logs(&preferences, logs_path) {
+        tracing::warn!("Failed to migrate logs: {}", err);
+    }
 
     // [NA] `_guard` cannot be `_` or it'll immediately drop
     // https://docs.rs/tracing-appender/latest/tracing_appender/non_blocking/index.html
-    let log_path = preferences
-        .log_filename_pattern()
-        .create_path(&preferences.cli.config);
     let (non_blocking_file, _file_guard) = tracing_appender::non_blocking(File::create(log_path)?);
     let (non_blocking_stdout, _stdout_guard) = tracing_appender::non_blocking(std::io::stdout());
 
@@ -174,18 +158,55 @@ async fn main() -> Result<(), Error> {
 
     #[cfg(feature = "tracy")]
     let subscriber = {
-        let tracy_subscriber = tracing_tracy::TracyLayer::new();
+        let tracy_subscriber = tracing_tracy::TracyLayer::new(tracy::RuffleTracyConfig::default());
         subscriber.with(tracy_subscriber)
     };
 
     subscriber.init();
 
-    let result = App::new(preferences).and_then(|app| app.run());
+    let result = App::new(preferences).and_then(|(mut app, event_loop)| {
+        event_loop.run_app(&mut app).context("Event loop failure")
+    });
 
     #[cfg(windows)]
     if let Err(error) = &result {
         eprintln!("{:?}", error)
     }
-    shutdown();
+
     result
+}
+
+/// Move logs from config directory into proper log directory.
+///
+/// This exists because in older versions Ruffle created log files in the config directory.
+///
+/// TODO Remove this after some time.
+fn migrate_logs(
+    preferences: &GlobalPreferences,
+    log_path: &std::path::Path,
+) -> std::io::Result<()> {
+    tracing::debug!("Migrating logs from config directory to log directory");
+    let config_path = &preferences.cli.config;
+    let paths = std::fs::read_dir(config_path)?;
+
+    for dir in paths.flatten() {
+        if dir.file_name().as_encoded_bytes().ends_with(b".log") {
+            let src = dir.path();
+            let dest = log_path.join(dir.file_name());
+            tracing::info!(
+                "Moving log file {} -> {}",
+                src.to_string_lossy(),
+                dest.to_string_lossy()
+            );
+            if let Err(err) = std::fs::rename(&src, &dest) {
+                tracing::warn!(
+                    "Failed to move log file {} -> {}: {err}",
+                    src.to_string_lossy(),
+                    dest.to_string_lossy()
+                )
+            }
+        }
+    }
+
+    Ok(())
 }

@@ -57,7 +57,7 @@ should work. Additionally, headless JREs should also work.
 
 Follow the instructions to [install Node.js](https://nodejs.org/) on your machine.
 
-We recommend using the currently active LTS 20, but we do also run tests with current Node.js 22.
+We recommend using the currently active LTS 24, but we do also run tests with current Node.js 25.
 
 Note that npm 7 or newer is required. It should come bundled with Node.js 15 or newer, but can be upgraded with older Node.js versions using `npm install -g npm` as root/Administrator.
 
@@ -65,7 +65,7 @@ Note that npm 7 or newer is required. It should come bundled with Node.js 15 or 
 
 <!-- Be sure to also update the wasm-bindgen-cli version in `.github/workflows/*.yml` and `web/Cargo.toml`. -->
 
-This can be installed with `cargo install wasm-bindgen-cli --version 0.2.92`. Be sure to install this specific version of `wasm-bindgen-cli` to match the version used by Ruffle.
+This can be installed with `cargo install wasm-bindgen-cli --version 0.2.108`. Be sure to install this specific version of `wasm-bindgen-cli` to match the version used by Ruffle.
 
 #### Binaryen
 
@@ -85,7 +85,7 @@ Just make sure the `wasm-opt` program is in `$PATH`, and that it works.
 ##### `jpegxr`
 
 The release version of the extension is compiled with `jpegxr`.
-To enable it, set the the env `CARGO_FEATURES="jpegxr"`.
+To enable it, set the env `CARGO_FEATURES="jpegxr"`.
 
 Windows dependencies:
 
@@ -103,9 +103,11 @@ In this project, you may run the following commands to build all packages:
     -   This will build the wasm binary and every node package (notably selfhosted and extension).
     -   Output will be available in the `dist/` folder of each package (for example, `./packages/selfhosted/dist`).
     -   You may also use `npm run build:debug` to disable Webpack optimizations and activate the (extremely verbose) ActionScript debugging output.
-    -   There is `npm run build:dual-wasm` as well, to build a second WebAssembly module that makes use of some WebAssembly extensions,
-        potentially resulting in better performance in browsers that support them, at the expense of longer build time.
-    -   `npm run build:repro` enables reproducible builds. Note that this also requires a `version_seal.json`, which is not provided in the normal Git repository - only specially-marked reproducible source archives. Running this without a version seal will generate one based on the current state of your environment.
+    -   There is `npm run build:dual-wasm` as well, to build a second WebAssembly module that disables all supported WebAssembly extensions,
+        potentially resulting in support for more browsers, at the expense of longer build time.
+    -   `npm run build:repro` enables reproducible builds with the default WASM module. Note that this also requires a `version_seal.json`, which is not provided in the normal Git repository - only specially-marked reproducible source archives. Running this without a version seal will generate one based on the current state of your environment.
+    -   `npm run build:dual-wasm-repro` enables reproducible builds with both WASM modules. Note that this also requires a `version_seal.json`, which is not provided in the normal Git repository - only specially-marked reproducible source archives. Running this without a version seal will generate one based on the current state of your environment.
+    -   You will also need to run `rustup component add rust-src` with either of the dual-wasm commands since we rebuild std for the vanilla WASM module.
 
 From here, you may follow the instructions to [use Ruffle on your website](packages/selfhosted/README.md),
 run a demo locally with `npm run demo`, or [install the extension in your browser](https://github.com/ruffle-rs/ruffle/wiki/Using-Ruffle#browser-extension).
@@ -143,7 +145,7 @@ Pass `--spec <name>` to filter a test based on name. For example, `--spec extern
 
 ### Testing tips!
 If debugging a failing test, use `await browser.pause(100000);` in the test file to pause it, and don't start the test with `--headless`.
-That way you can actually see what's happening, and manually get involved to debug it. 
+That way you can actually see what's happening, and manually get involved to debug it.
 
 ## Structure
 

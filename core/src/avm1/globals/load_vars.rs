@@ -5,14 +5,14 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::ExecutionReason;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::backend::navigator::{NavigationMethod, Request};
-use crate::context::GcContext;
 use crate::string::AvmString;
+use ruffle_macros::istr;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "load" => method(load; DONT_ENUM | DONT_DELETE);
     "send" => method(send; DONT_ENUM | DONT_DELETE);
     "sendAndLoad" => method(send_and_load; DONT_ENUM | DONT_DELETE);
@@ -20,30 +20,19 @@ const PROTO_DECLS: &[Declaration] = declare_properties! {
     "getBytesLoaded" => method(get_bytes_loaded; DONT_ENUM | DONT_DELETE);
     "getBytesTotal" => method(get_bytes_total; DONT_ENUM | DONT_DELETE);
     "toString" => method(to_string; DONT_ENUM | DONT_DELETE);
-    "contentType" => string("application/x-www-form-urlencoded"; DONT_ENUM | DONT_DELETE);
+    "contentType" => value("application/x-www-form-urlencoded"; DONT_ENUM | DONT_DELETE);
     "onLoad" => method(on_load; DONT_ENUM | DONT_DELETE);
     "onData" => method(on_data; DONT_ENUM | DONT_DELETE);
     "addRequestHeader" => method(add_request_header; DONT_ENUM | DONT_DELETE);
 };
 
-/// Implements `LoadVars`
-pub fn constructor<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    // No-op constructor
-    Ok(this.into())
-}
-
-pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.empty_class(super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
 }
 
 fn add_request_header<'gc>(
@@ -65,8 +54,8 @@ fn decode<'gc>(
     if let Some(data) = args.get(0) {
         let data = data.coerce_to_string(activation)?;
         for (k, v) in url::form_urlencoded::parse(data.to_utf8_lossy().as_bytes()) {
-            let k = AvmString::new_utf8(activation.context.gc_context, k);
-            let v = AvmString::new_utf8(activation.context.gc_context, v);
+            let k = AvmString::new_utf8(activation.gc(), k);
+            let v = AvmString::new_utf8(activation.gc(), v);
             this.set(k, v.into(), activation)?;
         }
     }
@@ -80,7 +69,7 @@ fn get_bytes_loaded<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Forwards to undocumented property on the object.
-    this.get("_bytesLoaded", activation)
+    this.get(istr!("_bytesLoaded"), activation)
 }
 
 fn get_bytes_total<'gc>(
@@ -89,7 +78,7 @@ fn get_bytes_total<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Forwards to undocumented property on the object.
-    this.get("_bytesTotal", activation)
+    this.get(istr!("_bytesTotal"), activation)
 }
 
 fn load<'gc>(
@@ -117,18 +106,18 @@ fn on_data<'gc>(
         Value::Undefined | Value::Null => false,
         val => {
             this.call_method(
-                "decode".into(),
+                istr!("decode"),
                 &[*val],
                 activation,
                 ExecutionReason::FunctionCall,
             )?;
-            this.set("loaded", true.into(), activation)?;
+            this.set(istr!("loaded"), true.into(), activation)?;
             true
         }
     };
 
     this.call_method(
-        "onLoad".into(),
+        istr!("onLoad"),
         &[success.into()],
         activation,
         ExecutionReason::FunctionCall,
@@ -159,7 +148,7 @@ fn send<'gc>(
 
     let window = match args.get(1) {
         Some(window) => window.coerce_to_string(activation)?,
-        None => "".into(),
+        None => istr!(""),
     };
 
     let method_name = args
@@ -181,7 +170,7 @@ fn send<'gc>(
             v.ok()
                 .unwrap_or(Value::Undefined)
                 .coerce_to_string(activation)
-                .unwrap_or_else(|_| "undefined".into())
+                .unwrap_or_else(|_| istr!("undefined"))
                 .to_string(),
         );
     }
@@ -237,7 +226,7 @@ fn to_string<'gc>(
             v.ok()
                 .unwrap_or(Value::Undefined)
                 .coerce_to_string(activation)
-                .unwrap_or_else(|_| "undefined".into())
+                .unwrap_or_else(|_| istr!("undefined"))
                 .to_string(),
         );
     }
@@ -246,7 +235,7 @@ fn to_string<'gc>(
         .extend_pairs(form_values.iter())
         .finish();
 
-    Ok(AvmString::new_utf8(activation.context.gc_context, query_string).into())
+    Ok(AvmString::new_utf8(activation.gc(), query_string).into())
 }
 
 fn spawn_load_var_fetch<'gc>(
@@ -263,45 +252,48 @@ fn spawn_load_var_fetch<'gc>(
         Request::get(url.to_utf8_lossy().into_owned())
     };
 
-    let future = activation.context.load_manager.load_form_into_load_vars(
-        activation.context.player.clone(),
-        loader_object,
-        request,
-    );
+    let future =
+        crate::loader::load_form_into_load_vars(activation.context, loader_object, request);
     activation.context.navigator.spawn_future(future);
 
     // Create hidden properties on object.
-    if !loader_object.has_property(activation, "_bytesLoaded".into()) {
+    let bytes_loaded_string = istr!("_bytesLoaded");
+
+    if !loader_object.has_property(activation, bytes_loaded_string) {
         loader_object.define_value(
-            activation.context.gc_context,
-            "_bytesLoaded",
+            activation.gc(),
+            bytes_loaded_string,
             0.into(),
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        loader_object.set("_bytesLoaded", 0.into(), activation)?;
+        loader_object.set(bytes_loaded_string, 0.into(), activation)?;
     }
 
-    if !loader_object.has_property(activation, "_bytesTotal".into()) {
+    let bytes_total_string = istr!("_bytesTotal");
+
+    if !loader_object.has_property(activation, bytes_total_string) {
         loader_object.define_value(
-            activation.context.gc_context,
-            "_bytesTotal",
+            activation.gc(),
+            bytes_total_string,
             Value::Undefined,
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        loader_object.set("_bytesTotal", Value::Undefined, activation)?;
+        loader_object.set(bytes_total_string, Value::Undefined, activation)?;
     }
 
-    if !loader_object.has_property(activation, "loaded".into()) {
+    let loaded_string = istr!("loaded");
+
+    if !loader_object.has_property(activation, loaded_string) {
         loader_object.define_value(
-            activation.context.gc_context,
-            "loaded",
+            activation.gc(),
+            loaded_string,
             false.into(),
             Attribute::DONT_DELETE | Attribute::DONT_ENUM,
         );
     } else {
-        loader_object.set("loaded", false.into(), activation)?;
+        loader_object.set(loaded_string, false.into(), activation)?;
     }
 
     Ok(true.into())

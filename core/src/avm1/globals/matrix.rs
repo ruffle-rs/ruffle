@@ -2,61 +2,69 @@
 
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
-use crate::avm1::function::{Executable, FunctionObject};
 use crate::avm1::globals::point::{point_to_object, value_to_point};
-use crate::avm1::property_decl::{define_properties_on, Declaration};
-use crate::avm1::{Object, ScriptObject, TObject, Value};
-use crate::context::GcContext;
+use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::{Object, Value};
 use crate::string::AvmString;
 
+use ruffle_macros::istr;
 use ruffle_render::matrix::Matrix;
 use swf::Twips;
 
-const PROTO_DECLS: &[Declaration] = declare_properties! {
-    "toString" => method(to_string);
-    "identity" => method(identity);
-    "clone" => method(clone);
-    "scale" => method(scale);
-    "rotate" => method(rotate);
-    "translate" => method(translate);
+const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "concat" => method(concat);
     "invert" => method(invert);
     "createBox" => method(create_box);
     "createGradientBox" => method(create_gradient_box);
-    "transformPoint" => method(transform_point);
+    "clone" => method(clone);
+    "identity" => method(identity);
+    "rotate" => method(rotate);
+    "translate" => method(translate);
+    "scale" => method(scale);
     "deltaTransformPoint" => method(delta_transform_point);
+    "transformPoint" => method(transform_point);
+    "toString" => method(to_string);
 };
+
+pub fn create_class<'gc>(
+    context: &mut DeclContext<'_, 'gc>,
+    super_proto: Object<'gc>,
+) -> SystemClass<'gc> {
+    let class = context.class(constructor, super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
+    class
+}
 
 pub fn value_to_matrix<'gc>(
     value: Value<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     let a = value
-        .coerce_to_object(activation)
-        .get("a", activation)?
+        .coerce_to_object_or_bare(activation)?
+        .get(istr!("a"), activation)?
         .coerce_to_f64(activation)? as f32;
     let b = value
-        .coerce_to_object(activation)
-        .get("b", activation)?
+        .coerce_to_object_or_bare(activation)?
+        .get(istr!("b"), activation)?
         .coerce_to_f64(activation)? as f32;
     let c = value
-        .coerce_to_object(activation)
-        .get("c", activation)?
+        .coerce_to_object_or_bare(activation)?
+        .get(istr!("c"), activation)?
         .coerce_to_f64(activation)? as f32;
     let d = value
-        .coerce_to_object(activation)
-        .get("d", activation)?
+        .coerce_to_object_or_bare(activation)?
+        .get(istr!("d"), activation)?
         .coerce_to_f64(activation)? as f32;
     let tx = Twips::from_pixels(
         value
-            .coerce_to_object(activation)
-            .get("tx", activation)?
+            .coerce_to_object_or_bare(activation)?
+            .get(istr!("tx"), activation)?
             .coerce_to_f64(activation)?,
     );
     let ty = Twips::from_pixels(
         value
-            .coerce_to_object(activation)
-            .get("ty", activation)?
+            .coerce_to_object_or_bare(activation)?
+            .get(istr!("ty"), activation)?
             .coerce_to_f64(activation)?,
     );
 
@@ -68,15 +76,25 @@ pub fn gradient_object_to_matrix<'gc>(
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
     if &object
-        .get("matrixType", activation)?
+        .get(istr!("matrixType"), activation)?
         .coerce_to_string(activation)?
         == b"box"
     {
-        let width = object.get("w", activation)?.coerce_to_f64(activation)?;
-        let height = object.get("h", activation)?.coerce_to_f64(activation)?;
-        let rotation = object.get("r", activation)?.coerce_to_f64(activation)?;
-        let tx = object.get("x", activation)?.coerce_to_f64(activation)?;
-        let ty = object.get("y", activation)?.coerce_to_f64(activation)?;
+        let width = object
+            .get(istr!("w"), activation)?
+            .coerce_to_f64(activation)?;
+        let height = object
+            .get(istr!("h"), activation)?
+            .coerce_to_f64(activation)?;
+        let rotation = object
+            .get(istr!("r"), activation)?
+            .coerce_to_f64(activation)?;
+        let tx = object
+            .get(istr!("x"), activation)?
+            .coerce_to_f64(activation)?;
+        let ty = object
+            .get(istr!("y"), activation)?
+            .coerce_to_f64(activation)?;
         Ok(Matrix::create_gradient_box(
             width as f32,
             height as f32,
@@ -95,12 +113,28 @@ pub fn object_to_matrix<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<Matrix, Error<'gc>> {
-    let a = object.get("a", activation)?.coerce_to_f64(activation)? as f32;
-    let b = object.get("b", activation)?.coerce_to_f64(activation)? as f32;
-    let c = object.get("c", activation)?.coerce_to_f64(activation)? as f32;
-    let d = object.get("d", activation)?.coerce_to_f64(activation)? as f32;
-    let tx = Twips::from_pixels(object.get("tx", activation)?.coerce_to_f64(activation)?);
-    let ty = Twips::from_pixels(object.get("ty", activation)?.coerce_to_f64(activation)?);
+    let a = object
+        .get(istr!("a"), activation)?
+        .coerce_to_f64(activation)? as f32;
+    let b = object
+        .get(istr!("b"), activation)?
+        .coerce_to_f64(activation)? as f32;
+    let c = object
+        .get(istr!("c"), activation)?
+        .coerce_to_f64(activation)? as f32;
+    let d = object
+        .get(istr!("d"), activation)?
+        .coerce_to_f64(activation)? as f32;
+    let tx = Twips::from_pixels(
+        object
+            .get(istr!("tx"), activation)?
+            .coerce_to_f64(activation)?,
+    );
+    let ty = Twips::from_pixels(
+        object
+            .get(istr!("ty"), activation)?
+            .coerce_to_f64(activation)?,
+    );
 
     Ok(Matrix { a, b, c, d, tx, ty })
 }
@@ -114,12 +148,12 @@ pub fn object_to_matrix_or_default<'gc>(
 ) -> Result<Matrix, Error<'gc>> {
     if let (Some(a), Some(b), Some(c), Some(d), Some(tx), Some(ty)) = (
         // These lookups do not search the prototype chain and ignore virtual properties.
-        object.get_local_stored("a", activation, false),
-        object.get_local_stored("b", activation, false),
-        object.get_local_stored("c", activation, false),
-        object.get_local_stored("d", activation, false),
-        object.get_local_stored("tx", activation, false),
-        object.get_local_stored("ty", activation, false),
+        object.get_local_stored(istr!("a"), activation),
+        object.get_local_stored(istr!("b"), activation),
+        object.get_local_stored(istr!("c"), activation),
+        object.get_local_stored(istr!("d"), activation),
+        object.get_local_stored(istr!("tx"), activation),
+        object.get_local_stored(istr!("ty"), activation),
     ) {
         let a = a.coerce_to_f64(activation)? as f32;
         let b = b.coerce_to_f64(activation)? as f32;
@@ -145,7 +179,7 @@ pub fn matrix_to_value<'gc>(
         matrix.tx.to_pixels().into(),
         matrix.ty.to_pixels().into(),
     ];
-    let constructor = activation.context.avm1.prototypes().matrix_constructor;
+    let constructor = activation.prototypes().matrix_constructor;
     let object = constructor.construct(activation, &args)?;
     Ok(object)
 }
@@ -155,12 +189,12 @@ pub fn apply_matrix_to_object<'gc>(
     object: Object<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Result<(), Error<'gc>> {
-    object.set("a", matrix.a.into(), activation)?;
-    object.set("b", matrix.b.into(), activation)?;
-    object.set("c", matrix.c.into(), activation)?;
-    object.set("d", matrix.d.into(), activation)?;
-    object.set("tx", matrix.tx.to_pixels().into(), activation)?;
-    object.set("ty", matrix.ty.to_pixels().into(), activation)?;
+    object.set(istr!("a"), matrix.a.into(), activation)?;
+    object.set(istr!("b"), matrix.b.into(), activation)?;
+    object.set(istr!("c"), matrix.c.into(), activation)?;
+    object.set(istr!("d"), matrix.d.into(), activation)?;
+    object.set(istr!("tx"), matrix.tx.to_pixels().into(), activation)?;
+    object.set(istr!("ty"), matrix.ty.to_pixels().into(), activation)?;
     Ok(())
 }
 
@@ -170,29 +204,29 @@ fn constructor<'gc>(
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if args.is_empty() {
-        apply_matrix_to_object(Matrix::IDENTITY, this, activation)?;
+        identity(activation, this, args)?;
     } else {
         if let Some(a) = args.get(0) {
-            this.set("a", *a, activation)?;
+            this.set(istr!("a"), *a, activation)?;
         }
         if let Some(b) = args.get(1) {
-            this.set("b", *b, activation)?;
+            this.set(istr!("b"), *b, activation)?;
         }
         if let Some(c) = args.get(2) {
-            this.set("c", *c, activation)?;
+            this.set(istr!("c"), *c, activation)?;
         }
         if let Some(d) = args.get(3) {
-            this.set("d", *d, activation)?;
+            this.set(istr!("d"), *d, activation)?;
         }
         if let Some(tx) = args.get(4) {
-            this.set("tx", *tx, activation)?;
+            this.set(istr!("tx"), *tx, activation)?;
         }
         if let Some(ty) = args.get(5) {
-            this.set("ty", *ty, activation)?;
+            this.set(istr!("ty"), *ty, activation)?;
         }
     }
 
-    Ok(this.into())
+    Ok(Value::Undefined)
 }
 
 fn identity<'gc>(
@@ -200,7 +234,12 @@ fn identity<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    apply_matrix_to_object(Matrix::IDENTITY, this, activation)?;
+    this.set(istr!("d"), 1.0.into(), activation)?;
+    this.set(istr!("a"), 1.0.into(), activation)?;
+    this.set(istr!("c"), 0.0.into(), activation)?;
+    this.set(istr!("b"), 0.0.into(), activation)?;
+    this.set(istr!("ty"), 0.0.into(), activation)?;
+    this.set(istr!("tx"), 0.0.into(), activation)?;
     Ok(Value::Undefined)
 }
 
@@ -210,14 +249,14 @@ fn clone<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let args = [
-        this.get("a", activation)?,
-        this.get("b", activation)?,
-        this.get("c", activation)?,
-        this.get("d", activation)?,
-        this.get("tx", activation)?,
-        this.get("ty", activation)?,
+        this.get(istr!("a"), activation)?,
+        this.get(istr!("b"), activation)?,
+        this.get(istr!("c"), activation)?,
+        this.get(istr!("d"), activation)?,
+        this.get(istr!("tx"), activation)?,
+        this.get(istr!("ty"), activation)?,
     ];
-    let constructor = activation.context.avm1.prototypes().matrix_constructor;
+    let constructor = activation.prototypes().matrix_constructor;
     let cloned = constructor.construct(activation, &args)?;
     Ok(cloned)
 }
@@ -432,15 +471,15 @@ fn to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let a = this.get("a", activation)?;
-    let b = this.get("b", activation)?;
-    let c = this.get("c", activation)?;
-    let d = this.get("d", activation)?;
-    let tx = this.get("tx", activation)?;
-    let ty = this.get("ty", activation)?;
+    let a = this.get(istr!("a"), activation)?;
+    let b = this.get(istr!("b"), activation)?;
+    let c = this.get(istr!("c"), activation)?;
+    let d = this.get(istr!("d"), activation)?;
+    let tx = this.get(istr!("tx"), activation)?;
+    let ty = this.get(istr!("ty"), activation)?;
 
     Ok(AvmString::new_utf8(
-        activation.context.gc_context,
+        activation.gc(),
         format!(
             "(a={}, b={}, c={}, d={}, tx={}, ty={})",
             a.coerce_to_string(activation)?,
@@ -452,28 +491,4 @@ fn to_string<'gc>(
         ),
     )
     .into())
-}
-
-pub fn create_matrix_object<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    matrix_proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    FunctionObject::constructor(
-        context.gc_context,
-        Executable::Native(constructor),
-        constructor_to_fn!(constructor),
-        fn_proto,
-        matrix_proto,
-    )
-}
-
-pub fn create_proto<'gc>(
-    context: &mut GcContext<'_, 'gc>,
-    proto: Object<'gc>,
-    fn_proto: Object<'gc>,
-) -> Object<'gc> {
-    let object = ScriptObject::new(context.gc_context, Some(proto));
-    define_properties_on(PROTO_DECLS, context, object, fn_proto);
-    object.into()
 }

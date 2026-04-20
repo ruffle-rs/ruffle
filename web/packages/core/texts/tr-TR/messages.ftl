@@ -1,18 +1,21 @@
 message-cant-embed =
     Ruffle, bu sayfaya gömülü Flash'ı çalıştıramadı.
     Bu sorunu ortadan kaldırmak için dosyayı ayrı bir sekmede açmayı deneyebilirsiniz.
+message-restored-from-bfcache =
+    Tarayıcınız bu Flash içeriğini önceki bir oturumdan geri yükledi.
+    Sıfırdan başlamak için sayfayı yeniden yükleyin.
 panic-title = Bir şeyler yanlış gitti :(
 more-info = Daha fazla bilgi
 run-anyway = Yine de çalıştır
 continue = Devam et
-report-bug = Hata Bildir
-update-ruffle = Ruffle'ı Güncelle
+report-bug = Hata bildir
+update-ruffle = Ruffle'ı güncelle
 ruffle-demo = Ağ Demosu
-ruffle-desktop = Masaüstü Uygulaması
-ruffle-wiki = Ruffle Wiki'yi Görüntüle
-enable-hardware-acceleration = Görünüşe göre donanım hızlandırma etkin değil. Ruffle çalışabilir ancak fazlasıyla yavaş olabilir. Donanım hızlandırmayı nasıl etkinleştirebiliceğiniz hakkında bu linkten bilgi edinebilirsiniz:
-enable-hardware-acceleration-link = SSS - Chrome Donanım Hızlandırma
-view-error-details = Hata Ayrıntılarını Görüntüle
+ruffle-desktop = Masaüstü uygulaması
+ruffle-wiki = Ruffle wiki'yi görüntüle
+enable-hardware-acceleration = Donanım hızlandırması etkin değil gibi görünüyor. Ruffle çalışabilir ancak çok yavaş olabilir. Donanım hızlandırmasını nasıl etkinleştirebileceğinizi bu linkten öğrenebilirsiniz:
+enable-hardware-acceleration-link = SSS - Chrome Donanım Hızlandırması
+view-error-details = Hata ayrıntılarını görüntüle
 open-in-new-tab = Yeni sekmede aç
 click-to-unmute = Sesi açmak için tıklayın
 clipboard-message-title = Ruffle'da kopyalama ve yapıştırma
@@ -24,6 +27,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } kopyalamak için
 clipboard-message-cut = { " " } kesmek için
 clipboard-message-paste = { " " } yapıştırmak için
+error-canvas-reload = Tuval oluşturucusu kullanımda olduğunda tuval oluşturucusu ile yeniden yükleme yapılamaz.
 error-file-protocol =
     Görünüşe göre Ruffle'ı "dosya:" protokolünde çalıştırıyorsunuz.
     Tarayıcılar güvenlik nedenleriyle birçok özelliğin çalışmasını engellediğinden bu işe yaramaz.
@@ -68,6 +72,10 @@ error-wasm-disabled-on-edge =
     Bunu düzeltmek için tarayıcınızın ayarlarını açın, "Gizlilik, arama ve hizmetler"i tıklayın, aşağı kaydırın ve "Web'de güvenliğinizi artırın"ı kapatmayı deneyin.
     Bu, tarayıcınızın gerekli ".wasm" dosyalarını yüklemesine izin verecektir.
     Sorun devam ederse, farklı bir tarayıcı kullanmanız gerekebilir.
+error-wasm-unsupported-browser =
+    Kullandığınız tarayıcı, Ruffle'ın çalışması için gereken WebAssembly uzantılarını desteklemiyor.
+    Lütfen desteklenen bir tarayıcıya geçin.
+    Wiki'de desteklenen tarayıcıların bir listesini bulabilirsiniz.
 error-javascript-conflict =
     Ruffle, başlatmaya çalışırken önemli bir sorunla karşılaştı.
     Görünüşe göre bu sayfa, Ruffle ile çakışan JavaScript kodu kullanıyor.

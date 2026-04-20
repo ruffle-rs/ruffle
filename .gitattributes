@@ -14,5 +14,5 @@
 *.swf  binary
 *.swc  binary
 
-# Fix GH saying Ruffle is written in ActionScript 
+# Ignore test files from GitHub's language stats
 tests/tests/swfs/** linguist-vendored

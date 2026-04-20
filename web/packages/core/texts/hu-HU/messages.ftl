@@ -1,6 +1,9 @@
 message-cant-embed =
     A Ruffle nem tudta futtatni az oldalba ágyazott Flash tartalmat.
     A probléma kikerüléséhez megpróbálhatod megnyitni a fájlt egy külön lapon.
+message-restored-from-bfcache =
+    A böngésző ezt a Flash tartalmat egy korábbi munkamenetből állította vissza.
+    A tiszta induláshoz frissítse az oldalt.
 panic-title = Valami baj történt :(
 more-info = További információ
 run-anyway = Futtatás mégis
@@ -24,6 +27,7 @@ clipboard-message-description =
 clipboard-message-copy = { " " } másoláshoz
 clipboard-message-cut = { " " } kivágáshoz
 clipboard-message-paste = { " " } beillesztéshez
+error-canvas-reload = Újratöltés a canvas megjelenítővel nem lehetséges, ha már az van használatban.
 error-file-protocol =
     Úgy tűnik, a Ruffle-t a "file:" protokollon futtatod.
     Ez nem működik, mivel így a böngészők biztonsági okokból számos funkció működését letiltják.
@@ -68,6 +72,10 @@ error-wasm-disabled-on-edge =
     A probléma megoldásához nyisd meg a böngésző beállításait, kattints az „Adatvédelem, keresés és szolgáltatások” elemre, görgess le, és kapcsold ki a „Fokozott biztonság a weben” opciót.
     Ez lehetővé teszi a böngésző számára, hogy betöltse a szükséges ".wasm" fájlokat.
     Ha a probléma továbbra is fennáll, lehet, hogy másik böngészőt kell használnod.
+error-wasm-unsupported-browser =
+    Az általad használt böngésző nem támogatja a Ruffle futtatásához szükséges WebAssembly kiegészítéseket.
+    Kérlek, válts egy támogatott böngészőre.
+    A támogatott böngészők listáját a Wikin találod.
 error-javascript-conflict =
     A Ruffle komoly problémába ütközött az inicializálás során.
     Úgy tűnik, ez az oldal olyan JavaScript-kódot használ, amely ütközik a Ruffle-lel.

@@ -1,0 +1,12 @@
+SWF5
+
+[targetPath.as debug-22403-05c7ba106]
+PASSED: targetPath(_root) == "_level0" [./targetPath.as:35]
+PASSED: typeof(a) == 'undefined' [./targetPath.as:46]
+PASSED: typeof(a) == 'undefined' [./targetPath.as:55]
+PASSED: typeof(a) == 'undefined' [./targetPath.as:64]
+PASSED: typeof(a) == 'undefined' [./targetPath.as:73]
+PASSED: typeof(a) == 'undefined' [./targetPath.as:83]
+#passed: 6
+#failed: 0
+#total tests run: 6

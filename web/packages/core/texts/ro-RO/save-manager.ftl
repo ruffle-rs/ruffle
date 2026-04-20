@@ -7,3 +7,4 @@ save-reload-prompt =
 save-download = Descarcă
 save-replace = Înlocuiește
 save-delete = Șterge
+save-backup-all = Descarcă toate fișierele de salvare

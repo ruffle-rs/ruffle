@@ -1,0 +1,7 @@
+SWF5
+
+[ debug-22403-05c7ba106]
+PASSED: typeof(EI) == 'undefined' [./ExternalInterface.as:32]
+#passed: 1
+#failed: 0
+#total tests run: 1

@@ -1,0 +1,12 @@
+export-bundle-dialog-title = 导出 Ruffle 包
+export-bundle-dialog-bundle-name = 包名称：
+export-bundle-dialog-files-description = 选择要打包的文件：
+export-bundle-dialog-files-select-all = 全选
+export-bundle-dialog-export = 导出
+export-bundle-dialog-exporting = 正在导出...
+export-bundle-dialog-exporting-failed = 导出失败。
+export-bundle-dialog-error-user-canceled = 用户已取消。
+export-bundle-dialog-error-failed-to-show-picker = 打开文件选择器失败。
+export-bundle-dialog-error-io-error = 写入包时发生错误。
+export-bundle-dialog-info-title = 什么是 Ruffle 包？
+export-bundle-dialog-info-description = Ruffle 包是一种通用的打包格式，包含运行 SWF 文件所需的一切——所有需要的资产和配置。使用包可以让您的 SWF 文件开箱即用——没有文件缺失，无需手动设置，即插即用。

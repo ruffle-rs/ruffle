@@ -1,0 +1,66 @@
+PASSED: object == object
+PASSED: undefined == undefined
+PASSED: undefined == undefined
+PASSED: undefined == undefined
+1. Press a single key to continue the test
+l.onKeyDown
+l.onKeyUp
+PASSED: 1 == 1
+PASSED: 1 == 1
+PASSED: number == number
+2. Press a single key to continue the test
+l.onKeyDown
+l.onKeyUp
+PASSED: 2 == 2
+PASSED: 2 == 2
+PASSED: object == object
+3. Press a single key to continue the test
+obj1.onKeyDown
+PASSED: 2 == 2
+PASSED: 2 == 2
+4. Press a single key to continue the test
+listenerClip2.onClipKeyDown
+4. Press a single key to continue the test
+listenerClip2.onClipKeyDown
+PASSED: _root.test2  ==  2 [key_event_test.c:162]
+5. Press a single key to continue the test
+dynamic_mc.onKeyDown triggered
+PASSED: _level0.dynamic_mc == _level0.dynamic_mc
+PASSED: 11 == 11
+5. Press a single key to continue the test
+dynamic_mc.onKeyDown triggered
+PASSED: _level0.dynamic_mc == _level0.dynamic_mc
+PASSED: 13 == 13
+PASSED: _root.test3  ==  2 [key_event_test.c:193]
+6. Press a single key to continue the test
+PASSED: _root.test4  ==  0 [key_event_test.c:214]
+obj2.onKeyDown triggered
+PASSED: objRef.x  ==  100 [key_event_test.c:217]
+PASSED: _root.test4  ==  1 [key_event_test.c:218]
+7. Press a single key to continue the test
+PASSED: object == object
+obj3.onKeyDown
+PASSED: _root.test4  ==  1 [key_event_test.c:236]
+8. Press a single key to continue the test
+ls3.onClipKeyDown
+ls1.onClipKeyDown
+ls2.onClipKeyDown
+obj1.onKeyDown
+ls1.onKeyDown
+obj2.onKeyDown
+ls2.onKeyDown
+obj3.onKeyDown
+9. Press a single key to continue the test
+obj1.onKeyDown
+obj2.onKeyDown
+obj3.onKeyDown
+FAILED: expected: '0+ls3+ls2+ls1+obj1+ls1+obj2+ls2+obj3+obj1+obj2+obj3' obtained: 0+ls3+ls1+ls2+obj1+ls1+obj2+ls2+obj3+obj1+obj2+obj3 [key_event_test.c:327] 
+10. Click on the TextField and type "i"
+obj1.onKeyDown
+obj2.onKeyDown
+obj3.onKeyDown
+PASSED: _root.t  ==  'Input here' [key_event_test.c:345]
+FAILED: expected: 'Input herei' obtained: Input here [key_event_test.c:346] 
+#passed: 24
+#failed: 2
+#total tests run: 26

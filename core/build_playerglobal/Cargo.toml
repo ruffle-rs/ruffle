@@ -11,10 +11,10 @@ version.workspace = true
 workspace = true
 
 [dependencies]
-convert_case = "0.6.0"
-proc-macro2 = "1.0.86"
-quote = "1.0.36"
+convert_case = "0.11.0"
+proc-macro2 = "1.0.106"
+quote = "1.0.45"
 swf = { path = "../../swf" }
 clap = { workspace = true }
-regex = "1.10.5"
+regex = { workspace = true }
 walkdir = { workspace = true }

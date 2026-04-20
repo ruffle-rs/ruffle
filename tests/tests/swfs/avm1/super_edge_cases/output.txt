@@ -1,0 +1,39 @@
+#1: `super.foobar()` never does primitive-to-object coercions
+// obj.__proto__ = _root
+obj.foobar called!
+super.foobar(): undefined
+obj.foobar(): obj-foobar
+// obj.__proto__ = new String('hello')
+obj.foobar called!
+String.prototype.foobar called!
+super.foobar(): string-foobar
+obj.foobar(): obj-foobar
+// obj.__proto__ = 'hello'
+obj.foobar called!
+super.foobar(): undefined
+obj.foobar(): obj-foobar
+
+#2: `super()` never calls `__resolve`
+// obj.__constructor__ = ...
+obj.foobar called!
+super(): undefined
+// __proto__.__resolve = () => __constructor__
+obj.foobar called!
+super(): undefined
+// __proto__.__proto__.__constructor__ = ...
+obj.foobar called!
+__constructor__ called!
+super(): constructed
+// __proto__.addProperty('__constructor__', ...)
+obj.foobar called!
+__constructor__ property called!
+__constructor__ called!
+super(): constructed
+// __proto__ = makeSuperWith(__proto__)
+obj.foobar called!
+__constructor__ property called!
+__constructor__ called!
+super(): constructed
+// (__proto__ = _root).__constructor__ = ...
+obj.foobar called!
+super(): undefined

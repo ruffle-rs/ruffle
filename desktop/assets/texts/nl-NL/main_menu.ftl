@@ -9,7 +9,6 @@
 # This is because some languages may use different wording for one or the other, especially with things like capitalisation.
 
 file-menu = Bestand
-file-menu-open-quick = Openen...
 file-menu-open-advanced = Geavanceerd openen...
 file-menu-close = Sluiten
 file-menu-reload = Herladen
@@ -17,9 +16,11 @@ file-menu-recents = Recent
 file-menu-recents-empty = Niets recents
 file-menu-preferences = Voorkeuren...
 file-menu-exit = Afsluiten
+file-menu-export = Exporteer...
 controls-menu = Bediening
 controls-menu-suspend = Onderbreken
 controls-menu-resume = Hervatten
+controls-menu-step-once = Doe één stap
 controls-menu-volume = Geluidsniveaus
 help-menu = Help
 help-menu-join-discord = Bezoek Discord
@@ -32,7 +33,10 @@ bookmarks-menu-add = Toevoegen...
 bookmarks-menu-manage = Bladwijzers beheren...
 debug-menu = Foutopsporingsmiddelen
 debug-menu-open-stage = Scherminformatie
+debug-menu-open-root-movie-clip = Bekijk hoofd-MovieClip
 debug-menu-open-movie = Bekijk film
 debug-menu-open-movie-list = Laat bekende films zien
 debug-menu-open-domain-list = Toon applicatiedomeinen
 debug-menu-search-display-objects = Doorzoek weergaveobjecten...
+view-menu = Weergave
+view-menu-fullscreen = Naar volledig scherm

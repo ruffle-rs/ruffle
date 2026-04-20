@@ -1,0 +1,25 @@
+ (object):
+  _arrayToXML:  -> <array></array> (string)
+  _argumentsToXML:  -> <arguments></arguments> (string)
+  _objectToXML:  -> <object></object> (string)
+  _toXML:  -> <array></array> (string)
+ (string):
+  _arrayToXML:  -> <array></array> (string)
+  _argumentsToXML:  -> <arguments></arguments> (string)
+  _objectToXML:  -> <object></object> (string)
+  _toXML:  -> <string>null</string> (string)
+ (object):
+  _arrayToXML:  -> <array></array> (string)
+  _argumentsToXML:  -> <arguments></arguments> (string)
+  _objectToXML:  -> <object></object> (string)
+  _toXML:  -> <array></array> (string)
+hello (object):
+  _arrayToXML: hello -> <array><property id="0"><undefined/></property><property id="1"><undefined/></property><property id="2"><undefined/></property><property id="3"><undefined/></property><property id="4"><undefined/></property></array> (string)
+  _argumentsToXML: hello -> <arguments><undefined/><undefined/><undefined/><undefined/></arguments> (string)
+  _objectToXML: hello -> <object></object> (string)
+  _toXML: hello -> <array><property id="0"><undefined/></property><property id="1"><undefined/></property><property id="2"><undefined/></property><property id="3"><undefined/></property><property id="4"><undefined/></property></array> (string)
+[object Object] (object):
+  _arrayToXML: [object Object] -> <array><property id="0"><undefined/></property><property id="1"><undefined/></property><property id="2"><undefined/></property><property id="3"><undefined/></property><property id="4"><undefined/></property></array> (string)
+  _argumentsToXML: [object Object] -> <arguments><undefined/><undefined/><undefined/><undefined/></arguments> (string)
+  _objectToXML: [object Object] -> <object><property id="length"><number>5</number></property></object> (string)
+  _toXML: [object Object] -> <array><property id="0"><undefined/></property><property id="1"><undefined/></property><property id="2"><undefined/></property><property id="3"><undefined/></property><property id="4"><undefined/></property></array> (string)

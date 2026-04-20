@@ -1,6 +1,6 @@
 //! CSS dimension types
 use std::cmp::{max, min};
-use std::ops::{Add, AddAssign, Sub};
+use std::ops::{Add, AddAssign, Sub, SubAssign};
 use swf::{Rectangle, Twips};
 
 /// A type which represents the top-left position of a layout box.
@@ -78,6 +78,30 @@ where
     }
 }
 
+impl<T> Sub for Position<T>
+where
+    T: Sub<T, Output = T>,
+{
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self {
+            x: self.x - rhs.x,
+            y: self.y - rhs.y,
+        }
+    }
+}
+
+impl<T> SubAssign for Position<T>
+where
+    T: SubAssign,
+{
+    fn sub_assign(&mut self, rhs: Self) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
+    }
+}
+
 /// A type which represents the size of a layout box.
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub struct Size<T> {
@@ -106,7 +130,6 @@ impl<T> From<(T, T)> for Size<T> {
     }
 }
 
-#[allow(dead_code)]
 impl<T> Size<T>
 where
     T: Copy,
@@ -126,6 +149,34 @@ impl<T> From<Position<T>> for Size<T> {
             width: size.x,
             height: size.y,
         }
+    }
+}
+
+impl From<swf::PointDelta<Twips>> for Size<Twips> {
+    fn from(size: swf::PointDelta<Twips>) -> Self {
+        Self {
+            width: size.dx,
+            height: size.dy,
+        }
+    }
+}
+
+impl From<Size<Twips>> for swf::PointDelta<Twips> {
+    fn from(size: Size<Twips>) -> Self {
+        Self {
+            dx: size.width,
+            dy: size.height,
+        }
+    }
+}
+
+impl std::ops::Mul<Size<Twips>> for ruffle_render::matrix::Matrix {
+    type Output = Size<Twips>;
+
+    fn mul(self, size: Size<Twips>) -> Size<Twips> {
+        // Size has the same semantics as PointDelta when applying a matrix
+        let size: swf::PointDelta<Twips> = size.into();
+        (self * size).into()
     }
 }
 
@@ -180,7 +231,16 @@ where
     }
 }
 
-#[allow(dead_code)]
+impl std::ops::Mul<BoxBounds<Twips>> for ruffle_render::matrix::Matrix {
+    type Output = BoxBounds<Twips>;
+
+    fn mul(self, bounds: BoxBounds<Twips>) -> BoxBounds<Twips> {
+        // BoxBounds have the same semantics as Rectangle when applying a matrix
+        let bounds: Rectangle<Twips> = bounds.into();
+        (self * bounds).into()
+    }
+}
+
 impl<T> BoxBounds<T>
 where
     T: Add<T, Output = T> + Sub<T, Output = T> + Copy,
@@ -205,7 +265,6 @@ where
     }
 }
 
-#[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
     T: Copy + std::cmp::PartialOrd,
@@ -218,7 +277,6 @@ where
     }
 }
 
-#[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
     T: Copy,
@@ -261,7 +319,6 @@ where
     }
 }
 
-#[allow(dead_code)]
 impl<T> BoxBounds<T>
 where
     T: Add<T, Output = T> + Copy,
@@ -272,6 +329,15 @@ where
             extent_x: self.offset_x + new_size.width,
             offset_y: self.offset_y,
             extent_y: self.offset_y + new_size.height,
+        }
+    }
+
+    pub fn with_width(self, new_width: T) -> Self {
+        Self {
+            offset_x: self.offset_x,
+            extent_x: self.offset_x + new_width,
+            offset_y: self.offset_y,
+            extent_y: self.extent_y,
         }
     }
 }

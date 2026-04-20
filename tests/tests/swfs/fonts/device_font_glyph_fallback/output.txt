@@ -1,0 +1,36 @@
+Text: a
+  Text runs:
+    Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=TestFontA, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Character bounds:
+    0: x=2, y=2, width=10, height=10
+  Line metrics:
+    ascent=5, descent=5, height=10, leading=0
+    width=10
+Text: ab
+  Text runs:
+    Text runs (1):
+    from 0 to 2: size=10, blockIndent=0, font=TestFontA, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Character bounds:
+    0: x=2, y=2, width=10, height=10
+    1:
+      x=12, y=2
+      width is zero? false
+      height is zero? false
+  Line metrics:
+    ascent=5, descent=5, height=10, leading=0
+    width is zero? false
+    width is 10? false
+Text: b
+  Text runs:
+    Text runs (1):
+    from 0 to 1: size=10, blockIndent=0, font=TestFontA, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+  Character bounds:
+    0:
+      x=2, y=2
+      width is zero? false
+      height is zero? false
+  Line metrics:
+    ascent=5, descent=5, height=10, leading=0
+    width is zero? false
+    width is 10? false

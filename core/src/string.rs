@@ -1,15 +1,8 @@
 use std::borrow::Cow;
 
-mod avm_string;
-mod interner;
-mod repr;
-
-use repr::AvmStringRepr;
-
 pub use ruffle_wstr::*;
 
-pub use avm_string::AvmString;
-pub use interner::{AvmAtom, AvmStringInterner};
+pub use ruffle_common::avm_string::*;
 
 pub trait SwfStrExt {
     /// Converts a SWF-encoded string into a `WStr`.

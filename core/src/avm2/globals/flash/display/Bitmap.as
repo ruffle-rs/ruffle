@@ -1,5 +1,4 @@
 package flash.display {
-
     [Ruffle(InstanceAllocator)]
     public class Bitmap extends DisplayObject {
         public native function get bitmapData():BitmapData;

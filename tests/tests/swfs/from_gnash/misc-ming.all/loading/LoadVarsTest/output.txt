@@ -1,0 +1,36 @@
+PASSED: l.loaded  ==  undefined [LoadVarsTest.c:122]
+PASSED: e  ==  true [LoadVarsTest.c:128]
+onData called
+PASSED: dataString  ==  '0: onData called with undefined argument undefined' [LoadVarsTest.c:136]
+PASSED: l.loaded  ==  false [LoadVarsTest.c:137]
+PASSED: l.loaded  ==  undefined [LoadVarsTest.c:142]
+PASSED: e  ==  true [LoadVarsTest.c:148]
+PASSED: loadString  ==  '1: onLoad called with boolean argument false' [LoadVarsTest.c:154]
+PASSED: l.loaded  ==  false [LoadVarsTest.c:155]
+PASSED: l.loaded  ==  undefined [LoadVarsTest.c:160]
+PASSED: e  ==  true [LoadVarsTest.c:168]
+onData called
+PASSED: loadString  ==  '' [LoadVarsTest.c:173]
+PASSED: dataString  ==  '2: onData called with undefined argument undefined' [LoadVarsTest.c:175]
+PASSED: l.loaded  ==  false [LoadVarsTest.c:176]
+PASSED: l.loaded  ==  undefined [LoadVarsTest.c:187]
+PASSED: e  ==  true [LoadVarsTest.c:193]
+onData called
+PASSED: escape(dataString)  ==  '3%3A%20onData%20called%20with%20string%20argument%20v2%5Fvar1%3Dval1%26v2%5Fvar2%3Dval2%26%0A' [LoadVarsTest.c:200]
+PASSED: l.loaded  ==  false [LoadVarsTest.c:201]
+PASSED: decodeCalled  ==  0 [LoadVarsTest.c:204]
+PASSED: decodeString  ==  '' [LoadVarsTest.c:205]
+PASSED: l.loaded  ==  undefined [LoadVarsTest.c:209]
+PASSED: e  ==  true [LoadVarsTest.c:215]
+PASSED: loadString  ==  '4: onLoad called with boolean argument true' [LoadVarsTest.c:220]
+PASSED: decodeCalled  ==  1 [LoadVarsTest.c:225]
+PASSED: escape(decodeString)  ==  'decode%20called%20with%20string%20argument%20v2%5Fvar1%3Dval1%26v2%5Fvar2%3Dval2%26%0A' [LoadVarsTest.c:229]
+PASSED: l.loaded  ==  undefined [LoadVarsTest.c:238]
+PASSED: e  ==  true [LoadVarsTest.c:244]
+onData called
+PASSED: escape(dataString)  ==  '5%3A%20onData%20called%20with%20undefined%20argument%20undefined' [LoadVarsTest.c:251]
+PASSED: l.loaded  ==  false [LoadVarsTest.c:252]
+PASSED: decodeCalled  ==  1 [LoadVarsTest.c:256]
+#passed: 29
+#failed: 0
+#total tests run: 29

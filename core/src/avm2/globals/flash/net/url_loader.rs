@@ -9,9 +9,11 @@ use crate::avm2::{Error, Object};
 /// Native function definition for `URLLoader.load`
 pub fn load<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
+    this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
     let request = args.get_object(activation, 0, "request")?;
 
     spawn_fetch(activation, this, request)
@@ -24,9 +26,9 @@ fn spawn_fetch<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let request = request_from_url_request(activation, url_request)?;
 
-    let future = activation.context.load_manager.load_data_into_url_loader(
-        activation.context.player.clone(),
-        loader_object,
+    let future = crate::loader::load_data_into_url_loader(
+        activation.context,
+        loader_object.as_script_object().unwrap(),
         request,
     );
     activation.context.navigator.spawn_future(future);

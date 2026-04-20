@@ -1,14 +1,24 @@
 mod context_menu;
 mod controller;
-mod dialogs;
+pub mod dialogs;
+mod locale;
 mod menu_bar;
 mod movie;
+mod picker;
+mod theme;
 mod widgets;
 
 pub use controller::GuiController;
+pub use dialogs::DialogDescriptor;
+pub use locale::LocalizableText;
+pub use locale::available_languages;
+pub use locale::optional_text;
+pub use locale::text;
+pub use locale::text_with_args;
 pub use movie::MovieView;
-use std::borrow::Cow;
-use url::Url;
+pub use picker::FilePicker;
+use ruffle_frontend_utils::content::ContentDescriptor;
+pub use theme::ThemePreference;
 
 use crate::custom_event::RuffleEvent;
 use crate::gui::context_menu::ContextMenu;
@@ -16,59 +26,13 @@ use crate::player::LaunchOptions;
 use crate::preferences::GlobalPreferences;
 use dialogs::Dialogs;
 use egui::*;
-use fluent_templates::fluent_bundle::FluentValue;
-use fluent_templates::{static_loader, Loader};
 use menu_bar::MenuBar;
-use rfd::FileDialog;
+use rfd::AsyncFileDialog;
 use ruffle_core::debug_ui::Message as DebugMessage;
 use ruffle_core::{Player, PlayerEvent};
-use std::collections::HashMap;
-use std::sync::MutexGuard;
+use std::sync::{MutexGuard, Weak};
 use std::{fs, mem};
-use unic_langid::LanguageIdentifier;
 use winit::event_loop::EventLoopProxy;
-
-static_loader! {
-    static TEXTS = {
-        locales: "./assets/texts",
-        fallback_language: "en-US"
-    };
-}
-
-pub fn text<'a>(locale: &LanguageIdentifier, id: &'a str) -> Cow<'a, str> {
-    TEXTS
-        .try_lookup(locale, id)
-        .map(Cow::Owned)
-        .unwrap_or_else(|| {
-            tracing::error!("Unknown desktop text id '{id}'");
-            Cow::Borrowed(id)
-        })
-}
-
-pub fn optional_text(locale: &LanguageIdentifier, id: &str) -> Option<String> {
-    TEXTS.lookup_single_language::<&str>(locale, id, None)
-}
-
-pub fn available_languages() -> Vec<&'static LanguageIdentifier> {
-    let mut result: Vec<_> = TEXTS.locales().collect();
-    result.sort();
-    result
-}
-
-#[allow(dead_code)]
-pub fn text_with_args<'a, T: AsRef<str>>(
-    locale: &LanguageIdentifier,
-    id: &'a str,
-    args: &HashMap<T, FluentValue>,
-) -> Cow<'a, str> {
-    TEXTS
-        .try_lookup_with_args(locale, id, args)
-        .map(Cow::Owned)
-        .unwrap_or_else(|| {
-            tracing::error!("Unknown desktop text id '{id}'");
-            Cow::Borrowed(id)
-        })
-}
 
 /// Size of the top menu bar in pixels.
 /// This is the offset at which the movie will be shown,
@@ -88,8 +52,9 @@ pub struct RuffleGui {
 
 impl RuffleGui {
     fn new(
+        window: Weak<winit::window::Window>,
         event_loop: EventLoopProxy<RuffleEvent>,
-        default_path: Option<Url>,
+        default_content: Option<ContentDescriptor>,
         default_launch_options: LaunchOptions,
         preferences: GlobalPreferences,
     ) -> Self {
@@ -100,7 +65,8 @@ impl RuffleGui {
             dialogs: Dialogs::new(
                 preferences.clone(),
                 default_launch_options.clone(),
-                default_path,
+                default_content,
+                window,
                 event_loop.clone(),
             ),
             menu_bar: MenuBar::new(
@@ -124,6 +90,8 @@ impl RuffleGui {
     ) {
         let locale = self.preferences.language();
 
+        self.menu_bar
+            .consume_shortcuts(egui_ctx, &mut self.dialogs, player.as_deref_mut());
         if show_menu {
             self.menu_bar
                 .show(&locale, egui_ctx, &mut self.dialogs, player.as_deref_mut());
@@ -143,25 +111,29 @@ impl RuffleGui {
                 }
             }
             for item in player.debug_ui().items_to_save() {
-                std::thread::spawn(move || {
-                    if let Some(path) = FileDialog::new()
-                        .set_file_name(&item.suggested_name)
-                        .save_file()
-                    {
-                        if let Err(e) = fs::write(&path, item.data) {
+                let dialog = AsyncFileDialog::new().set_file_name(&item.suggested_name);
+                let picker = self.dialogs.file_picker();
+                let result = picker.show_dialog(dialog, |d| d.save_file());
+                if let Some(result) = result {
+                    tokio::spawn(async move {
+                        let Some(handle) = result.await else {
+                            return;
+                        };
+                        let path = handle.path();
+                        if let Err(e) = fs::write(path, item.data) {
                             tracing::error!(
                                 "Couldn't save {} to {path:?}: {e}",
                                 item.suggested_name,
                             );
                         }
-                    }
-                });
+                    });
+                }
             }
 
-            if let Some(context_menu) = &mut self.context_menu {
-                if !context_menu.show(egui_ctx, &self.event_loop) {
-                    self.close_context_menu(player);
-                }
+            if let Some(context_menu) = &mut self.context_menu
+                && !context_menu.show(&locale, egui_ctx, &self.event_loop, player.is_fullscreen())
+            {
+                self.close_context_menu(player);
             }
         };
     }
@@ -186,18 +158,23 @@ impl RuffleGui {
         self.context_menu.is_some()
     }
 
+    /// Notifies the GUI that the player has been destroyed.
+    fn on_player_destroyed(&mut self) {
+        self.dialogs.close_dialogs_with_notifiers();
+    }
+
     /// Notifies the GUI that a new player was created.
     fn on_player_created(
         &mut self,
         opt: LaunchOptions,
-        movie_url: Url,
+        content_descriptor: ContentDescriptor,
         mut player: MutexGuard<Player>,
     ) {
-        self.menu_bar.currently_opened = Some((movie_url.clone(), opt.clone()));
+        self.menu_bar.currently_opened = Some((content_descriptor.clone(), opt.clone()));
 
         // Update dialog state to reflect the newly-opened movie's options.
         self.dialogs
-            .recreate_open_dialog(opt, Some(movie_url), self.event_loop.clone());
+            .recreate_open_dialog(opt, Some(content_descriptor), self.event_loop.clone());
 
         player.set_volume(self.dialogs.volume_controls.get_volume());
     }

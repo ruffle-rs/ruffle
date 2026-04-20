@@ -1,0 +1,17 @@
+PASSED: _root.x1  ==  'mc11_frame4' [frame_label_test.c:152]
+PASSED: _root.x2  ==  'mc11_frame5' [frame_label_test.c:153]
+PASSED: _root.x3  ==  'mc11_frame6' [frame_label_test.c:154]
+PASSED: _root.x7  ==  'mc1_frame7' [frame_label_test.c:155]
+PASSED: _root.x8  ==  'mc1_frame8' [frame_label_test.c:156]
+PASSED: _root.x9  ==  'small_first' [frame_label_test.c:157]
+PASSED: _root.x10  ==  'mc1_frame10' [frame_label_test.c:158]
+PASSED: _root.x11  ==  'Big_first' [frame_label_test.c:159]
+PASSED: _root.x4  ==  0 [frame_label_test.c:161]
+PASSED: _root.x5  ==  0 [frame_label_test.c:162]
+PASSED: _root.x6  ==  0 [frame_label_test.c:163]
+PASSED: _root.x1  ==  0 [frame_label_test.c:165]
+PASSED: _root.x2  ==  0 [frame_label_test.c:166]
+PASSED: _root.x3  ==  0 [frame_label_test.c:167]
+#passed: 14
+#failed: 0
+#total tests run: 14

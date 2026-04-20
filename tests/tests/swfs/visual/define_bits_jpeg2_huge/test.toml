@@ -1,0 +1,4 @@
+# Note: The SWF needs to be manually edited after compiling and
+# DefineBitsLossless2 needs to be replaced by DefineBitsJPEG2
+
+num_ticks = 1

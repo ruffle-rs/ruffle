@@ -1,0 +1,129 @@
+Monkey-patching-globals...
+Testing primitive coercions...
+
+// true coerced to 'this'
+Boolean getter called!
+MyBoolean(true) constructor called!
+  coerced: true
+  typeof: object
+  typeof __proto__: object
+  className: MyBoolean
+// true.className
+Boolean getter called!
+MyBoolean(true) constructor called!
+  className: MyBoolean
+
+// 42 coerced to 'this'
+Number getter called!
+MyNumber(42) constructor called!
+  coerced: 42
+  typeof: object
+  typeof __proto__: object
+  className: MyNumber
+// 42.className
+Number getter called!
+MyNumber(42) constructor called!
+  className: MyNumber
+
+// hello coerced to 'this'
+String getter called!
+MyString(hello) constructor called!
+  coerced: hello
+  typeof: object
+  typeof __proto__: object
+  className: MyString
+// hello.className
+String getter called!
+MyString(hello) constructor called!
+  className: MyString
+
+// "world".length
+String getter called!
+MyString(world) constructor called!
+result: 5
+// "callme"()
+String getter called!
+MyString(callme) constructor called!
+result: undefined
+// new "callme"()
+String getter called!
+MyString(callme) constructor called!
+result: undefined
+
+Testing loookup logic...
+
+// undefined coerced to 'this'
+  coerced: undefined
+  is _global!
+// undefined.className
+  className: undefined
+
+// null coerced to 'this'
+  coerced: undefined
+  is _global!
+// null.className
+  className: undefined
+
+// delete Number; __resolve = () => MyNumber
+// 42 coerced to 'this'
+  coerced: undefined
+  is _global!
+// 42.className
+  className: undefined
+
+// Number = MyNumber
+// 42 coerced to 'this'
+MyNumber(42) constructor called!
+  coerced: 42
+  typeof: object
+  typeof __proto__: object
+  className: MyNumber
+// 42.className
+MyNumber(42) constructor called!
+  className: MyNumber
+
+// Number.prototype = true
+// 42 coerced to 'this'
+undefined(42) constructor called!
+  coerced: undefined
+  typeof: object
+  typeof __proto__: boolean
+  className: undefined
+// 42.className
+undefined(42) constructor called!
+  className: undefined
+
+// Number = "some string"
+// 42 coerced to 'this'
+  coerced: undefined
+  is _global!
+// 42.className
+  className: undefined
+
+// Number = BitmapData
+// 42 coerced to 'this'
+  coerced: undefined
+  is _global!
+// 42.className
+  className: undefined
+
+// Number = {}
+// 42 coerced to 'this'
+  coerced: undefined
+  is _global!
+// 42.className
+  className: undefined
+
+// Number = Boolean
+Boolean getter called!
+// 42 coerced to 'this'
+MyBoolean(42) constructor called!
+  coerced: true
+  typeof: object
+  typeof __proto__: object
+  className: MyBoolean
+// 42.className
+MyBoolean(42) constructor called!
+  className: MyBoolean
+
+Done!

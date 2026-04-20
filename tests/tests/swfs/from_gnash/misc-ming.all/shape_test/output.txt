@@ -1,0 +1,21 @@
+PASSED: sh1 != undefined [shape_test.c:74]
+PASSED: sh2 != undefined [shape_test.c:75]
+PASSED: typeof(sh1)  ==  'movieclip' [shape_test.c:79]
+PASSED: typeof(sh2)  ==  'movieclip' [shape_test.c:80]
+PASSED: typeof(_root)  ==  'movieclip' [shape_test.c:81]
+PASSED: sh1.var1  ==  10 [shape_test.c:90]
+PASSED: sh2.var2  ==  20 [shape_test.c:91]
+PASSED: _root.var1  ==  10 [shape_test.c:92]
+PASSED: _root.var2  ==  20 [shape_test.c:93]
+PASSED: sh1._x  ==  0 [shape_test.c:95]
+PASSED: sh2._x  ==  0 [shape_test.c:96]
+PASSED: sh1._x  ==  400 [shape_test.c:103]
+PASSED: sh2._x  ==  400 [shape_test.c:104]
+PASSED: _root._x  ==  400 [shape_test.c:105]
+PASSED: typeof(sh1.getDepth())  ==  'undefined' [shape_test.c:110]
+PASSED: typeof(sh2.getDepth())  ==  'undefined' [shape_test.c:111]
+PASSED: typeof(getInstanceAtDepth(-16381))  ==  'undefined' [shape_test.c:114]
+PASSED: typeof(getInstanceAtDepth(-16380))  ==  'undefined' [shape_test.c:115]
+#passed: 18
+#failed: 0
+#total tests run: 18

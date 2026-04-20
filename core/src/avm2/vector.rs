@@ -1,10 +1,10 @@
 //! Storage for AS3 Vectors
 
+use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
-use crate::avm2::error::{make_error_1125, range_error};
+use crate::avm2::error::{make_error_1125, make_error_1126};
 use crate::avm2::value::Value;
-use crate::avm2::Error;
 use gc_arena::Collect;
 use std::cmp::{max, min};
 use std::ops::RangeBounds;
@@ -40,12 +40,7 @@ pub struct VectorStorage<'gc> {
 }
 
 impl<'gc> VectorStorage<'gc> {
-    pub fn new(
-        length: usize,
-        is_fixed: bool,
-        value_type: Option<Class<'gc>>,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Self {
+    pub fn new(length: usize, is_fixed: bool, value_type: Option<Class<'gc>>) -> Self {
         let storage = Vec::new();
 
         let mut self_vec = VectorStorage {
@@ -54,20 +49,14 @@ impl<'gc> VectorStorage<'gc> {
             value_type,
         };
 
-        self_vec
-            .storage
-            .resize(length, self_vec.default(activation));
+        self_vec.storage.resize(length, self_vec.default());
 
         self_vec
     }
 
     pub fn check_fixed(&self, activation: &mut Activation<'_, 'gc>) -> Result<(), Error<'gc>> {
         if self.is_fixed {
-            return Err(Error::AvmError(range_error(
-                activation,
-                "Error #1126: Cannot change the length of a fixed Vector.",
-                1126,
-            )?));
+            return Err(make_error_1126(activation));
         }
         Ok(())
     }
@@ -110,20 +99,16 @@ impl<'gc> VectorStorage<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         self.check_fixed(activation)?;
-        self.storage.resize(new_length, self.default(activation));
+        self.storage.resize(new_length, self.default());
 
         Ok(())
     }
 
     /// Get the default value for this vector.
-    pub fn default(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+    pub fn default(&self) -> Value<'gc> {
         if let Some(value_type) = self.value_type {
-            if value_type == activation.avm2().classes().int.inner_class_definition()
-                || value_type == activation.avm2().classes().uint.inner_class_definition()
-            {
+            if value_type.is_builtin_numeric() {
                 Value::Integer(0)
-            } else if value_type == activation.avm2().classes().number.inner_class_definition() {
-                Value::Number(0.0)
             } else {
                 Value::Null
             }
@@ -140,7 +125,7 @@ impl<'gc> VectorStorage<'gc> {
     /// Get the value type this vector coerces things to.
     pub fn value_type_for_coercion(&self, activation: &mut Activation<'_, 'gc>) -> Class<'gc> {
         self.value_type
-            .unwrap_or_else(|| activation.avm2().classes().object.inner_class_definition())
+            .unwrap_or_else(|| activation.avm2().class_defs().object)
     }
 
     /// Check if a vector index is in bounds.
@@ -170,7 +155,7 @@ impl<'gc> VectorStorage<'gc> {
         if let Some(val) = self.get_optional(pos) {
             Ok(val)
         } else {
-            Err(make_error_1125(activation, pos, self.length()))
+            Err(make_error_1125(activation, pos as f64, self.length()))
         }
     }
 
@@ -195,14 +180,14 @@ impl<'gc> VectorStorage<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         if !self.is_fixed && pos == self.length() {
-            self.storage.resize(pos + 1, self.default(activation));
+            self.storage.resize(pos + 1, self.default());
         }
 
         if let Some(v) = self.storage.get_mut(pos) {
             *v = value;
             Ok(())
         } else {
-            Err(make_error_1125(activation, pos, self.length()))
+            Err(make_error_1125(activation, pos as f64, self.length()))
         }
     }
 
@@ -234,12 +219,8 @@ impl<'gc> VectorStorage<'gc> {
         if let Some(v) = self.storage.pop() {
             Ok(v)
         } else if let Some(value_type) = self.value_type() {
-            if value_type == activation.avm2().classes().uint.inner_class_definition()
-                || value_type == activation.avm2().classes().int.inner_class_definition()
-            {
+            if value_type.is_builtin_numeric() {
                 Ok(Value::Integer(0))
-            } else if value_type == activation.avm2().classes().number.inner_class_definition() {
-                Ok(Value::Number(0.0))
             } else {
                 Ok(Value::Undefined)
             }
@@ -280,12 +261,8 @@ impl<'gc> VectorStorage<'gc> {
         if !self.storage.is_empty() {
             Ok(self.storage.remove(0))
         } else if let Some(value_type) = self.value_type() {
-            if value_type == activation.avm2().classes().uint.inner_class_definition()
-                || value_type == activation.avm2().classes().int.inner_class_definition()
-            {
+            if value_type.is_builtin_numeric() {
                 Ok(Value::Integer(0))
-            } else if value_type == activation.avm2().classes().number.inner_class_definition() {
-                Ok(Value::Number(0.0))
             } else {
                 Ok(Value::Undefined)
             }
@@ -345,7 +322,7 @@ impl<'gc> VectorStorage<'gc> {
         };
 
         if position >= self.storage.len() {
-            Err(make_error_1125(activation, position, self.length()))
+            Err(make_error_1125(activation, position as f64, self.length()))
         } else {
             Ok(self.storage.remove(position))
         }
@@ -365,8 +342,19 @@ impl<'gc> VectorStorage<'gc> {
     }
 
     /// Replace this vector's storage with new values.
+    ///
+    /// See also [`Self::replace_storage_with_iter`] to avoid unnecessarily collecting to a Vec.
     pub fn replace_storage(&mut self, new_storage: Vec<Value<'gc>>) {
         self.storage = new_storage;
+    }
+
+    /// Replace the contents of the vector's storage with the contents of an iterator, reusing the existing allocation if possible.
+    pub fn replace_storage_with_iter<I>(&mut self, iter: I)
+    where
+        I: IntoIterator<Item = Value<'gc>>,
+    {
+        self.storage.clear();
+        self.storage.extend(iter);
     }
 
     pub fn splice<R>(
@@ -379,5 +367,9 @@ impl<'gc> VectorStorage<'gc> {
     {
         // NOTE: no fixed check here for bug compatibility
         Ok(self.storage.splice(range, replace_with).collect())
+    }
+
+    pub fn storage(&self) -> &Vec<Value<'gc>> {
+        &self.storage
     }
 }

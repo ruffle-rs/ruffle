@@ -1,4 +1,5 @@
 package flash.globalization {
+    [API("667")]
     public final class NumberParseResult {
         private var _endIndex:int;
         private var _startIndex:int;

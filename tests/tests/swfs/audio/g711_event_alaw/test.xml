@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<swf version="9" compressed="0">
+  <Header framerate="24" frames="1">
+    <size>
+      <Rectangle left="0" right="200" top="0" bottom="200"/>
+    </size>
+    <tags>
+      <FileAttributes hasMetaData="0" allowABC="0" suppressCrossDomainCaching="0" swfRelativeURLs="0" useNetwork="0"/>
+      <DefineSound objectID="1" format="7" rate="1" is16bit="0" stereo="0" samples="800">
+        <data>
+          <data>gJWot76/uKqXgmxYSUFARlRme5GltL2/ua2bhnBcTEJARVFid42isry/u7CeinRfTkNAQ05fdIqesLu/vLKijXdiUUVAQkxccIabrbm/vbSlkXtmVEZAQUlYbIKXqri/vreolX9qV0hBQEdVaH2Tp7a+v7mrmYRuWktCQEZSZHmPo7O9v7qunYhyXU1DQERPYXWLoLG8wLyxoIt1YU9EQENNXXKIna66v72zo495ZFJGQEJLWm6Emau5v762p5N9aFVHQEFIV2qAlai3vr+4qpeCbFhJQUBGVGZ7kaW0vb+5rZuGcFxMQkBFUWJ3jaKyvL+7sJ6KdF9OQ0BDTl90ip6wu7+8sqKNd2JRRUBCTFxwhputub+9tKWRe2ZURkBBSVhsgpequL++t6iVgGpXSEFAR1VofZOntr6/uauZhG5aS0JARlJkeY+js72/uq6diHJdTUNARE9hdYugsbzAvLGgi3VhT0RAQ01dcoidrrq/vbOjj3lkUkZAQktaboSZq7m/vrank31oVUdAQUhXaoCVqLe+v7iql4JsWElBQEZUZnuRpbS9v7mtm4ZwXExCQEVRYneNorK8v7uwnop0X05DQENOX3SKnrC7v7yyoo13YlFFQEJMXHCGm625v720pZF7ZlRGQEFJWGyCl6q4v763qJV/aldIQUBHVWh9k6e2vr+5q5mEblpLQkBGUmR5j6Ozvb+6rp2Icl1NQ0BET2F1i6CxvMC8saCLdWFPREBDTV1yiJ2uur+9s6OPeWRSRkBCS1puhJmrub++tqeTfWhVR0BBSFdqf5Wot76/uKqXgmxYSUFARlRme5GltL2/ua2bhnBcTEJARVFid42isry/u7CeinRfTkNAQ05fdIqesLu/vLKijXdiUUVAQkxccIabrbm/vbSlkXtmVEZAQUlYbIKXqri/vreolX9qV0hBQEdVaH2Tp7a+v7mrmYRuWktCQEZSZHmPo7O9v7qunYhyXU1DQERPYXWLoLG8wLyxoIt1YU9EQENNXXKIna66v72zo495ZFJGQEJLWm6Emau5v762p5N9aFVHQEFIV2o=</data>
+        </data>
+      </DefineSound>
+      <StartSound objectID="1" stopPlayback="0" noMultiple="0" hasEnvelope="0" hasLoop="1" hasOutPoint="0" hasInPoint="0" loop="2"/>
+      <ShowFrame/>
+      <End/>
+    </tags>
+  </Header>
+</swf>

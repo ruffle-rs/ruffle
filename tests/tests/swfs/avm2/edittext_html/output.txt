@@ -1977,6 +1977,76 @@ Default multiline: false
       from 0 to 4: size=12, blockIndent=0, font=Times, align=right, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=true
       from 4 to 5: size=12, blockIndent=0, font=Times, align=right, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
     ===============
+    HTML set:    <p align="justify">text</p>
+    HTML get:    <P ALIGN="JUSTIFY"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=justify, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    Text runs (1):
+      from 0 to 5: size=12, blockIndent=0, font=Times, align=justify, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <p align="center">text</p>
+    HTML get:    <P ALIGN="CENTER"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=center, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    Text runs (1):
+      from 0 to 5: size=12, blockIndent=0, font=Times, align=center, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <p align="unknown">text</p>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    Text runs (1):
+      from 0 to 5: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <p align="Left">text</p>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    Text runs (1):
+      from 0 to 5: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <p ALIGN="LEFT">text</p>
+    HTML get:    <P ALIGN="LEFT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    Text runs (1):
+      from 0 to 5: size=12, blockIndent=0, font=Times, align=left, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <p ALIGN="RiGHT">text</p>
+    HTML get:    <P ALIGN="RIGHT"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=right, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    Text runs (1):
+      from 0 to 5: size=12, blockIndent=0, font=Times, align=right, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
+    HTML set:    <p ALIGN="CENtEr">text</p>
+    HTML get:    <P ALIGN="CENTER"><FONT FACE="Times" SIZE="12" COLOR="#000000" LETTERSPACING="0" KERNING="0">text</FONT></P>
+    Text get:    text
+    Text runs (1):
+      from 0 to 4: size=12, blockIndent=0, font=Times, align=center, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    HTML get ml: <!-- the same -->
+    Text get:    text\r
+    Text runs (1):
+      from 0 to 5: size=12, blockIndent=0, font=Times, align=center, leading=0, display=block, kerning=false, leftMargin=0, rightMargin=0, color=0, bold=false, italic=false, bullet=false, underline=false
+    ===============
     HTML set:    <a href="http://example.com"><p align="right"></p></a>
     HTML get:    
     Text get:    

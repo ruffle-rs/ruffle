@@ -1,0 +1,16 @@
+PASSED: _root.scope_test  ==  undefined [event_handler_scope_test.c:80]
+PASSED: _root.mc.scope_test  ==  undefined [event_handler_scope_test.c:81]
+onClipEnterFrame triggered
+user defined onEnterFrame called
+PASSED: _root.mc.scope_test  ==  1 [event_handler_scope_test.c:84]
+PASSED: _root.scope_test  ==  3 [event_handler_scope_test.c:85]
+onClipEnterFrame triggered
+user defined onEnterFrame called
+PASSED: _root.mc.scope_test  ==  2 [event_handler_scope_test.c:88]
+onClipEnterFrame triggered
+user defined onEnterFrame called
+PASSED: _root.scope_test  ==  3 [event_handler_scope_test.c:91]
+PASSED: _root.mc.scope_test  ==  undefined [event_handler_scope_test.c:95]
+#passed: 7
+#failed: 0
+#total tests run: 7

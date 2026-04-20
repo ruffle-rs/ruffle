@@ -1,6 +1,7 @@
 //! `flash.net` namespace
 
-use crate::avm2::error::{make_error_2007, reference_error};
+use crate::avm2::error::{Error1014Type, make_error_1014, make_error_2007};
+use crate::avm2::globals::slots::flash_net_url_request as url_request_slots;
 use crate::avm2::object::TObject;
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Object, Value};
@@ -24,19 +25,19 @@ fn object_to_index_map<'gc>(
 ) -> Result<IndexMap<String, String>, Error<'gc>> {
     let mut map = IndexMap::new();
     let mut last_index = obj.get_next_enumerant(0, activation)?;
-    while let Some(index) = last_index {
+    while last_index != 0 {
         let name = obj
-            .get_enumerant_name(index, activation)?
+            .get_enumerant_name(last_index, activation)?
             .coerce_to_string(activation)?;
         let value = obj
-            .get_public_property(name, activation)?
+            .get_enumerant_value(last_index, activation)?
             .coerce_to_string(activation)?
             .to_utf8_lossy()
             .to_string();
 
         let name = name.to_utf8_lossy().to_string();
         map.insert(name, value);
-        last_index = obj.get_next_enumerant(index, activation)?;
+        last_index = obj.get_next_enumerant(last_index, activation)?;
     }
     Ok(map)
 }
@@ -53,8 +54,11 @@ fn parse_data<'gc>(
         .classes()
         .urlvariables
         .inner_class_definition();
-    if data.is_of_type(activation, urlvariables) {
-        let obj = data.coerce_to_object(activation)?;
+
+    if data.is_of_type(urlvariables) {
+        let obj = data
+            .as_object()
+            .expect("URLVariables object should be Value::Object");
         vars = object_to_index_map(activation, &obj).unwrap_or_default();
     } else if *data != Value::Null {
         let str_data = data.coerce_to_string(activation)?.to_string();
@@ -63,40 +67,37 @@ fn parse_data<'gc>(
         }
         url.push_str(&str_data);
     }
+
     Ok((url, vars))
 }
 
 /// Implements `flash.net.navigateToURL`
 pub fn navigate_to_url<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let request = args
-        .get(0)
-        .ok_or("navigateToURL: not enough arguments")?
-        .coerce_to_object(activation)?;
+    let request = args.get_object(activation, 0, "request")?;
 
-    let target = args
-        .get(1)
-        .ok_or("navigateToURL: not enough arguments")?
-        .coerce_to_string(activation)?;
+    let target = args.get_string(activation, 1);
 
-    match request.get_public_property("url", activation)? {
+    match request.get_slot(url_request_slots::_URL) {
         Value::Null => Err(make_error_2007(activation, "url")),
         url => {
             let url = url.coerce_to_string(activation)?.to_string();
             let method = request
-                .get_public_property("method", activation)?
+                .get_slot(url_request_slots::_METHOD)
                 .coerce_to_string(activation)?;
             let method = NavigationMethod::from_method_str(&method).unwrap();
-            let data: Value<'gc> = request.get_public_property("data", activation)?;
+            let data = request.get_slot(url_request_slots::_DATA);
             let (url, vars) = parse_data(activation, &url, &data)?;
+
             activation.context.navigator.navigate_to_url(
                 &url,
                 &target.to_utf8_lossy(),
                 Some((method, vars)),
             );
+
             Ok(Value::Undefined)
         }
     }
@@ -104,7 +105,7 @@ pub fn navigate_to_url<'gc>(
 
 pub fn register_class_alias<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_string_non_null(activation, 0, "aliasName")?;
@@ -119,7 +120,7 @@ pub fn register_class_alias<'gc>(
 
 pub fn get_class_by_alias<'gc>(
     activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     let name = args.get_string_non_null(activation, 0, "aliasName")?;
@@ -127,13 +128,10 @@ pub fn get_class_by_alias<'gc>(
     if let Some(class_object) = activation.avm2().get_class_by_alias(name) {
         Ok(class_object.into())
     } else {
-        // can't create error 1014 normally,
-        // as this is one place where it's a ReferenceError for some reason
-        let error = reference_error(
+        Err(make_error_1014(
             activation,
-            &format!("Error #1014: Class {} could not be found.", name),
-            1014,
-        )?;
-        Err(Error::AvmError(error))
+            Error1014Type::ReferenceError,
+            name,
+        ))
     }
 }

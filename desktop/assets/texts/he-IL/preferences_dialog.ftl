@@ -19,3 +19,18 @@ storage-backend-disk = דיסק
 storage-backend-memory = זיכרון
 recent-limit = מגבלה אחרונה
 recent-clear = מחיקה
+theme = ערכת נושא
+theme-system = ברירת מחדל של המערכת
+theme-light = בהיר
+theme-dark = כהה
+# See for context https://github.com/FeralInteractive/gamemode
+gamemode = GameMode
+gamemode-tooltip =
+    GameMode מחיל באופן זמני כמה אופטימיזציות על המחשב ו/או גם על Ruffle.
+    Ruffle משתמש בGameMode רק כאשר קובץ מתנגן.
+gamemode-default = ברירת מחדל
+gamemode-default-tooltip = GameMode יופעל רק כאשר העדפת הספק מוגדרת לרמה גבוהה.
+# See for context https://wiki.archlinux.org/title/Input_method
+ime-enabled = שיטת קלט
+ime-enabled-experimental = (ניסיוני)
+ime-enabled-tooltip = שיטת קלט מאפשרת להזין תווים שאינם זמינים במקלדת, כמו למשל תווים סיניים, יפניים או קוריאניים.

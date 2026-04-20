@@ -1,0 +1,36 @@
+Input: 4, 4
+Result: ff01ffff
+=================
+Input: 2, 8
+Result: ff0040ff
+=================
+Input: 2, 16
+Result: ff0020ff
+=================
+Input: 2, 8
+Result: ff0040ff
+=================
+Input: 8, 1
+Result: ff08ffff
+=================
+Input: 8, 2
+Result: ff04ffff
+=================
+Input: -8, -2
+Result: ff04ff00
+=================
+Input: -2, -8
+Result: ff004000
+=================
+Input: 0, 2
+Result: ff000000
+=================
+Input: 2.5, 8
+Result: ff0050ff
+=================
+Input: 2.1, 8
+Result: ff0043ff
+=================
+Input: 2.9, 8
+Result: ff005cff
+=================

@@ -1,0 +1,576 @@
+none, left ""
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 0
+none, right ""
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 0
+none, center ""
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 0
+left, left ""
+  x, y: 0, 0
+  width, height: 4, 4
+  textWidth: 0
+left, right ""
+  x, y: 0, 0
+  width, height: 4, 4
+  textWidth: 0
+left, center ""
+  x, y: 0, 0
+  width, height: 4, 4
+  textWidth: 0
+right, left ""
+  x, y: -3, 0
+  width, height: 4, 4
+  textWidth: 0
+right, right ""
+  x, y: -3, 0
+  width, height: 4, 4
+  textWidth: 0
+right, center ""
+  x, y: -3, 0
+  width, height: 4, 4
+  textWidth: 0
+center, left ""
+  x, y: -1.5, 0
+  width, height: 4, 4
+  textWidth: 0
+center, right ""
+  x, y: -1.5, 0
+  width, height: 4, 4
+  textWidth: 0
+center, center ""
+  x, y: -1.5, 0
+  width, height: 4, 4
+  textWidth: 0
+none, left " "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 10
+none, right " "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 10
+none, center " "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 10
+left, left " "
+  x, y: 0, 0
+  width, height: 14, 24
+  textWidth: 10
+left, right " "
+  x, y: 0, 0
+  width, height: 14, 24
+  textWidth: 10
+left, center " "
+  x, y: 0, 0
+  width, height: 14, 24
+  textWidth: 10
+right, left " "
+  x, y: -13, 0
+  width, height: 14, 24
+  textWidth: 10
+right, right " "
+  x, y: -13, 0
+  width, height: 14, 24
+  textWidth: 10
+right, center " "
+  x, y: -13, 0
+  width, height: 14, 24
+  textWidth: 10
+center, left " "
+  x, y: -6.5, 0
+  width, height: 14, 24
+  textWidth: 10
+center, right " "
+  x, y: -6.5, 0
+  width, height: 14, 24
+  textWidth: 10
+center, center " "
+  x, y: -6.5, 0
+  width, height: 14, 24
+  textWidth: 10
+none, left "  "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 20
+none, right "  "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 20
+none, center "  "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 20
+left, left "  "
+  x, y: 0, 0
+  width, height: 24, 24
+  textWidth: 20
+left, right "  "
+  x, y: 0, 0
+  width, height: 24, 24
+  textWidth: 20
+left, center "  "
+  x, y: 0, 0
+  width, height: 24, 24
+  textWidth: 20
+right, left "  "
+  x, y: -23, 0
+  width, height: 24, 24
+  textWidth: 20
+right, right "  "
+  x, y: -23, 0
+  width, height: 24, 24
+  textWidth: 20
+right, center "  "
+  x, y: -23, 0
+  width, height: 24, 24
+  textWidth: 20
+center, left "  "
+  x, y: -11.5, 0
+  width, height: 24, 24
+  textWidth: 20
+center, right "  "
+  x, y: -11.5, 0
+  width, height: 24, 24
+  textWidth: 20
+center, center "  "
+  x, y: -11.5, 0
+  width, height: 24, 24
+  textWidth: 20
+none, left "   "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 30
+none, right "   "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 30
+none, center "   "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 30
+left, left "   "
+  x, y: 0, 0
+  width, height: 34, 24
+  textWidth: 30
+left, right "   "
+  x, y: 0, 0
+  width, height: 34, 24
+  textWidth: 30
+left, center "   "
+  x, y: 0, 0
+  width, height: 34, 24
+  textWidth: 30
+right, left "   "
+  x, y: -33, 0
+  width, height: 34, 24
+  textWidth: 30
+right, right "   "
+  x, y: -33, 0
+  width, height: 34, 24
+  textWidth: 30
+right, center "   "
+  x, y: -33, 0
+  width, height: 34, 24
+  textWidth: 30
+center, left "   "
+  x, y: -16.5, 0
+  width, height: 34, 24
+  textWidth: 30
+center, right "   "
+  x, y: -16.5, 0
+  width, height: 34, 24
+  textWidth: 30
+center, center "   "
+  x, y: -16.5, 0
+  width, height: 34, 24
+  textWidth: 30
+none, left "aa "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 41
+none, right "aa "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 41
+none, center "aa "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 41
+left, left "aa "
+  x, y: 0, 0
+  width, height: 45.9, 24
+  textWidth: 41
+left, right "aa "
+  x, y: 0, 0
+  width, height: 45.9, 24
+  textWidth: 41
+left, center "aa "
+  x, y: 0, 0
+  width, height: 45.9, 24
+  textWidth: 41
+right, left "aa "
+  x, y: -44.9, 0
+  width, height: 45.9, 24
+  textWidth: 41
+right, right "aa "
+  x, y: -44.9, 0
+  width, height: 45.9, 24
+  textWidth: 41
+right, center "aa "
+  x, y: -44.9, 0
+  width, height: 45.9, 24
+  textWidth: 41
+center, left "aa "
+  x, y: -22.45, 0
+  width, height: 45.9, 24
+  textWidth: 41
+center, right "aa "
+  x, y: -22.45, 0
+  width, height: 45.9, 24
+  textWidth: 41
+center, center "aa "
+  x, y: -22.45, 0
+  width, height: 45.9, 24
+  textWidth: 41
+none, left "aa  "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 51
+none, right "aa  "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 51
+none, center "aa  "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 51
+left, left "aa  "
+  x, y: 0, 0
+  width, height: 55.9, 24
+  textWidth: 51
+left, right "aa  "
+  x, y: 0, 0
+  width, height: 55.9, 24
+  textWidth: 51
+left, center "aa  "
+  x, y: 0, 0
+  width, height: 55.9, 24
+  textWidth: 51
+right, left "aa  "
+  x, y: -54.9, 0
+  width, height: 55.9, 24
+  textWidth: 51
+right, right "aa  "
+  x, y: -54.9, 0
+  width, height: 55.9, 24
+  textWidth: 51
+right, center "aa  "
+  x, y: -54.9, 0
+  width, height: 55.9, 24
+  textWidth: 51
+center, left "aa  "
+  x, y: -27.45, 0
+  width, height: 55.9, 24
+  textWidth: 51
+center, right "aa  "
+  x, y: -27.45, 0
+  width, height: 55.9, 24
+  textWidth: 51
+center, center "aa  "
+  x, y: -27.45, 0
+  width, height: 55.9, 24
+  textWidth: 51
+none, left " aa"
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 41
+none, right " aa"
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 41
+none, center " aa"
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 41
+left, left " aa"
+  x, y: 0, 0
+  width, height: 45.9, 24
+  textWidth: 41
+left, right " aa"
+  x, y: 0, 0
+  width, height: 45.9, 24
+  textWidth: 41
+left, center " aa"
+  x, y: 0, 0
+  width, height: 45.9, 24
+  textWidth: 41
+right, left " aa"
+  x, y: -44.9, 0
+  width, height: 45.9, 24
+  textWidth: 41
+right, right " aa"
+  x, y: -44.9, 0
+  width, height: 45.9, 24
+  textWidth: 41
+right, center " aa"
+  x, y: -44.9, 0
+  width, height: 45.9, 24
+  textWidth: 41
+center, left " aa"
+  x, y: -22.45, 0
+  width, height: 45.9, 24
+  textWidth: 41
+center, right " aa"
+  x, y: -22.45, 0
+  width, height: 45.9, 24
+  textWidth: 41
+center, center " aa"
+  x, y: -22.45, 0
+  width, height: 45.9, 24
+  textWidth: 41
+none, left "  aa"
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 51
+none, right "  aa"
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 51
+none, center "  aa"
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 51
+left, left "  aa"
+  x, y: 0, 0
+  width, height: 55.9, 24
+  textWidth: 51
+left, right "  aa"
+  x, y: 0, 0
+  width, height: 55.9, 24
+  textWidth: 51
+left, center "  aa"
+  x, y: 0, 0
+  width, height: 55.9, 24
+  textWidth: 51
+right, left "  aa"
+  x, y: -54.9, 0
+  width, height: 55.9, 24
+  textWidth: 51
+right, right "  aa"
+  x, y: -54.9, 0
+  width, height: 55.9, 24
+  textWidth: 51
+right, center "  aa"
+  x, y: -54.9, 0
+  width, height: 55.9, 24
+  textWidth: 51
+center, left "  aa"
+  x, y: -27.45, 0
+  width, height: 55.9, 24
+  textWidth: 51
+center, right "  aa"
+  x, y: -27.45, 0
+  width, height: 55.9, 24
+  textWidth: 51
+center, center "  aa"
+  x, y: -27.45, 0
+  width, height: 55.9, 24
+  textWidth: 51
+none, left " aa "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 51
+none, right " aa "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 51
+none, center " aa "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 51
+left, left " aa "
+  x, y: 0, 0
+  width, height: 55.9, 24
+  textWidth: 51
+left, right " aa "
+  x, y: 0, 0
+  width, height: 55.9, 24
+  textWidth: 51
+left, center " aa "
+  x, y: 0, 0
+  width, height: 55.9, 24
+  textWidth: 51
+right, left " aa "
+  x, y: -54.9, 0
+  width, height: 55.9, 24
+  textWidth: 51
+right, right " aa "
+  x, y: -54.9, 0
+  width, height: 55.9, 24
+  textWidth: 51
+right, center " aa "
+  x, y: -54.9, 0
+  width, height: 55.9, 24
+  textWidth: 51
+center, left " aa "
+  x, y: -27.45, 0
+  width, height: 55.9, 24
+  textWidth: 51
+center, right " aa "
+  x, y: -27.45, 0
+  width, height: 55.9, 24
+  textWidth: 51
+center, center " aa "
+  x, y: -27.45, 0
+  width, height: 55.9, 24
+  textWidth: 51
+none, left "  aa "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 61
+none, right "  aa "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 61
+none, center "  aa "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 61
+left, left "  aa "
+  x, y: 0, 0
+  width, height: 65.9, 24
+  textWidth: 61
+left, right "  aa "
+  x, y: 0, 0
+  width, height: 65.9, 24
+  textWidth: 61
+left, center "  aa "
+  x, y: 0, 0
+  width, height: 65.9, 24
+  textWidth: 61
+right, left "  aa "
+  x, y: -64.9, 0
+  width, height: 65.9, 24
+  textWidth: 61
+right, right "  aa "
+  x, y: -64.9, 0
+  width, height: 65.9, 24
+  textWidth: 61
+right, center "  aa "
+  x, y: -64.9, 0
+  width, height: 65.9, 24
+  textWidth: 61
+center, left "  aa "
+  x, y: -32.45, 0
+  width, height: 65.9, 24
+  textWidth: 61
+center, right "  aa "
+  x, y: -32.45, 0
+  width, height: 65.9, 24
+  textWidth: 61
+center, center "  aa "
+  x, y: -32.45, 0
+  width, height: 65.9, 24
+  textWidth: 61
+none, left " aa  "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 61
+none, right " aa  "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 61
+none, center " aa  "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 61
+left, left " aa  "
+  x, y: 0, 0
+  width, height: 65.9, 24
+  textWidth: 61
+left, right " aa  "
+  x, y: 0, 0
+  width, height: 65.9, 24
+  textWidth: 61
+left, center " aa  "
+  x, y: 0, 0
+  width, height: 65.9, 24
+  textWidth: 61
+right, left " aa  "
+  x, y: -64.9, 0
+  width, height: 65.9, 24
+  textWidth: 61
+right, right " aa  "
+  x, y: -64.9, 0
+  width, height: 65.9, 24
+  textWidth: 61
+right, center " aa  "
+  x, y: -64.9, 0
+  width, height: 65.9, 24
+  textWidth: 61
+center, left " aa  "
+  x, y: -32.45, 0
+  width, height: 65.9, 24
+  textWidth: 61
+center, right " aa  "
+  x, y: -32.45, 0
+  width, height: 65.9, 24
+  textWidth: 61
+center, center " aa  "
+  x, y: -32.45, 0
+  width, height: 65.9, 24
+  textWidth: 61
+none, left "  aa  "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 71
+none, right "  aa  "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 71
+none, center "  aa  "
+  x, y: 0, 0
+  width, height: 1, 1
+  textWidth: 71
+left, left "  aa  "
+  x, y: 0, 0
+  width, height: 75.9, 24
+  textWidth: 71
+left, right "  aa  "
+  x, y: 0, 0
+  width, height: 75.9, 24
+  textWidth: 71
+left, center "  aa  "
+  x, y: 0, 0
+  width, height: 75.9, 24
+  textWidth: 71
+right, left "  aa  "
+  x, y: -74.9, 0
+  width, height: 75.9, 24
+  textWidth: 71
+right, right "  aa  "
+  x, y: -74.9, 0
+  width, height: 75.9, 24
+  textWidth: 71
+right, center "  aa  "
+  x, y: -74.9, 0
+  width, height: 75.9, 24
+  textWidth: 71
+center, left "  aa  "
+  x, y: -37.45, 0
+  width, height: 75.9, 24
+  textWidth: 71
+center, right "  aa  "
+  x, y: -37.45, 0
+  width, height: 75.9, 24
+  textWidth: 71
+center, center "  aa  "
+  x, y: -37.45, 0
+  width, height: 75.9, 24
+  textWidth: 71

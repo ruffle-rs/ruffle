@@ -1,0 +1,4 @@
+TESTOBJ.returnArguments(); PASSED!
+returnArguments(); PASSED!
+TESTOBJ1.returnArguments(); PASSED!
+returnArgumentsNoPackage(); PASSED!

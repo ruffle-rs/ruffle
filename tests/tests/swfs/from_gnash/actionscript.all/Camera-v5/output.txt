@@ -1,0 +1,7 @@
+SWF5
+
+[Camera.as debug-22403-05c7ba106]
+PASSED: typeof(Camera) == 'function' [./Camera.as:30]
+#passed: 1
+#failed: 0
+#total tests run: 1

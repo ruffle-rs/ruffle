@@ -1,48 +1,47 @@
 //! Contexts and helper types passed between functions.
 
-use crate::avm1::Activation;
-use crate::avm1::ActivationIdentifier;
+use crate::PlayerMode;
+use crate::avm_rng::AvmRng;
 use crate::avm1::Attribute;
 use crate::avm1::Avm1;
-use crate::avm1::ScriptObject;
-use crate::avm1::SystemProperties;
-use crate::avm1::TObject;
 use crate::avm1::{Object as Avm1Object, Value as Avm1Value};
-use crate::avm2::api_version::ApiVersion;
-use crate::avm2::object::LoaderInfoObject;
 use crate::avm2::Activation as Avm2Activation;
-use crate::avm2::TObject as _;
-use crate::avm2::{Avm2, Object as Avm2Object, SoundChannelObject};
+use crate::avm2::api_version::ApiVersion;
+use crate::avm2::{Avm2, LoaderInfoObject, SharedObjectObject, SoundChannelObject};
 use crate::backend::{
     audio::{AudioBackend, AudioManager, SoundHandle, SoundInstanceHandle},
     log::LogBackend,
     navigator::NavigatorBackend,
     storage::StorageBackend,
-    ui::{InputManager, UiBackend},
+    ui::UiBackend,
 };
 use crate::context_menu::ContextMenuState;
 use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
+use crate::events::PlayerNotification;
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::FramePhase;
+use crate::input::InputManager;
 use crate::library::Library;
 use crate::loader::LoadManager;
 use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
+use crate::orphan_manager::OrphanManager;
 use crate::player::PostFrameCallback;
 use crate::player::{MouseData, Player};
 use crate::prelude::*;
 use crate::socket::Sockets;
 use crate::streams::StreamManager;
-use crate::string::AvmString;
-use crate::string::AvmStringInterner;
+use crate::string::HasStringContext;
+use crate::string::{AvmString, StringContext};
 use crate::stub::StubCollection;
+use crate::system_properties::SystemProperties;
 use crate::tag_utils::{SwfMovie, SwfSlice};
 use crate::timer::Timers;
 use crate::vminterface::Instantiator;
+use async_channel::Sender;
 use core::fmt;
 use gc_arena::{Collect, Mutation};
-use rand::rngs::SmallRng;
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::transform::TransformStack;
@@ -52,55 +51,29 @@ use std::sync::{Arc, Mutex, Weak};
 use std::time::Duration;
 use web_time::Instant;
 
-/// Minimal context, useful for manipulating the GC heap.
-pub struct GcContext<'a, 'gc> {
-    /// The mutation context to allocate and mutate `Gc` pointers.
-    pub gc_context: &'gc Mutation<'gc>,
-
-    /// The global string interner.
-    pub interner: &'a mut AvmStringInterner<'gc>,
-}
-
-impl<'a, 'gc> GcContext<'a, 'gc> {
-    #[inline(always)]
-    pub fn reborrow<'b>(&'b mut self) -> GcContext<'b, 'gc>
-    where
-        'a: 'b,
-    {
-        GcContext {
-            gc_context: self.gc_context,
-            interner: self.interner,
-        }
-    }
-
-    /// Convenience method to retrieve the current GC context. Note that explicitly writing
-    /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
-    #[inline(always)]
-    pub fn gc(&self) -> &'gc Mutation<'gc> {
-        self.gc_context
-    }
-}
-
 /// `UpdateContext` holds shared data that is used by the various subsystems of Ruffle.
 /// `Player` creates this when it begins a tick and passes it through the call stack to
 /// children and the VM.
-pub struct UpdateContext<'a, 'gc> {
-    /// The queue of actions that will be run after the display list updates.
-    /// Display objects and actions can push actions onto the queue.
-    pub action_queue: &'a mut ActionQueue<'gc>,
-
+pub struct UpdateContext<'gc> {
     /// The mutation context to allocate and mutate `Gc` pointers.
+    ///
+    /// NOTE: This is redundant with `strings.gc()`, but is used by
+    /// too much code to remove.
     pub gc_context: &'gc Mutation<'gc>,
 
-    /// The global string interner.
-    pub interner: &'a mut AvmStringInterner<'gc>,
+    /// The string context.
+    pub strings: StringContext<'gc>,
+
+    /// The queue of actions that will be run after the display list updates.
+    /// Display objects and actions can push actions onto the queue.
+    pub action_queue: &'gc mut ActionQueue<'gc>,
 
     /// A collection of stubs encountered during this movie.
-    pub stub_tracker: &'a mut StubCollection,
+    pub stub_tracker: &'gc mut StubCollection,
 
     /// The library containing character definitions for this SWF.
     /// Used to instantiate a `DisplayObject` of a given ID.
-    pub library: &'a mut Library<'gc>,
+    pub library: &'gc mut Library<'gc>,
 
     /// The version of the Flash Player we are emulating.
     /// TODO: This is a little confusing because this represents the player's max SWF version,
@@ -109,54 +82,56 @@ pub struct UpdateContext<'a, 'gc> {
     /// variables.
     pub player_version: u8,
 
+    pub player_mode: PlayerMode,
+
     /// Requests that the player re-renders after this execution (e.g. due to `updateAfterEvent`).
-    pub needs_render: &'a mut bool,
+    pub needs_render: &'gc mut bool,
 
     /// The root SWF file.
-    pub swf: &'a mut Arc<SwfMovie>,
+    pub root_swf: &'gc mut Arc<SwfMovie>,
 
     /// The audio backend, used by display objects and AVM to play audio.
-    pub audio: &'a mut dyn AudioBackend,
+    pub audio: &'gc mut dyn AudioBackend,
 
     /// The audio manager, managing all actively playing sounds.
-    pub audio_manager: &'a mut AudioManager<'gc>,
+    pub audio_manager: &'gc mut AudioManager<'gc>,
 
     /// The navigator backend, used by the AVM to make HTTP requests and visit webpages.
-    pub navigator: &'a mut dyn NavigatorBackend,
+    pub navigator: &'gc mut dyn NavigatorBackend,
 
     /// The renderer, used by the display objects to draw themselves.
-    pub renderer: &'a mut dyn RenderBackend,
+    pub renderer: &'gc mut dyn RenderBackend,
 
     /// The UI backend, used to detect user interactions.
-    pub ui: &'a mut dyn UiBackend,
+    pub ui: &'gc mut dyn UiBackend,
 
     /// The storage backend, used for storing persistent state
-    pub storage: &'a mut dyn StorageBackend,
+    pub storage: &'gc mut dyn StorageBackend,
 
     /// The logging backend, used for trace output capturing.
     ///
     /// **DO NOT** use this field directly, use the `avm_trace` method instead.
-    pub log: &'a mut dyn LogBackend,
+    pub log: &'gc mut dyn LogBackend,
 
     /// The video backend, used for video decoding
-    pub video: &'a mut dyn VideoBackend,
+    pub video: &'gc mut dyn VideoBackend,
 
     /// The RNG, used by the AVM `RandomNumber` opcode, `Math.random(),` and `random()`.
-    pub rng: &'a mut SmallRng,
+    pub rng: &'gc mut AvmRng,
 
     /// The current player's stage (including all loaded levels)
     pub stage: Stage<'gc>,
 
-    pub mouse_data: &'a mut MouseData<'gc>,
+    pub mouse_data: &'gc mut MouseData<'gc>,
 
     /// The input manager, tracking keys state.
-    pub input: &'a InputManager,
+    pub input: &'gc InputManager,
 
     /// The location of the mouse when it was last over the player.
-    pub mouse_position: &'a Point<Twips>,
+    pub mouse_position: &'gc Point<Twips>,
 
     /// The object being dragged via a `startDrag` action.
-    pub drag_object: &'a mut Option<crate::player::DragObject<'gc>>,
+    pub drag_object: &'gc mut Option<crate::player::DragObject<'gc>>,
 
     /// Weak reference to the player.
     ///
@@ -168,38 +143,38 @@ pub struct UpdateContext<'a, 'gc> {
     ///
     /// This is required for asynchronous behavior, such as fetching data from
     /// a URL.
-    pub load_manager: &'a mut LoadManager<'gc>,
+    pub load_manager: &'gc mut LoadManager<'gc>,
 
     /// The system properties
-    pub system: &'a mut SystemProperties,
+    pub system: &'gc mut SystemProperties,
 
-    pub page_url: &'a mut Option<String>,
+    pub page_url: &'gc mut Option<String>,
 
     /// The current instance ID. Used to generate default `instanceN` names.
-    pub instance_counter: &'a mut i32,
+    pub instance_counter: &'gc mut i32,
 
     /// Shared objects cache
-    pub avm1_shared_objects: &'a mut HashMap<String, Avm1Object<'gc>>,
+    pub avm1_shared_objects: &'gc mut HashMap<String, Avm1Object<'gc>>,
 
     /// Shared objects cache
-    pub avm2_shared_objects: &'a mut HashMap<String, Avm2Object<'gc>>,
+    pub avm2_shared_objects: &'gc mut HashMap<String, SharedObjectObject<'gc>>,
 
     /// Text fields with unbound variable bindings.
-    pub unbound_text_fields: &'a mut Vec<EditText<'gc>>,
+    pub unbound_text_fields: &'gc mut Vec<EditText<'gc>>,
 
     /// Timed callbacks created with `setInterval`/`setTimeout`.
-    pub timers: &'a mut Timers<'gc>,
+    pub timers: &'gc mut Timers<'gc>,
 
-    pub current_context_menu: &'a mut Option<ContextMenuState<'gc>>,
+    pub current_context_menu: &'gc mut Option<ContextMenuState<'gc>>,
 
     /// The AVM1 global state.
-    pub avm1: &'a mut Avm1<'gc>,
+    pub avm1: &'gc mut Avm1<'gc>,
 
     /// The AVM2 global state.
-    pub avm2: &'a mut Avm2<'gc>,
+    pub avm2: &'gc mut Avm2<'gc>,
 
     /// External interface for (for example) JavaScript <-> ActionScript interaction
-    pub external_interface: &'a mut ExternalInterface<'gc>,
+    pub external_interface: &'gc mut ExternalInterface<'gc>,
 
     /// The instant at which the SWF was launched.
     pub start_time: Instant,
@@ -218,43 +193,57 @@ pub struct UpdateContext<'a, 'gc> {
     pub times_get_time_called: u32,
 
     /// This frame's current fake time offset, used to pretend passage of time in time functions
-    pub time_offset: &'a mut u32,
+    pub time_offset: &'gc mut u32,
 
     /// The current stage frame rate.
-    pub frame_rate: &'a mut f64,
+    pub frame_rate: &'gc mut f64,
 
     /// Whether movies are prevented from changing the stage frame rate.
     pub forced_frame_rate: bool,
 
     /// Amount of actions performed since the last timeout check
-    pub actions_since_timeout_check: &'a mut u16,
+    pub actions_since_timeout_check: &'gc mut u32,
 
     /// The current frame processing phase.
     ///
     /// If we are not doing frame processing, then this is `FramePhase::Enter`.
-    pub frame_phase: &'a mut FramePhase,
+    pub frame_phase: &'gc mut FramePhase,
 
     /// Manager of in-progress media streams.
-    pub stream_manager: &'a mut StreamManager<'gc>,
+    pub stream_manager: &'gc mut StreamManager<'gc>,
 
-    pub sockets: &'a mut Sockets<'gc>,
+    pub sockets: &'gc mut Sockets<'gc>,
 
     /// List of active NetConnection instances.
-    pub net_connections: &'a mut NetConnections<'gc>,
+    pub net_connections: &'gc mut NetConnections<'gc>,
 
-    pub local_connections: &'a mut LocalConnections<'gc>,
+    pub local_connections: &'gc mut LocalConnections<'gc>,
+
+    pub orphan_manager: &'gc mut OrphanManager<'gc>,
 
     /// Dynamic root for allowing handles to GC objects to exist outside of the GC.
     pub dynamic_root: gc_arena::DynamicRootSet<'gc>,
 
     /// These functions are run at the end of each frame execution.
     /// Currently, this is just used for handling `Loader.loadBytes`
-    #[allow(clippy::type_complexity)]
-    pub post_frame_callbacks: &'a mut Vec<PostFrameCallback<'gc>>,
+    pub post_frame_callbacks: &'gc mut Vec<PostFrameCallback<'gc>>,
+
+    pub notification_sender: Option<&'gc Sender<PlayerNotification>>,
+
+    // Movie clips whose frame scripts were registered during frame script phase
+    // requires a seperate clean-up pass when running frame-scripts instead of executing them in place
+    pub frame_script_cleanup_queue: VecDeque<MovieClip<'gc>>,
+}
+
+impl<'gc> HasStringContext<'gc> for UpdateContext<'gc> {
+    #[inline(always)]
+    fn strings_ref(&self) -> &StringContext<'gc> {
+        &self.strings
+    }
 }
 
 /// Convenience methods for controlling audio.
-impl<'a, 'gc> UpdateContext<'a, 'gc> {
+impl<'gc> UpdateContext<'gc> {
     pub fn global_sound_transform(&self) -> &SoundTransform {
         self.audio_manager.global_sound_transform()
     }
@@ -283,11 +272,12 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         &mut self,
         sound: SoundHandle,
         settings: &swf::SoundInfo,
+        transform: Option<SoundTransform>,
         owner: Option<DisplayObject<'gc>>,
-        avm1_object: Option<crate::avm1::SoundObject<'gc>>,
+        avm1_object: Option<Avm1Object<'gc>>,
     ) -> Option<SoundInstanceHandle> {
         self.audio_manager
-            .start_sound(self.audio, sound, settings, owner, avm1_object)
+            .start_sound(self.audio, sound, settings, transform, owner, avm1_object)
     }
 
     pub fn attach_avm2_sound_channel(
@@ -311,6 +301,11 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
     pub fn stop_sounds_with_display_object(&mut self, display_object: DisplayObject<'gc>) {
         self.audio_manager
             .stop_sounds_with_display_object(self.audio, display_object)
+    }
+
+    pub fn stop_sounds_on_parent_and_children(&mut self, display_object: DisplayObject<'gc>) {
+        self.audio_manager
+            .stop_sounds_on_parent_and_children(self.audio, display_object)
     }
 
     pub fn stop_all_sounds(&mut self) {
@@ -342,8 +337,8 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
 
     /// Change the root movie.
     ///
-    /// This should only be called once, as it makes no attempt at removing
-    /// previous stage contents. If you need to load a new root movie, you
+    /// This should only be called once, as it makes no attempt at proper clean-up
+    /// of previous stage contents. If you need to load a new root movie, you
     /// should use `replace_root_movie`.
     pub fn set_root_movie(&mut self, movie: SwfMovie) {
         if !self.forced_frame_rate {
@@ -358,33 +353,31 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
             self.frame_rate,
         );
 
-        *self.swf = Arc::new(movie);
+        *self.root_swf = Arc::new(movie);
         *self.instance_counter = 0;
 
-        if self.swf.is_action_script_3() {
+        if self.root_swf.is_action_script_3() {
             self.avm2.root_api_version =
-                ApiVersion::from_swf_version(self.swf.version(), self.avm2.player_runtime)
-                    .unwrap_or_else(|| panic!("Unknown SWF version {}", self.swf.version()));
+                ApiVersion::from_swf_version(self.root_swf.version(), self.avm2.player_runtime);
         }
 
         self.stage.set_movie_size(
-            self.gc_context,
-            self.swf.width().to_pixels() as u32,
-            self.swf.height().to_pixels() as u32,
+            self.root_swf.width().to_pixels() as u32,
+            self.root_swf.height().to_pixels() as u32,
         );
-        self.stage.set_movie(self.gc_context, self.swf.clone());
+        self.stage.set_movie(self.gc(), self.root_swf.clone());
 
         let stage_domain = self.avm2.stage_domain();
-        let mut activation = Avm2Activation::from_domain(self.reborrow(), stage_domain);
+        let mut activation = Avm2Activation::from_domain(self, stage_domain);
 
         activation
             .context
             .library
-            .library_for_movie_mut(activation.context.swf.clone())
+            .library_for_movie_mut(activation.context.root_swf.clone())
             .set_avm2_domain(stage_domain);
         activation.context.ui.set_mouse_visible(true);
 
-        let swf = activation.context.swf.clone();
+        let swf = activation.context.root_swf.clone();
         let root: DisplayObject = MovieClip::player_root_movie(&mut activation, swf.clone()).into();
 
         // The Stage `LoaderInfo` is permanently in the 'not yet loaded' state,
@@ -394,59 +387,43 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         let stage_loader_info =
             LoaderInfoObject::not_yet_loaded(&mut activation, swf, None, Some(root), true)
                 .expect("Failed to construct Stage LoaderInfo");
-        stage_loader_info
-            .as_loader_info_object()
-            .unwrap()
-            .set_expose_content(activation.context.gc_context);
+        stage_loader_info.set_expose_content();
+
         activation
             .context
             .stage
-            .set_loader_info(activation.context.gc_context, stage_loader_info);
+            .set_loader_info(activation.gc(), stage_loader_info);
 
         drop(activation);
 
-        root.set_depth(self.gc_context, 0);
-        let flashvars = if !self.swf.parameters().is_empty() {
-            let object = ScriptObject::new(self.gc_context, None);
-            for (key, value) in self.swf.parameters().iter() {
-                object.define_value(
-                    self.gc_context,
-                    AvmString::new_utf8(self.gc_context, key),
-                    AvmString::new_utf8(self.gc_context, value).into(),
+        root.set_depth(0);
+        root.set_perspective_projection(None); // Set default PerspectiveProjection
+
+        root.post_instantiation(self, None, Instantiator::Movie, false);
+        root.set_default_root_name(self);
+
+        // Set flashvars and the version parameters (AVM1 only)
+        if let Some(flashvars) = root.object1() {
+            for (key, value) in self.root_swf.parameters().iter() {
+                flashvars.define_value(
+                    self.gc(),
+                    AvmString::new_utf8(self.gc(), key),
+                    AvmString::new_utf8(self.gc(), value).into(),
                     Attribute::empty(),
                 );
             }
-            Some(object.into())
-        } else {
-            None
-        };
 
-        root.post_instantiation(self, flashvars, Instantiator::Movie, false);
-        root.set_default_root_name(self);
+            let version_string = self.system.get_version_string(self.player_version);
+            flashvars.define_value(
+                self.gc(),
+                AvmString::new_ascii_static(self.gc(), b"$version"),
+                AvmString::new_utf8(self.gc(), version_string).into(),
+                Attribute::empty(),
+            );
+        }
+
         self.stage.replace_at_depth(self, root, 0);
-
-        // Set the version parameter on the root.
-        let mut activation = Activation::from_stub(
-            self.reborrow(),
-            ActivationIdentifier::root("[Version Setter]"),
-        );
-        let object = root.object().coerce_to_object(&mut activation);
-        let version_string = activation
-            .context
-            .system
-            .get_version_string(activation.context.avm1);
-        object.define_value(
-            activation.context.gc_context,
-            "$version",
-            AvmString::new_utf8(activation.context.gc_context, version_string).into(),
-            Attribute::empty(),
-        );
-
-        let stage = activation.context.stage;
-        stage.build_matrices(&mut activation.context);
-
-        drop(activation);
-
+        self.stage.build_matrices(self);
         self.audio.set_frame_rate(*self.frame_rate);
     }
 
@@ -460,9 +437,17 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
 
         self.set_root_movie(movie);
     }
+
+    pub fn send_notification(&self, notification: PlayerNotification) {
+        if let Some(notification_sender) = self.notification_sender
+            && let Err(e) = notification_sender.try_send(notification)
+        {
+            tracing::error!("Failed to send player notification: {e}");
+        }
+    }
 }
 
-impl<'a, 'gc> UpdateContext<'a, 'gc> {
+impl<'gc> UpdateContext<'gc> {
     /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
@@ -470,86 +455,19 @@ impl<'a, 'gc> UpdateContext<'a, 'gc> {
         self.gc_context
     }
 
-    /// Transform a borrowed update context into an owned update context with
-    /// a shorter internal lifetime.
-    ///
-    /// This is particularly useful for structures that may wish to hold an
-    /// update context without adding further lifetimes for its borrowing.
-    /// Please note that you will not be able to use the original update
-    /// context until this reborrowed copy has fallen out of scope.
-    #[inline]
-    pub fn reborrow<'b>(&'b mut self) -> UpdateContext<'b, 'gc>
-    where
-        'a: 'b,
-    {
-        UpdateContext {
-            action_queue: self.action_queue,
-            gc_context: self.gc_context,
-            interner: self.interner,
-            stub_tracker: self.stub_tracker,
-            library: self.library,
-            player_version: self.player_version,
-            needs_render: self.needs_render,
-            swf: self.swf,
-            audio: self.audio,
-            audio_manager: self.audio_manager,
-            navigator: self.navigator,
-            renderer: self.renderer,
-            log: self.log,
-            ui: self.ui,
-            video: self.video,
-            storage: self.storage,
-            rng: self.rng,
-            stage: self.stage,
-            mouse_data: self.mouse_data,
-            input: self.input,
-            mouse_position: self.mouse_position,
-            drag_object: self.drag_object,
-            player: self.player.clone(),
-            load_manager: self.load_manager,
-            system: self.system,
-            page_url: self.page_url,
-            instance_counter: self.instance_counter,
-            avm1_shared_objects: self.avm1_shared_objects,
-            avm2_shared_objects: self.avm2_shared_objects,
-            unbound_text_fields: self.unbound_text_fields,
-            timers: self.timers,
-            current_context_menu: self.current_context_menu,
-            avm1: self.avm1,
-            avm2: self.avm2,
-            external_interface: self.external_interface,
-            start_time: self.start_time,
-            update_start: self.update_start,
-            max_execution_duration: self.max_execution_duration,
-            focus_tracker: self.focus_tracker,
-            times_get_time_called: self.times_get_time_called,
-            time_offset: self.time_offset,
-            frame_rate: self.frame_rate,
-            forced_frame_rate: self.forced_frame_rate,
-            actions_since_timeout_check: self.actions_since_timeout_check,
-            frame_phase: self.frame_phase,
-            stream_manager: self.stream_manager,
-            sockets: self.sockets,
-            net_connections: self.net_connections,
-            local_connections: self.local_connections,
-            dynamic_root: self.dynamic_root,
-            post_frame_callbacks: self.post_frame_callbacks,
-        }
-    }
-
-    #[inline]
-    pub fn borrow_gc<'b>(&'b mut self) -> GcContext<'b, 'gc>
-    where
-        'a: 'b,
-    {
-        GcContext {
-            gc_context: self.gc_context,
-            interner: self.interner,
-        }
-    }
-
     pub fn avm_trace(&self, message: &str) {
         self.log.avm_trace(&message.replace('\r', "\n"));
+    }
+
+    pub fn avm_warning(&self, message: &str) {
+        self.log.avm_warning(message);
+    }
+
+    /// Obtain a strong reference to the current `Player`.
+    pub fn player_handle(&self) -> Arc<Mutex<Player>> {
+        self.player
+            .upgrade()
+            .expect("Could not upgrade weak reference to player")
     }
 }
 
@@ -614,7 +532,7 @@ impl<'gc> ActionQueue<'gc> {
     }
 }
 
-impl<'gc> Default for ActionQueue<'gc> {
+impl Default for ActionQueue<'_> {
     fn default() -> Self {
         Self::new()
     }
@@ -624,7 +542,7 @@ impl<'gc> Default for ActionQueue<'gc> {
 /// `Player` creates this when it renders a frame and passes it down to display objects.
 ///
 /// As a convenience, this type can be deref-coerced to `Mutation<'gc>`, but note that explicitly
-/// writing `context.gc_context` can be sometimes necessary to satisfy the borrow checker.
+/// writing `context.gc()` can be sometimes necessary to satisfy the borrow checker.
 pub struct RenderContext<'a, 'gc> {
     /// The renderer, used by the display objects to register themselves.
     pub renderer: &'a mut dyn RenderBackend,
@@ -654,7 +572,7 @@ pub struct RenderContext<'a, 'gc> {
     pub stage: Stage<'gc>,
 }
 
-impl<'a, 'gc> RenderContext<'a, 'gc> {
+impl<'gc> RenderContext<'_, 'gc> {
     /// Convenience method to retrieve the current GC context. Note that explicitly writing
     /// `self.gc_context` can be sometimes necessary to satisfy the borrow checker.
     #[inline(always)]
@@ -722,14 +640,14 @@ pub enum ActionType<'gc> {
     /// An event handler method, e.g. `onEnterFrame`.
     Method {
         object: Avm1Object<'gc>,
-        name: &'static str,
+        name: AvmString<'gc>,
         args: Vec<Avm1Value<'gc>>,
     },
 
     /// A system listener method.
     NotifyListeners {
-        listener: &'static str,
-        method: &'static str,
+        listener: AvmString<'gc>,
+        method: AvmString<'gc>,
         args: Vec<Avm1Value<'gc>>,
     },
 }

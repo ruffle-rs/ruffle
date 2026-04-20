@@ -1,11 +1,13 @@
+use crate::avm2::error::make_error_1107;
+use crate::avm2::object::{ArrayObject, Object, ScriptObject, TObject};
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::{Activation, Error};
+use crate::context::UpdateContext;
 use crate::string::AvmString;
 
 use gc_arena::Collect;
+use ruffle_macros::istr;
 use swf::avm2::types::{Index as AbcIndex, Metadata as AbcMetadata};
-
-use super::{ArrayObject, ArrayStorage, Object, TObject, Value};
 
 // Represents a single key-value pair for a trait metadata.
 #[derive(Clone, Collect, Debug, Eq, PartialEq)]
@@ -38,21 +40,23 @@ impl<'gc> Metadata<'gc> {
         let mut trait_metadata_list = vec![];
         for single_metadata in metadata.iter() {
             // Lookup the Index<Metadata> to convert it into a Metadata.
+            // FP throws error 1107 for metadata index out of bounds
+            // TODO: FP seems to throw the error earlier, and as a top-level
+            // verify-error
             let single_metadata = abc
                 .metadata
                 .get(single_metadata.0 as usize)
-                .ok_or_else(|| format!("Unknown metadata {}", single_metadata.0))?;
+                .ok_or_else(|| make_error_1107(activation))?;
 
-            let name = translation_unit
-                .pool_string(single_metadata.name.0, &mut activation.borrow_gc())?;
+            // Pooling of `name` uses `pool_string_or_err`, but pooling of `key`
+            // and `value` uses `pool_string`.
+            let name = translation_unit.pool_string_or_err(single_metadata.name, activation)?;
 
             let mut current_metadata_items = vec![];
             for metadata_item in single_metadata.items.iter() {
-                let key = translation_unit
-                    .pool_string(metadata_item.key.0, &mut activation.borrow_gc())?;
+                let key = translation_unit.pool_string(metadata_item.key, activation)?;
 
-                let value = translation_unit
-                    .pool_string(metadata_item.value.0, &mut activation.borrow_gc())?;
+                let value = translation_unit.pool_string(metadata_item.value, activation)?;
 
                 let item = MetadataItem {
                     key: key.into(),
@@ -73,35 +77,27 @@ impl<'gc> Metadata<'gc> {
     }
 
     // Converts the Metadata to an Object of the form used in avmplus:describeTypeJSON().
-    pub fn as_json_object(
-        &self,
-        activation: &mut Activation<'_, 'gc>,
-    ) -> Result<Object<'gc>, Error<'gc>> {
-        let object = activation
-            .avm2()
-            .classes()
-            .object
-            .construct(activation, &[])?;
-        object.set_public_property("name", self.name.into(), activation)?;
+    pub fn as_json_object(&self, context: &mut UpdateContext<'gc>) -> Object<'gc> {
+        let name_str = istr!(context, "name");
+        let key_str = istr!(context, "key");
+        let value_str = istr!(context, "value");
 
-        let values = self
+        let object = ScriptObject::new_object(context);
+        object.set_dynamic_property(name_str, self.name.into(), context.gc());
+
+        let storage = self
             .items
             .iter()
             .map(|item| {
-                let value_object = activation
-                    .avm2()
-                    .classes()
-                    .object
-                    .construct(activation, &[])?;
-                value_object.set_public_property("key", item.key.into(), activation)?;
-                value_object.set_public_property("value", item.value.into(), activation)?;
-                Ok(Some(value_object.into()))
+                let value_object = ScriptObject::new_object(context);
+                value_object.set_dynamic_property(key_str, item.key.into(), context.gc());
+                value_object.set_dynamic_property(value_str, item.value.into(), context.gc());
+                value_object
             })
-            .collect::<Result<Vec<Option<Value<'gc>>>, Error<'gc>>>()?;
+            .collect();
 
-        let values_array =
-            ArrayObject::from_storage(activation, ArrayStorage::from_storage(values))?;
-        object.set_public_property("value", values_array.into(), activation)?;
-        Ok(object)
+        let values_array = ArrayObject::from_storage(context, storage);
+        object.set_dynamic_property(value_str, values_array.into(), context.gc());
+        object
     }
 }

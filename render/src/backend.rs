@@ -4,14 +4,16 @@ use crate::bitmap::{Bitmap, BitmapHandle, BitmapSource, PixelRegion, RgbaBufRead
 use crate::commands::CommandList;
 use crate::error::Error;
 use crate::filters::Filter;
-use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderArgument, PixelBenderShaderHandle};
+use crate::pixel_bender::{PixelBenderShader, PixelBenderShaderHandle};
+use crate::pixel_bender_support::PixelBenderShaderArgument;
 use crate::quality::StageQuality;
 use crate::shape_utils::DistilledShape;
-use downcast_rs::{impl_downcast, Downcast};
-use ruffle_wstr::WStr;
+use ruffle_wstr::{FromWStr, WStr};
+use std::any::Any;
 use std::borrow::Cow;
 use std::cell::RefCell;
 use std::fmt::Debug;
+use std::num::NonZeroU32;
 use std::rc::Rc;
 use std::sync::Arc;
 use swf::{Color, Rectangle, Twips};
@@ -23,7 +25,7 @@ pub struct BitmapCacheEntry {
     pub filters: Vec<Filter>,
 }
 
-pub trait RenderBackend: Downcast {
+pub trait RenderBackend: Any {
     fn viewport_dimensions(&self) -> ViewportDimensions;
     // Do not call this method directly - use `player.set_viewport_dimensions`,
     // which will ensure that the stage is properly updated as well.
@@ -54,7 +56,7 @@ pub trait RenderBackend: Downcast {
         _source_point: (u32, u32),
         _source_size: (u32, u32),
         _destination: BitmapHandle,
-        _dest_point: (u32, u32),
+        _dest_point: (i32, i32),
         _filter: Filter,
     ) -> Option<Box<dyn SyncHandle>> {
         None
@@ -75,18 +77,21 @@ pub trait RenderBackend: Downcast {
         cache_entries: Vec<BitmapCacheEntry>,
     );
 
-    fn create_empty_texture(&mut self, width: u32, height: u32) -> Result<BitmapHandle, Error>;
+    fn create_empty_texture(
+        &mut self,
+        width: NonZeroU32,
+        height: NonZeroU32,
+    ) -> Result<BitmapHandle, Error>;
 
-    fn register_bitmap(&mut self, bitmap: Bitmap) -> Result<BitmapHandle, Error>;
+    fn register_bitmap(&mut self, bitmap: Bitmap<'_>) -> Result<BitmapHandle, Error>;
     fn update_texture(
         &mut self,
         handle: &BitmapHandle,
-        bitmap: Bitmap,
+        bitmap: Bitmap<'_>,
         region: PixelRegion,
     ) -> Result<(), Error>;
 
     fn create_context3d(&mut self, profile: Context3DProfile) -> Result<Box<dyn Context3D>, Error>;
-    fn context3d_present(&mut self, context: &mut dyn Context3D) -> Result<(), Error>;
 
     fn debug_info(&self) -> Cow<'static, str>;
     /// An internal name that is used to identify the render-backend.
@@ -112,7 +117,6 @@ pub trait RenderBackend: Downcast {
         with_rgba: RgbaBufRead,
     ) -> Result<(), Error>;
 }
-impl_downcast!(RenderBackend);
 
 pub enum PixelBenderTarget {
     // The shader will write to the provided bitmap texture,
@@ -129,29 +133,24 @@ pub enum PixelBenderOutput {
     Bytes(Vec<u8>),
 }
 
-pub trait IndexBuffer: Downcast {}
-impl_downcast!(IndexBuffer);
-pub trait VertexBuffer: Downcast {}
-impl_downcast!(VertexBuffer);
+pub trait IndexBuffer: Any {}
+pub trait VertexBuffer: Any {}
 
-pub trait ShaderModule: Downcast {}
-impl_downcast!(ShaderModule);
+pub trait ShaderModule: Any {}
 
-pub trait Texture: Downcast + Debug {
+pub trait Texture: Any + Debug {
     fn width(&self) -> u32;
     fn height(&self) -> u32;
 }
-impl_downcast!(Texture);
 
-pub trait RawTexture: Downcast + Debug {
+pub trait RawTexture: Any + Debug {
     fn equals(&self, other: &dyn RawTexture) -> bool;
 }
-impl_downcast!(RawTexture);
 
 #[cfg(feature = "wgpu")]
 impl RawTexture for wgpu::Texture {
     fn equals(&self, other: &dyn RawTexture) -> bool {
-        if let Some(other_texture) = other.downcast_ref::<wgpu::Texture>() {
+        if let Some(other_texture) = (other as &dyn Any).downcast_ref::<wgpu::Texture>() {
             std::ptr::eq(self, other_texture)
         } else {
             false
@@ -169,22 +168,24 @@ pub enum Context3DTextureFormat {
     RgbaHalfFloat,
 }
 
-impl Context3DTextureFormat {
-    pub fn from_wstr(wstr: &WStr) -> Option<Context3DTextureFormat> {
-        if wstr == b"bgra" {
-            Some(Context3DTextureFormat::Bgra)
-        } else if wstr == b"bgraPacked4444" {
-            Some(Context3DTextureFormat::BgraPacked)
-        } else if wstr == b"bgrPacked565" {
-            Some(Context3DTextureFormat::BgrPacked)
-        } else if wstr == b"compressed" {
-            Some(Context3DTextureFormat::Compressed)
-        } else if wstr == b"compressedAlpha" {
-            Some(Context3DTextureFormat::CompressedAlpha)
-        } else if wstr == b"rgbaHalfFloat" {
-            Some(Context3DTextureFormat::RgbaHalfFloat)
+impl FromWStr for Context3DTextureFormat {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"bgra" {
+            Ok(Context3DTextureFormat::Bgra)
+        } else if s == b"bgraPacked4444" {
+            Ok(Context3DTextureFormat::BgraPacked)
+        } else if s == b"bgrPacked565" {
+            Ok(Context3DTextureFormat::BgrPacked)
+        } else if s == b"compressed" {
+            Ok(Context3DTextureFormat::Compressed)
+        } else if s == b"compressedAlpha" {
+            Ok(Context3DTextureFormat::CompressedAlpha)
+        } else if s == b"rgbaHalfFloat" {
+            Ok(Context3DTextureFormat::RgbaHalfFloat)
         } else {
-            None
+            Err(())
         }
     }
 }
@@ -203,30 +204,32 @@ pub enum Context3DBlendFactor {
     Zero,
 }
 
-impl Context3DBlendFactor {
-    pub fn from_wstr(wstr: &WStr) -> Option<Context3DBlendFactor> {
-        if wstr == b"destinationAlpha" {
-            Some(Context3DBlendFactor::DestinationAlpha)
-        } else if wstr == b"destinationColor" {
-            Some(Context3DBlendFactor::DestinationColor)
-        } else if wstr == b"one" {
-            Some(Context3DBlendFactor::One)
-        } else if wstr == b"oneMinusDestinationAlpha" {
-            Some(Context3DBlendFactor::OneMinusDestinationAlpha)
-        } else if wstr == b"oneMinusDestinationColor" {
-            Some(Context3DBlendFactor::OneMinusDestinationColor)
-        } else if wstr == b"oneMinusSourceAlpha" {
-            Some(Context3DBlendFactor::OneMinusSourceAlpha)
-        } else if wstr == b"oneMinusSourceColor" {
-            Some(Context3DBlendFactor::OneMinusSourceColor)
-        } else if wstr == b"sourceAlpha" {
-            Some(Context3DBlendFactor::SourceAlpha)
-        } else if wstr == b"sourceColor" {
-            Some(Context3DBlendFactor::SourceColor)
-        } else if wstr == b"zero" {
-            Some(Context3DBlendFactor::Zero)
+impl FromWStr for Context3DBlendFactor {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"destinationAlpha" {
+            Ok(Context3DBlendFactor::DestinationAlpha)
+        } else if s == b"destinationColor" {
+            Ok(Context3DBlendFactor::DestinationColor)
+        } else if s == b"one" {
+            Ok(Context3DBlendFactor::One)
+        } else if s == b"oneMinusDestinationAlpha" {
+            Ok(Context3DBlendFactor::OneMinusDestinationAlpha)
+        } else if s == b"oneMinusDestinationColor" {
+            Ok(Context3DBlendFactor::OneMinusDestinationColor)
+        } else if s == b"oneMinusSourceAlpha" {
+            Ok(Context3DBlendFactor::OneMinusSourceAlpha)
+        } else if s == b"oneMinusSourceColor" {
+            Ok(Context3DBlendFactor::OneMinusSourceColor)
+        } else if s == b"sourceAlpha" {
+            Ok(Context3DBlendFactor::SourceAlpha)
+        } else if s == b"sourceColor" {
+            Ok(Context3DBlendFactor::SourceColor)
+        } else if s == b"zero" {
+            Ok(Context3DBlendFactor::Zero)
         } else {
-            None
+            Err(())
         }
     }
 }
@@ -241,7 +244,21 @@ pub enum ProgramType {
     Fragment,
 }
 
-pub trait Context3D: Downcast {
+impl FromWStr for ProgramType {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"vertex" {
+            Ok(ProgramType::Vertex)
+        } else if s == b"fragment" {
+            Ok(ProgramType::Fragment)
+        } else {
+            Err(())
+        }
+    }
+}
+
+pub trait Context3D: Any {
     fn profile(&self) -> Context3DProfile;
     // The BitmapHandle for the texture we're rendering to
     fn bitmap_handle(&self) -> BitmapHandle;
@@ -258,7 +275,7 @@ pub trait Context3D: Downcast {
     fn disposed_vertex_buffer_handle(&self) -> Rc<dyn VertexBuffer>;
 
     fn create_index_buffer(&mut self, usage: BufferUsage, num_indices: u32)
-        -> Box<dyn IndexBuffer>;
+    -> Box<dyn IndexBuffer>;
     fn create_vertex_buffer(
         &mut self,
         usage: BufferUsage,
@@ -282,9 +299,17 @@ pub trait Context3D: Downcast {
         streaming_levels: u32,
     ) -> Result<Rc<dyn Texture>, Error>;
 
+    fn upload_shaders(
+        &mut self,
+        module: &RefCell<Option<Rc<dyn ShaderModule>>>,
+        vertex_shader_agal: Vec<u8>,
+        fragment_shader_agal: Vec<u8>,
+    ) -> Result<(), naga_agal::AgalError>;
+
     fn process_command(&mut self, command: Context3DCommand<'_>);
+
+    fn present(&mut self);
 }
-impl_downcast!(Context3D);
 
 #[derive(Copy, Clone, Debug)]
 pub enum Context3DVertexBufferFormat {
@@ -295,12 +320,50 @@ pub enum Context3DVertexBufferFormat {
     Bytes4,
 }
 
+impl FromWStr for Context3DVertexBufferFormat {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"float1" {
+            Ok(Context3DVertexBufferFormat::Float1)
+        } else if s == b"float2" {
+            Ok(Context3DVertexBufferFormat::Float2)
+        } else if s == b"float3" {
+            Ok(Context3DVertexBufferFormat::Float3)
+        } else if s == b"float4" {
+            Ok(Context3DVertexBufferFormat::Float4)
+        } else if s == b"bytes4" {
+            Ok(Context3DVertexBufferFormat::Bytes4)
+        } else {
+            Err(())
+        }
+    }
+}
+
 #[derive(Copy, Clone, Debug)]
 pub enum Context3DTriangleFace {
     None,
     Back,
     Front,
     FrontAndBack,
+}
+
+impl FromWStr for Context3DTriangleFace {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"none" {
+            Ok(Context3DTriangleFace::None)
+        } else if s == b"back" {
+            Ok(Context3DTriangleFace::Back)
+        } else if s == b"front" {
+            Ok(Context3DTriangleFace::Front)
+        } else if s == b"frontAndBack" {
+            Ok(Context3DTriangleFace::FrontAndBack)
+        } else {
+            Err(())
+        }
+    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -311,26 +374,6 @@ pub enum Context3DProfile {
     Standard,
     StandardConstrained,
     StandardExtended,
-}
-
-impl Context3DProfile {
-    pub fn from_wstr(s: &WStr) -> Option<Self> {
-        if s == b"baseline" {
-            Some(Context3DProfile::Baseline)
-        } else if s == b"baselineConstrained" {
-            Some(Context3DProfile::BaselineConstrained)
-        } else if s == b"baselineExtended" {
-            Some(Context3DProfile::BaselineExtended)
-        } else if s == b"standard" {
-            Some(Context3DProfile::Standard)
-        } else if s == b"standardConstrained" {
-            Some(Context3DProfile::StandardConstrained)
-        } else if s == b"standardExtended" {
-            Some(Context3DProfile::StandardExtended)
-        } else {
-            None
-        }
-    }
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -345,26 +388,66 @@ pub enum Context3DCompareMode {
     Always,
 }
 
-impl Context3DCompareMode {
-    pub fn from_wstr(s: &WStr) -> Option<Self> {
+impl FromWStr for Context3DCompareMode {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
         if s == b"never" {
-            Some(Context3DCompareMode::Never)
+            Ok(Context3DCompareMode::Never)
         } else if s == b"less" {
-            Some(Context3DCompareMode::Less)
+            Ok(Context3DCompareMode::Less)
         } else if s == b"equal" {
-            Some(Context3DCompareMode::Equal)
+            Ok(Context3DCompareMode::Equal)
         } else if s == b"lessEqual" {
-            Some(Context3DCompareMode::LessEqual)
+            Ok(Context3DCompareMode::LessEqual)
         } else if s == b"greater" {
-            Some(Context3DCompareMode::Greater)
+            Ok(Context3DCompareMode::Greater)
         } else if s == b"notEqual" {
-            Some(Context3DCompareMode::NotEqual)
+            Ok(Context3DCompareMode::NotEqual)
         } else if s == b"greaterEqual" {
-            Some(Context3DCompareMode::GreaterEqual)
+            Ok(Context3DCompareMode::GreaterEqual)
         } else if s == b"always" {
-            Some(Context3DCompareMode::Always)
+            Ok(Context3DCompareMode::Always)
         } else {
-            None
+            Err(())
+        }
+    }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum Context3DStencilAction {
+    DecrementSaturate,
+    DecrementWrap,
+    IncrementSaturate,
+    IncrementWrap,
+    Invert,
+    Keep,
+    Set,
+    Zero,
+}
+
+impl FromWStr for Context3DStencilAction {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
+        if s == b"decrementSaturate" {
+            Ok(Context3DStencilAction::DecrementSaturate)
+        } else if s == b"decrementWrap" {
+            Ok(Context3DStencilAction::DecrementWrap)
+        } else if s == b"incrementSaturate" {
+            Ok(Context3DStencilAction::IncrementSaturate)
+        } else if s == b"incrementWrap" {
+            Ok(Context3DStencilAction::IncrementWrap)
+        } else if s == b"invert" {
+            Ok(Context3DStencilAction::Invert)
+        } else if s == b"keep" {
+            Ok(Context3DStencilAction::Keep)
+        } else if s == b"set" {
+            Ok(Context3DStencilAction::Set)
+        } else if s == b"zero" {
+            Ok(Context3DStencilAction::Zero)
+        } else {
+            Err(())
         }
     }
 }
@@ -377,18 +460,20 @@ pub enum Context3DWrapMode {
     RepeatUClampV,
 }
 
-impl Context3DWrapMode {
-    pub fn from_wstr(s: &WStr) -> Option<Self> {
+impl FromWStr for Context3DWrapMode {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
         if s == b"clamp" {
-            Some(Context3DWrapMode::Clamp)
+            Ok(Context3DWrapMode::Clamp)
         } else if s == b"clamp_u_repeat_v" {
-            Some(Context3DWrapMode::ClampURepeatV)
+            Ok(Context3DWrapMode::ClampURepeatV)
         } else if s == b"repeat" {
-            Some(Context3DWrapMode::Repeat)
+            Ok(Context3DWrapMode::Repeat)
         } else if s == b"repeat_u_clamp_v" {
-            Some(Context3DWrapMode::RepeatUClampV)
+            Ok(Context3DWrapMode::RepeatUClampV)
         } else {
-            None
+            Err(())
         }
     }
 }
@@ -403,22 +488,24 @@ pub enum Context3DTextureFilter {
     Nearest,
 }
 
-impl Context3DTextureFilter {
-    pub fn from_wstr(s: &WStr) -> Option<Self> {
+impl FromWStr for Context3DTextureFilter {
+    type Err = ();
+
+    fn from_wstr(s: &WStr) -> Result<Self, Self::Err> {
         if s == b"anisotropic16x" {
-            Some(Context3DTextureFilter::Anisotropic16X)
+            Ok(Context3DTextureFilter::Anisotropic16X)
         } else if s == b"anisotropic2x" {
-            Some(Context3DTextureFilter::Anisotropic2X)
+            Ok(Context3DTextureFilter::Anisotropic2X)
         } else if s == b"anisotropic4x" {
-            Some(Context3DTextureFilter::Anisotropic4X)
+            Ok(Context3DTextureFilter::Anisotropic4X)
         } else if s == b"anisotropic8x" {
-            Some(Context3DTextureFilter::Anisotropic8X)
+            Ok(Context3DTextureFilter::Anisotropic8X)
         } else if s == b"linear" {
-            Some(Context3DTextureFilter::Linear)
+            Ok(Context3DTextureFilter::Linear)
         } else if s == b"nearest" {
-            Some(Context3DTextureFilter::Nearest)
+            Ok(Context3DTextureFilter::Nearest)
         } else {
-            None
+            Err(())
         }
     }
 }
@@ -451,14 +538,14 @@ pub enum Context3DCommand<'a> {
     UploadToIndexBuffer {
         buffer: &'a mut dyn IndexBuffer,
         start_offset: usize,
-        data: Vec<u8>,
+        data: &'a [u8],
     },
 
     UploadToVertexBuffer {
         buffer: Rc<dyn VertexBuffer>,
         start_vertex: usize,
         data32_per_vertex: u8,
-        data: Vec<u8>,
+        data: &'a [u8],
     },
 
     DrawTriangles {
@@ -473,12 +560,6 @@ pub enum Context3DCommand<'a> {
         buffer_offset: u32,
     },
 
-    UploadShaders {
-        module: &'a RefCell<Option<Rc<dyn ShaderModule>>>,
-        vertex_shader_agal: Vec<u8>,
-        fragment_shader_agal: Vec<u8>,
-    },
-
     SetShaders {
         module: Option<Rc<dyn ShaderModule>>,
     },
@@ -491,7 +572,7 @@ pub enum Context3DCommand<'a> {
         face: Context3DTriangleFace,
     },
     CopyBitmapToTexture {
-        source: Vec<u8>,
+        source: &'a [u8],
         source_width: u32,
         source_height: u32,
         dest: Rc<dyn Texture>,
@@ -524,13 +605,24 @@ pub enum Context3DCommand<'a> {
     SetScissorRectangle {
         rect: Option<Rectangle<Twips>>,
     },
+    SetStencilActions {
+        triangle_face: Context3DTriangleFace,
+        compare_mode: Context3DCompareMode,
+        on_both_pass: Context3DStencilAction,
+        on_depth_fail: Context3DStencilAction,
+        on_depth_pass_stencil_fail: Context3DStencilAction,
+    },
+    SetStencilReferenceValue {
+        reference_value: u32,
+        read_mask: u32,
+        write_mask: u32,
+    },
 }
 
 #[derive(Clone, Debug)]
 pub struct ShapeHandle(pub Arc<dyn ShapeHandleImpl>);
 
-pub trait ShapeHandleImpl: Downcast + Debug {}
-impl_downcast!(ShapeHandleImpl);
+pub trait ShapeHandleImpl: Any + Debug {}
 
 #[derive(Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

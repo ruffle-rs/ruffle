@@ -1,6 +1,6 @@
 {
     "settings_ruffle_enable": {
-        "message": "Ejecutar Flash con Ruffle"
+        "message": "Ejecutar contenido Flash con Ruffle"
     },
     "settings_ignore_optout": {
         "message": "Ejecutar contenido Flash incluso en sitios que no permiten Ruffle"
@@ -9,7 +9,10 @@
         "message": "Mostrar descarga de SWF en el menú contextual"
     },
     "settings_autostart": {
-        "message": "Reproduzca contenido automáticamente (y haga clic para restaurar el sonido)"
+        "message": "Reproduzca contenido Flash automáticamente (y haga clic para desmutear)"
+    },
+    "settings_swf_takeover": {
+        "message": "Reproduce archivos SWF en el navegador en lugar descargar"
     },
     "settings_log_level": {
         "message": "Nivel de log"
@@ -23,8 +26,14 @@
     "settings_log_level_info": {
         "message": "Info"
     },
+    "settings_log_level_debug": {
+        "message": "Depuración"
+    },
+    "settings_log_level_trace": {
+        "message": "Rastreo"
+    },
     "settings_max_execution_duration": {
-        "message": "Duración máxima de ejecución de ActionScript (en segundos)"
+        "message": "Duración máxima de ejecución de ActionScript permitida (en segundos)"
     },
     "settings_player_version": {
         "message": "Versión de Flash Player a emular (rango 1-32)"
@@ -35,11 +44,14 @@
     "settings_preferred_renderer_auto": {
         "message": "Automático"
     },
+    "device_font_renderer_embedded": {
+        "message": "Embebido"
+    },
     "settings_advanced_options": {
-        "message": "Opciones Avanzadas"
+        "message": "Opciones avanzadas"
     },
     "settings_reset": {
-        "message": "Resetear Configuración"
+        "message": "Reiniciar configuración"
     },
     "settings_reset_confirm": {
         "message": "¿Está seguro de que desea restaurar la configuración de Ruffle a sus valores predeterminados originales?"
@@ -48,22 +60,22 @@
         "message": "Leyendo la pestaña actual…"
     },
     "status_no_tabs": {
-        "message": "No hay pestaña activada."
+        "message": "No hay pestaña activa."
     },
     "status_tabs_error": {
-        "message": "Occurió un error buscando la pestaña actual."
+        "message": "Ocurrió un error buscando la pestaña actual."
     },
     "status_message_init": {
         "message": "Comprobando el estado de Ruffle en la pestaña actual…"
     },
     "status_result_running": {
-        "message": "Ruffle está cargado y listo para ejecutar contenido Flash en la pestaña actual."
+        "message": "Ruffle está listo para ejecutar contenido Flash en la pestaña actual."
     },
     "status_result_running_protected": {
         "message": "Ruffle está listo para ejecutar el contenido de Flash que usted pide."
     },
     "status_result_optout": {
-        "message": "Ruffle no se carga porque la página actual se ha marcado como incompatible."
+        "message": "Ruffle no se puede cargar porque la página actual se ha marcado a sí misma como incompatible."
     },
     "status_result_disabled": {
         "message": "Ruffle está deshabilitado."
@@ -78,7 +90,7 @@
         "message": "Recargar la pestaña para aplicar los cambios"
     },
     "open_player_page": {
-        "message": "Abrir Reproductor de SWF"
+        "message": "Abrir reproductor de SWF"
     },
     "open_settings_page": {
         "message": "Abrir la página de configuración"
@@ -108,6 +120,9 @@
         "message": "Activar permanentemente en este sitio"
     },
     "permissions_explanation": {
-        "message": "La extensión de Ruffle funciona mejor si puede acceder a datos en todos los sitios web. Esto le permite ejecutarse cuando se carga cualquier sitio web por primera vez, lo que permite convencer a los sitios web que usan Flash Player inmediatamente para que permitan que se ejecute el contenido de Flash. También ofrece la posibilidad de cargar archivos SWF desde el reproductor interno en otras ubicaciones de la web. Si no otorga este permiso, tendrás que habilitar Ruffle manualmente en cada sitio web en el que quieras usarlo haciendo clic en el icono de la extension y habilitándolo para ese sitio web."
+        "message": "La extensión Ruffle trabaja mejor con la habilidad de acceder datos de todas las páginas. Esto le permite estar ejecutada cuando cualquier página carga inicialmente, así permitiendo convencer paginas que hacen detección inmediata para que contenido Flash se ejecute. También le da la capacidad de cargar archivos SWF en su página de reproducción interna desde otras ubicaciones en la web y le permite cargar automáticamente enlaces SWF directos en esa página. Si no concede este permiso, tendrá que habilitar Ruffle manualmente en cada sitio web en el que desees utilizarlo haciendo clic en el icono de la extensión y permitiendo esa página."
+    },
+    "swf_player_permissions": {
+        "message": "Tiene que dar permiso a este origen URL para cargar el contenido de los SWF de lo mismo."
     }
 }

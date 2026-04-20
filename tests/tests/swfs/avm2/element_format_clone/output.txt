@@ -1,0 +1,44 @@
+trace(ef.fontDescription.fontName == ef2.fontDescription.fontName);
+true
+trace(ef.fontDescription.fontWeight == ef2.fontDescription.fontWeight);
+true
+trace(ef.fontDescription.fontPosture == ef2.fontDescription.fontPosture);
+true
+trace(ef.fontDescription.fontLookup == ef2.fontDescription.fontLookup);
+true
+trace(ef.fontDescription.renderingMode == ef2.fontDescription.renderingMode);
+true
+trace(ef.fontDescription.cffHinting == ef2.fontDescription.cffHinting);
+true
+trace(ef.fontSize == ef2.fontSize);
+true
+trace(ef.color == ef2.color);
+true
+trace(ef.alpha == ef2.alpha);
+true
+trace(ef.textRotation == ef2.textRotation);
+true
+trace(ef.dominantBaseline == ef2.dominantBaseline);
+true
+trace(ef.alignmentBaseline == ef2.alignmentBaseline);
+true
+trace(ef.baselineShift == ef2.baselineShift);
+true
+trace(ef.kerning == ef2.kerning);
+true
+trace(ef.trackingRight == ef2.trackingRight);
+true
+trace(ef.trackingLeft == ef2.trackingLeft);
+true
+trace(ef.locale == ef2.locale);
+true
+trace(ef.breakOpportunity == ef2.breakOpportunity);
+true
+trace(ef.digitCase == ef2.digitCase);
+true
+trace(ef.digitWidth == ef2.digitWidth);
+true
+trace(ef.ligatureLevel == ef2.ligatureLevel);
+true
+trace(ef.typographicCase == ef2.typographicCase);
+true

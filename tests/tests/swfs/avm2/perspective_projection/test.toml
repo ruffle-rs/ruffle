@@ -1,0 +1,10 @@
+num_ticks = 1
+
+# The output.txt is obtained from Flash Player 32 for Windows.
+# FP 32,0,0,465 for Linux might show a slightly different result within this approximation.
+[approximations]
+epsilon = 0.0000000000001
+number_patterns = [
+    'fieldOfView = ([0-9.]+)',
+    'FOV [0-9]+ ([0-9.]+)',
+]

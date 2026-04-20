@@ -1,0 +1,736 @@
+PASSED: typeof(square1.button)  ==  'object' [ButtonEventsTest.c:480]
+PASSED: square1.button instanceOf Button [ButtonEventsTest.c:481]
+PASSED: typeof(square1.button.useHandCursor)  ==  'boolean' [ButtonEventsTest.c:482]
+PASSED: square1.button.useHandCursor  ==  true [ButtonEventsTest.c:483]
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance6
+instance5
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance6
+instance5
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance6
+instance5
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance6
+instance5
+PASSED: typeof(_root.buttonChild)  ==  'object' [ButtonEventsTest.c:563]
+PASSED: _root.buttonChild instanceof Array [ButtonEventsTest.c:564]
+FAILED: expected: 2 obtained: 3 [ButtonEventsTest.c:565] 
+PASSED: typeof(_root.buttonChild[10])  ==  'object' [ButtonEventsTest.c:568]
+FAILED: expected: '_level0.square1.button.instance5' obtained: _level0.square1.button.instance8 [ButtonEventsTest.c:569] 
+PASSED: (_root.buttonChild[10].exe)  ==  1 [ButtonEventsTest.c:570]
+PASSED: (_root.buttonChild[10].uld)  ==  0 [ButtonEventsTest.c:571]
+FAILED: expected: 'object' obtained: undefined [ButtonEventsTest.c:574] 
+FAILED: expected: '_level0.square1.button.instance6' obtained:  [ButtonEventsTest.c:575] 
+FAILED: expected: 1 obtained:  [ButtonEventsTest.c:576] 
+FAILED: expected: 0 obtained:  [ButtonEventsTest.c:577] 
+PASSED: _level0.square1.button.instance6._name  ==  'instance6' [ButtonEventsTest.c:578]
+FAILED: expected: -16371 obtained: -16372 [ButtonEventsTest.c:579] 
+FAILED: expected: 'undefined' obtained: object [ButtonEventsTest.c:582] 
+PASSED: typeof(_root.buttonChild[13])  ==  'undefined' [ButtonEventsTest.c:585]
+0. Roll over and out the red square, not touching the small dark-red square in it.
+   The cursor should turn to an hand while on the square.
+PASSED: _level0.square1.hitTest(60,60,true) [ButtonEventsTest.c:597]
+1. Roll over the red square.
+PASSED: 3 == 3
+FAILED: expected: object , obtained: undefined
+FAILED: expected: _level0.square1.button.instance7 , obtained: 
+FAILED: expected: 1 , obtained: 
+FAILED: expected: 0 , obtained: 
+FAILED: expected: 1 , obtained: 
+FAILED: expected: 1 , obtained: 
+PASSED: movieclip == movieclip
+PASSED: instance6 == instance6
+FAILED: expected: -16398 , obtained: -16397
+PASSED: 1 == 1
+PASSED: 0 == 0
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: / == /
+2. Press (and keep pressed) the mouse button inside the square.
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance9
+instance6
+instance5
+PASSED: 4 == 4
+FAILED: expected: object , obtained: undefined
+FAILED: expected: _level0.square1.button.instance8 , obtained: 
+FAILED: expected: 1 , obtained: 
+FAILED: expected: 0 , obtained: 
+FAILED: expected: 1 , obtained: 
+FAILED: expected: 1 , obtained: 
+PASSED: 1 == 1
+PASSED: 0 == 0
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: square1 == square1
+PASSED: / == /
+PASSED: string == string
+PASSED:  == 
+3. Depress the mouse button inside the square.
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance10
+instance9
+instance6
+instance5
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: / == /
+4. Move the mouse pointer off the square.
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance10
+instance11
+instance6
+instance5
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: / == /
+5. Press mouse button inside the square, and release it outside.
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance10
+instance11
+instance12
+instance5
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance10
+instance13
+instance12
+instance5
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance14
+instance13
+instance12
+instance5
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance14
+instance15
+instance12
+instance5
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: square1 == square1
+PASSED: / == /
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance14
+instance15
+instance16
+instance5
+PASSED: printBounds(square1.getBounds())  ==  '-0.05,-0.05 40.05,40.05' [ButtonEventsTest.c:630]
+PASSED: typeof(_root.buttonChild)  ==  'object' [ButtonEventsTest.c:633]
+PASSED: _root.buttonChild instanceof Array [ButtonEventsTest.c:634]
+FAILED: expected: 4 obtained: 5 [ButtonEventsTest.c:635] 
+PASSED: typeof(_root.buttonChild[10])  ==  'object' [ButtonEventsTest.c:638]
+FAILED: expected: '_level0.square1.button.instance5' obtained: _level0.square1.button.instance8 [ButtonEventsTest.c:639] 
+PASSED: (_root.buttonChild[10].exe)  ==  1 [ButtonEventsTest.c:640]
+PASSED: (_root.buttonChild[10].uld)  ==  0 [ButtonEventsTest.c:641]
+PASSED: typeof(_root.buttonChild[12])  ==  'object' [ButtonEventsTest.c:644]
+FAILED: expected: '_level0.square1.button.instance6' obtained: _level0.square1.button.instance9 [ButtonEventsTest.c:645] 
+FAILED: expected: 3 obtained: 4 [ButtonEventsTest.c:646] 
+FAILED: expected: 2 obtained: 4 [ButtonEventsTest.c:647] 
+PASSED: typeof(_root.buttonChild[13])  ==  'object' [ButtonEventsTest.c:650]
+FAILED: expected: '_level0.square1.button.instance7' obtained: _level0.square1.button.instance10 [ButtonEventsTest.c:651] 
+FAILED: expected: 4 obtained: 2 [ButtonEventsTest.c:652] 
+FAILED: expected: 4 obtained: 3 [ButtonEventsTest.c:653] 
+FAILED: expected: 'object' obtained: undefined [ButtonEventsTest.c:656] 
+FAILED: expected: '_level0.square1.button.instance8' obtained:  [ButtonEventsTest.c:657] 
+FAILED: expected: 2 obtained:  [ButtonEventsTest.c:658] 
+FAILED: expected: 2 obtained:  [ButtonEventsTest.c:659] 
+FAILED: expected: 'undefined' obtained: object [ButtonEventsTest.c:662] 
+-- Added shape at lower depth --
+6. Roll over the square.
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: / == /
+7. Press (and keep pressed) the mouse button inside the square.
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance17
+instance16
+instance5
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: square1 == square1
+PASSED: / == /
+PASSED: string == string
+PASSED:  == 
+8. Depress the mouse button inside the square.
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance18
+instance17
+instance16
+instance5
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: / == /
+9. Move the mouse pointer off the square.
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance18
+instance19
+instance16
+instance5
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: / == /
+10. Press mouse button inside the square, and release it outside.
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance18
+instance19
+instance20
+instance5
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance18
+instance21
+instance20
+instance5
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance22
+instance21
+instance20
+instance5
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance22
+instance23
+instance20
+instance5
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: square1 == square1
+PASSED: / == /
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance22
+instance23
+instance24
+instance5
+PASSED: typeof(_root.buttonChild)  ==  'object' [ButtonEventsTest.c:689]
+PASSED: _root.buttonChild instanceof Array [ButtonEventsTest.c:690]
+FAILED: expected: 4 obtained: 5 [ButtonEventsTest.c:691] 
+PASSED: typeof(_root.buttonChild[10])  ==  'object' [ButtonEventsTest.c:694]
+FAILED: expected: '_level0.square1.button.instance5' obtained: _level0.square1.button.instance8 [ButtonEventsTest.c:695] 
+PASSED: (_root.buttonChild[10].exe)  ==  1 [ButtonEventsTest.c:696]
+PASSED: (_root.buttonChild[10].uld)  ==  0 [ButtonEventsTest.c:697]
+PASSED: typeof(_root.buttonChild[12])  ==  'object' [ButtonEventsTest.c:700]
+FAILED: expected: '_level0.square1.button.instance6' obtained: _level0.square1.button.instance9 [ButtonEventsTest.c:701] 
+FAILED: expected: 5 obtained: 8 [ButtonEventsTest.c:702] 
+FAILED: expected: 4 obtained: 8 [ButtonEventsTest.c:703] 
+PASSED: typeof(_root.buttonChild[13])  ==  'object' [ButtonEventsTest.c:706]
+FAILED: expected: '_level0.square1.button.instance7' obtained: _level0.square1.button.instance10 [ButtonEventsTest.c:707] 
+FAILED: expected: 8 obtained: 4 [ButtonEventsTest.c:708] 
+FAILED: expected: 8 obtained: 6 [ButtonEventsTest.c:709] 
+FAILED: expected: 'object' obtained: undefined [ButtonEventsTest.c:712] 
+FAILED: expected: '_level0.square1.button.instance8' obtained:  [ButtonEventsTest.c:713] 
+FAILED: expected: 4 obtained:  [ButtonEventsTest.c:714] 
+FAILED: expected: 4 obtained:  [ButtonEventsTest.c:715] 
+FAILED: expected: 'undefined' obtained: object [ButtonEventsTest.c:718] 
+-- Added shape at higher depth --
+11. Roll over the square.
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: / == /
+12. Press (and keep pressed) the mouse button inside the square.
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance25
+instance24
+instance5
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: square1 == square1
+PASSED: / == /
+PASSED: string == string
+PASSED:  == 
+13. Depress the mouse button inside the square.
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance26
+instance25
+instance24
+instance5
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: / == /
+14. Move the mouse pointer off the square.
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance26
+instance27
+instance24
+instance5
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: / == /
+15. Press mouse button inside the square, and release it outside.
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance26
+instance27
+instance28
+instance5
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance26
+instance29
+instance28
+instance5
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance30
+instance29
+instance28
+instance5
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance30
+instance31
+instance28
+instance5
+PASSED: -0.05,-0.05 40.05,40.05 == -0.05,-0.05 40.05,40.05
+PASSED: /square1 == /square1
+PASSED: square1 == square1
+PASSED: / == /
+PASSED: / == /
+tabIndex
+blendMode
+cacheAsBitmap
+filters
+scale9Grid
+getDepth
+enabled
+useHandCursor
+onKeyUp
+onKeyDown
+onSetFocus
+onReleaseOutside
+onRelease
+onPress
+onRollOut
+onRollOver
+instance30
+instance31
+instance32
+instance5
+PASSED: true == true
+PASSED: 6 == 6
+PASSED: string == string
+PASSED: string == string
+#passed: 117
+#failed: 47
+#total tests run: 164
+-- Button disabled, try playing with it, nothing should happen --

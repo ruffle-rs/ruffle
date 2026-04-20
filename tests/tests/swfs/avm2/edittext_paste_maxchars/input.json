@@ -1,0 +1,7 @@
+[
+  { "type": "SetClipboardText", "text": "a\nb" },
+  { "type": "KeyDown", "key": "LeftControl" },
+  { "type": "TextControl", "code": "Paste" },
+  { "type": "KeyUp", "key": "LeftControl" },
+  { "type": "Wait" }
+]

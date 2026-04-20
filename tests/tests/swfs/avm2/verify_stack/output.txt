@@ -1,0 +1,5 @@
+Overflow did throw VerifyError: Error #1023: Stack overflow occurred.
+Overflow after jump did throw VerifyError: Error #1023: Stack overflow occurred.
+Overflow in unreachable code did not throw
+Overflow in unreachable exception did not throw
+Overflow in reachable exception did throw VerifyError: Error #1023: Stack overflow occurred.

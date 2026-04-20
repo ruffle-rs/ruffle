@@ -1,0 +1,34 @@
+// ASnew = ASnative(2, 0)
+[type Function]
+--- begin function
+// ASnew()
+false
+// ASnew.apply(null, [])
+false
+// ASnew.call(null)
+false
+// (() => ASnew())()
+false
+// obj.ASnew (property)
+false
+// obj.__resolve = ASnew; obj.foo
+false
+// (new Date({ valueOf: ASnew })).getTime()
+0
+--- end function
+--- begin constructor
+// ASnew()
+true
+// ASnew.apply(null, [])
+true
+// ASnew.call(null)
+true
+// (() => ASnew())()
+false
+// obj.ASnew (property)
+true
+// obj.__resolve = ASnew; obj.foo
+true
+// (new Date({ valueOf: ASnew })).getTime()
+1
+--- end constructor

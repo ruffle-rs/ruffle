@@ -1,1 +1,5 @@
 num_frames = 1
+
+[player_options]
+# TODO Fix this test. It shouldn't depend on the default font.
+with_default_font = true

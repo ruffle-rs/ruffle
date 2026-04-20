@@ -1,0 +1,7 @@
+public on unambiguous interface method (f) PASSED!
+public on unambiguous interface method (g) PASSED!
+public on unambiguous extended interface method (f) PASSED!
+public on unambiguous interface method (g) PASSED!
+extended implementation method (f) PASSED!
+extended implementation method (g) PASSED!
+public on unambiguous interface method (h) PASSED!

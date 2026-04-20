@@ -41,8 +41,8 @@ print('[')
 
 for obj in click_seq:
     if obj == 'esc':
-        print(f'    {{ "type": "KeyDown", "key_code": 27 }},')
-        print(f'    {{ "type": "KeyUp", "key_code": 27 }},')
+        print(f'    {{ "type": "KeyDown", "key": "Escape" }},')
+        print(f'    {{ "type": "KeyUp", "key": "Escape" }},')
         continue
     pos = coord_map[obj]
     print(f'    {{ "type": "MouseMove", "pos": {pos} }},')

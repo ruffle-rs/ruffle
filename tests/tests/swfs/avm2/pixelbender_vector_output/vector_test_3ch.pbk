@@ -1,0 +1,18 @@
+<languageVersion : 1.0;>
+
+kernel VectorTest3Channel
+<   namespace : "ruffle";
+    vendor : "Ruffle";
+    version : 1;
+    description : "Test shader for 3-channel Vector.<Number> output";
+>
+{
+    parameter float param1 < defaultValue: 1.0; >;
+    parameter float param2 < defaultValue: 2.0; >;
+    output pixel3 dst;
+
+    void evaluatePixel()
+    {
+        dst = pixel3(param1 * 10.5, param2 * 20.5, param1 + param2);
+    }
+}

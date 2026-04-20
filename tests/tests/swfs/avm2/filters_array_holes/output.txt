@@ -1,0 +1,25 @@
+Input
+ BitmapData 4x4:
+  ff000000 ff00ff00 ff00ffff ffffff00
+  ffff0000 ff0000ff ffff00ff ffffffff
+  80000000 8000ff00 8000ffff 80ffff00
+  80ff0000 800000ff 80ff00ff 80ffffff
+ColorMatrixFilter
+ BitmapData 4x4:
+  ff000000 ff000000 ff000000 ffff0000
+  ffff0000 ff000000 ffff0000 ffff0000
+  80000000 80000000 80000000 80ff0000
+  80ff0000 80000000 80ff0000 80ff0000
+GradientBevelFilter
+ BitmapData 4x4:
+  ff000000 ff00ff00 ff00ffff ffffff00
+  ffff0000 ff0000ff ffff00ff ffffffff
+  80000000 8000ff00 8000ffff 80ffff00
+  80ff0000 800000ff 80ff00ff 80ffffff
+GradientGlowFilter
+ BitmapData 4x4:
+  ff000000 ff00ff00 ff00ffff ffffff00
+  ffff0000 ff0000ff ffff00ff ffffffff
+  80000000 8000ff00 8000ffff 80ffff00
+  80ff0000 800000ff 80ff00ff 80ffffff
+Done

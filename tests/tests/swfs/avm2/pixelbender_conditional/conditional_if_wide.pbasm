@@ -1,0 +1,29 @@
+version 1i
+name "conditional_if_wide"
+
+meta "namespace", string("Ruffle Tests")
+meta "vendor", string("Kamil Jarosz")
+meta "version", int(1i)
+
+param.out "dst", float4, f0.rgba
+param.in "int4Input", int4, i1.rgba
+
+.if     i1.rgba
+  ld    f0.r, 1f
+.else
+  ld    f0.r, 0f
+.endif
+
+.if     i1.rbg
+  ld    f0.g, 1f
+.else
+  ld    f0.g, 0f
+.endif
+
+.if     i1.ag
+  ld    f0.b, 1f
+.else
+  ld    f0.b, 0f
+.endif
+
+ld      f0.a, 1f

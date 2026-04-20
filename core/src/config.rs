@@ -1,3 +1,4 @@
+use std::fmt;
 use std::str::FromStr;
 
 /// Controls whether the content is letterboxed or pillarboxed when the
@@ -24,6 +25,16 @@ pub enum Letterbox {
     /// The content will always be letterboxed.
     #[cfg_attr(feature = "serde", serde(rename = "on"))]
     On,
+}
+
+impl fmt::Display for Letterbox {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            Letterbox::Off => "off",
+            Letterbox::Fullscreen => "fullscreen",
+            Letterbox::On => "on",
+        })
+    }
 }
 
 pub struct ParseEnumError;

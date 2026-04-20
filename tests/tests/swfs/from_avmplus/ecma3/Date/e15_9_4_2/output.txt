@@ -1,0 +1,391 @@
+new Date(0).getTime() PASSED!
+new Date(0).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Thu Jan 1 00:00:00 1970 UTC) PASSED!
+new Date(0).getUTCFullYear() PASSED!
+new Date(0).getUTCMonth() PASSED!
+new Date(0).getUTCDate() PASSED!
+new Date(0).getUTCDay() PASSED!
+new Date(0).getUTCHours() PASSED!
+new Date(0).getUTCMinutes() PASSED!
+new Date(0).getUTCSeconds() PASSED!
+new Date(0).getUTCMilliseconds() PASSED!
+new Date(0).getFullYear() PASSED!
+new Date(0).getMonth() PASSED!
+new Date(0).getDate() PASSED!
+new Date(0).getDay() PASSED!
+new Date(0).getHours() PASSED!
+new Date(0).getMinutes() PASSED!
+new Date(0).getSeconds() PASSED!
+new Date(0).getMilliseconds() PASSED!
+new Date(-1).getTime() PASSED!
+new Date(-1).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Wed Dec 31 23:59:59 1969 UTC) PASSED!
+new Date(-1).getUTCFullYear() PASSED!
+new Date(-1).getUTCMonth() PASSED!
+new Date(-1).getUTCDate() PASSED!
+new Date(-1).getUTCDay() PASSED!
+new Date(-1).getUTCHours() PASSED!
+new Date(-1).getUTCMinutes() PASSED!
+new Date(-1).getUTCSeconds() PASSED!
+new Date(-1).getUTCMilliseconds() PASSED!
+new Date(-1).getFullYear() PASSED!
+new Date(-1).getMonth() PASSED!
+new Date(-1).getDate() PASSED!
+new Date(-1).getDay() PASSED!
+new Date(-1).getHours() PASSED!
+new Date(-1).getMinutes() PASSED!
+new Date(-1).getSeconds() PASSED!
+new Date(-1).getMilliseconds() PASSED!
+new Date(28799999).getTime() PASSED!
+new Date(28799999).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Thu Jan 1 07:59:59 1970 UTC) PASSED!
+new Date(28799999).getUTCFullYear() PASSED!
+new Date(28799999).getUTCMonth() PASSED!
+new Date(28799999).getUTCDate() PASSED!
+new Date(28799999).getUTCDay() PASSED!
+new Date(28799999).getUTCHours() PASSED!
+new Date(28799999).getUTCMinutes() PASSED!
+new Date(28799999).getUTCSeconds() PASSED!
+new Date(28799999).getUTCMilliseconds() PASSED!
+new Date(28799999).getFullYear() PASSED!
+new Date(28799999).getMonth() PASSED!
+new Date(28799999).getDate() PASSED!
+new Date(28799999).getDay() PASSED!
+new Date(28799999).getHours() PASSED!
+new Date(28799999).getMinutes() PASSED!
+new Date(28799999).getSeconds() PASSED!
+new Date(28799999).getMilliseconds() PASSED!
+new Date(28800000).getTime() PASSED!
+new Date(28800000).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Thu Jan 1 08:00:00 1970 UTC) PASSED!
+new Date(28800000).getUTCFullYear() PASSED!
+new Date(28800000).getUTCMonth() PASSED!
+new Date(28800000).getUTCDate() PASSED!
+new Date(28800000).getUTCDay() PASSED!
+new Date(28800000).getUTCHours() PASSED!
+new Date(28800000).getUTCMinutes() PASSED!
+new Date(28800000).getUTCSeconds() PASSED!
+new Date(28800000).getUTCMilliseconds() PASSED!
+new Date(28800000).getFullYear() PASSED!
+new Date(28800000).getMonth() PASSED!
+new Date(28800000).getDate() PASSED!
+new Date(28800000).getDay() PASSED!
+new Date(28800000).getHours() PASSED!
+new Date(28800000).getMinutes() PASSED!
+new Date(28800000).getSeconds() PASSED!
+new Date(28800000).getMilliseconds() PASSED!
+new Date(946684799999).getTime() PASSED!
+new Date(946684799999).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Fri Dec 31 23:59:59 1999 UTC) PASSED!
+new Date(946684799999).getUTCFullYear() PASSED!
+new Date(946684799999).getUTCMonth() PASSED!
+new Date(946684799999).getUTCDate() PASSED!
+new Date(946684799999).getUTCDay() PASSED!
+new Date(946684799999).getUTCHours() PASSED!
+new Date(946684799999).getUTCMinutes() PASSED!
+new Date(946684799999).getUTCSeconds() PASSED!
+new Date(946684799999).getUTCMilliseconds() PASSED!
+new Date(946684799999).getFullYear() PASSED!
+new Date(946684799999).getMonth() PASSED!
+new Date(946684799999).getDate() PASSED!
+new Date(946684799999).getDay() PASSED!
+new Date(946684799999).getHours() PASSED!
+new Date(946684799999).getMinutes() PASSED!
+new Date(946684799999).getSeconds() PASSED!
+new Date(946684799999).getMilliseconds() PASSED!
+new Date(946713599999).getTime() PASSED!
+new Date(946713599999).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Sat Jan 1 07:59:59 2000 UTC) PASSED!
+new Date(946713599999).getUTCFullYear() PASSED!
+new Date(946713599999).getUTCMonth() PASSED!
+new Date(946713599999).getUTCDate() PASSED!
+new Date(946713599999).getUTCDay() PASSED!
+new Date(946713599999).getUTCHours() PASSED!
+new Date(946713599999).getUTCMinutes() PASSED!
+new Date(946713599999).getUTCSeconds() PASSED!
+new Date(946713599999).getUTCMilliseconds() PASSED!
+new Date(946713599999).getFullYear() PASSED!
+new Date(946713599999).getMonth() PASSED!
+new Date(946713599999).getDate() PASSED!
+new Date(946713599999).getDay() PASSED!
+new Date(946713599999).getHours() PASSED!
+new Date(946713599999).getMinutes() PASSED!
+new Date(946713599999).getSeconds() PASSED!
+new Date(946713599999).getMilliseconds() PASSED!
+new Date(946684800000).getTime() PASSED!
+new Date(946684800000).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Sat Jan 1 00:00:00 2000 UTC) PASSED!
+new Date(946684800000).getUTCFullYear() PASSED!
+new Date(946684800000).getUTCMonth() PASSED!
+new Date(946684800000).getUTCDate() PASSED!
+new Date(946684800000).getUTCDay() PASSED!
+new Date(946684800000).getUTCHours() PASSED!
+new Date(946684800000).getUTCMinutes() PASSED!
+new Date(946684800000).getUTCSeconds() PASSED!
+new Date(946684800000).getUTCMilliseconds() PASSED!
+new Date(946684800000).getFullYear() PASSED!
+new Date(946684800000).getMonth() PASSED!
+new Date(946684800000).getDate() PASSED!
+new Date(946684800000).getDay() PASSED!
+new Date(946684800000).getHours() PASSED!
+new Date(946684800000).getMinutes() PASSED!
+new Date(946684800000).getSeconds() PASSED!
+new Date(946684800000).getMilliseconds() PASSED!
+new Date(946713600000).getTime() PASSED!
+new Date(946713600000).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Sat Jan 1 08:00:00 2000 UTC) PASSED!
+new Date(946713600000).getUTCFullYear() PASSED!
+new Date(946713600000).getUTCMonth() PASSED!
+new Date(946713600000).getUTCDate() PASSED!
+new Date(946713600000).getUTCDay() PASSED!
+new Date(946713600000).getUTCHours() PASSED!
+new Date(946713600000).getUTCMinutes() PASSED!
+new Date(946713600000).getUTCSeconds() PASSED!
+new Date(946713600000).getUTCMilliseconds() PASSED!
+new Date(946713600000).getFullYear() PASSED!
+new Date(946713600000).getMonth() PASSED!
+new Date(946713600000).getDate() PASSED!
+new Date(946713600000).getDay() PASSED!
+new Date(946713600000).getHours() PASSED!
+new Date(946713600000).getMinutes() PASSED!
+new Date(946713600000).getSeconds() PASSED!
+new Date(946713600000).getMilliseconds() PASSED!
+new Date(-2208988800000).getTime() PASSED!
+new Date(-2208988800000).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Mon Jan 1 00:00:00 1900 UTC) PASSED!
+new Date(-2208988800000).getUTCFullYear() PASSED!
+new Date(-2208988800000).getUTCMonth() PASSED!
+new Date(-2208988800000).getUTCDate() PASSED!
+new Date(-2208988800000).getUTCDay() PASSED!
+new Date(-2208988800000).getUTCHours() PASSED!
+new Date(-2208988800000).getUTCMinutes() PASSED!
+new Date(-2208988800000).getUTCSeconds() PASSED!
+new Date(-2208988800000).getUTCMilliseconds() PASSED!
+new Date(-2208988800000).getFullYear() PASSED!
+new Date(-2208988800000).getMonth() PASSED!
+new Date(-2208988800000).getDate() PASSED!
+new Date(-2208988800000).getDay() PASSED!
+new Date(-2208988800000).getHours() PASSED!
+new Date(-2208988800000).getMinutes() PASSED!
+new Date(-2208988800000).getSeconds() PASSED!
+new Date(-2208988800000).getMilliseconds() PASSED!
+new Date(-2208988800001).getTime() PASSED!
+new Date(-2208988800001).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Sun Dec 31 23:59:59 1899 UTC) PASSED!
+new Date(-2208988800001).getUTCFullYear() PASSED!
+new Date(-2208988800001).getUTCMonth() PASSED!
+new Date(-2208988800001).getUTCDate() PASSED!
+new Date(-2208988800001).getUTCDay() PASSED!
+new Date(-2208988800001).getUTCHours() PASSED!
+new Date(-2208988800001).getUTCMinutes() PASSED!
+new Date(-2208988800001).getUTCSeconds() PASSED!
+new Date(-2208988800001).getUTCMilliseconds() PASSED!
+new Date(-2208988800001).getFullYear() PASSED!
+new Date(-2208988800001).getMonth() PASSED!
+new Date(-2208988800001).getDate() PASSED!
+new Date(-2208988800001).getDay() PASSED!
+new Date(-2208988800001).getHours() PASSED!
+new Date(-2208988800001).getMinutes() PASSED!
+new Date(-2208988800001).getSeconds() PASSED!
+new Date(-2208988800001).getMilliseconds() PASSED!
+new Date(-2208960000001).getTime() PASSED!
+new Date(-2208960000001).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Mon Jan 1 07:59:59 1900 UTC) PASSED!
+new Date(-2208960000001).getUTCFullYear() PASSED!
+new Date(-2208960000001).getUTCMonth() PASSED!
+new Date(-2208960000001).getUTCDate() PASSED!
+new Date(-2208960000001).getUTCDay() PASSED!
+new Date(-2208960000001).getUTCHours() PASSED!
+new Date(-2208960000001).getUTCMinutes() PASSED!
+new Date(-2208960000001).getUTCSeconds() PASSED!
+new Date(-2208960000001).getUTCMilliseconds() PASSED!
+new Date(-2208960000001).getFullYear() PASSED!
+new Date(-2208960000001).getMonth() PASSED!
+new Date(-2208960000001).getDate() PASSED!
+new Date(-2208960000001).getDay() PASSED!
+new Date(-2208960000001).getHours() PASSED!
+new Date(-2208960000001).getMinutes() PASSED!
+new Date(-2208960000001).getSeconds() PASSED!
+new Date(-2208960000001).getMilliseconds() PASSED!
+new Date(-2208960000000).getTime() PASSED!
+new Date(-2208960000000).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Mon Jan 1 08:00:00 1900 UTC) PASSED!
+new Date(-2208960000000).getUTCFullYear() PASSED!
+new Date(-2208960000000).getUTCMonth() PASSED!
+new Date(-2208960000000).getUTCDate() PASSED!
+new Date(-2208960000000).getUTCDay() PASSED!
+new Date(-2208960000000).getUTCHours() PASSED!
+new Date(-2208960000000).getUTCMinutes() PASSED!
+new Date(-2208960000000).getUTCSeconds() PASSED!
+new Date(-2208960000000).getUTCMilliseconds() PASSED!
+new Date(-2208960000000).getFullYear() PASSED!
+new Date(-2208960000000).getMonth() PASSED!
+new Date(-2208960000000).getDate() PASSED!
+new Date(-2208960000000).getDay() PASSED!
+new Date(-2208960000000).getHours() PASSED!
+new Date(-2208960000000).getMinutes() PASSED!
+new Date(-2208960000000).getSeconds() PASSED!
+new Date(-2208960000000).getMilliseconds() PASSED!
+new Date(-2208959999999).getTime() PASSED!
+new Date(-2208959999999).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Mon Jan 1 08:00:00 1900 UTC) PASSED!
+new Date(-2208959999999).getUTCFullYear() PASSED!
+new Date(-2208959999999).getUTCMonth() PASSED!
+new Date(-2208959999999).getUTCDate() PASSED!
+new Date(-2208959999999).getUTCDay() PASSED!
+new Date(-2208959999999).getUTCHours() PASSED!
+new Date(-2208959999999).getUTCMinutes() PASSED!
+new Date(-2208959999999).getUTCSeconds() PASSED!
+new Date(-2208959999999).getUTCMilliseconds() PASSED!
+new Date(-2208959999999).getFullYear() PASSED!
+new Date(-2208959999999).getMonth() PASSED!
+new Date(-2208959999999).getDate() PASSED!
+new Date(-2208959999999).getDay() PASSED!
+new Date(-2208959999999).getHours() PASSED!
+new Date(-2208959999999).getMinutes() PASSED!
+new Date(-2208959999999).getSeconds() PASSED!
+new Date(-2208959999999).getMilliseconds() PASSED!
+new Date(951782400000).getTime() PASSED!
+new Date(951782400000).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Tue Feb 29 00:00:00 2000 UTC) PASSED!
+new Date(951782400000).getUTCFullYear() PASSED!
+new Date(951782400000).getUTCMonth() PASSED!
+new Date(951782400000).getUTCDate() PASSED!
+new Date(951782400000).getUTCDay() PASSED!
+new Date(951782400000).getUTCHours() PASSED!
+new Date(951782400000).getUTCMinutes() PASSED!
+new Date(951782400000).getUTCSeconds() PASSED!
+new Date(951782400000).getUTCMilliseconds() PASSED!
+new Date(951782400000).getFullYear() PASSED!
+new Date(951782400000).getMonth() PASSED!
+new Date(951782400000).getDate() PASSED!
+new Date(951782400000).getDay() PASSED!
+new Date(951782400000).getHours() PASSED!
+new Date(951782400000).getMinutes() PASSED!
+new Date(951782400000).getSeconds() PASSED!
+new Date(951782400000).getMilliseconds() PASSED!
+new Date(951811200000).getTime() PASSED!
+new Date(951811200000).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Tue Feb 29 08:00:00 2000 UTC) PASSED!
+new Date(951811200000).getUTCFullYear() PASSED!
+new Date(951811200000).getUTCMonth() PASSED!
+new Date(951811200000).getUTCDate() PASSED!
+new Date(951811200000).getUTCDay() PASSED!
+new Date(951811200000).getUTCHours() PASSED!
+new Date(951811200000).getUTCMinutes() PASSED!
+new Date(951811200000).getUTCSeconds() PASSED!
+new Date(951811200000).getUTCMilliseconds() PASSED!
+new Date(951811200000).getFullYear() PASSED!
+new Date(951811200000).getMonth() PASSED!
+new Date(951811200000).getDate() PASSED!
+new Date(951811200000).getDay() PASSED!
+new Date(951811200000).getHours() PASSED!
+new Date(951811200000).getMinutes() PASSED!
+new Date(951811200000).getSeconds() PASSED!
+new Date(951811200000).getMilliseconds() PASSED!
+new Date(1104537600000).getTime() PASSED!
+new Date(1104537600000).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Sat Jan 1 00:00:00 2005 UTC) PASSED!
+new Date(1104537600000).getUTCFullYear() PASSED!
+new Date(1104537600000).getUTCMonth() PASSED!
+new Date(1104537600000).getUTCDate() PASSED!
+new Date(1104537600000).getUTCDay() PASSED!
+new Date(1104537600000).getUTCHours() PASSED!
+new Date(1104537600000).getUTCMinutes() PASSED!
+new Date(1104537600000).getUTCSeconds() PASSED!
+new Date(1104537600000).getUTCMilliseconds() PASSED!
+new Date(1104537600000).getFullYear() PASSED!
+new Date(1104537600000).getMonth() PASSED!
+new Date(1104537600000).getDate() PASSED!
+new Date(1104537600000).getDay() PASSED!
+new Date(1104537600000).getHours() PASSED!
+new Date(1104537600000).getMinutes() PASSED!
+new Date(1104537600000).getSeconds() PASSED!
+new Date(1104537600000).getMilliseconds() PASSED!
+new Date(1104566400000).getTime() PASSED!
+new Date(1104566400000).valueOf() PASSED!
+Date.parse( + DateCase.toString() +) PASSED!
+mydate.valueOf()==Date.parse(mydate.toString()) PASSED!
+mydate.valueOf()==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(mydate.toString())==Date.parse(mydate.toUTCString()) PASSED!
+Date.parse(Sat Jan 1 08:00:00 2005 UTC) PASSED!
+new Date(1104566400000).getUTCFullYear() PASSED!
+new Date(1104566400000).getUTCMonth() PASSED!
+new Date(1104566400000).getUTCDate() PASSED!
+new Date(1104566400000).getUTCDay() PASSED!
+new Date(1104566400000).getUTCHours() PASSED!
+new Date(1104566400000).getUTCMinutes() PASSED!
+new Date(1104566400000).getUTCSeconds() PASSED!
+new Date(1104566400000).getUTCMilliseconds() PASSED!
+new Date(1104566400000).getFullYear() PASSED!
+new Date(1104566400000).getMonth() PASSED!
+new Date(1104566400000).getDate() PASSED!
+new Date(1104566400000).getDay() PASSED!
+new Date(1104566400000).getHours() PASSED!
+new Date(1104566400000).getMinutes() PASSED!
+new Date(1104566400000).getSeconds() PASSED!
+new Date(1104566400000).getMilliseconds() PASSED!

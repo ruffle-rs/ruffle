@@ -1,5 +1,7 @@
 ﻿package {
-	public class Test {
+	import flash.display.Sprite;
+
+	public class Test extends Sprite {
 	}
 }
 
@@ -29,3 +31,21 @@ trace(a.lastIndexOf(undefined));
 
 trace("//a.lastIndexOf(\"5\");");
 trace(a.lastIndexOf("5"));
+
+trace("//a.lastIndexOf(5, -1);");
+trace(a.lastIndexOf(5, -1));
+
+trace("//a.lastIndexOf(5, -3);");
+trace(a.lastIndexOf(5, -3));
+
+trace("//a.lastIndexOf(5, -8);");
+trace(a.lastIndexOf(5, -8));
+
+trace("//a.lastIndexOf(5, -9);");
+trace(a.lastIndexOf(5, -9));
+
+trace("//a.lastIndexOf(\"5\", -8);");
+trace(a.lastIndexOf("5", -8));
+
+trace("//a.lastIndexOf(\"5\", -9);");
+trace(a.lastIndexOf("5", -9));

@@ -1,0 +1,13 @@
+PASSED: 1 == 1
+PASSED: 3 == 3
+PASSED: _root.asOrder  ==  '0+1+2+3+4+5+6+' [goto_frame_test.c:145]
+PASSED: _root.asOrder  ==  '0+1+2+3+4+5+6+7+' [goto_frame_test.c:148]
+FAILED: expected: '/mc1' obtained:  [goto_frame_test.c:155] 
+FAILED: expected: '/mc2' obtained:  [goto_frame_test.c:156] 
+FAILED: expected: -16485 obtained:  [goto_frame_test.c:182] 
+FAILED: expected: 'mc1' obtained:  [goto_frame_test.c:183] 
+FAILED: expected: -16485 obtained:  [goto_frame_test.c:184] 
+FAILED: expected: 'mc2' obtained:  [goto_frame_test.c:185] 
+#passed: 4
+#failed: 6
+#total tests run: 10

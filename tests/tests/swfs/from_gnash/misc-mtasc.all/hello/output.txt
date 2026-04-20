@@ -1,0 +1,8 @@
+PASSED: function == function  [hello.as:8]
+PASSED: 1 == 1  [hello.as:23]
+Hello world [hello.as:26]
+PASSED: Test run 2 [ [hello.as:29]]
+#passed: 3
+#failed: 0
+#total tests run: 3
+__END_OF_TEST__

@@ -46,11 +46,28 @@ align-top-right = Вверх вправо
 align-bottom-right = Вниз вправо
 align-force = Принудительно
 scale-mode = Режим масштабирования
-scale-mode-exactfit = Точный размер
-scale-mode-noborder = Без рамок
-scale-mode-noscale = Без масштабирования
-scale-mode-showall = Показать всё
+scale-mode-noscale = 100%
+scale-mode-noscale-tooltip =
+    Не изменяет масштаб SWF.
+    
+    Соответствует StageScaleMode.NO_SCALE
+scale-mode-showall = Вписать содержимое
+scale-mode-showall-tooltip =
+    Изменяет масштаб SWF для заполнения всей рабочей области с новыми размерами без изменения соотношения сторон содержимого.
+    
+    Соответствует StageScaleMode.SHOW_ALL
+scale-mode-exactfit = Растянуть содержимое
+scale-mode-exactfit-tooltip =
+    Изменяет масштаб SWF для заполнения рабочей области с новыми размерами без учета исходного соотношения сторон. 
+    
+    Соответствует StageScaleMode.EXACT_FIT
+scale-mode-noborder = Обрезать по размеру
+scale-mode-noborder-tooltip =
+    Изменяет масштаб SWF для заполнения всей рабочей области с новыми размерами без изменения соотношения сторон содержимого. 
+    
+    Соответствует StageScaleMode.NO_BORDER
 scale-mode-force = Принудительно
+scale-mode-force-tooltip = Предотвращает изменение режима масштабирования ролика, фиксируя выбранную настройку.
 player-version = Версия Flash Player'а
 player-runtime = Среда выполнения
 player-runtime-flash = Flash Player

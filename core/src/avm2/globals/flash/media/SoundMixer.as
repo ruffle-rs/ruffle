@@ -1,8 +1,7 @@
 package flash.media {
     import flash.utils.ByteArray;
-    
-    public final class SoundMixer {
 
+    public final class SoundMixer {
         public static native function get soundTransform():SoundTransform;
         public static native function set soundTransform(value:SoundTransform):void;
 
@@ -11,6 +10,11 @@ package flash.media {
 
         public static native function stopAll():void;
         public static native function areSoundsInaccessible():Boolean
-        public static native function computeSpectrum(outputArray:ByteArray, FFTMode:Boolean = false, stretchFactor:int = 0):void;
+
+        public static native function computeSpectrum(
+            outputArray:ByteArray,
+            FFTMode:Boolean = false,
+            stretchFactor:int = 0
+        ):void;
     }
 }

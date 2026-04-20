@@ -1,0 +1,13 @@
+// stage root - onscreen
+true
+true
+// stage root - offscreen
+true
+true
+// load complete
+// loader root - offscreen
+true
+false
+// loader root - onscreen
+true
+false

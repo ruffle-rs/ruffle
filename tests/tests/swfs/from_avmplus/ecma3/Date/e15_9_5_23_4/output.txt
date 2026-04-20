@@ -1,0 +1,44 @@
+(  ).setTime() PASSED!
+( ).setTime() PASSED!
+().setTime() PASSED!
+().setTime() PASSED!
+( ).setTime() PASSED!
+( ).setTime() PASSED!
+(  ).setTime() PASSED!
+( ).setTime() PASSED!
+().setTime() PASSED!
+().setTime() PASSED!
+( ).setTime() PASSED!
+( ).setTime() PASSED!
+(  ).setTime() PASSED!
+( ).setTime() PASSED!
+().setTime() PASSED!
+().setTime() PASSED!
+( ).setTime() PASSED!
+( ).setTime() PASSED!
+(  ).setTime() PASSED!
+( ).setTime() PASSED!
+().setTime() PASSED!
+().setTime() PASSED!
+( ).setTime() PASSED!
+( ).setTime() PASSED!
+(  ).setTime() PASSED!
+( ).setTime() PASSED!
+().setTime() PASSED!
+().setTime() PASSED!
+( ).setTime() PASSED!
+( ).setTime() PASSED!
+(  ).setTime() PASSED!
+( ).setTime() PASSED!
+().setTime() PASSED!
+().setTime() PASSED!
+( ).setTime() PASSED!
+( ).setTime() PASSED!
+(  ).setTime() PASSED!
+( ).setTime() PASSED!
+().setTime() PASSED!
+().setTime() PASSED!
+( ).setTime() PASSED!
+( ).setTime() PASSED!
+(new Date(NaN)).setTime() PASSED!
+Date.prototype.setTime.length PASSED!

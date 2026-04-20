@@ -1,12 +1,14 @@
-use crate::avm1::globals::local_connection::LocalConnection as Avm1LocalConnectionObject;
 use crate::avm1::Object as Avm1Object;
-use crate::avm2::object::LocalConnectionObject;
+use crate::avm1::globals::local_connection::LocalConnection as Avm1LocalConnectionObject;
 use crate::avm2::Domain as Avm2Domain;
+use crate::avm2::object::LocalConnectionObject;
 use crate::context::UpdateContext;
 use crate::string::AvmString;
 use flash_lso::types::Value as AmfValue;
 use fnv::FnvHashMap;
 use gc_arena::Collect;
+use gc_arena::collect::Trace;
+use ruffle_macros::istr;
 use ruffle_wstr::{WStr, WString};
 use std::borrow::Cow;
 
@@ -30,7 +32,7 @@ impl<'gc> From<Avm1Object<'gc>> for LocalConnectionKind<'gc> {
 }
 
 impl<'gc> LocalConnectionKind<'gc> {
-    pub fn send_status(&self, context: &mut UpdateContext<'_, 'gc>, status: &'static str) {
+    pub fn send_status(&self, status: AvmString<'gc>, context: &mut UpdateContext<'gc>) {
         match self {
             LocalConnectionKind::Avm2(_domain, object) => {
                 object.send_status(context, status);
@@ -45,7 +47,7 @@ impl<'gc> LocalConnectionKind<'gc> {
 
     pub fn run_method(
         &self,
-        context: &mut UpdateContext<'_, 'gc>,
+        context: &mut UpdateContext<'gc>,
         method_name: AvmString<'gc>,
         arguments: Vec<AmfValue>,
     ) {
@@ -85,10 +87,10 @@ pub enum QueuedMessageKind<'gc> {
 }
 
 impl<'gc> QueuedMessageKind<'gc> {
-    pub fn deliver(self, source: LocalConnectionKind<'gc>, context: &mut UpdateContext<'_, 'gc>) {
+    pub fn deliver(self, source: LocalConnectionKind<'gc>, context: &mut UpdateContext<'gc>) {
         match self {
             QueuedMessageKind::Failure => {
-                source.send_status(context, "error");
+                source.send_status(istr!(context, "error"), context);
             }
             QueuedMessageKind::Message {
                 connection_name,
@@ -96,10 +98,10 @@ impl<'gc> QueuedMessageKind<'gc> {
                 arguments,
             } => {
                 if let Some(receiver) = context.local_connections.find_listener(&connection_name) {
-                    source.send_status(context, "status");
+                    source.send_status(istr!(context, "status"), context);
                     receiver.run_method(context, method_name, arguments);
                 } else {
-                    source.send_status(context, "error");
+                    source.send_status(istr!(context, "error"), context);
                 }
             }
         }
@@ -118,14 +120,13 @@ pub struct LocalConnections<'gc> {
     messages: Vec<QueuedMessage<'gc>>,
 }
 
-unsafe impl Collect for LocalConnections<'_> {
-    fn trace(&self, cc: &gc_arena::Collection) {
+// TODO(moulins): use gc_arena::Static to avoid unsafe impl?
+unsafe impl<'gc> Collect<'gc> for LocalConnections<'gc> {
+    fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
         for (_, v) in self.connections.iter() {
-            v.trace(cc);
+            cc.trace(v);
         }
-        for m in self.messages.iter() {
-            m.trace(cc);
-        }
+        cc.trace(&self.messages);
     }
 }
 
@@ -157,7 +158,7 @@ impl<'gc> LocalConnections<'gc> {
             None
         } else {
             self.connections.insert(key.to_owned(), connection.into());
-            Some(LocalConnectionHandle(key.to_owned()))
+            Some(LocalConnectionHandle(key))
         }
     }
 
@@ -207,7 +208,7 @@ impl<'gc> LocalConnections<'gc> {
         self.connections.get(name).cloned()
     }
 
-    pub fn update_connections(context: &mut UpdateContext<'_, 'gc>) {
+    pub fn update_connections(context: &mut UpdateContext<'gc>) {
         if context.local_connections.messages.is_empty() {
             return;
         }
@@ -229,7 +230,7 @@ impl<'gc> LocalConnections<'gc> {
             }
         } else {
             tracing::error!("LocalConnection: Unable to parse movie URL: {url}");
-            return Cow::Borrowed("unknown"); // this is surely an error but it'll hopefully highlight this case in issues for us
+            Cow::Borrowed("unknown") // this is surely an error but it'll hopefully highlight this case in issues for us
         }
     }
 

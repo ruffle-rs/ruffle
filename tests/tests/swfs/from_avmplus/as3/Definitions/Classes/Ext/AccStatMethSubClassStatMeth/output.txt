@@ -1,0 +1,4 @@
+*** Access the static method via sub class using unadorned method call *** PASSED!
+AccStatMethSubClassStatMeth.callEcho('world') PASSED!
+*** Access the static method via sub class using base class method call *** PASSED!
+AccStatMethSubClassStatMeth.callBaseEcho('here') PASSED!

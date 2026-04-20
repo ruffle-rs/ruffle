@@ -1,37 +1,37 @@
+use std::any::Any;
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::num::NonZeroU64;
 use std::{borrow::Cow, cell::Cell, sync::Arc};
 
 use indexmap::IndexMap;
+use ruffle_render::bitmap::BitmapHandle;
 use ruffle_render::error::Error as BitmapError;
 use ruffle_render::pixel_bender::{
-    ImageInputTexture, PixelBenderShaderHandle, PixelBenderShaderImpl, PixelBenderType,
-    OUT_COORD_NAME,
+    OUT_COORD_NAME, PixelBenderParam, PixelBenderShader, PixelBenderShaderHandle,
+    PixelBenderShaderImpl, PixelBenderType,
 };
-use ruffle_render::{
-    bitmap::BitmapHandle,
-    pixel_bender::{PixelBenderParam, PixelBenderShader, PixelBenderShaderArgument},
-};
+use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
+use smallvec::{SmallVec, smallvec_inline};
 use wgpu::util::{DeviceExt, StagingBelt};
 use wgpu::{
     BindGroupEntry, BindingResource, BlendComponent, BufferDescriptor, BufferUsages,
-    ColorTargetState, ColorWrites, CommandEncoder, ImageCopyTexture, PipelineLayout,
-    RenderPipeline, RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor,
+    ColorTargetState, ColorWrites, CommandEncoder, PipelineLayout, RenderPipeline,
+    RenderPipelineDescriptor, SamplerBindingType, ShaderModuleDescriptor, TexelCopyTextureInfo,
     TextureDescriptor, TextureFormat, TextureView, VertexState,
 };
 
 use crate::filters::{FilterSource, VERTEX_BUFFERS_DESCRIPTION_FILTERS};
 use crate::raw_texture_as_texture;
 use crate::{
-    as_texture, backend::WgpuRenderBackend, descriptors::Descriptors, target::RenderTarget, Texture,
+    Texture, as_texture, backend::WgpuRenderBackend, descriptors::Descriptors, target::RenderTarget,
 };
 
 #[derive(Debug)]
 pub struct PixelBenderWgpuShader {
     bind_group_layout: wgpu::BindGroupLayout,
     pipeline_layout: PipelineLayout,
-    pipelines: RefCell<HashMap<(u32, wgpu::TextureFormat), Arc<RenderPipeline>>>,
+    pipelines: RefCell<HashMap<(u32, wgpu::TextureFormat), RenderPipeline>>,
     vertex_shader: wgpu::ShaderModule,
     fragment_shader: wgpu::ShaderModule,
     shader: PixelBenderShader,
@@ -50,47 +50,46 @@ impl PixelBenderWgpuShader {
         descriptors: &Descriptors,
         samples: u32,
         format: TextureFormat,
-    ) -> Arc<wgpu::RenderPipeline> {
+    ) -> wgpu::RenderPipeline {
         self.pipelines
             .borrow_mut()
             .entry((samples, format))
             .or_insert_with(|| {
-                Arc::new(
-                    descriptors
-                        .device
-                        .create_render_pipeline(&RenderPipelineDescriptor {
-                            label: create_debug_label!("PixelBender shader pipeline").as_deref(),
-                            layout: Some(&self.pipeline_layout),
-                            vertex: VertexState {
-                                module: &self.vertex_shader,
-                                entry_point: naga_pixelbender::VERTEX_SHADER_ENTRYPOINT,
-                                buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
-                                compilation_options: Default::default(),
-                            },
-                            fragment: Some(wgpu::FragmentState {
-                                module: &self.fragment_shader,
-                                entry_point: naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT,
-                                targets: &[Some(ColorTargetState {
-                                    format,
-                                    // FIXME - what should this be?
-                                    blend: Some(wgpu::BlendState {
-                                        color: BlendComponent::OVER,
-                                        alpha: BlendComponent::OVER,
-                                    }),
-                                    write_mask: ColorWrites::all(),
-                                })],
-                                compilation_options: Default::default(),
-                            }),
-                            primitive: Default::default(),
-                            depth_stencil: None,
-                            multisample: wgpu::MultisampleState {
-                                count: samples,
-                                mask: !0,
-                                alpha_to_coverage_enabled: false,
-                            },
-                            multiview: Default::default(),
+                descriptors
+                    .device
+                    .create_render_pipeline(&RenderPipelineDescriptor {
+                        label: create_debug_label!("PixelBender shader pipeline").as_deref(),
+                        layout: Some(&self.pipeline_layout),
+                        vertex: VertexState {
+                            module: &self.vertex_shader,
+                            entry_point: Some(naga_pixelbender::VERTEX_SHADER_ENTRYPOINT),
+                            buffers: &VERTEX_BUFFERS_DESCRIPTION_FILTERS,
+                            compilation_options: Default::default(),
+                        },
+                        fragment: Some(wgpu::FragmentState {
+                            module: &self.fragment_shader,
+                            entry_point: Some(naga_pixelbender::FRAGMENT_SHADER_ENTRYPOINT),
+                            targets: &[Some(ColorTargetState {
+                                format,
+                                // FIXME - what should this be?
+                                blend: Some(wgpu::BlendState {
+                                    color: BlendComponent::OVER,
+                                    alpha: BlendComponent::OVER,
+                                }),
+                                write_mask: ColorWrites::all(),
+                            })],
+                            compilation_options: Default::default(),
                         }),
-                )
+                        primitive: Default::default(),
+                        depth_stencil: None,
+                        multisample: wgpu::MultisampleState {
+                            count: samples,
+                            mask: !0,
+                            alpha_to_coverage_enabled: false,
+                        },
+                        multiview: Default::default(),
+                        cache: None,
+                    })
             })
             .clone()
     }
@@ -103,7 +102,7 @@ impl PixelBenderShaderImpl for PixelBenderWgpuShader {
 }
 
 pub fn as_cache_holder(handle: &PixelBenderShaderHandle) -> &PixelBenderWgpuShader {
-    <dyn PixelBenderShaderImpl>::downcast_ref(&*handle.0).unwrap()
+    <dyn Any>::downcast_ref(&*handle.0).unwrap()
 }
 
 impl PixelBenderWgpuShader {
@@ -262,22 +261,6 @@ impl PixelBenderWgpuShader {
     }
 }
 
-enum BorrowedOrOwnedTexture<'a> {
-    Borrowed(&'a wgpu::Texture),
-    Owned(wgpu::Texture),
-}
-
-impl<'a> std::ops::Deref for BorrowedOrOwnedTexture<'a> {
-    type Target = wgpu::Texture;
-
-    fn deref(&self) -> &Self::Target {
-        match self {
-            BorrowedOrOwnedTexture::Borrowed(t) => t,
-            BorrowedOrOwnedTexture::Owned(t) => t,
-        }
-    }
-}
-
 /// The texture format to use for the temporary texture we create when reading/writing
 /// from raw bytes (ByteArray to Vector.<Number>). We use a Float texture to be able to
 /// pass in floating-point values directly, without converting on the host side.
@@ -291,47 +274,35 @@ pub(super) fn temporary_texture_format_for_channels(channels: u32) -> wgpu::Text
         2 => wgpu::TextureFormat::Rg32Float,
         3 => wgpu::TextureFormat::Rgba32Float,
         4 => wgpu::TextureFormat::Rgba32Float,
-        _ => panic!("Unsupported number of channels: {}", channels),
+        _ => panic!("Unsupported number of channels: {channels}"),
     }
 }
 
 fn image_input_as_texture<'a>(
     descriptors: &Descriptors,
     input: &'a ImageInputTexture<'a>,
-) -> BorrowedOrOwnedTexture<'a> {
+) -> Cow<'a, wgpu::Texture> {
     match input {
-        ImageInputTexture::Bitmap(handle) => {
-            BorrowedOrOwnedTexture::Borrowed(&as_texture(handle).texture)
-        }
+        ImageInputTexture::Bitmap(handle) => Cow::Borrowed(&as_texture(handle).texture),
         ImageInputTexture::TextureRef(raw_texture) => {
-            BorrowedOrOwnedTexture::Borrowed(raw_texture_as_texture(*raw_texture))
+            Cow::Borrowed(raw_texture_as_texture(*raw_texture))
         }
-        ImageInputTexture::Bytes {
+        ImageInputTexture::Floats {
             width,
             height,
-            channels,
-            bytes,
+            data,
         } => {
             let extent = wgpu::Extent3d {
                 width: *width,
                 height: *height,
                 depth_or_array_layers: 1,
             };
-            let texture_format = temporary_texture_format_for_channels(*channels);
-            // We're going to be using an Rgba32Float texture, so we need to pad the bytes
-            // with zeros for the alpha channel. The PixelBender code will only ever try to
-            // use the first 3 channels (since it was compiled with a 3-channel input),
-            // so it doesn't matter what value we choose here.
-            let padded_bytes = if *channels == 3 {
-                let mut padded_bytes = Vec::with_capacity(bytes.len() * 4 / 3);
-                for chunk in bytes.chunks_exact(12) {
-                    padded_bytes.extend_from_slice(chunk);
-                    padded_bytes.extend_from_slice(&[0, 0, 0, 0]);
-                }
-                Cow::Owned(padded_bytes)
-            } else {
-                Cow::Borrowed(bytes)
-            };
+
+            let texture_format =
+                crate::pixel_bender::temporary_texture_format_for_channels(data.channel_count());
+            let padded_data = data.padded_data();
+
+            let padded_bytes = bytemuck::cast_slice::<f32, u8>(padded_data.as_ref());
 
             let fresh_texture = descriptors.device.create_texture(&TextureDescriptor {
                 label: Some("Temporary PixelBender output texture"),
@@ -344,21 +315,21 @@ fn image_input_as_texture<'a>(
                 view_formats: &[texture_format],
             });
             descriptors.queue.write_texture(
-                wgpu::ImageCopyTexture {
+                wgpu::TexelCopyTextureInfo {
                     texture: &fresh_texture,
                     mip_level: 0,
                     origin: wgpu::Origin3d::ZERO,
                     aspect: wgpu::TextureAspect::All,
                 },
-                &padded_bytes,
-                wgpu::ImageDataLayout {
+                padded_bytes,
+                wgpu::TexelCopyBufferLayout {
                     offset: 0,
                     bytes_per_row: Some(padded_bytes.len() as u32 / height),
                     rows_per_image: None,
                 },
                 extent,
             );
-            BorrowedOrOwnedTexture::Owned(fresh_texture)
+            Cow::Owned(fresh_texture)
         }
     }
 }
@@ -378,7 +349,7 @@ pub enum ShaderMode {
     Filter,
 }
 
-#[allow(clippy::too_many_arguments)]
+#[expect(clippy::too_many_arguments)]
 pub(super) fn run_pixelbender_shader_impl(
     descriptors: &Descriptors,
     shader: PixelBenderShaderHandle,
@@ -451,7 +422,7 @@ pub(super) fn run_pixelbender_shader_impl(
         ShaderMode::ShaderJob => [0.0f32, 0.0f32, 0.0f32, 0.0f32],
         // When a Shader is run through a ShaderFilter, out-of-range texture sample coordinates
         // return transparent black (0.0, 0.0, 0.0, 0.0). This is easiest to observe with
-        // BitmapData.applyFilter when the BitampData destination is larger than the source.
+        // BitmapData.applyFilter when the BitmapData destination is larger than the source.
         ShaderMode::Filter => [1.0f32, 1.0f32, 1.0f32, 1.0f32],
     }]));
     drop(zeroed_out_of_range_mode_slice);
@@ -469,13 +440,12 @@ pub(super) fn run_pixelbender_shader_impl(
         match input {
             PixelBenderShaderArgument::ImageInput { index, texture, .. } => {
                 let input_texture = &image_input_as_texture(descriptors, texture.as_ref().unwrap());
-                let same_source_dest =
-                    if let BorrowedOrOwnedTexture::Borrowed(input_texture) = input_texture {
-                        std::ptr::eq(*input_texture, target)
-                    } else {
-                        // When we create a fresh texture, it can never be equal to the pre-existing target
-                        false
-                    };
+                let same_source_dest = if let Cow::Borrowed(input_texture) = input_texture {
+                    std::ptr::eq(*input_texture, target)
+                } else {
+                    // When we create a fresh texture, it can never be equal to the pre-existing target
+                    false
+                };
                 if same_source_dest {
                     // The input is the same as the output - we need to clone the input.
                     // We will write to the original output, and use a clone of the input as a texture input binding
@@ -497,13 +467,13 @@ pub(super) fn run_pixelbender_shader_impl(
                             view_formats: &[wgpu::TextureFormat::Rgba8Unorm],
                         });
                         render_command_encoder.copy_texture_to_texture(
-                            ImageCopyTexture {
+                            TexelCopyTextureInfo {
                                 texture: target,
                                 mip_level: 0,
                                 origin: Default::default(),
                                 aspect: Default::default(),
                             },
-                            ImageCopyTexture {
+                            TexelCopyTextureInfo {
                                 texture: &fresh_texture,
                                 mip_level: 0,
                                 origin: Default::default(),
@@ -513,7 +483,7 @@ pub(super) fn run_pixelbender_shader_impl(
                         );
 
                         BitmapHandle(Arc::new(Texture {
-                            texture: Arc::new(fresh_texture),
+                            texture: fresh_texture,
                             bind_linear: Default::default(),
                             bind_nearest: Default::default(),
                             copy_count: Cell::new(0),
@@ -541,62 +511,68 @@ pub(super) fn run_pixelbender_shader_impl(
 
                 #[derive(Debug)]
                 enum FloatOrInt {
-                    Float(Vec<f32>),
-                    Int(Vec<i32>),
+                    Float(SmallVec<[[f32; 4]; 1]>),
+                    Int([i32; 4]),
                 }
 
                 impl FloatOrInt {
-                    fn len(&self) -> usize {
+                    fn vec4_count(&self) -> usize {
                         match self {
                             FloatOrInt::Float(v) => v.len(),
-                            FloatOrInt::Int(v) => v.len(),
+                            FloatOrInt::Int(_) => 1,
                         }
                     }
                 }
 
                 let value_vec = match value {
-                    PixelBenderType::TFloat(f1) => FloatOrInt::Float(vec![*f1, 0.0, 0.0, 0.0]),
-                    PixelBenderType::TFloat2(f1, f2) => FloatOrInt::Float(vec![*f1, *f2, 0.0, 0.0]),
-                    PixelBenderType::TFloat3(f1, f2, f3) => {
-                        FloatOrInt::Float(vec![*f1, *f2, *f3, 0.0])
+                    &mut PixelBenderType::TFloat(f1) => {
+                        FloatOrInt::Float(smallvec_inline![[f1, 0.0, 0.0, 0.0]])
                     }
-                    PixelBenderType::TFloat4(f1, f2, f3, f4) => {
-                        FloatOrInt::Float(vec![*f1, *f2, *f3, *f4])
+                    &mut PixelBenderType::TFloat2(f1, f2) => {
+                        FloatOrInt::Float(smallvec_inline![[f1, f2, 0.0, 0.0]])
                     }
-                    PixelBenderType::TInt(i1) => FloatOrInt::Int(vec![*i1 as i32, 0, 0, 0]),
-                    PixelBenderType::TInt2(i1, i2) => {
-                        FloatOrInt::Int(vec![*i1 as i32, *i2 as i32, 0, 0])
+                    &mut PixelBenderType::TFloat3(f1, f2, f3) => {
+                        FloatOrInt::Float(smallvec_inline![[f1, f2, f3, 0.0]])
                     }
-                    PixelBenderType::TInt3(i1, i2, i3) => {
-                        FloatOrInt::Int(vec![*i1 as i32, *i2 as i32, *i3 as i32, 0])
+                    &mut PixelBenderType::TFloat4(f1, f2, f3, f4) => {
+                        FloatOrInt::Float(smallvec_inline![[f1, f2, f3, f4]])
                     }
-                    PixelBenderType::TInt4(i1, i2, i3, i4) => {
-                        FloatOrInt::Int(vec![*i1 as i32, *i2 as i32, *i3 as i32, *i4 as i32])
+                    &mut PixelBenderType::TInt(i1) | &mut PixelBenderType::TBool(i1) => {
+                        FloatOrInt::Int([i1 as i32, 0, 0, 0])
+                    }
+                    &mut PixelBenderType::TInt2(i1, i2) | &mut PixelBenderType::TBool2(i1, i2) => {
+                        FloatOrInt::Int([i1 as i32, i2 as i32, 0, 0])
+                    }
+                    &mut PixelBenderType::TInt3(i1, i2, i3)
+                    | &mut PixelBenderType::TBool3(i1, i2, i3) => {
+                        FloatOrInt::Int([i1 as i32, i2 as i32, i3 as i32, 0])
+                    }
+                    &mut PixelBenderType::TInt4(i1, i2, i3, i4)
+                    | &mut PixelBenderType::TBool4(i1, i2, i3, i4) => {
+                        FloatOrInt::Int([i1 as i32, i2 as i32, i3 as i32, i4 as i32])
                     }
                     // We treat the input as being in column-major order. Despite what the Flash docs claim,
                     // this seems to be what Flash Player does.
-                    PixelBenderType::TFloat2x2(arr) => FloatOrInt::Float(arr.to_vec()),
-                    PixelBenderType::TFloat3x3(arr) => {
-                        // Add a zero after every 3 values to created zero-padded vec4s
-                        let mut vec4_arr = Vec::with_capacity(16);
-                        for (i, val) in arr.iter().enumerate() {
-                            vec4_arr.push(*val);
-                            if i % 3 == 2 {
-                                vec4_arr.push(0.0);
-                            }
-                        }
-                        FloatOrInt::Float(vec4_arr)
+                    &mut PixelBenderType::TFloat2x2(arr) => {
+                        FloatOrInt::Float(SmallVec::from_buf([arr]))
                     }
-                    PixelBenderType::TFloat4x4(arr) => FloatOrInt::Float(arr.to_vec()),
+                    PixelBenderType::TFloat3x3(arr) => {
+                        // Each column becomes a zero-padded vec4
+                        FloatOrInt::Float(SmallVec::from_slice(&[
+                            [arr[0], arr[1], arr[2], 0.0],
+                            [arr[3], arr[4], arr[5], 0.0],
+                            [arr[6], arr[7], arr[8], 0.0],
+                        ]))
+                    }
+                    PixelBenderType::TFloat4x4(arr) => {
+                        let arr = bytemuck::cast_slice(arr);
+
+                        FloatOrInt::Float(SmallVec::from_slice(arr))
+                    }
                     _ => unreachable!("Unimplemented value {value:?}"),
                 };
 
-                assert_eq!(
-                    value_vec.len() % 4,
-                    0,
-                    "value_vec should represent concatenated vec4fs"
-                );
-                let num_vec4s = value_vec.len() / 4;
+                let num_vec4s = value_vec.vec4_count();
                 // Both float32 and int are 4 bytes
                 let component_size_bytes = 4;
 
@@ -614,7 +590,7 @@ pub(super) fn run_pixelbender_shader_impl(
                     render_command_encoder,
                     buffer,
                     vec4_count as u64 * 4 * component_size_bytes,
-                    NonZeroU64::new(value_vec.len() as u64 * component_size_bytes).unwrap(),
+                    NonZeroU64::new(num_vec4s as u64 * 4 * component_size_bytes).unwrap(),
                     &descriptors.device,
                 );
                 match value_vec {

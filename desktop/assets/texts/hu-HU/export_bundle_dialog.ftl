@@ -1,0 +1,12 @@
+export-bundle-dialog-title = Ruffle csomag exportálása
+export-bundle-dialog-bundle-name = Csomag neve:
+export-bundle-dialog-files-description = Csomagolandó fájlok kiválasztása:
+export-bundle-dialog-files-select-all = Minden kijelölése
+export-bundle-dialog-export = Exportálás
+export-bundle-dialog-exporting = Exportálás...
+export-bundle-dialog-exporting-failed = Az exportálás sikertelen.
+export-bundle-dialog-error-user-canceled = Felhasználó által megszakítva.
+export-bundle-dialog-error-failed-to-show-picker = Nem sikerült megjeleníteni a fájlválasztót.
+export-bundle-dialog-error-io-error = Hiba történt a csomag írásakor.
+export-bundle-dialog-info-title = Mi az a Ruffle csomag?
+export-bundle-dialog-info-description = A Ruffle csomag egy univerzális csomag, amely mindent tartalmaz, ami egy SWF fájl futtatásához szükséges — az összes szükséges erőforrást és beállítást. Egy csomaggal az SWF fájl azonnal működik: nincsenek hiányzó fájlok, nincs szükség manuális beállításra, csak el kell indítani a csomagot.

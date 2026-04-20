@@ -68,7 +68,7 @@ Ruffle is a young project, and there is still much Flash functionality that is u
 
 ## Debugging ActionScript Content
 
-To enable debug logging, set `RUST_LOG=warn,ruffle=info,ruffle_core=debug,avm_trace=info` and run Ruffle from the command line. 
+To enable debug logging, set `RUST_LOG=warn,ruffle=info,ruffle_core=debug,avm_trace=info` and run Ruffle from the command line.
 This will also enable printing `trace()` statements.
 
 Additionally, if you build Ruffle with `--features avm_debug` then you will activate a few more built-in debugging utilities inside Ruffle, listed below.
@@ -109,7 +109,7 @@ This currently only works for AVM1. We'd [welcome a PR to change that](https://g
 
 ### Render Tree Dumping
 
-The hotkey <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> dumps the DisplayObject render tree at the moment you press it. 
+The hotkey <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>F</kbd> dumps the DisplayObject render tree at the moment you press it.
 This allows you to see Ruffle's representation of the objects on the Stage.
 
 ## Reporting Bugs
@@ -183,7 +183,7 @@ When you run a test SWF, trace output will appear in a file called `flashlog.txt
 * MacOS: `~/Library/Preferences/Macromedia/Flash Player/Logs/`
 * Linux: `$HOME/.macromedia/Flash_Player/Logs/`
 
-There are several ways to create your own test SWFs, which are listed in the sections below. 
+There are several ways to create your own test SWFs, which are listed in the sections below.
 Once you have an `.swf`, run it in the debug Flash Player and copy the output of the trace statements into a file called `output.txt`. Add the `output.txt`, `test.swf` and either the `test.as` or `test.fla` file to a directory under `tests/tests/swfs/avm1` (or `avm2`) named after what your test tests.
 
 Finally, add a `test.toml` in the same directory to control how the test is run - such as how many frames it should take or if we should compare the image it generates. See [tests/README.md](tests/README.md) for information on what the test.toml should look like.
@@ -191,6 +191,7 @@ Finally, add a `test.toml` in the same directory to control how the test is run 
 Running `cargo test [your test]` from within the `tests` folder will run the `.swf` in Ruffle and compare the `trace()` output against `output.txt`. To run all of the tests in all workspaces, run `cargo test --all`.
 
 Some tests also compare Ruffle's visual output to an expected image. To properly run these tests, add the argument `--features imgtests`.
+When adding a new image test, make sure to include the expected visual output by taking a screenshot of Flash Player and cropping it.
 
 Heavily algorithmic code may benefit from unit tests in Rust: create a module `mod tests` conditionally compiled with `#[cfg(test)]`, and add your tests in there.
 
@@ -199,6 +200,12 @@ Heavily algorithmic code may benefit from unit tests in Rust: create a module `m
 Create a new ActionScript project. Save the `.fla` file and export an `.swf` (File -> Export -> Export Movie...).
 
 Adobe Flash Professional CS6 is the most recent version to support both ActionScript 2 and 3. Newer versions support ActionScript 3 only.
+
+### JPEXS Free Flash Decompiler
+
+You can use [JPEXS Free Flash Decompiler](https://github.com/jindrapetrik/jpexs-decompiler) for writing ActionScript 2 or ActionScript 3 tests. It can also be used to write more advanced tests, as you have full control over SWF tags.
+
+When using JPEXS Free Flash Decompiler you're editing the SWF file directly.
 
 ### Motion-Twin ActionScript 2 Compiler
 
@@ -233,11 +240,12 @@ This is a free and open source SDK capable of compiling ActionScript 3 code. It 
 4. Define the `FLEX_HOME` and `PLAYERGLOBAL_HOME` environment variables to the path of the extracted SDK root, and the path of the `<sdk-root>/frameworks/libs/player` subdirectory, respectively.
 5. Edit `<sdk-root>/frameworks/flex-config.xml` and change `<target-player>27.0</target-player>` to `<target-player>32.0</target-player>`.
 
-After `mxmlc` is set up, create a file `test.as` in a text editor, per the following template:
+After `mxmlc` is set up, create a file `Test.as` (note the capitalization) in a text editor, per the following template:
 
 ```as
 package {
-    public class Test {}
+    import flash.display.Sprite;
+    public class Test extends Sprite {}
 }
 
 // Your test here.
@@ -247,10 +255,10 @@ trace("Hello World!");
 Then compile it using:
 
 ```sh
-mxmlc -output test.swf -compiler.debug=true Test.as
+mxmlc -o test.swf -debug Test.as
 ```
 
-You may want to use Docker instead - something like `docker run -it --rm -v ${PWD}:/src jeko/airbuild mxmlc -output test.swf -compiler.debug=true Test.as` works well.
+You may want to use Docker instead - something like `docker run -it --rm -v ${PWD}:/src jeko/airbuild mxmlc -o test.swf -debug Test.as` works well.
 
 ### RABCDAsm
 
@@ -281,7 +289,7 @@ web: Fix incorrect rendering of gradients (close #23)
 * Use the present tense and imperative mood ("fix", not "fixed" nor "fixes").
 * Reference any PRs or issues in the first line.
 * Use keywords to close/address issues when applicable ("close #23").
-* Write more detailed info on following lines when applicable.
+* Write more detailed info on following lines when applicable. **Note: it's usually applicable.** Please describe your changes and add all required context so that people working on it in the future can see the big picture of your changes.
 
 ## Pull Requests
 

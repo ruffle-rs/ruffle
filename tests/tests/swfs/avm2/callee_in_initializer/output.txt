@@ -1,0 +1,6 @@
+(script init) argument was: 9001
+(class init) argument was: 2001
+(class init) argument was: 1002
+(script init) argument was: 1009
+(instance init) argument was: 3001
+(instance init) argument was: 1003

@@ -1,0 +1,20 @@
+_root: ABCD
+// Add a dynamic text field.
+_root: ABCD
+child: ABCD
+// Duplicate child.
+_root: ABCD
+old child: ABCD
+child: undefined
+child_clone: ABCD
+// Duplicate child_clone.
+old child: ABCD
+child: undefined
+old child_clone: ABCD
+child_clone: undefined
+child_clone2: ABCD
+// Duplicate child again.
+child: undefined
+child_clone: undefined
+child_clone2: ABCD
+child_clone3: undefined

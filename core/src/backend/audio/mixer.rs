@@ -1,8 +1,11 @@
-use super::decoders::{self, AdpcmDecoder, Decoder, PcmDecoder, SeekableDecoder};
+use super::decoders::{
+    self, AdpcmDecoder, Decoder, G711ALawDecoder, G711MuLawDecoder, PcmDecoder, SeekableDecoder,
+};
 use super::{SoundHandle, SoundInstanceHandle, SoundStreamInfo, SoundTransform};
 use crate::backend::audio::{DecodeError, RegisterError};
-use crate::buffer::Substream;
 use crate::tag_utils::SwfSlice;
+use ruffle_common::buffer::Substream;
+use ruffle_common::duration::FloatDuration;
 use slotmap::SlotMap;
 use std::io::Cursor;
 use std::sync::{Arc, Mutex, RwLock};
@@ -169,7 +172,7 @@ struct Sound {
 struct SoundInstance {
     /// The handle the sound definition inside `sounds`.
     /// `None` if this is a stream sound.
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     handle: Option<SoundHandle>,
 
     /// The audio stream. Call `next()` to yield sample frames.
@@ -326,13 +329,15 @@ impl AudioMixer {
                 data,
                 format.sample_rate.into(),
             )),
+            AudioCompression::G711ALawPCM => Box::new(G711ALawDecoder::new(data)),
+            AudioCompression::G711MuLawPCM => Box::new(G711MuLawDecoder::new(data)),
             _ => return Err(decoders::Error::UnhandledCompression(format.compression)),
         };
         Ok(decoder)
     }
 
     /// Transforms a `Stream` into a new `Stream` that matches the output sample rate.
-    fn make_resampler(&self, mut stream: impl Stream) -> impl Stream {
+    fn make_resampler<S: Stream>(&self, mut stream: S) -> impl Stream + use<S> {
         // TODO: Allow interpolator to be user-configurable?
         let left = stream.next();
         let right = stream.next();
@@ -396,11 +401,11 @@ impl AudioMixer {
     }
 
     /// Creates a `Stream` that decodes and resamples a timeline "stream" sound.
-    fn make_stream_from_swf_slice<'a>(
+    fn make_stream_from_swf_slice(
         &self,
         stream_info: &swf::SoundStreamHead,
         data_stream: SwfSlice,
-    ) -> Result<Box<dyn 'a + Stream>, DecodeError> {
+    ) -> Result<Box<dyn Stream>, DecodeError> {
         // Instantiate a decoder for the compression that the sound data uses.
         let clip_stream_decoder = decoders::make_stream_decoder(stream_info, data_stream)?;
 
@@ -441,8 +446,8 @@ impl AudioMixer {
             + dasp::sample::FromSample<i16>,
     {
         use dasp::{
-            frame::{Frame, Stereo},
             Sample,
+            frame::{Frame, Stereo},
         };
         use std::ops::DerefMut;
 
@@ -663,16 +668,16 @@ impl AudioMixer {
         sound_instances.get(instance).map(|instance| instance.peak)
     }
 
-    /// Returns the duration of a registered sound in milliseconds.
+    /// Returns the duration of a registered sound.
     ///
     /// Returns `None` if the sound is not registered or invalid.
-    pub fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64> {
+    pub fn get_sound_duration(&self, sound: SoundHandle) -> Option<FloatDuration> {
         if let Some(sound) = self.sounds.get(sound) {
             // AS duration does not subtract `skip_sample_frames`.
             let num_sample_frames: f64 = sound.num_sample_frames.into();
             let sample_rate: f64 = sound.format.sample_rate.into();
             let ms = num_sample_frames * 1000.0 / sample_rate;
-            Some(ms)
+            Some(FloatDuration::from_millis(ms))
         } else {
             None
         }
@@ -840,10 +845,10 @@ impl dasp::signal::Signal for EventSoundStream {
         if !self.is_exhausted {
             if let Some(frame) = self.decoder.next() {
                 self.cur_sample_frame += 1;
-                if let Some(end) = self.end_sample_frame {
-                    if self.cur_sample_frame > end {
-                        self.next_loop();
-                    }
+                if let Some(end) = self.end_sample_frame
+                    && self.cur_sample_frame > end
+                {
+                    self.next_loop();
                 }
                 frame
             } else {
@@ -1099,7 +1104,7 @@ macro_rules! impl_audio_mixer_backend {
         #[inline]
         fn start_substream(
             &mut self,
-            stream_data: ruffle_core::buffer::Substream,
+            stream_data: ruffle_core::backend::audio::Substream,
             stream_info: &SoundStreamInfo,
         ) -> Result<SoundInstanceHandle, DecodeError> {
             self.$mixer.start_substream(stream_data, stream_info)
@@ -1121,7 +1126,7 @@ macro_rules! impl_audio_mixer_backend {
         }
 
         #[inline]
-        fn get_sound_duration(&self, sound: SoundHandle) -> Option<f64> {
+        fn get_sound_duration(&self, sound: SoundHandle) -> Option<$crate::FloatDuration> {
             self.$mixer.get_sound_duration(sound)
         }
 

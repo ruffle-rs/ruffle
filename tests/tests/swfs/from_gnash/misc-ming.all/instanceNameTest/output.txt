@@ -1,0 +1,5 @@
+PASSED: / == /
+PASSED: /instance2 == /instance2
+#passed: 2
+#failed: 0
+#total tests run: 2

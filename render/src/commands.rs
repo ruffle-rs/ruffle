@@ -15,6 +15,7 @@ pub trait CommandHandler {
     );
     fn render_stage3d(&mut self, bitmap: BitmapHandle, transform: Transform);
     fn render_shape(&mut self, shape: ShapeHandle, transform: Transform);
+    fn render_alpha_mask(&mut self, maskee_commands: CommandList, mask_commands: CommandList);
     fn draw_rect(&mut self, color: Color, matrix: Matrix);
     fn draw_line(&mut self, color: Color, matrix: Matrix);
     fn draw_line_rect(&mut self, color: Color, matrix: Matrix);
@@ -27,6 +28,7 @@ pub trait CommandHandler {
 }
 
 /// Holds either a normal BlendMode, or the shader for BlendMode.SHADER.
+///
 /// We cannot store the `PixelBenderShaderHandle` directly in `ExtendedBlendMode`,
 /// since we need to remember the shader even if the blend mode is changed
 /// to something else (so that the shader will still be used if we switch back)
@@ -51,6 +53,11 @@ impl CommandList {
         Self::default()
     }
 
+    #[inline]
+    pub fn is_empty(&self) -> bool {
+        self.commands.is_empty()
+    }
+
     pub fn execute(self, handler: &mut impl CommandHandler) {
         for command in self.commands {
             match command {
@@ -72,6 +79,10 @@ impl CommandList {
                 Command::DeactivateMask => handler.deactivate_mask(),
                 Command::PopMask => handler.pop_mask(),
                 Command::Blend(commands, blend_mode) => handler.blend(commands, blend_mode),
+                Command::RenderAlphaMask {
+                    maskee_commands,
+                    mask_commands,
+                } => handler.render_alpha_mask(maskee_commands, mask_commands),
             }
         }
     }
@@ -113,6 +124,15 @@ impl CommandHandler for CommandList {
         if self.maskers_in_progress <= 1 {
             self.commands
                 .push(Command::RenderShape { shape, transform });
+        }
+    }
+
+    fn render_alpha_mask(&mut self, maskee_commands: CommandList, mask_commands: CommandList) {
+        if self.maskers_in_progress <= 1 {
+            self.commands.push(Command::RenderAlphaMask {
+                maskee_commands,
+                mask_commands,
+            });
         }
     }
 
@@ -192,6 +212,10 @@ pub enum Command {
     RenderShape {
         shape: ShapeHandle,
         transform: Transform,
+    },
+    RenderAlphaMask {
+        maskee_commands: CommandList,
+        mask_commands: CommandList,
     },
     DrawRect {
         color: Color,

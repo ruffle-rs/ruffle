@@ -1,0 +1,19 @@
+// BitmapData.RED_CHANNEL
+1
+
+// BitmapData.GREEN_CHANNEL
+2
+
+// BitmapData.BLUE_CHANNEL
+4
+
+// BitmapData.ALPHA_CHANNEL
+8
+
+/// Enumeration
+
+/// Channels
+ALPHA_CHANNEL: (no prop flags)
+BLUE_CHANNEL: (no prop flags)
+GREEN_CHANNEL: (no prop flags)
+RED_CHANNEL: (no prop flags)

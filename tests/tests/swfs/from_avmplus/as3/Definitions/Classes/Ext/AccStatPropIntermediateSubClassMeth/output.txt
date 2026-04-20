@@ -1,0 +1,6 @@
+*** Access the static property via base class *** PASSED!
+BaseClass.string PASSED!
+*** Access the static property via sub class using unadorned property name *** PASSED!
+obj.getString() PASSED!
+*** Access the static property via sub class using unadorned property name *** PASSED!
+obj.getBaseString() PASSED!

@@ -4,9 +4,10 @@ use crate::loader::Error;
 use crate::socket::{ConnectionState, SocketAction, SocketHandle};
 use crate::string::WStr;
 use async_channel::{Receiver, Sender};
-use downcast_rs::Downcast;
 use encoding_rs::Encoding;
+use enumset::EnumSetType;
 use indexmap::IndexMap;
+use std::any::Any;
 use std::borrow::Cow;
 use std::fmt;
 use std::fmt::Display;
@@ -34,7 +35,7 @@ pub fn url_from_relative_url(base: &str, relative: &str) -> Result<Url, ParseErr
 }
 
 /// Enumerates all possible navigation methods.
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub enum NavigationMethod {
     /// Indicates that navigation should generate a GET request.
     Get,
@@ -56,22 +57,11 @@ pub enum SocketMode {
     Ask,
 }
 
-/// The handling mode of links opening a new website.
-#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
-#[derive(Clone, Copy, Debug, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
-pub enum OpenURLMode {
-    /// Allow all links to open a new website.
-    #[cfg_attr(feature = "serde", serde(rename = "allow"))]
-    Allow,
-
-    /// A confirmation dialog opens with every link trying to open a new website.
-    #[cfg_attr(feature = "serde", serde(rename = "confirm"))]
-    Confirm,
-
-    /// Deny all links to open a new website.
-    #[cfg_attr(feature = "serde", serde(rename = "deny"))]
-    Deny,
+#[derive(EnumSetType, Debug)]
+pub enum FetchReason {
+    LoadSwf,
+    UrlLoader,
+    Other,
 }
 
 impl NavigationMethod {
@@ -151,7 +141,7 @@ impl Request {
     }
 
     /// Construct a request with the given method and data
-    #[allow(clippy::self_named_constructors)]
+    #[expect(clippy::self_named_constructors)]
     pub fn request(method: NavigationMethod, url: String, body: Option<(Vec<u8>, String)>) -> Self {
         Self {
             url,
@@ -164,6 +154,10 @@ impl Request {
     /// Retrieve the URL of this request.
     pub fn url(&self) -> &str {
         &self.url
+    }
+
+    pub fn set_url(&mut self, url: String) {
+        self.url = url;
     }
 
     /// Retrieve the navigation method for this request.
@@ -192,7 +186,10 @@ impl Request {
 /// A response to a successful fetch request.
 pub trait SuccessResponse {
     /// The final URL obtained after any redirects.
-    fn url(&self) -> Cow<str>;
+    fn url(&self) -> Cow<'_, str>;
+
+    /// Rewrite the URL to a different one.
+    fn set_url(&mut self, url: String);
 
     /// Retrieve the contents of the response body.
     ///
@@ -245,7 +242,7 @@ pub struct ErrorResponse {
 pub type OwnedFuture<T, E> = Pin<Box<dyn Future<Output = Result<T, E>> + 'static>>;
 
 /// A backend interacting with a browser environment.
-pub trait NavigatorBackend: Downcast {
+pub trait NavigatorBackend: Any {
     /// Cause a browser navigation to a given URL.
     ///
     /// The URL given may be any URL scheme a browser can support. This may not
@@ -320,7 +317,6 @@ pub trait NavigatorBackend: Downcast {
         sender: Sender<SocketAction>,
     );
 }
-impl_downcast!(NavigatorBackend);
 
 #[cfg(not(target_family = "wasm"))]
 pub struct NullExecutor(futures::executor::LocalPool);
@@ -478,10 +474,7 @@ pub fn async_return<SuccessType: 'static, ErrorType: 'static>(
 
 /// This creates and returns the generic ErrorResponse for an invalid URL
 /// used in the NavigatorBackend fetch methods.
-pub fn create_fetch_error<ErrorType: Display>(
-    url: &str,
-    error: ErrorType,
-) -> Result<Box<dyn SuccessResponse>, ErrorResponse> {
+pub fn create_fetch_error<ErrorType: Display>(url: &str, error: ErrorType) -> ErrorResponse {
     create_specific_fetch_error("Invalid URL", url, error)
 }
 
@@ -491,17 +484,17 @@ pub fn create_specific_fetch_error<ErrorType: Display>(
     reason: &str,
     url: &str,
     error: ErrorType,
-) -> Result<Box<dyn SuccessResponse>, ErrorResponse> {
+) -> ErrorResponse {
     let message = if error.to_string() == "" {
         format!("{reason} {url}")
     } else {
         format!("{reason} {url}: {error}")
     };
     let error = Error::FetchError(message);
-    Err(ErrorResponse {
+    ErrorResponse {
         url: url.to_string(),
         error,
-    })
+    }
 }
 
 // Url doesn't implement from_file_path and to_file_path for WASM targets.
@@ -585,8 +578,12 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
     }
 
     impl SuccessResponse for LocalResponse {
-        fn url(&self) -> Cow<str> {
+        fn url(&self) -> Cow<'_, str> {
             Cow::Borrowed(&self.url)
+        }
+
+        fn set_url(&mut self, url: String) {
+            self.url = url;
         }
 
         fn body(self: Box<Self>) -> OwnedFuture<Vec<u8>, Error> {
@@ -643,7 +640,7 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
 
     let url = match navigator.resolve_url(url) {
         Ok(url) => url,
-        Err(e) => return async_return(create_fetch_error(url, e)),
+        Err(e) => return async_return(Err(create_fetch_error(url, e))),
     };
     let path = if url.scheme() == "file" {
         // Flash supports query parameters with local urls.
@@ -655,11 +652,11 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
         match url_to_file_path(&filesystem_url) {
             Ok(path) => path,
             Err(_) => {
-                return async_return(create_specific_fetch_error(
+                return async_return(Err(create_specific_fetch_error(
                     "Unable to create path out of URL",
                     url.as_str(),
                     "",
-                ))
+                )));
             }
         }
     } else if let Some(base_path) = base_path {
@@ -673,11 +670,11 @@ pub fn fetch_path<NavigatorType: NavigatorBackend>(
         }
         path
     } else {
-        return async_return(create_specific_fetch_error(
+        return async_return(Err(create_specific_fetch_error(
             &format!("{navigator_name} can't fetch non-local URL"),
             url.as_str(),
             "",
-        ));
+        )));
     };
 
     Box::pin(async move {

@@ -1,5 +1,4 @@
 #![deny(clippy::unwrap_used)]
-#![allow(clippy::empty_docs)] //False positive in rustc 1.78 beta
 
 //! Ruffle web frontend.
 mod audio;
@@ -14,16 +13,17 @@ mod zip;
 
 use crate::builder::RuffleInstanceBuilder;
 use external_interface::{external_to_js_value, js_to_external_value};
-use input::{web_key_to_codepoint, web_to_ruffle_key_code, web_to_ruffle_text_control};
+use input::{web_input_to_ruffle_key_descriptor, web_to_ruffle_text_control};
 use js_sys::{Error as JsError, Uint8Array};
 use ruffle_core::context::UpdateContext;
 use ruffle_core::context_menu::ContextMenuCallback;
-use ruffle_core::events::{MouseButton, MouseWheelDelta, TextControlCode};
+use ruffle_core::events::{GamepadButton, MouseButton, MouseWheelDelta, TextControlCode};
 use ruffle_core::tag_utils::SwfMovie;
-use ruffle_core::{Player, PlayerEvent, StaticCallstack, ViewportDimensions};
+use ruffle_core::{FloatDuration, Player, PlayerEvent, StaticCallstack, ViewportDimensions};
 use ruffle_web_common::JsResult;
 use serde::Serialize;
-use slotmap::{new_key_type, SlotMap};
+use slotmap::{SlotMap, new_key_type};
+use std::any::Any;
 use std::rc::Rc;
 use std::str::FromStr;
 use std::sync::Once;
@@ -32,12 +32,15 @@ use std::{cell::RefCell, error::Error, num::NonZeroI32};
 use tracing_subscriber::layer::{Layered, SubscriberExt};
 use tracing_subscriber::registry::Registry;
 use tracing_wasm::{WASMLayer, WASMLayerConfigBuilder};
+use ui::WebUiBackend;
 use url::Url;
 use wasm_bindgen::convert::FromWasmAbi;
 use wasm_bindgen::prelude::*;
 use web_sys::{
-    AddEventListenerOptions, ClipboardEvent, Element, Event, EventTarget, HtmlCanvasElement,
-    HtmlElement, KeyboardEvent, PointerEvent, WheelEvent, Window,
+    AddEventListenerOptions, ClipboardEvent, Element, EventTarget, FocusEvent,
+    Gamepad as WebGamepad, GamepadButton as WebGamepadButton, HtmlCanvasElement, HtmlElement,
+    KeyboardEvent, Node, PageTransitionEvent, PointerEvent, ShadowRoot, WebGlContextEvent,
+    WheelEvent, Window,
 };
 
 static RUFFLE_GLOBAL_PANIC: Once = Once::new();
@@ -56,7 +59,7 @@ thread_local! {
     /// issues with lifetimes and type parameters (which cannot be exported with wasm-bindgen).
     static INSTANCES: RefCell<SlotMap<RuffleHandle, RefCell<RuffleInstance>>> = RefCell::new(SlotMap::with_key());
 
-    static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static, 'static>>> = const { RefCell::new(None) };
+    static CURRENT_CONTEXT: RefCell<Option<*mut UpdateContext<'static>>> = const { RefCell::new(None) };
 }
 
 type AnimationHandler = Closure<dyn FnMut(f64)>;
@@ -78,13 +81,14 @@ impl<E: FromWasmAbi + 'static> JsCallback<E> {
         let target = target.as_ref();
         let closure = Closure::new(closure);
 
+        let options = AddEventListenerOptions::new();
+        options.set_passive(false);
+        options.set_capture(is_capture);
         target
             .add_event_listener_with_callback_and_add_event_listener_options(
                 name,
                 closure.as_ref().unchecked_ref(),
-                AddEventListenerOptions::new()
-                    .passive(false)
-                    .capture(is_capture),
+                &options,
             )
             .warn_on_error();
 
@@ -121,26 +125,30 @@ struct RuffleInstance {
     timestamp: Option<f64>,
     animation_handler: Option<AnimationHandler>, // requestAnimationFrame callback
     animation_handler_id: Option<NonZeroI32>,    // requestAnimationFrame id
+    background_tick_mode: bool,
     mouse_move_callback: Option<JsCallback<PointerEvent>>,
     mouse_enter_callback: Option<JsCallback<PointerEvent>>,
     mouse_leave_callback: Option<JsCallback<PointerEvent>>,
     mouse_down_callback: Option<JsCallback<PointerEvent>>,
-    player_mouse_down_callback: Option<JsCallback<PointerEvent>>,
-    window_mouse_down_callback: Option<JsCallback<PointerEvent>>,
     mouse_up_callback: Option<JsCallback<PointerEvent>>,
     mouse_wheel_callback: Option<JsCallback<WheelEvent>>,
     key_down_callback: Option<JsCallback<KeyboardEvent>>,
     key_up_callback: Option<JsCallback<KeyboardEvent>>,
     paste_callback: Option<JsCallback<ClipboardEvent>>,
-    unload_callback: Option<JsCallback<Event>>,
+    pageshow_callback: Option<JsCallback<PageTransitionEvent>>,
+    pagehide_callback: Option<JsCallback<PageTransitionEvent>>,
+    focusin_callback: Option<JsCallback<FocusEvent>>,
+    focusout_callback: Option<JsCallback<FocusEvent>>,
+    focus_on_press_callback: Option<JsCallback<PointerEvent>>,
+    webglcontextlost_callback: Option<JsCallback<WebGlContextEvent>>,
     has_focus: bool,
     trace_observer: Rc<RefCell<JsValue>>,
     log_subscriber: Arc<Layered<WASMLayer, Registry>>,
+    pressed_buttons: Vec<GamepadButton>,
 }
 
-#[wasm_bindgen(raw_module = "./ruffle-player")]
-extern "C" {
-    #[wasm_bindgen(extends = EventTarget)]
+#[wasm_bindgen(raw_module = "./internal/player/inner")]
+unsafe extern "C" {
     #[derive(Clone)]
     pub type JavascriptPlayer;
 
@@ -150,14 +158,22 @@ extern "C" {
     #[wasm_bindgen(method, js_name = "getObjectId")]
     fn get_object_id(this: &JavascriptPlayer) -> Option<String>;
 
-    #[wasm_bindgen(method, catch, js_name = "onFSCommand")]
-    fn on_fs_command(this: &JavascriptPlayer, command: &str, args: &str) -> Result<bool, JsValue>;
+    #[wasm_bindgen(method, catch, js_name = "callFSCommand")]
+    fn call_fs_command(this: &JavascriptPlayer, command: &str, args: &str)
+    -> Result<bool, JsValue>;
 
     #[wasm_bindgen(method)]
     fn panic(this: &JavascriptPlayer, error: &JsError);
 
     #[wasm_bindgen(method, js_name = "displayRootMovieDownloadFailedMessage")]
-    fn display_root_movie_download_failed_message(this: &JavascriptPlayer, invalid_swf: bool);
+    fn display_root_movie_download_failed_message(
+        this: &JavascriptPlayer,
+        invalid_swf: bool,
+        fetch_error: String,
+    );
+
+    #[wasm_bindgen(method, js_name = "displayRestoredFromBfcacheMessage")]
+    fn display_restored_from_bfcache_message(this: &JavascriptPlayer);
 
     #[wasm_bindgen(method, js_name = "displayMessage")]
     fn display_message(this: &JavascriptPlayer, message: &str);
@@ -174,6 +190,9 @@ extern "C" {
     #[wasm_bindgen(method, js_name = "openVirtualKeyboard")]
     fn open_virtual_keyboard(this: &JavascriptPlayer);
 
+    #[wasm_bindgen(method, js_name = "closeVirtualKeyboard")]
+    fn close_virtual_keyboard(this: &JavascriptPlayer);
+
     #[wasm_bindgen(method, js_name = "isVirtualKeyboardFocused")]
     fn is_virtual_keyboard_focused(this: &JavascriptPlayer) -> bool;
 
@@ -185,6 +204,9 @@ extern "C" {
 
     #[wasm_bindgen(method, js_name = "suppressContextMenu")]
     fn suppress_context_menu(this: &JavascriptPlayer);
+
+    #[wasm_bindgen(method, js_name = "reloadWithCanvasRenderer")]
+    fn reload_with_canvas_renderer(this: &JavascriptPlayer);
 }
 
 #[derive(Debug, Clone)]
@@ -208,6 +230,19 @@ struct MovieMetadata {
     is_action_script_3: bool,
     #[serde(rename = "uncompressedLength")]
     uncompressed_len: i32,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum ScrollingBehavior {
+    Always,
+    Never,
+    Smart,
+}
+
+#[derive(Debug, Clone, Copy)]
+pub enum DeviceFontRenderer {
+    Embedded,
+    Canvas,
 }
 
 #[wasm_bindgen]
@@ -255,7 +290,7 @@ impl RuffleHandle {
             SwfMovie::from_data(&swf_data.to_vec(), url.to_string(), None).map_err(|e| {
                 let _ = self.with_core_mut(|core| {
                     core.ui_mut()
-                        .display_root_movie_download_failed_message(true);
+                        .display_root_movie_download_failed_message(true, e.to_string());
                 });
                 format!("Error loading movie: {e}")
             })?;
@@ -286,6 +321,43 @@ impl RuffleHandle {
 
     pub fn is_playing(&self) -> bool {
         self.with_core(|core| core.is_playing()).unwrap_or_default()
+    }
+
+    /// Switches to background tick mode, pausing the normal animation loop.
+    /// Use `tick_for_background` to advance the player while the tab is hidden.
+    pub fn enable_background_tick_mode(&self) {
+        let _ = self.with_instance_mut(|instance| {
+            if let Some(id) = instance.animation_handler_id.take() {
+                let _ = instance.window.cancel_animation_frame(id.into());
+            }
+            instance.background_tick_mode = true;
+        });
+    }
+
+    /// Leaves background tick mode and reschedules the normal animation loop.
+    /// Does not tick the core itself.
+    pub fn restart_animation_loop(&self) {
+        let _ = self.with_instance_mut(|instance| {
+            instance.background_tick_mode = false;
+            if let Some(handler) = &instance.animation_handler {
+                let id = instance
+                    .window
+                    .request_animation_frame(handler.as_ref().unchecked_ref())
+                    .unwrap_or_default();
+                instance.animation_handler_id = NonZeroI32::new(id);
+            }
+        });
+    }
+
+    /// Ticks the game core once. Intended to be called from a Web Worker loop
+    /// after calling `enable_background_tick_mode`.
+    pub fn tick_for_background(&self, timestamp: f64) {
+        self.tick(timestamp);
+    }
+
+    pub fn has_focus(&self) -> bool {
+        self.with_instance(|instance| instance.has_focus)
+            .unwrap_or_default()
     }
 
     pub fn volume(&self) -> f32 {
@@ -346,11 +418,14 @@ impl RuffleHandle {
 
     async fn run_context_menu_callback_paste(&self, index: usize) {
         let window = web_sys::window().expect("Missing window");
-        let Some(clipboard) = window.navigator().clipboard() else {
+        let navigator = window.navigator();
+        // The Clipboard API is unavailable on e.g. non-secure pages.
+        if !JsValue::from_str("clipboard").js_in(&navigator) {
             tracing::warn!("Clipboard unsupported");
             let _ = self.with_instance(|inst| inst.js_player.display_clipboard_modal(false));
             return;
-        };
+        }
+        let clipboard = window.navigator().clipboard();
 
         let promise = clipboard.read_text();
         tracing::debug!("Requested text from clipboard");
@@ -367,7 +442,9 @@ impl RuffleHandle {
         if !clipboard.is_empty() {
             let _ = self.with_core_mut(|core| {
                 core.mutate_with_update_context(|context| {
-                    context.ui.set_clipboard_content(clipboard);
+                    <dyn Any>::downcast_mut::<WebUiBackend>(context.ui)
+                        .expect("Web UI backend")
+                        .set_clipboard_content_buffer(clipboard);
                 });
                 core.run_context_menu_callback(index);
             });
@@ -390,9 +467,13 @@ impl RuffleHandle {
         // Instance is dropped at this point.
     }
 
-    #[allow(clippy::boxed_local)] // for js_bind
-    pub fn call_exposed_callback(&self, name: &str, args: Box<[JsValue]>) -> JsValue {
-        let args: Vec<_> = args.iter().map(js_to_external_value).collect();
+    pub fn call_exposed_callback(
+        &self,
+        name: &str,
+        #[expect(clippy::boxed_local)] // for js_bind
+        args: Box<[JsValue]>,
+    ) -> JsValue {
+        let args = args.iter().map(js_to_external_value);
 
         // Re-entrant callbacks need to return through the hole that was punched through for them
         // We record the context of external functions, and then if we get an internal callback
@@ -420,8 +501,7 @@ impl RuffleHandle {
     /// Returns `None` if the audio backend does not use Web Audio.
     pub fn audio_context(&self) -> Option<web_sys::AudioContext> {
         self.with_core_mut(|core| {
-            core.audio()
-                .downcast_ref::<audio::WebAudioBackend>()
+            <dyn Any>::downcast_ref::<audio::WebAudioBackend>(core.audio())
                 .map(|audio| audio.audio_context().clone())
         })
         .unwrap_or_default()
@@ -472,22 +552,27 @@ impl RuffleHandle {
             window: window.clone(),
             animation_handler: None,
             animation_handler_id: None,
+            background_tick_mode: false,
             mouse_move_callback: None,
             mouse_enter_callback: None,
             mouse_leave_callback: None,
             mouse_down_callback: None,
-            player_mouse_down_callback: None,
-            window_mouse_down_callback: None,
             mouse_up_callback: None,
             mouse_wheel_callback: None,
             key_down_callback: None,
             key_up_callback: None,
             paste_callback: None,
-            unload_callback: None,
+            pageshow_callback: None,
+            pagehide_callback: None,
+            focusin_callback: None,
+            focusout_callback: None,
+            focus_on_press_callback: None,
+            webglcontextlost_callback: None,
             timestamp: None,
             has_focus: false,
             trace_observer: player.trace_observer,
             log_subscriber,
+            pressed_buttons: vec![],
         };
 
         // Prevent touch-scrolling on canvas.
@@ -498,7 +583,13 @@ impl RuffleHandle {
             .warn_on_error();
 
         // Register the instance and create the animation frame closure.
-        let mut ruffle = Self::add_instance(instance)?;
+        let ruffle = Self::add_instance(instance)?;
+
+        // For backward compatibility.
+        parent.set_tab_index(-1);
+
+        let shadow_host = Self::get_shadow_host(&parent);
+        Self::set_up_focus_management(ruffle, shadow_host.unwrap_or(parent))?;
 
         // Create the animation frame closure.
         ruffle.with_instance_mut(|instance| {
@@ -571,15 +662,16 @@ impl RuffleHandle {
                                 .set_pointer_capture(js_event.pointer_id());
                         }
                         let device_pixel_ratio = instance.device_pixel_ratio;
+                        let button = match js_event.button() {
+                            0 => MouseButton::Left,
+                            1 => MouseButton::Middle,
+                            2 => MouseButton::Right,
+                            _ => MouseButton::Unknown,
+                        };
                         let event = PlayerEvent::MouseDown {
                             x: f64::from(js_event.offset_x()) * device_pixel_ratio,
                             y: f64::from(js_event.offset_y()) * device_pixel_ratio,
-                            button: match js_event.button() {
-                                0 => MouseButton::Left,
-                                1 => MouseButton::Middle,
-                                2 => MouseButton::Right,
-                                _ => MouseButton::Unknown,
-                            },
+                            button,
                             // TODO The index should be provided by the browser, not calculated.
                             index: None,
                         };
@@ -587,48 +679,11 @@ impl RuffleHandle {
                             .with_core_mut(|core| core.handle_event(event))
                             .unwrap_or_default();
 
-                        if handled
-                            && matches!(
-                                event,
-                                PlayerEvent::MouseDown {
-                                    button: MouseButton::Right,
-                                    ..
-                                }
-                            )
-                        {
+                        if handled && matches!(button, MouseButton::Right) {
                             js_player_callback.suppress_context_menu();
                         }
 
                         js_event.prevent_default();
-                    });
-                },
-            ));
-
-            // Create player mouse down handler.
-            instance.player_mouse_down_callback = Some(JsCallback::register(
-                &js_player,
-                "pointerdown",
-                false,
-                move |_js_event| {
-                    let _ = ruffle.with_instance_mut(|instance| {
-                        instance.has_focus = true;
-                        // Ensure the parent window gets focus. This is necessary for events
-                        // to be received when the player is inside a frame.
-                        instance.window.focus().warn_on_error();
-                    });
-                },
-            ));
-
-            // Create window mouse down handler.
-            instance.window_mouse_down_callback = Some(JsCallback::register(
-                &window,
-                "pointerdown",
-                true,
-                move |_js_event| {
-                    let _ = ruffle.with_instance_mut(|instance| {
-                        // If we actually clicked on the player, this will be reset to true
-                        // after the event bubbles down to the player.
-                        instance.has_focus = false;
                     });
                 },
             ));
@@ -683,9 +738,26 @@ impl RuffleHandle {
                             _ => return,
                         };
                         let _ = instance.with_core_mut(|core| {
-                            core.handle_event(PlayerEvent::MouseWheel { delta });
-                            if core.should_prevent_scrolling() {
-                                js_event.prevent_default();
+                            let scroll_handled =
+                                core.handle_event(PlayerEvent::MouseWheel { delta });
+                            match config.scrolling_behavior {
+                                ScrollingBehavior::Always => {
+                                    // Do not prevent scrolling
+                                }
+                                ScrollingBehavior::Never => {
+                                    // Always prevent scrolling
+                                    js_event.prevent_default();
+                                }
+                                ScrollingBehavior::Smart => {
+                                    if scroll_handled {
+                                        // AVM2 logic
+                                        js_event.prevent_default();
+                                    }
+                                    if core.should_prevent_scrolling() {
+                                        // AVM1 logic
+                                        js_event.prevent_default();
+                                    }
+                                }
                             }
                         });
                     });
@@ -702,10 +774,9 @@ impl RuffleHandle {
                         if instance.has_focus {
                             let mut paste_event = false;
                             let _ = instance.with_core_mut(|core| {
-                                let key_code = web_to_ruffle_key_code(&js_event.code());
-                                let key_char = web_key_to_codepoint(&js_event.key());
+                                let key = web_input_to_ruffle_key_descriptor(&js_event);
                                 let is_ctrl_cmd = js_event.ctrl_key() || js_event.meta_key();
-                                core.handle_event(PlayerEvent::KeyDown { key_code, key_char });
+                                core.handle_event(PlayerEvent::KeyDown { key });
 
                                 if let Some(control_code) = web_to_ruffle_text_control(
                                     &js_event.key(),
@@ -720,7 +791,7 @@ impl RuffleHandle {
                                             code: control_code,
                                         });
                                     }
-                                } else if let Some(codepoint) = key_char {
+                                } else if let Some(codepoint) = key.logical_key.character() {
                                     core.handle_event(PlayerEvent::TextInput { codepoint });
                                 }
                             });
@@ -748,7 +819,9 @@ impl RuffleHandle {
                                     } else {
                                         "".into()
                                     };
-                                core.ui_mut().set_clipboard_content(clipboard_content);
+                                <dyn Any>::downcast_mut::<WebUiBackend>(core.ui_mut())
+                                    .expect("Web UI backend")
+                                    .set_clipboard_content_buffer(clipboard_content);
                                 core.handle_event(PlayerEvent::TextControl {
                                     code: TextControlCode::Paste,
                                 });
@@ -768,9 +841,8 @@ impl RuffleHandle {
                     let _ = ruffle.with_instance(|instance| {
                         if instance.has_focus {
                             let _ = instance.with_core_mut(|core| {
-                                let key_code = web_to_ruffle_key_code(&js_event.code());
-                                let key_char = web_key_to_codepoint(&js_event.key());
-                                core.handle_event(PlayerEvent::KeyUp { key_code, key_char });
+                                let key = web_input_to_ruffle_key_descriptor(&js_event);
+                                core.handle_event(PlayerEvent::KeyUp { key });
                             });
                             js_event.prevent_default();
                         }
@@ -778,18 +850,137 @@ impl RuffleHandle {
                 },
             ));
 
-            instance.unload_callback =
-                Some(JsCallback::register(&window, "unload", false, move |_| {
+            // Create webglcontextlost handler.
+            let js_player_callback = js_player.clone();
+            instance.webglcontextlost_callback = Some(JsCallback::register(
+                &player.canvas,
+                "webglcontextlost",
+                false,
+                move |_js_event: WebGlContextEvent| {
+                    INSTANCES.with(|instances| {
+                        if instances.borrow().len() >= 8 {
+                            let _ = ruffle.remove_instance();
+                            js_player_callback.reload_with_canvas_renderer();
+                        }
+                    });
+                },
+            ));
+
+            // Create pageshow event handler.
+            let js_player_callback = js_player.clone();
+            instance.pageshow_callback = Some(JsCallback::register(
+                &window,
+                "pageshow",
+                false,
+                move |js_event: PageTransitionEvent| {
+                    if js_event.persisted() {
+                        js_player_callback.display_restored_from_bfcache_message();
+                    }
+                },
+            ));
+
+            // Create pagehide event handler.
+            instance.pagehide_callback = Some(JsCallback::register(
+                &window,
+                "pagehide",
+                false,
+                move |_js_event: PageTransitionEvent| {
                     let _ = ruffle.with_core_mut(|core| {
                         core.flush_shared_objects();
                     });
-                }));
+                },
+            ));
         })?;
 
         // Set initial timestamp and do initial tick to start animation loop.
         ruffle.tick(0.0);
 
         Ok(ruffle)
+    }
+
+    fn get_shadow_host(element: &HtmlElement) -> Option<HtmlElement> {
+        element
+            .get_root_node()
+            .dyn_ref::<ShadowRoot>()
+            .map(|root| root.host())
+            .and_then(|el| el.dyn_into::<HtmlElement>().ok())
+    }
+
+    fn set_up_focus_management(
+        ruffle: RuffleHandle,
+        focus_target: HtmlElement,
+    ) -> Result<(), RuffleInstanceError> {
+        ruffle.with_instance_mut(|instance| {
+            let focus_target_clone = focus_target.clone();
+            instance.focusin_callback = Some(JsCallback::register(
+                &focus_target,
+                "focusin",
+                false,
+                move |js_event: FocusEvent| {
+                    if let Some(related_target) = js_event.related_target() {
+                        let related_target = related_target.dyn_ref::<Node>();
+                        if focus_target_clone.contains(related_target) {
+                            // Focus is changed within parent, we can ignore it.
+                            return;
+                        }
+                    }
+
+                    let _ = ruffle.with_instance_mut(|instance| {
+                        if !instance.has_focus {
+                            instance.has_focus = true;
+                            let _ = instance.with_core_mut(|core| {
+                                core.handle_event(PlayerEvent::FocusGained);
+                            });
+                        }
+                    });
+                },
+            ));
+
+            let focus_target_clone = focus_target.clone();
+            instance.focusout_callback = Some(JsCallback::register(
+                &focus_target,
+                "focusout",
+                false,
+                move |js_event: FocusEvent| {
+                    if let Some(related_target) = js_event.related_target() {
+                        let related_target = related_target.dyn_ref::<Node>();
+                        if focus_target_clone.contains(related_target) {
+                            // Focus is changed within parent, we can ignore it.
+                            return;
+                        }
+                    }
+
+                    let _ = ruffle.with_instance_mut(|instance| {
+                        if instance.has_focus {
+                            let _ = instance.with_core_mut(|core| {
+                                core.handle_event(PlayerEvent::FocusLost);
+                            });
+                            instance.has_focus = false;
+                        }
+                    });
+                },
+            ));
+
+            let focus_target_clone = focus_target.clone();
+            instance.focus_on_press_callback = Some(JsCallback::register(
+                &focus_target,
+                "pointerdown",
+                // We want to set the focus as early as we can.
+                true,
+                move |_js_event| {
+                    let has_focus = ruffle
+                        .with_instance(|instance| instance.has_focus)
+                        .unwrap_or_default();
+                    if has_focus {
+                        // We already have focus, no need to reset it.
+                        return;
+                    }
+
+                    focus_target_clone.focus().warn_on_error();
+                },
+            ));
+        })?;
+        Ok(())
     }
 
     /// Registers a new Ruffle instance and returns the handle to the instance.
@@ -802,10 +993,10 @@ impl RuffleHandle {
     }
 
     /// Unregisters a Ruffle instance, and returns the removed instance.
-    fn remove_instance(&self) -> Result<RuffleInstance, RuffleInstanceError> {
+    fn remove_instance(self) -> Result<RuffleInstance, RuffleInstanceError> {
         INSTANCES.try_with(|instances| {
             let mut instances = instances.try_borrow_mut()?;
-            if let Some(instance) = instances.remove(*self) {
+            if let Some(instance) = instances.remove(self) {
                 Ok(instance.into_inner())
             } else {
                 Err(RuffleInstanceError::InstanceNotFound)
@@ -814,14 +1005,14 @@ impl RuffleHandle {
     }
 
     /// Runs the given function on this Ruffle instance.
-    fn with_instance<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
+    fn with_instance<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&RuffleInstance) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(*self) {
+                if let Some(instance) = instances.get(self) {
                     let instance = instance.try_borrow()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -839,14 +1030,14 @@ impl RuffleHandle {
     }
 
     /// Runs the given function on this Ruffle instance.
-    fn with_instance_mut<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
+    fn with_instance_mut<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&mut RuffleInstance) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(*self) {
+                if let Some(instance) = instances.get(self) {
                     let mut instance = instance.try_borrow_mut()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -864,14 +1055,14 @@ impl RuffleHandle {
     }
 
     /// Runs the given function on this instance's `Player`.
-    fn with_core<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
+    fn with_core<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&ruffle_core::Player) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(*self) {
+                if let Some(instance) = instances.get(self) {
                     let instance = instance.try_borrow()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -896,14 +1087,14 @@ impl RuffleHandle {
     }
 
     /// Runs the given function on this instance's `Player`.
-    fn with_core_mut<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
+    fn with_core_mut<F, O>(self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&mut ruffle_core::Player) -> O,
     {
         let ret = INSTANCES
             .try_with(|instances| {
                 let instances = instances.try_borrow()?;
-                if let Some(instance) = instances.get(*self) {
+                if let Some(instance) = instances.get(self) {
                     let instance = instance.try_borrow()?;
                     let _subscriber =
                         tracing::subscriber::set_default(instance.log_subscriber.clone());
@@ -927,9 +1118,10 @@ impl RuffleHandle {
         ret
     }
 
-    fn tick(&mut self, timestamp: f64) {
+    fn tick(self, timestamp: f64) {
         let mut dt = 0.0;
         let mut new_dimensions = None;
+        let mut gamepad_button_events = Vec::new();
         let _ = self.with_instance_mut(|instance| {
             // Check for canvas resize.
             let canvas_width = instance.canvas.client_width();
@@ -958,15 +1150,68 @@ impl RuffleHandle {
                 ));
             }
 
-            // Request next animation frame.
-            if let Some(handler) = &instance.animation_handler {
-                let id = instance
-                    .window
-                    .request_animation_frame(handler.as_ref().unchecked_ref())
-                    .unwrap_or_default();
-                instance.animation_handler_id = NonZeroI32::new(id);
-            } else {
-                instance.animation_handler_id = None;
+            if let Ok(gamepads) = instance.window.navigator().get_gamepads()
+                && let Some(gamepad) = gamepads.into_iter().next()
+                && let Ok(gamepad) = gamepad.dyn_into::<WebGamepad>()
+            {
+                let mut pressed_buttons = Vec::new();
+
+                let buttons = gamepad.buttons();
+                for (index, button) in buttons.into_iter().enumerate() {
+                    let Ok(button) = button.dyn_into::<WebGamepadButton>() else {
+                        continue;
+                    };
+
+                    if !button.pressed() {
+                        continue;
+                    }
+
+                    // See https://w3c.github.io/gamepad/#remapping
+                    let gamepad_button = match index {
+                        0 => GamepadButton::South,
+                        1 => GamepadButton::East,
+                        2 => GamepadButton::West,
+                        3 => GamepadButton::North,
+                        12 => GamepadButton::DPadUp,
+                        13 => GamepadButton::DPadDown,
+                        14 => GamepadButton::DPadLeft,
+                        15 => GamepadButton::DPadRight,
+                        _ => continue,
+                    };
+
+                    pressed_buttons.push(gamepad_button);
+                }
+
+                if pressed_buttons != instance.pressed_buttons {
+                    for button in pressed_buttons.iter() {
+                        if !instance.pressed_buttons.contains(button) {
+                            gamepad_button_events
+                                .push(PlayerEvent::GamepadButtonDown { button: *button });
+                        }
+                    }
+
+                    for button in instance.pressed_buttons.iter() {
+                        if !pressed_buttons.contains(button) {
+                            gamepad_button_events
+                                .push(PlayerEvent::GamepadButtonUp { button: *button });
+                        }
+                    }
+
+                    instance.pressed_buttons = pressed_buttons;
+                }
+            }
+
+            // Request next animation frame (skipped in background tick mode).
+            if !instance.background_tick_mode {
+                if let Some(handler) = &instance.animation_handler {
+                    let id = instance
+                        .window
+                        .request_animation_frame(handler.as_ref().unchecked_ref())
+                        .unwrap_or_default();
+                    instance.animation_handler_id = NonZeroI32::new(id);
+                } else {
+                    instance.animation_handler_id = None;
+                }
             }
 
             // Calculate the elapsed time since the last tick.
@@ -980,6 +1225,10 @@ impl RuffleHandle {
 
         // Tick the Ruffle core.
         let _ = self.with_core_mut(|core| {
+            for event in gamepad_button_events {
+                core.handle_event(event);
+            }
+
             if let Some((ref canvas, viewport_width, viewport_height, device_pixel_ratio)) =
                 new_dimensions
             {
@@ -993,7 +1242,7 @@ impl RuffleHandle {
                 });
             }
 
-            core.tick(dt);
+            core.tick(FloatDuration::from_millis(dt));
 
             // Render if the core signals a new frame, or if we resized.
             if core.needs_render() || new_dimensions.is_some() {
@@ -1002,7 +1251,7 @@ impl RuffleHandle {
         });
     }
 
-    fn on_metadata(&self, swf_header: &ruffle_core::swf::HeaderExt) {
+    fn on_metadata(self, swf_header: &ruffle_core::swf::HeaderExt) {
         let _ = self.with_instance(|instance| {
             // Convert the background color to an HTML hex color ("#FFFFFF").
             let background_color = swf_header
@@ -1027,7 +1276,7 @@ impl RuffleHandle {
 }
 
 impl RuffleInstance {
-    #[allow(dead_code)]
+    #[expect(dead_code)]
     fn with_core<F, O>(&self, f: F) -> Result<O, RuffleInstanceError>
     where
         F: FnOnce(&ruffle_core::Player) -> O,
@@ -1096,10 +1345,10 @@ fn parse_movie_parameters(input: &JsValue) -> Vec<(String, String)> {
     let mut params = Vec::new();
     if let Ok(keys) = js_sys::Reflect::own_keys(input) {
         for key in keys.values().into_iter().flatten() {
-            if let Ok(value) = js_sys::Reflect::get(input, &key) {
-                if let (Some(key), Some(value)) = (key.as_string(), value.as_string()) {
-                    params.push((key, value))
-                }
+            if let Ok(value) = js_sys::Reflect::get(input, &key)
+                && let (Some(key), Some(value)) = (key.as_string(), value.as_string())
+            {
+                params.push((key, value))
             }
         }
     }

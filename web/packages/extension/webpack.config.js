@@ -12,9 +12,8 @@ function transformManifest(content, env) {
     const manifest = json5.parse(content.toString());
 
     let packageVersion = process.env["npm_package_version"];
-    let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "nightly";
-    let buildDate = new Date().toISOString().substring(0, 10);
-    let buildId = process.env["BUILD_ID"];
+    let versionChannel = process.env["CFG_RELEASE_CHANNEL"] || "local";
+    let version4 = process.env["VERSION4"];
     let firefoxExtensionId =
         process.env["FIREFOX_EXTENSION_ID"] || "ruffle@ruffle.rs";
 
@@ -26,8 +25,7 @@ function transformManifest(content, env) {
 
             packageVersion = versionSeal.version_number;
             versionChannel = versionSeal.version_channel;
-            buildDate = versionSeal.build_date.substring(0, 10);
-            buildId = versionSeal.build_id;
+            version4 = versionSeal.version4;
             firefoxExtensionId = versionSeal.firefox_extension_id;
         } else {
             throw new Error(
@@ -41,26 +39,31 @@ function transformManifest(content, env) {
     // when it gets generated in web/packages/core/tools/set_version.js and then
     // load it in the code above.
 
-    // The extension marketplaces require the version to monotonically increase,
-    // so append the build number onto the end of the manifest version.
-    manifest.version = buildId
-        ? `${packageVersion}.${buildId}`
-        : packageVersion;
+    // The extension marketplaces require the version to monotonically increase
+    // and to be in the format of A.B.C.D.
+    manifest.version = version4 ? version4 : packageVersion;
 
     if (env["firefox"]) {
         manifest.browser_specific_settings = {
             gecko: {
                 id: firefoxExtensionId,
+                data_collection_permissions: {
+                    required: ["none"],
+                },
             },
         };
         manifest.background = {
             scripts: ["dist/background.js"],
         };
     } else {
-        manifest.version_name =
-            versionChannel === "nightly"
-                ? `${packageVersion} nightly ${buildDate}`
-                : packageVersion;
+        if (
+            versionChannel === "stable" ||
+            packageVersion?.includes(versionChannel)
+        ) {
+            manifest.version_name = packageVersion;
+        } else {
+            manifest.version_name = `${versionChannel} ${packageVersion}`;
+        }
 
         manifest.background = {
             service_worker: "dist/background.js",
@@ -75,7 +78,7 @@ function transformManifest(content, env) {
 }
 
 /**
- * @type {import("webpack-cli").CallableOption}
+ * @type {import("webpack-cli").CallableWebpackConfiguration}
  */
 export default function (/** @type {Record<string, any>} */ env, _argv) {
     const mode =
@@ -99,7 +102,9 @@ export default function (/** @type {Record<string, any>} */ env, _argv) {
         },
         output: {
             path: url.fileURLToPath(new URL("assets/dist/", import.meta.url)),
-            publicPath: "auto",
+            // publicPath: "auto" throws for content scripts, which lack a script src
+            // This is changed at runtime to the full URL of the extension's /dist/ folder
+            publicPath: "/dist/",
             clean: true,
             assetModuleFilename: "assets/[name][ext][query]",
         },

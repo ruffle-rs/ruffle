@@ -1,5 +1,5 @@
 use crate::blend::ComplexBlend;
-use enum_map::{enum_map, EnumMap};
+use enum_map::{EnumMap, enum_map};
 use ruffle_render::shader_source::SHADER_FILTER_COMMON;
 
 #[derive(Debug)]
@@ -15,6 +15,7 @@ pub struct Shaders {
     pub gradient_shader: wgpu::ShaderModule,
     pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
+    pub alpha_mask_shader: wgpu::ShaderModule,
     pub blend_shaders: EnumMap<ComplexBlend, wgpu::ShaderModule>,
     pub color_matrix_filter: wgpu::ShaderModule,
     pub blur_filter: wgpu::ShaderModule,
@@ -67,6 +68,11 @@ impl Shaders {
             "gradient.wgsl",
             include_str!("../shaders/gradient.wgsl"),
         );
+        let alpha_mask_shader = make_shader(
+            device,
+            "alpha_mask.wgsl",
+            include_str!("../shaders/alpha_mask.wgsl"),
+        );
 
         let blend_shaders = enum_map! {
             ComplexBlend::Multiply => make_shader(device, "blend/multiply.wgsl", include_str!("../shaders/blend/multiply.wgsl")),
@@ -86,6 +92,7 @@ impl Shaders {
             gradient_shader,
             copy_srgb_shader,
             copy_shader,
+            alpha_mask_shader,
             blend_shaders,
             color_matrix_filter,
             blur_filter,
@@ -99,13 +106,13 @@ impl Shaders {
 fn make_shader(device: &wgpu::Device, name: &str, source: &str) -> wgpu::ShaderModule {
     let common = include_str!("../shaders/common.wgsl");
     device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: create_debug_label!("Shader {}", name).as_deref(),
-        source: wgpu::ShaderSource::Wgsl(format!("{}\n{}", common, source).into()),
+        label: create_debug_label!("Shader {name}").as_deref(),
+        source: wgpu::ShaderSource::Wgsl(format!("{common}\n{source}").into()),
     })
 }
 fn make_filter_shader(device: &wgpu::Device, name: &str, source: &str) -> wgpu::ShaderModule {
     device.create_shader_module(wgpu::ShaderModuleDescriptor {
-        label: create_debug_label!("Shader {}", name).as_deref(),
-        source: wgpu::ShaderSource::Wgsl(format!("{}\n{}", SHADER_FILTER_COMMON, source).into()),
+        label: create_debug_label!("Shader {name}").as_deref(),
+        source: wgpu::ShaderSource::Wgsl(format!("{SHADER_FILTER_COMMON}\n{source}").into()),
     })
 }

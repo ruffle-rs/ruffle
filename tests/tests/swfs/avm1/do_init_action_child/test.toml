@@ -1,0 +1,7 @@
+# Tests DoInitAction behavior in child movies, both when
+# loaded through a `MovieClipLoader` and through `ImportAssets2`.
+#
+# .swf files were handcrafted using the JPEXS Decompiler and have
+# no corresponding sources files.
+
+num_frames = 2

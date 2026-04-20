@@ -3,9 +3,7 @@ use naga::{
     StructMember, Type, TypeInner,
 };
 
-use crate::{builder::NagaBuilder, Error, ShaderType};
-
-pub type Result<T> = std::result::Result<T, Error>;
+use crate::{ShaderType, builder::NagaBuilder};
 
 #[derive(Default)]
 pub struct VaryingRegisters {
@@ -22,8 +20,9 @@ pub struct VaryingRegister {
     output_struct_index: Option<usize>,
 }
 
-impl<'a> NagaBuilder<'a> {
-    pub fn get_varying_pointer(&mut self, index: usize) -> Result<Handle<Expression>> {
+impl NagaBuilder<'_> {
+    pub fn get_varying_pointer(&mut self, index: u16) -> Handle<Expression> {
+        let index = index as usize;
         if index >= self.varying_registers.varying_pointers.len() {
             self.varying_registers
                 .varying_pointers
@@ -60,7 +59,7 @@ impl<'a> NagaBuilder<'a> {
                                     location: index as u32,
                                     interpolation: Some(naga::Interpolation::Perspective),
                                     sampling: None,
-                                    second_blend_source: false,
+                                    blend_src: None,
                                 }),
                                 offset: 0,
                             });
@@ -86,7 +85,7 @@ impl<'a> NagaBuilder<'a> {
                             location: index as u32,
                             interpolation: Some(Interpolation::Perspective),
                             sampling: None,
-                            second_blend_source: false,
+                            blend_src: None,
                         }),
                     });
                     let arg_index = self.func.arguments.len() - 1;
@@ -103,14 +102,14 @@ impl<'a> NagaBuilder<'a> {
             };
         };
 
-        Ok(self.varying_registers.varying_pointers[index]
+        self.varying_registers.varying_pointers[index]
             .unwrap()
-            .expr_local_variable)
+            .expr_local_variable
     }
 
     /// Builds the final output struct expression, using the 'main' output (a position or color)
     /// and any varying registers that were written to (if this is a vertex shader)
-    pub fn build_output_expr(&mut self, return_ty: Handle<Type>) -> Result<Handle<Expression>> {
+    pub fn build_output_expr(&mut self, return_ty: Handle<Type>) -> Handle<Expression> {
         // Load the 'main' output (a position or color) from our temporary location.
         let dest_load = self.evaluate_expr(Expression::Load { pointer: self.dest });
         let mut components = vec![Some(dest_load)];
@@ -126,16 +125,16 @@ impl<'a> NagaBuilder<'a> {
                     if component_index >= components.len() {
                         components.resize(component_index + 1, None);
                     }
-                    components[component_index] = Some(self.emit_varying_load(i)?);
+                    components[component_index] = Some(self.emit_varying_load(i as u16));
                 }
             }
         }
 
         let components = components.into_iter().map(|c| c.unwrap()).collect();
 
-        Ok(self.evaluate_expr(Expression::Compose {
+        self.evaluate_expr(Expression::Compose {
             ty: return_ty,
             components,
-        }))
+        })
     }
 }

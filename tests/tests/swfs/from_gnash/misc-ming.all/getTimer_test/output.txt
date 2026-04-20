@@ -1,0 +1,8 @@
+PASSED: x1 > 0 [getTimer_test.c:76]
+PASSED: x2 > x1 [getTimer_test.c:77]
+PASSED: x2 < 6000 [getTimer_test.c:80]
+PASSED: x2 == Math.ceil(x2) [getTimer_test.c:82]
+PASSED: x2 == Math.floor(x2) [getTimer_test.c:83]
+#passed: 5
+#failed: 0
+#total tests run: 5

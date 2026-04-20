@@ -1,0 +1,4 @@
+function Function() {}
+function Function() {}
+this.hasOwnProperty threw 1069
+function Function() {}

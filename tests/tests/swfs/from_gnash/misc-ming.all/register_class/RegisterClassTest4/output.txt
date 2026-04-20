@@ -1,0 +1,42 @@
+1 undefined
+Bug ctor: 0
+2 0
+load _level0.mc.Segments c: 0
+1 0
+2 0
+1 0
+Bug ctor: 1
+unload _level0.mc.Segments c: 0
+2 0
+load _level0.mc.Segments c: 1
+1 0
+2 1
+1 1
+Bug ctor: 2
+unload _level0.mc.Segments c: 1
+2 1
+load _level0.mc.Segments c: 2
+1 1
+2 2
+PASSED: _global.real.length  ==  12 [RegisterClassTest4.c:152]
+PASSED: _global.real.toString()  ==  'undefined,0,0,0,0,0,0,1,1,1,1,2' [RegisterClassTest4.c:154]
+PASSED: _global.fns.length  ==  12 [RegisterClassTest4.c:156]
+PASSED: _global.fns[0]  ==  'undefined' [RegisterClassTest4.c:157]
+PASSED: _global.fns[1]  ==  'function' [RegisterClassTest4.c:158]
+PASSED: _global.fns[2]  ==  'function' [RegisterClassTest4.c:159]
+PASSED: _global.fns[3]  ==  'function' [RegisterClassTest4.c:160]
+PASSED: _global.fns[4]  ==  'function' [RegisterClassTest4.c:161]
+PASSED: _global.fns[5]  ==  'function' [RegisterClassTest4.c:162]
+PASSED: _global.fns[6]  ==  'function' [RegisterClassTest4.c:163]
+PASSED: _global.fns[7]  ==  'function' [RegisterClassTest4.c:164]
+PASSED: _global.fns[8]  ==  'function' [RegisterClassTest4.c:165]
+PASSED: _global.fns[9]  ==  'function' [RegisterClassTest4.c:166]
+PASSED: _global.fns[10]  ==  'function' [RegisterClassTest4.c:167]
+PASSED: _global.fns[11]  ==  'function' [RegisterClassTest4.c:168]
+PASSED: _global.ctorcalls  ==  3 [RegisterClassTest4.c:170]
+Bug ctor: 3
+unload _level0.mc.Segments c: 2
+#passed: 16
+#failed: 0
+#total tests run: 16
+load _level0.mc.Segments c: 3
