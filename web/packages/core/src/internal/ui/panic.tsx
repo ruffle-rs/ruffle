@@ -420,14 +420,8 @@ export function showPanicScreen(
                     )}
                 </ul>
             </div>
-            <div
-                id="panic-details-modal"
-                class="hidden"
-                ref={detailsModal}
-            >
-                <div
-                    id="panic-details-content"
-                >
+            <div id="panic-details-modal" class="hidden" ref={detailsModal}>
+                <div id="panic-details-content">
                     <span
                         class="panic-copy-button"
                         title="Copy to clipboard"
