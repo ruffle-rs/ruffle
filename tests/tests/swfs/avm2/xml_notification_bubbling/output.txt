@@ -1,0 +1,286 @@
+# notifier
+currentTarget = <root>
+  <first>
+    <second a="added a"/>
+  </first>
+</root>
+command = attributeAdded
+target = <second a="added a"/>
+value = a
+detail = added a
+
+# notifier
+currentTarget = <root>
+  <first>
+    <second a="added a" b="added b"/>
+  </first>
+</root>
+command = attributeAdded
+target = <second a="added a" b="added b"/>
+value = b
+detail = added b
+
+# notifier
+currentTarget = <root>
+  <first c="added c">
+    <second a="added a" b="added b"/>
+  </first>
+</root>
+command = attributeAdded
+target = <first c="added c">
+  <second a="added a" b="added b"/>
+</first>
+value = c
+detail = added c
+
+# notifier
+currentTarget = <root d="added d">
+  <first c="added c">
+    <second a="added a" b="added b"/>
+  </first>
+</root>
+command = attributeAdded
+target = <root d="added d">
+  <first c="added c">
+    <second a="added a" b="added b"/>
+  </first>
+</root>
+value = d
+detail = added d
+
+# notifier
+currentTarget = <root d="added d">
+  <first c="added c">
+    <second a="changed a" b="added b"/>
+  </first>
+</root>
+command = attributeChanged
+target = <second a="changed a" b="added b"/>
+value = a
+detail = added a
+
+# notifier
+currentTarget = <root d="added d">
+  <first c="added c">
+    <second a="changed a" b="changed b"/>
+  </first>
+</root>
+command = attributeChanged
+target = <second a="changed a" b="changed b"/>
+value = b
+detail = added b
+
+# notifier
+currentTarget = <root d="added d">
+  <first c="changed c">
+    <second a="changed a" b="changed b"/>
+  </first>
+</root>
+command = attributeChanged
+target = <first c="changed c">
+  <second a="changed a" b="changed b"/>
+</first>
+value = c
+detail = added c
+
+# notifier
+currentTarget = <root d="changed d">
+  <first c="changed c">
+    <second a="changed a" b="changed b"/>
+  </first>
+</root>
+command = attributeChanged
+target = <root d="changed d">
+  <first c="changed c">
+    <second a="changed a" b="changed b"/>
+  </first>
+</root>
+value = d
+detail = added d
+
+# notifier
+currentTarget = <second a="added a"/>
+command = attributeAdded
+target = <second a="added a"/>
+value = a
+detail = added a
+
+# notifier
+currentTarget = <first>
+  <second a="added a"/>
+</first>
+command = attributeAdded
+target = <second a="added a"/>
+value = a
+detail = added a
+
+# notifier
+currentTarget = <root2>
+  <first>
+    <second a="added a"/>
+  </first>
+</root2>
+command = attributeAdded
+target = <second a="added a"/>
+value = a
+detail = added a
+
+# notifier
+currentTarget = <second a="added a" b="added b"/>
+command = attributeAdded
+target = <second a="added a" b="added b"/>
+value = b
+detail = added b
+
+# notifier
+currentTarget = <first>
+  <second a="added a" b="added b"/>
+</first>
+command = attributeAdded
+target = <second a="added a" b="added b"/>
+value = b
+detail = added b
+
+# notifier
+currentTarget = <root2>
+  <first>
+    <second a="added a" b="added b"/>
+  </first>
+</root2>
+command = attributeAdded
+target = <second a="added a" b="added b"/>
+value = b
+detail = added b
+
+# notifier
+currentTarget = <first c="added c">
+  <second a="added a" b="added b"/>
+</first>
+command = attributeAdded
+target = <first c="added c">
+  <second a="added a" b="added b"/>
+</first>
+value = c
+detail = added c
+
+# notifier
+currentTarget = <root2>
+  <first c="added c">
+    <second a="added a" b="added b"/>
+  </first>
+</root2>
+command = attributeAdded
+target = <first c="added c">
+  <second a="added a" b="added b"/>
+</first>
+value = c
+detail = added c
+
+# notifier
+currentTarget = <root2 d="added d">
+  <first c="added c">
+    <second a="added a" b="added b"/>
+  </first>
+</root2>
+command = attributeAdded
+target = <root2 d="added d">
+  <first c="added c">
+    <second a="added a" b="added b"/>
+  </first>
+</root2>
+value = d
+detail = added d
+
+# notifier
+currentTarget = <second a="changed a" b="added b"/>
+command = attributeChanged
+target = <second a="changed a" b="added b"/>
+value = a
+detail = added a
+
+# notifier
+currentTarget = <first c="added c">
+  <second a="changed a" b="added b"/>
+</first>
+command = attributeChanged
+target = <second a="changed a" b="added b"/>
+value = a
+detail = added a
+
+# notifier
+currentTarget = <root2 d="added d">
+  <first c="added c">
+    <second a="changed a" b="added b"/>
+  </first>
+</root2>
+command = attributeChanged
+target = <second a="changed a" b="added b"/>
+value = a
+detail = added a
+
+# notifier
+currentTarget = <second a="changed a" b="changed b"/>
+command = attributeChanged
+target = <second a="changed a" b="changed b"/>
+value = b
+detail = added b
+
+# notifier
+currentTarget = <first c="added c">
+  <second a="changed a" b="changed b"/>
+</first>
+command = attributeChanged
+target = <second a="changed a" b="changed b"/>
+value = b
+detail = added b
+
+# notifier
+currentTarget = <root2 d="added d">
+  <first c="added c">
+    <second a="changed a" b="changed b"/>
+  </first>
+</root2>
+command = attributeChanged
+target = <second a="changed a" b="changed b"/>
+value = b
+detail = added b
+
+# notifier
+currentTarget = <first c="changed c">
+  <second a="changed a" b="changed b"/>
+</first>
+command = attributeChanged
+target = <first c="changed c">
+  <second a="changed a" b="changed b"/>
+</first>
+value = c
+detail = added c
+
+# notifier
+currentTarget = <root2 d="added d">
+  <first c="changed c">
+    <second a="changed a" b="changed b"/>
+  </first>
+</root2>
+command = attributeChanged
+target = <first c="changed c">
+  <second a="changed a" b="changed b"/>
+</first>
+value = c
+detail = added c
+
+# notifier
+currentTarget = <root2 d="changed d">
+  <first c="changed c">
+    <second a="changed a" b="changed b"/>
+  </first>
+</root2>
+command = attributeChanged
+target = <root2 d="changed d">
+  <first c="changed c">
+    <second a="changed a" b="changed b"/>
+  </first>
+</root2>
+value = d
+detail = added d
+
