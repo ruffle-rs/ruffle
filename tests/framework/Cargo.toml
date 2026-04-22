@@ -17,7 +17,7 @@ ruffle_input_format = { path = "../input-format" }
 ruffle_socket_format = { path = "../socket-format" }
 ruffle_video_software = { path = "../../video/software", optional = true }
 ruffle_video_external = { path = "../../video/external", features = ["openh264"], optional = true }
-image = { workspace = true, features  = ["png"] }
+image = { workspace = true, features = ["png"] }
 regex = { workspace = true }
 url = { workspace = true }
 chrono = { workspace = true }
@@ -31,6 +31,7 @@ vfs = { workspace = true }
 percent-encoding = { workspace = true }
 cfg-expr = "0.20.7"
 oxipng = "10.1.0"
+rascal = "0.2.3"
 
 [features]
 jpegxr = ["ruffle_core/jpegxr"]

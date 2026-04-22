@@ -55,6 +55,7 @@ impl Test {
             .player_options
             .create_renderer(environment, viewport_dimensions);
 
+        self.compile()?;
         let injector = self.input_injector()?;
         let socket_events = self.socket_events()?;
         let runner = TestRunner::new(
@@ -156,5 +157,12 @@ impl Test {
         }
 
         self.options.can_run(check_renderer, environment)
+    }
+
+    fn compile(&self) -> Result<()> {
+        for options in &self.options.compilers {
+            options.create_compiler()?.compile(&self.root_path)?;
+        }
+        Ok(())
     }
 }

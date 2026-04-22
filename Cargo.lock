@@ -111,6 +111,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "annotate-snippets"
+version = "0.12.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92570a3f9c98e7e84df84b71d0965ac99b1871fcd75a3773a3bd1bad13f64cf7"
+dependencies = [
+ "anstyle",
+ "memchr",
+ "unicode-width",
+]
+
+[[package]]
 name = "anstream"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -376,6 +387,12 @@ checksum = "c4512299f36f043ab09a583e57bceb5a5aab7a73db1805848e8fef3c9e8c78b3"
 
 [[package]]
 name = "bitstream-io"
+version = "2.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6099cdc01846bc367c4e7dd630dc5966dccf36b652fae7a74e17b640411a91b2"
+
+[[package]]
+name = "bitstream-io"
 version = "4.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7eff00be299a18769011411c9def0d827e8f2d7bf0c3dbf53633147a8867fd1f"
@@ -447,7 +464,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
- "swf",
+ "swf 0.2.2",
  "walkdir",
 ]
 
@@ -2377,6 +2394,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashbrown"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f467dd6dccf739c208452f8014c75c18bb8301b050ad1cfb27153803edb0f51"
+
+[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2594,13 +2617,15 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.13.0"
+version = "2.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7714e70437a7dc3ac8eb7e6f8df75fd8eb422675fc7678aff7364301092b1017"
+checksum = "d466e9454f08e4a911e14806c24e16fba1b4c121d1ea474396f396069cf949d9"
 dependencies = [
  "equivalent",
- "hashbrown 0.16.1",
+ "hashbrown 0.17.0",
  "rayon",
+ "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -3088,9 +3113,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.7.6"
+version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
+checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
 name = "memmap2"
@@ -3260,7 +3285,7 @@ name = "nellymoser-rs"
 version = "0.1.2"
 source = "git+https://github.com/ruffle-rs/nellymoser?rev=073eb48d907201f46dea0c8feb4e8d9a1d92208c#073eb48d907201f46dea0c8feb4e8d9a1d92208c"
 dependencies = [
- "bitstream-io",
+ "bitstream-io 4.10.0",
  "once_cell",
  "rustdct",
 ]
@@ -4309,6 +4334,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d6831663a5098ea164f89cff59c6284e95f4e3c76ce9848d4529f5ccca9bde"
 
 [[package]]
+name = "rascal"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "385d7d5131b11717c5e3122f4b1522bb9bd5314b381f9bd3ce41a3a76b41dde0"
+dependencies = [
+ "annotate-snippets",
+ "byteorder",
+ "indexmap",
+ "serde",
+ "swf 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winnow 1.0.2",
+]
+
+[[package]]
 name = "raw-window-handle"
 version = "0.6.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4543,7 +4582,7 @@ dependencies = [
  "regress",
  "ruffle_macros",
  "ruffle_wstr",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
  "tracing",
  "url",
@@ -4555,7 +4594,7 @@ version = "0.1.0"
 dependencies = [
  "async-channel",
  "bitflags 2.11.1",
- "bitstream-io",
+ "bitstream-io 4.10.0",
  "build_playerglobal",
  "bytemuck",
  "byteorder",
@@ -4605,7 +4644,7 @@ dependencies = [
  "serde_json",
  "slotmap",
  "smallvec",
- "swf",
+ "swf 0.2.2",
  "symphonia",
  "thiserror 2.0.18",
  "tracing",
@@ -4748,7 +4787,7 @@ dependencies = [
  "ruffle_wstr",
  "serde",
  "smallvec",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
  "tracing",
  "wasm-bindgen",
@@ -4763,7 +4802,7 @@ dependencies = [
  "log",
  "ruffle_render",
  "ruffle_web_common",
- "swf",
+ "swf 0.2.2",
  "wasm-bindgen",
  "web-sys",
 ]
@@ -4777,7 +4816,7 @@ dependencies = [
  "log",
  "ruffle_render",
  "ruffle_web_common",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
  "wasm-bindgen",
  "web-sys",
@@ -4801,7 +4840,7 @@ dependencies = [
  "profiling",
  "ruffle_render",
  "smallvec",
- "swf",
+ "swf 0.2.2",
  "tracing",
  "web-sys",
  "wgpu",
@@ -4821,7 +4860,7 @@ dependencies = [
  "ruffle_core",
  "serde",
  "sha2",
- "swf",
+ "swf 0.2.2",
  "walkdir",
 ]
 
@@ -4846,6 +4885,7 @@ dependencies = [
  "oxipng",
  "percent-encoding",
  "pretty_assertions",
+ "rascal",
  "regex",
  "ruffle_core",
  "ruffle_input_format",
@@ -4865,7 +4905,7 @@ version = "0.1.0"
 dependencies = [
  "ruffle_render",
  "slotmap",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
 ]
 
@@ -4883,7 +4923,7 @@ dependencies = [
  "ruffle_video_software",
  "sha2",
  "slotmap",
- "swf",
+ "swf 0.2.2",
  "tempfile",
  "thiserror 2.0.18",
  "tracing",
@@ -4907,7 +4947,7 @@ dependencies = [
  "ruffle_render",
  "ruffle_video",
  "slotmap",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
 ]
 
@@ -5468,7 +5508,26 @@ name = "swf"
 version = "0.2.2"
 dependencies = [
  "bitflags 2.11.1",
- "bitstream-io",
+ "bitstream-io 4.10.0",
+ "byteorder",
+ "encoding_rs",
+ "enum-map",
+ "flate2",
+ "log",
+ "lzma-rs",
+ "num-derive",
+ "num-traits",
+ "simple_asn1",
+]
+
+[[package]]
+name = "swf"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "802bff556571f7e5c6e347d5f147f91d1e5976bb43fb312437f04676707bbe4f"
+dependencies = [
+ "bitflags 2.11.1",
+ "bitstream-io 2.6.0",
  "byteorder",
  "encoding_rs",
  "enum-map",
@@ -5874,7 +5933,7 @@ dependencies = [
  "toml_datetime",
  "toml_parser",
  "toml_writer",
- "winnow",
+ "winnow 0.7.14",
 ]
 
 [[package]]
@@ -5896,7 +5955,7 @@ dependencies = [
  "toml_datetime",
  "toml_parser",
  "toml_writer",
- "winnow",
+ "winnow 0.7.14",
 ]
 
 [[package]]
@@ -5905,7 +5964,7 @@ version = "1.0.9+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "702d4415e08923e7e1ef96cd5727c0dfed80b4d2fa25db9647fe5eb6f7c5a4c4"
 dependencies = [
- "winnow",
+ "winnow 0.7.14",
 ]
 
 [[package]]
@@ -7297,6 +7356,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "winnow"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ee1708bef14716a11bae175f579062d4554d95be2c6829f518df847b7b3fdd0"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "winresource"
 version = "0.1.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7433,7 +7501,7 @@ dependencies = [
  "uds_windows",
  "uuid",
  "windows-sys 0.61.2",
- "winnow",
+ "winnow 0.7.14",
  "zbus_macros",
  "zbus_names",
  "zvariant",
@@ -7462,7 +7530,7 @@ checksum = "7be68e64bf6ce8db94f63e72f0c7eb9a60d733f7e0499e628dfab0f84d6bcb97"
 dependencies = [
  "serde",
  "static_assertions",
- "winnow",
+ "winnow 0.7.14",
  "zvariant",
 ]
 
@@ -7571,7 +7639,7 @@ dependencies = [
  "enumflags2",
  "serde",
  "url",
- "winnow",
+ "winnow 0.7.14",
  "zvariant_derive",
  "zvariant_utils",
 ]
@@ -7599,5 +7667,5 @@ dependencies = [
  "quote",
  "serde",
  "syn",
- "winnow",
+ "winnow 0.7.14",
 ]
