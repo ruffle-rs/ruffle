@@ -8,23 +8,10 @@ from the Adobe Flash `playerglobal.swf`. This would violate copyright by making
 Ruffle re-distribute Adobe's code (and will not even work in general, since
 Adobe's `playerglobal.swf` uses native methods that Ruffle doesn't implement).
 
-Currently, globals are implemented in one of two ways:
-1) As pure-Rust code in files like `system.rs`. These are normal Rust
-   modules, and are used from `core/src/avm2/global.rs`.
-2) As ActionScript code like `flash/geom/Point.as`.
-   The files included from `globals.as` are compiled into a `playerglobal.swf`
-   file at build time, which is included in the final Ruffle binary
-   and loaded during player initialization.
-
-ActionScript files included from `stubs.as` can be referenced from other `.as` files,
-but they will not be included in the final `playerglobal.swf`. This is useful when you need to write
-an `.as` file that references a class defined in Rust - you can create
-a stub class without needing to port the entire pre-existing class
-to ActionScript.
-
-In many cases, defining a class in ActionScript results in
-code that's much simpler and more readable than if were
-defined in Rust.
+Globals are implemented as ActionScript code like `flash/geom/Point.as`. The
+files included from `globals.as` are compiled into a `playerglobal.swf` file
+at build time, which is included in the final Ruffle binary and loaded during
+player initialization.
 
 Flash's `playerglobal.swc` (specifically, its `library.swf`)
 cannot be used as a drop-in replacement for our `playerglobal.swf`.
@@ -55,8 +42,7 @@ generate a reference to a Rust function at the corresponding path in Ruffle.
 For example, the native method function `flash.system.Security.allowDomain`
 expects a Rust function to be defined at `crate::avm2::globals::flash::system::security::allow_domain`.
 
-This function is cast to a `NativeMethodImpl` function pointer, exactly like
-functions defined on a pure-Rust class definition.
+This function is cast to a `NativeMethodImpl` function pointer.
 
 If you're unsure of the path to use, just build Ruffle after marking the
 `ActionScript` method as `native` - the compiler will produce an error
@@ -71,9 +57,8 @@ function is called from ActionScript.
 You can use a custom instance allocator method by applying the metadata
 `[Ruffle(InstanceAllocator)]`
 to your class definition. A reference to a function named `<classname>_allocator`
-will be generated - this should be an `AllocatorFn`, just like when defining
-a class in Rust. This allocator will automatically be registered when the corresponding
-class is loaded.
+will be generated - this should be an `AllocatorFn`. This allocator will
+automatically be registered when the corresponding class is loaded.
 
 See `flash/events/Event.as` for an example
 
@@ -114,9 +99,8 @@ For example, see `Event.WORKER_STATE`
 
 To add versioning to an API:
 
-1. Determine the first version where it was added. This can be seen in the Flash Documentation (e.g. "Runtime Versions: Flash Player 11.4, AIR 3.4")
-2. Convert the Flash Player version to an SWF version number using [this chart](https://github.com/ruffle-rs/ruffle/wiki/SWF-version-chart)
-2. Determine the corresponding asc.jar version code for the SWF version. This can be found in avmplus in https://github.com/adobe/avmplus/blob/master/core/api-versions.as
+1. Determine the first version where it was added. This can be seen in the Flash Documentation (e.g. "Runtime Versions: Flash Player 11.4, AIR 3.4" for `Event.WORKER_STATE`)
+2. Convert the Flash Player version to an API version number using the numbers on the far right of [this chart](https://github.com/ruffle-rs/ruffle/wiki/SWF-version-chart). For `Event.WORKER_STATE`, Flash Player 11.4 maps to API version "682".
 3. Add an `[API("VersionCode")]` metadata to the definition. In the `Event.WORKER_STATE` example,
    this looks like:
 
@@ -124,9 +108,6 @@ To add versioning to an API:
    [API("682")]
    public static const WORKER_STATE:String = "workerState";
    ```
-
-   WORKER_STATE was added in Flash Player 11.4, which corresponds to SWF version 17. Looking at the avmplus file, this corresponds
-   to a version code of "682".
 
 ## Compiling
 
@@ -146,14 +127,6 @@ and not checked in to Git).
 
 The `core/build_playerglobal` tool is automatically run by `core`'s build script
 when any of our ActionScript classes are changed.
-
-## Limitations
-
-* 'Special' classes which are loaded early during player initialization
-(e.g. `Object`, `Function`, `Class`) cannot currently
-be implemented in `playerglobal`, since they are initialized in a special
-way. However, virtually all classes in the `flash` package are initialized
-in a 'normal' way, and are eligible for implementation in `playerglobal`.
 
 ## Acknowledgments
 
