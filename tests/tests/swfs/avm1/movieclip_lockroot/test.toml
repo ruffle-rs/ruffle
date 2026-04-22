@@ -1,1 +1,13 @@
 num_frames = 10
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 15
+
+[[compilers]]
+type = "Rascal"
+target = "child.swf"
+scripts = ["child.as"]
+swf_version = 15
