@@ -155,6 +155,7 @@ async function displayTabStatus() {
 }
 
 window.addEventListener("DOMContentLoaded", async () => {
+    utils.setPageLanguage();
     const data = await utils.storage.sync.get({
         responseHeadersUnsupported: false,
     });

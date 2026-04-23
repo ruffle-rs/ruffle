@@ -137,3 +137,9 @@ export async function hasHostPermissionForActiveTab() {
 
     return await hasHostPermissionForSpecifiedTab(activeTab?.url);
 }
+
+export function setPageLanguage() {
+    document.documentElement.lang = i18n
+        .getMessage("@@ui_locale")
+        .replace("_", "-");
+}

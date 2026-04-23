@@ -11,6 +11,7 @@ window.addEventListener("DOMContentLoaded", async () => {
             .getElementById("swf_takeover")!
             .parentElement!.classList.add("hidden");
     }
+    utils.setPageLanguage();
     document.title = utils.i18n.getMessage("settings_page");
     {
         const vt = document.getElementById("version-text")!;
