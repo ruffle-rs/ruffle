@@ -1,9 +1,12 @@
+@import url("lato.css");
+
 :root {
-    --ruffle-light-blue: #546da3;
+    --ruffle-dark-blue: #2c4980;
     --ruffle-blue: #37528c;
-    --ruffle-dark-blue: #184778;
+    --ruffle-blue-mid: #425fa1;
+    --ruffle-blue-bright: #5271b6;
     --ruffle-orange: #ffad33;
-    --ruffle-dark-orange: #966214;
+    --ruffle-orange-dim: #ffc16350;
 }
 
 .notransition,
@@ -16,18 +19,20 @@
 body {
     background: var(--ruffle-blue);
     font:
-        14px Arial,
+        14px Lato,
+        Arial,
         sans-serif;
     margin: auto;
-    color: white;
+    color: #e8eaf0;
+    color-scheme: dark;
 }
 
 .header {
     position: relative;
     background: var(--ruffle-dark-blue);
     text-align: center;
-    padding: 16px 16px 6px;
-    box-shadow: 0 0 12px #0008;
+    padding: 14px 16px 8px;
+    border-bottom: 1px solid #ffffff18;
 }
 
 .header a {
@@ -37,17 +42,20 @@ body {
 
 #version-text {
     text-align: center;
-    font-size: smaller;
-    opacity: 0.6;
+    font-size: 11px;
+    letter-spacing: 0.04em;
+    opacity: 0.45;
+    margin-top: 2px;
+    font-family: inherit;
 }
 
 .logo {
     width: 100%;
-    transition: transform 0.2s;
+    transition: opacity 0.2s;
 }
 
 .logo:hover {
-    transform: scale(104%);
+    opacity: 0.85;
 }
 
 /* Controls */
@@ -55,59 +63,117 @@ body {
 input,
 select {
     background: var(--ruffle-dark-blue);
-    color: white;
-    padding: 6px;
-    border: none;
-    border-radius: 4px;
+    color: #e8eaf0;
+    padding: 5px 8px;
+    border: 1px solid #ffffff25;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 13px;
+    transition: border-color 0.15s;
+    color-scheme: dark;
+}
+
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'><path fill='%23ffffff60' d='M0 0l5 6 5-6z'/></svg>");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 26px;
+}
+
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+    opacity: 1;
 }
 
 input::placeholder {
-    opacity: 0.5;
-    color: white;
+    color: #ffffff40;
+}
+
+input:hover,
+select:hover {
+    border-color: #ffffff45;
+}
+
+select:focus-visible,
+input:focus-visible {
+    outline: none;
+    border-color: var(--ruffle-orange);
+    box-shadow: 0 0 0 2px var(--ruffle-orange-dim);
 }
 
 button {
-    padding: 6px 8px;
-    border: 2px solid var(--ruffle-blue);
+    padding: 7px 14px;
+    border: 1px solid #ffffff25;
     border-radius: 8px;
     cursor: pointer;
     text-align: center;
-    background: var(--ruffle-light-blue);
-    color: white;
+    background: var(--ruffle-blue-mid);
+    color: #e8eaf0;
+    font-family: inherit;
+    font-size: 13px;
+    transition:
+        background 0.15s,
+        border-color 0.15s;
+}
 
-    /* This gives the text a little more weight without outright bolding it */
-    text-shadow: 0 0 0.1px white;
+button:hover {
+    background: var(--ruffle-blue-bright);
+    border-color: #ffffff40;
+}
+
+button:active {
+    background: var(--ruffle-blue);
+}
+
+button:focus-visible {
+    outline: none;
+    border-color: var(--ruffle-orange);
+    box-shadow: 0 0 0 2px var(--ruffle-orange-dim);
 }
 
 .options {
     display: flex;
     flex-flow: column;
-    gap: 20px;
+    gap: 18px;
 }
 
 .option {
     position: relative;
     display: flex;
     align-items: center;
+    min-height: 28px;
 }
 
 .option input,
 .option select {
-    padding: 4px;
     position: absolute;
     right: 0;
 }
 
-.option label {
-    display: inline-block;
-    padding-right: 60px;
+.option input {
+    padding: 4px 8px;
 }
 
-/* Checkbox (Based on "Pure CSS Slider Checkboxes": https://codepen.io/Qvcool/pen/bdzVYW) */
+.option select {
+    padding: 4px 26px 4px 8px;
+    min-width: 110px;
+}
+
+.option label {
+    display: inline-block;
+    padding-right: 64px;
+    font-size: 13px;
+    color: #d0d4e0;
+    line-height: 1.4;
+    cursor: pointer;
+}
+
+/* Checkbox toggle */
 
 .option.checkbox input {
     width: 40px;
-    height: 20px;
+    height: 22px;
     margin: auto;
     cursor: pointer;
     z-index: 1;
@@ -118,7 +184,7 @@ button {
 .option.checkbox label::after {
     content: "";
     position: absolute;
-    border-radius: 10px;
+    border-radius: 11px;
     top: 0;
     bottom: 0;
     margin: auto;
@@ -128,32 +194,34 @@ button {
 }
 
 .option.checkbox label::before {
-    height: 20px;
+    height: 22px;
     width: 40px;
     right: 0;
-    background: gray;
+    background: #fff2;
+    border: 1px solid #ffffff30;
 }
 
 .option.checkbox label::after {
-    height: 18px;
-    width: 18px;
-    right: 21px;
-    background: silver;
+    height: 16px;
+    width: 16px;
+    right: 23px;
+    background: #fffa;
+    border-radius: 50%;
 }
 
 .option.checkbox input:checked + label::before {
-    background: var(--ruffle-dark-orange);
+    background: #a06010;
+    border-color: var(--ruffle-orange);
 }
 
 .option.checkbox input:checked + label::after {
     background: var(--ruffle-orange);
-    right: 1px;
+    right: 3px;
 }
 
 /* Number input */
 
 .option.number-input input {
-    width: 60px;
-    height: 20px;
-    margin: auto;
+    width: 70px;
+    text-align: center;
 }

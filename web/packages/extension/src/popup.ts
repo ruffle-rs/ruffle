@@ -181,6 +181,7 @@ window.addEventListener("DOMContentLoaded", async () => {
     const optionsButton = document.getElementById(
         "options-button",
     ) as HTMLButtonElement;
+    optionsButton.title = utils.i18n.getMessage("open_settings_page");
     optionsButton.addEventListener("click", async () => {
         await utils.openOptionsPage();
         window.close();
