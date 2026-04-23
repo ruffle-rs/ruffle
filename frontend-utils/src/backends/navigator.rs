@@ -460,7 +460,7 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
             tokio::select! {
                _ = read => {},
                _ = write => {},
-            };
+            }
 
             if let Err(e) = stream.shutdown().await {
                 tracing::warn!("Failed to shutdown write half of TcpStream: {e}");
