@@ -4,6 +4,7 @@ use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::class::Class;
 use crate::avm2::error::{make_error_1125, make_error_1126};
+use crate::avm2::method::MethodKind;
 use crate::avm2::value::Value;
 use gc_arena::Collect;
 use std::cmp::{max, min};
@@ -40,7 +41,12 @@ pub struct VectorStorage<'gc> {
 }
 
 impl<'gc> VectorStorage<'gc> {
-    pub fn new(length: usize, is_fixed: bool, value_type: Option<Class<'gc>>) -> Self {
+    pub fn new(
+        length: usize,
+        is_fixed: bool,
+        value_type: Option<Class<'gc>>,
+        activation: &mut Activation<'_, 'gc>,
+    ) -> Self {
         let storage = Vec::new();
 
         let mut self_vec = VectorStorage {
@@ -49,7 +55,9 @@ impl<'gc> VectorStorage<'gc> {
             value_type,
         };
 
-        self_vec.storage.resize(length, self_vec.default());
+        self_vec
+            .storage
+            .resize(length, self_vec.default(activation));
 
         self_vec
     }
@@ -99,16 +107,18 @@ impl<'gc> VectorStorage<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         self.check_fixed(activation)?;
-        self.storage.resize(new_length, self.default());
+        self.storage.resize(new_length, self.default(activation));
 
         Ok(())
     }
 
     /// Get the default value for this vector.
-    pub fn default(&self) -> Value<'gc> {
+    pub fn default(&self, activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
         if let Some(value_type) = self.value_type {
             if value_type.is_builtin_numeric() {
                 Value::Integer(0)
+            } else if value_type.is_builtin_boolean() {
+                bool_default(activation)
             } else {
                 Value::Null
             }
@@ -180,7 +190,7 @@ impl<'gc> VectorStorage<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<(), Error<'gc>> {
         if !self.is_fixed && pos == self.length() {
-            self.storage.resize(pos + 1, self.default());
+            self.storage.resize(pos + 1, self.default(activation));
         }
 
         if let Some(v) = self.storage.get_mut(pos) {
@@ -371,5 +381,35 @@ impl<'gc> VectorStorage<'gc> {
 
     pub fn storage(&self) -> &Vec<Value<'gc>> {
         &self.storage
+    }
+}
+
+/// Determine the default value for `Vector.<Boolean>` holes.
+///
+/// Flash returns `null` when the fill happens from a script initializer
+/// (top-level code), regardless of SWF version. From any other context the
+/// default is `false` for SWF version >= 14 and `null` for earlier versions.
+fn bool_default<'gc>(activation: &mut Activation<'_, 'gc>) -> Value<'gc> {
+    let call_stack = activation.avm2().call_stack();
+    let call_stack = call_stack.borrow();
+
+    let calling_method = call_stack
+        .iter_top_down()
+        .find(|m| matches!(m.method_kind(), MethodKind::Bytecode { .. }));
+
+    if let Some(method) = calling_method {
+        let is_script_init = method
+            .bound_class()
+            .is_some_and(|c| c.is_script_traits() && c.instance_init() == Some(method));
+
+        if is_script_init {
+            return Value::Null;
+        }
+    }
+
+    if activation.caller_movie_or_root().version() >= 14 {
+        Value::Bool(false)
+    } else {
+        Value::Null
     }
 }

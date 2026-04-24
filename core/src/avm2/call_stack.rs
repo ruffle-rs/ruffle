@@ -22,6 +22,11 @@ impl<'gc> CallStack<'gc> {
         self.stack.pop();
     }
 
+    /// Iterate methods from most-recently-pushed to least-recently-pushed.
+    pub fn iter_top_down(&self) -> impl Iterator<Item = Method<'gc>> + '_ {
+        self.stack.iter().rev().copied()
+    }
+
     pub fn display(&self, output: &mut WString) {
         for method in self.stack.iter().rev() {
             output.push_utf8("\n\tat ");

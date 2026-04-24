@@ -79,7 +79,7 @@ pub fn call_handler<'gc>(
         .get_public_property(istr!("length"), activation)?
         .coerce_to_i32(activation)?;
 
-    let mut new_storage = VectorStorage::new(0, false, value_type);
+    let mut new_storage = VectorStorage::new(0, false, value_type, activation);
     new_storage.reserve_exact(length as usize);
 
     let value_type_for_coercion = new_storage.value_type_for_coercion(activation);
@@ -269,7 +269,7 @@ pub fn filter<'gc>(
         .param()
         .expect("Receiver is parametrized vector"); // technically unreachable
 
-    let mut new_storage = VectorStorage::new(0, false, value_type);
+    let mut new_storage = VectorStorage::new(0, false, value_type, activation);
 
     let callback = match args.try_get_function(0) {
         None => return Ok(VectorObject::from_vector(new_storage, activation).into()),
@@ -366,7 +366,7 @@ pub fn map<'gc>(
         .param()
         .expect("Receiver is parametrized vector"); // technically unreachable
 
-    let mut new_storage = VectorStorage::new(0, false, value_type);
+    let mut new_storage = VectorStorage::new(0, false, value_type, activation);
 
     let callback = match args.try_get_function(0) {
         None => {
@@ -571,7 +571,7 @@ pub fn slice<'gc>(
         let from = vs.clamp_parameter_index(from);
         let to = vs.clamp_parameter_index(to);
 
-        let mut new_vs = VectorStorage::new(0, false, value_type);
+        let mut new_vs = VectorStorage::new(0, false, value_type, activation);
 
         if to > from {
             for value in vs.iter().skip(from).take(to - from) {
