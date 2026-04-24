@@ -17,6 +17,7 @@ use ruffle_render::filters::Filter;
 use ruffle_render::matrix::Matrix;
 use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
+use smallvec::smallvec;
 use std::cell::{Ref, RefMut};
 use swf::{BlendMode, ColorTransform, Fixed8, Rectangle, Twips};
 
@@ -1065,6 +1066,85 @@ pub fn copy_pixels<'gc>(
         return;
     }
 
+    let needs_blend = (source_transparency && !transparency) || merge_alpha;
+    let different_bitmaps = !source_bitmap.ptr_eq(target);
+
+    // Fast path 1: plain replace (no blending) from a GPU-resident source
+    // onto a different target. Uses a raw texture-to-texture copy so we
+    // skip the blocking GPU->CPU readback that `copy_on_cpu` would do.
+    if !needs_blend
+        && different_bitmaps
+        && !source_bitmap.can_read(source_region)
+        && context.renderer.is_offscreen_supported()
+    {
+        // `bitmap_handle` flushes each side's pending batch, so our raw
+        // copy observes the right source pixels and isn't clobbered by a
+        // later `render_offscreen` into the target.
+        let source_handle = source_bitmap.bitmap_handle(context.gc(), context.renderer);
+        let target_handle = target.bitmap_handle(context.gc(), context.renderer);
+        if let Some(sync_handle) = context.renderer.copy_pixels_to_texture(
+            source_handle,
+            source_region,
+            target_handle,
+            (dest_region.x_min, dest_region.y_min),
+        ) {
+            let (target_ref, old_dirty) = target.overwrite_cpu_pixels_from_gpu(context.gc());
+            let mut write = target_ref.borrow_mut(context.gc());
+            let mut dirty = dest_region;
+            if let Some(old) = old_dirty {
+                dirty.union(old);
+            }
+            write.set_gpu_dirty(context.gc(), sync_handle, dirty);
+            return;
+        }
+    }
+
+    // Fast path 2: when the original src_rect covers the full source and
+    // the target's current pixels don't need to come back to the CPU, we
+    // can queue a `render_bitmap` into the pending GPU batch instead of
+    // reading back both sides and blending on the CPU. Using the original
+    // dest_point (before clamp) lets the GPU naturally clip pixels that
+    // fall outside the target texture.
+    let original_covers_full_source = src_min_x <= 0
+        && src_min_y <= 0
+        && src_width >= source_bitmap.width() as i32
+        && src_height >= source_bitmap.height() as i32;
+    if original_covers_full_source
+        && different_bitmaps
+        && !target.can_read(dest_region)
+        && context.renderer.is_offscreen_supported()
+    {
+        let source_handle = source_bitmap.bitmap_handle(context.gc(), context.renderer);
+        let transform = Transform {
+            matrix: Matrix {
+                a: 1.0,
+                b: 0.0,
+                c: 0.0,
+                d: 1.0,
+                tx: Twips::from_pixels(dest_min_x as f64),
+                ty: Twips::from_pixels(dest_min_y as f64),
+            },
+            color_transform: ColorTransform::default(),
+            perspective_projection: None,
+        };
+
+        // copyPixels is a plain blit - MSAA on it just wastes a 4x buffer
+        // and a resolve pass. Use `Low` so contiguous copyPixels runs skip
+        // MSAA entirely; a later vector `draw()` with higher stage quality
+        // will flush this batch and start its own MSAA pass.
+        target.append_render_bitmap(
+            context.gc(),
+            context.renderer,
+            source_handle,
+            transform,
+            false,
+            PixelSnapping::Never,
+            dest_region,
+            StageQuality::Low,
+        );
+        return;
+    }
+
     copy_on_cpu(
         context.gc(),
         context.renderer,
@@ -1072,7 +1152,7 @@ pub fn copy_pixels<'gc>(
         target,
         source_region,
         dest_region,
-        (source_transparency && !transparency) || merge_alpha,
+        needs_blend,
     );
 }
 
@@ -1610,9 +1690,10 @@ pub fn draw<'gc>(
         cache_draws.is_empty(),
         "BitmapData.draw() should not use cacheAsBitmap"
     );
-    let image = context
-        .renderer
-        .render_offscreen(handle, commands, quality, dirty_region);
+    let image =
+        context
+            .renderer
+            .render_offscreen(handle, smallvec![commands], quality, dirty_region);
 
     match image {
         Some(sync_handle) => {
