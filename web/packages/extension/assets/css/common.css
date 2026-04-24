@@ -13,6 +13,12 @@
     transition: none !important;
 }
 
+html:lang(ar),
+html:lang(he) {
+    direction: rtl;
+    unicode-bidi: embed;
+}
+
 body {
     background: var(--ruffle-blue);
     font:
@@ -95,12 +101,12 @@ button {
 .option select {
     padding: 4px;
     position: absolute;
-    right: 0;
+    inset-inline-end: 0;
 }
 
 .option label {
     display: inline-block;
-    padding-right: 60px;
+    padding-inline-end: 60px;
 }
 
 /* Checkbox (Based on "Pure CSS Slider Checkboxes": https://codepen.io/Qvcool/pen/bdzVYW) */
@@ -124,20 +130,20 @@ button {
     margin: auto;
     transition:
         background 0.2s,
-        right 0.2s;
+        inset-inline-end 0.2s;
 }
 
 .option.checkbox label::before {
     height: 20px;
     width: 40px;
-    right: 0;
+    inset-inline-end: 0;
     background: gray;
 }
 
 .option.checkbox label::after {
     height: 18px;
     width: 18px;
-    right: 21px;
+    inset-inline-end: 21px;
     background: silver;
 }
 
@@ -147,7 +153,7 @@ button {
 
 .option.checkbox input:checked + label::after {
     background: var(--ruffle-orange);
-    right: 1px;
+    inset-inline-end: 1px;
 }
 
 /* Number input */
