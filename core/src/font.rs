@@ -587,6 +587,10 @@ struct FontData {
 }
 
 impl<'gc> Font<'gc> {
+    pub fn ptr_eq(this: Font<'gc>, other: Font<'gc>) -> bool {
+        Gc::ptr_eq(this.0, other.0)
+    }
+
     pub fn from_font_file(
         gc_context: &Mutation<'gc>,
         descriptor: FontDescriptor,
