@@ -1,4 +1,4 @@
-use ruffle_test_framework::environment::Environment;
+use ruffle_test_framework::environment::{CompileMode, Environment};
 
 pub struct NativeEnvironment;
 
@@ -21,6 +21,10 @@ impl Environment for NativeEnvironment {
         Box<dyn ruffle_test_framework::environment::RenderBackend>,
     )> {
         renderer::NativeRenderInterface::create_pair(width, height)
+    }
+
+    fn compile_mode(&self) -> CompileMode {
+        CompileMode::CompileSilently
     }
 }
 

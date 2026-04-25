@@ -4894,6 +4894,7 @@ dependencies = [
  "ruffle_video_external",
  "ruffle_video_software",
  "serde",
+ "sha2",
  "toml",
  "url",
  "vfs",

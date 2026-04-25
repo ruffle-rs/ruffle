@@ -26,5 +26,5 @@ impl SwfCompilerOptions {
 }
 
 pub trait SwfCompiler {
-    fn compile(self: Box<Self>, root_dir: &VfsPath) -> anyhow::Result<()>;
+    fn compile(self: Box<Self>, root_dir: &VfsPath, verify_if_changed: bool) -> anyhow::Result<()>;
 }

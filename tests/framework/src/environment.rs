@@ -2,6 +2,18 @@ use crate::options::RenderOptions;
 
 pub use ruffle_render::backend::RenderBackend;
 
+/// How tests should be compiled, if at all
+pub enum CompileMode {
+    /// Compile every test before running.
+    CompileSilently,
+
+    /// Compile every test but verify that the output is unchanged.
+    CompileAndVerify,
+
+    /// Don't compile tests at all and use the preexisting outputs.
+    UsePrecompiled,
+}
+
 pub trait Environment {
     /// Checks if this environment supports rendering the given test.
     ///
@@ -31,6 +43,9 @@ pub trait Environment {
     ) -> Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
         None
     }
+
+    /// Checks if tests should be compiled before running.
+    fn compile_mode(&self) -> CompileMode;
 }
 
 pub trait RenderInterface {

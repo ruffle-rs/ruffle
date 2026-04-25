@@ -1,7 +1,8 @@
 use crate::compiler::SwfCompiler;
-use crate::util::write_bytes;
+use crate::util::{read_bytes, write_bytes};
 use rascal::{CompileOptions, ProgramBuilder, SourceProvider, SwfOptions};
 use serde::Deserialize;
+use sha2::{Digest, Sha256};
 use std::io::Error;
 use vfs::VfsPath;
 
@@ -49,7 +50,7 @@ pub struct RascalCompiler {
 }
 
 impl SwfCompiler for RascalCompiler {
-    fn compile(self: Box<Self>, root_dir: &VfsPath) -> anyhow::Result<()> {
+    fn compile(self: Box<Self>, root_dir: &VfsPath, verify_if_changed: bool) -> anyhow::Result<()> {
         let provider = VfsSourceProvider(root_dir.clone());
         let mut builder = ProgramBuilder::new(provider);
         for script in &self.scripts {
@@ -66,7 +67,30 @@ impl SwfCompiler for RascalCompiler {
             .compile(self.compile_options)
             .to_swf(&self.swf_options)?;
         let output_path = root_dir.join(&self.target)?;
-        Ok(write_bytes(&output_path, &swf)?)
+        if verify_if_changed {
+            if !output_path.is_file()? {
+                write_bytes(&output_path, &swf)?;
+                return Err(anyhow::anyhow!(
+                    "Output file '{}' does not exist or is not a file",
+                    self.target
+                ));
+            }
+            let mut existing_hash = Sha256::new();
+            existing_hash.update(read_bytes(&output_path)?);
+            let mut new_hash = Sha256::new();
+            new_hash.update(&swf);
+            if existing_hash.finalize() != new_hash.finalize() {
+                write_bytes(&output_path, &swf)?;
+                Err(anyhow::anyhow!(
+                    "Output file '{}' has changed during compilation",
+                    self.target
+                ))
+            } else {
+                Ok(())
+            }
+        } else {
+            Ok(write_bytes(&output_path, &swf)?)
+        }
     }
 }
 
