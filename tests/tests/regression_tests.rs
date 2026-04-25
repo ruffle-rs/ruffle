@@ -9,6 +9,7 @@ use anyhow::Context;
 use clap::Parser;
 use libtest_mimic::Trial;
 use ruffle_fs_tests_runner::FsTestsRunner;
+use ruffle_test_framework::environment::CompileMode;
 use ruffle_test_framework::options::TestOptions;
 use ruffle_test_framework::runner::TestStatus;
 use ruffle_test_framework::test::Test;
@@ -29,6 +30,10 @@ struct RuffleTestOpts {
     /// Ignore tests that are known to be failing
     #[clap(long, action)]
     ignore_known_failures: bool,
+
+    /// Ignore tests that are known to be failing
+    #[clap(long, default_value = "compile-silently")]
+    compile_mode: CompileMode,
 }
 
 fn main() {
@@ -58,32 +63,38 @@ fn main() {
     );
 
     let mut runner = FsTestsRunner::new();
+    let compile_mode = ruffle_test_opts.compile_mode;
 
     runner
         .with_descriptor_name(Cow::Borrowed(TEST_TOML_NAME))
         .with_root_dir(PathBuf::from("tests/swfs"))
         .with_test_loader(Box::new(move |params, register_trial| {
             for test in load_test_dir(&params.test_dir, params.test_name) {
-                let trial = trial_for_test(&ruffle_test_opts, test, params.args.list);
+                let trial = trial_for_test(
+                    NativeEnvironment { compile_mode },
+                    &ruffle_test_opts,
+                    test,
+                    params.args.list,
+                );
                 register_trial(trial);
             }
         }));
 
     // Manual tests here, since #[test] doesn't work once we use our own test harness
-    runner.with_additional_test(Trial::test("shared_object_avm1", || {
-        shared_object_avm1(&NativeEnvironment)
+    runner.with_additional_test(Trial::test("shared_object_avm1", move || {
+        shared_object_avm1(&NativeEnvironment { compile_mode })
     }));
-    runner.with_additional_test(Trial::test("shared_object_self_ref_avm1", || {
-        shared_object_self_ref_avm1(&NativeEnvironment)
+    runner.with_additional_test(Trial::test("shared_object_self_ref_avm1", move || {
+        shared_object_self_ref_avm1(&NativeEnvironment { compile_mode })
     }));
-    runner.with_additional_test(Trial::test("shared_object_avm2", || {
-        shared_object_avm2(&NativeEnvironment)
+    runner.with_additional_test(Trial::test("shared_object_avm2", move || {
+        shared_object_avm2(&NativeEnvironment { compile_mode })
     }));
-    runner.with_additional_test(Trial::test("external_interface_avm1", || {
-        external_interface_avm1(&NativeEnvironment)
+    runner.with_additional_test(Trial::test("external_interface_avm1", move || {
+        external_interface_avm1(&NativeEnvironment { compile_mode })
     }));
-    runner.with_additional_test(Trial::test("external_interface_avm2", || {
-        external_interface_avm2(&NativeEnvironment)
+    runner.with_additional_test(Trial::test("external_interface_avm2", move || {
+        external_interface_avm2(&NativeEnvironment { compile_mode })
     }));
 
     runner.run()
@@ -100,8 +111,13 @@ fn load_test_dir<'a>(test_dir: &'a VfsPath, name: &'a str) -> impl Iterator<Item
     })
 }
 
-fn trial_for_test(opts: &RuffleTestOpts, test: Test, list_only: bool) -> Trial {
-    let ignore = !test.should_run(opts.ignore_known_failures, !list_only, &NativeEnvironment);
+fn trial_for_test(
+    environment: NativeEnvironment,
+    opts: &RuffleTestOpts,
+    test: Test,
+    list_only: bool,
+) -> Trial {
+    let ignore = !test.should_run(opts.ignore_known_failures, !list_only, &environment);
 
     // Put extra info into the test 'kind' instead of appending it to the test name,
     // to not break `cargo test some/test -- --exact` and `cargo test -- --list`.
@@ -114,7 +130,7 @@ fn trial_for_test(opts: &RuffleTestOpts, test: Test, list_only: bool) -> Trial {
     }
 
     let trial = Trial::test(test.name.clone(), move || {
-        let mut runner = test.create_test_runner(&NativeEnvironment)?;
+        let mut runner = test.create_test_runner(&environment)?;
 
         loop {
             match runner.tick()? {

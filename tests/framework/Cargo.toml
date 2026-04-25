@@ -33,6 +33,7 @@ cfg-expr = "0.20.7"
 oxipng = "10.1.0"
 rascal = "0.2.3"
 sha2 = { workspace = true }
+clap = { workspace = true, optional = true }
 
 [features]
 jpegxr = ["ruffle_core/jpegxr"]

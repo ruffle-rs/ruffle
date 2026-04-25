@@ -3,6 +3,8 @@ use crate::options::RenderOptions;
 pub use ruffle_render::backend::RenderBackend;
 
 /// How tests should be compiled, if at all
+#[derive(Debug, Clone, Copy, PartialEq)]
+#[cfg_attr(feature = "clap", derive(clap::ValueEnum))]
 pub enum CompileMode {
     /// Compile every test before running.
     CompileSilently,

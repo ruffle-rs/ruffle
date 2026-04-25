@@ -4881,6 +4881,7 @@ dependencies = [
  "async-channel",
  "cfg-expr",
  "chrono",
+ "clap",
  "image",
  "oxipng",
  "percent-encoding",

@@ -1,6 +1,9 @@
 use ruffle_test_framework::environment::{CompileMode, Environment};
 
-pub struct NativeEnvironment;
+#[derive(Debug)]
+pub struct NativeEnvironment {
+    pub compile_mode: CompileMode,
+}
 
 impl Environment for NativeEnvironment {
     #[cfg(feature = "imgtests")]
@@ -24,7 +27,7 @@ impl Environment for NativeEnvironment {
     }
 
     fn compile_mode(&self) -> CompileMode {
-        CompileMode::CompileSilently
+        self.compile_mode
     }
 }
 
