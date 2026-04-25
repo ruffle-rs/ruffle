@@ -250,6 +250,7 @@ impl<'gc> Bitmap<'gc> {
         .set(bitmap_data);
 
         bitmap_data.add_display_object(context.gc(), weak_self);
+        self.invalidate_cached_bitmap();
     }
 
     pub fn avm2_bitmapdata_class(self) -> Option<Avm2ClassObject<'gc>> {
