@@ -119,7 +119,7 @@ pub fn get_length<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(this) = this.as_function_object() {
-        return Ok(this.executable().signature().len().into());
+        return Ok(Value::from_usize_lossy(this.executable().signature().len()));
     }
 
     Ok(Value::Undefined)

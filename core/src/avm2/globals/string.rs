@@ -43,7 +43,7 @@ pub fn get_length<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let Value::String(s) = this {
-        return Ok(s.len().into());
+        return Ok(Value::from_usize_lossy(s.len()));
     }
 
     Ok(Value::Undefined)
@@ -143,7 +143,9 @@ pub fn index_of<'gc>(
 
     this.slice(start_index..)
         .and_then(|s| s.find(&pattern))
-        .map(|i| Ok((i + start_index).into()))
+        .map(|i| i + start_index)
+        .map(Value::from_usize_lossy)
+        .map(Ok)
         .unwrap_or_else(|| Ok((-1).into())) // Out of range or not found
 }
 
@@ -172,7 +174,8 @@ pub fn last_index_of<'gc>(
     this.slice(..start_index)
         .unwrap_or(&this)
         .rfind(&pattern)
-        .map(|i| Ok(i.into()))
+        .map(Value::from_usize_lossy)
+        .map(Ok)
         .unwrap_or_else(|| Ok((-1).into())) // Not found
 }
 
@@ -276,7 +279,11 @@ pub fn match_internal<'gc>(
 
                 let array = ArrayObject::from_storage(activation.context, storage);
 
-                array.set_dynamic_property(istr!("index"), result.start().into(), activation.gc());
+                array.set_dynamic_property(
+                    istr!("index"),
+                    Value::from_usize_lossy(result.start()),
+                    activation.gc(),
+                );
                 array.set_dynamic_property(istr!("input"), this.into(), activation.gc());
 
                 return Ok(array.into());
@@ -322,7 +329,11 @@ pub fn replace<'gc>(
         let mut ret = WString::from(&this[..position]);
         // Replacement is either a function or treatable as string.
         if let Some(f) = replacement.as_object().and_then(|o| o.as_function_object()) {
-            let args = &[pattern.into(), position.into(), this.into()];
+            let args = &[
+                pattern.into(),
+                Value::from_usize_lossy(position),
+                this.into(),
+            ];
             let v = f.call(activation, Value::Null, FunctionArgs::from_slice(args))?;
             ret.push_str(v.coerce_to_string(activation)?.as_wstr());
         } else {

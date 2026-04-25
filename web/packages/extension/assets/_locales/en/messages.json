@@ -38,6 +38,15 @@
     "settings_player_version": {
         "message": "Flash player version number to emulate (range 1-32)"
     },
+    "settings_background_execution_mode": {
+        "message": "Background execution"
+    },
+    "settings_background_execution_mode_none": {
+        "message": "Pause"
+    },
+    "settings_background_execution_mode_main_thread": {
+        "message": "Run in the main thread"
+    },
     "settings_preferred_renderer": {
         "message": "Preferred renderer"
     },

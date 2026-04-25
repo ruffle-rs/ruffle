@@ -14,7 +14,7 @@ use crate::avm2::object::{
 };
 use crate::avm2::{
     Activation as Avm2Activation, Avm2, BitmapDataObject, Domain as Avm2Domain,
-    Object as Avm2Object,
+    Object as Avm2Object, Value as Avm2Value,
 };
 use crate::avm2_stub_method_context;
 use crate::backend::navigator::{
@@ -304,6 +304,10 @@ impl<'gc> LoadManager<'gc> {
         request: Request,
         importer_movie: MovieClip<'gc>,
     ) -> OwnedFuture<(), Error> {
+        // TODO: Observe more closely how this should behave in AVM2.
+        // It looks like AVM2 is more strict than AVM1 regarding when
+        // something is not a valid import, and doesn't continue
+        // executing when that is the case(?).
         let player = uc.player_handle();
         let importer_movie = MovieClipHandle::stash(uc, importer_movie);
 
@@ -311,45 +315,46 @@ impl<'gc> LoadManager<'gc> {
             let fetch = player.lock().unwrap().fetch(request, FetchReason::LoadSwf);
 
             match wait_for_full_response(fetch).await {
+                // TODO: In some cases, if the fetched url is a directory,
+                // FP will ignore it and continue to execute the movie.
                 Ok((body, url, _status, _redirected)) => {
                     let content_type = ContentType::sniff(&body);
                     tracing::info!("Loading imported movie: {:?}", url);
-                    match content_type {
-                        ContentType::Swf => {
+
+                    player.lock().unwrap().mutate_with_update_context(|uc| {
+                        let importer_movie = importer_movie.fetch(uc);
+
+                        if matches!(content_type, ContentType::Swf) {
                             let movie = SwfMovie::from_data(&body, url.clone(), Some(url.clone()))
                                 .expect("Could not load movie");
 
                             let movie = Arc::new(movie);
 
-                            player.lock().unwrap().mutate_with_update_context(|uc| {
-                                let importer_movie = importer_movie.fetch(uc);
-                                let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
+                            let clip = MovieClip::new_import_assets(uc, movie, importer_movie);
 
-                                clip.set_cur_preload_frame(0);
-                                let mut execution_limit = ExecutionLimit::none();
+                            clip.set_cur_preload_frame(0);
+                            let mut execution_limit = ExecutionLimit::none();
 
-                                tracing::debug!("Preloading swf to run exports {:?}", url);
+                            tracing::debug!("Preloading swf to run exports {:?}", url);
 
-                                // Create library for exports before preloading
-                                uc.library.library_for_movie_mut(clip.movie());
-                                let res = clip.preload(uc, &mut execution_limit);
-                                tracing::debug!(
-                                    "Preloaded swf to run exports result {:?} {}",
-                                    url,
-                                    res
-                                );
-                                importer_movie.finish_importing();
-                            });
-                            Ok(())
-                        }
-                        _ => {
+                            // Create library for exports before preloading
+                            uc.library.library_for_movie_mut(clip.movie());
+                            let res = clip.preload(uc, &mut execution_limit);
+                            tracing::debug!(
+                                "Preloaded swf to run exports result {:?} {}",
+                                url,
+                                res
+                            );
+                        } else {
                             tracing::warn!(
                                 "Unsupported content type for ImportAssets: {:?}",
                                 content_type
                             );
-                            Ok(())
                         }
-                    }
+
+                        importer_movie.finish_importing();
+                    });
+                    Ok(())
                 }
                 Err(e) => Err(Error::FetchError(format!(
                     "Could not fetch: {:?} because {:?}",
@@ -664,9 +669,13 @@ impl<'gc> MovieLoader<'gc> {
                     if !mc.movie().is_action_script_3() {
                         mc.avm1_unload(uc);
 
-                        // Clear deletable properties on the target before loading
-                        // Properties written during the subsequent onLoad events will persist
-                        if let Some(clip_object) = mc.object1() {
+                        // Clear deletable properties on the target before loading.
+                        // Properties written during the subsequent onLoad events will persist.
+                        // Note: skip this step when we can't execute code (swf_version is 0).
+                        //   This will happen in case we're replacing an error movie.
+                        if let Some(clip_object) = mc.object1()
+                            && mc.swf_version() > 0
+                        {
                             let mut activation = Activation::from_nothing(
                                 uc,
                                 ActivationIdentifier::root("unknown"),
@@ -1022,9 +1031,17 @@ pub fn load_form_into_load_vars<'gc>(
                     let length = body.len();
 
                     // Set the properties used by the getBytesTotal and getBytesLoaded methods.
-                    that.set(istr!("_bytesTotal"), length.into(), &mut activation)?;
+                    that.set(
+                        istr!("_bytesTotal"),
+                        Value::from_usize_lossy(length),
+                        &mut activation,
+                    )?;
                     if length > 0 {
-                        that.set(istr!("_bytesLoaded"), length.into(), &mut activation)?;
+                        that.set(
+                            istr!("_bytesLoaded"),
+                            Value::from_usize_lossy(length),
+                            &mut activation,
+                        )?;
                     }
 
                     let _ = that.call_method(
@@ -1177,7 +1194,7 @@ pub fn load_data_into_url_loader<'gc>(
             ) {
                 use crate::avm2::globals::slots::flash_net_url_loader as url_loader_slots;
 
-                let body_len = body.len().into();
+                let body_len = Avm2Value::from_usize_lossy(body.len());
 
                 // TODO - update these as the download progresses
                 target
@@ -1907,8 +1924,8 @@ impl<'gc> MovieLoader<'gc> {
                         &[
                             istr!(uc, "onLoadProgress").into(),
                             target_clip.object1_or_undef(),
-                            cur_len.into(),
-                            total_len.into(),
+                            Value::from_usize_lossy(cur_len),
+                            Value::from_usize_lossy(total_len),
                         ],
                         uc,
                     );
@@ -2524,7 +2541,11 @@ pub fn download_file_dialog<'gc>(
 
                                 as_broadcaster::broadcast_internal(
                                     target_object,
-                                    &[target_object.into(), total_bytes.into(), total_bytes.into()],
+                                    &[
+                                        target_object.into(),
+                                        Value::from_usize_lossy(total_bytes),
+                                        Value::from_usize_lossy(total_bytes),
+                                    ],
                                     istr!("onProgress"),
                                     &mut activation,
                                 )?;
@@ -2577,8 +2598,8 @@ pub fn download_file_dialog<'gc>(
                                             target_object,
                                             &[
                                                 target_object.into(),
-                                                body_len.into(),
-                                                body_len.into(),
+                                                Value::from_u64_lossy(body_len),
+                                                Value::from_u64_lossy(body_len),
                                             ],
                                             istr!("onProgress"),
                                             &mut activation,
@@ -2711,8 +2732,8 @@ pub fn upload_file<'gc>(
                         target_object,
                         &[
                             target_object.into(),
-                            total_size_bytes.into(),
-                            total_size_bytes.into(),
+                            Value::from_usize_lossy(total_size_bytes),
+                            Value::from_usize_lossy(total_size_bytes),
                         ],
                         istr!("onProgress"),
                         &mut activation,
@@ -2746,8 +2767,8 @@ pub fn upload_file<'gc>(
                                 target_object,
                                 &[
                                     target_object.into(),
-                                    total_size_bytes.into(),
-                                    total_size_bytes.into(),
+                                    Value::from_usize_lossy(total_size_bytes),
+                                    Value::from_usize_lossy(total_size_bytes),
                                 ],
                                 istr!("onProgress"),
                                 &mut activation,

@@ -218,11 +218,15 @@ pub trait TDisplayObjectContainer<'gc>:
         child.set_place_frame(0);
         child.set_depth(depth);
 
-        if let Some(removed_child) = removed_child {
-            if !self.raw_container().is_action_script_3() {
-                removed_child.avm1_unload(context);
-            }
-            removed_child.set_parent(context, None);
+        if let Some(removed_child) = removed_child
+            && !self.raw_container().is_action_script_3()
+        {
+            // The parent of `removed_child` should NOT be set to `None` here.
+            // It's theoretically impossible for an AVM2 child to end up here(?),
+            // and doing so for AVM1 can e.g. break the logic of the audio
+            // manager's `stop_sounds_on_parent_and_children` method.
+            // (See https://github.com/ruffle-rs/ruffle/issues/21500)
+            removed_child.avm1_unload(context);
         }
 
         let this: DisplayObject<'_> = self.into();

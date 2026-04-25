@@ -238,7 +238,7 @@ impl<'gc> RegExp<'gc> {
                     Some(r) => activation.strings().substring(txt, r.clone()).into(),
                     None => istr!("").into(),
                 })
-                .chain(std::iter::once(m.range.start.into()))
+                .chain(std::iter::once(m.range.start).map(Value::from_usize_lossy))
                 .chain(std::iter::once(txt.into()))
                 .collect::<Vec<_>>();
 

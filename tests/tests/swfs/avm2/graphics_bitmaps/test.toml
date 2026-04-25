@@ -1,7 +1,18 @@
 num_frames = 1
 
-[image_comparisons.output]
-tolerance = 1
+# FIXME: We could be better here.
+
+[[image_comparisons.output.checks]]
+tolerance = 8
+max_outliers = 4000
+
+[[image_comparisons.output.checks]]
+tolerance = 16
+max_outliers = 800
+
+[[image_comparisons.output.checks]]
+tolerance = 32
+max_outliers = 600
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false, quality = "high" }

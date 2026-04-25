@@ -335,8 +335,9 @@ fn avm2_to_color_matrix_filter<'gc>(
             for i in 0..matrix.len().min(array.length()) {
                 matrix[i] = array
                     .get(i)
-                    .expect("Length was already checked at this point")
-                    .coerce_to_number(activation)? as f32;
+                    .map(|v| v.coerce_to_number(activation))
+                    .transpose()?
+                    .unwrap_or_default() as f32;
             }
         }
     }
@@ -885,17 +886,20 @@ fn get_gradient_colors<'gc>(
                             {
                                 let color = colors_array
                                     .get(i)
-                                    .expect("Length was already checked at this point")
-                                    .coerce_to_u32(activation)?;
+                                    .map(|v| v.coerce_to_u32(activation))
+                                    .transpose()?
+                                    .unwrap_or_default();
                                 let alpha = colors_array
                                     .get(i)
-                                    .expect("Length was already checked at this point")
-                                    .coerce_to_number(activation)?
+                                    .map(|v| v.coerce_to_number(activation))
+                                    .transpose()?
+                                    .unwrap_or_default()
                                     as f32;
                                 let ratio = colors_array
                                     .get(i)
-                                    .expect("Length was already checked at this point")
-                                    .coerce_to_u32(activation)?;
+                                    .map(|v| v.coerce_to_u32(activation))
+                                    .transpose()?
+                                    .unwrap_or_default();
                                 colors.push(GradientRecord {
                                     ratio: ratio.clamp(0, 255) as u8,
                                     color: Color::from_rgb(color, (alpha * 255.0) as u8),

@@ -693,8 +693,8 @@ fn translate_op<'gc>(
     }
 
     let op = match op {
-        AbcOp::PushByte { value } => Op::PushShort {
-            value: value as i8 as i16,
+        AbcOp::PushByte { value } => Op::PushInt {
+            value: value as i8 as i32,
         },
         AbcOp::PushDouble { value } => {
             let value = translation_unit.pool_double_or_err(activation, value)?;
@@ -714,7 +714,9 @@ fn translate_op<'gc>(
         }
         AbcOp::PushNaN => Op::PushDouble { value: f64::NAN },
         AbcOp::PushNull => Op::PushNull,
-        AbcOp::PushShort { value } => Op::PushShort { value },
+        AbcOp::PushShort { value } => Op::PushInt {
+            value: value as i32,
+        },
         AbcOp::PushString { value } => {
             let string = translation_unit.pool_string_or_err(value, activation)?;
 

@@ -44,11 +44,15 @@ pub enum Value<'gc> {
     Undefined,
     Null,
     Bool(bool),
+
+    /// Numbers that are representable as ints are equivalent to
+    /// [`Value::Integer`]. See [`Value::normalize`] for details.
     Number(f64),
-    // note: this value should never reach +/- 1<<28; this is currently not enforced (TODO).
-    // Ruffle currently won't break if you break that invariant,
-    // but some FP compatibility edge cases depend on it, so we should do this at some point.
+
+    /// All integers are equivalent to [`Value::Number`].
+    /// See [`Value::normalize`] for details.
     Integer(i32),
+
     String(AvmString<'gc>),
     Object(Object<'gc>),
 }
@@ -57,18 +61,21 @@ pub enum Value<'gc> {
 const _: () = assert!(size_of::<Value<'_>>() <= 16);
 
 impl<'gc> From<AvmString<'gc>> for Value<'gc> {
+    #[inline(always)]
     fn from(string: AvmString<'gc>) -> Self {
         Value::String(string)
     }
 }
 
 impl<'gc> From<AvmAtom<'gc>> for Value<'gc> {
+    #[inline(always)]
     fn from(atom: AvmAtom<'gc>) -> Self {
         Value::String(atom.into())
     }
 }
 
 impl From<bool> for Value<'_> {
+    #[inline(always)]
     fn from(value: bool) -> Self {
         Value::Bool(value)
     }
@@ -78,70 +85,69 @@ impl<'gc, T> From<T> for Value<'gc>
 where
     Object<'gc>: From<T>,
 {
+    #[inline(always)]
     fn from(value: T) -> Self {
         Value::Object(Object::from(value))
     }
 }
 
 impl From<f64> for Value<'_> {
+    #[inline(always)]
     fn from(value: f64) -> Self {
         Value::Number(value)
     }
 }
 
 impl From<f32> for Value<'_> {
+    #[inline(always)]
     fn from(value: f32) -> Self {
         Value::Number(f64::from(value))
     }
 }
 
 impl From<u8> for Value<'_> {
+    #[inline(always)]
     fn from(value: u8) -> Self {
         Value::Integer(i32::from(value))
     }
 }
 
 impl From<i8> for Value<'_> {
+    #[inline(always)]
     fn from(value: i8) -> Self {
         Value::Integer(i32::from(value))
     }
 }
 
 impl From<i16> for Value<'_> {
+    #[inline(always)]
     fn from(value: i16) -> Self {
         Value::Integer(i32::from(value))
     }
 }
 
 impl From<u16> for Value<'_> {
+    #[inline(always)]
     fn from(value: u16) -> Self {
         Value::Integer(i32::from(value))
     }
 }
 
 impl From<i32> for Value<'_> {
+    #[inline(always)]
     fn from(value: i32) -> Self {
-        if fits_in_value_integer_i32(value) {
-            Value::Integer(value)
-        } else {
-            Value::Number(value as f64)
-        }
+        Value::Integer(value)
     }
 }
 
 impl From<u32> for Value<'_> {
+    #[inline(always)]
     fn from(value: u32) -> Self {
-        if fits_in_value_integer_u32(value) {
-            Value::Integer(value as i32)
+        if let Some(value) = value.to_i32() {
+            Value::Integer(value)
         } else {
             Value::Number(value as f64)
         }
-    }
-}
-
-impl From<usize> for Value<'_> {
-    fn from(value: usize) -> Self {
-        Value::Number(value as f64)
     }
 }
 
@@ -164,10 +170,6 @@ impl PartialEq for Value<'_> {
 
 fn fits_in_value_integer_i32(value: i32) -> bool {
     value < (1 << 28) && value >= -(1 << 28)
-}
-
-fn fits_in_value_integer_u32(value: u32) -> bool {
-    value < (1 << 28)
 }
 
 /// Strips leading whitespace.
@@ -492,6 +494,20 @@ pub fn abc_default_value<'gc>(
 }
 
 impl<'gc> Value<'gc> {
+    /// Do the best effort of converting the [`usize`] value to [`Value`].
+    ///
+    /// This is lossless on 32-bit architectures and for values less or equal to
+    /// 2^53. For values greater than that, it will return a value equivalent to
+    /// the closest integer representable as IEEE 754 64-bit.
+    #[inline(always)]
+    pub fn from_usize_lossy(value: usize) -> Self {
+        if let Some(value) = value.to_i32() {
+            Value::Integer(value)
+        } else {
+            Value::Number(value as f64)
+        }
+    }
+
     pub fn as_namespace(&self) -> Result<Namespace<'gc>, Error<'gc>> {
         match self {
             Value::Object(ns) => ns
@@ -1817,20 +1833,7 @@ impl<'gc> Value<'gc> {
             (Value::Number(_) | Value::Integer(_), Value::Number(_) | Value::Integer(_)) => {
                 let a = self.coerce_to_number(activation)?;
                 let b = other.coerce_to_number(activation)?;
-
-                if a.is_nan() || b.is_nan() {
-                    return Ok(false);
-                }
-
-                if a == b {
-                    return Ok(true);
-                }
-
-                if a.abs() == 0.0 && b.abs() == 0.0 {
-                    return Ok(true);
-                }
-
-                Ok(false)
+                Ok(a == b)
             }
             (Value::String(a), Value::String(b)) => Ok(a == b),
             (Value::Bool(a), Value::Bool(b)) => Ok(a == b),

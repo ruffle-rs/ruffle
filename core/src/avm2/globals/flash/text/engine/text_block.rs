@@ -90,7 +90,11 @@ pub fn create_text_line<'gc>(
 
     instance.set_slot(line_slots::_SPECIFIED_WIDTH, args.get_value(1), activation)?;
 
-    instance.set_slot(line_slots::_RAW_TEXT_LENGTH, text.len().into(), activation)?;
+    instance.set_slot(
+        line_slots::_RAW_TEXT_LENGTH,
+        Value::from_usize_lossy(text.len()),
+        activation,
+    )?;
 
     this.set_slot(
         block_slots::_TEXT_LINE_CREATION_RESULT,

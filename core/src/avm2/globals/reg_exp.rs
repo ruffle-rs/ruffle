@@ -160,7 +160,7 @@ pub fn get_last_index<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(re) = this.as_regexp() {
-        return Ok(re.last_index().into());
+        return Ok(Value::from_usize_lossy(re.last_index()));
     }
 
     Ok(Value::Undefined)

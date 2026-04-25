@@ -12,7 +12,7 @@ pub fn get_bytes_loaded<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(ns) = this.as_netstream() {
-        return Ok(ns.bytes_loaded().into());
+        return Ok(Value::from_usize_lossy(ns.bytes_loaded()));
     }
 
     Ok(Value::Undefined)
@@ -26,7 +26,7 @@ pub fn get_bytes_total<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(ns) = this.as_netstream() {
-        return Ok(ns.bytes_total().into());
+        return Ok(Value::from_usize_lossy(ns.bytes_total()));
     }
 
     Ok(Value::Undefined)

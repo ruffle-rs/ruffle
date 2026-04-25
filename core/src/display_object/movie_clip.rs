@@ -3173,11 +3173,21 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
     }
 
     fn mouse_cursor(self, context: &mut UpdateContext<'gc>) -> MouseCursor {
-        if self.is_button_mode(context) && self.use_hand_cursor(context) && self.enabled(context) {
-            MouseCursor::Hand
-        } else {
-            MouseCursor::Arrow
+        // In Flash, children inside a button-mode Sprite inherit the hand cursor.
+        // The nearest button-mode ancestor governs the cursor, so stop at the first one.
+        let mut current: Option<DisplayObject<'gc>> = Some(self.into());
+        while let Some(obj) = current {
+            if let Some(mc) = obj.as_movie_clip()
+                && mc.is_button_mode(context)
+            {
+                if mc.use_hand_cursor(context) && mc.enabled(context) {
+                    return MouseCursor::Hand;
+                }
+                break;
+            }
+            current = obj.parent();
         }
+        MouseCursor::Arrow
     }
 
     fn is_focusable(self, context: &mut UpdateContext<'gc>) -> bool {
