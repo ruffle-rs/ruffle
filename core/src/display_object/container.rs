@@ -848,15 +848,14 @@ impl<'gc> ChildContainer<'gc> {
                     .position(|x| DisplayObject::ptr_eq(*x, above_child))
                 {
                     self.insert_id(position, child);
-                    None
                 } else {
                     self.push_id(child);
-                    None
                 }
             } else {
                 self.push_id(child);
-                None
             }
+
+            None
         }
     }
 

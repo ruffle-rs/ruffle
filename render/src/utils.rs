@@ -147,13 +147,12 @@ pub fn remove_invalid_jpeg_data(data: &[u8]) -> Cow<'_, [u8]> {
     // Some JPEGs are missing the final EOI marker (JPEG optimizers truncate it?)
     // Flash and most image decoders will still display these images, but jpeg-decoder errors.
     // Glue on an EOI marker if its not already there and hope for the best.
-    if data.ends_with(&[0xFF, EOI]) {
-        data
-    } else {
+    if !data.ends_with(&[0xFF, EOI]) {
         tracing::warn!("JPEG is missing EOI marker and may not decode properly");
         data.to_mut().extend_from_slice(&[0xFF, EOI]);
-        data
     }
+
+    data
 }
 
 /// Some SWFs report unreasonable bitmap dimensions (#1191).

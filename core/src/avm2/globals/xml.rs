@@ -508,22 +508,22 @@ pub fn remove_namespace<'gc>(
         }
     }
 
-    // 6. If ns.prefix == undefined
-    if ns.prefix.is_none() {
+    {
         let E4XNodeKind::Element { namespaces, .. } = &mut *node.kind_mut(activation.gc()) else {
             unreachable!()
         };
-        // 6.a. If there exists a namespace n ∈ x.[[InScopeNamespaces]],
-        // such that n.uri == ns.uri, remove the namespace n from x.[[InScopeNamespaces]]
-        namespaces.retain(|namespace| namespace.uri != ns.uri);
-    } else {
+
+        // 6. If ns.prefix == undefined
+        if ns.prefix.is_none() {
+            // 6.a. If there exists a namespace n ∈ x.[[InScopeNamespaces]],
+            // such that n.uri == ns.uri, remove the namespace n from x.[[InScopeNamespaces]]
+            namespaces.retain(|namespace| namespace.uri != ns.uri);
         // 7. Else
-        let E4XNodeKind::Element { namespaces, .. } = &mut *node.kind_mut(activation.gc()) else {
-            unreachable!()
-        };
-        // 7.a. If there exists a namespace n ∈ x.[[InScopeNamespaces]],
-        // such that n.uri == ns.uri and n.prefix == ns.prefix, remove the namespace n from x.[[InScopeNamespaces]]
-        namespaces.retain(|namespace| *namespace != ns);
+        } else {
+            // 7.a. If there exists a namespace n ∈ x.[[InScopeNamespaces]],
+            // such that n.uri == ns.uri and n.prefix == ns.prefix, remove the namespace n from x.[[InScopeNamespaces]]
+            namespaces.retain(|namespace| *namespace != ns);
+        }
     }
 
     let E4XNodeKind::Element { children, .. } = &*node.kind() else {

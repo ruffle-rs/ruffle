@@ -1302,54 +1302,44 @@ fn copy_on_cpu<'gc>(
         return;
     }
 
-    if source.ptr_eq(dest) {
-        let dest = dest.sync(renderer);
-        let mut write = dest.borrow_mut(context);
+    let dest_is_source = source.ptr_eq(dest);
+    let mut dest = dest.sync(renderer).borrow_mut(context);
 
+    if dest_is_source {
         for y in 0..dest_region.height() {
             for x in 0..dest_region.width() {
                 let mut color =
-                    write.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
+                    dest.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
                 if blend {
-                    color = write
+                    color = dest
                         .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
                         .blend_over(&color);
                 }
-                write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
+                dest.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
             }
         }
-
-        write.set_cpu_dirty(context, dest_region);
     } else {
-        let dest = dest.sync(renderer);
-        let mut dest_write = dest.borrow_mut(context);
-        let source_read = source.read_area(source_region, renderer);
+        let source = source.read_area(source_region, renderer);
 
-        if !blend && (dest_write.transparency() || !source_read.transparency()) {
+        if !blend && (dest.transparency() || !source.transparency()) {
             // Copying (not blending) anything to a transparent texture,
             // or copying an opaque texture to an opaque texture,
             // means we can skip alpha premultiplication
 
             if dest_region == source_region
-                && dest_region.width() == dest_write.width()
-                && dest_region.height() == dest_write.height()
-                && dest_region.width() == source_read.width()
-                && dest_region.height() == source_read.height()
+                && dest_region.width() == dest.width()
+                && dest_region.height() == dest.height()
+                && dest_region.width() == source.width()
+                && dest_region.height() == source.height()
             {
                 // Copying an entire texture that's the same size and type? Just replace the whole thing
-                dest_write
-                    .raw_pixels_mut()
-                    .copy_from_slice(source_read.raw_pixels());
+                dest.raw_pixels_mut().copy_from_slice(source.raw_pixels());
             } else {
                 for y in 0..dest_region.height() {
                     for x in 0..dest_region.width() {
-                        let color = source_read
+                        let color = source
                             .get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
-                        dest_write.set_pixel32_raw(
-                            dest_region.x_min + x,
-                            dest_region.y_min + y,
-                            color,
-                        );
+                        dest.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
                     }
                 }
             }
@@ -1357,27 +1347,27 @@ fn copy_on_cpu<'gc>(
             // Copying (not blending) a transparent texture to an opaque texture,
             // or blending anything to anything
 
-            let opaque = !dest_write.transparency();
+            let opaque = !dest.transparency();
 
             for y in 0..dest_region.height() {
                 for x in 0..dest_region.width() {
-                    let mut color = source_read
-                        .get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
+                    let mut color =
+                        source.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
                     if blend {
-                        color = dest_write
+                        color = dest
                             .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
                             .blend_over(&color);
                     }
                     if opaque {
                         color = color.with_alpha(255);
                     }
-                    dest_write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
+                    dest.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
                 }
             }
         }
-
-        dest_write.set_cpu_dirty(context, dest_region);
     }
+
+    dest.set_cpu_dirty(context, dest_region);
 }
 
 fn blend_and_transform<'gc>(
@@ -1388,51 +1378,47 @@ fn blend_and_transform<'gc>(
     dest_region: PixelRegion,
     transform: &ColorTransform,
 ) {
-    if source.ptr_eq(dest) {
-        let dest = dest.sync(context.renderer);
-        let mut write = dest.borrow_mut(context.gc());
+    let dest_is_source = source.ptr_eq(dest);
+    let mut dest = dest.sync(context.renderer).borrow_mut(context.gc());
 
+    if dest_is_source {
         for y in 0..dest_region.height() {
             for x in 0..dest_region.width() {
                 let mut color =
-                    write.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
+                    dest.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
                 color = Color::from(transform * swf::Color::from(color.to_un_multiplied_alpha()))
                     .to_premultiplied_alpha(true);
-                color = write
+                color = dest
                     .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
                     .blend_over(&color);
-                if !write.transparency() {
+                if !dest.transparency() {
                     color = color.with_alpha(255);
                 }
-                write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
+                dest.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
             }
         }
-
-        write.set_cpu_dirty(context.gc(), dest_region);
     } else {
-        let dest = dest.sync(context.renderer);
-        let mut dest_write = dest.borrow_mut(context.gc());
-        let source_read = source.read_area(source_region, context.renderer);
-        let opaque = !dest_write.transparency();
+        let source = source.read_area(source_region, context.renderer);
+        let opaque = !dest.transparency();
 
         for y in 0..dest_region.height() {
             for x in 0..dest_region.width() {
                 let mut color =
-                    source_read.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
+                    source.get_pixel32_raw(source_region.x_min + x, source_region.y_min + y);
                 color = Color::from(transform * swf::Color::from(color.to_un_multiplied_alpha()))
                     .to_premultiplied_alpha(true);
-                color = dest_write
+                color = dest
                     .get_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y)
                     .blend_over(&color);
                 if opaque {
                     color = color.with_alpha(255);
                 }
-                dest_write.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
+                dest.set_pixel32_raw(dest_region.x_min + x, dest_region.y_min + y, color);
             }
         }
-
-        dest_write.set_cpu_dirty(context.gc(), dest_region);
     }
+
+    dest.set_cpu_dirty(context.gc(), dest_region);
 }
 
 #[expect(clippy::too_many_arguments)]
