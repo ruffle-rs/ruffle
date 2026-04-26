@@ -213,7 +213,7 @@ impl<'gc> LoaderInfoObject<'gc> {
             let (should_complete, from_url) = match &*self.0.loaded_stream.borrow() {
                 LoaderStream::Swf(movie, root) => (
                     root.as_movie_clip()
-                        .map(|mc| mc.loaded_bytes() as i32 >= mc.total_bytes())
+                        .map(|mc| mc.is_preload_finished())
                         .unwrap_or(true),
                     movie.url() != "file:///",
                 ),
