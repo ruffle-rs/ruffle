@@ -122,6 +122,8 @@ trivially_copy_pass_by_ref = "deny"
 redundant_clone = "deny"
 unused_async = "deny"
 used_underscore_items = "deny"
+dbg_macro = "warn"
+enum_glob_use = "deny"
 
 # TODO Enable used_underscore_binding when false positives get fixed.
 
