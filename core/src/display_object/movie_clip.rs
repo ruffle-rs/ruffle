@@ -500,6 +500,8 @@ impl<'gc> MovieClip<'gc> {
         }
 
         if progress.next_preload_chunk.get() >= swf.len() as u64 {
+            progress.next_preload_chunk.set(u64::MAX);
+
             return true;
         }
 
@@ -1184,14 +1186,27 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn loaded_bytes(self) -> u32 {
         let progress = &Gc::as_ref(self.0.shared.get()).preload_progress;
-        if progress.next_preload_chunk.get() == u64::MAX {
-            // u64::MAX is a sentinel for load complete
-            return max(self.total_bytes(), 0) as u32;
+        // A corrupt header may overstate the size of a root movie.
+        let actual_total = if self.is_root() {
+            self.movie().actual_uncompressed_len()
+        } else {
+            max(self.total_bytes(), 0) as u32
+        };
+
+        if self.is_preload_finished() {
+            return actual_total;
         }
 
-        let swf_header_size = max(self.total_bytes(), 0) as u32 - self.tag_stream_len() as u32;
+        let swf_header_size = actual_total - self.tag_stream_len() as u32;
 
         swf_header_size + progress.next_preload_chunk.get() as u32
+    }
+
+    /// Whether preload has finished, regardless of whether the data we have
+    /// matches the header-declared size.
+    pub fn is_preload_finished(self) -> bool {
+        let progress = &Gc::as_ref(self.0.shared.get()).preload_progress;
+        progress.next_preload_chunk.get() == u64::MAX
     }
 
     /// Calculate the compressed total size of this movie clip's tag stream.
@@ -1222,6 +1237,10 @@ impl<'gc> MovieClip<'gc> {
     /// run through `progress`, we instead emulate this property by scaling the
     /// loaded bytes by the compression ratio of the SWF.
     pub fn compressed_loaded_bytes(self) -> u32 {
+        if self.is_preload_finished() {
+            return self.compressed_total_bytes();
+        }
+
         (self.loaded_bytes() as f64 * self.compressed_total_bytes() as f64
             / self.total_bytes() as f64) as u32
     }
