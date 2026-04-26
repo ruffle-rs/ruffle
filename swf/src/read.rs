@@ -193,12 +193,15 @@ pub fn decompress_swf<'a, R: Read + 'a>(mut input: R) -> Result<SwfBuf> {
         tag = reader.read_tag();
     }
 
+    let actual_uncompressed_len = (8 + offset + data.len()) as u32;
+
     Ok(SwfBuf {
         header: HeaderExt {
             header,
             file_attributes,
             background_color,
             uncompressed_len: uncompressed_len as i32,
+            actual_uncompressed_len,
         },
         data,
     })
