@@ -316,7 +316,7 @@ pub fn derive_has_prefix_field(input: TokenStream) -> TokenStream {
 pub fn define_common_strings(input: TokenStream) -> TokenStream {
     struct Input {
         ascii_ident: syn::Ident,
-        strings: Vec<syn::LitByteStr>,
+        strings: Vec<syn::LitStr>,
     }
 
     impl Parse for Input {
@@ -342,15 +342,21 @@ pub fn define_common_strings(input: TokenStream) -> TokenStream {
     let idents: Vec<_> = input
         .strings
         .iter()
+        .map(|s| common_str_ident(&s.value()))
+        .collect();
+
+    let strings: Vec<_> = input
+        .strings
+        .iter()
         .map(|s| {
-            let bytes = s.value();
-            String::from_utf8(bytes).expect("Common strings must be valid UTF-8")
+            let value = s.value();
+            assert!(value.is_ascii(), "Non-ASCII common strings unsupported");
+            syn::LitByteStr::new(value.as_bytes(), s.span())
         })
-        .map(|s| common_str_ident(&s))
         .collect();
 
     let ascii_ident = &input.ascii_ident;
-    let strings = &input.strings;
+
     quote! {
         define_common_strings_impl! {
             #ascii_ident,
@@ -361,7 +367,15 @@ pub fn define_common_strings(input: TokenStream) -> TokenStream {
 }
 
 fn common_str_ident(s: &str) -> syn::Ident {
-    format_ident!("str_{s}")
+    let mut ident = String::from("str_");
+    for c in s.chars() {
+        if c.is_ascii_alphanumeric() {
+            ident.push(c);
+        } else {
+            ident.push_str(&format!("_{:02x}", c as u32));
+        }
+    }
+    format_ident!("{ident}")
 }
 
 /// Get the string passed to it as an interned `AvmAtom`, assumed to be present on
