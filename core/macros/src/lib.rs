@@ -308,6 +308,62 @@ pub fn derive_has_prefix_field(input: TokenStream) -> TokenStream {
     .into()
 }
 
+/// A helper used to define common strings.
+///
+/// Generates field names and string values and passes them along to
+/// define_common_strings_impl to implement the structure.
+#[proc_macro]
+pub fn define_common_strings(input: TokenStream) -> TokenStream {
+    struct Input {
+        ascii_ident: syn::Ident,
+        strings: Vec<syn::LitByteStr>,
+    }
+
+    impl Parse for Input {
+        fn parse(input: ParseStream) -> syn::Result<Self> {
+            let ascii_ident: syn::Ident = input.parse()?;
+            input.parse::<syn::Token![,]>()?;
+
+            let mut strings = Vec::new();
+            while !input.is_empty() {
+                strings.push(input.parse()?);
+                if !input.is_empty() {
+                    input.parse::<syn::Token![,]>()?;
+                }
+            }
+            Ok(Self {
+                ascii_ident,
+                strings,
+            })
+        }
+    }
+
+    let input = parse_macro_input!(input as Input);
+    let idents: Vec<_> = input
+        .strings
+        .iter()
+        .map(|s| {
+            let bytes = s.value();
+            String::from_utf8(bytes).expect("Common strings must be valid UTF-8")
+        })
+        .map(|s| common_str_ident(&s))
+        .collect();
+
+    let ascii_ident = &input.ascii_ident;
+    let strings = &input.strings;
+    quote! {
+        define_common_strings_impl! {
+            #ascii_ident,
+            #( #idents: #strings, )*
+        }
+    }
+    .into()
+}
+
+fn common_str_ident(s: &str) -> syn::Ident {
+    format_ident!("str_{s}")
+}
+
 /// Get the string passed to it as an interned `AvmAtom`, assumed to be present on
 /// the current `StringContext`.
 ///
@@ -373,7 +429,7 @@ fn atom_internal(
         let c = string.as_bytes()[0];
         (format_ident!("ascii_chars"), Some(c as usize))
     } else {
-        (format_ident!("str_{string}"), None)
+        (common_str_ident(&string), None)
     };
 
     let mut atom = if let Some(context) = input.context {
