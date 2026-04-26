@@ -262,7 +262,12 @@ impl Avm2ObjectWindow {
                 ui.end_row();
 
                 ui.label("Movie");
-                open_movie_button(ui, &class.translation_unit().movie(), messages);
+                open_movie_button(
+                    ui,
+                    &mut *activation.context,
+                    class.translation_unit().movie(),
+                    messages,
+                );
                 ui.end_row();
 
                 ui.label("Super Chain");

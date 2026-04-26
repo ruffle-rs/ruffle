@@ -1,8 +1,7 @@
 use crate::sandbox::SandboxType;
 
-use gc_arena::Collect;
+use gc_arena::{Collect, Gc};
 use std::fmt::{Debug, Formatter};
-use std::sync::Arc;
 use swf::{Fixed8, HeaderExt, Rectangle, Twips};
 use url::Url;
 
@@ -332,16 +331,16 @@ impl Debug for SwfMovie {
 }
 
 /// A shared-ownership reference to some portion of an SWF datastream.
-#[derive(Debug, Clone, Collect)]
+#[derive(Debug, Clone, Copy, Collect)]
 #[collect(no_drop)]
-pub struct SwfSlice {
-    pub movie: Arc<SwfMovie>,
+pub struct SwfSlice<'gc> {
+    pub movie: Gc<'gc, SwfMovie>,
     pub start: usize,
     pub end: usize,
 }
 
-impl From<Arc<SwfMovie>> for SwfSlice {
-    fn from(movie: Arc<SwfMovie>) -> Self {
+impl<'gc> From<Gc<'gc, SwfMovie>> for SwfSlice<'gc> {
+    fn from(movie: Gc<'gc, SwfMovie>) -> Self {
         let end = movie.data().len();
 
         Self {
@@ -352,17 +351,17 @@ impl From<Arc<SwfMovie>> for SwfSlice {
     }
 }
 
-impl AsRef<[u8]> for SwfSlice {
+impl<'gc> AsRef<[u8]> for SwfSlice<'gc> {
     #[inline]
     fn as_ref(&self) -> &[u8] {
         self.data()
     }
 }
 
-impl SwfSlice {
+impl<'gc> SwfSlice<'gc> {
     /// Creates an empty SwfSlice.
     #[inline]
-    pub fn empty(movie: Arc<SwfMovie>) -> Self {
+    pub fn empty(movie: Gc<'gc, SwfMovie>) -> Self {
         Self {
             movie,
             start: 0,
@@ -373,7 +372,7 @@ impl SwfSlice {
     /// Creates an empty SwfSlice of the same movie.
     #[inline]
     pub fn copy_empty(&self) -> Self {
-        Self::empty(self.movie.clone())
+        Self::empty(self.movie)
     }
 
     /// Construct a new SwfSlice from a regular slice.
@@ -386,7 +385,7 @@ impl SwfSlice {
 
         if (self_pval + self.start) <= slice_pval && slice_pval < (self_pval + self.end) {
             Self {
-                movie: self.movie.clone(),
+                movie: self.movie,
                 start: slice_pval - self_pval,
                 end: (slice_pval - self_pval) + slice.len(),
             }
@@ -406,7 +405,7 @@ impl SwfSlice {
 
         if self_pval <= slice_pval && slice_pval < (self_pval + self_len) {
             Self {
-                movie: self.movie.clone(),
+                movie: self.movie,
                 start: slice_pval - self_pval,
                 end: (slice_pval - self_pval) + slice.len(),
             }
@@ -425,6 +424,27 @@ impl SwfSlice {
     /// function returns an empty slice.
     pub fn resize_to_reader(&self, reader: &SwfStream<'_>) -> Self {
         self.to_subslice(reader.get_ref())
+    }
+
+    /// Construct a new SwfSlice from a start and an end.
+    ///
+    /// The start and end values will be relative to the current slice.
+    /// Furthermore, this function will yield an empty slice if the calculated slice
+    /// would be invalid (e.g. negative length) or would extend past the end of
+    /// the current slice.
+    pub fn to_start_and_end(&self, start: usize, end: usize) -> Self {
+        let new_start = self.start + start;
+        let new_end = self.start + end;
+
+        if new_start <= new_end {
+            if let Some(result) = self.movie.data().get(new_start..new_end) {
+                self.to_subslice(result)
+            } else {
+                self.copy_empty()
+            }
+        } else {
+            self.copy_empty()
+        }
     }
 
     /// Convert the SwfSlice into a standard data slice.

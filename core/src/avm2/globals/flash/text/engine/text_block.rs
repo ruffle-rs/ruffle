@@ -69,7 +69,7 @@ pub fn create_text_line<'gc>(
     let class = activation.avm2().classes().textline;
     let movie = activation.caller_movie_or_root();
 
-    let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);
+    let fallback = EditText::new_fte(activation.context, movie, 0.0, 0.0, width, 15.0);
 
     fallback.set_text(text.as_wstr(), activation.context);
 

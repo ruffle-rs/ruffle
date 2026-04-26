@@ -16,13 +16,13 @@ use crate::backend::{
     ui::UiBackend,
 };
 use crate::context_menu::ContextMenuState;
-use crate::display_object::{EditText, MovieClip, SoundTransform, Stage};
+use crate::display_object::{EditText, MovieClip, SoundTransform, Stage, TDisplayObject};
 use crate::events::PlayerNotification;
 use crate::external::ExternalInterface;
 use crate::focus_tracker::FocusTracker;
 use crate::frame_lifecycle::FramePhase;
 use crate::input::InputManager;
-use crate::library::Library;
+use crate::library::{Library, MovieLibrary};
 use crate::loader::LoadManager;
 use crate::local_connection::LocalConnections;
 use crate::net_connection::NetConnections;
@@ -43,7 +43,8 @@ use async_channel::Sender;
 use core::fmt;
 use enum_map::Enum;
 use enum_map::EnumMap;
-use gc_arena::{Collect, Mutation};
+use gc_arena::lock::RefLock;
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::{BitmapCacheEntry, RenderBackend};
 use ruffle_render::commands::{CommandHandler, CommandList};
 use ruffle_render::transform::TransformStack;
@@ -90,7 +91,7 @@ pub struct UpdateContext<'gc> {
     pub needs_render: &'gc mut bool,
 
     /// The root SWF file.
-    pub root_swf: &'gc mut Arc<SwfMovie>,
+    pub root_swf: &'gc mut Gc<'gc, SwfMovie>,
 
     /// The audio backend, used by display objects and AVM to play audio.
     pub audio: &'gc mut dyn AudioBackend,
@@ -356,32 +357,37 @@ impl<'gc> UpdateContext<'gc> {
             self.frame_rate,
         );
 
-        *self.root_swf = Arc::new(movie);
+        *self.root_swf = Gc::new(self.gc(), movie);
         *self.instance_counter = 0;
 
-        if self.root_swf.is_action_script_3() {
+        let root_movie = *self.root_swf;
+        if root_movie.is_action_script_3() {
             self.avm2.root_api_version =
-                ApiVersion::from_swf_version(self.root_swf.version(), self.avm2.player_runtime);
+                ApiVersion::from_swf_version(root_movie.version(), self.avm2.player_runtime);
         }
 
         self.stage.set_movie_size(
-            self.root_swf.width().to_pixels() as u32,
-            self.root_swf.height().to_pixels() as u32,
+            root_movie.width().to_pixels() as u32,
+            root_movie.height().to_pixels() as u32,
         );
-        self.stage.set_movie(self.gc(), self.root_swf.clone());
+        self.stage.set_movie(self.gc(), root_movie);
 
         let stage_domain = self.avm2.stage_domain();
         let mut activation = Avm2Activation::from_domain(self, stage_domain);
 
+        activation.context.ui.set_mouse_visible(true);
+
+        let swf = *activation.context.root_swf;
+        let lib = Gc::new(activation.gc(), RefLock::new(MovieLibrary::new(swf)));
         activation
             .context
             .library
-            .library_for_movie_mut(activation.context.root_swf.clone())
+            .register_movie_library(swf, lib, activation.gc());
+        lib.borrow_mut(activation.gc())
             .set_avm2_domain(stage_domain);
-        activation.context.ui.set_mouse_visible(true);
-
-        let swf = activation.context.root_swf.clone();
-        let root: DisplayObject = MovieClip::player_root_movie(&mut activation, swf.clone()).into();
+        let root: DisplayObject = MovieClip::player_root_movie(&mut activation, swf).into();
+        let root_mc = root.as_movie_clip().unwrap();
+        root_mc.set_movie_library(activation.gc(), lib);
 
         // The Stage `LoaderInfo` is permanently in the 'not yet loaded' state,
         // and has no associated `Loader` instance.
@@ -397,6 +403,7 @@ impl<'gc> UpdateContext<'gc> {
             .stage
             .set_loader_info(activation.gc(), stage_loader_info);
 
+        #[allow(clippy::drop_non_drop)]
         drop(activation);
 
         root.set_depth(0);
@@ -471,6 +478,14 @@ impl<'gc> UpdateContext<'gc> {
         self.player
             .upgrade()
             .expect("Could not upgrade weak reference to player")
+    }
+
+    /// Find the `MovieLibrary` for a given `SwfMovie` via the library registry.
+    pub fn library_for_movie(
+        &self,
+        movie: Gc<'gc, SwfMovie>,
+    ) -> Option<Gc<'gc, RefLock<MovieLibrary<'gc>>>> {
+        self.library.library_for_movie(movie, self.gc())
     }
 }
 
@@ -641,15 +656,15 @@ impl<'gc> RenderContext<'_, 'gc> {
 #[collect(no_drop)]
 pub enum ActionType<'gc> {
     /// Normal frame or event actions.
-    Normal { bytecode: SwfSlice },
+    Normal { bytecode: SwfSlice<'gc> },
 
     /// AVM1 initialize clip event.
-    Initialize { bytecode: SwfSlice },
+    Initialize { bytecode: SwfSlice<'gc> },
 
     /// Construct a movie with a custom class or on(construct) events.
     Construct {
         constructor: Option<Avm1Object<'gc>>,
-        events: Vec<SwfSlice>,
+        events: Vec<SwfSlice<'gc>>,
     },
 
     /// An event handler method, e.g. `onEnterFrame`.

@@ -18,14 +18,14 @@ pub fn font_allocator<'gc>(
         .context
         .library
         .avm2_class_registry()
-        .class_symbol(class.inner_class_definition())
+        .class_symbol(
+            class.inner_class_definition(),
+            activation.context.gc_context,
+        )
+        && let Some(lib) = activation.context.library_for_movie(movie)
     {
-        if let Some(lib) = activation.context.library.library_for_movie(movie) {
-            if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                Some(font)
-            } else {
-                None
-            }
+        if let Some(Character::Font(font)) = lib.borrow().character_by_id(id) {
+            Some(font)
         } else {
             None
         }

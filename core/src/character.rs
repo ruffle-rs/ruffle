@@ -28,7 +28,7 @@ pub enum Character<'gc> {
     Text(Text<'gc>),
     Sound(#[collect(require_static)] SoundHandle),
     Video(Video<'gc>),
-    BinaryData(Gc<'gc, BinaryData>),
+    BinaryData(BinaryData<'gc>),
 }
 
 #[derive(Collect, Debug)]

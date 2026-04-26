@@ -19,7 +19,6 @@ use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, GcWeak, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Ref, RefMut};
-use std::sync::Arc;
 
 use super::interactive::Avm2MousePick;
 
@@ -42,11 +41,11 @@ pub struct LoaderDisplayData<'gc> {
     base: InteractiveObjectBase<'gc>,
     container: RefLock<ChildContainer<'gc>>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
-    movie: Arc<SwfMovie>,
+    movie: Gc<'gc, SwfMovie>,
 }
 
 impl<'gc> LoaderDisplay<'gc> {
-    pub fn empty(activation: &mut Activation<'_, 'gc>, movie: Arc<SwfMovie>) -> Self {
+    pub fn empty(activation: &mut Activation<'_, 'gc>, movie: Gc<'gc, SwfMovie>) -> Self {
         let obj = LoaderDisplay(Gc::new(
             activation.gc(),
             LoaderDisplayData {
@@ -129,8 +128,8 @@ impl<'gc> TDisplayObject<'gc> for LoaderDisplay<'gc> {
         self.set_default_instance_name(context);
     }
 
-    fn movie(self) -> Arc<SwfMovie> {
-        self.0.movie.clone()
+    fn movie(self) -> Gc<'gc, SwfMovie> {
+        self.0.movie
     }
 
     fn on_parent_removed(self, context: &mut UpdateContext<'gc>) {

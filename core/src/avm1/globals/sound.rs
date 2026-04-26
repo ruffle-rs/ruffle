@@ -431,18 +431,18 @@ fn attach_sound<'gc>(
             .unwrap_or(&Value::Undefined)
             .coerce_to_string(activation)?;
 
-        let movie = if sound.use_global_sound() {
-            activation.base_clip().avm1_root().movie()
+        let owner = if sound.use_global_sound() {
+            activation.base_clip().avm1_root()
         } else if let Some(owner) = sound.owner(activation) {
-            owner.movie()
+            owner
         } else {
             return Ok(Value::Undefined);
         };
 
-        if let Some((_, Character::Sound(sound_handle))) = activation
-            .context
-            .library
-            .library_for_movie_mut(movie)
+        if let Some((_, Character::Sound(sound_handle))) = owner
+            .library()
+            .unwrap()
+            .borrow()
             .character_by_export_name(name)
         {
             sound.load_sound(activation, this, sound_handle);
@@ -751,19 +751,18 @@ fn stop<'gc>(
         if let Some(name) = args.get(0) {
             // Usage 1: Stop all instances of a particular sound, using the name parameter.
             let name = name.coerce_to_string(activation)?;
-
-            let movie = if sound.use_global_sound() {
-                activation.base_clip().avm1_root().movie()
+            let owner = if sound.use_global_sound() {
+                activation.base_clip().avm1_root()
             } else if let Some(owner) = sound.owner(activation) {
-                owner.movie()
+                owner
             } else {
                 return Ok(Value::Undefined);
             };
 
-            if let Some((_, Character::Sound(sound))) = activation
-                .context
-                .library
-                .library_for_movie_mut(movie)
+            if let Some((_, Character::Sound(sound))) = owner
+                .library()
+                .unwrap()
+                .borrow()
                 .character_by_export_name(name)
             {
                 // TODO: This isn't entirely correct. We should only

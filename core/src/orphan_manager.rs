@@ -25,6 +25,13 @@ impl<'gc> OrphanManager<'gc> {
         Rc::make_mut(&mut self.orphans)
     }
 
+    /// A cheap (`Rc`-cloned) snapshot of the current orphan list, for read-only
+    /// traversal (e.g. searching loaded-but-unattached clips for a movie's
+    /// library). Modifications during iteration won't affect the snapshot.
+    pub fn orphans(&self) -> Rc<Vec<DisplayObjectWeak<'gc>>> {
+        self.orphans.clone()
+    }
+
     /// Adds a `MovieClip` to the orphan list. In AVM2, movies advance their
     /// frames even when they are not on a display list. Unfortunately,
     /// multiple SWFS rely on this behavior, so we need to match Flash's
