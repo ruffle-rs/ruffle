@@ -61,28 +61,28 @@ pub struct TestLoaderParams<'a> {
     pub test_name: &'a str,
 }
 
-pub type TestLoader = Box<dyn Fn(TestLoaderParams, &mut dyn FnMut(Trial))>;
-pub type TestSorter = Box<dyn FnMut(&Trial, &Trial) -> Ordering>;
+pub type TestLoader<T> = Box<dyn Fn(TestLoaderParams, &mut dyn FnMut(T))>;
+pub type TestSorter<T> = Box<dyn FnMut(&T, &T) -> Ordering>;
 
-pub struct FsTestsRunner {
+pub struct FsTestsRunner<T> {
     root_dir: PathBuf,
     descriptor_name: Cow<'static, str>,
-    additional_tests: Vec<Trial>,
-    test_loader: Option<TestLoader>,
+    additional_tests: Vec<T>,
+    test_loader: Option<TestLoader<T>>,
     canonicalize_paths: bool,
-    sorter: Option<TestSorter>,
+    sorter: Option<TestSorter<T>>,
     exact: bool,
     filter: Option<String>,
     skip: Vec<String>,
 }
 
-impl Default for FsTestsRunner {
+impl<T> Default for FsTestsRunner<T> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl FsTestsRunner {
+impl<T> FsTestsRunner<T> {
     pub fn new() -> Self {
         Self {
             root_dir: PathBuf::from("tests"),
@@ -95,14 +95,6 @@ impl FsTestsRunner {
             filter: None,
             skip: Vec::new(),
         }
-    }
-
-    pub fn with_args_from_libtest_mimic(&mut self) -> &mut Self {
-        let arguments = Arguments::from_args();
-        self.exact = arguments.exact;
-        self.filter = arguments.filter;
-        self.skip = arguments.skip;
-        self
     }
 
     pub fn with_exact(&mut self, exact: bool) -> &mut Self {
@@ -130,12 +122,12 @@ impl FsTestsRunner {
         self
     }
 
-    pub fn with_additional_test(&mut self, test: Trial) -> &mut Self {
+    pub fn with_additional_test(&mut self, test: T) -> &mut Self {
         self.additional_tests.push(test);
         self
     }
 
-    pub fn with_test_loader(&mut self, test_loader: TestLoader) -> &mut Self {
+    pub fn with_test_loader(&mut self, test_loader: TestLoader<T>) -> &mut Self {
         self.test_loader = Some(test_loader);
         self
     }
@@ -145,12 +137,12 @@ impl FsTestsRunner {
         self
     }
 
-    pub fn with_sorter(&mut self, sorter: TestSorter) -> &mut Self {
+    pub fn with_sorter(&mut self, sorter: TestSorter<T>) -> &mut Self {
         self.sorter = Some(sorter);
         self
     }
 
-    pub fn find_tests(mut self) -> Vec<Trial> {
+    pub fn find_tests(mut self) -> Vec<T> {
         self.ensure_root_dir_exists();
 
         // When this is true, we are looking for one specific test.
@@ -198,15 +190,6 @@ impl FsTestsRunner {
         tests
     }
 
-    pub fn run(self) -> Conclusion {
-        let mut args = Arguments::from_args();
-        args.exact = self.exact;
-        args.filter = self.filter.clone();
-        args.skip = self.skip.clone();
-        let tests = self.find_tests();
-        libtest_mimic::run(&args, tests)
-    }
-
     fn ensure_root_dir_exists(&self) {
         if !self.root_dir.is_dir() {
             let root_dir = self.root_dir.to_string_lossy();
@@ -214,7 +197,7 @@ impl FsTestsRunner {
         }
     }
 
-    fn look_up_test(&self, out: &mut Vec<Trial>) -> anyhow::Result<()> {
+    fn look_up_test(&self, out: &mut Vec<T>) -> anyhow::Result<()> {
         let root = &self.root_dir;
 
         let name = filter_to_test_name(self.filter.as_ref().unwrap());
@@ -238,7 +221,7 @@ impl FsTestsRunner {
         Ok(())
     }
 
-    fn load_test(&self, file: &Path, name: &str, out: &mut Vec<Trial>) {
+    fn load_test(&self, file: &Path, name: &str, out: &mut Vec<T>) {
         let Some(test_loader) = self.test_loader.as_ref() else {
             return;
         };
@@ -257,5 +240,24 @@ impl FsTestsRunner {
             test_name: name,
         };
         test_loader(params, &mut |trial| out.push(trial));
+    }
+}
+
+impl FsTestsRunner<Trial> {
+    pub fn with_args_from_libtest_mimic(&mut self) -> &mut Self {
+        let arguments = Arguments::from_args();
+        self.exact = arguments.exact;
+        self.filter = arguments.filter;
+        self.skip = arguments.skip;
+        self
+    }
+
+    pub fn run(self) -> Conclusion {
+        let mut args = Arguments::from_args();
+        args.exact = self.exact;
+        args.filter = self.filter.clone();
+        args.skip = self.skip.clone();
+        let tests = self.find_tests();
+        libtest_mimic::run(&args, tests)
     }
 }
