@@ -866,49 +866,41 @@ fn get_gradient_colors<'gc>(
     if let Some(colors_object) = object
         .get_slot(gradient_bevel_filter_slots::_COLORS)
         .as_object()
+        && let Some(colors_array) = colors_object.as_array_storage()
+        && let Some(alphas_object) = object
+            .get_slot(gradient_bevel_filter_slots::_ALPHAS)
+            .as_object()
+        && let Some(alphas_array) = alphas_object.as_array_storage()
+        && let Some(ratios_object) = object
+            .get_slot(gradient_bevel_filter_slots::_RATIOS)
+            .as_object()
+        && let Some(ratios_array) = ratios_object.as_array_storage()
     {
-        if let Some(colors_array) = colors_object.as_array_storage() {
-            if let Some(alphas_object) = object
-                .get_slot(gradient_bevel_filter_slots::_ALPHAS)
-                .as_object()
-            {
-                if let Some(alphas_array) = alphas_object.as_array_storage() {
-                    if let Some(ratios_object) = object
-                        .get_slot(gradient_bevel_filter_slots::_RATIOS)
-                        .as_object()
-                    {
-                        if let Some(ratios_array) = ratios_object.as_array_storage() {
-                            // Flash only keeps the elements from any array until the lowest index in each array
-                            for i in 0..ratios_array
-                                .length()
-                                .min(alphas_array.length())
-                                .min(colors_array.length())
-                            {
-                                let color = colors_array
-                                    .get(i)
-                                    .map(|v| v.coerce_to_u32(activation))
-                                    .transpose()?
-                                    .unwrap_or_default();
-                                let alpha = colors_array
-                                    .get(i)
-                                    .map(|v| v.coerce_to_number(activation))
-                                    .transpose()?
-                                    .unwrap_or_default()
-                                    as f32;
-                                let ratio = colors_array
-                                    .get(i)
-                                    .map(|v| v.coerce_to_u32(activation))
-                                    .transpose()?
-                                    .unwrap_or_default();
-                                colors.push(GradientRecord {
-                                    ratio: ratio.clamp(0, 255) as u8,
-                                    color: Color::from_rgb(color, (alpha * 255.0) as u8),
-                                })
-                            }
-                        }
-                    }
-                }
-            }
+        // Flash only keeps the elements from any array until the lowest index in each array
+        for i in 0..ratios_array
+            .length()
+            .min(alphas_array.length())
+            .min(colors_array.length())
+        {
+            let color = colors_array
+                .get(i)
+                .map(|v| v.coerce_to_u32(activation))
+                .transpose()?
+                .unwrap_or_default();
+            let alpha = colors_array
+                .get(i)
+                .map(|v| v.coerce_to_number(activation))
+                .transpose()?
+                .unwrap_or_default() as f32;
+            let ratio = colors_array
+                .get(i)
+                .map(|v| v.coerce_to_u32(activation))
+                .transpose()?
+                .unwrap_or_default();
+            colors.push(GradientRecord {
+                ratio: ratio.clamp(0, 255) as u8,
+                color: Color::from_rgb(color, (alpha * 255.0) as u8),
+            })
         }
     }
     Ok(colors)
