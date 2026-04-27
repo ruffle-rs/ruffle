@@ -121,6 +121,9 @@ unknown_lints = "allow"
 trivially_copy_pass_by_ref = "deny"
 redundant_clone = "deny"
 unused_async = "deny"
+used_underscore_items = "deny"
+
+# TODO Enable used_underscore_binding when false positives get fixed.
 
 # LONG-TERM: These lints are unhelpful.
 manual_map = "allow"             # Less readable: Suggests `opt.map(..)` instead of `if let Some(opt) { .. }`
