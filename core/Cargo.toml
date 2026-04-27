@@ -56,7 +56,7 @@ hashbrown = { workspace = true }
 scopeguard = "1.2.0"
 fluent-templates = { workspace = true }
 egui = { workspace = true, optional = true }
-egui_extras = { version = "0.33.3", default-features = false, optional = true }
+egui_extras = { version = "0.34.1", default-features = false, optional = true }
 png = { version = "0.18.1", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
