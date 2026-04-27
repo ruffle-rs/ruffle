@@ -56,7 +56,6 @@ fn is_candidate(args: &Arguments, test_name: &str) -> bool {
 }
 
 pub struct TestLoaderParams<'a> {
-    pub args: &'a Arguments,
     pub test_dir: VfsPath,
     pub test_dir_real: Cow<'a, Path>,
     pub test_name: &'a str,
@@ -158,7 +157,7 @@ impl FsTestsRunner {
                     .to_string_lossy()
                     .replace('\\', "/");
                 if is_candidate(&args, &name) {
-                    self.load_test(&args, file.path(), &name, &mut tests)
+                    self.load_test(file.path(), &name, &mut tests)
                 }
             }
         };
@@ -198,12 +197,12 @@ impl FsTestsRunner {
         }
 
         if path.is_file() {
-            self.load_test(args, &path, &name, out)
+            self.load_test(&path, &name, out)
         }
         Ok(())
     }
 
-    fn load_test(&self, args: &Arguments, file: &Path, name: &str, out: &mut Vec<Trial>) {
+    fn load_test(&self, file: &Path, name: &str, out: &mut Vec<Trial>) {
         let Some(test_loader) = self.test_loader.as_ref() else {
             return;
         };
@@ -217,7 +216,6 @@ impl FsTestsRunner {
         }
         let test_dir = VfsPath::new(PhysicalFS::new(&test_dir_real));
         let params = TestLoaderParams {
-            args,
             test_dir,
             test_dir_real,
             test_name: name,
