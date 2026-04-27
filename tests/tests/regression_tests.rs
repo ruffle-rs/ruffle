@@ -76,7 +76,8 @@ fn main() {
                 let trial = trial_for_test(&env_clone, &ruffle_test_opts, test, params.args.list);
                 register_trial(trial);
             }
-        }));
+        }))
+        .with_sorter(Box::new(|a, b| a.name().cmp(b.name())));
 
     // Manual tests here, since #[test] doesn't work once we use our own test harness
     let env_clone = env.clone();

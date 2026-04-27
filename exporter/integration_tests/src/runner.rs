@@ -88,7 +88,8 @@ fn main() -> Result<()> {
         .with_descriptor_name(Cow::Borrowed(TEST_TOML_NAME))
         .with_test_loader(Box::new(|params, register_trial| {
             register_trial(load_test(params))
-        }));
+        }))
+        .with_sorter(Box::new(|a, b| a.name().cmp(b.name())));
 
     runner.run().exit()
 }

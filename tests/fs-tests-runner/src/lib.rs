@@ -10,6 +10,7 @@ pub use libtest_mimic::Conclusion;
 use libtest_mimic::{Arguments, Trial};
 use regex::Regex;
 use std::borrow::Cow;
+use std::cmp::Ordering;
 use std::path::Path;
 use std::path::PathBuf;
 use vfs::PhysicalFS;
@@ -62,6 +63,7 @@ pub struct TestLoaderParams<'a> {
 }
 
 pub type TestLoader = Box<dyn Fn(TestLoaderParams, &mut dyn FnMut(Trial))>;
+pub type TestSorter = Box<dyn FnMut(&Trial, &Trial) -> Ordering>;
 
 pub struct FsTestsRunner {
     root_dir: PathBuf,
@@ -69,6 +71,7 @@ pub struct FsTestsRunner {
     additional_tests: Vec<Trial>,
     test_loader: Option<TestLoader>,
     canonicalize_paths: bool,
+    sorter: Option<TestSorter>,
 }
 
 impl Default for FsTestsRunner {
@@ -85,6 +88,7 @@ impl FsTestsRunner {
             additional_tests: Vec::new(),
             test_loader: None,
             canonicalize_paths: false,
+            sorter: None,
         }
     }
 
@@ -110,6 +114,11 @@ impl FsTestsRunner {
 
     pub fn with_canonicalize_paths(&mut self, canonicalize_paths: bool) -> &mut Self {
         self.canonicalize_paths = canonicalize_paths;
+        self
+    }
+
+    pub fn with_sorter(&mut self, sorter: TestSorter) -> &mut Self {
+        self.sorter = Some(sorter);
         self
     }
 
@@ -156,7 +165,9 @@ impl FsTestsRunner {
 
         tests.append(&mut self.additional_tests);
 
-        tests.sort_unstable_by(|a, b| a.name().cmp(b.name()));
+        if let Some(sorter) = &mut self.sorter {
+            tests.sort_unstable_by(sorter);
+        }
 
         libtest_mimic::run(&args, tests)
     }
