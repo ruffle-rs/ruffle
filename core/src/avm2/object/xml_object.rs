@@ -134,27 +134,27 @@ impl<'gc> XmlObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> XmlListObject<'gc> {
         // 1. If ToString(ToUint32(propertyName)) == propertyName
-        if let Some(local_name) = name.local_name() {
-            if let Ok(index) = local_name.parse::<usize>() {
-                let result = if let E4XNodeKind::Element { children, .. } = &*self.node().kind() {
-                    if let Some(node) = children.get(index) {
-                        vec![E4XOrXml::E4X(*node)]
-                    } else {
-                        Vec::new()
-                    }
+        if let Some(local_name) = name.local_name()
+            && let Ok(index) = local_name.parse::<usize>()
+        {
+            let result = if let E4XNodeKind::Element { children, .. } = &*self.node().kind() {
+                if let Some(node) = children.get(index) {
+                    vec![E4XOrXml::E4X(*node)]
                 } else {
                     Vec::new()
-                };
-
-                let list = XmlListObject::new_with_children(activation, result, None, None);
-
-                if list.length() > 0 {
-                    // NOTE: Since avmplus uses appendNode here, when the node exists, that implicitly sets the target_dirty flag.
-                    list.set_dirty_flag();
                 }
+            } else {
+                Vec::new()
+            };
 
-                return list;
+            let list = XmlListObject::new_with_children(activation, result, None, None);
+
+            if list.length() > 0 {
+                // NOTE: Since avmplus uses appendNode here, when the node exists, that implicitly sets the target_dirty flag.
+                list.set_dirty_flag();
             }
+
+            return list;
         }
 
         // 2. Let temporary be the result of calling the [[Get]] method of x with argument propertyName
@@ -262,23 +262,23 @@ impl<'gc> XmlObject<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<bool, Error<'gc>> {
         // 3.a. If both x and y are the same type (XML)
-        if let Value::Object(obj) = other {
-            if let Some(xml_obj) = obj.as_xml_object() {
-                // 3.a.i. If ((x.[[Class]] ∈ {"text", "attribute"}) and (y.hasSimpleContent())
-                // or ((y.[[Class]] ∈ {"text", "attribute"}) and (x.hasSimpleContent())
-                if ((self.node().is_text() || self.node().is_attribute())
-                    && xml_obj.node().has_simple_content())
-                    || ((xml_obj.node().is_text() || xml_obj.node().is_attribute())
-                        && self.node().has_simple_content())
-                {
-                    // 3.a.i.1. Return the result of the comparison ToString(x) == ToString(y)
-                    return Ok(self.node().xml_to_string(activation)
-                        == xml_obj.node().xml_to_string(activation));
-                }
-
-                // 3.a.i. Else return the result of calling the [[Equals]] method of x with argument y
-                return self.equals(other, activation);
+        if let Value::Object(obj) = other
+            && let Some(xml_obj) = obj.as_xml_object()
+        {
+            // 3.a.i. If ((x.[[Class]] ∈ {"text", "attribute"}) and (y.hasSimpleContent())
+            // or ((y.[[Class]] ∈ {"text", "attribute"}) and (x.hasSimpleContent())
+            if ((self.node().is_text() || self.node().is_attribute())
+                && xml_obj.node().has_simple_content())
+                || ((xml_obj.node().is_text() || xml_obj.node().is_attribute())
+                    && self.node().has_simple_content())
+            {
+                // 3.a.i.1. Return the result of the comparison ToString(x) == ToString(y)
+                return Ok(self.node().xml_to_string(activation)
+                    == xml_obj.node().xml_to_string(activation));
             }
+
+            // 3.a.i. Else return the result of calling the [[Equals]] method of x with argument y
+            return self.equals(other, activation);
         }
 
         // 4. If (Type(x) is XML and x.hasSimpleContent() == true)
@@ -438,10 +438,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
         let name = handle_input_multiname(name.clone(), activation);
 
         // 1. If ToString(ToUint32(P)) == P, throw a TypeError exception
-        if let Some(local_name) = name.local_name() {
-            if local_name.parse::<usize>().is_ok() {
-                return Err(make_error_1087(activation));
-            }
+        if let Some(local_name) = name.local_name()
+            && local_name.parse::<usize>().is_ok()
+        {
+            return Err(make_error_1087(activation));
         }
 
         // 2. If x.[[Class]] ∈ {"text", "comment", "processing-instruction", "attribute"}, return
@@ -709,10 +709,10 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
 
         // 1. If ToString(ToUint32(P)) == P, throw a TypeError exception
         // NOTE: This doesn't actually throw in Flash.
-        if let Some(local_name) = name.local_name() {
-            if local_name.parse::<usize>().is_ok() {
-                return Ok(true);
-            }
+        if let Some(local_name) = name.local_name()
+            && local_name.parse::<usize>().is_ok()
+        {
+            return Ok(true);
         }
 
         let node = self.0.node.get();

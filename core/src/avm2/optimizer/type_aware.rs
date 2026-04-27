@@ -126,17 +126,17 @@ impl<'gc> OptValue<'gc> {
         } else if other.is_null() {
             // If the other value is guaranteed to be null, we can just use our class.
             // Unless it's a non-null class.
-            if let Some(self_class) = self.class {
-                if !self_class.is_builtin_non_null() {
-                    created_value.class = self.class;
-                }
+            if let Some(self_class) = self.class
+                && !self_class.is_builtin_non_null()
+            {
+                created_value.class = self.class;
             }
         } else if self.is_null() {
             // And vice-versa.
-            if let Some(other_class) = other.class {
-                if !other_class.is_builtin_non_null() {
-                    created_value.class = other.class;
-                }
+            if let Some(other_class) = other.class
+                && !other_class.is_builtin_non_null()
+            {
+                created_value.class = other.class;
             }
         } else if let (Some(self_class), Some(other_class)) = (self.class, other.class) {
             // Check for a common superclass.
@@ -1132,12 +1132,12 @@ fn abstract_interpret_ops<'gc>(
 
                 let mut new_value = OptValue::any();
 
-                if let Some(class) = type_c_class.class.and_then(|c| c.i_class()) {
-                    if !class.is_builtin_non_null() {
-                        // If the type on the stack was a c_class with a non-primitive
-                        // i_class, we can use the type
-                        new_value = OptValue::of_type(class);
-                    }
+                if let Some(class) = type_c_class.class.and_then(|c| c.i_class())
+                    && !class.is_builtin_non_null()
+                {
+                    // If the type on the stack was a c_class with a non-primitive
+                    // i_class, we can use the type
+                    new_value = OptValue::of_type(class);
                 }
 
                 stack.push(activation, new_value)?;
@@ -1150,13 +1150,13 @@ fn abstract_interpret_ops<'gc>(
                     // if T is not non-nullable, we can assume the result is typed T
                     new_value = OptValue::of_type(class);
                 }
-                if let Some(stack_class) = stack_value.class {
-                    if class == stack_class {
-                        // If type check is guaranteed, preserve original type
-                        // TODO: there are more cases when this can succeed,
-                        // like inheritance and numbers (`x: Number = 1; x as int;`)
-                        new_value = stack_value;
-                    }
+                if let Some(stack_class) = stack_value.class
+                    && class == stack_class
+                {
+                    // If type check is guaranteed, preserve original type
+                    // TODO: there are more cases when this can succeed,
+                    // like inheritance and numbers (`x: Number = 1; x as int;`)
+                    new_value = stack_value;
                 }
                 if stack_value.is_null() {
                     // null always turns into null

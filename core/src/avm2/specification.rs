@@ -286,10 +286,9 @@ impl Definition {
             .super_class_name()
             .as_ref()
             .and_then(|n| n.local_name())
+            && &super_name != b"Object"
         {
-            if &super_name != b"Object" {
-                definition.classinfo.get_or_insert_default().extends = Some(super_name.to_string());
-            }
+            definition.classinfo.get_or_insert_default().extends = Some(super_name.to_string());
         }
 
         let prototype = class_object.prototype();

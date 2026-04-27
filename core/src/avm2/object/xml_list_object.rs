@@ -175,15 +175,15 @@ impl<'gc> XmlListObject<'gc> {
                 .node();
 
             if let Some(parent) = last_node.parent() {
-                if let Some(XmlOrXmlListObject::Xml(target_obj)) = self.0.target_object.get() {
-                    if !E4XNode::ptr_eq(target_obj.node(), parent) {
-                        unlock!(
-                            Gc::write(activation.gc(), self.0),
-                            XmlListObjectData,
-                            target_object
-                        )
-                        .set(Some(XmlObject::new(parent, activation).into()));
-                    }
+                if let Some(XmlOrXmlListObject::Xml(target_obj)) = self.0.target_object.get()
+                    && !E4XNode::ptr_eq(target_obj.node(), parent)
+                {
+                    unlock!(
+                        Gc::write(activation.gc(), self.0),
+                        XmlListObjectData,
+                        target_object
+                    )
+                    .set(Some(XmlObject::new(parent, activation).into()));
                 }
             } else {
                 unlock!(
@@ -194,24 +194,22 @@ impl<'gc> XmlListObject<'gc> {
                 .set(None);
             }
 
-            if !matches!(*last_node.kind(), E4XNodeKind::ProcessingInstruction(_)) {
-                if let Some(name) = last_node.local_name() {
-                    let ns = match last_node.namespace() {
-                        Some(ns) => Namespace::package(
-                            ns.uri,
-                            ApiVersion::AllVersions,
-                            activation.strings(),
-                        ),
-                        None => activation.avm2().namespaces.public_all(),
-                    };
+            if !matches!(*last_node.kind(), E4XNodeKind::ProcessingInstruction(_))
+                && let Some(name) = last_node.local_name()
+            {
+                let ns = match last_node.namespace() {
+                    Some(ns) => {
+                        Namespace::package(ns.uri, ApiVersion::AllVersions, activation.strings())
+                    }
+                    None => activation.avm2().namespaces.public_all(),
+                };
 
-                    *unlock!(
-                        Gc::write(activation.gc(), self.0),
-                        XmlListObjectData,
-                        target_property
-                    )
-                    .borrow_mut() = Some(Multiname::new(ns, name));
-                }
+                *unlock!(
+                    Gc::write(activation.gc(), self.0),
+                    XmlListObjectData,
+                    target_property
+                )
+                .borrow_mut() = Some(Multiname::new(ns, name));
             }
 
             self.0.target_dirty.set(false);
@@ -288,11 +286,11 @@ impl<'gc> XmlListObject<'gc> {
             // 2.e. If (target.[[Length]] == 0)
             if target.length().unwrap_or(0) == 0 {
                 // 2.e.i. If (Type(base) is XMLList) and (base.[[Length]] > 1), return null
-                if let XmlOrXmlListObject::XmlList(x) = &base {
-                    if x.length() > 1 {
-                        // NOTE: Not mentioned in the spec, but avmplus throws an Error 1089 here.
-                        return Err(make_error_1089(activation));
-                    }
+                if let XmlOrXmlListObject::XmlList(x) = &base
+                    && x.length() > 1
+                {
+                    // NOTE: Not mentioned in the spec, but avmplus throws an Error 1089 here.
+                    return Err(make_error_1089(activation));
                 }
 
                 // 2.e.ii. Call [[Put]] on base with arguments x.[[TargetProperty]] and the empty string
@@ -320,25 +318,25 @@ impl<'gc> XmlListObject<'gc> {
             return Ok(true);
         }
 
-        if let Value::Object(obj) = other {
-            if let Some(xml_list_obj) = obj.as_xml_list_object() {
-                if self.length() != xml_list_obj.length() {
+        if let Value::Object(obj) = other
+            && let Some(xml_list_obj) = obj.as_xml_list_object()
+        {
+            if self.length() != xml_list_obj.length() {
+                return Ok(false);
+            }
+
+            for n in 0..self.length() {
+                let value = xml_list_obj.xml_object_child(n, activation).unwrap().into();
+                if !self
+                    .xml_object_child(n, activation)
+                    .unwrap()
+                    .abstract_eq(&value, activation)?
+                {
                     return Ok(false);
                 }
-
-                for n in 0..self.length() {
-                    let value = xml_list_obj.xml_object_child(n, activation).unwrap().into();
-                    if !self
-                        .xml_object_child(n, activation)
-                        .unwrap()
-                        .abstract_eq(&value, activation)?
-                    {
-                        return Ok(false);
-                    }
-                }
-
-                return Ok(true);
             }
+
+            return Ok(true);
         }
 
         if self.length() == 1 {
@@ -513,15 +511,14 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         let mut children = self.children_mut(activation.gc());
 
         // 1. If ToString(ToUint32(P)) == P
-        if !name.has_explicit_namespace() {
-            if let Some(local_name) = name.local_name() {
-                if let Ok(index) = local_name.parse::<usize>() {
-                    if let Some(child) = children.get_mut(index) {
-                        return Ok(Value::Object(child.get_or_create_xml(activation).into()));
-                    } else {
-                        return Ok(Value::Undefined);
-                    }
-                }
+        if !name.has_explicit_namespace()
+            && let Some(local_name) = name.local_name()
+            && let Ok(index) = local_name.parse::<usize>()
+        {
+            if let Some(child) = children.get_mut(index) {
+                return Ok(Value::Object(child.get_or_create_xml(activation).into()));
+            } else {
+                return Ok(Value::Undefined);
             }
         }
 
@@ -607,11 +604,11 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
 
     fn has_own_property(self, name: &Multiname<'gc>) -> bool {
         // 1. If ToString(ToUint32(P)) == P
-        if let Some(name) = name.local_name() {
-            if let Ok(index) = name.parse::<usize>() {
-                // 1.a. Return (ToUint32(P) < x.[[Length]])
-                return index < self.length();
-            }
+        if let Some(name) = name.local_name()
+            && let Ok(index) = name.parse::<usize>()
+        {
+            // 1.a. Return (ToUint32(P) < x.[[Length]])
+            return index < self.length();
         }
 
         // 2. For i = 0 to x.[[Length]]-1
@@ -641,346 +638,338 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     ) -> Result<(), Error<'gc>> {
         // 1. Let i = ToUint32(P)
         // 2. If ToString(i) == P
-        if !name.is_any_name() && !name.is_attribute() {
-            if let Some(local_name) = name.local_name() {
-                if let Ok(mut index) = local_name.parse::<usize>() {
-                    self.reevaluate_target_object(activation);
+        if !name.is_any_name()
+            && !name.is_attribute()
+            && let Some(local_name) = name.local_name()
+            && let Ok(mut index) = local_name.parse::<usize>()
+        {
+            self.reevaluate_target_object(activation);
 
-                    // 2.a. If x.[[TargetObject]] is not null
-                    let r = if let Some(target) = self.target_object() {
-                        // 2.a.i. Let r be the result of calling the [[ResolveValue]] method of x.[[TargetObject]]
-                        let r = target.resolve_value(activation)?;
+            // 2.a. If x.[[TargetObject]] is not null
+            let r = if let Some(target) = self.target_object() {
+                // 2.a.i. Let r be the result of calling the [[ResolveValue]] method of x.[[TargetObject]]
+                let r = target.resolve_value(activation)?;
 
-                        // 2.a.ii. If r == null, return
-                        let Some(r) = r else {
+                // 2.a.ii. If r == null, return
+                let Some(r) = r else {
+                    return Ok(());
+                };
+
+                Some(r)
+            // 2.b. Else let r = null
+            } else {
+                None
+            };
+
+            // 2.c. If i is greater than or equal to x.[[Length]]
+            if index >= self.length() {
+                let r = match r {
+                    Some(XmlOrXmlListObject::Xml(x)) => Some(x.node()),
+                    // 2.c.i. If Type(r) is XMLList
+                    Some(XmlOrXmlListObject::XmlList(x)) => {
+                        // 2.c.i.1. If r.[[Length]] is not equal to 1, return
+                        if x.length() != 1 {
                             return Ok(());
+                        }
+
+                        // 2.c.i.2. Else let r = r[0]
+                        Some(x.children()[0].node())
+                    }
+                    None => None,
+                };
+
+                // 2.c.ii. If r.[[Class]] is not equal to "element", return
+                if let Some(r) = r
+                    && !r.is_element()
+                {
+                    return Ok(());
+                }
+
+                // 2.c.iii Create a new XML object y with y.[[Parent]] = r, y.[[Name]] = x.[[TargetProperty]],
+                //         y.[[Attributes]] = {}, y.[[Length]] = 0
+                let y = match self.target_property() {
+                    // 2.c.iv. If Type(x.[[TargetProperty]]) is AttributeName
+                    Some(x) if x.is_attribute() => {
+                        // 2.c.iv.1. Let attributeExists be the result of calling the [[Get]] method of r with argument y.[[Name]]
+                        let attribute_exists = XmlObject::new(r.unwrap(), activation)
+                            .get_property_local(&x, activation)?;
+
+                        // 2.c.iv.2. If (attributeExists.[[Length]] > 0), return
+                        if let Some(list) = attribute_exists
+                            .as_object()
+                            .and_then(|x| x.as_xml_list_object())
+                            && list.length() > 0
+                        {
+                            return Ok(());
+                        }
+
+                        // 2.c.iv.3. Let y.[[Class]] = "attribute"
+                        E4XNode::attribute(
+                            activation.gc(),
+                            x.explicit_namespace().map(E4XNamespace::new_uri),
+                            x.local_name().unwrap(),
+                            istr!(""),
+                            r,
+                        )
+                    }
+                    // 2.c.v. Else if x.[[TargetProperty]] == null or x.[[TargetProperty]].localName == "*"
+                    // 2.c.v.1. Let y.[[Name]] = null
+                    // 2.c.v.2. Let y.[[Class]] = "text"
+                    Some(x) if x.is_any_name() => E4XNode::text(activation.gc(), istr!(""), r),
+                    None => E4XNode::text(activation.gc(), istr!(""), r),
+                    // NOTE: avmplus edge case.
+                    //       See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLListObject.cpp#L297-L300
+                    _ if value
+                        .as_object()
+                        .and_then(|x| x.as_xml_object())
+                        .is_some_and(|x| x.node().is_text() || x.node().is_attribute()) =>
+                    {
+                        E4XNode::text(activation.gc(), istr!(""), r)
+                    }
+
+                    // 2.c.vi. Else let y.[[Class]] = "element"
+                    Some(property) => E4XNode::element(
+                        activation.gc(),
+                        namespace_for_multiname(&property, activation),
+                        property.local_name().expect("Local name should exist"),
+                        r,
+                    ),
+                };
+
+                // 2.c.vii. Let i = x.[[Length]]
+                index = self.length();
+
+                // 2.c.viii. If (y.[[Class]] is not equal to "attribute")
+                if !y.is_attribute() {
+                    // 2.c.viii.1. If r is not null
+                    if let Some(r) = r {
+                        let j = if let E4XNodeKind::Element { children, .. } = &*r.kind() {
+                            // 2.c.viii.1.a. If (i > 0)
+                            let j = if index > 0 {
+                                // 2.c.viii.1.a.i. Let j = 0
+                                let mut j = 0;
+
+                                // 2.c.viii.1.a.ii. While (j < r.[[Length]]-1) and (r[j] is not the same object as x[i-1])
+                                while j < children.len() - 1
+                                    && !E4XNode::ptr_eq(
+                                        children[j],
+                                        self.children()[index - 1].node(),
+                                    )
+                                {
+                                    // 2.c.viii.1.a.ii.1. Let j = j + 1
+                                    j += 1;
+                                }
+
+                                // NOTE: Not listed in spec, but avmplus does this, so we do the same.
+                                j + 1
+                            // 2.c.viii.1.b. Else
+                            } else {
+                                // 2.c.viii.1.b.i. Let j = r.[[Length]]-1
+                                children.len()
+                            };
+
+                            Some(j)
+                        } else {
+                            None
                         };
 
-                        Some(r)
-                    // 2.b. Else let r = null
+                        // NOTE: This is to bypass borrow errors.
+                        if let Some(j) = j {
+                            // 2.c.viii.1.c. Call the [[Insert]] method of r with arguments ToString(j+1) and y
+                            r.insert(j, XmlObject::new(y, activation).into(), activation)?;
+                        }
+                    }
+
+                    // 2.c.viii.2. If Type(V) is XML, let y.[[Name]] = V.[[Name]]
+                    if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
+                        if let Some(name) = xml.node().local_name() {
+                            y.set_local_name(name, activation.gc());
+                        }
+                        y.set_namespace(xml.node().namespace(), activation.gc());
+                    }
+
+                    // 2.c.viii.3. Else if Type(V) is XMLList, let y.[[Name]] = V.[[TargetProperty]]
+                    if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
+                        // Note: Don't set anything when there is no [[TargetProperty]].
+                        if let Some(target_property) = list.target_property() {
+                            if let Some(name) = target_property.local_name() {
+                                y.set_local_name(name, activation.gc());
+                            }
+
+                            let ns = namespace_for_multiname(&target_property, activation);
+                            if ns.is_some() {
+                                y.set_namespace(ns, activation.gc());
+                            }
+                        }
+                    }
+                }
+
+                // 2.c.ix. Call the [[Append]] method of x with argument y
+                self.append(XmlObject::new(y, activation).into(), activation.gc());
+            }
+
+            // 2.d. If (Type(V) ∉ {XML, XMLList}) or (V.[[Class]] ∈ {"text", "attribute"}), let V = ToString(V)
+            if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
+                if list.length() == 1 {
+                    let xml = list
+                        .xml_object_child(0, activation)
+                        .expect("List length was just verified");
+
+                    // NOTE: avmplus contrary to specification doesn't consider CData here.
+                    if matches!(
+                        *xml.node().kind(),
+                        E4XNodeKind::Attribute(_) | E4XNodeKind::Text(_)
+                    ) {
+                        value = Value::Object(xml.into())
+                            .coerce_to_string(activation)?
+                            .into();
+                    }
+                }
+            } else if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
+                // NOTE: This also doesn't consider CData.
+                if matches!(
+                    *xml.node().kind(),
+                    E4XNodeKind::Attribute(_) | E4XNodeKind::Text(_)
+                ) {
+                    value = value.coerce_to_string(activation)?.into();
+                }
+            } else {
+                value = value.coerce_to_string(activation)?.into();
+            }
+
+            // NOTE: Get x[i] for future operations.
+            let child = self.children()[index].node();
+
+            // 2.e. If x[i].[[Class]] == "attribute"
+            if child.is_attribute() {
+                // FIXME: We probably need to take the namespace too.
+                // 2.e.i. Let z = ToAttributeName(x[i].[[Name]])
+                let z = Multiname::attribute(
+                    activation.avm2().namespaces.public_all(),
+                    child.local_name().expect("Attribute should have a name"),
+                );
+                // 2.e.ii. Call the [[Put]] method of x[i].[[Parent]] with arguments z and V
+                if let Some(parent) = child.parent() {
+                    let parent = XmlObject::new(parent, activation);
+                    parent.set_property_local(&z, value, activation)?;
+
+                    // 2.e.iii. Let attr be the result of calling [[Get]] on x[i].[[Parent]] with argument z
+                    let attr = parent
+                        .get_property_local(&z, activation)?
+                        .as_object()
+                        .and_then(|x| x.as_xml_list_object())
+                        .expect("XmlObject get_property_local should return XmlListObject");
+                    // 2.e.iv. Let x[i] = attr[0]
+                    self.children_mut(activation.gc())[index] = attr.children()[0].clone();
+                }
+            // 2.f. Else if Type(V) is XMLList
+            } else if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
+                // 2.f.i. Create a shallow copy c of V
+                let c = XmlListObject::new_with_children(
+                    activation,
+                    list.children().clone(),
+                    None,
+                    None,
+                );
+                // 2.f.ii. Let parent = x[i].[[Parent]]
+                let parent = child.parent();
+
+                // 2.f.iii. If parent is not null
+                if let Some(parent) = parent {
+                    // 2.f.iii.1. Let q be the property of parent, such that parent[q] is the same object as x[i]
+                    let q = if let E4XNodeKind::Element { children, .. } = &*parent.kind() {
+                        children.iter().position(|x| E4XNode::ptr_eq(*x, child))
                     } else {
                         None
                     };
 
-                    // 2.c. If i is greater than or equal to x.[[Length]]
-                    if index >= self.length() {
-                        let r = match r {
-                            Some(XmlOrXmlListObject::Xml(x)) => Some(x.node()),
-                            // 2.c.i. If Type(r) is XMLList
-                            Some(XmlOrXmlListObject::XmlList(x)) => {
-                                // 2.c.i.1. If r.[[Length]] is not equal to 1, return
-                                if x.length() != 1 {
-                                    return Ok(());
-                                }
+                    if let Some(q) = q {
+                        // 2.f.iii.2. Call the [[Replace]] method of parent with arguments q and c
+                        parent.replace(q, c.into(), activation)?;
 
-                                // 2.c.i.2. Else let r = r[0]
-                                Some(x.children()[0].node())
-                            }
-                            None => None,
+                        let E4XNodeKind::Element { children, .. } = &*parent.kind() else {
+                            unreachable!()
                         };
 
-                        // 2.c.ii. If r.[[Class]] is not equal to "element", return
-                        if let Some(r) = r {
-                            if !r.is_element() {
-                                return Ok(());
-                            }
+                        // 2.f.iii.3. For j = 0 to c.[[Length]]-1
+                        for (index, child) in c.children_mut(activation.gc()).iter_mut().enumerate()
+                        {
+                            // 2.f.iii.3.a. Let c[j] = parent[ToUint32(q)+j]
+                            *child = E4XOrXml::E4X(children[q + index]);
                         }
-
-                        // 2.c.iii Create a new XML object y with y.[[Parent]] = r, y.[[Name]] = x.[[TargetProperty]],
-                        //         y.[[Attributes]] = {}, y.[[Length]] = 0
-                        let y = match self.target_property() {
-                            // 2.c.iv. If Type(x.[[TargetProperty]]) is AttributeName
-                            Some(x) if x.is_attribute() => {
-                                // 2.c.iv.1. Let attributeExists be the result of calling the [[Get]] method of r with argument y.[[Name]]
-                                let attribute_exists = XmlObject::new(r.unwrap(), activation)
-                                    .get_property_local(&x, activation)?;
-
-                                // 2.c.iv.2. If (attributeExists.[[Length]] > 0), return
-                                if let Some(list) = attribute_exists
-                                    .as_object()
-                                    .and_then(|x| x.as_xml_list_object())
-                                {
-                                    if list.length() > 0 {
-                                        return Ok(());
-                                    }
-                                }
-
-                                // 2.c.iv.3. Let y.[[Class]] = "attribute"
-                                E4XNode::attribute(
-                                    activation.gc(),
-                                    x.explicit_namespace().map(E4XNamespace::new_uri),
-                                    x.local_name().unwrap(),
-                                    istr!(""),
-                                    r,
-                                )
-                            }
-                            // 2.c.v. Else if x.[[TargetProperty]] == null or x.[[TargetProperty]].localName == "*"
-                            // 2.c.v.1. Let y.[[Name]] = null
-                            // 2.c.v.2. Let y.[[Class]] = "text"
-                            Some(x) if x.is_any_name() => {
-                                E4XNode::text(activation.gc(), istr!(""), r)
-                            }
-                            None => E4XNode::text(activation.gc(), istr!(""), r),
-                            // NOTE: avmplus edge case.
-                            //       See https://github.com/adobe/avmplus/blob/858d034a3bd3a54d9b70909386435cf4aec81d21/core/XMLListObject.cpp#L297-L300
-                            _ if value
-                                .as_object()
-                                .and_then(|x| x.as_xml_object())
-                                .is_some_and(|x| x.node().is_text() || x.node().is_attribute()) =>
-                            {
-                                E4XNode::text(activation.gc(), istr!(""), r)
-                            }
-
-                            // 2.c.vi. Else let y.[[Class]] = "element"
-                            Some(property) => E4XNode::element(
-                                activation.gc(),
-                                namespace_for_multiname(&property, activation),
-                                property.local_name().expect("Local name should exist"),
-                                r,
-                            ),
-                        };
-
-                        // 2.c.vii. Let i = x.[[Length]]
-                        index = self.length();
-
-                        // 2.c.viii. If (y.[[Class]] is not equal to "attribute")
-                        if !y.is_attribute() {
-                            // 2.c.viii.1. If r is not null
-                            if let Some(r) = r {
-                                let j = if let E4XNodeKind::Element { children, .. } = &*r.kind() {
-                                    // 2.c.viii.1.a. If (i > 0)
-                                    let j = if index > 0 {
-                                        // 2.c.viii.1.a.i. Let j = 0
-                                        let mut j = 0;
-
-                                        // 2.c.viii.1.a.ii. While (j < r.[[Length]]-1) and (r[j] is not the same object as x[i-1])
-                                        while j < children.len() - 1
-                                            && !E4XNode::ptr_eq(
-                                                children[j],
-                                                self.children()[index - 1].node(),
-                                            )
-                                        {
-                                            // 2.c.viii.1.a.ii.1. Let j = j + 1
-                                            j += 1;
-                                        }
-
-                                        // NOTE: Not listed in spec, but avmplus does this, so we do the same.
-                                        j + 1
-                                    // 2.c.viii.1.b. Else
-                                    } else {
-                                        // 2.c.viii.1.b.i. Let j = r.[[Length]]-1
-                                        children.len()
-                                    };
-
-                                    Some(j)
-                                } else {
-                                    None
-                                };
-
-                                // NOTE: This is to bypass borrow errors.
-                                if let Some(j) = j {
-                                    // 2.c.viii.1.c. Call the [[Insert]] method of r with arguments ToString(j+1) and y
-                                    r.insert(j, XmlObject::new(y, activation).into(), activation)?;
-                                }
-                            }
-
-                            // 2.c.viii.2. If Type(V) is XML, let y.[[Name]] = V.[[Name]]
-                            if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
-                                if let Some(name) = xml.node().local_name() {
-                                    y.set_local_name(name, activation.gc());
-                                }
-                                y.set_namespace(xml.node().namespace(), activation.gc());
-                            }
-
-                            // 2.c.viii.3. Else if Type(V) is XMLList, let y.[[Name]] = V.[[TargetProperty]]
-                            if let Some(list) =
-                                value.as_object().and_then(|x| x.as_xml_list_object())
-                            {
-                                // Note: Don't set anything when there is no [[TargetProperty]].
-                                if let Some(target_property) = list.target_property() {
-                                    if let Some(name) = target_property.local_name() {
-                                        y.set_local_name(name, activation.gc());
-                                    }
-
-                                    let ns = namespace_for_multiname(&target_property, activation);
-                                    if ns.is_some() {
-                                        y.set_namespace(ns, activation.gc());
-                                    }
-                                }
-                            }
-                        }
-
-                        // 2.c.ix. Call the [[Append]] method of x with argument y
-                        self.append(XmlObject::new(y, activation).into(), activation.gc());
                     }
-
-                    // 2.d. If (Type(V) ∉ {XML, XMLList}) or (V.[[Class]] ∈ {"text", "attribute"}), let V = ToString(V)
-                    if let Some(list) = value.as_object().and_then(|x| x.as_xml_list_object()) {
-                        if list.length() == 1 {
-                            let xml = list
-                                .xml_object_child(0, activation)
-                                .expect("List length was just verified");
-
-                            // NOTE: avmplus contrary to specification doesn't consider CData here.
-                            if matches!(
-                                *xml.node().kind(),
-                                E4XNodeKind::Attribute(_) | E4XNodeKind::Text(_)
-                            ) {
-                                value = Value::Object(xml.into())
-                                    .coerce_to_string(activation)?
-                                    .into();
-                            }
-                        }
-                    } else if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
-                        // NOTE: This also doesn't consider CData.
-                        if matches!(
-                            *xml.node().kind(),
-                            E4XNodeKind::Attribute(_) | E4XNodeKind::Text(_)
-                        ) {
-                            value = value.coerce_to_string(activation)?.into();
-                        }
-                    } else {
-                        value = value.coerce_to_string(activation)?.into();
-                    }
-
-                    // NOTE: Get x[i] for future operations.
-                    let child = self.children()[index].node();
-
-                    // 2.e. If x[i].[[Class]] == "attribute"
-                    if child.is_attribute() {
-                        // FIXME: We probably need to take the namespace too.
-                        // 2.e.i. Let z = ToAttributeName(x[i].[[Name]])
-                        let z = Multiname::attribute(
-                            activation.avm2().namespaces.public_all(),
-                            child.local_name().expect("Attribute should have a name"),
-                        );
-                        // 2.e.ii. Call the [[Put]] method of x[i].[[Parent]] with arguments z and V
-                        if let Some(parent) = child.parent() {
-                            let parent = XmlObject::new(parent, activation);
-                            parent.set_property_local(&z, value, activation)?;
-
-                            // 2.e.iii. Let attr be the result of calling [[Get]] on x[i].[[Parent]] with argument z
-                            let attr = parent
-                                .get_property_local(&z, activation)?
-                                .as_object()
-                                .and_then(|x| x.as_xml_list_object())
-                                .expect("XmlObject get_property_local should return XmlListObject");
-                            // 2.e.iv. Let x[i] = attr[0]
-                            self.children_mut(activation.gc())[index] = attr.children()[0].clone();
-                        }
-                    // 2.f. Else if Type(V) is XMLList
-                    } else if let Some(list) =
-                        value.as_object().and_then(|x| x.as_xml_list_object())
-                    {
-                        // 2.f.i. Create a shallow copy c of V
-                        let c = XmlListObject::new_with_children(
-                            activation,
-                            list.children().clone(),
-                            None,
-                            None,
-                        );
-                        // 2.f.ii. Let parent = x[i].[[Parent]]
-                        let parent = child.parent();
-
-                        // 2.f.iii. If parent is not null
-                        if let Some(parent) = parent {
-                            // 2.f.iii.1. Let q be the property of parent, such that parent[q] is the same object as x[i]
-                            let q = if let E4XNodeKind::Element { children, .. } = &*parent.kind() {
-                                children.iter().position(|x| E4XNode::ptr_eq(*x, child))
-                            } else {
-                                None
-                            };
-
-                            if let Some(q) = q {
-                                // 2.f.iii.2. Call the [[Replace]] method of parent with arguments q and c
-                                parent.replace(q, c.into(), activation)?;
-
-                                let E4XNodeKind::Element { children, .. } = &*parent.kind() else {
-                                    unreachable!()
-                                };
-
-                                // 2.f.iii.3. For j = 0 to c.[[Length]]-1
-                                for (index, child) in
-                                    c.children_mut(activation.gc()).iter_mut().enumerate()
-                                {
-                                    // 2.f.iii.3.a. Let c[j] = parent[ToUint32(q)+j]
-                                    *child = E4XOrXml::E4X(children[q + index]);
-                                }
-                            }
-                        }
-
-                        // 2.f.iv - 2.f.viii.
-                        let mut children = self.children_mut(activation.gc());
-                        children.remove(index);
-                        for (index2, child) in c.children().iter().enumerate() {
-                            children.insert(index + index2, child.clone());
-                        }
-                    // 2.g. Else if (Type(V) is XML) or (x[i].[[Class]] ∈ {"text", "comment", "processing-instruction"})
-                    } else if value
-                        .as_object()
-                        .is_some_and(|x| x.as_xml_object().is_some())
-                        || matches!(
-                            *child.kind(),
-                            E4XNodeKind::Text(_)
-                                | E4XNodeKind::Comment(_)
-                                | E4XNodeKind::ProcessingInstruction(_)
-                                | E4XNodeKind::CData(_)
-                        )
-                    {
-                        // 2.g.i. Let parent = x[i].[[Parent]]
-                        let parent = child.parent();
-
-                        // 2.g.ii. If parent is not null
-                        if let Some(parent) = parent {
-                            // 2.g.ii.1. Let q be the property of parent, such that parent[q] is the same object as x[i]
-                            let q = if let E4XNodeKind::Element { children, .. } = &*parent.kind() {
-                                children.iter().position(|x| E4XNode::ptr_eq(*x, child))
-                            } else {
-                                None
-                            };
-
-                            if let Some(q) = q {
-                                // 2.g.ii.2. Call the [[Replace]] method of parent with arguments q and V
-                                parent.replace(q, value, activation)?;
-
-                                let E4XNodeKind::Element { children, .. } = &*parent.kind() else {
-                                    unreachable!()
-                                };
-
-                                // 2.g.ii.3. Let V = parent[q]
-                                value = XmlObject::new(children[q], activation).into();
-                            }
-                        }
-
-                        let mut children = self.children_mut(activation.gc());
-                        // NOTE: Avmplus does not follow the spec here, it instead checks if value is XML
-                        //       and sets it, otherwise uses ToXML (our closest equivalent is the XML constructor).
-                        if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
-                            children[index] = E4XOrXml::Xml(xml);
-                        } else {
-                            let xml = activation
-                                .avm2()
-                                .classes()
-                                .xml
-                                .construct(activation, &[value])?
-                                .as_object()
-                                .unwrap()
-                                .as_xml_object()
-                                .expect("Should be XML Object");
-                            children[index] = E4XOrXml::Xml(xml);
-                        }
-                    // 2.h. Else
-                    } else {
-                        // 2.h.i. Call the [[Put]] method of x[i] with arguments "*" and V
-                        self.xml_object_child(index, activation)
-                            .unwrap()
-                            .set_property_local(&Multiname::any(), value, activation)?;
-                    }
-
-                    // NOTE: Not specified in the spec, but avmplus returns here, so we do the same.
-                    return Ok(());
                 }
+
+                // 2.f.iv - 2.f.viii.
+                let mut children = self.children_mut(activation.gc());
+                children.remove(index);
+                for (index2, child) in c.children().iter().enumerate() {
+                    children.insert(index + index2, child.clone());
+                }
+            // 2.g. Else if (Type(V) is XML) or (x[i].[[Class]] ∈ {"text", "comment", "processing-instruction"})
+            } else if value
+                .as_object()
+                .is_some_and(|x| x.as_xml_object().is_some())
+                || matches!(
+                    *child.kind(),
+                    E4XNodeKind::Text(_)
+                        | E4XNodeKind::Comment(_)
+                        | E4XNodeKind::ProcessingInstruction(_)
+                        | E4XNodeKind::CData(_)
+                )
+            {
+                // 2.g.i. Let parent = x[i].[[Parent]]
+                let parent = child.parent();
+
+                // 2.g.ii. If parent is not null
+                if let Some(parent) = parent {
+                    // 2.g.ii.1. Let q be the property of parent, such that parent[q] is the same object as x[i]
+                    let q = if let E4XNodeKind::Element { children, .. } = &*parent.kind() {
+                        children.iter().position(|x| E4XNode::ptr_eq(*x, child))
+                    } else {
+                        None
+                    };
+
+                    if let Some(q) = q {
+                        // 2.g.ii.2. Call the [[Replace]] method of parent with arguments q and V
+                        parent.replace(q, value, activation)?;
+
+                        let E4XNodeKind::Element { children, .. } = &*parent.kind() else {
+                            unreachable!()
+                        };
+
+                        // 2.g.ii.3. Let V = parent[q]
+                        value = XmlObject::new(children[q], activation).into();
+                    }
+                }
+
+                let mut children = self.children_mut(activation.gc());
+                // NOTE: Avmplus does not follow the spec here, it instead checks if value is XML
+                //       and sets it, otherwise uses ToXML (our closest equivalent is the XML constructor).
+                if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
+                    children[index] = E4XOrXml::Xml(xml);
+                } else {
+                    let xml = activation
+                        .avm2()
+                        .classes()
+                        .xml
+                        .construct(activation, &[value])?
+                        .as_object()
+                        .unwrap()
+                        .as_xml_object()
+                        .expect("Should be XML Object");
+                    children[index] = E4XOrXml::Xml(xml);
+                }
+            // 2.h. Else
+            } else {
+                // 2.h.i. Call the [[Put]] method of x[i] with arguments "*" and V
+                self.xml_object_child(index, activation)
+                    .unwrap()
+                    .set_property_local(&Multiname::any(), value, activation)?;
             }
+
+            // NOTE: Not specified in the spec, but avmplus returns here, so we do the same.
+            return Ok(());
         }
 
         // 3. Else if x.[[Length]] is less than or equal to 1
@@ -1077,23 +1066,23 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
     ) -> Result<bool, Error<'gc>> {
         let mut children = self.children_mut(activation.gc());
 
-        if !name.is_any_name() && !name.is_attribute() {
-            if let Some(local_name) = name.local_name() {
-                if let Ok(index) = local_name.parse::<usize>() {
-                    if index < children.len() {
-                        let removed = children.remove(index);
-                        let removed_node = removed.node();
-                        if let Some(parent) = removed_node.parent() {
-                            if removed_node.is_attribute() {
-                                parent.remove_attribute(activation.gc(), removed_node);
-                            } else {
-                                parent.remove_child(activation.gc(), removed_node);
-                            }
-                        }
+        if !name.is_any_name()
+            && !name.is_attribute()
+            && let Some(local_name) = name.local_name()
+            && let Ok(index) = local_name.parse::<usize>()
+        {
+            if index < children.len() {
+                let removed = children.remove(index);
+                let removed_node = removed.node();
+                if let Some(parent) = removed_node.parent() {
+                    if removed_node.is_attribute() {
+                        parent.remove_attribute(activation.gc(), removed_node);
+                    } else {
+                        parent.remove_child(activation.gc(), removed_node);
                     }
-                    return Ok(true);
                 }
             }
+            return Ok(true);
         }
 
         for child in children.iter_mut() {

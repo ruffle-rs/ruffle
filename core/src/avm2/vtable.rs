@@ -302,15 +302,15 @@ impl<'gc> VTable<'gc> {
 
             first_slot_offset = superclass_vtable.slot_count();
 
-            if let Some(protected_namespace) = defining_class_def.protected_namespace() {
-                if let Some(super_protected_namespace) = superclass_vtable.0.protected_namespace {
-                    // Copy all protected traits from superclass
-                    // but with this class's protected namespace
-                    for (local_name, ns, prop) in superclass_vtable.resolved_traits().iter() {
-                        if ns.exact_version_match(super_protected_namespace) {
-                            let new_name = QName::new(protected_namespace, local_name);
-                            resolved_traits.insert(new_name, *prop);
-                        }
+            if let Some(protected_namespace) = defining_class_def.protected_namespace()
+                && let Some(super_protected_namespace) = superclass_vtable.0.protected_namespace
+            {
+                // Copy all protected traits from superclass
+                // but with this class's protected namespace
+                for (local_name, ns, prop) in superclass_vtable.resolved_traits().iter() {
+                    if ns.exact_version_match(super_protected_namespace) {
+                        let new_name = QName::new(protected_namespace, local_name);
+                        resolved_traits.insert(new_name, *prop);
                     }
                 }
             }
@@ -319,16 +319,15 @@ impl<'gc> VTable<'gc> {
         if let Some(defining_tunit) = defining_class_def.translation_unit() {
             let mut current_super_class = defining_class_def.super_class();
             while let Some(super_class) = current_super_class {
-                if let Some(super_tunit) = super_class.translation_unit() {
-                    if !defining_tunit.same_abc(super_tunit) {
-                        if super_class.vtable().slot_count() != 0 {
-                            // If the superclass of this class comes from a
-                            // different ABC, and it has a non-zero slot count,
-                            // the slots for this vtable are auto-assigned.
-                            force_auto_assign_slots = true;
-                            break;
-                        }
-                    }
+                if let Some(super_tunit) = super_class.translation_unit()
+                    && !defining_tunit.same_abc(super_tunit)
+                    && super_class.vtable().slot_count() != 0
+                {
+                    // If the superclass of this class comes from a
+                    // different ABC, and it has a non-zero slot count,
+                    // the slots for this vtable are auto-assigned.
+                    force_auto_assign_slots = true;
+                    break;
                 }
                 current_super_class = super_class.super_class();
             }

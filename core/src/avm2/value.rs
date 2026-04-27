@@ -1296,10 +1296,10 @@ impl<'gc> Value<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         // TODO: Bound methods should be cached on the Method in a
         // WeakKeyHashMap<Value, FunctionObject>, not on the Object
-        if let Some(object) = self.as_object() {
-            if let Some(bound_method) = object.get_bound_method(id) {
-                return bound_method.call(activation, *self, arguments);
-            }
+        if let Some(object) = self.as_object()
+            && let Some(bound_method) = object.get_bound_method(id)
+        {
+            return bound_method.call(activation, *self, arguments);
         }
 
         let vtable = self.vtable(activation);
@@ -1491,10 +1491,10 @@ impl<'gc> Value<'gc> {
     ) -> bool {
         let name = Multiname::new(activation.avm2().find_public_namespace(), name);
 
-        if let Some(object) = self.as_object() {
-            if object.has_own_property(&name) {
-                return true;
-            }
+        if let Some(object) = self.as_object()
+            && object.has_own_property(&name)
+        {
+            return true;
         }
 
         if let Some(proto) = self.proto(activation) {
@@ -1585,10 +1585,10 @@ impl<'gc> Value<'gc> {
             return Ok(*self);
         }
 
-        if let Some(object) = self.as_object() {
-            if object.is_of_type(class) {
-                return Ok(*self);
-            }
+        if let Some(object) = self.as_object()
+            && object.is_of_type(class)
+        {
+            return Ok(*self);
         }
 
         Err(make_error_1034(activation, *self, class))
@@ -1767,10 +1767,10 @@ impl<'gc> Value<'gc> {
             true
         } else {
             // TODO - this should apply to (Array/Vector).indexOf, and possibility more places as well
-            if let Some(xml1) = self.as_object().and_then(|obj| obj.as_xml_object()) {
-                if let Some(xml2) = other.as_object().and_then(|obj| obj.as_xml_object()) {
-                    return E4XNode::ptr_eq(xml1.node(), xml2.node());
-                }
+            if let Some(xml1) = self.as_object().and_then(|obj| obj.as_xml_object())
+                && let Some(xml2) = other.as_object().and_then(|obj| obj.as_xml_object())
+            {
+                return E4XNode::ptr_eq(xml1.node(), xml2.node());
             }
             false
         }
@@ -1799,20 +1799,20 @@ impl<'gc> Value<'gc> {
                 return xml_obj.abstract_eq(other, activation);
             }
 
-            if let Some(self_qname) = obj.as_qname_object() {
-                if let Value::Object(Object::QNameObject(other_qname)) = other {
-                    return Ok(self_qname.uri(activation.strings())
-                        == other_qname.uri(activation.strings())
-                        && self_qname.local_name(activation.strings())
-                            == other_qname.local_name(activation.strings()));
-                }
+            if let Some(self_qname) = obj.as_qname_object()
+                && let Value::Object(Object::QNameObject(other_qname)) = other
+            {
+                return Ok(self_qname.uri(activation.strings())
+                    == other_qname.uri(activation.strings())
+                    && self_qname.local_name(activation.strings())
+                        == other_qname.local_name(activation.strings()));
             }
 
-            if let Some(self_ns) = obj.as_namespace_object() {
-                if let Value::Object(Object::NamespaceObject(other_ns)) = other {
-                    return Ok(self_ns.namespace().as_uri(activation.strings())
-                        == other_ns.namespace().as_uri(activation.strings()));
-                }
+            if let Some(self_ns) = obj.as_namespace_object()
+                && let Value::Object(Object::NamespaceObject(other_ns)) = other
+            {
+                return Ok(self_ns.namespace().as_uri(activation.strings())
+                    == other_ns.namespace().as_uri(activation.strings()));
             }
         }
 

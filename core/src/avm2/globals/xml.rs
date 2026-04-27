@@ -826,21 +826,21 @@ pub fn call_handler<'gc>(
     _this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if args.len() == 1 {
-        if let Some(obj) = args.get_value(0).as_object() {
-            // We do *not* create a new object when AS does 'XML(someXML)'
-            if let Some(xml) = obj.as_xml_object() {
-                return Ok(xml.into());
+    if args.len() == 1
+        && let Some(obj) = args.get_value(0).as_object()
+    {
+        // We do *not* create a new object when AS does 'XML(someXML)'
+        if let Some(xml) = obj.as_xml_object() {
+            return Ok(xml.into());
+        }
+        // This re-uses the XML object stored in the list
+        if let Some(xml_list) = obj.as_xml_list_object() {
+            if xml_list.length() == 1 {
+                return Ok(xml_list.children_mut(activation.gc())[0]
+                    .get_or_create_xml(activation)
+                    .into());
             }
-            // This re-uses the XML object stored in the list
-            if let Some(xml_list) = obj.as_xml_list_object() {
-                if xml_list.length() == 1 {
-                    return Ok(xml_list.children_mut(activation.gc())[0]
-                        .get_or_create_xml(activation)
-                        .into());
-                }
-                return Err(make_error_1088(activation));
-            }
+            return Err(make_error_1088(activation));
         }
     }
 
@@ -1229,12 +1229,12 @@ pub fn replace<'gc>(
     };
 
     // 4. If ToString(ToUint32(P)) == P
-    if let Some(local_name) = multiname.local_name() {
-        if let Ok(index) = local_name.parse::<usize>() {
-            // 4.a. Call the [[Replace]] method of x with arguments P and c and return x
-            self_node.replace(index, value, activation)?;
-            return Ok(xml.into());
-        }
+    if let Some(local_name) = multiname.local_name()
+        && let Ok(index) = local_name.parse::<usize>()
+    {
+        // 4.a. Call the [[Replace]] method of x with arguments P and c and return x
+        self_node.replace(index, value, activation)?;
+        return Ok(xml.into());
     }
 
     // 5. Let n be a QName object created as if by calling the function QName(P)
