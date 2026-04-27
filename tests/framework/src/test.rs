@@ -47,6 +47,10 @@ impl Test {
         })
     }
 
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     pub fn create_test_runner(&self, environment: &impl Environment) -> Result<TestRunner> {
         let movie = self.movie()?;
         let viewport_dimensions = self.options.player_options.viewport_dimensions(&movie);
@@ -159,7 +163,7 @@ impl Test {
         self.options.can_run(check_renderer, environment)
     }
 
-    fn compile(&self, compile_mode: CompileMode) -> Result<()> {
+    pub fn compile(&self, compile_mode: CompileMode) -> Result<()> {
         let verify_if_changed = match compile_mode {
             CompileMode::CompileSilently => false,
             CompileMode::CompileAndVerify => true,
