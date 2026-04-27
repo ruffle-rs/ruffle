@@ -221,7 +221,7 @@ pub trait TInteractiveObject<'gc>:
     /// onto other siblings of the display object instead.
     fn filter_clip_event(
         self,
-        _context: &mut UpdateContext<'gc>,
+        context: &mut UpdateContext<'gc>,
         event: ClipEvent,
     ) -> ClipEventResult;
 
@@ -265,8 +265,8 @@ pub trait TInteractiveObject<'gc>:
     /// if the event will be passed onto siblings and parents.
     fn event_dispatch(
         self,
-        _context: &mut UpdateContext<'gc>,
-        _event: ClipEvent<'gc>,
+        context: &mut UpdateContext<'gc>,
+        event: ClipEvent<'gc>,
     ) -> ClipEventResult;
 
     /// Convert the clip event into an AVM2 event and dispatch it into the
