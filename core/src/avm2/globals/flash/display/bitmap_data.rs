@@ -718,32 +718,30 @@ pub fn get_color_bounds_rect<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(bitmap_data) = this.as_bitmap_data() {
-        if !bitmap_data.disposed() {
-            let find_color = args.get_bool(2);
+    let Some(bitmap_data) = this.as_bitmap_data().filter(|d| !d.disposed()) else {
+        return Ok(Value::Undefined);
+    };
 
-            let mask = args.get_u32(0);
-            let color = args.get_u32(1);
+    let find_color = args.get_bool(2);
 
-            let (x, y, w, h) = operations::color_bounds_rect(
-                activation.context.renderer,
-                bitmap_data,
-                find_color,
-                mask,
-                color,
-            );
+    let mask = args.get_u32(0);
+    let color = args.get_u32(1);
 
-            let rect = activation
-                .avm2()
-                .classes()
-                .rectangle
-                .construct(activation, &[x.into(), y.into(), w.into(), h.into()])?;
+    let (x, y, w, h) = operations::color_bounds_rect(
+        activation.context.renderer,
+        bitmap_data,
+        find_color,
+        mask,
+        color,
+    );
 
-            return Ok(rect);
-        }
-    }
+    let rect = activation
+        .avm2()
+        .classes()
+        .rectangle
+        .construct(activation, &[x.into(), y.into(), w.into(), h.into()])?;
 
-    Ok(Value::Undefined)
+    Ok(rect)
 }
 
 pub fn lock<'gc>(
@@ -781,131 +779,132 @@ pub fn hit_test<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(bitmap_data) = this.as_bitmap_data() {
-        if !bitmap_data.disposed() {
-            let first_point = args.get_object(activation, 0, "firstPoint")?;
-            let top_left = (
-                first_point
-                    .get_slot(point_slots::X)
-                    .coerce_to_i32(activation)?,
-                first_point
-                    .get_slot(point_slots::Y)
-                    .coerce_to_i32(activation)?,
-            );
-            let source_threshold = args.get_u32(1).clamp(0, u8::MAX.into()) as u8;
-            let compare_object = args.get_value(2);
-            let point_class = activation.avm2().classes().point.inner_class_definition();
-            let rectangle_class = activation
-                .avm2()
-                .classes()
-                .rectangle
-                .inner_class_definition();
+    let Some(bitmap_data) = this.as_bitmap_data().filter(|d| !d.disposed()) else {
+        return Ok(false.into());
+    };
 
-            let Value::Object(compare_object) = compare_object else {
-                // This is the error message Flash Player produces. Even though it's misleading.
-                return Err(make_error_2005(activation, 0, "BitmapData"));
-            };
+    let first_point = args.get_object(activation, 0, "firstPoint")?;
+    let top_left = (
+        first_point
+            .get_slot(point_slots::X)
+            .coerce_to_i32(activation)?,
+        first_point
+            .get_slot(point_slots::Y)
+            .coerce_to_i32(activation)?,
+    );
+    let source_threshold = args.get_u32(1).clamp(0, u8::MAX.into()) as u8;
+    let compare_object = args.get_value(2);
+    let point_class = activation.avm2().classes().point.inner_class_definition();
+    let rectangle_class = activation
+        .avm2()
+        .classes()
+        .rectangle
+        .inner_class_definition();
 
-            if compare_object.is_of_type(point_class) {
-                let test_point = (
-                    compare_object
-                        .get_slot(point_slots::X)
-                        .coerce_to_i32(activation)?
-                        - top_left.0,
-                    compare_object
-                        .get_slot(point_slots::Y)
-                        .coerce_to_i32(activation)?
-                        - top_left.1,
-                );
-                return Ok(Value::Bool(operations::hit_test_point(
-                    activation.context.renderer,
-                    bitmap_data,
-                    source_threshold,
-                    test_point,
-                )));
-            } else if compare_object.is_of_type(rectangle_class) {
-                let test_point = (
-                    compare_object
-                        .get_slot(rectangle_slots::X)
-                        .coerce_to_i32(activation)?
-                        - top_left.0,
-                    compare_object
-                        .get_slot(rectangle_slots::Y)
-                        .coerce_to_i32(activation)?
-                        - top_left.1,
-                );
-                let size = (
-                    compare_object
-                        .get_slot(rectangle_slots::WIDTH)
-                        .coerce_to_i32(activation)?,
-                    compare_object
-                        .get_slot(rectangle_slots::HEIGHT)
-                        .coerce_to_i32(activation)?,
-                );
-                return Ok(Value::Bool(operations::hit_test_rectangle(
-                    activation.context.renderer,
-                    bitmap_data,
-                    source_threshold,
-                    test_point,
-                    size,
-                )));
-            } else if let Some(other_bmd) = compare_object.as_bitmap_data() {
-                other_bmd.check_valid(activation)?;
-                let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
-                let second_point = (
-                    second_point
-                        .get_slot(point_slots::X)
-                        .coerce_to_i32(activation)?,
-                    second_point
-                        .get_slot(point_slots::Y)
-                        .coerce_to_i32(activation)?,
-                );
-                let second_threshold = args.get_u32(4).clamp(0, u8::MAX.into()) as u8;
+    let Value::Object(compare_object) = compare_object else {
+        // This is the error message Flash Player produces. Even though it's misleading.
+        return Err(make_error_2005(activation, 0, "BitmapData"));
+    };
 
-                let result = operations::hit_test_bitmapdata(
-                    activation.context.renderer,
-                    bitmap_data,
-                    top_left,
-                    source_threshold,
-                    other_bmd,
-                    second_point,
-                    second_threshold,
-                );
-                return Ok(Value::Bool(result));
-            } else if let Some(bitmap) = compare_object
-                .as_display_object()
-                .and_then(|dobj| dobj.as_bitmap())
-            {
-                let other_bmd = bitmap.bitmap_data();
-                other_bmd.check_valid(activation)?;
-                let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
-                let second_point = (
-                    second_point
-                        .get_slot(point_slots::X)
-                        .coerce_to_i32(activation)?,
-                    second_point
-                        .get_slot(point_slots::Y)
-                        .coerce_to_i32(activation)?,
-                );
-                let second_threshold = args.get_u32(4).clamp(0, u8::MAX.into()) as u8;
+    if compare_object.is_of_type(point_class) {
+        let test_point = (
+            compare_object
+                .get_slot(point_slots::X)
+                .coerce_to_i32(activation)?
+                - top_left.0,
+            compare_object
+                .get_slot(point_slots::Y)
+                .coerce_to_i32(activation)?
+                - top_left.1,
+        );
 
-                return Ok(Value::Bool(operations::hit_test_bitmapdata(
-                    activation.context.renderer,
-                    bitmap_data,
-                    top_left,
-                    source_threshold,
-                    other_bmd,
-                    second_point,
-                    second_threshold,
-                )));
-            } else {
-                // This is the error message Flash Player produces. Even though it's misleading.
-                return Err(make_error_2005(activation, 0, "BitmapData"));
-            }
-        }
+        Ok(Value::Bool(operations::hit_test_point(
+            activation.context.renderer,
+            bitmap_data,
+            source_threshold,
+            test_point,
+        )))
+    } else if compare_object.is_of_type(rectangle_class) {
+        let test_point = (
+            compare_object
+                .get_slot(rectangle_slots::X)
+                .coerce_to_i32(activation)?
+                - top_left.0,
+            compare_object
+                .get_slot(rectangle_slots::Y)
+                .coerce_to_i32(activation)?
+                - top_left.1,
+        );
+        let size = (
+            compare_object
+                .get_slot(rectangle_slots::WIDTH)
+                .coerce_to_i32(activation)?,
+            compare_object
+                .get_slot(rectangle_slots::HEIGHT)
+                .coerce_to_i32(activation)?,
+        );
+
+        Ok(Value::Bool(operations::hit_test_rectangle(
+            activation.context.renderer,
+            bitmap_data,
+            source_threshold,
+            test_point,
+            size,
+        )))
+    } else if let Some(other_bmd) = compare_object.as_bitmap_data() {
+        other_bmd.check_valid(activation)?;
+        let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
+        let second_point = (
+            second_point
+                .get_slot(point_slots::X)
+                .coerce_to_i32(activation)?,
+            second_point
+                .get_slot(point_slots::Y)
+                .coerce_to_i32(activation)?,
+        );
+        let second_threshold = args.get_u32(4).clamp(0, u8::MAX.into()) as u8;
+
+        let result = operations::hit_test_bitmapdata(
+            activation.context.renderer,
+            bitmap_data,
+            top_left,
+            source_threshold,
+            other_bmd,
+            second_point,
+            second_threshold,
+        );
+
+        Ok(Value::Bool(result))
+    } else if let Some(bitmap) = compare_object
+        .as_display_object()
+        .and_then(|dobj| dobj.as_bitmap())
+    {
+        let other_bmd = bitmap.bitmap_data();
+        other_bmd.check_valid(activation)?;
+        let second_point = args.get_object(activation, 3, "secondBitmapDataPoint")?;
+        let second_point = (
+            second_point
+                .get_slot(point_slots::X)
+                .coerce_to_i32(activation)?,
+            second_point
+                .get_slot(point_slots::Y)
+                .coerce_to_i32(activation)?,
+        );
+        let second_threshold = args.get_u32(4).clamp(0, u8::MAX.into()) as u8;
+
+        Ok(Value::Bool(operations::hit_test_bitmapdata(
+            activation.context.renderer,
+            bitmap_data,
+            top_left,
+            source_threshold,
+            other_bmd,
+            second_point,
+            second_threshold,
+        )))
+    } else {
+        // This is the error message Flash Player produces. Even though it's misleading.
+        Err(make_error_2005(activation, 0, "BitmapData"))
     }
-
-    Ok(false.into())
 }
 
 /// Implements `BitmapData.draw`
