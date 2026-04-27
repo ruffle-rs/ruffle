@@ -150,7 +150,7 @@ impl FsTestsRunner {
         self
     }
 
-    pub fn run(mut self) -> Conclusion {
+    pub fn find_tests(mut self) -> Vec<Trial> {
         self.ensure_root_dir_exists();
 
         // When this is true, we are looking for one specific test.
@@ -195,10 +195,15 @@ impl FsTestsRunner {
             tests.sort_unstable_by(sorter);
         }
 
+        tests
+    }
+
+    pub fn run(self) -> Conclusion {
         let mut args = Arguments::from_args();
         args.exact = self.exact;
         args.filter = self.filter.clone();
         args.skip = self.skip.clone();
+        let tests = self.find_tests();
         libtest_mimic::run(&args, tests)
     }
 
