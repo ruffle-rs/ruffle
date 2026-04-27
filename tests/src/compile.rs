@@ -1,13 +1,17 @@
-use crate::{find_root_dir, load_test_dir};
+use crate::{TestFilterOptions, find_root_dir, load_test_dir};
 use clap::Args;
 use ruffle_fs_tests_runner::FsTestsRunner;
 use ruffle_test_framework::environment::CompileMode;
 
 #[derive(Args)]
-pub struct CompileOptions {}
+pub struct CompileOptions {
+    #[command(flatten)]
+    filter: TestFilterOptions,
+}
 
-pub fn main_compile(_compile_options: CompileOptions) {
+pub fn main_compile(compile_options: CompileOptions) {
     let mut runner = FsTestsRunner::new();
+    compile_options.filter.apply(&mut runner);
     runner
         .with_root_dir(find_root_dir())
         .with_test_loader(Box::new(move |params, register_trial| {
