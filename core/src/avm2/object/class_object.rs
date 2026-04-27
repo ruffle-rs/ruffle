@@ -426,7 +426,7 @@ impl<'gc> ClassObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         let property = self.instance_vtable().get_trait(multiname);
         match property {
-            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+            Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) => {
                 let func = receiver.get_slot(slot_id);
 
                 func.call(activation, receiver.into(), arguments)
@@ -488,7 +488,7 @@ impl<'gc> ClassObject<'gc> {
         let property = self.instance_vtable().get_trait(multiname);
 
         match property {
-            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+            Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) => {
                 Ok(receiver.get_slot(slot_id))
             }
             Some(Property::Method { disp_id }) => {
@@ -574,7 +574,7 @@ impl<'gc> ClassObject<'gc> {
 
                 Ok(())
             }
-            Some(Property::ConstSlot { .. }) | Some(Property::Virtual { set: None, .. }) => {
+            Some(Property::ConstSlot { .. } | Property::Virtual { set: None, .. }) => {
                 if activation.is_interpreter() {
                     Err(error::make_reference_error(
                         activation,

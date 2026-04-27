@@ -107,7 +107,7 @@ fn play<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     if let NativeObject::NetStream(ns) = this.native() {
         let name = match args.get(0) {
-            Some(Value::Undefined) | Some(Value::Null) | None => None,
+            Some(Value::Undefined | Value::Null) | None => None,
             Some(v) => Some(v.coerce_to_string(activation)?),
         };
 

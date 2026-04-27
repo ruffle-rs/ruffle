@@ -1778,13 +1778,12 @@ impl<'gc> MovieClip<'gc> {
                 (_, Some(prev_child), true) | (PlaceObjectAction::Modify, Some(prev_child), _) => {
                     prev_child.apply_place_object(context, &params.place_object);
                 }
-                (swf::PlaceObjectAction::Replace(id), Some(prev_child), _) => {
+                (PlaceObjectAction::Replace(id), Some(prev_child), _) => {
                     prev_child.replace_with(context, id);
                     prev_child.apply_place_object(context, &params.place_object);
                     prev_child.set_place_frame(params.frame);
                 }
-                (PlaceObjectAction::Place(id), _, _)
-                | (swf::PlaceObjectAction::Replace(id), _, _) => {
+                (PlaceObjectAction::Place(id) | PlaceObjectAction::Replace(id), _, _) => {
                     if let Some(child) =
                         clip.instantiate_child(context, id, params.depth(), &params.place_object)
                     {

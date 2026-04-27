@@ -1570,9 +1570,9 @@ impl ShaderBuilder<'_> {
     ) -> Handle<Expression> {
         if matches!(
             reg.channels.as_slice(),
-            [PixelBenderRegChannel::M2x2]
-                | [PixelBenderRegChannel::M3x3]
-                | [PixelBenderRegChannel::M4x4]
+            [PixelBenderRegChannel::M2x2
+                | PixelBenderRegChannel::M3x3
+                | PixelBenderRegChannel::M4x4]
         ) {
             assert_eq!(
                 reg.kind,
@@ -1667,9 +1667,9 @@ impl ShaderBuilder<'_> {
     fn emit_dest_store(&mut self, expr: Handle<Expression>, dst: &PixelBenderReg) {
         if matches!(
             dst.channels.as_slice(),
-            [PixelBenderRegChannel::M2x2]
-                | [PixelBenderRegChannel::M3x3]
-                | [PixelBenderRegChannel::M4x4]
+            [PixelBenderRegChannel::M2x2
+                | PixelBenderRegChannel::M3x3
+                | PixelBenderRegChannel::M4x4]
         ) {
             // If we're writing to a 2x2 matrix, load the individual values from the matrix,
             // and construct a vec4f containing all of them (a 2x2 matrix is stored as a single vec4f)

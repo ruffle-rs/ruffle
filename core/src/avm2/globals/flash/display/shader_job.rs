@@ -315,7 +315,7 @@ pub fn start<'gc>(
     };
 
     match shader_handle.0.parsed_shader().output_channels() {
-        Some(3) | Some(4) => {}
+        Some(3 | 4) => {}
         channels => {
             tracing::warn!(
                 "Unsupported number of shader output channels: {channels:?}, expected 3 or 4"

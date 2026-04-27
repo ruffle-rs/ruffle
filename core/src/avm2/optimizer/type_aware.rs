@@ -1531,8 +1531,7 @@ fn abstract_interpret_ops<'gc>(
                 if !multiname.has_lazy_component() {
                     if let Some(vtable) = stack_value.vtable() {
                         match vtable.get_trait(&multiname) {
-                            Some(Property::Slot { slot_id })
-                            | Some(Property::ConstSlot { slot_id }) => {
+                            Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) => {
                                 // If the set value's type is the same as the type of the slot,
                                 // a SetSlotNoCoerce can be emitted. Otherwise, emit a SetSlot.
                                 let mut value_class =
@@ -1707,28 +1706,25 @@ fn abstract_interpret_ops<'gc>(
                 let stack_value = stack.pop(activation)?;
 
                 if !multiname.has_lazy_component() {
-                    if let Some(vtable) = stack_value.vtable() {
-                        match vtable.get_trait(&multiname) {
-                            Some(Property::Slot { slot_id })
-                            | Some(Property::ConstSlot { slot_id }) => {
-                                let mut value_class =
-                                    vtable.slot_class(slot_id).expect("Slot should exist");
-                                let resolved_value_class = value_class.get_class(activation)?;
+                    if let Some(vtable) = stack_value.vtable()
+                        && let Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) =
+                            vtable.get_trait(&multiname)
+                    {
+                        let mut value_class =
+                            vtable.slot_class(slot_id).expect("Slot should exist");
+                        let resolved_value_class = value_class.get_class(activation)?;
 
-                                if let Some(slot_class) = resolved_value_class {
-                                    if let Some(instance_class) = slot_class.i_class() {
-                                        optimize_op_to!(Op::ConstructSlot {
-                                            index: slot_id,
-                                            num_args
-                                        });
+                        if let Some(slot_class) = resolved_value_class
+                            && let Some(instance_class) = slot_class.i_class()
+                        {
+                            optimize_op_to!(Op::ConstructSlot {
+                                index: slot_id,
+                                num_args
+                            });
 
-                                        // ConstructProp on a c_class will construct its i_class
-                                        stack_push_done = true;
-                                        stack.push_class_not_null(activation, instance_class)?;
-                                    }
-                                }
-                            }
-                            _ => {}
+                            // ConstructProp on a c_class will construct its i_class
+                            stack_push_done = true;
+                            stack.push_class_not_null(activation, instance_class)?;
                         }
                     }
                 }
@@ -1850,8 +1846,7 @@ fn abstract_interpret_ops<'gc>(
                 if !multiname.has_lazy_component() {
                     let vtable = bound_superclass_object.instance_vtable();
                     match vtable.get_trait(&multiname) {
-                        Some(Property::Slot { slot_id })
-                        | Some(Property::ConstSlot { slot_id }) => {
+                        Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) => {
                             let mut value_class =
                                 vtable.slot_class(slot_id).expect("Slot should exist");
                             let resolved_value_class = value_class.get_class(activation)?;
@@ -2198,7 +2193,7 @@ fn optimize_get_property<'gc>(
 
     if let Some(vtable) = stack_value.vtable() {
         match vtable.get_trait(&multiname) {
-            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+            Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) => {
                 let mut value_class = vtable.slot_class(slot_id).expect("Slot should exist");
                 let resolved_value_class = value_class.get_class(activation)?;
 
@@ -2283,7 +2278,7 @@ fn optimize_call_property<'gc>(
                 return Ok(Some((result_op, return_type)));
             }
             #[allow(clippy::collapsible_match)]
-            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+            Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) => {
                 // Don't optimize this for `callpropvoid`
                 if push_return_value {
                     if stack_value.not_null() {

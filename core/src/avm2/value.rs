@@ -956,7 +956,7 @@ impl<'gc> Value<'gc> {
         let vtable = self.vtable(activation);
 
         match vtable.get_trait(multiname) {
-            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+            Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) => {
                 // Only objects can have slots
                 let object = self.as_object().unwrap();
 
@@ -1096,7 +1096,7 @@ impl<'gc> Value<'gc> {
             Some(Property::Virtual { set: Some(set), .. }) => {
                 self.call_method(set, &[value], activation).map(|_| ())
             }
-            Some(Property::ConstSlot { .. }) | Some(Property::Virtual { set: None, .. }) => {
+            Some(Property::ConstSlot { .. } | Property::Virtual { set: None, .. }) => {
                 let instance_class = self.instance_class(activation);
 
                 Err(error::make_reference_error(
@@ -1149,7 +1149,7 @@ impl<'gc> Value<'gc> {
         let vtable = self.vtable(activation);
 
         match vtable.get_trait(multiname) {
-            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+            Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) => {
                 // Only objects can have slots
                 let object = self.as_object().unwrap();
 
@@ -1210,7 +1210,7 @@ impl<'gc> Value<'gc> {
         let vtable = self.vtable(activation);
 
         match vtable.get_trait(multiname) {
-            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+            Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) => {
                 // Only objects can have slots
                 let object = self.as_object().unwrap();
 
@@ -1386,7 +1386,7 @@ impl<'gc> Value<'gc> {
         let vtable = self.vtable(activation);
 
         match vtable.get_trait(multiname) {
-            Some(Property::Slot { slot_id }) | Some(Property::ConstSlot { slot_id }) => {
+            Some(Property::Slot { slot_id } | Property::ConstSlot { slot_id }) => {
                 // Only objects can have slots
                 let object = self.as_object().unwrap();
 
