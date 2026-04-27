@@ -1303,63 +1303,54 @@ pub fn perlin_noise<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(bitmap_data) = this.as_bitmap_data() {
-        if !bitmap_data.disposed() {
-            let base_x = args.get_f64(0);
-            let base_y = args.get_f64(1);
-            let num_octaves = args.get_u32(2) as usize;
-            let seed = args.get_i32(3) as i64;
-            let stitch = args.get_bool(4);
-            let fractal_noise = args.get_bool(5);
-            let channel_options = ChannelOptions::from_bits_truncate(args.get_i32(6) as u8);
-            let grayscale = args.get_bool(7);
-            let offsets = args.try_get_object(8);
+    if let Some(bitmap_data) = this.as_bitmap_data()
+        && !bitmap_data.disposed()
+    {
+        let base_x = args.get_f64(0);
+        let base_y = args.get_f64(1);
+        let num_octaves = args.get_u32(2) as usize;
+        let seed = args.get_i32(3) as i64;
+        let stitch = args.get_bool(4);
+        let fractal_noise = args.get_bool(5);
+        let channel_options = ChannelOptions::from_bits_truncate(args.get_i32(6) as u8);
+        let grayscale = args.get_bool(7);
+        let offsets = args.try_get_object(8);
 
-            let point_class = activation.avm2().classes().point.inner_class_definition();
+        let point_class = activation.avm2().classes().point.inner_class_definition();
 
-            let octave_offsets: Result<Vec<_>, Error<'gc>> = (0..num_octaves)
-                .map(|i| {
-                    if let Some(offsets) = offsets {
-                        if let Some(offsets) = offsets.as_array_storage() {
-                            if let Some(Value::Object(point)) = offsets.get(i) {
-                                if point.is_of_type(point_class) {
-                                    let x = point
-                                        .get_slot(point_slots::X)
-                                        .coerce_to_number(activation)?;
-                                    let y = point
-                                        .get_slot(point_slots::Y)
-                                        .coerce_to_number(activation)?;
+        let octave_offsets: Result<Vec<_>, Error<'gc>> = (0..num_octaves)
+            .map(|i| {
+                if let Some(offsets) = offsets
+                    && let Some(offsets) = offsets.as_array_storage()
+                    && let Some(Value::Object(point)) = offsets.get(i)
+                    && point.is_of_type(point_class)
+                {
+                    let x = point
+                        .get_slot(point_slots::X)
+                        .coerce_to_number(activation)?;
+                    let y = point
+                        .get_slot(point_slots::Y)
+                        .coerce_to_number(activation)?;
 
-                                    Ok((x, y))
-                                } else {
-                                    Ok((0.0, 0.0))
-                                }
-                            } else {
-                                Ok((0.0, 0.0))
-                            }
-                        } else {
-                            Ok((0.0, 0.0))
-                        }
-                    } else {
-                        Ok((0.0, 0.0))
-                    }
-                })
-                .collect();
-            let octave_offsets = octave_offsets?;
+                    Ok((x, y))
+                } else {
+                    Ok((0.0, 0.0))
+                }
+            })
+            .collect();
 
-            operations::perlin_noise(
-                activation.gc(),
-                bitmap_data,
-                (base_x, base_y),
-                num_octaves,
-                seed,
-                stitch,
-                fractal_noise,
-                channel_options,
-                grayscale,
-                octave_offsets,
-            );
-        }
+        operations::perlin_noise(
+            activation.gc(),
+            bitmap_data,
+            (base_x, base_y),
+            num_octaves,
+            seed,
+            stitch,
+            fractal_noise,
+            channel_options,
+            grayscale,
+            octave_offsets?,
+        );
     }
 
     Ok(Value::Undefined)
