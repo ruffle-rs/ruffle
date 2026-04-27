@@ -33,19 +33,19 @@ fn filter_to_test_name(filter: &str) -> String {
         .to_string()
 }
 
-fn is_candidate(args: &Arguments, test_name: &str) -> bool {
-    if let Some(filter) = &args.filter {
+fn is_candidate(test_name: &str, filter: Option<&str>, exact: bool, skip: &[String]) -> bool {
+    if let Some(filter) = filter {
         let expected_test_name = filter_to_test_name(filter);
-        match args.exact {
+        match exact {
             true if test_name != expected_test_name => return false,
             false if !test_name.contains(&expected_test_name) => return false,
             _ => {}
         };
     }
 
-    for skip_filter in &args.skip {
+    for skip_filter in skip {
         let skipped_test_name = filter_to_test_name(skip_filter);
-        match args.exact {
+        match exact {
             true if test_name == skipped_test_name => return false,
             false if test_name.contains(&skipped_test_name) => return false,
             _ => {}
@@ -71,6 +71,9 @@ pub struct FsTestsRunner {
     test_loader: Option<TestLoader>,
     canonicalize_paths: bool,
     sorter: Option<TestSorter>,
+    exact: bool,
+    filter: Option<String>,
+    skip: Vec<String>,
 }
 
 impl Default for FsTestsRunner {
@@ -88,7 +91,33 @@ impl FsTestsRunner {
             test_loader: None,
             canonicalize_paths: false,
             sorter: None,
+            exact: false,
+            filter: None,
+            skip: Vec::new(),
         }
+    }
+
+    pub fn with_args_from_libtest_mimic(&mut self) -> &mut Self {
+        let arguments = Arguments::from_args();
+        self.exact = arguments.exact;
+        self.filter = arguments.filter;
+        self.skip = arguments.skip;
+        self
+    }
+
+    pub fn with_exact(&mut self, exact: bool) -> &mut Self {
+        self.exact = exact;
+        self
+    }
+
+    pub fn with_filter(&mut self, filter: Option<String>) -> &mut Self {
+        self.filter = filter;
+        self
+    }
+
+    pub fn with_skip(&mut self, skip: Vec<String>) -> &mut Self {
+        self.skip = skip;
+        self
     }
 
     pub fn with_root_dir(&mut self, root_dir: PathBuf) -> &mut Self {
@@ -124,19 +153,17 @@ impl FsTestsRunner {
     pub fn run(mut self) -> Conclusion {
         self.ensure_root_dir_exists();
 
-        let args = Arguments::from_args();
-
         // When this is true, we are looking for one specific test.
         // This is an important optimization for nextest,
         // as it executes tests one by one.
-        let filter_exact = args.exact && args.filter.is_some();
+        let filter_exact = self.exact && self.filter.is_some();
 
         let root = &self.root_dir;
         let mut tests = Vec::new();
 
         if filter_exact {
             // Ignore "errors" here.
-            let _ = self.look_up_test(&args, &mut tests);
+            let _ = self.look_up_test(&mut tests);
         } else {
             let walk = walkdir::WalkDir::new(root)
                 .into_iter()
@@ -156,7 +183,7 @@ impl FsTestsRunner {
                     .unwrap()
                     .to_string_lossy()
                     .replace('\\', "/");
-                if is_candidate(&args, &name) {
+                if is_candidate(&name, self.filter.as_deref(), self.exact, &self.skip) {
                     self.load_test(file.path(), &name, &mut tests)
                 }
             }
@@ -168,6 +195,10 @@ impl FsTestsRunner {
             tests.sort_unstable_by(sorter);
         }
 
+        let mut args = Arguments::from_args();
+        args.exact = self.exact;
+        args.filter = self.filter.clone();
+        args.skip = self.skip.clone();
         libtest_mimic::run(&args, tests)
     }
 
@@ -178,10 +209,10 @@ impl FsTestsRunner {
         }
     }
 
-    fn look_up_test(&self, args: &Arguments, out: &mut Vec<Trial>) -> anyhow::Result<()> {
+    fn look_up_test(&self, out: &mut Vec<Trial>) -> anyhow::Result<()> {
         let root = &self.root_dir;
 
-        let name = filter_to_test_name(args.filter.as_ref().unwrap());
+        let name = filter_to_test_name(self.filter.as_ref().unwrap());
         let absolute_root = std::fs::canonicalize(root).unwrap();
         let path = absolute_root
             .join(&name)

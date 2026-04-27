@@ -70,6 +70,7 @@ fn main() {
 
     let env_clone = env.clone();
     runner
+        .with_args_from_libtest_mimic()
         .with_descriptor_name(Cow::Borrowed(TEST_TOML_NAME))
         .with_root_dir(PathBuf::from("tests/swfs"))
         .with_test_loader(Box::new(move |params, register_trial| {
