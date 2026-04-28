@@ -76,7 +76,7 @@ itertools = "0.14.0"
 workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
-version = "0.4.58"
+version = "0.4.70"
 
 [features]
 default = []

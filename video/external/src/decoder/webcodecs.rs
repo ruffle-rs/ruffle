@@ -268,7 +268,7 @@ impl VideoDecoder for H264Decoder {
             trace!("frame type: {:?}", frame_type);
 
             // The timestamp doesn't matter for us.
-            let init = EncodedVideoChunkInit::new(&Uint8Array::from(nalu), 0.0, frame_type);
+            let init = EncodedVideoChunkInit::new(&Uint8Array::from(nalu), 0, frame_type);
             let chunk = EncodedVideoChunk::new(&init).unwrap();
 
             self.decoder
