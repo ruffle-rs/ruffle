@@ -730,15 +730,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             // An optional path to a MovieClip and a frame #/label, such as "/clip:framelabel".
             let frame_path = arg.coerce_to_string(self)?;
-            if let Some((clip, frame)) = self.resolve_variable_path(target, &frame_path)? {
-                if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
-                    if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
-                        // First try to parse as a frame number.
-                        call_frame = Some((clip, frame));
-                    } else if let Some(frame) = clip.frame_label_to_number(frame, self.context) {
-                        // Otherwise, it's a frame label.
-                        call_frame = Some((clip, frame.into()));
-                    }
+            if let Some((clip, frame)) = self.resolve_variable_path(target, &frame_path)?
+                && let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip())
+            {
+                if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
+                    // First try to parse as a frame number.
+                    call_frame = Some((clip, frame));
+                } else if let Some(frame) = clip.frame_label_to_number(frame, self.context) {
+                    // Otherwise, it's a frame label.
+                    call_frame = Some((clip, frame.into()));
                 }
             }
         };
@@ -2174,43 +2174,39 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
         let mut result = self.run_actions(parent_data.to_unbounded_subslice(action.try_body));
 
-        if let Some((catch_vars, actions)) = &action.catch_body {
-            if let Err(Error::ThrownValue(value)) = &result {
-                let mut activation = Activation::from_action(
-                    self.context,
-                    self.id.child("[Catch]"),
-                    self.swf_version(),
-                    self.scope,
-                    self.constant_pool,
-                    self.base_clip,
-                    self.this,
-                    self.callee,
-                    &[],
-                );
+        if let Some((catch_vars, actions)) = &action.catch_body
+            && let Err(Error::ThrownValue(value)) = &result
+        {
+            let mut activation = Activation::from_action(
+                self.context,
+                self.id.child("[Catch]"),
+                self.swf_version(),
+                self.scope,
+                self.constant_pool,
+                self.base_clip,
+                self.this,
+                self.callee,
+                &[],
+            );
 
-                activation.local_registers = self.local_registers;
+            activation.local_registers = self.local_registers;
 
-                match catch_vars {
-                    CatchVar::Var(name) => {
-                        let name =
-                            AvmString::new(activation.gc(), name.decode(activation.encoding()));
-                        activation.set_variable(name, value.to_owned())?
-                    }
-                    CatchVar::Register(id) => {
-                        activation.set_current_register(*id, value.to_owned())
-                    }
+            match catch_vars {
+                CatchVar::Var(name) => {
+                    let name = AvmString::new(activation.gc(), name.decode(activation.encoding()));
+                    activation.set_variable(name, value.to_owned())?
                 }
-
-                result = activation.run_actions(parent_data.to_unbounded_subslice(actions));
+                CatchVar::Register(id) => activation.set_current_register(*id, value.to_owned()),
             }
+
+            result = activation.run_actions(parent_data.to_unbounded_subslice(actions));
         }
 
-        if let Some(actions) = action.finally_body {
-            if let ReturnType::Explicit(value) =
+        if let Some(actions) = action.finally_body
+            && let ReturnType::Explicit(value) =
                 self.run_actions(parent_data.to_unbounded_subslice(actions))?
-            {
-                return Ok(FrameControl::Return(ReturnType::Explicit(value)));
-            }
+        {
+            return Ok(FrameControl::Return(ReturnType::Explicit(value)));
         }
 
         match result? {
@@ -2358,10 +2354,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ///
     /// If a given register does not exist, this function does nothing.
     pub fn set_current_register(&mut self, id: u8, value: Value<'gc>) {
-        if !self.set_local_register(id, value) {
-            if let Some(reg) = self.context.avm1.get_register_mut(id as usize) {
-                *reg = value;
-            }
+        if !self.set_local_register(id, value)
+            && let Some(reg) = self.context.avm1.get_register_mut(id as usize)
+        {
+            *reg = value;
         }
     }
 

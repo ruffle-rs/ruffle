@@ -1,6 +1,4 @@
-// Temporarily allow this to ease migration to Rust 2024 edition.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::collapsible_if)]
+//! ActionScript Virtual Machine 1 (AS1 & AS2) support.
 
 #[cfg(test)]
 #[macro_use]

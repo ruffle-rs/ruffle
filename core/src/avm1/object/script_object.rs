@@ -279,15 +279,14 @@ impl<'gc> Object<'gc> {
                     stage_object::notify_property_change(dobj, name, value, activation)?;
                     // 'magic' display object properties (such as _x, _y, etc) take
                     // priority over properties in prototypes.
-                    if !self.has_own_property(activation, name) {
-                        if let Some(property) = activation
+                    if !self.has_own_property(activation, name)
+                        && let Some(property) = activation
                             .context
                             .avm1
                             .display_properties()
                             .get_by_name(name)
-                        {
-                            return property.set(activation, dobj, value);
-                        }
+                    {
+                        return property.set(activation, dobj, value);
                     }
                 }
             }
@@ -300,20 +299,19 @@ impl<'gc> Object<'gc> {
             .get(name, activation.is_case_sensitive())
             .and_then(|v| v.setter());
 
-        if let Some(setter) = setter {
-            if let Some(exec) = setter.as_function() {
-                if let Err(Error::ThrownValue(e)) = exec.exec(
-                    ExecutionName::Static("[Setter]"),
-                    activation,
-                    this.into(),
-                    1,
-                    &[value],
-                    ExecutionReason::Special,
-                    setter,
-                ) {
-                    return Err(Error::ThrownValue(e));
-                }
-            }
+        if let Some(setter) = setter
+            && let Some(exec) = setter.as_function()
+            && let Err(Error::ThrownValue(e)) = exec.exec(
+                ExecutionName::Static("[Setter]"),
+                activation,
+                this.into(),
+                1,
+                &[value],
+                ExecutionReason::Special,
+                setter,
+            )
+        {
+            return Err(Error::ThrownValue(e));
         }
 
         match self
