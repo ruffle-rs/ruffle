@@ -24,15 +24,15 @@ pub fn init<'gc>(
     let ignore_processing_instructions = args.get_bool(2);
     let ignore_whitespace = args.get_bool(3);
 
-    if let Some(obj) = value.as_object() {
-        if let Some(xml_list) = obj.as_xml_list_object() {
-            // Note - 'new XML(new XMLList())' throws an error, even though
-            // 'new XML("")' does not. We need this special case to ensure that we return
-            // an error, since E4XNode::parse would otherwise return an empty array
-            // (which would be accepted)
-            if xml_list.length() != 1 {
-                return Err(make_error_1088(activation));
-            }
+    if let Some(obj) = value.as_object()
+        && let Some(xml_list) = obj.as_xml_list_object()
+    {
+        // Note - 'new XML(new XMLList())' throws an error, even though
+        // 'new XML("")' does not. We need this special case to ensure that we return
+        // an error, since E4XNode::parse would otherwise return an empty array
+        // (which would be accepted)
+        if xml_list.length() != 1 {
+            return Err(make_error_1088(activation));
         }
     }
 
@@ -1089,10 +1089,10 @@ pub fn insert_child_after<'gc>(
         if let Some(xml) = x.as_xml_object() {
             return Some(xml.node());
         // NOTE: Non-standard avmplus behavior, single element XMLLists are treated as XML objects.
-        } else if let Some(list) = x.as_xml_list_object() {
-            if list.length() == 1 {
-                return Some(list.children()[0].node());
-            }
+        } else if let Some(list) = x.as_xml_list_object()
+            && list.length() == 1
+        {
+            return Some(list.children()[0].node());
         }
 
         None
@@ -1147,10 +1147,10 @@ pub fn insert_child_before<'gc>(
         if let Some(xml) = x.as_xml_object() {
             return Some(xml.node());
         // NOTE: Non-standard avmplus behavior, single element XMLLists are treated as XML objects.
-        } else if let Some(list) = x.as_xml_list_object() {
-            if list.length() == 1 {
-                return Some(list.children()[0].node());
-            }
+        } else if let Some(list) = x.as_xml_list_object()
+            && list.length() == 1
+        {
+            return Some(list.children()[0].node());
         }
 
         None

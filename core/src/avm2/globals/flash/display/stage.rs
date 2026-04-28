@@ -488,13 +488,13 @@ pub fn set_tab_children<'gc>(
         // TODO FP actually refers here to the original root,
         //      even if it has been removed.
         //      See the test tab_ordering_stage_tab_children_remove_root.
-        if let Some(root) = stage.root_clip() {
-            if let Some(root) = root.as_container() {
-                // Stage's tabChildren setter just propagates the value to the AVM2 root.
-                // It does not affect the value of tabChildren of the stage, which is always true.
-                let value = args.get_bool(0);
-                root.set_tab_children(activation.context, value);
-            }
+        if let Some(root) = stage.root_clip()
+            && let Some(root) = root.as_container()
+        {
+            // Stage's tabChildren setter just propagates the value to the AVM2 root.
+            // It does not affect the value of tabChildren of the stage, which is always true.
+            let value = args.get_bool(0);
+            root.set_tab_children(activation.context, value);
         }
     }
 

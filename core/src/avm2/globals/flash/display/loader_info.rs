@@ -270,12 +270,11 @@ pub fn get_child_allows_parent<'gc>(
                 let loader = loader.display_object();
                 let parent_movie = loader.movie();
 
-                if let Ok(child_url) = Url::parse(root.url()) {
-                    if let Ok(parent_url) = Url::parse(parent_movie.url()) {
-                        if child_url.host() == parent_url.host() {
-                            return Ok(true.into());
-                        }
-                    }
+                if let Ok(child_url) = Url::parse(root.url())
+                    && let Ok(parent_url) = Url::parse(parent_movie.url())
+                    && child_url.host() == parent_url.host()
+                {
+                    return Ok(true.into());
                 }
                 Ok(false.into())
             } else {
@@ -311,12 +310,11 @@ pub fn get_parent_allows_child<'gc>(
                 let loader = loader.display_object();
                 let parent_movie = loader.movie();
 
-                if let Ok(child_url) = Url::parse(root.url()) {
-                    if let Ok(parent_url) = Url::parse(parent_movie.url()) {
-                        if child_url.host() == parent_url.host() {
-                            return Ok(true.into());
-                        }
-                    }
+                if let Ok(child_url) = Url::parse(root.url())
+                    && let Ok(parent_url) = Url::parse(parent_movie.url())
+                    && child_url.host() == parent_url.host()
+                {
+                    return Ok(true.into());
                 }
                 Ok(false.into())
             } else {

@@ -86,12 +86,12 @@ pub fn connect<'gc>(
         return Err(make_error_2004(activation, Error2004Type::ArgumentError));
     }
 
-    if let Some(local_connection) = this.as_local_connection_object() {
-        if !local_connection.connect(activation, connection_name) {
-            // This triggers both if this object is already connected, OR there's something else taking the name
-            // (The error message is misleading, in that case!)
-            return Err(make_error_2082(activation));
-        }
+    if let Some(local_connection) = this.as_local_connection_object()
+        && !local_connection.connect(activation, connection_name)
+    {
+        // This triggers both if this object is already connected, OR there's something else taking the name
+        // (The error message is misleading, in that case!)
+        return Err(make_error_2082(activation));
     }
 
     Ok(Value::Undefined)

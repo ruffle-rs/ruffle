@@ -149,20 +149,17 @@ pub fn register_font<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let object = args.get_object(activation, 0, "font")?;
 
-    if let Some(class) = object.as_class_object() {
-        if let Some((movie, id)) = activation
+    if let Some(class) = object.as_class_object()
+        && let Some((movie, id)) = activation
             .context
             .library
             .avm2_class_registry()
             .class_symbol(class.inner_class_definition())
-        {
-            if let Some(lib) = activation.context.library.library_for_movie(movie) {
-                if let Some(Character::Font(font)) = lib.character_by_id(id) {
-                    activation.context.library.register_global_font(font);
-                    return Ok(Value::Undefined);
-                }
-            }
-        }
+        && let Some(lib) = activation.context.library.library_for_movie(movie)
+        && let Some(Character::Font(font)) = lib.character_by_id(id)
+    {
+        activation.context.library.register_global_font(font);
+        return Ok(Value::Undefined);
     }
 
     Err(make_error_1508(activation, "font"))

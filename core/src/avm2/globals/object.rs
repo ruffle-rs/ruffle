@@ -14,10 +14,10 @@ pub fn object_constructor<'gc>(
     activation: &mut Activation<'_, 'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(arg) = args.get_optional(0) {
-        if !matches!(arg, Value::Undefined | Value::Null) {
-            return Ok(arg);
-        }
+    if let Some(arg) = args.get_optional(0)
+        && !matches!(arg, Value::Undefined | Value::Null)
+    {
+        return Ok(arg);
     }
 
     let constructed_object = ScriptObject::new_object(activation.context);
@@ -74,10 +74,10 @@ pub fn is_prototype_of<'gc>(
 
         let mut target_proto = Some(target_proto);
         while let Some(proto) = target_proto {
-            if let Some(proto) = proto.as_object() {
-                if Object::ptr_eq(this, proto) {
-                    return Ok(true.into());
-                }
+            if let Some(proto) = proto.as_object()
+                && Object::ptr_eq(this, proto)
+            {
+                return Ok(true.into());
             }
 
             target_proto = proto.proto(activation).map(|o| o.into());

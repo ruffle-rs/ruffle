@@ -54,13 +54,13 @@ pub fn get_parent_domain<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(appdomain) = this.as_application_domain() {
-        if let Some(parent_domain) = appdomain.parent_domain() {
-            if parent_domain.is_playerglobals_domain(activation.avm2()) {
-                return Ok(Value::Null);
-            }
-            return Ok(DomainObject::from_domain(activation, parent_domain).into());
+    if let Some(appdomain) = this.as_application_domain()
+        && let Some(parent_domain) = appdomain.parent_domain()
+    {
+        if parent_domain.is_playerglobals_domain(activation.avm2()) {
+            return Ok(Value::Null);
         }
+        return Ok(DomainObject::from_domain(activation, parent_domain).into());
     }
 
     Ok(Value::Null)

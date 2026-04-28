@@ -532,15 +532,13 @@ pub fn prev_scene<'gc>(
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
-    {
-        if let Some(Scene {
+        && let Some(Scene {
             name: _,
             start,
             length: _,
         }) = mc.previous_scene()
-        {
-            mc.goto_frame(activation.context, start, false);
-        }
+    {
+        mc.goto_frame(activation.context, start, false);
     }
 
     Ok(Value::Undefined)
@@ -557,15 +555,13 @@ pub fn next_scene<'gc>(
     if let Some(mc) = this
         .as_display_object()
         .and_then(|dobj| dobj.as_movie_clip())
-    {
-        if let Some(Scene {
+        && let Some(Scene {
             name: _,
             start,
             length: _,
         }) = mc.next_scene()
-        {
-            mc.goto_frame(activation.context, start, false);
-        }
+    {
+        mc.goto_frame(activation.context, start, false);
     }
 
     Ok(Value::Undefined)

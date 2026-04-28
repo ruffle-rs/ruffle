@@ -623,21 +623,21 @@ pub fn flood_fill<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(bitmap_data) = this.as_bitmap_data() {
-        if !bitmap_data.disposed() {
-            let x = args.get_u32(0);
-            let y = args.get_u32(1);
-            let color = args.get_u32(2);
+    if let Some(bitmap_data) = this.as_bitmap_data()
+        && !bitmap_data.disposed()
+    {
+        let x = args.get_u32(0);
+        let y = args.get_u32(1);
+        let color = args.get_u32(2);
 
-            operations::flood_fill(
-                activation.gc(),
-                activation.context.renderer,
-                bitmap_data,
-                x,
-                y,
-                color,
-            );
-        }
+        operations::flood_fill(
+            activation.gc(),
+            activation.context.renderer,
+            bitmap_data,
+            x,
+            y,
+            color,
+        );
     }
 
     Ok(Value::Undefined)
@@ -681,31 +681,31 @@ pub fn color_transform<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(bitmap_data) = this.as_bitmap_data() {
-        if !bitmap_data.disposed() {
-            // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
-            let rectangle = args.get_object(activation, 0, "rect")?;
-            let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
+    if let Some(bitmap_data) = this.as_bitmap_data()
+        && !bitmap_data.disposed()
+    {
+        // TODO: Re-use `object_to_rectangle` in `movie_clip.rs`.
+        let rectangle = args.get_object(activation, 0, "rect")?;
+        let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
 
-            let x_min = x.max(0) as u32;
-            let x_max = (x + width) as u32;
-            let y_min = y.max(0) as u32;
-            let y_max = (y + height) as u32;
+        let x_min = x.max(0) as u32;
+        let x_max = (x + width) as u32;
+        let y_min = y.max(0) as u32;
+        let y_max = (y + height) as u32;
 
-            let color_transform = args.get_object(activation, 1, "colorTransform")?;
-            let color_transform = object_to_color_transform(color_transform);
+        let color_transform = args.get_object(activation, 1, "colorTransform")?;
+        let color_transform = object_to_color_transform(color_transform);
 
-            operations::color_transform(
-                activation.gc(),
-                activation.context.renderer,
-                bitmap_data,
-                x_min,
-                y_min,
-                x_max,
-                y_max,
-                &color_transform,
-            );
-        }
+        operations::color_transform(
+            activation.gc(),
+            activation.context.renderer,
+            bitmap_data,
+            x_min,
+            y_min,
+            x_max,
+            y_max,
+            &color_transform,
+        );
     }
 
     Ok(Value::Undefined)
@@ -1211,16 +1211,16 @@ pub fn clone<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(bitmap_data) = this.as_bitmap_data() {
-        if !bitmap_data.disposed() {
-            let new_bitmap_data =
-                bitmap_data.clone_data(activation.context.gc_context, activation.context.renderer);
+    if let Some(bitmap_data) = this.as_bitmap_data()
+        && !bitmap_data.disposed()
+    {
+        let new_bitmap_data =
+            bitmap_data.clone_data(activation.context.gc_context, activation.context.renderer);
 
-            let new_bitmap_data_object =
-                BitmapDataObject::from_bitmap_data(activation.context, new_bitmap_data);
+        let new_bitmap_data_object =
+            BitmapDataObject::from_bitmap_data(activation.context, new_bitmap_data);
 
-            return Ok(new_bitmap_data_object.into());
-        }
+        return Ok(new_bitmap_data_object.into());
     }
     Ok(Value::Undefined)
 }
@@ -1364,53 +1364,53 @@ pub fn threshold<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(bitmap_data) = this.as_bitmap_data() {
-        if !bitmap_data.disposed() {
-            let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
-            let source_rect = args.get_object(activation, 1, "sourceRect")?;
-            let dest_point = args.get_object(activation, 2, "destPoint")?;
-            let dest_point = (
-                dest_point
-                    .get_slot(point_slots::X)
-                    .coerce_to_i32(activation)?,
-                dest_point
-                    .get_slot(point_slots::Y)
-                    .coerce_to_i32(activation)?,
-            );
-            let operation = args.get_string_non_null(activation, 3, "operationStr")?;
-            let threshold = args.get_u32(4);
-            let color = args.get_u32(5);
-            let mask = args.get_u32(6);
-            let copy_source = args.get_bool(7);
+    if let Some(bitmap_data) = this.as_bitmap_data()
+        && !bitmap_data.disposed()
+    {
+        let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
+        let source_rect = args.get_object(activation, 1, "sourceRect")?;
+        let dest_point = args.get_object(activation, 2, "destPoint")?;
+        let dest_point = (
+            dest_point
+                .get_slot(point_slots::X)
+                .coerce_to_i32(activation)?,
+            dest_point
+                .get_slot(point_slots::Y)
+                .coerce_to_i32(activation)?,
+        );
+        let operation = args.get_string_non_null(activation, 3, "operationStr")?;
+        let threshold = args.get_u32(4);
+        let color = args.get_u32(5);
+        let mask = args.get_u32(6);
+        let copy_source = args.get_bool(7);
 
-            let operation = if let Some(operation) = ThresholdOperation::from_wstr(&operation) {
-                operation
-            } else {
-                // It's wrong but this is what Flash says.
-                return Err(make_error_2005(activation, 0, "Operation"));
-            };
+        let operation = if let Some(operation) = ThresholdOperation::from_wstr(&operation) {
+            operation
+        } else {
+            // It's wrong but this is what Flash says.
+            return Err(make_error_2005(activation, 0, "Operation"));
+        };
 
-            let (src_min_x, src_min_y, src_width, src_height) =
-                get_rectangle_x_y_width_height(activation, source_rect)?;
+        let (src_min_x, src_min_y, src_width, src_height) =
+            get_rectangle_x_y_width_height(activation, source_rect)?;
 
-            if let Some(src_bitmap) = src_bitmap.as_bitmap_data() {
-                src_bitmap.check_valid(activation)?;
+        if let Some(src_bitmap) = src_bitmap.as_bitmap_data() {
+            src_bitmap.check_valid(activation)?;
 
-                return Ok(operations::threshold(
-                    activation.gc(),
-                    activation.context.renderer,
-                    bitmap_data,
-                    src_bitmap,
-                    (src_min_x, src_min_y, src_width, src_height),
-                    dest_point,
-                    operation,
-                    threshold,
-                    color,
-                    mask,
-                    copy_source,
-                )
-                .into());
-            }
+            return Ok(operations::threshold(
+                activation.gc(),
+                activation.context.renderer,
+                bitmap_data,
+                src_bitmap,
+                (src_min_x, src_min_y, src_width, src_height),
+                dest_point,
+                operation,
+                threshold,
+                color,
+                mask,
+                copy_source,
+            )
+            .into());
         }
     }
 
@@ -1550,47 +1550,47 @@ pub fn merge<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(bitmap_data) = this.as_bitmap_data() {
-        if !bitmap_data.disposed() {
-            let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
+    if let Some(bitmap_data) = this.as_bitmap_data()
+        && !bitmap_data.disposed()
+    {
+        let src_bitmap = args.get_object(activation, 0, "sourceBitmapData")?;
 
-            let (src_min_x, src_min_y, src_width, src_height) = {
-                let source_rect = args.get_object(activation, 1, "sourceRect")?;
-                get_rectangle_x_y_width_height(activation, source_rect)?
-            };
+        let (src_min_x, src_min_y, src_width, src_height) = {
+            let source_rect = args.get_object(activation, 1, "sourceRect")?;
+            get_rectangle_x_y_width_height(activation, source_rect)?
+        };
 
-            let dest_point = {
-                let dest_point = args.get_object(activation, 2, "destPoint")?;
+        let dest_point = {
+            let dest_point = args.get_object(activation, 2, "destPoint")?;
 
-                let x = dest_point
-                    .get_slot(point_slots::X)
-                    .coerce_to_i32(activation)?;
+            let x = dest_point
+                .get_slot(point_slots::X)
+                .coerce_to_i32(activation)?;
 
-                let y = dest_point
-                    .get_slot(point_slots::Y)
-                    .coerce_to_i32(activation)?;
+            let y = dest_point
+                .get_slot(point_slots::Y)
+                .coerce_to_i32(activation)?;
 
-                (x, y)
-            };
+            (x, y)
+        };
 
-            let red_mult = args.get_i32(3);
-            let green_mult = args.get_i32(4);
-            let blue_mult = args.get_i32(5);
-            let alpha_mult = args.get_i32(6);
+        let red_mult = args.get_i32(3);
+        let green_mult = args.get_i32(4);
+        let blue_mult = args.get_i32(5);
+        let alpha_mult = args.get_i32(6);
 
-            if let Some(src_bitmap) = src_bitmap.as_bitmap_data() {
-                if !src_bitmap.disposed() {
-                    operations::merge(
-                        activation.gc(),
-                        activation.context.renderer,
-                        bitmap_data,
-                        src_bitmap,
-                        (src_min_x, src_min_y, src_width, src_height),
-                        dest_point,
-                        (red_mult, green_mult, blue_mult, alpha_mult),
-                    );
-                }
-            }
+        if let Some(src_bitmap) = src_bitmap.as_bitmap_data()
+            && !src_bitmap.disposed()
+        {
+            operations::merge(
+                activation.gc(),
+                activation.context.renderer,
+                bitmap_data,
+                src_bitmap,
+                (src_min_x, src_min_y, src_width, src_height),
+                dest_point,
+                (red_mult, green_mult, blue_mult, alpha_mult),
+            );
         }
     }
 

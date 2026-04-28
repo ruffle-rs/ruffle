@@ -324,10 +324,10 @@ pub fn set_default_text_format<'gc>(
     {
         let new_text_format = args.try_get_object(0);
 
-        if let Some(new_text_format) = new_text_format {
-            if let Some(new_text_format) = new_text_format.as_text_format() {
-                this.set_new_text_format(new_text_format.clone());
-            }
+        if let Some(new_text_format) = new_text_format
+            && let Some(new_text_format) = new_text_format.as_text_format()
+        {
+            this.set_new_text_format(new_text_format.clone());
         }
     }
 
@@ -946,37 +946,34 @@ pub fn set_text_format<'gc>(
     if let Some(this) = this
         .as_display_object()
         .and_then(|this| this.as_edit_text())
+        && let Some(tf) = args.try_get_object(0)
+        && let Some(tf) = tf.as_text_format()
     {
-        let tf = args.try_get_object(0);
-        if let Some(tf) = tf {
-            if let Some(tf) = tf.as_text_format() {
-                let mut begin_index = args.get_i32(1);
-                let mut end_index = args.get_i32(2);
+        let mut begin_index = args.get_i32(1);
+        let mut end_index = args.get_i32(2);
 
-                if begin_index < 0 {
-                    begin_index = 0;
-                }
-
-                if begin_index as usize > this.text_length() {
-                    return Err(make_error_2006(activation));
-                }
-
-                if end_index < 0 {
-                    end_index = this.text_length() as i32;
-                }
-
-                if end_index as usize > this.text_length() {
-                    return Err(make_error_2006(activation));
-                }
-
-                this.set_text_format(
-                    begin_index as usize,
-                    end_index as usize,
-                    tf.clone(),
-                    activation.context,
-                );
-            }
+        if begin_index < 0 {
+            begin_index = 0;
         }
+
+        if begin_index as usize > this.text_length() {
+            return Err(make_error_2006(activation));
+        }
+
+        if end_index < 0 {
+            end_index = this.text_length() as i32;
+        }
+
+        if end_index as usize > this.text_length() {
+            return Err(make_error_2006(activation));
+        }
+
+        this.set_text_format(
+            begin_index as usize,
+            end_index as usize,
+            tf.clone(),
+            activation.context,
+        );
     }
 
     Ok(Value::Undefined)
