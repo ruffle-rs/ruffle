@@ -322,7 +322,7 @@ impl WebCanvasRenderBackend {
     }
 
     #[inline]
-    fn set_transform(&mut self, matrix: &Matrix) {
+    fn set_transform(&self, matrix: &Matrix) {
         self.context
             .set_transform(
                 matrix.a.into(),
@@ -386,7 +386,7 @@ impl WebCanvasRenderBackend {
         ));
     }
 
-    fn apply_blend_mode(&mut self, blend: RenderBlendMode) {
+    fn apply_blend_mode(&self, blend: RenderBlendMode) {
         // TODO: Objects with a blend mode need to be rendered to an intermediate buffer first,
         // but for now we render each child directly to the canvas. This should look reasonable for most
         // common cases.
@@ -454,7 +454,7 @@ impl WebCanvasRenderBackend {
         }
     }
 
-    fn draw_lines(&mut self, color: Color, mut matrix: Matrix, rect: bool) {
+    fn draw_lines(&self, color: Color, mut matrix: Matrix, rect: bool) {
         matrix.tx += Twips::HALF_PX;
         matrix.ty += Twips::HALF_PX;
         let dom_matrix = matrix.to_dom_matrix();

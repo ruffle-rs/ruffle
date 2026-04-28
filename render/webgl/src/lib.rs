@@ -727,7 +727,7 @@ impl WebGlRenderBackend {
         };
     }
 
-    fn set_stencil_state(&mut self) {
+    fn set_stencil_state(&self) {
         // Set stencil state for masking, if necessary.
         if self.mask_state_dirty {
             match self.mask_state {
@@ -758,7 +758,7 @@ impl WebGlRenderBackend {
         }
     }
 
-    fn apply_blend_mode(&mut self, mode: RenderBlendMode) {
+    fn apply_blend_mode(&self, mode: RenderBlendMode) {
         let (blend_op, src_rgb, dst_rgb) = match mode {
             RenderBlendMode::Builtin(BlendMode::Normal) => {
                 // src + (1-a)
@@ -815,7 +815,7 @@ impl WebGlRenderBackend {
         self.gl.clear(Gl::COLOR_BUFFER_BIT | Gl::STENCIL_BUFFER_BIT);
     }
 
-    fn end_frame(&mut self) {
+    fn end_frame(&self) {
         // Resolve MSAA, if we're using it (WebGL2).
         if let (Some(gl), Some(msaa_buffers)) = (&self.gl2, &self.msaa_buffers) {
             // Disable any remaining masking state.
