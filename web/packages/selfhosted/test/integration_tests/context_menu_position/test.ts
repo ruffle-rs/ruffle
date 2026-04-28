@@ -15,15 +15,13 @@ async function getViewportWidth(): Promise<number> {
     });
 }
 
-async function setDirection(
-    element: ChainablePromiseElement,
-    direction: string,
-) {
+async function setDirection(element: WebdriverIO.Element, direction: string) {
     await browser.execute(
-        ({ el, dir }: { el: HTMLElement; dir: string }) => {
+        (el, dir) => {
             el.dir = dir;
         },
-        { el: element, dir: direction },
+        element,
+        direction,
     );
 }
 
@@ -113,7 +111,7 @@ describe("Context Menu", () => {
 
         const player = await browser.$("#objectElement");
         const menu = await player.$("#context-menu");
-        await setDirection(menu, "rtl");
+        await setDirection(await menu.getElement(), "rtl");
     });
 
     it("open RTL context menu in the middle RTL", async () => {

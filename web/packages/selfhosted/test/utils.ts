@@ -208,29 +208,26 @@ export async function openTest(
 
 /** Test set-up for JS API testing. */
 export function loadJsAPI(swf?: string) {
-    let player = null;
-
     before("Loads the test", async () => {
         await browser.url("http://localhost:4567/test_assets/js_api.html");
 
         await injectRuffleAndWait(browser);
 
-        player = await browser.execute(() => {
+        await browser.execute(() => {
             const ruffle = (window.RufflePlayer as Setup.PublicAPI).newest();
             const player = ruffle!.createPlayer();
+            player.id = "ruffle-player";
             const container = document.getElementById("test-container");
             container!.appendChild(player);
-            return player;
         });
 
+        const player = await $("#ruffle-player");
+
         if (swf) {
-            await browser.execute(
-                async (player, swf) => {
-                    await (player as Player.PlayerElement).ruffle().load(swf);
-                },
-                player,
-                swf,
-            );
+            await browser.execute(async (swf) => {
+                const player = document.getElementById("ruffle-player");
+                await (player as Player.PlayerElement).ruffle().load(swf);
+            }, swf);
             await playAndMonitor(browser, player);
         }
     });
@@ -241,15 +238,12 @@ export async function closeAllModals(
     player: ChainablePromiseElement,
 ) {
     const modals = await player.$$(".modal:not(.hidden)");
-    await browser.execute(
-        ({ modals }) => {
-            for (const m of modals) {
-                const cl = m.querySelector(".close-modal")! as HTMLElement;
-                cl.click();
-            }
-        },
-        { modals },
-    );
+    await browser.execute((modals) => {
+        for (const m of modals) {
+            const cl = m.querySelector(".close-modal")! as HTMLElement;
+            cl.click();
+        }
+    }, modals);
 }
 
 export async function hideHardwareAccelerationModal(

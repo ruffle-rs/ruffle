@@ -10,7 +10,7 @@ import {
 } from "../../utils.js";
 import { expect, use } from "chai";
 import chaiHtml from "chai-html";
-import { Key } from "webdriverio";
+import { Key, type ButtonNames } from "webdriverio";
 
 use(chaiHtml);
 
@@ -46,7 +46,7 @@ async function openContextMenuOnInput(player: ChainablePromiseElement) {
 async function clickContextMenuEntry(
     player: ChainablePromiseElement,
     text: string,
-    button: string = "left",
+    button: ButtonNames = "left",
 ) {
     const contextMenu = await player.shadow$("#context-menu");
     const item = await contextMenu.$(`.menu-item[data-text="${text}"]`);
