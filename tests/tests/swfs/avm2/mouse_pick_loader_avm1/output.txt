@@ -1,0 +1,42 @@
+Clicked on: [object Loader] (instance2)
+Clicked on: [object Loader] (instance2)
+Clicked on: [object Loader] (instance2)
+input_txt.onSetFocus
+input_txt.onKillFocus
+Clicked on: [object MovieClip] (rect_mc)
+Clicked on: [object Stage] (null)
+avm1 button clicked
+avm1 button clicked
+Clicked on: [object Loader] (instance2)
+avm1Container.mouseChildren is now false
+Clicked on: [object Sprite] (avm1Container)
+Clicked on: [object Sprite] (avm1Container)
+Clicked on: [object Sprite] (avm1Container)
+Clicked on: [object Sprite] (avm1Container)
+Clicked on: [object MovieClip] (rect_mc)
+Clicked on: [object Stage] (null)
+Clicked on: [object Sprite] (avm1Container)
+Clicked on: [object Sprite] (avm1Container)
+Clicked on: [object Sprite] (avm1Container)
+avm1Container.mouseChildren is now true
+avm1Container.mouseEnabled is now false
+Clicked on: [object Loader] (instance2)
+Clicked on: [object Loader] (instance2)
+Clicked on: [object Loader] (instance2)
+input_txt.onSetFocus
+input_txt.onKillFocus
+Clicked on: [object MovieClip] (rect_mc)
+Clicked on: [object Stage] (null)
+avm1 button clicked
+avm1 button clicked
+Clicked on: [object Loader] (instance2)
+avm1Container.mouseChildren is now false
+Clicked on: [object Stage] (null)
+Clicked on: [object MovieClip] (rect_mc)
+Clicked on: [object MovieClip] (rect_mc)
+Clicked on: [object MovieClip] (rect_mc)
+Clicked on: [object MovieClip] (rect_mc)
+Clicked on: [object Stage] (null)
+Clicked on: [object MovieClip] (rect_mc)
+Clicked on: [object MovieClip] (rect_mc)
+Clicked on: [object MovieClip] (rect_mc)

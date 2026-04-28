@@ -262,10 +262,6 @@ impl<'gc> FocusTracker<'gc> {
             .or_else(|| {
                 // The current focus as the stage is only used
                 // if the interactive object is AVM2.
-                //
-                // TODO: Clicking a non-interactive AVM1 object should
-                // fire the focus event with the related object
-                // as the root LoaderDisplay.
                 if related_object
                     .is_none_or(|ro| ro.as_displayobject().movie().is_action_script_3())
                 {
