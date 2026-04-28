@@ -330,15 +330,14 @@ fn avm2_to_color_matrix_filter<'gc>(
     if let Some(matrix_object) = object
         .get_slot(color_matrix_filter_slots::_MATRIX)
         .as_object()
+        && let Some(array) = matrix_object.as_array_storage()
     {
-        if let Some(array) = matrix_object.as_array_storage() {
-            for i in 0..matrix.len().min(array.length()) {
-                matrix[i] = array
-                    .get(i)
-                    .map(|v| v.coerce_to_number(activation))
-                    .transpose()?
-                    .unwrap_or_default() as f32;
-            }
+        for i in 0..matrix.len().min(array.length()) {
+            matrix[i] = array
+                .get(i)
+                .map(|v| v.coerce_to_number(activation))
+                .transpose()?
+                .unwrap_or_default() as f32;
         }
     }
     Ok(Filter::ColorMatrixFilter(ColorMatrixFilter { matrix }))
@@ -367,15 +366,14 @@ fn avm2_to_convolution_filter<'gc>(
     if let Some(matrix_object) = object
         .get_slot(convolution_filter_slots::MATRIX)
         .as_object()
+        && let Some(array) = matrix_object.as_array_storage()
     {
-        if let Some(array) = matrix_object.as_array_storage() {
-            for value in array.iter() {
-                matrix.push(
-                    value
-                        .unwrap_or(Value::Undefined)
-                        .coerce_to_number(activation)? as f32,
-                );
-            }
+        for value in array.iter() {
+            matrix.push(
+                value
+                    .unwrap_or(Value::Undefined)
+                    .coerce_to_number(activation)? as f32,
+            );
         }
     }
     let alpha = object

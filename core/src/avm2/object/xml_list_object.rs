@@ -588,14 +588,15 @@ impl<'gc> TObject<'gc> for XmlListObject<'gc> {
         // To be safe, we'll just perform exactly the same check that avmplus does.
         if matches!(method, Value::Undefined) {
             let prop = self.get_property_local(multiname, activation)?;
-            if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object()) {
-                if list.length() == 0 && self.length() == 1 {
-                    let mut children = self.children_mut(activation.gc());
+            if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object())
+                && list.length() == 0
+                && self.length() == 1
+            {
+                let mut children = self.children_mut(activation.gc());
 
-                    let child = children.first_mut().unwrap().get_or_create_xml(activation);
+                let child = children.first_mut().unwrap().get_or_create_xml(activation);
 
-                    return Value::from(child).call_property(multiname, arguments, activation);
-                }
+                return Value::from(child).call_property(multiname, arguments, activation);
             }
         }
 

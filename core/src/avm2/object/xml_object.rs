@@ -353,16 +353,15 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
     ) -> Result<Value<'gc>, Error<'gc>> {
         // FIXME - implement everything from E4X spec (XMLObject::getMultinameProperty in avmplus)
 
-        if !name.has_explicit_namespace() {
-            if let Some(local_name) = name.local_name() {
-                // The only supported numerical index is 0
-                if let Ok(index) = local_name.parse::<usize>() {
-                    if index == 0 {
-                        return Ok(self.into());
-                    } else {
-                        return Ok(Value::Undefined);
-                    }
-                }
+        if !name.has_explicit_namespace()
+            && let Some(local_name) = name.local_name()
+            && let Ok(index) = local_name.parse::<usize>()
+        {
+            // The only supported numerical index is 0
+            if index == 0 {
+                return Ok(self.into());
+            } else {
+                return Ok(Value::Undefined);
             }
         }
 
@@ -390,12 +389,13 @@ impl<'gc> TObject<'gc> for XmlObject<'gc> {
             // avmplus has this check, so we do it out of an abundance of caution.
             // Compare to the very similar case in XMLListObject::call_property_local
             let prop = self.get_property_local(multiname, activation)?;
-            if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object()) {
-                if list.length() == 0 && self.node().has_simple_content() {
-                    let receiver = Value::String(self.node().xml_to_string(activation));
+            if let Some(list) = prop.as_object().and_then(|obj| obj.as_xml_list_object())
+                && list.length() == 0
+                && self.node().has_simple_content()
+            {
+                let receiver = Value::String(self.node().xml_to_string(activation));
 
-                    return receiver.call_property(multiname, arguments, activation);
-                }
+                return receiver.call_property(multiname, arguments, activation);
             }
         }
 

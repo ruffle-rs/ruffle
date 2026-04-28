@@ -340,12 +340,11 @@ impl Hash for EventHandler<'_> {
 /// to traverse. If no hierarchy is available, this returns `None`, as if the
 /// target had no parent.
 pub fn parent_of(target: Object<'_>) -> Option<Object<'_>> {
-    if let Some(dobj) = target.as_display_object() {
-        if let Some(dparent) = dobj.parent() {
-            if let Some(parent) = dparent.object2() {
-                return Some(parent.into());
-            }
-        }
+    if let Some(dobj) = target.as_display_object()
+        && let Some(dparent) = dobj.parent()
+        && let Some(parent) = dparent.object2()
+    {
+        return Some(parent.into());
     }
 
     None

@@ -223,10 +223,10 @@ pub fn recursive_serialize<'gc>(
             if let Property::Method { .. } = prop {
                 continue;
             }
-            if let Property::Virtual { get, set } = prop {
-                if !(get.is_some() && set.is_some()) {
-                    continue;
-                }
+            if let Property::Virtual { get, set } = prop
+                && !(get.is_some() && set.is_some())
+            {
+                continue;
             }
             let value = Value::from(obj).get_public_property(name, activation)?;
             let name = name.to_utf8_lossy().to_string();
@@ -408,11 +408,11 @@ pub fn deserialize_value_impl<'gc>(
                     tracing::warn!(
                         "Ignoring error deserializing AMF property for field {name:?}: {e:?}"
                     );
-                    if let Some(e) = e.as_avm_error() {
-                        if let Some(e) = e.as_object().and_then(|o| o.as_error_object()) {
-                            // Flash player *traces* the error (without a stacktrace)
-                            activation.context.avm_trace(&e.display().to_string());
-                        }
+                    if let Some(e) = e.as_avm_error()
+                        && let Some(e) = e.as_object().and_then(|o| o.as_error_object())
+                    {
+                        // Flash player *traces* the error (without a stacktrace)
+                        activation.context.avm_trace(&e.display().to_string());
                     }
                 }
             }

@@ -205,11 +205,11 @@ impl<'gc> Domain<'gc> {
         self,
         multiname: &Multiname<'gc>,
     ) -> Option<(QName<'gc>, Script<'gc>)> {
-        if let Some(name) = multiname.local_name() {
-            if let Some((ns, script)) = self.cell().defs.get_with_ns_for_multiname(multiname) {
-                let qname = QName::new(ns, name);
-                return Some((qname, *script));
-            }
+        if let Some(name) = multiname.local_name()
+            && let Some((ns, script)) = self.cell().defs.get_with_ns_for_multiname(multiname)
+        {
+            let qname = QName::new(ns, name);
+            return Some((qname, *script));
         }
 
         if let Some(parent) = self.0.parent {
@@ -238,18 +238,19 @@ impl<'gc> Domain<'gc> {
     ) -> Option<Class<'gc>> {
         let class = self.get_class_inner(multiname);
 
-        if let Some(class) = class {
-            if let Some(param) = multiname.param() {
-                if let Some(param) = param {
-                    if let Some(resolved_param) = self.get_class(context, &param) {
-                        return Some(Class::with_type_param(context, class, Some(resolved_param)));
-                    }
-                    return None;
-                } else {
-                    return Some(Class::with_type_param(context, class, None));
+        if let Some(class) = class
+            && let Some(param) = multiname.param()
+        {
+            if let Some(param) = param {
+                if let Some(resolved_param) = self.get_class(context, &param) {
+                    return Some(Class::with_type_param(context, class, Some(resolved_param)));
                 }
+                return None;
+            } else {
+                return Some(Class::with_type_param(context, class, None));
             }
         }
+
         class
     }
 

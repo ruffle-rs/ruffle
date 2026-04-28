@@ -189,10 +189,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             let mut proto = Some(global);
             while let Some(current_proto) = proto {
-                if let Some(current_proto) = current_proto.as_object() {
-                    if current_proto.base().has_own_dynamic_property(name) {
-                        return Ok(Some(global));
-                    }
+                if let Some(current_proto) = current_proto.as_object()
+                    && current_proto.base().has_own_dynamic_property(name)
+                {
+                    return Ok(Some(global));
                 }
 
                 proto = current_proto.proto(self).map(|o| o.into());
@@ -1255,14 +1255,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Value::Object(object) = object_value {
             match name_value {
                 Value::Integer(_) | Value::Number(_) => {
-                    if let Some(index) = name_value.try_as_index() {
-                        if let Some(value) = object.get_index_property(index) {
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
-                            self.push_stack(value);
+                    if let Some(index) = name_value.try_as_index()
+                        && let Some(value) = object.get_index_property(index)
+                    {
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+                        self.push_stack(value);
 
-                            return Ok(());
-                        }
+                        return Ok(());
                     }
                 }
                 Value::Object(name_object) => {
@@ -1330,14 +1330,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Value::Object(object) = object_value {
             match name_value {
                 Value::Integer(_) | Value::Number(_) => {
-                    if let Some(index) = name_value.try_as_index() {
-                        if let Some(result) = object.set_index_property(self, index, value) {
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
-                            let _ = self.pop_stack();
+                    if let Some(index) = name_value.try_as_index()
+                        && let Some(result) = object.set_index_property(self, index, value)
+                    {
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
+                        let _ = self.pop_stack();
 
-                            return result;
-                        }
+                        return result;
                     }
                 }
                 Value::Object(name_object) => {
@@ -1405,16 +1405,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
             let name_value = self.stack.peek(0);
             let object = self.stack.peek(1);
-            if let Some(name_object) = name_value.as_object() {
-                if let Some(dictionary) = object.as_object().and_then(|o| o.as_dictionary_object())
-                {
-                    let _ = self.pop_stack();
-                    let _ = self.pop_stack();
-                    dictionary.delete_property_by_object(name_object, self.gc());
+            if let Some(name_object) = name_value.as_object()
+                && let Some(dictionary) = object.as_object().and_then(|o| o.as_dictionary_object())
+            {
+                let _ = self.pop_stack();
+                let _ = self.pop_stack();
+                dictionary.delete_property_by_object(name_object, self.gc());
 
-                    self.push_stack(true);
-                    return Ok(());
-                }
+                self.push_stack(true);
+                return Ok(());
             }
         }
 
@@ -1490,12 +1489,12 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         let has_prop = match value {
             Value::Object(obj) => {
-                if let Some(dictionary) = obj.as_dictionary_object() {
-                    if let Some(name_object) = name_value.as_object() {
-                        self.push_stack(dictionary.has_property_by_object(name_object));
+                if let Some(dictionary) = obj.as_dictionary_object()
+                    && let Some(name_object) = name_value.as_object()
+                {
+                    self.push_stack(dictionary.has_property_by_object(name_object));
 
-                        return Ok(());
-                    }
+                    return Ok(());
                 }
 
                 let name = name_value.coerce_to_string(self)?;
@@ -2207,11 +2206,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // to help int-indexing.
         // Once we get a generic implicit double->int conversion,
         // we can reevaluate whether this path is needed.
-        if let (Value::Integer(n1), Value::Integer(n2)) = (value1, value2) {
-            if let Some(result) = n1.checked_mul(n2) {
-                self.push_stack(result);
-                return Ok(());
-            }
+        if let (Value::Integer(n1), Value::Integer(n2)) = (value1, value2)
+            && let Some(result) = n1.checked_mul(n2)
+        {
+            self.push_stack(result);
+            return Ok(());
         }
         let value2 = value2.coerce_to_number(self)?;
         let value1 = value1.coerce_to_number(self)?;
