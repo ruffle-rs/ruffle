@@ -18,8 +18,7 @@ _If you need help with making tests, or do not believe this change is easily aut
 <!-- Please check the lines that are applicable. You do not need to check every box to open a PR. -->
 
 - [ ] I, a human, have self-reviewed this PR and fully understand the changes within.
-- [ ] I have [made or updated tests](https://github.com/ruffle-rs/ruffle/blob/master/CONTRIBUTING.md#test-guidelines)
-  where possible.
+- [ ] I have [made or updated tests](https://github.com/ruffle-rs/ruffle/blob/master/CONTRIBUTING.md#test-guidelines) where possible.
 - [ ] All of my commits are properly scoped, compile successfully, and pass all tests.
 - [ ] This PR does not make sense to split up into smaller PRs.
 - [ ] An LLM was involved in the authoring of this code.
