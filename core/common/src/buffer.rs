@@ -1,9 +1,8 @@
 //! Shared-ownership buffer types
 
 use gc_arena::Collect;
-use std::cmp::min;
 use std::fmt::{Debug, Formatter, LowerHex, UpperHex};
-use std::io::{Error as IoError, Read, Result as IoResult};
+use std::io::{Read, Result as IoResult};
 use std::ops::{Bound, Deref, RangeBounds};
 use std::sync::{Arc, RwLock, RwLockReadGuard};
 use thiserror::Error;
@@ -293,18 +292,6 @@ impl Substream {
         self.chunks.read().unwrap().len()
     }
 
-    /// Create a readable cursor into the `Substream`.
-    ///
-    /// The returned cursor clones the `Substream` and thus shares a chunk list
-    /// with it.
-    pub fn as_cursor(&self) -> SubstreamCursor {
-        SubstreamCursor {
-            substream: self.clone(),
-            chunk_pos: 0,
-            bytes_pos: 0,
-        }
-    }
-
     /// Calculate the number of bytes in the `Substream`.
     pub fn len(&self) -> usize {
         let mut tally = 0;
@@ -376,62 +363,6 @@ impl From<Slice> for Substream {
             buf: slice.buf,
             chunks: Arc::new(RwLock::new(vec![(slice.start, slice.end)])),
         }
-    }
-}
-
-/// A readable cursor into a buffer substream.
-///
-/// Reads from the cursor (via `Read` etc) will be filled as if the substream
-/// referred to in the chunks list is a single contiguous stream of bytes with
-/// no other data in between. Code using a `SubstreamCursor` can thus work with
-/// both multiplexed and unmultiplexed data in the same way.
-pub struct SubstreamCursor {
-    substream: Substream,
-    chunk_pos: usize,
-    bytes_pos: usize,
-}
-
-impl Read for SubstreamCursor {
-    fn read(&mut self, data: &mut [u8]) -> IoResult<usize> {
-        let mut out_count = 0;
-        let buf_owned = self.substream.buf.clone();
-        let buf = buf_owned.0.read().map_err(|_| {
-            IoError::other("the underlying substream is locked by a panicked process")
-        })?;
-
-        let chunks = self.substream.chunks.read().unwrap();
-
-        while out_count < data.len() {
-            let cur_chunk = chunks.get(self.chunk_pos);
-            if cur_chunk.is_none() {
-                //out of chunks to read
-                return Ok(out_count);
-            }
-
-            let cur_chunk = cur_chunk.expect("cur_chunk should never be None");
-
-            let chunk_len = cur_chunk.1 - cur_chunk.0;
-            let copy_count = min(data.len() - out_count, chunk_len - self.bytes_pos);
-
-            data[out_count..out_count + copy_count].copy_from_slice(
-                buf.get(cur_chunk.0 + self.bytes_pos..cur_chunk.0 + self.bytes_pos + copy_count)
-                    .expect("Slice offsets are always valid"),
-            );
-
-            self.bytes_pos += copy_count;
-            out_count += copy_count;
-
-            if self.bytes_pos < chunk_len {
-                //`data` is full
-                break;
-            }
-
-            //`data` not full, move onto next chunk
-            self.chunk_pos += 1;
-            self.bytes_pos = 0;
-        }
-
-        Ok(out_count)
     }
 }
 
@@ -513,7 +444,7 @@ impl UpperHex for SliceRef<'_> {
 
 #[cfg(test)]
 mod test {
-    use crate::buffer::{Buffer, Substream};
+    use crate::buffer::Buffer;
     use std::io::Read;
 
     #[test]
@@ -568,64 +499,5 @@ mod test {
         let result = cursor.read(&mut data);
         assert_eq!(result.unwrap(), slice.len());
         assert_eq!(&data[..slice.len()], &refdata[..]);
-    }
-
-    #[test]
-    fn substream_cursor_read_inside() {
-        let buf = Buffer::from(vec![
-            38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
-        ]);
-        let mut substream = Substream::new(buf.clone());
-
-        substream.append(buf.get(3..7).unwrap()).unwrap();
-        substream.append(buf.get(10..12).unwrap()).unwrap();
-        substream.append(buf.get(14..15).unwrap()).unwrap();
-
-        let mut cursor = substream.as_cursor();
-        let mut data = vec![0; 7];
-        let result = cursor.read(&mut data);
-        assert_eq!(result.unwrap(), 7);
-        assert_eq!(data, vec![1; 7]);
-    }
-
-    #[test]
-    fn substream_cursor_read_outside() {
-        let buf = Buffer::from(vec![
-            38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
-        ]);
-        let mut substream = Substream::new(buf.clone());
-
-        substream.append(buf.get(0..3).unwrap()).unwrap();
-        substream.append(buf.get(7..10).unwrap()).unwrap();
-        substream.append(buf.get(12..14).unwrap()).unwrap();
-        substream.append(buf.get(15..).unwrap()).unwrap();
-
-        let mut cursor = substream.as_cursor();
-        let mut data = vec![0; 7];
-        let result = cursor.read(&mut data);
-        assert_eq!(result.unwrap(), 7);
-        assert_eq!(data, vec![38, 26, 99, 38, 12, 14, 93]);
-
-        let mut data = vec![0; 2];
-        let result = cursor.read(&mut data);
-        assert_eq!(result.unwrap(), 2);
-        assert_eq!(data, vec![86, 88]);
-
-        let mut cursor = substream.as_cursor();
-        let mut data = vec![0; 8];
-        let result = cursor.read(&mut data);
-        assert_eq!(result.unwrap(), 8);
-        assert_eq!(data, vec![38, 26, 99, 38, 12, 14, 93, 86]);
-
-        let mut data = vec![0; 1];
-        let result = cursor.read(&mut data);
-        assert_eq!(result.unwrap(), 1);
-        assert_eq!(data, vec![88]);
-
-        let mut cursor = substream.as_cursor();
-        let mut data = vec![0; 9];
-        let result = cursor.read(&mut data);
-        assert_eq!(result.unwrap(), 9);
-        assert_eq!(data, vec![38, 26, 99, 38, 12, 14, 93, 86, 88]);
     }
 }
