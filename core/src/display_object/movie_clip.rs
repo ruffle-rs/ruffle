@@ -1,5 +1,7 @@
 //! `MovieClip` display object and support code.
+use crate::avm1::ActivationIdentifier as Avm1ActivationIdentifier;
 use crate::avm1::Avm1;
+use crate::avm1::ExecutionReason as Avm1ExecutionReason;
 use crate::avm1::globals::AVM_DEPTH_BIAS;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
@@ -407,6 +409,29 @@ impl<'gc> MovieClip<'gc> {
 
     pub fn set_next_avm1_clip(&self, mc: &Mutation<'gc>, node: Option<MovieClip<'gc>>) {
         unlock!(Gc::write(mc, self.0), MovieClipData, next_avm1_clip).set(node);
+    }
+
+    pub fn call_on_construct_handler(self, context: &mut UpdateContext<'gc>) {
+        let Some(object) = self.0.object1.get() else {
+            return;
+        };
+
+        let mut activation = Avm1Activation::from_nothing(
+            context,
+            Avm1ActivationIdentifier::root("[onConstruct]"),
+            self.as_displayobject(),
+        );
+
+        let result = object.call_method(
+            istr!("onConstruct"),
+            &[],
+            &mut activation,
+            Avm1ExecutionReason::Special,
+        );
+
+        if let Err(e) = result {
+            Avm1::handle_error(&mut activation, e);
+        }
     }
 
     /// Tries to fire events from our `LoaderInfo` object if we're ready - returns

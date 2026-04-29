@@ -841,6 +841,8 @@ fn create_empty_movie_clip<'gc>(
     movie_clip.replace_at_depth(activation.context, new_clip.into(), depth);
     new_clip.post_instantiation(activation.context, None, Instantiator::Avm1, true);
 
+    new_clip.call_on_construct_handler(activation.context);
+
     Ok(new_clip.object1_or_undef())
 }
 

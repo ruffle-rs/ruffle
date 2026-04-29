@@ -203,6 +203,7 @@ ruffle_macros::define_common_strings! {
     "onClose",
     "onComplete",
     "onConnect",
+    "onConstruct",
     "onData",
     "onDragOut",
     "onDragOver",
