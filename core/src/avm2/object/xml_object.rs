@@ -67,6 +67,7 @@ pub struct XmlObjectData<'gc> {
 pub enum NotificationCommand {
     AttributeAdded,
     AttributeChanged,
+    NameSet,
 }
 
 impl<'gc> XmlObject<'gc> {
@@ -306,6 +307,7 @@ impl<'gc> XmlObject<'gc> {
                 let command = match command {
                     NotificationCommand::AttributeAdded => istr!("attributeAdded"),
                     NotificationCommand::AttributeChanged => istr!("attributeChanged"),
+                    NotificationCommand::NameSet => istr!("nameSet"),
                 };
                 let args = [
                     current_target.into(),
