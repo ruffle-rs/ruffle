@@ -60,11 +60,20 @@ impl ScriptObjectHandle {
 pub struct ScriptObjectData<'gc, K = Erased> {
     kind: ObjectKind,
 
+    /// Slots stored on this object.
+    ///
+    /// Hot field — touched on every `op_get_slot` / `op_set_slot`. Declared
+    /// early so that under `#[repr(C)]` the slice header lands in the same
+    /// cache line as `kind`.
+    slots: Box<[Lock<Value<'gc>>]>,
+
+    /// The table used for non-dynamic property lookups.
+    ///
+    /// Also hot — every property dispatch reads through it.
+    vtable: Lock<VTable<'gc>>,
+
     /// Values stored on this object.
     values: RefLock<DynamicMap<DynamicKey<'gc>, Value<'gc>>>,
-
-    /// Slots stored on this object.
-    slots: Box<[Lock<Value<'gc>>]>,
 
     /// Methods stored on this object.
     bound_methods: RefLock<Vec<Option<FunctionObject<'gc>>>>,
@@ -74,9 +83,6 @@ pub struct ScriptObjectData<'gc, K = Erased> {
 
     /// The `Class` that this is an instance of.
     instance_class: Class<'gc>,
-
-    /// The table used for non-dynamic property lookups.
-    vtable: Lock<VTable<'gc>>,
 
     _kind: PhantomData<fn() -> K>,
 }
