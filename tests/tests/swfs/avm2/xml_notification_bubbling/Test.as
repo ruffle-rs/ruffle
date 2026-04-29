@@ -10,8 +10,8 @@ function notifier(currentTarget:Object, command:String, target:Object,
     trace("currentTarget = " + currentTarget.toXMLString());
     trace("command = " + command);
     trace("target = " + target.toXMLString());
-    trace("value = " + value);
-    trace("detail = " + detail);
+    trace("value = " + value + " (" + Object.prototype.toString.call(value) + ")");
+    trace("detail = " + detail + " (" + Object.prototype.toString.call(detail) + ")");
     trace("");
 }
 
@@ -25,6 +25,9 @@ function testit(xml: XML):void {
     xml.first.second.@b = "changed b";
     xml.first.@c = "changed c";
     xml.@d = "changed d";
+
+    xml.first.second.setLocalName("second2");
+    xml.first.second2.setName(new QName("http://example.org", "namespaced"));
 }
 
 var xml1:XML = <root><first><second></second></first></root>;

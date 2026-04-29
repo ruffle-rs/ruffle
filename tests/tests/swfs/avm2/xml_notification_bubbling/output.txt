@@ -6,8 +6,8 @@ currentTarget = <root>
 </root>
 command = attributeAdded
 target = <second a="added a"/>
-value = a
-detail = added a
+value = a ([object String])
+detail = added a ([object String])
 
 # notifier
 currentTarget = <root>
@@ -17,8 +17,8 @@ currentTarget = <root>
 </root>
 command = attributeAdded
 target = <second a="added a" b="added b"/>
-value = b
-detail = added b
+value = b ([object String])
+detail = added b ([object String])
 
 # notifier
 currentTarget = <root>
@@ -30,8 +30,8 @@ command = attributeAdded
 target = <first c="added c">
   <second a="added a" b="added b"/>
 </first>
-value = c
-detail = added c
+value = c ([object String])
+detail = added c ([object String])
 
 # notifier
 currentTarget = <root d="added d">
@@ -45,8 +45,8 @@ target = <root d="added d">
     <second a="added a" b="added b"/>
   </first>
 </root>
-value = d
-detail = added d
+value = d ([object String])
+detail = added d ([object String])
 
 # notifier
 currentTarget = <root d="added d">
@@ -56,8 +56,8 @@ currentTarget = <root d="added d">
 </root>
 command = attributeChanged
 target = <second a="changed a" b="added b"/>
-value = a
-detail = added a
+value = a ([object String])
+detail = added a ([object String])
 
 # notifier
 currentTarget = <root d="added d">
@@ -67,8 +67,8 @@ currentTarget = <root d="added d">
 </root>
 command = attributeChanged
 target = <second a="changed a" b="changed b"/>
-value = b
-detail = added b
+value = b ([object String])
+detail = added b ([object String])
 
 # notifier
 currentTarget = <root d="added d">
@@ -80,8 +80,8 @@ command = attributeChanged
 target = <first c="changed c">
   <second a="changed a" b="changed b"/>
 </first>
-value = c
-detail = added c
+value = c ([object String])
+detail = added c ([object String])
 
 # notifier
 currentTarget = <root d="changed d">
@@ -95,15 +95,37 @@ target = <root d="changed d">
     <second a="changed a" b="changed b"/>
   </first>
 </root>
-value = d
-detail = added d
+value = d ([object String])
+detail = added d ([object String])
+
+# notifier
+currentTarget = <root d="changed d">
+  <first c="changed c">
+    <second2 a="changed a" b="changed b"/>
+  </first>
+</root>
+command = nameSet
+target = <second2 a="changed a" b="changed b"/>
+value = second2 ([object String])
+detail = second ([object String])
+
+# notifier
+currentTarget = <root d="changed d">
+  <first c="changed c">
+    <namespaced a="changed a" b="changed b" xmlns="http://example.org"/>
+  </first>
+</root>
+command = nameSet
+target = <namespaced a="changed a" b="changed b" xmlns="http://example.org"/>
+value = http://example.org::namespaced ([object QName])
+detail = namespaced ([object String])
 
 # notifier
 currentTarget = <second a="added a"/>
 command = attributeAdded
 target = <second a="added a"/>
-value = a
-detail = added a
+value = a ([object String])
+detail = added a ([object String])
 
 # notifier
 currentTarget = <first>
@@ -111,8 +133,8 @@ currentTarget = <first>
 </first>
 command = attributeAdded
 target = <second a="added a"/>
-value = a
-detail = added a
+value = a ([object String])
+detail = added a ([object String])
 
 # notifier
 currentTarget = <root2>
@@ -122,15 +144,15 @@ currentTarget = <root2>
 </root2>
 command = attributeAdded
 target = <second a="added a"/>
-value = a
-detail = added a
+value = a ([object String])
+detail = added a ([object String])
 
 # notifier
 currentTarget = <second a="added a" b="added b"/>
 command = attributeAdded
 target = <second a="added a" b="added b"/>
-value = b
-detail = added b
+value = b ([object String])
+detail = added b ([object String])
 
 # notifier
 currentTarget = <first>
@@ -138,8 +160,8 @@ currentTarget = <first>
 </first>
 command = attributeAdded
 target = <second a="added a" b="added b"/>
-value = b
-detail = added b
+value = b ([object String])
+detail = added b ([object String])
 
 # notifier
 currentTarget = <root2>
@@ -149,8 +171,8 @@ currentTarget = <root2>
 </root2>
 command = attributeAdded
 target = <second a="added a" b="added b"/>
-value = b
-detail = added b
+value = b ([object String])
+detail = added b ([object String])
 
 # notifier
 currentTarget = <first c="added c">
@@ -160,8 +182,8 @@ command = attributeAdded
 target = <first c="added c">
   <second a="added a" b="added b"/>
 </first>
-value = c
-detail = added c
+value = c ([object String])
+detail = added c ([object String])
 
 # notifier
 currentTarget = <root2>
@@ -173,8 +195,8 @@ command = attributeAdded
 target = <first c="added c">
   <second a="added a" b="added b"/>
 </first>
-value = c
-detail = added c
+value = c ([object String])
+detail = added c ([object String])
 
 # notifier
 currentTarget = <root2 d="added d">
@@ -188,15 +210,15 @@ target = <root2 d="added d">
     <second a="added a" b="added b"/>
   </first>
 </root2>
-value = d
-detail = added d
+value = d ([object String])
+detail = added d ([object String])
 
 # notifier
 currentTarget = <second a="changed a" b="added b"/>
 command = attributeChanged
 target = <second a="changed a" b="added b"/>
-value = a
-detail = added a
+value = a ([object String])
+detail = added a ([object String])
 
 # notifier
 currentTarget = <first c="added c">
@@ -204,8 +226,8 @@ currentTarget = <first c="added c">
 </first>
 command = attributeChanged
 target = <second a="changed a" b="added b"/>
-value = a
-detail = added a
+value = a ([object String])
+detail = added a ([object String])
 
 # notifier
 currentTarget = <root2 d="added d">
@@ -215,15 +237,15 @@ currentTarget = <root2 d="added d">
 </root2>
 command = attributeChanged
 target = <second a="changed a" b="added b"/>
-value = a
-detail = added a
+value = a ([object String])
+detail = added a ([object String])
 
 # notifier
 currentTarget = <second a="changed a" b="changed b"/>
 command = attributeChanged
 target = <second a="changed a" b="changed b"/>
-value = b
-detail = added b
+value = b ([object String])
+detail = added b ([object String])
 
 # notifier
 currentTarget = <first c="added c">
@@ -231,8 +253,8 @@ currentTarget = <first c="added c">
 </first>
 command = attributeChanged
 target = <second a="changed a" b="changed b"/>
-value = b
-detail = added b
+value = b ([object String])
+detail = added b ([object String])
 
 # notifier
 currentTarget = <root2 d="added d">
@@ -242,8 +264,8 @@ currentTarget = <root2 d="added d">
 </root2>
 command = attributeChanged
 target = <second a="changed a" b="changed b"/>
-value = b
-detail = added b
+value = b ([object String])
+detail = added b ([object String])
 
 # notifier
 currentTarget = <first c="changed c">
@@ -253,8 +275,8 @@ command = attributeChanged
 target = <first c="changed c">
   <second a="changed a" b="changed b"/>
 </first>
-value = c
-detail = added c
+value = c ([object String])
+detail = added c ([object String])
 
 # notifier
 currentTarget = <root2 d="added d">
@@ -266,8 +288,8 @@ command = attributeChanged
 target = <first c="changed c">
   <second a="changed a" b="changed b"/>
 </first>
-value = c
-detail = added c
+value = c ([object String])
+detail = added c ([object String])
 
 # notifier
 currentTarget = <root2 d="changed d">
@@ -281,6 +303,60 @@ target = <root2 d="changed d">
     <second a="changed a" b="changed b"/>
   </first>
 </root2>
-value = d
-detail = added d
+value = d ([object String])
+detail = added d ([object String])
+
+# notifier
+currentTarget = <second2 a="changed a" b="changed b"/>
+command = nameSet
+target = <second2 a="changed a" b="changed b"/>
+value = second2 ([object String])
+detail = second ([object String])
+
+# notifier
+currentTarget = <first c="changed c">
+  <second2 a="changed a" b="changed b"/>
+</first>
+command = nameSet
+target = <second2 a="changed a" b="changed b"/>
+value = second2 ([object String])
+detail = second ([object String])
+
+# notifier
+currentTarget = <root2 d="changed d">
+  <first c="changed c">
+    <second2 a="changed a" b="changed b"/>
+  </first>
+</root2>
+command = nameSet
+target = <second2 a="changed a" b="changed b"/>
+value = second2 ([object String])
+detail = second ([object String])
+
+# notifier
+currentTarget = <namespaced a="changed a" b="changed b" xmlns="http://example.org"/>
+command = nameSet
+target = <namespaced a="changed a" b="changed b" xmlns="http://example.org"/>
+value = http://example.org::namespaced ([object QName])
+detail = namespaced ([object String])
+
+# notifier
+currentTarget = <first c="changed c">
+  <namespaced a="changed a" b="changed b" xmlns="http://example.org"/>
+</first>
+command = nameSet
+target = <namespaced a="changed a" b="changed b" xmlns="http://example.org"/>
+value = http://example.org::namespaced ([object QName])
+detail = namespaced ([object String])
+
+# notifier
+currentTarget = <root2 d="changed d">
+  <first c="changed c">
+    <namespaced a="changed a" b="changed b" xmlns="http://example.org"/>
+  </first>
+</root2>
+command = nameSet
+target = <namespaced a="changed a" b="changed b" xmlns="http://example.org"/>
+value = http://example.org::namespaced ([object QName])
+detail = namespaced ([object String])
 
