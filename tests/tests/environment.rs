@@ -1,17 +1,60 @@
 use ruffle_test_framework::environment::{CompileMode, Environment};
 
-#[derive(Debug)]
+#[cfg(feature = "imgtests")]
+use ruffle_render_wgpu::descriptors::Descriptors;
+#[cfg(feature = "imgtests")]
+use std::sync::{Arc, LazyLock};
+
 pub struct NativeEnvironment {
     pub compile_mode: CompileMode,
+    #[cfg(feature = "imgtests")]
+    descriptors: LazyLock<Option<Arc<Descriptors>>>,
+}
+
+impl NativeEnvironment {
+    pub fn new(compile_mode: CompileMode) -> Self {
+        Self {
+            compile_mode,
+            #[cfg(feature = "imgtests")]
+            descriptors: LazyLock::new(renderer::build_wgpu_descriptors),
+        }
+    }
+
+    /// Wait for any pending GPU work to finish, with a `timeout`.
+    ///
+    /// Call this before `main` ends so the driver's worker threads quiesce
+    /// while the environment is still alive — otherwise libc's
+    /// `__cxa_finalize` can run while a Mesa lavapipe JIT thread is still
+    /// compiling a shader, racing the destructors and producing a
+    /// `SIGSEGV`. The wait also keeps wgpu's `Queue::Drop` (with its
+    /// hard-coded ~6.3 s budget that `panic!`s on timeout) happy on slow
+    /// software renderers like DX12-WARP on the Windows GitHub-Actions
+    /// runner.
+    pub fn flush_gpu_with_timeout(&self, #[allow(unused)] timeout: std::time::Duration) {
+        #[cfg(feature = "imgtests")]
+        {
+            // `LazyLock::get` peeks without forcing initialization, so tests
+            // that never touched the renderer don't pay the cost of building
+            // wgpu state just to flush it again at shutdown.
+            if let Some(Some(descriptors)) = LazyLock::get(&self.descriptors) {
+                use ruffle_render_wgpu::wgpu;
+
+                let _ = descriptors.device.poll(wgpu::PollType::Wait {
+                    submission_index: None,
+                    timeout: Some(timeout),
+                });
+            }
+        }
+    }
 }
 
 impl Environment for NativeEnvironment {
     #[cfg(feature = "imgtests")]
     fn is_render_supported(
         &self,
-        requirements: &ruffle_test_framework::options::RenderOptions,
+        _requirements: &ruffle_test_framework::options::RenderOptions,
     ) -> bool {
-        renderer::is_supported(requirements)
+        self.descriptors.is_some()
     }
 
     #[cfg(feature = "imgtests")]
@@ -23,7 +66,7 @@ impl Environment for NativeEnvironment {
         Box<dyn ruffle_test_framework::environment::RenderInterface>,
         Box<dyn ruffle_test_framework::environment::RenderBackend>,
     )> {
-        renderer::NativeRenderInterface::create_pair(width, height)
+        renderer::create_pair(self, width, height)
     }
 
     fn compile_mode(&self) -> CompileMode {
@@ -33,6 +76,7 @@ impl Environment for NativeEnvironment {
 
 #[cfg(feature = "imgtests")]
 mod renderer {
+    use super::NativeEnvironment;
     use image::RgbaImage;
     use ruffle_render_wgpu::backend::{
         WgpuRenderBackend, create_wgpu_instance, request_adapter_and_device,
@@ -41,40 +85,37 @@ mod renderer {
     use ruffle_render_wgpu::target::TextureTarget;
     use ruffle_render_wgpu::wgpu;
     use ruffle_test_framework::environment::{RenderBackend, RenderInterface};
-    use ruffle_test_framework::options::RenderOptions;
     use std::any::Any;
-    use std::sync::{Arc, OnceLock};
+    use std::sync::Arc;
 
-    pub struct NativeRenderInterface;
+    pub struct NativeRenderInterface {
+        name: String,
+    }
 
-    impl NativeRenderInterface {
-        pub fn create_pair(
-            width: u32,
-            height: u32,
-        ) -> Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
-            if let Some(descriptors) = descriptors() {
-                let target = TextureTarget::new(&descriptors.device, (width, height)).expect(
-                    "WGPU Texture Target creation must not fail, everything was checked ahead of time",
-                );
+    pub fn create_pair(
+        env: &NativeEnvironment,
+        width: u32,
+        height: u32,
+    ) -> Option<(Box<dyn RenderInterface>, Box<dyn RenderBackend>)> {
+        let descriptors = env.descriptors.clone()?;
+        let target = TextureTarget::new(&descriptors.device, (width, height)).expect(
+            "WGPU Texture Target creation must not fail, everything was checked ahead of time",
+        );
 
-                Some( (Box::new(Self), Box::new(
-                    WgpuRenderBackend::new(descriptors.clone(), target)
-                        .expect("WGPU Render backend creation must not fail, everything was checked ahead of time"),
-                )))
-            } else {
-                None
-            }
-        }
+        let adapter_info = descriptors.adapter.get_info();
+        let name = format!("{}-{:?}", std::env::consts::OS, adapter_info.backend);
+
+        Some((
+            Box::new(NativeRenderInterface { name }),
+            Box::new(WgpuRenderBackend::new(descriptors, target).expect(
+                "WGPU Render backend creation must not fail, everything was checked ahead of time",
+            )),
+        ))
     }
 
     impl RenderInterface for NativeRenderInterface {
         fn name(&self) -> String {
-            if let Some(descriptors) = descriptors() {
-                let adapter_info = descriptors.adapter.get_info();
-                format!("{}-{:?}", std::env::consts::OS, adapter_info.backend)
-            } else {
-                std::env::consts::OS.to_string()
-            }
+            self.name.clone()
         }
 
         fn capture(&self, backend: &mut dyn RenderBackend) -> RgbaImage {
@@ -84,12 +125,6 @@ mod renderer {
             renderer.capture_frame().expect("Failed to capture image")
         }
     }
-
-    pub fn is_supported(_requirements: &RenderOptions) -> bool {
-        descriptors().is_some()
-    }
-
-    static WGPU: OnceLock<Option<Arc<Descriptors>>> = OnceLock::new();
 
     /*
        It can be expensive to construct WGPU, much less Descriptors, so we put it off as long as we can
@@ -101,6 +136,14 @@ mod renderer {
 
        For `cargo test` it's relatively okay if we spend the time to construct descriptors once,
        but for `cargo nextest run` it's a big cost per test if it's not going to use it.
+
+       The descriptors live on the `NativeEnvironment` (rather than a `static`)
+       so that they get dropped when the environment is dropped at the end of
+       `main`. Their `Drop` impl runs `vkDestroyDevice` / `vkDestroyInstance`,
+       which joins driver worker threads (notably Mesa lavapipe's LLVM JIT
+       pool) before libc tears the process down. Leaving the descriptors in a
+       `static` left those workers racing with `__cxa_finalize`, producing a
+       `SIGSEGV` after the test had already passed.
     */
 
     fn create_wgpu_device() -> Option<(wgpu::Instance, wgpu::Adapter, wgpu::Device, wgpu::Queue)> {
@@ -115,15 +158,9 @@ mod renderer {
         .map(|(adapter, device, queue)| (instance, adapter, device, queue))
     }
 
-    fn build_wgpu_descriptors() -> Option<Arc<Descriptors>> {
-        if let Some((instance, adapter, device, queue)) = create_wgpu_device() {
-            Some(Arc::new(Descriptors::new(instance, adapter, device, queue)))
-        } else {
-            None
-        }
-    }
+    pub(super) fn build_wgpu_descriptors() -> Option<Arc<Descriptors>> {
+        let (instance, adapter, device, queue) = create_wgpu_device()?;
 
-    fn descriptors() -> Option<&'static Arc<Descriptors>> {
-        WGPU.get_or_init(build_wgpu_descriptors).as_ref()
+        Some(Arc::new(Descriptors::new(instance, adapter, device, queue)))
     }
 }
