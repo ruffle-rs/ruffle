@@ -169,7 +169,7 @@ impl<'gc> Avm1<'gc> {
             &[],
         );
         if let Err(e) = child_activation.run_actions(code) {
-            root_error_handler(&mut child_activation, e);
+            Self::handle_error(&mut child_activation, e);
         }
     }
 
@@ -246,7 +246,7 @@ impl<'gc> Avm1<'gc> {
             &[],
         );
         if let Err(e) = child_activation.run_actions(code) {
-            root_error_handler(&mut child_activation, e);
+            Self::handle_error(&mut child_activation, e);
         }
     }
 
@@ -585,6 +585,36 @@ impl<'gc> Avm1<'gc> {
 
     #[cfg(not(feature = "avm_debug"))]
     pub const fn set_show_debug_output(&self, _visible: bool) {}
+
+    pub fn handle_error(activation: &mut Activation<'_, 'gc>, error: Error<'gc>) {
+        match &error {
+            Error::ThrownValue(value) => {
+                tracing::warn!("Uncaught AVM1 error: {value:?}");
+
+                let string = if let Ok(message) = value.coerce_to_string(activation) {
+                    Cow::Owned(message.to_utf8_lossy().to_string())
+                } else {
+                    // The only Value variant that can throw an error when being stringified
+                    // is Object, so just print "[type Object]".
+                    Cow::Borrowed("[type Object]")
+                };
+
+                activation
+                    .context
+                    .avm_warning(&format!("Uncaught exception, {string}"));
+
+                // Continue execution without halting.
+                return;
+            }
+            Error::InvalidSwf(swf_error) => {
+                tracing::error!("{}: {}", error, swf_error);
+            }
+            _ => {
+                tracing::error!("{}", error);
+            }
+        }
+        activation.context.avm1.halt();
+    }
 }
 
 /// Utility function used by `Avm1::action_wait_for_frame` and
@@ -595,34 +625,4 @@ pub fn skip_actions(reader: &mut Reader<'_>, num_actions_to_skip: u8) {
             tracing::warn!("Couldn't skip action: {}", e);
         }
     }
-}
-
-fn root_error_handler<'gc>(activation: &mut Activation<'_, 'gc>, error: Error<'gc>) {
-    match &error {
-        Error::ThrownValue(value) => {
-            tracing::warn!("Uncaught AVM1 error: {value:?}");
-
-            let string = if let Ok(message) = value.coerce_to_string(activation) {
-                Cow::Owned(message.to_utf8_lossy().to_string())
-            } else {
-                // The only Value variant that can throw an error when being stringified
-                // is Object, so just print "[type Object]".
-                Cow::Borrowed("[type Object]")
-            };
-
-            activation
-                .context
-                .avm_warning(&format!("Uncaught exception, {string}"));
-
-            // Continue execution without halting.
-            return;
-        }
-        Error::InvalidSwf(swf_error) => {
-            tracing::error!("{}: {}", error, swf_error);
-        }
-        _ => {
-            tracing::error!("{}", error);
-        }
-    }
-    activation.context.avm1.halt();
 }
