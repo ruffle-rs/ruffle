@@ -675,7 +675,7 @@ impl<'a> WgpuCommandHandler<'a> {
 
 impl CommandHandler for WgpuCommandHandler<'_> {
     fn blend(&mut self, commands: CommandList, blend_mode: RenderBlendMode) {
-        let mut surface = Surface::new(
+        let surface = Surface::new(
             self.descriptors,
             self.quality,
             self.width,
@@ -908,7 +908,7 @@ impl CommandHandler for WgpuCommandHandler<'_> {
     }
 
     fn render_alpha_mask(&mut self, maskee_commands: CommandList, mask_commands: CommandList) {
-        let mut surface = Surface::new(
+        let surface = Surface::new(
             self.descriptors,
             self.quality,
             self.width,

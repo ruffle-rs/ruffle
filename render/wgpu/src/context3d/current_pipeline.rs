@@ -223,7 +223,7 @@ impl CurrentPipeline {
         }
     }
 
-    pub fn update_vertex_buffer_at(&mut self, _index: usize) {
+    pub fn update_vertex_buffer_at(&self, _index: usize) {
         // FIXME - check if it's the same, so we can skip rebuilding the pipeline
         self.dirty.set(true);
     }
