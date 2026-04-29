@@ -6,6 +6,7 @@
 //! libtest_mimic is used so that the runner is compatible with `cargo test`.
 
 use anyhow::Context;
+pub use libtest_mimic::Conclusion;
 use libtest_mimic::{Arguments, Trial};
 use regex::Regex;
 use std::borrow::Cow;
@@ -112,7 +113,7 @@ impl FsTestsRunner {
         self
     }
 
-    pub fn run(mut self) -> ! {
+    pub fn run(mut self) -> Conclusion {
         self.ensure_root_dir_exists();
 
         let args = Arguments::from_args();
@@ -157,7 +158,7 @@ impl FsTestsRunner {
 
         tests.sort_unstable_by(|a, b| a.name().cmp(b.name()));
 
-        libtest_mimic::run(&args, tests).exit()
+        libtest_mimic::run(&args, tests)
     }
 
     fn ensure_root_dir_exists(&self) {

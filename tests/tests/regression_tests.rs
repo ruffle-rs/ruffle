@@ -97,7 +97,7 @@ fn main() {
         external_interface_avm2(&NativeEnvironment { compile_mode })
     }));
 
-    runner.run()
+    runner.run().exit()
 }
 
 fn load_test_dir<'a>(test_dir: &'a VfsPath, name: &'a str) -> impl Iterator<Item = Test> + 'a {

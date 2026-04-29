@@ -90,7 +90,7 @@ fn main() -> Result<()> {
             register_trial(load_test(params))
         }));
 
-    runner.run()
+    runner.run().exit()
 }
 
 fn load_test(params: TestLoaderParams) -> Trial {
