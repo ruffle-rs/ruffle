@@ -1,6 +1,9 @@
 mod compile;
+mod execute;
+mod flashplayer;
 
 use crate::compile::{CompileOptions, main_compile};
+use crate::execute::{ExecuteOptions, main_execute};
 use anyhow::Context;
 use clap::{Args, Parser, Subcommand};
 use ruffle_fs_tests_runner::FsTestsRunner;
@@ -51,12 +54,20 @@ impl TestFilterOptions {
         runner.with_skip(self.skip.clone());
         runner.with_exact(self.exact);
     }
+
+    fn is_empty(&self) -> bool {
+        self.filter.is_none() && self.skip.is_empty()
+    }
 }
 
 #[derive(Subcommand)]
 enum Commands {
     /// Compile test assets from their source files.
     Compile(CompileOptions),
+
+    /// Executes a test using Flash Player. This is not the same as running the test, and has many limitations.
+    /// This is currently only supported on Linux.
+    Execute(ExecuteOptions),
 }
 
 fn main() {
@@ -65,6 +76,9 @@ fn main() {
     match opt.command {
         Commands::Compile(compile_options) => {
             main_compile(compile_options);
+        }
+        Commands::Execute(execute_options) => {
+            main_execute(execute_options);
         }
     }
 }

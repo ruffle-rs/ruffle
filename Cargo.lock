@@ -5675,6 +5675,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
+name = "temp-dir"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "016ef9739649996fcc983b9c588fe3d557cf216d4d98503ce1b057ab5a66d689"
+
+[[package]]
 name = "tempfile"
 version = "3.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5720,6 +5726,9 @@ dependencies = [
  "ruffle_fs_tests_runner",
  "ruffle_render_wgpu",
  "ruffle_test_framework",
+ "serde",
+ "temp-dir",
+ "toml",
  "tracing",
  "tracing-subscriber",
 ]

@@ -102,4 +102,8 @@ impl PlayerOptions {
             None
         }
     }
+
+    pub fn version(&self) -> Option<u8> {
+        self.version
+    }
 }

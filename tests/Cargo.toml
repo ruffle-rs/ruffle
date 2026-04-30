@@ -28,6 +28,10 @@ ruffle_fs_tests_runner = { path = "fs-tests-runner" }
 ruffle_test_framework = { path = "framework", features = ["clap"] }
 clap = { workspace = true }
 anyhow = { workspace = true }
+serde = { workspace = true }
+toml = { workspace = true }
+temp-dir = "0.2.0"
+ruffle_core = { path = "../core" }
 
 [dev-dependencies]
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "aac", "default_font"] }
