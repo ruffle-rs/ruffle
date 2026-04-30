@@ -1555,6 +1555,16 @@ Testing _global.escape
   call, type=[function]
   constructor, type=[function]
   __proto__, own, type=[object]
+Testing _global.ASSetNativeAccessor
+  apply, type=[function]
+  call, type=[function]
+  constructor, type=[function]
+  __proto__, own, type=[object]
+Testing _global.ASSetNative
+  apply, type=[function]
+  call, type=[function]
+  constructor, type=[function]
+  __proto__, own, type=[object]
 Testing _global.ASSetPropFlags
   apply, type=[function]
   call, type=[function]

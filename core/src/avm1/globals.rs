@@ -1,5 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::globals::asnative::as_set_native_method;
 use crate::avm1::property_decl::DeclContext;
 use crate::avm1::{Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
@@ -637,8 +638,10 @@ pub fn create_globals<'gc>(
         // TODO: RemoteLSOUsage
 
         "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM); // TODO: (1, 0)
-        // TODO: ASSetNative - (4, 0)
-        // TODO: ASSetAccessor - (4, 1)
+
+        use fn as_set_native_method;
+        "ASSetNative" => method(AS_SET_NATIVE; DONT_ENUM);
+        "ASSetNativeAccessor" => method(AS_SET_NATIVE_ACCESSOR; DONT_ENUM);
 
         use fn method;
         "escape" => method(ESCAPE; DONT_ENUM);

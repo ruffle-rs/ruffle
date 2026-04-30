@@ -1018,6 +1018,14 @@ Testing _global.escape
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
+Testing _global.ASSetNativeAccessor
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.ASSetNative
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  __proto__, DONT_DELETE
 Testing _global.ASSetPropFlags
   apply, DONT_DELETE
   call, DONT_DELETE
