@@ -256,6 +256,11 @@ frame_rate = 24
 # The display region of the stage, in pixels. You can usually get away with just specifying max, not min.
 stage_rect = { x_min = 0.0, y_min = 0.0, x_max = 550.0, y_max = 400.0 }
 
+# Whether the SWF is allowed to use the network.
+# If true, the SWF can access the network but not local files.
+# If false (default), the SWF can access local files but not the network.
+use_network = false
+
 ```
 
 ## Multiple tests

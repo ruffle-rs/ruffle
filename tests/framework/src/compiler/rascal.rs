@@ -15,6 +15,7 @@ pub struct RascalOptions {
     pub classes: Vec<String>,
     pub pcode: Vec<String>,
     pub stage_rect: StageSize,
+    pub use_network: bool,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -99,7 +100,8 @@ impl RascalOptions {
                     self.stage_rect.y_min,
                     self.stage_rect.x_max,
                     self.stage_rect.y_max,
-                ),
+                )
+                .with_network_sandbox(self.use_network),
         }))
     }
 }
@@ -114,6 +116,7 @@ impl Default for RascalOptions {
             classes: vec![],
             pcode: vec![],
             stage_rect: Default::default(),
+            use_network: false,
         }
     }
 }
