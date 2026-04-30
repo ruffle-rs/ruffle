@@ -13,6 +13,7 @@ pub struct RascalOptions {
     pub frame_rate: f32,
     pub scripts: Vec<String>,
     pub classes: Vec<String>,
+    pub pcode: Vec<String>,
     pub stage_rect: StageSize,
 }
 
@@ -43,6 +44,7 @@ pub struct RascalCompiler {
     compile_options: CompileOptions,
     scripts: Vec<String>,
     classes: Vec<String>,
+    pcode: Vec<String>,
 }
 
 impl SwfCompiler for RascalCompiler {
@@ -54,6 +56,9 @@ impl SwfCompiler for RascalCompiler {
         }
         for class in &self.classes {
             builder.add_class(class);
+        }
+        for pcode in &self.pcode {
+            builder.add_pcode(pcode);
         }
         let program = builder.build()?;
         let swf = program
@@ -69,9 +74,9 @@ impl RascalOptions {
         if self.swf_version.is_none() {
             return Err(anyhow::anyhow!("swf_version is required"));
         }
-        if self.scripts.is_empty() && self.classes.is_empty() {
+        if self.scripts.is_empty() && self.classes.is_empty() && self.pcode.is_empty() {
             return Err(anyhow::anyhow!(
-                "At least one of scripts or classes must be specified"
+                "At least one of scripts, classes or pcode must be specified"
             ));
         }
         Ok(())
@@ -82,6 +87,7 @@ impl RascalOptions {
             target: self.target.clone(),
             classes: self.classes.clone(),
             scripts: self.scripts.clone(),
+            pcode: self.pcode.clone(),
             compile_options: CompileOptions::default().with_swf_version(
                 self.swf_version
                     .expect("swf_version is validated elsewhere"),
@@ -106,7 +112,8 @@ impl Default for RascalOptions {
             frame_rate: 24.0,
             scripts: vec![],
             classes: vec![],
-            stage_rect: StageSize::default(),
+            pcode: vec![],
+            stage_rect: Default::default(),
         }
     }
 }

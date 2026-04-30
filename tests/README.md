@@ -243,6 +243,9 @@ scripts = ["test.as", "other.as"]
 # A list of class names (not paths) to compile.
 classes = ["foo.Bar", "SomeClass"]
 
+# A list of pcode files to compile.
+pcode = ["test.pcode"]
+
 # The SWF version to compile for (see https://github.com/ruffle-rs/ruffle/wiki/SWF-version-chart).
 # This is required!
 swf_version = 15
