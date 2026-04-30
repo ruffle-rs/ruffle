@@ -293,6 +293,18 @@ impl Substream {
         self.chunks.read().unwrap().len()
     }
 
+    /// Create a readable cursor into the `Substream`.
+    ///
+    /// The returned cursor clones the `Substream` and thus shares a chunk list
+    /// with it.
+    pub fn as_cursor(&self) -> SubstreamCursor {
+        SubstreamCursor {
+            substream: self.clone(),
+            chunk_pos: 0,
+            bytes_pos: 0,
+        }
+    }
+
     /// Calculate the number of bytes in the `Substream`.
     pub fn len(&self) -> usize {
         let mut tally = 0;
@@ -501,7 +513,7 @@ impl UpperHex for SliceRef<'_> {
 
 #[cfg(test)]
 mod test {
-    use crate::buffer::Buffer;
+    use crate::buffer::{Buffer, Substream};
     use std::io::Read;
 
     #[test]
@@ -556,5 +568,64 @@ mod test {
         let result = cursor.read(&mut data);
         assert_eq!(result.unwrap(), slice.len());
         assert_eq!(&data[..slice.len()], &refdata[..]);
+    }
+
+    #[test]
+    fn substream_cursor_read_inside() {
+        let buf = Buffer::from(vec![
+            38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
+        ]);
+        let mut substream = Substream::new(buf.clone());
+
+        substream.append(buf.get(3..7).unwrap()).unwrap();
+        substream.append(buf.get(10..12).unwrap()).unwrap();
+        substream.append(buf.get(14..15).unwrap()).unwrap();
+
+        let mut cursor = substream.as_cursor();
+        let mut data = vec![0; 7];
+        let result = cursor.read(&mut data);
+        assert_eq!(result.unwrap(), 7);
+        assert_eq!(data, vec![1; 7]);
+    }
+
+    #[test]
+    fn substream_cursor_read_outside() {
+        let buf = Buffer::from(vec![
+            38, 26, 99, 1, 1, 1, 1, 38, 12, 14, 1, 1, 93, 86, 1, 88,
+        ]);
+        let mut substream = Substream::new(buf.clone());
+
+        substream.append(buf.get(0..3).unwrap()).unwrap();
+        substream.append(buf.get(7..10).unwrap()).unwrap();
+        substream.append(buf.get(12..14).unwrap()).unwrap();
+        substream.append(buf.get(15..).unwrap()).unwrap();
+
+        let mut cursor = substream.as_cursor();
+        let mut data = vec![0; 7];
+        let result = cursor.read(&mut data);
+        assert_eq!(result.unwrap(), 7);
+        assert_eq!(data, vec![38, 26, 99, 38, 12, 14, 93]);
+
+        let mut data = vec![0; 2];
+        let result = cursor.read(&mut data);
+        assert_eq!(result.unwrap(), 2);
+        assert_eq!(data, vec![86, 88]);
+
+        let mut cursor = substream.as_cursor();
+        let mut data = vec![0; 8];
+        let result = cursor.read(&mut data);
+        assert_eq!(result.unwrap(), 8);
+        assert_eq!(data, vec![38, 26, 99, 38, 12, 14, 93, 86]);
+
+        let mut data = vec![0; 1];
+        let result = cursor.read(&mut data);
+        assert_eq!(result.unwrap(), 1);
+        assert_eq!(data, vec![88]);
+
+        let mut cursor = substream.as_cursor();
+        let mut data = vec![0; 9];
+        let result = cursor.read(&mut data);
+        assert_eq!(result.unwrap(), 9);
+        assert_eq!(data, vec![38, 26, 99, 38, 12, 14, 93, 86, 88]);
     }
 }
