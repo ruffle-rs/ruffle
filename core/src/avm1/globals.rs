@@ -387,7 +387,12 @@ pub fn escape<'gc>(
         return Ok(Value::Undefined);
     };
 
+    Ok(AvmString::new(activation.gc(), escape_internal(s.as_wstr())).into())
+}
+
+pub fn escape_internal(s: &WStr) -> WString {
     let mut buffer = Vec::<u8>::new();
+
     // TODO: unpaired surrogates will be lost; this is incorrect:
     // - `\u{DC00}` should become "%ED%B0%80";
     // - `\u{DFFF}` should become "%ED%BF%BF".
@@ -404,7 +409,8 @@ pub fn escape<'gc>(
             }
         };
     }
-    Ok(AvmString::new(activation.gc(), WString::from_buf(buffer)).into())
+
+    WString::from_buf(buffer)
 }
 
 pub fn unescape<'gc>(
