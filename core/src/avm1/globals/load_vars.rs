@@ -52,13 +52,16 @@ fn decode<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     // Spec says added in SWF 7, but not version gated.
     // Decode the query string into properties on this object.
-    if let Some(data) = args.get(0) {
-        let data = data.coerce_to_string(activation)?;
-        for (k, v) in url::form_urlencoded::parse(data.to_utf8_lossy().as_bytes()) {
-            let k = AvmString::new_utf8(activation.gc(), k);
-            let v = AvmString::new_utf8(activation.gc(), v);
-            this.set(k, v.into(), activation)?;
-        }
+
+    let Some(data) = args.get(0) else {
+        return Ok(Value::Bool(false));
+    };
+
+    let data = data.coerce_to_string(activation)?;
+    for (k, v) in url::form_urlencoded::parse(data.to_utf8_lossy().as_bytes()) {
+        let k = AvmString::new_utf8(activation.gc(), k);
+        let v = AvmString::new_utf8(activation.gc(), v);
+        this.set(k, v.into(), activation)?;
     }
 
     Ok(Value::Undefined)
