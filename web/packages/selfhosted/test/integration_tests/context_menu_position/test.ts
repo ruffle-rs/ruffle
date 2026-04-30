@@ -29,7 +29,7 @@ describe("Context Menu", () => {
     it("load the test", async () => {
         await openTest(browser, "integration_tests/context_menu_position");
         await injectRuffleAndWait(browser);
-        const player = await browser.$("<ruffle-object>");
+        const player = await browser.$("<ruffle-object>").getElement();
         await playAndMonitor(browser, player, ["Loaded!"]);
 
         // Dismiss hardware acceleration modal in Chrome
@@ -153,7 +153,7 @@ describe("Context Menu", () => {
     });
 
     it("no more traces", async function () {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
         assertNoMoreTraceOutput(browser, player);
     });
 });

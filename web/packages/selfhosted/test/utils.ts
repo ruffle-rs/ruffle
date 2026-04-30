@@ -24,14 +24,14 @@ export async function isRuffleLoaded(browser: WebdriverIO.Browser) {
 
 export async function isRufflePlayerLoaded(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element,
 ) {
     return (
         (await browser.execute(
             (player) =>
                 // TODO: How can we import ReadyState enum?
                 (player as Player.PlayerElement).ruffle().readyState,
-            await player,
+            player,
         )) === 2
     );
 }
@@ -85,48 +85,42 @@ export async function injectRuffle(browser: WebdriverIO.Browser) {
 
 export async function playAndMonitor(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element,
     expectedOutput: string[] = ["Hello from Flash!"],
 ) {
     await throwIfError(browser);
-    await waitForPlayerToLoad(browser, await player);
-    await setupAndPlay(browser, await player);
+    await waitForPlayerToLoad(browser, player);
+    await setupAndPlay(browser, player);
 
     await expectTraceOutput(browser, player, expectedOutput);
 }
 
 export async function setupAndPlay(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element,
 ) {
-    await browser.execute(
-        (playerElement) => {
-            const player = playerElement as Player.PlayerElement;
-            player.__ruffle_log__ = [];
-            player.ruffle().traceObserver = (msg) => {
-                player.__ruffle_log__.push(msg);
-                console.log(`[trace] ${msg}`);
-            };
-            player.ruffle().resume();
-        },
-        await player,
-    );
+    await browser.execute((playerElement) => {
+        const player = playerElement as Player.PlayerElement;
+        player.__ruffle_log__ = [];
+        player.ruffle().traceObserver = (msg) => {
+            player.__ruffle_log__.push(msg);
+            console.log(`[trace] ${msg}`);
+        };
+        player.ruffle().resume();
+    }, player);
 }
 
 export async function getTraceOutput(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element,
     messageCount: number = 1,
 ): Promise<string[]> {
     // Await trace output
     await browser.waitUntil(
         async () => {
-            const log = await browser.execute(
-                (player) => {
-                    return (player as Player.PlayerElement).__ruffle_log__;
-                },
-                await player,
-            );
+            const log = await browser.execute((player) => {
+                return (player as Player.PlayerElement).__ruffle_log__;
+            }, player);
             return log.length >= messageCount;
         },
         {
@@ -148,7 +142,7 @@ export async function getTraceOutput(
 
 export async function expectTraceOutput(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element,
     messages: string[],
 ) {
     expect(
@@ -158,7 +152,7 @@ export async function expectTraceOutput(
 
 export async function clearTraceOutput(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element,
 ) {
     await browser.execute((playerElement) => {
         const player = playerElement as Player.PlayerElement;
@@ -168,7 +162,7 @@ export async function clearTraceOutput(
 
 export async function assertNoMoreTraceOutput(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element,
 ) {
     await browser.execute((playerElement) => {
         const player = playerElement as Player.PlayerElement;
@@ -186,7 +180,7 @@ export async function injectRuffleAndWait(browser: WebdriverIO.Browser) {
 
 export async function waitForPlayerToLoad(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element,
 ) {
     await browser.waitUntil(
         async () => await isRufflePlayerLoaded(browser, player),
@@ -221,7 +215,7 @@ export function loadJsAPI(swf?: string) {
             container!.appendChild(player);
         });
 
-        const player = await $("#ruffle-player");
+        const player = await $("#ruffle-player").getElement();
 
         if (swf) {
             await browser.execute(async (swf) => {
@@ -235,7 +229,7 @@ export function loadJsAPI(swf?: string) {
 
 export async function closeAllModals(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element,
 ) {
     const modals = await player.$$(".modal:not(.hidden)");
     await browser.execute((modals) => {
@@ -248,7 +242,7 @@ export async function closeAllModals(
 
 export async function hideHardwareAccelerationModal(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element,
 ) {
     // Trigger it if not triggered yet
     await player.moveTo();

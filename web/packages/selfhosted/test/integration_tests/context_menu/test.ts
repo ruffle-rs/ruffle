@@ -23,7 +23,7 @@ async function supportsClipboardReadText(): Promise<boolean> {
     });
 }
 
-async function focusFlashInput(player: ChainablePromiseElement) {
+async function focusFlashInput(player: WebdriverIO.Element) {
     await player.click({ x: 10 - 200, y: 110 - 200 });
     await expectTraceOutput(browser, player, ["onMouseDown()", "onMouseUp()"]);
 }
@@ -35,16 +35,16 @@ async function focusHtmlInput() {
     });
 }
 
-async function openContextMenu(player: ChainablePromiseElement) {
+async function openContextMenu(player: WebdriverIO.Element) {
     await player.click({ x: 10 - 200, y: 10 - 200, button: "right" });
 }
 
-async function openContextMenuOnInput(player: ChainablePromiseElement) {
+async function openContextMenuOnInput(player: WebdriverIO.Element) {
     await player.click({ x: 10 - 200, y: 110 - 200, button: "right" });
 }
 
 async function clickContextMenuEntry(
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element,
     text: string,
     button: ButtonNames = "left",
 ) {
@@ -57,7 +57,7 @@ describe("Context Menu", () => {
     it("load the test", async () => {
         await openTest(browser, "integration_tests/context_menu");
         await injectRuffleAndWait(browser);
-        const player = await browser.$("<ruffle-object>");
+        const player = await browser.$("<ruffle-object>").getElement();
         await playAndMonitor(browser, player, ["Loaded!"]);
 
         // Dismiss hardware acceleration modal in Chrome
@@ -70,7 +70,7 @@ describe("Context Menu", () => {
     });
 
     it("clicking out of context menu does not fire events", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
         await player.click({ x: 10 - 200, y: 10 - 200 });
 
@@ -91,7 +91,7 @@ describe("Context Menu", () => {
     });
 
     it("left clicking a context menu entry works", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
         await browser.keys("q");
 
@@ -106,7 +106,7 @@ describe("Context Menu", () => {
     });
 
     it("right clicking a context menu entry works", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
         await browser.keys("q");
 
@@ -121,7 +121,7 @@ describe("Context Menu", () => {
     });
 
     it("copying text works", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
         // Populate text input in Flash
         await browser.keys("t");
@@ -158,7 +158,7 @@ describe("Context Menu", () => {
     });
 
     it("cutting text works", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
         await focusFlashInput(player);
 
@@ -192,7 +192,7 @@ describe("Context Menu", () => {
             this.skip();
         }
 
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
         // Populate text input in HTML
         await browser.execute(() => {
@@ -222,7 +222,7 @@ describe("Context Menu", () => {
             this.skip();
         }
 
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
         // Try pasting
         await focusFlashInput(player);
@@ -244,7 +244,7 @@ describe("Context Menu", () => {
     });
 
     it("no more traces", async function () {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
         assertNoMoreTraceOutput(browser, player);
     });
 });
