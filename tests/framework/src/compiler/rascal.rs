@@ -13,6 +13,27 @@ pub struct RascalOptions {
     pub frame_rate: f32,
     pub scripts: Vec<String>,
     pub classes: Vec<String>,
+    pub stage_rect: StageSize,
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default, deny_unknown_fields)]
+pub struct StageSize {
+    pub x_min: f64,
+    pub y_min: f64,
+    pub x_max: f64,
+    pub y_max: f64,
+}
+
+impl Default for StageSize {
+    fn default() -> Self {
+        Self {
+            x_min: 0.0,
+            y_min: 0.0,
+            x_max: 550.0,
+            y_max: 400.0,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -65,7 +86,14 @@ impl RascalOptions {
                 self.swf_version
                     .expect("swf_version is validated elsewhere"),
             ),
-            swf_options: SwfOptions::default().with_frame_rate(self.frame_rate),
+            swf_options: SwfOptions::default()
+                .with_frame_rate(self.frame_rate)
+                .with_stage_size(
+                    self.stage_rect.x_min,
+                    self.stage_rect.y_min,
+                    self.stage_rect.x_max,
+                    self.stage_rect.y_max,
+                ),
         }))
     }
 }
@@ -78,6 +106,7 @@ impl Default for RascalOptions {
             frame_rate: 24.0,
             scripts: vec![],
             classes: vec![],
+            stage_rect: StageSize::default(),
         }
     }
 }

@@ -250,6 +250,9 @@ swf_version = 15
 # The frame rate to compile the swf with.
 frame_rate = 24
 
+# The display region of the stage, in pixels. You can usually get away with just specifying max, not min.
+stage_rect = { x_min = 0.0, y_min = 0.0, x_max = 550.0, y_max = 400.0 }
+
 ```
 
 ## Multiple tests
