@@ -21,6 +21,7 @@ impl<'a> FlashPlayer<'a> {
         environment: &PlayerEnvironment,
         swf: &Path,
         max_duration: Duration,
+        max_idle: Duration,
     ) -> String {
         let mut command = Command::new(self.player_definition.path.clone());
         environment.configure(&mut command);
@@ -31,9 +32,16 @@ impl<'a> FlashPlayer<'a> {
             .spawn()
             .unwrap();
         let start = Instant::now();
+        let mut last_activity = Instant::now();
+        let mut last_log_time = None;
         while child.try_wait().unwrap().is_none() {
-            std::thread::sleep(Duration::from_millis(200));
-            if start.elapsed() > max_duration {
+            std::thread::sleep(Duration::from_millis(100));
+            let log_time = environment.log_file_last_modified();
+            if log_time != last_log_time {
+                last_log_time = log_time;
+                last_activity = Instant::now();
+            }
+            if start.elapsed() > max_duration || last_activity.elapsed() > max_idle {
                 child.kill().unwrap();
                 break;
             }

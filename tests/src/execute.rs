@@ -13,9 +13,13 @@ pub struct ExecuteOptions {
     #[command(flatten)]
     filter: TestFilterOptions,
 
-    /// Forcefully quit the test after the given amount of seconds.
-    #[arg(long, default_value_t = 3)]
-    max_duration: u32,
+    /// Forcefully quit the test after the given amount of seconds has elapsed.
+    #[arg(long, default_value_t = 3.0)]
+    max_duration: f32,
+
+    /// Forcefully quit the test after the given amount of seconds of inactivity (no log output).
+    #[arg(long, default_value_t = 0.5)]
+    max_idle: f32,
 }
 
 pub fn main_execute(options: ExecuteOptions) {
@@ -57,7 +61,8 @@ pub fn main_execute(options: ExecuteOptions) {
         let output = player.run(
             &environment,
             Path::new(swf_path_real_str.as_ref()),
-            Duration::from_secs(options.max_duration as u64),
+            Duration::from_secs_f32(options.max_duration),
+            Duration::from_secs_f32(options.max_idle),
         );
         println!("Test output:\n{}", output);
     }
