@@ -2172,11 +2172,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         action: &Try,
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let original_stack_size = self.context.avm1.stack_len();
         let mut result = self.run_actions(parent_data.to_unbounded_subslice(action.try_body));
 
         if let Some((catch_vars, actions)) = &action.catch_body
             && let Err(Error::ThrownValue(value)) = &result
         {
+            self.context.avm1.truncate_stack(original_stack_size);
             let mut activation = Activation::from_action(
                 self.context,
                 self.id.child("[Catch]"),

@@ -325,6 +325,10 @@ impl<'gc> Avm1<'gc> {
         self.stack.len()
     }
 
+    pub fn truncate_stack(&mut self, len: usize) {
+        self.stack.truncate(len);
+    }
+
     /// Resets the operand stack and the global registers.
     ///
     /// AVM1 bytecode may leave the stack unbalanced, or access global registers
