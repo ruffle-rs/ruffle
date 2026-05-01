@@ -5,7 +5,6 @@ use crate::{TestFilterOptions, find_root_dir, load_test_dir};
 use clap::Args;
 use ruffle_core::DEFAULT_PLAYER_VERSION;
 use ruffle_fs_tests_runner::FsTestsRunner;
-use std::path::Path;
 use std::time::Duration;
 
 #[derive(Args)]
@@ -20,6 +19,10 @@ pub struct ExecuteOptions {
     /// Forcefully quit the test after the given amount of seconds of inactivity (no log output).
     #[arg(long, default_value_t = 0.5)]
     max_idle: f32,
+
+    /// Save the output to the test's "expected output" file.
+    #[arg(short, long)]
+    save_output: bool,
 }
 
 pub fn main_execute(options: ExecuteOptions) {
@@ -44,7 +47,6 @@ pub fn main_execute(options: ExecuteOptions) {
     let tests = runner.find_tests();
     for (test_dir, test) in tests {
         let swf_path_real = test_dir.join(test.swf_path.as_str().trim_start_matches(['/']));
-        let swf_path_real_str = swf_path_real.to_string_lossy();
         let environment = PlayerEnvironment::new();
         let version = test
             .options
@@ -60,10 +62,14 @@ pub fn main_execute(options: ExecuteOptions) {
         let player = FlashPlayer::new(definition);
         let output = player.run(
             &environment,
-            Path::new(swf_path_real_str.as_ref()),
+            &swf_path_real,
             Duration::from_secs_f32(options.max_duration),
             Duration::from_secs_f32(options.max_idle),
         );
+        if options.save_output {
+            let output_path = test_dir.join(test.output_path.as_str().trim_start_matches(['/']));
+            std::fs::write(output_path, &output).unwrap();
+        }
         println!("Test output:\n{}", output);
     }
 }
