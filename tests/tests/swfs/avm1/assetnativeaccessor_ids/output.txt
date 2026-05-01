@@ -1,0 +1,21 @@
+f.id17() = 1
+f.alpha = 0.8
+f.id17() = 0.8
+f.alpha = 0.8
+f.alphaTwo = 0.8
+f.alpha = 0.2
+f.alphaTwo = 0.2
+f.alpha = 0.2
+f.alphaThree = 0.2
+f.alpha = 0.8
+f.alphaThree = 0.8
+f.alpha = 0.8
+f.alphaFour = 0.8
+f.alpha = 0.2
+f.alphaFour = 0.2
+valueOf
+f.alpha = 0.2
+f.alphaFive = 0.2
+f.alpha = 0.6
+f.alphaFive = 0.6
+Caught: some error
