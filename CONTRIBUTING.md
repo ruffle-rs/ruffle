@@ -212,6 +212,8 @@ swf_version = 15
 
 Then, whenever you run the tests it'll automatically build `test.swf` (version 15) with the source code of `test.as`. Consult the [full documentation](tests/README.md) for more details about this format.
 
+There is also the ability to only compile the test and not run it - use `cargo testutils compile` to compile all swfs (which takes the same filters as tests does, e.g. `cargo testutils compile avm1/movieclip_lockroot`).
+
 ### Flash authoring tool
 
 Create a new ActionScript project. Save the `.fla` file and export an `.swf` (File -> Export -> Export Movie...).

@@ -16,3 +16,6 @@ linker = "rust-lld.exe"
 # Otherwise some tests overflow the stack.
 RUST_MIN_STACK = "8388608"
 LOCAL_RUFFLE_TESTS_SWFS_DIR = { value = "tests/tests/swfs", relative = true }
+
+[alias]
+testutils = "run --package tests --"
