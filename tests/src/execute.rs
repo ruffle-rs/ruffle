@@ -5,6 +5,7 @@ use crate::{TestFilterOptions, find_root_dir, load_test_dir};
 use clap::Args;
 use ruffle_core::DEFAULT_PLAYER_VERSION;
 use ruffle_fs_tests_runner::FsTestsRunner;
+use ruffle_test_framework::environment::CompileMode;
 use std::time::Duration;
 
 #[derive(Args)]
@@ -23,6 +24,10 @@ pub struct ExecuteOptions {
     /// Save the output to the test's "expected output" file.
     #[arg(short, long)]
     save_output: bool,
+
+    /// Whether tests should be compiled before running.
+    #[arg(short, long)]
+    compile: bool,
 }
 
 pub fn main_execute(options: ExecuteOptions) {
@@ -60,6 +65,11 @@ pub fn main_execute(options: ExecuteOptions) {
             )
         });
         let player = FlashPlayer::new(definition);
+        test.compile(match options.compile {
+            true => CompileMode::CompileSilently,
+            false => CompileMode::UsePrecompiled,
+        })
+        .unwrap();
         let output = player.run(
             &environment,
             &swf_path_real,
