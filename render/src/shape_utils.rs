@@ -312,11 +312,17 @@ impl PendingPath {
                     other.points.extend_from_slice(&new_segment.points[1..]);
                     new_segment = self.segments.swap_remove(i);
                     start_open = false;
+                    // Restart from the beginning; the merged segment may now connect
+                    // to a segment at an earlier index for the end match.
+                    i = 0;
                 } else if end_open && new_segment.end() == other.start() {
                     std::mem::swap(&mut other.points, &mut new_segment.points);
                     other.points.extend_from_slice(&new_segment.points[1..]);
                     new_segment = self.segments.swap_remove(i);
                     end_open = false;
+                    // Restart from the beginning; the merged segment may now connect
+                    // to a segment at an earlier index for the start match.
+                    i = 0;
                 } else {
                     i += 1;
                 }
@@ -542,6 +548,10 @@ impl<'a> ShapeConverter<'a> {
         for (i, path) in self.fills.iter_mut().enumerate() {
             // These invariants are checked above (any invalid/empty fill ID should not have been added).
             debug_assert!(i < self.fill_styles.len());
+
+            // Fills must be closed loops. Flash ignores any unclosed fill paths.
+            path.segments.retain(PathSegment::is_closed);
+
             if path.segments.is_empty() {
                 continue;
             }
