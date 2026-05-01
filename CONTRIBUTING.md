@@ -195,6 +195,23 @@ When adding a new image test, make sure to include the expected visual output by
 
 Heavily algorithmic code may benefit from unit tests in Rust: create a module `mod tests` conditionally compiled with `#[cfg(test)]`, and add your tests in there.
 
+### Compile from Ruffle
+
+We are building up the capabilities to compile actionscript-only tests through Ruffle's test infrastructure. Currently, only AVM1 (ActionScript 1 and 2) is supported, using [Rascal](https://github.com/Dinnerbone/Rascal).
+
+This is the recommended way to write AVM1-only tests, as the .swf will never desync with the .as source, you don't need to configure any external programs, and we can easily generate multiple versions of the same swf with little effort.
+
+In the `test.toml`, add a section like the following:
+```toml
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 15
+```
+
+Then, whenever you run the tests it'll automatically build `test.swf` (version 15) with the source code of `test.as`. Consult the [full documentation](tests/README.md) for more details about this format.
+
 ### Flash authoring tool
 
 Create a new ActionScript project. Save the `.fla` file and export an `.swf` (File -> Export -> Export Movie...).
