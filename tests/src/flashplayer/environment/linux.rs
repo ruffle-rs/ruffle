@@ -1,5 +1,6 @@
 use std::fs;
 use std::path::PathBuf;
+use std::time::SystemTime;
 use temp_dir::TempDir;
 
 #[derive(Debug)]
@@ -18,6 +19,10 @@ impl PlayerEnvironment {
 
     pub fn read_log(&self) -> String {
         fs::read_to_string(self.log_file.clone()).unwrap()
+    }
+
+    pub fn log_file_last_modified(&self) -> Option<SystemTime> {
+        self.log_file.metadata().and_then(|m| m.modified()).ok()
     }
 
     pub fn configure(&self, command: &mut std::process::Command) {
