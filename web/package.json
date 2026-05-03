@@ -24,7 +24,7 @@
         "@wdio/static-server-service": "^9.27.1",
         "chai": "^6.2.2",
         "chai-html": "^3.2.0",
-        "copy-webpack-plugin": "^13.0.1",
+        "copy-webpack-plugin": "^14.0.0",
         "cross-env": "^10.1.0",
         "eslint": "^9.39.2",
         "eslint-config-prettier": "^10.1.8",
