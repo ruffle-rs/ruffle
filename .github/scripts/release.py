@@ -93,9 +93,10 @@ def cargo_set_version(args):
     run_command(['cargo', 'set-version', '--exclude', 'swf', *args])
 
 
-def gh_list_nightly_tags(limit):
+def gh_list_nightly_tags(repo, limit):
     tags_json = run_command([
         'gh', 'release', 'list',
+        '--repo', repo,
         '--order', 'desc',
         '--limit', str(limit),
         '--json=tagName',
@@ -106,10 +107,10 @@ def gh_list_nightly_tags(limit):
         yield tag['tagName']
 
 
-def gh_get_last_nightly_tag():
+def gh_get_last_nightly_tag(repo):
     # Assume that the last nightly tag will be in the last 16 releases.
     # It's very unlikely we'll have 16 releases without a nightly.
-    return next(gh_list_nightly_tags(16), None)
+    return next(gh_list_nightly_tags(repo, 16), None)
 
 
 # ===== Commands ===========================================
@@ -175,7 +176,7 @@ def tag_and_push():
     github_output('tag_name', tag_name)
 
 
-def release():
+def release(repo):
     """
     Create a release of Ruffle on GitHub.
     """
@@ -185,7 +186,7 @@ def release():
     current_time_underscores = now.strftime('%Y_%m_%d')
 
     tag_name = get_tag_name()
-    last_nightly_tag = gh_get_last_nightly_tag()
+    last_nightly_tag = gh_get_last_nightly_tag(repo)
     release_name = f'Nightly {current_time_dashes}'
     package_prefix = f'ruffle-nightly-{current_time_underscores}'
     release_options = ['--generate-notes', '--prerelease']
@@ -198,6 +199,7 @@ def release():
 
     run_command([
         'gh', 'release', 'create', tag_name,
+        '--repo', repo,
         '--title', release_name,
         '--verify-tag',
         *release_options])
@@ -218,7 +220,8 @@ def main():
     elif cmd == 'tag-and-push':
         tag_and_push()
     elif cmd == 'release':
-        release()
+        repo = sys.argv[2]
+        release(repo)
 
 
 if __name__ == '__main__':

@@ -87,7 +87,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          $RELEASE_SCRIPT release
+          $RELEASE_SCRIPT release ${{ github.repository }}
 
   build:
     name: Build ${{ matrix.build_name }}
