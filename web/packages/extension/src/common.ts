@@ -105,8 +105,9 @@ class SelectOption implements OptionElement<string | null> {
         // Convert `null` to the empty string.
         value ??= "";
         const options = Array.from(this.select.options);
-        const index = options.findIndex((option) => option.value === value);
-        this.select.selectedIndex = index;
+        this.select.selectedIndex = options.findIndex(
+            (option) => option.value === value,
+        );
     }
 }
 

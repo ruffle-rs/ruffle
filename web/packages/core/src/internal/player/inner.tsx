@@ -2104,13 +2104,12 @@ export class InnerPlayer {
                         `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`,
                     ) - 1;
                 if (error.avmStack) {
-                    const avmStackIndex =
+                    errorArray.avmStackIndex =
                         errorArray.push(
                             `AVM2 stack:\n\`\`\`\n    ${error.avmStack
                                 .trim()
                                 .replace(/\t/g, "    ")}\n\`\`\`\n`,
                         ) - 1;
-                    errorArray.avmStackIndex = avmStackIndex;
                 }
                 errorArray.stackIndex = stackIndex;
             }
@@ -2531,8 +2530,7 @@ function base64ToArray(bytesBase64: string): Uint8Array<ArrayBuffer> {
  */
 function base64ToBlob(bytesBase64: string, mimeString: string): Blob {
     const ab = base64ToArray(bytesBase64);
-    const blob = new Blob([ab], { type: mimeString });
-    return blob;
+    return new Blob([ab], { type: mimeString });
 }
 
 /**
