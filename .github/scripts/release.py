@@ -115,28 +115,51 @@ def gh_get_last_nightly_tag(repo):
 
 # ===== Commands ===========================================
 
-def bump():
+def bump(release_type):
     """
-    Bump the current version of Ruffle nightly.
+    Bump the current version of Ruffle.
     """
+
+    # Make sure the workspace is clean first.
+    try:
+        run_command(['git', 'diff', '--quiet'])
+        run_command(['git', 'diff', '--cached', '--quiet'])
+    except:
+        log('git workspace is not clean, refusing to bump')
+        raise
 
     current_version = cargo_get_version()
     log(f'Current version: {current_version}')
 
-    log('Bumping minor version to get the next planned version')
-    cargo_set_version(['--bump', 'minor'])
-    next_planned_version = cargo_get_version()
-    run_command(['git', 'reset', '--hard', 'HEAD'])
+    if release_type in ['major', 'minor', 'patch']:
+        # Those are standard bumps, we can just bump it.
+        cargo_set_version(['--bump', release_type])
 
-    log(f'Next planned version is {next_planned_version}')
+        version = cargo_get_version()
 
-    nightly_version = f'{next_planned_version}-nightly.{get_current_time_version()}'
-    log(f'Nightly version is {nightly_version}')
+        # Even for standard versions we have to add the day ID to version4,
+        # because otherwise a stable version would be older than a pre-release
+        # version (that's because in version4, 1.2.3 < 1.2.3.4).
+        version4 = f'{version}.{get_current_day_id()}'
+    elif release_type == 'nightly':
+        # Nightly is our custom pre-release version. We basically get the next
+        # minor version (by bumping it and resetting) and add suffix manually
+        # (https://semver.org/#spec-item-9).
 
-    cargo_set_version([nightly_version])
+        log('Bumping minor version to get the next planned version')
+        cargo_set_version(['--bump', 'minor'])
+        next_planned_version = cargo_get_version()
+        run_command(['git', 'reset', '--hard', 'HEAD'])
 
-    version = cargo_get_version()
-    version4 = f'{next_planned_version}.{get_current_day_id()}'
+        log(f'Next planned version is {next_planned_version}')
+
+        nightly_version = f'{next_planned_version}-nightly.{get_current_time_version()}'
+        cargo_set_version([nightly_version])
+
+        version = cargo_get_version()
+        version4 = f'{next_planned_version}.{get_current_day_id()}'
+    else:
+        raise Exception(f'Unsupported release type: {release_type}')
 
     npm_dir = f'{REPO_DIR}/web'
     run_command(['npm', 'install', 'workspace-version'], cwd=npm_dir)
@@ -212,7 +235,8 @@ def main():
     cmd = sys.argv[1]
     log(f'Running command {cmd}')
     if cmd == 'bump':
-        bump()
+        release_type = sys.argv[2]
+        bump(release_type)
     elif cmd == 'metainfo':
         metainfo()
     elif cmd == 'commit':

@@ -58,7 +58,7 @@ jobs:
         if: steps.activity.outputs.is_active == 'true'
         id: version
         run: |
-          $RELEASE_SCRIPT bump
+          $RELEASE_SCRIPT bump nightly
           # Ensure newlines at the end of file
           shopt -s globstar
           sed -i -e '$a\' **/package.json
