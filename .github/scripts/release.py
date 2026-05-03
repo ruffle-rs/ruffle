@@ -192,10 +192,10 @@ def commit():
     ])
 
 
-def tag_and_push():
+def tag_and_push(remote):
     tag_name = get_tag_name()
     run_command(['git', 'tag', tag_name])
-    run_command(['git', 'push', 'origin', 'tag', tag_name])
+    run_command(['git', 'push', remote, 'tag', tag_name])
     github_output('tag_name', tag_name)
 
 
@@ -242,7 +242,8 @@ def main():
     elif cmd == 'commit':
         commit()
     elif cmd == 'tag-and-push':
-        tag_and_push()
+        remote = sys.argv[2]
+        tag_and_push(remote)
     elif cmd == 'release':
         repo = sys.argv[2]
         release(repo)
