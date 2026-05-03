@@ -158,10 +158,14 @@ def metainfo():
 
 def commit():
     commit_message = f'Release {cargo_get_version()}'
-    run_command(['git', 'config', 'user.name', 'RuffleBuild'])
-    run_command(['git', 'config', 'user.email', 'ruffle@ruffle.rs'])
     run_command(['git', 'add', '--update'])
-    run_command(['git', 'commit', '-m', commit_message])
+    run_command([
+        'git',
+        '-c', 'user.name=RuffleBuild',
+        '-c', 'user.email=ruffle@ruffle.rs',
+        'commit',
+        '-m', commit_message,
+    ])
 
 
 def tag_and_push():
