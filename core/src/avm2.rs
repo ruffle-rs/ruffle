@@ -676,12 +676,13 @@ impl<'gc> Avm2<'gc> {
     #[cold]
     #[inline(never)]
     pub fn uncaught_error(
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         _display_object: Option<DisplayObject<'gc>>,
         error: Error<'gc>,
-        info: &str,
+        extra_info: &str,
     ) {
-        tracing::error!("{}: {:?}", info, error);
+        // This will print the properly formatted error
+        error.log(activation, extra_info);
 
         // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
     }
