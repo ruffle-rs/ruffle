@@ -254,6 +254,30 @@ impl<'gc> LoadManager<'gc> {
         self.0.get_mut(handle)
     }
 
+    /// Checks if the target clip on the given handle's loader
+    /// has been `avm1_removed()`. If so, it will set the `loader_status`
+    /// to `Failed` and return `true`.
+    /// This is used to prevent a loaded movie from executing
+    /// if its target clip was removed before it finished loading.
+    // TODO: Does this need adjusted for clip unloading?
+    // (see the avm1/load_cancel_via_unloadclip and avm1/load_cancel_via_unloadmovie tests)
+    pub fn load_cancelled_avm1(&mut self, handle: LoaderHandle) -> bool {
+        match self.get_loader_mut(handle) {
+            Some(MovieLoader {
+                loader_status,
+                target_clip,
+                ..
+            }) => {
+                if target_clip.avm1_removed() {
+                    *loader_status = LoaderStatus::Failed;
+                    return true;
+                }
+            }
+            _ => unreachable!(),
+        }
+        false
+    }
+
     /// Kick off a movie clip load.
     ///
     /// Returns the loader's async process, which you will need to spawn.
@@ -657,6 +681,11 @@ impl<'gc> MovieLoader<'gc> {
                     Some(MovieLoader { target_clip, .. }) => *target_clip,
                     None => return Err(Error::Cancelled),
                 };
+
+                if uc.load_manager.load_cancelled_avm1(handle) {
+                    tracing::warn!("movie_loader: Target clip was already AVM1 removed");
+                    return Err(Error::Cancelled);
+                }
 
                 replacing_root_movie = uc
                     .stage
@@ -1589,6 +1618,11 @@ impl<'gc> MovieLoader<'gc> {
             }) => (*target_clip, *vm_data, *from_bytes),
             None => return Err(Error::Cancelled),
         };
+
+        if uc.load_manager.load_cancelled_avm1(handle) {
+            tracing::warn!("movie_loader_data: Target clip was already avm1_removed");
+            return Ok(());
+        }
 
         let domain = if let MovieLoaderVMData::Avm2 {
             context,
