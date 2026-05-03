@@ -29,7 +29,15 @@ def get_current_day_id():
     return f'{now.year - 2000}{day}'
 
 
-def get_tag_name():
+def get_tag_name(version):
+    if '-nightly.' in version:
+        # TODO Nightly versions use a different tag syntax, unify it.
+        return get_today_nightly_tag_name()
+
+    return f'v{version}'
+
+
+def get_today_nightly_tag_name():
     now = datetime.now()
     current_time_dashes = now.strftime('%Y-%m-%d')
     tag_name = f'nightly-{current_time_dashes}'
@@ -175,7 +183,7 @@ def metainfo():
     metainfo_path1 = f'{REPO_DIR}/desktop/packages/linux/rs.ruffle.Ruffle.metainfo.xml'
     metainfo_path2 = f'{REPO_DIR}/desktop/packages/linux/rs.ruffle.Ruffle.metainfo.xml.in'
     version = cargo_get_version()
-    tag_name = get_tag_name()
+    tag_name = get_tag_name(version)
     add_release_to_metainfo(metainfo_path1, tag_name, version)
     add_release_to_metainfo(metainfo_path2, tag_name, version)
 
@@ -193,7 +201,8 @@ def commit():
 
 
 def tag_and_push(remote):
-    tag_name = get_tag_name()
+    version = cargo_get_version()
+    tag_name = get_tag_name(version)
     run_command(['git', 'tag', tag_name])
     run_command(['git', 'push', remote, 'tag', tag_name])
     github_output('tag_name', tag_name)
@@ -208,7 +217,8 @@ def release(repo):
     current_time_dashes = now.strftime('%Y-%m-%d')
     current_time_underscores = now.strftime('%Y_%m_%d')
 
-    tag_name = get_tag_name()
+    version = cargo_get_version()
+    tag_name = get_tag_name(version)
     last_nightly_tag = gh_get_last_nightly_tag(repo)
     release_name = f'Nightly {current_time_dashes}'
     package_prefix = f'ruffle-nightly-{current_time_underscores}'
