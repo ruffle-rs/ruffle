@@ -407,10 +407,10 @@ impl<'gc> AudioManager<'gc> {
     /// 44100 Hz × 2 channels × 0.1 s = 8820 channel-samples.
     const GENERATED_SOUND_MAX_LOOKAHEAD_SAMPLES: usize = 8820;
 
-    /// Minimum number of bytes that must be written to the `SampleDataEvent` data ByteArray
+    /// Minimum number of *bytes* that must be present in the `SampleDataEvent` data ByteArray
     /// per dispatch before buffering is considered complete for one iteration.
-    /// Flash typically provides 2048 stereo pairs per callback: 2048 × 2 floats × 4 bytes = 16384 bytes.
-    const GENERATED_SOUND_MIN_EVENT_SAMPLES: usize = 2048 * 8;
+    /// Flash typically provides 2048 stereo pairs per callback: 2048 pairs × 2 floats × 4 bytes = 16384 bytes.
+    const GENERATED_SOUND_MIN_EVENT_BYTES: usize = 2048 * 8;
 
     pub fn new() -> Self {
         Self {
@@ -565,7 +565,7 @@ impl<'gc> AudioManager<'gc> {
 
                 *pos += ba_len as u32 / 8;
 
-                if ba_len < Self::GENERATED_SOUND_MIN_EVENT_SAMPLES {
+                if ba_len < Self::GENERATED_SOUND_MIN_EVENT_BYTES {
                     break;
                 }
             }
