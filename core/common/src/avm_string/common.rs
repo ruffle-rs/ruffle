@@ -273,6 +273,7 @@ ruffle_macros::define_common_strings! {
     "rollOut",
     "rollOver",
     "rr",
+    "sampleData",
     "save",
     "Selection",
     "separatorBefore",
