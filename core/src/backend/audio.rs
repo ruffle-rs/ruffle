@@ -393,6 +393,20 @@ impl<'gc> AudioManager<'gc> {
     /// The player will adjust animation speed to stay within this many seconds of the audio track.
     pub const STREAM_DEFAULT_SYNC_THRESHOLD: f64 = 0.2;
 
+    /// Sample rate for generated sounds (Hz).
+    const GENERATED_SOUND_SAMPLE_RATE: f32 = 44100.0;
+
+    /// Number of channels for generated sounds.
+    const GENERATED_SOUND_CHANNELS: f32 = 2.0;
+
+    /// How many frames of audio to buffer ahead for generated sounds.
+    const GENERATED_SOUND_LOOKAHEAD_FRAMES: f32 = 3.0;
+
+    /// Minimum number of samples that must be written per `SampleDataEvent`
+    /// dispatch before buffering is considered complete for one iteration.
+    /// Flash expects up to 8192 samples (2048 stereo pairs × 4 bytes each).
+    const GENERATED_SOUND_MIN_EVENT_SAMPLES: usize = 2048 * 8;
+
     pub fn new() -> Self {
         Self {
             sounds: Vec::with_capacity(Self::MAX_SOUNDS),
@@ -499,8 +513,13 @@ impl<'gc> AudioManager<'gc> {
 
             let mut ns = sound_state.next_samples.write().unwrap();
             let mut pos = sound_state.position.write().unwrap();
-            // Generate ~3 frames of audio ahead to reduce stuttering.
-            while ns.len() <= ((44100.0 * 2.0 * 3.0 / fps).ceil() as usize) {
+            // Pre-buffer a few frames of audio to reduce stuttering.
+            let lookahead_samples = (Self::GENERATED_SOUND_SAMPLE_RATE
+                * Self::GENERATED_SOUND_CHANNELS
+                * Self::GENERATED_SOUND_LOOKAHEAD_FRAMES
+                / fps)
+                .ceil() as usize;
+            while ns.len() <= lookahead_samples {
                 let sample_data_evt =
                     Avm2EventObject::sample_data_event(activation, *pos);
                 Avm2::dispatch_event(
@@ -523,7 +542,7 @@ impl<'gc> AudioManager<'gc> {
 
                 *pos += ba_len as u32 / 8;
 
-                if ba_len < 2048 * 8 {
+                if ba_len < Self::GENERATED_SOUND_MIN_EVENT_SAMPLES {
                     break;
                 }
             }

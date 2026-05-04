@@ -907,6 +907,9 @@ struct GeneratedSoundStream {
 }
 
 impl GeneratedSoundStream {
+    /// Minimum local playout buffer size before pulling more samples from the shared queue.
+    const REFILL_THRESHOLD: usize = 128;
+
     fn new(stream: Arc<RwLock<VecDeque<f32>>>) -> Self {
         Self {
             position: 0,
@@ -924,7 +927,7 @@ impl dasp::signal::Signal for GeneratedSoundStream {
         use dasp::Sample;
 
         // Refill local buffer in bulk to reduce RwLock contention.
-        if self.playout_buffer.len() < 128 {
+        if self.playout_buffer.len() < Self::REFILL_THRESHOLD {
             let mut w = self.next_samples.write().unwrap();
             self.playout_buffer.append(&mut w);
         }

@@ -194,8 +194,14 @@ impl<'gc> SoundObject<'gc> {
                     queued_plays: Vec::new(),
                 };
             }
-            _ => {
-                panic!("Tried to load sound into non-empty sound");
+            SoundData::Loading { .. } => {
+                panic!("Tried to load sound that is already Loading");
+            }
+            SoundData::Loaded { .. } => {
+                panic!("Tried to load sound that is already Loaded");
+            }
+            SoundData::Generated => {
+                panic!("Tried to load sound that is already Generated");
             }
         }
     }
