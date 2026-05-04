@@ -213,29 +213,49 @@ def release(repo):
     Create a release of Ruffle on GitHub.
     """
 
-    now = datetime.now()
-    current_time_dashes = now.strftime('%Y-%m-%d')
-    current_time_underscores = now.strftime('%Y_%m_%d')
-
     version = cargo_get_version()
     tag_name = get_tag_name(version)
-    last_nightly_tag = gh_get_last_nightly_tag(repo)
-    release_name = f'Nightly {current_time_dashes}'
-    package_prefix = f'ruffle-nightly-{current_time_underscores}'
-    release_options = ['--generate-notes', '--prerelease']
 
-    if last_nightly_tag is not None:
-        log(f'Using {last_nightly_tag} as start tag for notes')
-        release_options += ['--notes-start-tag', last_nightly_tag]
-    else:
-        log('No start tag for notes found')
+    # When there's a "-" in version it's a pre-release version.
+    # (Except for versions with a build suffix, but we don't support those.)
+    is_pre_release = '-' in version
+
+    notes_start_tag = None
+    release_options = []
+    release_name = f'Release {version}'
+    package_prefix = f'ruffle-{version}'
+
+    if is_pre_release:
+        release_options += ['--prerelease']
+
+        if '-nightly.' in version:
+            # Nightly-specific stuff.
+            now = datetime.now()
+            current_time_dashes = now.strftime('%Y-%m-%d')
+            current_time_underscores = now.strftime('%Y_%m_%d')
+
+            # For nightly, we do detached tags, and we need to specify the start
+            # tag explicitly for generated notes to work.
+            notes_start_tag = gh_get_last_nightly_tag(repo)
+
+            release_name = f'Nightly {current_time_dashes}'
+            package_prefix = f'ruffle-nightly-{current_time_underscores}'
+            release_options += ['--generate-notes']
+    else: # Not a pre release.
+        # For stable release trust GitHub's generation tool.
+        release_options += ['--generate-notes']
+
+    if notes_start_tag is not None:
+        log(f'Using {notes_start_tag} as start tag for notes')
+        release_options += ['--notes-start-tag', notes_start_tag]
 
     run_command([
         'gh', 'release', 'create', tag_name,
         '--repo', repo,
         '--title', release_name,
         '--verify-tag',
-        *release_options])
+        *release_options,
+    ])
 
     github_output('tag_name', tag_name)
     github_output('package_prefix', package_prefix)
