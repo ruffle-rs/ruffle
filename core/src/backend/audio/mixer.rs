@@ -908,7 +908,9 @@ struct GeneratedSoundStream {
 
 impl GeneratedSoundStream {
     /// Minimum local playout buffer size before pulling more samples from the shared queue.
-    const REFILL_THRESHOLD: usize = 128;
+    /// 1024 channel-samples ≈ 11.6 ms at 44100 Hz, roughly one or two typical OS audio
+    /// callback sizes, keeping lock acquisitions to at most one or two per callback.
+    const REFILL_THRESHOLD: usize = 1024;
 
     fn new(stream: Arc<RwLock<VecDeque<f32>>>) -> Self {
         Self {

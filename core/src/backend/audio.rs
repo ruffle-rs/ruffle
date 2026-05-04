@@ -402,9 +402,14 @@ impl<'gc> AudioManager<'gc> {
     /// How many frames of audio to buffer ahead for generated sounds.
     const GENERATED_SOUND_LOOKAHEAD_FRAMES: f32 = 3.0;
 
-    /// Minimum number of samples that must be written per `SampleDataEvent`
-    /// dispatch before buffering is considered complete for one iteration.
-    /// Flash expects up to 8192 samples (2048 stereo pairs × 4 bytes each).
+    /// Upper bound on the number of channel-samples buffered ahead, regardless of frame rate.
+    /// Prevents runaway pre-buffering (~100 ms) when the frame rate is very low or throttled.
+    /// 44100 Hz × 2 channels × 0.1 s = 8820 channel-samples.
+    const GENERATED_SOUND_MAX_LOOKAHEAD_SAMPLES: usize = 8820;
+
+    /// Minimum number of bytes that must be written to the `SampleDataEvent` data ByteArray
+    /// per dispatch before buffering is considered complete for one iteration.
+    /// Flash typically provides 2048 stereo pairs per callback: 2048 × 2 floats × 4 bytes = 16384 bytes.
     const GENERATED_SOUND_MIN_EVENT_SAMPLES: usize = 2048 * 8;
 
     pub fn new() -> Self {
@@ -511,15 +516,24 @@ impl<'gc> AudioManager<'gc> {
                 .frame_rate()
                 .to_f32();
 
-            let mut ns = sound_state.next_samples.write().unwrap();
             let mut pos = sound_state.position.write().unwrap();
-            // Pre-buffer a few frames of audio to reduce stuttering.
-            let lookahead_samples = (Self::GENERATED_SOUND_SAMPLE_RATE
+            // Pre-buffer a few frames of audio to reduce stuttering, capped to
+            // avoid excessive pre-buffering at very low or throttled frame rates.
+            let lookahead_samples = ((Self::GENERATED_SOUND_SAMPLE_RATE
                 * Self::GENERATED_SOUND_CHANNELS
                 * Self::GENERATED_SOUND_LOOKAHEAD_FRAMES
                 / fps)
-                .ceil() as usize;
-            while ns.len() <= lookahead_samples {
+                .ceil() as usize)
+                .min(Self::GENERATED_SOUND_MAX_LOOKAHEAD_SAMPLES);
+            loop {
+                // Check the queue length with a short-lived lock.  The lock
+                // must NOT be held across the AS3 dispatch below: the audio
+                // callback thread also needs it, and blocking it causes glitches.
+                let current_len = sound_state.next_samples.read().unwrap().len();
+                if current_len >= lookahead_samples {
+                    break;
+                }
+
                 let sample_data_evt =
                     Avm2EventObject::sample_data_event(activation, *pos);
                 Avm2::dispatch_event(
@@ -536,8 +550,17 @@ impl<'gc> AudioManager<'gc> {
 
                 let ba_len = ba.len();
                 ba.set_position(0);
+
+                // Collect samples into a local buffer first, then push to the
+                // shared queue with a brief write lock.
+                let mut local_samples = Vec::with_capacity(ba_len / 4);
                 for _ in 0..ba_len / 4 {
-                    ns.push_back(ba.read_float().expect("float can be read"));
+                    local_samples.push(ba.read_float().expect("float can be read"));
+                }
+
+                {
+                    let mut ns = sound_state.next_samples.write().unwrap();
+                    ns.extend(local_samples);
                 }
 
                 *pos += ba_len as u32 / 8;
