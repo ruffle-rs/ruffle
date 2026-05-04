@@ -7,9 +7,9 @@ use std::{
 use crate::{
     avm1::{NativeObject, Object as Avm1Object},
     avm2::{
-        globals::slots::flash_events_sample_data_event as sample_data_event_slots, Activation,
-        Avm2, EventObject as Avm2EventObject, SoundChannelObject, SoundObject as Avm2SoundObject,
-        TObject,
+        Activation, Avm2, EventObject as Avm2EventObject, SoundChannelObject,
+        SoundObject as Avm2SoundObject, TObject,
+        globals::slots::flash_events_sample_data_event as sample_data_event_slots,
     },
     context::UpdateContext,
     display_object::{self, DisplayObject, MovieClip, TDisplayObject},
@@ -145,10 +145,7 @@ pub trait AudioBackend: Any {
     ///
     /// Audio data is provided externally via the shared `deque` on each frame
     /// by dispatching `SampleDataEvent` to the associated ActionScript object.
-    fn start_generated_sound(
-        &mut self,
-        deque: Arc<RwLock<VecDeque<f32>>>,
-    ) -> SoundInstanceHandle;
+    fn start_generated_sound(&mut self, deque: Arc<RwLock<VecDeque<f32>>>) -> SoundInstanceHandle;
 
     /// Stops a playing sound instance.
     /// No-op if the sound is not playing.
@@ -300,10 +297,7 @@ impl AudioBackend for NullAudioBackend {
         Ok(SoundInstanceHandle::null())
     }
 
-    fn start_generated_sound(
-        &mut self,
-        _deque: Arc<RwLock<VecDeque<f32>>>,
-    ) -> SoundInstanceHandle {
+    fn start_generated_sound(&mut self, _deque: Arc<RwLock<VecDeque<f32>>>) -> SoundInstanceHandle {
         SoundInstanceHandle::null()
     }
 
@@ -449,16 +443,15 @@ impl<'gc> AudioManager<'gc> {
                 }
 
                 // Sound ended.
-                let duration = if let SoundInstanceSourceData::Event(sound_handle) =
-                    &sound.source_data
-                {
-                    context
-                        .audio
-                        .get_sound_duration(*sound_handle)
-                        .unwrap_or_default()
-                } else {
-                    Default::default()
-                };
+                let duration =
+                    if let SoundInstanceSourceData::Event(sound_handle) = &sound.source_data {
+                        context
+                            .audio
+                            .get_sound_duration(*sound_handle)
+                            .unwrap_or_default()
+                    } else {
+                        Default::default()
+                    };
                 if let Some(object) = sound.avm1_object {
                     if let NativeObject::Sound(sound) = object.native() {
                         sound.set_position(duration.as_millis().round() as u32);
@@ -511,10 +504,7 @@ impl<'gc> AudioManager<'gc> {
         }
 
         for sound_state in &mut states {
-            let fps = activation
-                .caller_movie_or_root()
-                .frame_rate()
-                .to_f32();
+            let fps = activation.caller_movie_or_root().frame_rate().to_f32();
 
             let mut pos = sound_state.position.write().unwrap();
             // Pre-buffer a few frames of audio to reduce stuttering, capped to
@@ -534,8 +524,7 @@ impl<'gc> AudioManager<'gc> {
                     break;
                 }
 
-                let sample_data_evt =
-                    Avm2EventObject::sample_data_event(activation, *pos);
+                let sample_data_evt = Avm2EventObject::sample_data_event(activation, *pos);
                 Avm2::dispatch_event(
                     activation.context,
                     sample_data_evt,
@@ -706,9 +695,9 @@ impl<'gc> AudioManager<'gc> {
     }
 
     pub fn is_sound_playing_with_handle(&self, sound: SoundHandle) -> bool {
-        self.sounds.iter().any(|other| {
-            matches!(other.source_data, SoundInstanceSourceData::Event(s) if s == sound)
-        })
+        self.sounds.iter().any(
+            |other| matches!(other.source_data, SoundInstanceSourceData::Event(s) if s == sound),
+        )
     }
 
     pub fn start_stream(

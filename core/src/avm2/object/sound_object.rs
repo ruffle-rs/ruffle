@@ -96,9 +96,7 @@ pub enum SoundData<'gc> {
     /// Initial state: no load or play called yet.
     Empty,
     /// `load()` was called; waiting for data.
-    Loading {
-        queued_plays: Vec<QueuedPlay<'gc>>,
-    },
+    Loading { queued_plays: Vec<QueuedPlay<'gc>> },
     Loaded {
         #[collect(require_static)]
         sound: SoundHandle,
