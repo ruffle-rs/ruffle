@@ -308,7 +308,7 @@ export enum DeviceFontRenderer {
 }
 
 /**
- * Represents the various background execution behaviours that are supported.
+ * Represents the various background execution behaviors that are supported.
  */
 export enum BackgroundExecutionMode {
     /**
@@ -809,7 +809,7 @@ export interface BaseLoadOptions {
     /**
      * Controls how Ruffle behaves when the browser tab is hidden.
      *
-     * @default BackgroundExecutionMode.None
+     * @default BackgroundExecutionMode.MainThread
      */
     backgroundExecutionMode?: BackgroundExecutionMode;
 }
