@@ -936,11 +936,10 @@ impl dasp::signal::Signal for GeneratedSoundStream {
 
         self.position += 1;
 
-        if let Some(left) = self.playout_buffer.pop_front() {
-            if let Some(right) = self.playout_buffer.pop_front() {
+        if let Some(left) = self.playout_buffer.pop_front()
+            && let Some(right) = self.playout_buffer.pop_front() {
                 return [left.to_sample(), right.to_sample()];
             }
-        }
 
         Default::default()
     }
