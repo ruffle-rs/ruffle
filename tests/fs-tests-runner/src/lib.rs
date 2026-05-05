@@ -252,6 +252,10 @@ impl FsTestsRunner<Trial> {
         self
     }
 
+    pub fn sorted_by_name(&mut self) -> &mut Self {
+        self.with_sorter(Box::new(|a, b| a.name().cmp(b.name())))
+    }
+
     pub fn run(self) -> Conclusion {
         let mut args = Arguments::from_args();
         args.exact = self.exact;

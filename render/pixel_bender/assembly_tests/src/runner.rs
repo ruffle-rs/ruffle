@@ -80,7 +80,7 @@ fn main() {
         .with_test_loader(Box::new(|params, register_trial| {
             register_trial(load_test(params))
         }))
-        .with_sorter(Box::new(|a, b| a.name().cmp(b.name())));
+        .sorted_by_name();
 
     runner.run().exit()
 }

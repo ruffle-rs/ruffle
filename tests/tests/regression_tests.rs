@@ -79,7 +79,7 @@ fn main() {
                 register_trial(trial);
             }
         }))
-        .with_sorter(Box::new(|a, b| a.name().cmp(b.name())));
+        .sorted_by_name();
 
     // Manual tests here, since #[test] doesn't work once we use our own test harness
     let env_clone = env.clone();
