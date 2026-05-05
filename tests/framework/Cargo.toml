@@ -31,7 +31,7 @@ vfs = { workspace = true }
 percent-encoding = { workspace = true }
 cfg-expr = "0.20.7"
 oxipng = "10.1.1"
-rascal = "0.2.3"
+rascal = "0.2.4"
 sha2 = { workspace = true }
 clap = { workspace = true, optional = true }
 
