@@ -74,6 +74,12 @@ struct SoundData<'gc> {
     /// This will be true if `Sound.loadSound` was called with `isStreaming` of `true`.
     /// A streaming sound can only have a single active instance.
     is_streaming: Cell<bool>,
+
+    /// Number of bytes loaded for this sound.
+    bytes_loaded: Cell<u32>,
+
+    /// Total number of bytes for this sound.
+    bytes_total: Cell<Option<u32>>,
 }
 
 impl fmt::Debug for Sound<'_> {
@@ -98,6 +104,8 @@ impl<'gc> Sound<'gc> {
                 position: Cell::new(0),
                 duration: Cell::new(None),
                 is_streaming: Cell::new(false),
+                bytes_loaded: Cell::new(0),
+                bytes_total: Cell::new(None),
             },
         ))
     }
@@ -144,6 +152,22 @@ impl<'gc> Sound<'gc> {
 
     pub fn set_is_streaming(self, is_streaming: bool) {
         self.0.is_streaming.set(is_streaming);
+    }
+
+    pub fn bytes_loaded(self) -> u32 {
+        self.0.bytes_loaded.get()
+    }
+
+    pub fn set_bytes_loaded(self, bytes_loaded: u32) {
+        self.0.bytes_loaded.set(bytes_loaded);
+    }
+
+    pub fn bytes_total(self) -> Option<u32> {
+        self.0.bytes_total.get()
+    }
+
+    pub fn set_bytes_total(self, bytes_total: Option<u32>) {
+        self.0.bytes_total.set(bytes_total);
     }
 
     fn play(self, play: QueuedPlay<'gc>, context: &mut UpdateContext<'gc>) {
@@ -435,21 +459,27 @@ fn set_duration<'gc>(
 }
 
 fn get_bytes_loaded<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Sound", "getBytesLoaded");
-    Ok(1.into())
+    if let NativeObject::Sound(sound) = this.native() {
+        return Ok(sound.bytes_loaded().into());
+    }
+    Ok(Value::Undefined)
 }
 
 fn get_bytes_total<'gc>(
-    activation: &mut Activation<'_, 'gc>,
-    _this: Object<'gc>,
+    _activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    avm1_stub!(activation, "Sound", "getBytesTotal");
-    Ok(1.into())
+    if let NativeObject::Sound(sound) = this.native() {
+        if let Some(total) = sound.bytes_total() {
+            return Ok(total.into());
+        }
+    }
+    Ok(Value::Undefined)
 }
 
 fn get_pan<'gc>(

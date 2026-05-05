@@ -469,6 +469,25 @@ impl<F: FutureSpawner<Error> + 'static, I: NavigatorInterface> NavigatorBackend
 
         tokio::spawn(future);
     }
+
+    /// Estimate the length of a local file for a given request.
+    fn estimate_file_length(&self, request: &Request) -> Option<u32> {
+        let url_str = request.url();
+        if let Ok(resolved_url) = self.resolve_url(url_str)
+            && resolved_url.scheme() == "file"
+        {
+            // Strip query parameters for file path conversion
+            let mut filesystem_url = resolved_url;
+            filesystem_url.set_query(None);
+
+            let path = filesystem_url.to_file_path().ok()?;
+
+            if let Ok(metadata) = std::fs::metadata(&path) {
+                return Some(metadata.len() as u32);
+            }
+        }
+        None
+    }
 }
 
 /// Spawns a new asynchronous task in a tokio runtime, without the current executor needing to belong to tokio
