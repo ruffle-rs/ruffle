@@ -112,13 +112,6 @@ impl<'gc> ErrorObject<'gc> {
         output
     }
 
-    pub fn display_full(self) -> WString {
-        let mut output = WString::new();
-        output.push_str(&self.display());
-        self.call_stack().display(&mut output);
-        output
-    }
-
     pub fn call_stack(&self) -> &CallStack<'gc> {
         &self.0.call_stack
     }
