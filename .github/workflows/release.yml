@@ -1,4 +1,4 @@
-name: Release Nightly
+name: Release
 
 on:
   # Run nightly
@@ -16,7 +16,7 @@ jobs:
     name: Create Release
     runs-on: ubuntu-24.04
     outputs:
-      is_active: ${{ steps.activity.outputs.is_active }}
+      enabled: ${{ steps.configure.outputs.enabled }}
       date: ${{ steps.current_time_underscores.outputs.formattedTime }}
       upload_url: ${{ steps.create_release.outputs.upload_url }}
       package_prefix: ${{ steps.create_release.outputs.package_prefix }}
@@ -29,18 +29,18 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Check for repo activity
-        id: activity
+      - name: Configure release
+        id: configure
         run: |
           # Skip activity check when manually triggered.
           if [ "${{ github.event_name }}" == "repository_dispatch" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            is_active=true
+            enabled=true
           elif [ "$(git rev-list --after="24 hours" ${{ github.sha }})" ]; then
-            is_active=true
+            enabled=true
           else
-            is_active=false
+            enabled=false
           fi
-          echo "is_active=$is_active" >> $GITHUB_OUTPUT
+          echo "enabled=$enabled" | tee -a $GITHUB_OUTPUT
 
       - name: Install cargo-edit
         uses: baptiste0928/cargo-install@v3
@@ -55,7 +55,7 @@ jobs:
           version: '^1.0'
 
       - name: Bump version
-        if: steps.activity.outputs.is_active == 'true'
+        if: steps.configure.outputs.enabled == 'true'
         id: version
         run: |
           $RELEASE_SCRIPT bump nightly
@@ -64,12 +64,12 @@ jobs:
           sed -i -e '$a\' **/package.json
 
       - name: Update metainfo
-        if: steps.activity.outputs.is_active == 'true'
+        if: steps.configure.outputs.enabled == 'true'
         run: |
           $RELEASE_SCRIPT metainfo
 
       - name: Create release commit
-        if: steps.activity.outputs.is_active == 'true'
+        if: steps.configure.outputs.enabled == 'true'
         id: commit
         run: |
           $RELEASE_SCRIPT commit
@@ -82,7 +82,7 @@ jobs:
           format: YYYY_MM_DD
 
       - name: Create release
-        if: steps.activity.outputs.is_active == 'true'
+        if: steps.configure.outputs.enabled == 'true'
         id: create_release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -92,7 +92,7 @@ jobs:
   build:
     name: Build ${{ matrix.build_name }}
     needs: create-release
-    if: needs.create-release.outputs.is_active == 'true'
+    if: needs.create-release.outputs.enabled == 'true'
     strategy:
       fail-fast: false
       matrix:
@@ -330,7 +330,7 @@ jobs:
   build-stub-report:
     name: Build AVM2 stub repository
     needs: create-release
-    if: needs.create-release.outputs.is_active == 'true'
+    if: needs.create-release.outputs.enabled == 'true'
     runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
@@ -355,7 +355,7 @@ jobs:
     # Build browser extensions, web demo, selfhosted package, and docs
     name: Build web
     needs: create-release
-    if: needs.create-release.outputs.is_active == 'true'
+    if: needs.create-release.outputs.enabled == 'true'
     runs-on: ubuntu-24.04
     permissions:
       actions: read
