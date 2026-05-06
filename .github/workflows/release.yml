@@ -22,6 +22,7 @@ jobs:
       package_prefix: ${{ steps.create_release.outputs.package_prefix }}
       tag_name: ${{ steps.commit.outputs.tag_name }}
       version4: ${{ steps.version.outputs.version4 }}
+      release_channel: ${{ steps.configure.outputs.release_channel }}
 
     # Only run the scheduled workflows on the main repo.
     if: github.repository == 'ruffle-rs/ruffle' || github.event_name == 'repository_dispatch' || github.event_name == 'workflow_dispatch'
@@ -41,6 +42,7 @@ jobs:
             enabled=false
           fi
           echo "enabled=$enabled" | tee -a $GITHUB_OUTPUT
+          echo "release_channel=nightly" | tee -a $GITHUB_OUTPUT
 
       - name: Install cargo-edit
         uses: baptiste0928/cargo-install@v3
@@ -163,7 +165,7 @@ jobs:
       - name: Cargo build
         run: cargo build --locked --package ruffle_desktop --release ${{matrix.DESKTOP_FEATURES && '--features' }} ${{matrix.DESKTOP_FEATURES}} ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
-          CFG_RELEASE_CHANNEL: nightly
+          CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
 
@@ -213,7 +215,7 @@ jobs:
         if: runner.os == 'macOS'
         run: cargo build --locked --package ruffle_web_safari --release ${{ matrix.target && '--target' }} ${{ matrix.target }}
         env:
-          CFG_RELEASE_CHANNEL: nightly
+          CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
           RUSTFLAGS: ${{ matrix.RUSTFLAGS }}
           MACOSX_DEPLOYMENT_TARGET: ${{ matrix.MACOSX_DEPLOYMENT_TARGET }}
 
@@ -408,7 +410,7 @@ jobs:
         shell: bash -l {0}
         working-directory: web
         env:
-          CFG_RELEASE_CHANNEL: nightly
+          CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
           VERSION4: ${{ needs.create-release.outputs.version4 }}
           ENABLE_VERSION_SEAL: "true"
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }} # Needed to inject into manifest.json
@@ -416,7 +418,7 @@ jobs:
 
       - name: Build web
         env:
-          CFG_RELEASE_CHANNEL: nightly
+          CFG_RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
           VERSION4: ${{ needs.create-release.outputs.version4 }}
           # NOTE: In the future, we might want to enable some features (like `webgpu`) only in
           # the demo build, for limited testing (like a Chrome origin trial) on ruffle.rs.
@@ -469,7 +471,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish Chrome extension
-        if: env.CHROME_EXTENSION_ID != ''
+        if: env.CHROME_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
         id: publish-chrome-extension
         continue-on-error: true
         env:
@@ -483,7 +485,7 @@ jobs:
           file-path: ./web/packages/extension/dist/ruffle_extension.zip
 
       - name: Publish Edge extension
-        if: env.EDGE_PRODUCT_ID != ''
+        if: env.EDGE_PRODUCT_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
         id: publish-edge-extension
         continue-on-error: true
         env:
@@ -496,7 +498,7 @@ jobs:
           api-key: ${{ secrets.EDGE_API_KEY }}
 
       - name: Publish Firefox extension
-        if: env.FIREFOX_EXTENSION_ID != ''
+        if: env.FIREFOX_EXTENSION_ID != '' && needs.create-release.outputs.release_channel == 'nightly'
         id: publish-firefox-extension
         continue-on-error: true
         env:
@@ -533,6 +535,7 @@ jobs:
 
       - name: Clone JS docs
         uses: actions/checkout@v6
+        if: needs.create-release.outputs.release_channel == 'nightly'
         with:
           repository: ruffle-rs/js-docs
           path: js-docs
@@ -541,6 +544,7 @@ jobs:
           persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
 
       - name: Update JS docs
+        if: needs.create-release.outputs.release_channel == 'nightly'
         run: |
           # Delete the old docs
           rm -rf master/
@@ -556,7 +560,7 @@ jobs:
         working-directory: js-docs
 
       - name: Push JS docs
-        if: github.repository == 'ruffle-rs/ruffle'
+        if: github.repository == 'ruffle-rs/ruffle' && needs.create-release.outputs.release_channel == 'nightly'
         uses: ad-m/github-push-action@master
         with:
           repository: ruffle-rs/js-docs
@@ -566,6 +570,7 @@ jobs:
 
       - name: Clone web demo
         uses: actions/checkout@v6
+        if: needs.create-release.outputs.release_channel == 'nightly'
         with:
           repository: ruffle-rs/demo
           path: demo
@@ -574,6 +579,7 @@ jobs:
           persist-credentials: false # Needed to allow commit via RUFFLE_BUILD_TOKEN below
 
       - name: Update web demo
+        if: needs.create-release.outputs.release_channel == 'nightly'
         run: |
           # Delete the old build.
           rm -fr *
@@ -592,7 +598,7 @@ jobs:
         working-directory: demo
 
       - name: Push web demo
-        if: github.repository == 'ruffle-rs/ruffle'
+        if: github.repository == 'ruffle-rs/ruffle' && needs.create-release.outputs.release_channel == 'nightly'
         uses: ad-m/github-push-action@master
         with:
           repository: ruffle-rs/demo
@@ -604,7 +610,7 @@ jobs:
     name: Publish AUR package
     needs: [create-release, build]
     runs-on: ubuntu-24.04
-    if: github.repository == 'ruffle-rs/ruffle'
+    if: github.repository == 'ruffle-rs/ruffle' && needs.create-release.outputs.release_channel == 'nightly'
     steps:
       - uses: actions/checkout@v6
         with:
