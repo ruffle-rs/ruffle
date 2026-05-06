@@ -831,6 +831,13 @@ impl<'gc> BitmapRawData<'gc> {
         debug_assert!(region.x_max <= self.width);
         debug_assert!(region.y_max <= self.height);
 
+        // A zero-area region has nothing to update; skip marking dirty to avoid
+        // passing empty bitmap data to the renderer later (e.g. 0x0 BitmapData
+        // from an embedded SWF symbol).
+        if region.x_min == region.x_max || region.y_min == region.y_max {
+            return;
+        }
+
         #[cfg(feature = "egui")]
         self.egui_texture.borrow_mut().take();
 
