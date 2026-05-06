@@ -7,6 +7,15 @@ on:
 
   # Allow for manual dispatch on GitHub
   workflow_dispatch:
+    inputs:
+      release_type:
+        type: choice
+        description: Choose release type
+        options:
+          - nightly
+          - minor
+          - patch
+          - major
 
 env:
   RELEASE_SCRIPT: ./.github/scripts/release.py
@@ -33,16 +42,23 @@ jobs:
       - name: Configure release
         id: configure
         run: |
-          # Skip activity check when manually triggered.
-          if [ "${{ github.event_name }}" == "repository_dispatch" ] || [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
-            enabled=true
-          elif [ "$(git rev-list --after="24 hours" ${{ github.sha }})" ]; then
-            enabled=true
+          enabled=true
+          if [[ "${{ github.event.inputs.release_type }}" == "nightly" ]]; then
+            release_channel=nightly
+            release_type=nightly
+          elif [[ -n "${{ github.event.inputs.release_type }}" ]]; then
+            release_channel=stable
+            release_type="${{ github.event.inputs.release_type }}"
+          elif [[ "${{ github.event.schedule }}" == '0 0 * * *' && "$(git rev-list --after="24 hours" ${{ github.sha }})" ]]; then
+            release_channel=nightly
+            release_type=nightly
           else
             enabled=false
+            release_channel=
           fi
           echo "enabled=$enabled" | tee -a $GITHUB_OUTPUT
-          echo "release_channel=nightly" | tee -a $GITHUB_OUTPUT
+          echo "release_channel=$release_channel" | tee -a $GITHUB_OUTPUT
+          echo "release_type=$release_type" | tee -a $GITHUB_OUTPUT
 
       - name: Install cargo-edit
         uses: baptiste0928/cargo-install@v3
@@ -60,7 +76,7 @@ jobs:
         if: steps.configure.outputs.enabled == 'true'
         id: version
         run: |
-          $RELEASE_SCRIPT bump nightly
+          $RELEASE_SCRIPT bump "${{ steps.configure.outputs.release_type }}"
           # Ensure newlines at the end of file
           shopt -s globstar
           sed -i -e '$a\' **/package.json
@@ -76,6 +92,11 @@ jobs:
         run: |
           $RELEASE_SCRIPT commit
           $RELEASE_SCRIPT tag-and-push origin
+
+      - name: Update branch
+        if: steps.configure.outputs.enabled == 'true' && steps.configure.outputs.release_type != 'nightly'
+        run: |
+          git push
 
       - name: Get current time with underscores
         uses: josStorer/get-current-time@v2.1.2
