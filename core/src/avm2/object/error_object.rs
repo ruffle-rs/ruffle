@@ -4,11 +4,9 @@ use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::call_stack::CallStack;
 use crate::avm2::function::FunctionArgs;
-use crate::avm2::globals::slots::error as error_slots;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
-use crate::avm2::value::Value;
-use crate::string::{AvmString, WStr, WString};
+use crate::string::AvmString;
 use core::fmt;
 use gc_arena::{Collect, Gc, GcWeak};
 use ruffle_common::utils::HasPrefixField;
@@ -87,29 +85,6 @@ impl<'gc> ErrorObject<'gc> {
             .expect("Error constructors are infallible");
 
         allocated_object
-    }
-
-    pub fn display(self) -> WString {
-        let name = match self.base().get_slot(error_slots::NAME) {
-            Value::String(string) => string.as_wstr(),
-            Value::Null => WStr::from_units(b"null"),
-            _ => unreachable!("String-typed slot must be String or Null"),
-        };
-
-        let message = match self.base().get_slot(error_slots::MESSAGE) {
-            Value::String(string) => string.as_wstr(),
-            Value::Null => WStr::from_units(b"null"),
-            _ => unreachable!("String-typed slot must be String or Null"),
-        };
-        if message.is_empty() {
-            return name.to_owned();
-        }
-
-        let mut output = WString::new();
-        output.push_str(name);
-        output.push_utf8(": ");
-        output.push_str(message);
-        output
     }
 
     pub fn call_stack(&self) -> &CallStack<'gc> {

@@ -13,10 +13,8 @@ package {
 
         public static native function getErrorMessage(id:int):String;
 
-        [Ruffle(NativeAccessible)]
         public var name:String = "Error";
 
-        [Ruffle(NativeAccessible)]
         public var message:String;
 
         private var _id:int;
