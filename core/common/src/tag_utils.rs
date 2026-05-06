@@ -177,8 +177,11 @@ impl SwfMovie {
     }
 
     /// Construct a movie based on a loaded image (JPEG, GIF or PNG).
-    pub fn from_loaded_image(url: String, length: usize) -> Self {
-        let header = HeaderExt::default_with_uncompressed_len(length as i32);
+    pub fn from_loaded_image(url: String, length: usize, width: u32, height: u32) -> Self {
+        let stage_size = Rectangle::ZERO
+            .with_width(Twips::from_pixels_i32(width as i32))
+            .with_height(Twips::from_pixels_i32(height as i32));
+        let header = HeaderExt::default_with_uncompressed_len(length as i32, stage_size);
         let sandbox_type = SandboxType::infer(url.as_str(), &header);
         let mut movie = Self {
             header,

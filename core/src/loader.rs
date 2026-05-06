@@ -1625,7 +1625,15 @@ impl<'gc> MovieLoader<'gc> {
                 Arc::new(movie)
             }
             ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
-                Arc::new(SwfMovie::from_loaded_image(url.clone(), length))
+                let (width, height) =
+                    ruffle_render::utils::decode_define_bits_jpeg_dimensions(data)
+                        .unwrap_or((0, 0));
+                Arc::new(SwfMovie::from_loaded_image(
+                    url.clone(),
+                    length,
+                    width,
+                    height,
+                ))
             }
             ContentType::Unknown => Arc::new(SwfMovie::error_movie(url.clone())),
         };
