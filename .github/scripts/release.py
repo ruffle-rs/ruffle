@@ -29,6 +29,12 @@ def get_current_day_id():
     return f'{now.year - 2000}{day}'
 
 
+def get_max_day_id():
+    max_year = 2999
+    max_day = 999
+    return f'{max_year - 2000}{max_day}'
+
+
 def get_tag_name(version):
     if '-nightly.' in version:
         # TODO Nightly versions use a different tag syntax, unify it.
@@ -148,7 +154,7 @@ def bump(release_type):
         # Even for standard versions we have to add the day ID to version4,
         # because otherwise a stable version would be older than a pre-release
         # version (that's because in version4, 1.2.3 < 1.2.3.4).
-        version4 = f'{version}.{get_current_day_id()}'
+        version4 = f'{version}.{get_max_day_id()}'
     elif release_type == 'nightly':
         # Nightly is our custom pre-release version. We basically get the next
         # minor version (by bumping it and resetting) and add suffix manually
