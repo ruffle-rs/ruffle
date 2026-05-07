@@ -4,6 +4,7 @@ package {
     public dynamic class Error {
         {
             prototype.name = "Error";
+            prototype.message = "Error";
 
             prototype.toString = function():String {
                 var self:Error = this;
@@ -13,15 +14,16 @@ package {
 
         public static native function getErrorMessage(id:int):String;
 
-        public var name:String = "Error";
+        public var name:*;
 
-        public var message:String;
+        public var message:*;
 
         private var _id:int;
 
-        public function Error(message:String = "", id:int = 0) {
+        public function Error(message:* = "", id:* = 0) {
             this.message = message;
             this._id = id;
+            this.name = prototype.name;
         }
 
         public function get errorID():int {
