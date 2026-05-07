@@ -2469,10 +2469,10 @@ impl<'gc> EditText<'gc> {
 
     fn open_url(self, context: &mut UpdateContext<'gc>, url: &WStr, target: &WStr) {
         fn strip_url_prefix<'a>(url: &'a WStr, prefix: &'a WStr) -> Option<&'a WStr> {
-            if let Some(prefix_end) = url.find(WStr::from_units(b":")) {
-                let (stripped_prefix, address) = url.split_at(prefix_end + 1);
-                if stripped_prefix.eq_ignore_case(prefix) {
-                    Some(address)
+            let stripped_prefix = url.slice(..prefix.len());
+            if stripped_prefix.is_some() {
+                if stripped_prefix?.eq_ignore_case(prefix) {
+                    url.slice(prefix.len()..url.len())
                 } else {
                     None
                 }
