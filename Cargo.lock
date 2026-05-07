@@ -4334,9 +4334,9 @@ checksum = "c3d6831663a5098ea164f89cff59c6284e95f4e3c76ce9848d4529f5ccca9bde"
 
 [[package]]
 name = "rascal"
-version = "0.2.4"
+version = "0.2.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c7da560799a101510f593e8e8a706ee075a3cdccfcd2b6255250778e8d5825a4"
+checksum = "11fb37eee628f7df0d5a0dc6109250606dab3610269f85b549a4f76847e76898"
 dependencies = [
  "annotate-snippets",
  "byteorder",
