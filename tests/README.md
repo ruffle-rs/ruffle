@@ -261,6 +261,17 @@ stage_rect = { x_min = 0.0, y_min = 0.0, x_max = 550.0, y_max = 400.0 }
 # If false (default), the SWF can access local files but not the network.
 use_network = false
 
+# What optimization passes should run during code generation.
+# The default is to match Flash's compiler (all enabled), but this may not be desirable for some tests.
+optimizations = {
+  # Whether to evaluate constant expressions and fold in the results.
+  # For example, `1 + 2` will be folded to `3`.
+  fold_constants = true,
+
+  # Whether to promote variables to registers, enabling the `DefineFunction2` opcode.
+  promote_variables_to_registers = true,
+}
+
 ```
 
 ## Multiple tests
