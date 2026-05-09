@@ -214,6 +214,13 @@ Then, whenever you run the tests it'll automatically build `test.swf` (version 1
 
 There is also the ability to only compile the test and not run it - use `cargo testutils compile` to compile all swfs (which takes the same filters as tests does, e.g. `cargo testutils compile avm1/movieclip_lockroot`).
 
+If you want to conveniently run the test that you create in Flash Player, we also have a `cargo testutils execute` command - this only works on Linux currently, and you must configure the Flash Player paths in a `.flash_players.toml` file which looks something like:
+```toml
+[[players]]
+version = 32
+path = "/path/to/flashplayerdebugger"
+```
+
 ### Flash authoring tool
 
 Create a new ActionScript project. Save the `.fla` file and export an `.swf` (File -> Export -> Export Movie...).
