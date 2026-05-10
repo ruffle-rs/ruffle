@@ -1,4 +1,4 @@
-context-menu-download-swf = Unduh .swf
+context-menu-download-swf = Unduh SWF
 context-menu-copy-debug-info = Salin info debug
 context-menu-open-save-manager = Buka Manager Save
 context-menu-about-ruffle =

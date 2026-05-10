@@ -1,4 +1,4 @@
-context-menu-download-swf = הורדת קובץ הswf.
+context-menu-download-swf = הורדת קובץ הSWF
 context-menu-copy-debug-info = העתקת נתוני ניפוי שגיאות
 context-menu-open-save-manager = פתח את מנהל השמירות
 context-menu-about-ruffle =
