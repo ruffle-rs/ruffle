@@ -290,21 +290,7 @@ mod tests {
             0x08, 0x00, 0x00, 0x00, 0x02, 0x00, 0x03, 0x01, 0x02, 0x03, 0x06, 0x00, 0x03, 0x01,
             0x02, 0x03, 0x05, 0x00, 0x00, 0x09,
         ];
-        let mut reader = FlvReader::from_source(&data);
-
-        assert_eq!(
-            Value::parse(&mut reader),
-            Ok(Value::EcmaArray(vec![
-                Variable {
-                    name: &[0x01, 0x02, 0x03],
-                    data: Value::Undefined
-                },
-                Variable {
-                    name: &[0x01, 0x02, 0x03],
-                    data: Value::Null
-                }
-            ]))
-        );
+        read(&data);
     }
 
     #[test]
@@ -313,21 +299,7 @@ mod tests {
             0x08, 0x00, 0x00, 0x0F, 0x02, 0x00, 0x03, 0x01, 0x02, 0x03, 0x06, 0x00, 0x03, 0x01,
             0x02, 0x03, 0x05, 0x00, 0x00, 0x09,
         ];
-        let mut reader = FlvReader::from_source(&data);
-
-        assert_eq!(
-            Value::parse(&mut reader),
-            Ok(Value::EcmaArray(vec![
-                Variable {
-                    name: &[0x01, 0x02, 0x03],
-                    data: Value::Undefined
-                },
-                Variable {
-                    name: &[0x01, 0x02, 0x03],
-                    data: Value::Null
-                }
-            ]))
-        );
+        read(&data);
     }
 
     #[test]
@@ -336,7 +308,11 @@ mod tests {
             0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03, 0x06, 0x00, 0x03, 0x01,
             0x02, 0x03, 0x05, 0x00, 0x00, 0x09,
         ];
-        let mut reader = FlvReader::from_source(&data);
+        read(&data);
+    }
+
+    fn read(data: &[u8]) {
+        let mut reader = FlvReader::from_source(data);
 
         assert_eq!(
             Value::parse(&mut reader),
