@@ -1,6 +1,6 @@
 use crate::compiler::SwfCompiler;
 use crate::util::{read_bytes, write_bytes};
-use rascal::{CompileOptions, ProgramBuilder, SourceProvider, SwfOptions};
+use rascal::{CompileOptions, OptimizationOptions, ProgramBuilder, SourceProvider, SwfOptions};
 use serde::Deserialize;
 use sha2::{Digest, Sha256};
 use std::io::Error;
@@ -17,6 +17,23 @@ pub struct RascalOptions {
     pub pcode: Vec<String>,
     pub stage_rect: StageSize,
     pub use_network: bool,
+    pub optimizations: RascalOptimizations,
+}
+
+#[derive(Clone, Deserialize, Debug)]
+#[serde(default, deny_unknown_fields)]
+pub struct RascalOptimizations {
+    pub fold_constants: bool,
+    pub promote_variables_to_registers: bool,
+}
+
+impl Default for RascalOptimizations {
+    fn default() -> Self {
+        Self {
+            fold_constants: true,
+            promote_variables_to_registers: true,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -47,12 +64,13 @@ pub struct RascalCompiler {
     scripts: Vec<String>,
     classes: Vec<String>,
     pcode: Vec<String>,
+    optimizations: OptimizationOptions,
 }
 
 impl SwfCompiler for RascalCompiler {
     fn compile(self: Box<Self>, root_dir: &VfsPath, verify_if_changed: bool) -> anyhow::Result<()> {
         let provider = VfsSourceProvider(root_dir.clone());
-        let mut builder = ProgramBuilder::new(provider);
+        let mut builder = ProgramBuilder::new(provider).with_optimizations(self.optimizations);
         for script in &self.scripts {
             builder.add_script(script);
         }
@@ -126,6 +144,11 @@ impl RascalOptions {
                     self.stage_rect.y_max,
                 )
                 .with_network_sandbox(self.use_network),
+            optimizations: OptimizationOptions::none()
+                .with_fold_constants(self.optimizations.fold_constants)
+                .with_promote_variables_to_registers(
+                    self.optimizations.promote_variables_to_registers,
+                ),
         }))
     }
 }
@@ -141,6 +164,7 @@ impl Default for RascalOptions {
             pcode: vec![],
             stage_rect: Default::default(),
             use_network: false,
+            optimizations: Default::default(),
         }
     }
 }
