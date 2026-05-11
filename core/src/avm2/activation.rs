@@ -1189,10 +1189,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pop_stack()
             .coerce_to_type(self, bound_superclass_object.inner_class_definition())?;
 
-        let receiver = receiver
-            .null_check(self, Some(&multiname))?
-            .as_object()
-            .expect("Super ops should not appear in primitive functions");
+        let receiver = receiver.as_object_null_check(
+            self,
+            Some(&multiname),
+            "Super ops should not appear in primitive functions",
+        )?;
 
         let value = bound_superclass_object.call_super(&multiname, receiver, args, self)?;
 
@@ -1457,10 +1458,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pop_stack()
             .coerce_to_type(self, bound_superclass_object.inner_class_definition())?;
 
-        let receiver = receiver
-            .null_check(self, Some(&multiname))?
-            .as_object()
-            .expect("Super ops should not appear in primitive functions");
+        let receiver = receiver.as_object_null_check(
+            self,
+            Some(&multiname),
+            "Super ops should not appear in primitive functions",
+        )?;
 
         let value = bound_superclass_object.get_super(&multiname, receiver, self)?;
 
@@ -1482,10 +1484,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pop_stack()
             .coerce_to_type(self, bound_superclass_object.inner_class_definition())?;
 
-        let receiver = receiver
-            .null_check(self, Some(&multiname))?
-            .as_object()
-            .expect("Super ops should not appear in primitive functions");
+        let receiver = receiver.as_object_null_check(
+            self,
+            Some(&multiname),
+            "Super ops should not appear in primitive functions",
+        )?;
 
         bound_superclass_object.set_super(&multiname, value, receiver, self)?;
 
@@ -1663,11 +1666,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_get_slot(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let stack_top = self.stack.stack_top();
 
-        let object = stack_top
-            .get()
-            .null_check(self, None)?
-            .as_object()
-            .expect("Cannot get_slot on primitive");
+        let object =
+            stack_top
+                .get()
+                .as_object_null_check(self, None, "Cannot get_slot on primitive")?;
         let value = object.get_slot(index);
 
         // We use `stack_top` instead of `pop_stack` and `push_stack` here
@@ -1681,11 +1683,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_slot(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
-        let object = self
-            .pop_stack()
-            .null_check(self, None)?
-            .as_object()
-            .expect("Cannot set_slot on primitive");
+        let object =
+            self.pop_stack()
+                .as_object_null_check(self, None, "Cannot set_slot on primitive")?;
 
         object.set_slot(index, value, self)?;
 
@@ -1694,11 +1694,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_slot_coerce_i(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
-        let object = self
-            .pop_stack()
-            .null_check(self, None)?
-            .as_object()
-            .expect("Cannot set_slot on primitive");
+        let object =
+            self.pop_stack()
+                .as_object_null_check(self, None, "Cannot set_slot on primitive")?;
 
         let value = value.coerce_to_i32(self)?;
 
@@ -1709,11 +1707,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_slot_no_coerce(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
-        let object = self
-            .pop_stack()
-            .null_check(self, None)?
-            .as_object()
-            .expect("Cannot set_slot on primitive");
+        let object =
+            self.pop_stack()
+                .as_object_null_check(self, None, "Cannot set_slot on primitive")?;
 
         object.set_slot_no_coerce(index, value, self.gc());
 
@@ -1760,11 +1756,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_construct_slot(&mut self, index: usize, arg_count: u32) -> Result<(), Error<'gc>> {
         let args = self.get_args(arg_count);
-        let source = self
-            .pop_stack()
-            .null_check(self, None)?
-            .as_object()
-            .expect("Cannot get_slot on primitive");
+        let source =
+            self.pop_stack()
+                .as_object_null_check(self, None, "Cannot get_slot on primitive")?;
 
         let ctor = source.get_slot(index);
         let constructed_object = ctor.construct(self, args)?;
