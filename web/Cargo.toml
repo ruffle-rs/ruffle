@@ -67,7 +67,7 @@ features = ["audio", "mp3", "aac", "nellymoser", "default_compatibility_rules", 
 [dependencies.web-sys]
 workspace = true
 features = [
-    "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext",
+    "AddEventListenerOptions", "AudioBuffer", "AudioBufferSourceNode", "AudioContext", "AudioContextOptions",
     "AudioDestinationNode", "AudioNode", "AudioParam", "Blob", "BlobPropertyBag",
     "ChannelMergerNode", "ChannelSplitterNode", "ClipboardEvent", "DataTransfer", "Element",
     "EventTarget", "GainNode", "Headers", "HtmlCanvasElement", "HtmlDocument", "HtmlElement", "HtmlFormElement",

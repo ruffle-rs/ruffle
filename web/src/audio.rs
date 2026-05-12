@@ -12,7 +12,7 @@ use tracing_subscriber::Registry;
 use tracing_subscriber::layer::Layered;
 use tracing_wasm::WASMLayer;
 use wasm_bindgen::prelude::*;
-use web_sys::{AudioContext, AudioScheduledSourceNode};
+use web_sys::{AudioContext, AudioContextOptions, AudioScheduledSourceNode};
 
 pub struct WebAudioBackend {
     mixer: AudioMixer,
@@ -48,8 +48,19 @@ impl WebAudioBackend {
     const NORMAL_PROGRESS_RANGE_MAX: f64 = 0.75;
 
     pub fn new(log_subscriber: Arc<Layered<WASMLayer, Registry>>) -> Result<Self, JsError> {
-        let context = AudioContext::new().into_js_result()?;
+        // Pin the AudioContext to 44.1 kHz. SWF audio sources top out at 44.1 kHz, so
+        // there's no fidelity to gain from running our pipeline at the device rate, and
+        // running at the device rate caused stutter at startup on high-rate devices
+        // (e.g. 192/384 kHz cards) because each buffer expired faster than the JS event
+        // loop could refill it. Per Web Audio §1.2.1, the user agent MUST resample on
+        // output if the requested rate differs from the device rate.
+        // See: https://www.w3.org/TR/webaudio-1.1/#AudioContext-constructors
+        let opts = AudioContextOptions::new();
+        opts.set_sample_rate(44_100.0);
+
+        let context = AudioContext::new_with_context_options(&opts).into_js_result()?;
         let sample_rate = context.sample_rate();
+
         let mut audio = Self {
             context,
             mixer: AudioMixer::new(2, sample_rate as u32),
