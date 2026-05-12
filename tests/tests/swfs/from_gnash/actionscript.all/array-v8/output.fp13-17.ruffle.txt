@@ -51,9 +51,9 @@ PASSED: !Array.prototype.hasOwnProperty('valueOf') [./array.as:73]
 PASSED: !Array.prototype.hasOwnProperty('size') [./array.as:74]
 PASSED: typeof(Array()) == 'object' [./array.as:77]
 PASSED: typeof(new Array()) == 'object' [./array.as:78]
-FAILED: expected: 'function' obtained: undefined [./array.as:80]
-FAILED: expected: 'object' obtained: undefined [./array.as:82]
-FAILED: expected: 'function' obtained: undefined [./array.as:83]
+PASSED: typeof(f) == 'function' [./array.as:80]
+PASSED: typeof(a) == 'object' [./array.as:82]
+PASSED: typeof(a.pop) == 'function' [./array.as:83]
 PASSED: typeof(a.size) == 'undefined' [./array.as:101]
 PASSED: a instanceOf Array [./array.as:103]
 PASSED: a.length == 3 [./array.as:104]
@@ -649,6 +649,6 @@ FAILED: expected: undefined obtained:  [./array.as:1786]
 FAILED: expected: "object" obtained: function [./array.as:1791]
 FAILED: expected: "string" obtained: object [./array.as:1792]
 FAILED: expected: "string" obtained:  [./array.as:1793]
-#passed: 605
-#failed: 41
+#passed: 608
+#failed: 38
 #total tests run: 646

@@ -77,6 +77,48 @@ pub fn create_class<'gc>(
     class
 }
 
+pub mod method {
+    pub const ARRAY: u16 = 0;
+    pub const PUSH: u16 = 1;
+    pub const POP: u16 = 2;
+    pub const CONCAT: u16 = 3;
+    pub const SHIFT: u16 = 4;
+    pub const UNSHIFT: u16 = 5;
+    pub const SLICE: u16 = 6;
+    pub const JOIN: u16 = 7;
+    pub const SPLICE: u16 = 8;
+    pub const TO_STRING: u16 = 9;
+    pub const SORT: u16 = 10;
+    pub const REVERSE: u16 = 11;
+    pub const SORT_ON: u16 = 12;
+}
+
+pub fn method<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Object<'gc>,
+    args: &[Value<'gc>],
+    index: u16,
+) -> Result<Value<'gc>, Error<'gc>> {
+    use method::*;
+
+    match index {
+        ARRAY => array(activation, this, args),
+        PUSH => push(activation, this, args),
+        POP => pop(activation, this, args),
+        CONCAT => concat(activation, this, args),
+        SHIFT => shift(activation, this, args),
+        UNSHIFT => unshift(activation, this, args),
+        SLICE => slice(activation, this, args),
+        JOIN => join(activation, this, args),
+        SPLICE => splice(activation, this, args),
+        TO_STRING => to_string(activation, this, args),
+        SORT => sort(activation, this, args),
+        REVERSE => reverse(activation, this, args),
+        SORT_ON => sort_on(activation, this, args),
+        _ => Ok(Value::Undefined),
+    }
+}
+
 /// Intermediate builder for constructing `ArrayObject`,
 /// used to work around borrow-checker issues.
 pub struct ArrayBuilder<'gc> {
