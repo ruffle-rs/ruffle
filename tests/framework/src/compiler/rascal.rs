@@ -64,13 +64,12 @@ pub struct RascalCompiler {
     scripts: Vec<String>,
     classes: Vec<String>,
     pcode: Vec<String>,
-    optimizations: OptimizationOptions,
 }
 
 impl SwfCompiler for RascalCompiler {
     fn compile(self: Box<Self>, root_dir: &VfsPath, verify_if_changed: bool) -> anyhow::Result<()> {
         let provider = VfsSourceProvider(root_dir.clone());
-        let mut builder = ProgramBuilder::new(provider).with_optimizations(self.optimizations);
+        let mut builder = ProgramBuilder::new(provider).with_compile_options(self.compile_options);
         for script in &self.scripts {
             builder.add_script(script);
         }
@@ -81,9 +80,7 @@ impl SwfCompiler for RascalCompiler {
             builder.add_pcode(pcode);
         }
         let program = builder.build()?;
-        let swf = program
-            .compile(self.compile_options)
-            .to_swf(&self.swf_options)?;
+        let swf = program.compile().to_swf(&self.swf_options)?;
         let output_path = root_dir.join(&self.target)?;
         if verify_if_changed {
             if !output_path.is_file()? {
@@ -131,10 +128,18 @@ impl RascalOptions {
             classes: self.classes.clone(),
             scripts: self.scripts.clone(),
             pcode: self.pcode.clone(),
-            compile_options: CompileOptions::default().with_swf_version(
-                self.swf_version
-                    .expect("swf_version is validated elsewhere"),
-            ),
+            compile_options: CompileOptions::default()
+                .with_swf_version(
+                    self.swf_version
+                        .expect("swf_version is validated elsewhere"),
+                )
+                .with_optimizations(
+                    OptimizationOptions::none()
+                        .with_fold_constants(self.optimizations.fold_constants)
+                        .with_promote_variables_to_registers(
+                            self.optimizations.promote_variables_to_registers,
+                        ),
+                ),
             swf_options: SwfOptions::default()
                 .with_frame_rate(self.frame_rate)
                 .with_stage_size(
@@ -144,11 +149,6 @@ impl RascalOptions {
                     self.stage_rect.y_max,
                 )
                 .with_network_sandbox(self.use_network),
-            optimizations: OptimizationOptions::none()
-                .with_fold_constants(self.optimizations.fold_constants)
-                .with_promote_variables_to_registers(
-                    self.optimizations.promote_variables_to_registers,
-                ),
         }))
     }
 }
