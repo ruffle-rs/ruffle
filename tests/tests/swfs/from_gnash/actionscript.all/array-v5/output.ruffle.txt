@@ -22,7 +22,7 @@ PASSED: typeof(Array.prototype.sortOn) == 'function' [./array.as:43]
 PASSED: typeof(Array.prototype.splice) == 'function' [./array.as:44]
 PASSED: typeof(Array.prototype.unshift) == 'function' [./array.as:45]
 PASSED: typeof(Array.prototype.toString) == 'function' [./array.as:46]
-FAILED: expected: 'undefined' obtained: number [./array.as:47]
+PASSED: typeof(Array.prototype.length) == 'undefined' [./array.as:47]
 PASSED: typeof(Array.prototype.size) == 'undefined' [./array.as:48]
 PASSED: typeof(Array.prototype.CASEINSENSITIVE) == 'undefined' [./array.as:49]
 PASSED: typeof(Array.prototype.DESCENDING) == 'undefined' [./array.as:50]
@@ -555,6 +555,6 @@ PASSED: ret == "" [./array.as:1699]
 creating new object
 X ctor
 PASSED: ret == "Array data" [./array.as:1710]
-#passed: 524
-#failed: 28
+#passed: 525
+#failed: 27
 #total tests run: 552

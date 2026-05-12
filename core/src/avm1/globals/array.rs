@@ -66,9 +66,8 @@ pub fn create_class<'gc>(
     context: &mut DeclContext<'_, 'gc>,
     super_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let proto = ArrayBuilder::new_with_proto(context.strings, super_proto).with([]);
-    let class = context.native_class_with_proto(constructor, Some(array), proto);
-    context.define_properties_on(proto, PROTO_DECLS(context));
+    let class = context.native_class(constructor, Some(array), super_proto);
+    context.define_properties_on(class.proto, PROTO_DECLS(context));
 
     // TODO: These were added in Flash Player 7, but are available even to SWFv6 and lower
     // when run in Flash Player 7. Make these conditional if we add a parameter to control
@@ -113,6 +112,7 @@ impl<'gc> ArrayBuilder<'gc> {
             this.define_value(self.mc, length_str, value, Attribute::empty());
             length += 1;
         }
+
         this.define_value(
             self.mc,
             self.length_prop,
