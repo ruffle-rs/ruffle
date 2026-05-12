@@ -3098,11 +3098,12 @@ impl SoundTransform {
         const MAX_VOLUME: i64 = SoundTransform::MAX_VOLUME as i64;
 
         // It seems like Flash masks the results below to 30-bit integers:
-        // * Negative values are equivalent to their absolute value (their sign bit is unset).
         // * Specifically, 0x40000000, -0x40000000 and -0x80000000 are equivalent to zero.
+        // Negative values are equivalent to their absolute value.
         const MASK: i32 = (1 << 30) - 1;
 
-        self.volume = (i64::from(self.volume) * i64::from(other.volume) / MAX_VOLUME) as i32 & MASK;
+        self.volume =
+            (i64::from(self.volume) * i64::from(other.volume) / MAX_VOLUME).abs() as i32 & MASK;
 
         // This is a 2x2 matrix multiply between the transforms.
         // Done with integer math to match Flash behavior.
