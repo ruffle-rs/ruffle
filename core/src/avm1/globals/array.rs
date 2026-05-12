@@ -315,39 +315,16 @@ pub fn reverse<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let length = this.length(activation)?;
     for lower_index in 0..length / 2 {
-        let has_lower = this.has_element(activation, lower_index);
-        let lower_value = if has_lower {
-            this.get_element(activation, lower_index)
-        } else {
-            Value::Undefined
-        };
-
         let upper_index = length - lower_index - 1;
-        let has_upper = this.has_element(activation, upper_index);
-        let upper_value = if has_upper {
-            this.get_element(activation, upper_index)
-        } else {
-            Value::Undefined
-        };
 
-        match (has_lower, has_upper) {
-            (true, true) => {
-                this.set_element(activation, lower_index, upper_value)?;
-                this.set_element(activation, upper_index, lower_value)?;
-            }
-            (true, false) => {
-                this.delete_element(activation, lower_index);
-                this.set_element(activation, upper_index, lower_value)?;
-            }
-            (false, true) => {
-                this.set_element(activation, lower_index, upper_value)?;
-                this.delete_element(activation, upper_index);
-            }
-            (false, false) => {
-                this.delete_element(activation, lower_index);
-                this.delete_element(activation, upper_index);
-            }
-        }
+        let lower_value = this.get_element(activation, lower_index);
+        let upper_value = this.get_element(activation, upper_index);
+
+        this.delete_element(activation, lower_index);
+        this.delete_element(activation, upper_index);
+
+        this.set_element(activation, lower_index, upper_value)?;
+        this.set_element(activation, upper_index, lower_value)?;
     }
 
     // Some docs incorrectly say reverse returns Void.

@@ -173,7 +173,7 @@ PASSED: a.length == 0 [./array.as:491]
 PASSED: b.toString() == "" [./array.as:499]
 PASSED: count == 1 [./array.as:505]
 PASSED: sparse.toString() == ",,,,,5" [./array.as:511]
-FAILED: expected: 6 obtained: 1 [./array.as:517]
+PASSED: count == 6 [./array.as:517]
 PASSED: sparse.toString() == "5,,,,," [./array.as:523]
 PASSED: s == "^1^^3" [./array.as:538]
 PASSED: bclone.length == 0 [./array.as:549]
@@ -515,9 +515,9 @@ PASSED: val == "five" [./array.as:1535]
 PASSED: traceProps(o) == "pop,length,7,6,4,3,2,1," [./array.as:1537]
 PASSED: o.length == 6 [./array.as:1538]
 PASSED: traceProps(o) == "reverse,length,7,6,5,4,3,2,1," [./array.as:1545]
-FAILED: expected: "3,2,4,1,5,0,reverse,length,7,6," obtained: 0,reverse,length,7,6,4,3,2,1, [./array.as:1550]
+PASSED: traceProps(o) == "3,2,4,1,5,0,reverse,length,7,6," [./array.as:1550]
 PASSED: o.length == 6 [./array.as:1551]
-FAILED: expected: "3,1,4,0,reverse,length,7,6,5,2," obtained: 0,reverse,length,7,6,5,3,2,1, [./array.as:1559]
+PASSED: traceProps(o) == "3,1,4,0,reverse,length,7,6,5,2," [./array.as:1559]
 PASSED: o.length == 5 [./array.as:1560]
 PASSED: traceProps(o) == "splice,length,7,6,5,4,3,2,1," [./array.as:1571]
 PASSED: o.length == 6 [./array.as:1574]
@@ -555,6 +555,6 @@ PASSED: ret == "" [./array.as:1699]
 creating new object
 X ctor
 PASSED: ret == "Array data" [./array.as:1710]
-#passed: 528
-#failed: 24
+#passed: 531
+#failed: 21
 #total tests run: 552
