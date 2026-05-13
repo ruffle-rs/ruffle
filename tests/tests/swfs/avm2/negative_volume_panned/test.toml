@@ -1,0 +1,9 @@
+num_ticks = 30
+
+[player_options]
+with_audio = true
+
+[audio_assertions.sound]
+frames = [1]
+max_amplitude = 0.2
+min_max_amplitude = 0.05
