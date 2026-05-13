@@ -270,15 +270,10 @@ pub fn shift<'gc>(
     let first = this.get_element(activation, 0);
 
     for i in 1..length {
-        if this.has_element(activation, i) {
-            let element = this.get_element(activation, i);
-            this.set_element(activation, i - 1, element)?;
-        } else {
-            this.delete_element(activation, i - 1);
-        }
+        let element = this.get_element(activation, i);
+        this.delete_element(activation, i - 1);
+        this.set_element(activation, i - 1, element)?;
     }
-
-    this.delete_element(activation, length - 1);
 
     if let NativeObject::Array(_) = this.native() {
         this.set_length(activation, length - 1)?;
