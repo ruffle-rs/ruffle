@@ -508,7 +508,7 @@ PASSED: traceProps(o) == "shift,length,7,6,5,4,3,2,1," [./array.as:1509]
 PASSED: traceProps(o) == "4,3,2,1,0,shift,length,7,6,5," [./array.as:1513]
 PASSED: o.length == 6 [./array.as:1514]
 PASSED: traceProps(o) == "unshift,length,7,6,5,4,3,2,1," [./array.as:1520]
-FAILED: expected: "0,1,2,3,4,5,6,unshift,length,7," obtained: 0,unshift,length,7,6,5,4,3,2, [./array.as:1524]
+PASSED: traceProps(o) == "0,1,2,3,4,5,6,unshift,length,7," [./array.as:1524]
 PASSED: o.length == 6 [./array.as:1525]
 PASSED: traceProps(o) == "pop,length,7,6,5,4,3,2,1," [./array.as:1532]
 PASSED: val == "five" [./array.as:1535]
@@ -555,6 +555,6 @@ PASSED: ret == "" [./array.as:1699]
 creating new object
 X ctor
 PASSED: ret == "Array data" [./array.as:1710]
-#passed: 536
-#failed: 16
+#passed: 537
+#failed: 15
 #total tests run: 552

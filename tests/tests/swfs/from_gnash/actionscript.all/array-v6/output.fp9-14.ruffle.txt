@@ -569,7 +569,7 @@ PASSED: traceProps(o) == "shift,length,7,6,5,4,3,2,1," [./array.as:1509]
 PASSED: traceProps(o) == "4,3,2,1,0,shift,length,7,6,5," [./array.as:1513]
 PASSED: o.length == 6 [./array.as:1514]
 PASSED: traceProps(o) == "unshift,length,7,6,5,4,3,2,1," [./array.as:1520]
-FAILED: expected: "0,1,2,3,4,5,6,unshift,length,7," obtained: 0,unshift,length,7,6,5,4,3,2, [./array.as:1524]
+PASSED: traceProps(o) == "0,1,2,3,4,5,6,unshift,length,7," [./array.as:1524]
 PASSED: o.length == 6 [./array.as:1525]
 PASSED: traceProps(o) == "pop,length,7,6,5,4,3,2,1," [./array.as:1532]
 PASSED: val == "five" [./array.as:1535]
@@ -639,6 +639,6 @@ FAILED: expected: undefined obtained:  [./array.as:1786]
 FAILED: expected: "object" obtained: function [./array.as:1791]
 FAILED: expected: "string" obtained: object [./array.as:1792]
 FAILED: expected: "string" obtained:  [./array.as:1793]
-#passed: 605
-#failed: 31
+#passed: 606
+#failed: 30
 #total tests run: 636
