@@ -238,15 +238,14 @@ pub fn unshift<'gc>(
     for i in 0..old_length {
         let from = old_length - i - 1;
         let to = new_length - i - 1;
-        if this.has_element(activation, from) {
-            let element = this.get_element(activation, from);
-            this.set_element(activation, to, element)?;
-        } else {
-            this.delete_element(activation, to);
-        }
+
+        let element = this.get_element(activation, from);
+        this.delete_element(activation, to);
+        this.set_element(activation, to, element)?;
     }
 
     for (i, &arg) in args.iter().enumerate() {
+        this.delete_element(activation, i as i32);
         this.set_element(activation, i as i32, arg)?;
     }
 
