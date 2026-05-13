@@ -29,7 +29,6 @@ use crate::display_object::{
     TInteractiveObject,
 };
 use crate::events::ClipEvent;
-use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::limits::ExecutionLimit;
 use crate::player::{Player, PostFrameCallback};
 use crate::streams::{NetStream, NetStreamHandle};
@@ -253,6 +252,30 @@ impl<'gc> LoadManager<'gc> {
     /// Retrieve a loader by handle for mutation.
     pub fn get_loader_mut(&mut self, handle: LoaderHandle) -> Option<&mut MovieLoader<'gc>> {
         self.0.get_mut(handle)
+    }
+
+    /// Checks if the target clip on the given handle's loader
+    /// has been `avm1_removed()`. If so, it will set the `loader_status`
+    /// to `Failed` and return `true`.
+    /// This is used to prevent a loaded movie from executing
+    /// if its target clip was removed before it finished loading.
+    // TODO: Does this need adjusted for clip unloading?
+    // (see the avm1/load_cancel_via_unloadclip and avm1/load_cancel_via_unloadmovie tests)
+    pub fn load_cancelled_avm1(&mut self, handle: LoaderHandle) -> bool {
+        match self.get_loader_mut(handle) {
+            Some(MovieLoader {
+                loader_status,
+                target_clip,
+                ..
+            }) => {
+                if target_clip.avm1_removed() {
+                    *loader_status = LoaderStatus::Failed;
+                    return true;
+                }
+            }
+            _ => unreachable!(),
+        }
+        false
     }
 
     /// Kick off a movie clip load.
@@ -658,6 +681,11 @@ impl<'gc> MovieLoader<'gc> {
                     Some(MovieLoader { target_clip, .. }) => *target_clip,
                     None => return Err(Error::Cancelled),
                 };
+
+                if uc.load_manager.load_cancelled_avm1(handle) {
+                    tracing::warn!("movie_loader: Target clip was already AVM1 removed");
+                    return Err(Error::Cancelled);
+                }
 
                 replacing_root_movie = uc
                     .stage
@@ -1591,6 +1619,11 @@ impl<'gc> MovieLoader<'gc> {
             None => return Err(Error::Cancelled),
         };
 
+        if uc.load_manager.load_cancelled_avm1(handle) {
+            tracing::warn!("movie_loader_data: Target clip was already avm1_removed");
+            return Ok(());
+        }
+
         let domain = if let MovieLoaderVMData::Avm2 {
             context,
             default_domain,
@@ -1626,7 +1659,15 @@ impl<'gc> MovieLoader<'gc> {
                 Arc::new(movie)
             }
             ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
-                Arc::new(SwfMovie::from_loaded_image(url.clone(), length))
+                let (width, height) =
+                    ruffle_render::utils::decode_define_bits_jpeg_dimensions(data)
+                        .unwrap_or((0, 0));
+                Arc::new(SwfMovie::from_loaded_image(
+                    url.clone(),
+                    length,
+                    width,
+                    height,
+                ))
             }
             ContentType::Unknown => Arc::new(SwfMovie::error_movie(url.clone())),
         };
@@ -1990,7 +2031,12 @@ impl<'gc> MovieLoader<'gc> {
             // we add the loaded clip as a child. The frame constructor should see
             // 'this.parent == null' and 'this.stage == null'
             mc.post_instantiation(uc, None, Instantiator::Movie, false);
-            catchup_display_object_to_frame(uc, mc.into());
+
+            if mc.movie().is_action_script_3() {
+                mc.enter_frame(uc);
+                mc.construct_frame(uc);
+            }
+
             // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
             // and consequently are observed to have their currentFrame lag one
             // frame behind objects placed by the timeline (even if they were
@@ -2011,6 +2057,8 @@ impl<'gc> MovieLoader<'gc> {
         }
 
         if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+            let dobj = dobj.unwrap();
+
             let mut loader = loader_info
                 .loader()
                 .expect("Loader should be Some")
@@ -2018,29 +2066,39 @@ impl<'gc> MovieLoader<'gc> {
                 .as_container()
                 .unwrap();
 
-            // This isn't completely correct - the 'large_preload' test observes the child
-            // being set after an 'enterFrame' call. However, our current logic should
-            // hopefully be good enough.
-            avm2_stub_method_context!(
-                uc,
-                "flash.display.Loader",
-                "load",
-                "addChild at the correct time"
-            );
+            // If the AS3 constructor for the movie clip threw an error, Flash
+            // doesn't add the movie clip to the loader, and doesn't expose
+            // properties of the loaded child (doesn't call its equivalent of
+            // `set_expose_content`).
+            let constructor_errored = dobj
+                .as_movie_clip()
+                .is_some_and(|m| m.avm2_constructor_failed());
 
-            loader_info.set_expose_content();
+            if !constructor_errored {
+                // This isn't completely correct - the 'large_preload' test observes
+                // the child being set after an 'enterFrame' call. However, our
+                // current logic should hopefully be good enough.
+                avm2_stub_method_context!(
+                    uc,
+                    "flash.display.Loader",
+                    "load",
+                    "addChild at the correct time"
+                );
 
-            // Note that we do *not* use the 'addChild' method here:
-            // Per the flash docs, our implementation always throws
-            // an 'unsupported' error. Also, the AVM2 side of our movie
-            // clip does not yet exist. Any children added inside the movie
-            // frame constructor will see an 'added' event immediately, and
-            // an 'addedToStage' event *after* the constructor finishes
-            // when we add the movie as a child of the loader.
-            loader.insert_at_index(uc, dobj.unwrap(), 0);
+                loader_info.set_expose_content();
 
-            if !movie.unwrap().is_action_script_3() {
-                loader.insert_child_into_depth_list(uc, LOADER_INSERTED_AVM1_DEPTH, dobj.unwrap());
+                // Note that we do *not* use the 'addChild' method here:
+                // Per the flash docs, our implementation always throws
+                // an 'unsupported' error. Also, the AVM2 side of our movie
+                // clip does not yet exist. Any children added inside the movie
+                // frame constructor will see an 'added' event immediately, and
+                // an 'addedToStage' event *after* the constructor finishes
+                // when we add the movie as a child of the loader.
+                loader.insert_at_index(uc, dobj, 0);
+
+                if !movie.unwrap().is_action_script_3() {
+                    loader.insert_child_into_depth_list(uc, LOADER_INSERTED_AVM1_DEPTH, dobj);
+                }
             }
         } else if let Some(dobj) = dobj {
             // This is a load of an image into AVM1 - add it as a child of the target clip.

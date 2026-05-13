@@ -67,15 +67,13 @@ fn append_child<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let (Some(xmlnode), Some(child_xmlnode)) = (
-        this.as_xml_node(),
-        args.get(0).and_then(|n| n.as_xml_node()),
-    ) {
-        if !xmlnode.has_child(child_xmlnode) {
-            let position = xmlnode.children_len();
-            xmlnode.insert_child(activation.gc(), position, child_xmlnode);
-            xmlnode.refresh_cached_child_nodes(activation)?;
-        }
+    if let Some(xmlnode) = this.as_xml_node()
+        && let Some(child_xmlnode) = args.get(0).and_then(|n| n.as_xml_node())
+        && !xmlnode.has_child(child_xmlnode)
+    {
+        let position = xmlnode.children_len();
+        xmlnode.insert_child(activation.gc(), position, child_xmlnode);
+        xmlnode.refresh_cached_child_nodes(activation)?;
     }
 
     Ok(Value::Undefined)
@@ -86,17 +84,14 @@ fn insert_before<'gc>(
     this: Object<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let (Some(xmlnode), Some(child_xmlnode), Some(insertpoint_xmlnode)) = (
-        this.as_xml_node(),
-        args.get(0).and_then(|n| n.as_xml_node()),
-        args.get(1).and_then(|n| n.as_xml_node()),
-    ) {
-        if !xmlnode.has_child(child_xmlnode) {
-            if let Some(position) = xmlnode.child_position(insertpoint_xmlnode) {
-                xmlnode.insert_child(activation.gc(), position, child_xmlnode);
-                xmlnode.refresh_cached_child_nodes(activation)?;
-            }
-        }
+    if let Some(xmlnode) = this.as_xml_node()
+        && let Some(child_xmlnode) = args.get(0).and_then(|n| n.as_xml_node())
+        && let Some(insertpoint_xmlnode) = args.get(1).and_then(|n| n.as_xml_node())
+        && !xmlnode.has_child(child_xmlnode)
+        && let Some(position) = xmlnode.child_position(insertpoint_xmlnode)
+    {
+        xmlnode.insert_child(activation.gc(), position, child_xmlnode);
+        xmlnode.refresh_cached_child_nodes(activation)?;
     }
 
     Ok(Value::Undefined)
@@ -149,13 +144,13 @@ fn get_prefix_for_namespace<'gc>(
             // is returned.
             for (key, value) in ancestor.attributes().own_properties() {
                 let value = value.coerce_to_string(activation)?;
-                if value == uri {
-                    if let Some(prefix) = key.strip_prefix(WStr::from_units(b"xmlns")) {
-                        if let Some(prefix) = prefix.strip_prefix(b':') {
-                            return Ok(AvmString::new(activation.gc(), prefix).into());
-                        } else {
-                            return Ok(istr!("").into());
-                        }
+                if value == uri
+                    && let Some(prefix) = key.strip_prefix(WStr::from_units(b"xmlns"))
+                {
+                    if let Some(prefix) = prefix.strip_prefix(b':') {
+                        return Ok(AvmString::new(activation.gc(), prefix).into());
+                    } else {
+                        return Ok(istr!("").into());
                     }
                 }
             }

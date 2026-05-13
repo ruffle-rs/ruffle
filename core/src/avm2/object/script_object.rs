@@ -299,11 +299,11 @@ impl<'gc> ScriptObjectWrapper<'gc> {
     }
 
     pub fn has_own_dynamic_property(self, name: &Multiname<'gc>) -> bool {
-        if name.valid_dynamic_name() {
-            if let Some(name) = name.local_name() {
-                let key = maybe_int_property(name);
-                return self.values().contains_key(&key);
-            }
+        if name.valid_dynamic_name()
+            && let Some(name) = name.local_name()
+        {
+            let key = maybe_int_property(name);
+            return self.values().contains_key(&key);
         }
         false
     }
@@ -475,12 +475,11 @@ pub fn get_dynamic_property<'gc>(
         // array elements (if this prototype is an `Array`).
         //
         // This special-case doesn't apply to anything else (e.g. Vector elements).
-        if let Some(array) = this_proto.as_array_object() {
-            if let Some(index) = ArrayObject::as_array_index(&local_name) {
-                if let Some(value) = array.get_index_property(index) {
-                    return Ok(Some(value));
-                }
-            }
+        if let Some(array) = this_proto.as_array_object()
+            && let Some(index) = ArrayObject::as_array_index(&local_name)
+            && let Some(value) = array.get_index_property(index)
+        {
+            return Ok(Some(value));
         }
 
         proto = this_proto.proto();

@@ -841,6 +841,8 @@ fn create_empty_movie_clip<'gc>(
     movie_clip.replace_at_depth(activation.context, new_clip.into(), depth);
     new_clip.post_instantiation(activation.context, None, Instantiator::Avm1, true);
 
+    new_clip.call_on_construct_handler(activation.context);
+
     Ok(new_clip.object1_or_undef())
 }
 
@@ -1129,17 +1131,14 @@ pub fn goto_frame<'gc>(
             let frame_path = val.coerce_to_string(activation)?;
             if let Some((clip, frame)) =
                 activation.resolve_variable_path(movie_clip.into(), &frame_path)?
+                && let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip())
             {
-                if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
-                    if let Ok(frame) = frame.parse().map(f64_to_wrapping_i32) {
-                        // First try to parse as a frame number.
-                        call_frame = Some((clip, frame));
-                    } else if let Some(frame) =
-                        clip.frame_label_to_number(frame, activation.context)
-                    {
-                        // Otherwise, it's a frame label.
-                        call_frame = Some((clip, frame as i32));
-                    }
+                if let Ok(frame) = frame.parse().map(f64_to_wrapping_i32) {
+                    // First try to parse as a frame number.
+                    call_frame = Some((clip, frame));
+                } else if let Some(frame) = clip.frame_label_to_number(frame, activation.context) {
+                    // Otherwise, it's a frame label.
+                    call_frame = Some((clip, frame as i32));
                 }
             }
         }

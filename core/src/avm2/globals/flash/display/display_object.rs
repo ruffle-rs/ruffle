@@ -753,10 +753,10 @@ pub fn hit_test_object<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(dobj) = this.as_display_object() {
-        if let Some(rhs_dobj) = args.get_object(activation, 0, "obj")?.as_display_object() {
-            return Ok(dobj.hit_test_object(rhs_dobj).into());
-        }
+    if let Some(dobj) = this.as_display_object()
+        && let Some(rhs_dobj) = args.get_object(activation, 0, "obj")?.as_display_object()
+    {
+        return Ok(dobj.hit_test_object(rhs_dobj).into());
     }
 
     Ok(Value::Undefined)

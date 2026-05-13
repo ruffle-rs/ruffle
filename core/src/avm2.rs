@@ -1,9 +1,5 @@
 //! ActionScript Virtual Machine 2 (AS3) support
 
-// Temporarily allow this to ease migration to Rust 2024 edition.
-// TODO: Remove this once all instances are fixed.
-#![allow(clippy::collapsible_if)]
-
 use crate::PlayerRuntime;
 use crate::avm2::bytearray::ObjectEncoding;
 use crate::avm2::class::{AllocatorFn, CustomConstructorFn};
@@ -438,12 +434,12 @@ impl<'gc> Avm2<'gc> {
                 .get(i)
                 .copied();
 
-            if let Some(object) = object.and_then(|obj| obj.upgrade(context.gc())) {
-                if object.is_of_type(on_type.inner_class_definition()) {
-                    let mut activation = Activation::from_nothing(context);
+            if let Some(object) = object.and_then(|obj| obj.upgrade(context.gc()))
+                && object.is_of_type(on_type.inner_class_definition())
+            {
+                let mut activation = Activation::from_nothing(context);
 
-                    events::broadcast_event(&mut activation, object, event);
-                }
+                events::broadcast_event(&mut activation, object, event);
             }
         }
         // Once we're done iterating, remove dead weak references from the list.
@@ -680,12 +676,13 @@ impl<'gc> Avm2<'gc> {
     #[cold]
     #[inline(never)]
     pub fn uncaught_error(
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         _display_object: Option<DisplayObject<'gc>>,
         error: Error<'gc>,
-        info: &str,
+        extra_info: &str,
     ) {
-        tracing::error!("{}: {:?}", info, error);
+        // This will print the properly formatted error
+        error.log(activation, extra_info);
 
         // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
     }

@@ -19,7 +19,7 @@ describe("Context Menu", () => {
             "index_quirks.html",
         );
         await injectRuffleAndWait(browser);
-        const player = await browser.$("<ruffle-object>");
+        const player = await browser.$("<ruffle-object>").getElement();
         await playAndMonitor(browser, player, ["Loaded!"]);
 
         // Dismiss hardware acceleration modal in Chrome
@@ -28,7 +28,7 @@ describe("Context Menu", () => {
     });
 
     it("(quirks mode) open context menu", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
         await player.click({ x: -150, y: -150, button: "right" });
 
@@ -48,7 +48,7 @@ describe("Context Menu", () => {
             "index_no_quirks.html",
         );
         await injectRuffleAndWait(browser);
-        const player = await browser.$("<ruffle-object>");
+        const player = await browser.$("<ruffle-object>").getElement();
         await playAndMonitor(browser, player, ["Loaded!"]);
 
         // Dismiss hardware acceleration modal in Chrome
@@ -71,7 +71,7 @@ describe("Context Menu", () => {
     });
 
     it("no more traces", async function () {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
         assertNoMoreTraceOutput(browser, player);
     });
 });

@@ -83,13 +83,12 @@ impl<'gc, V> PropertyMap<'gc, V> {
     }
 
     pub fn get_mut(&mut self, name: QName<'gc>) -> Option<&mut V> {
-        if let Some(bucket) = self.0.get_mut(&name.local_name()) {
-            if let Some((_, old_value)) = bucket
+        if let Some(bucket) = self.0.get_mut(&name.local_name())
+            && let Some((_, old_value)) = bucket
                 .iter_mut()
                 .find(|(n, _)| n.matches_ns(name.namespace()))
-            {
-                return Some(old_value);
-            }
+        {
+            return Some(old_value);
         }
 
         None

@@ -1,0 +1,60 @@
+ii
+Error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::ShaderData/_setByteCode()
+	at flash.display::ShaderData()
+	at flash.display::Shader/set byteCode()
+	at flash.display::Shader()
+	at Test/testLoadingShader()
+	at Test()
+fi
+Error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::ShaderData/_setByteCode()
+	at flash.display::ShaderData()
+	at flash.display::Shader/set byteCode()
+	at flash.display::Shader()
+	at Test/testLoadingShader()
+	at Test()
+if
+Error: ArgumentError: Error #2004: One of the parameters is invalid.
+	at flash.display::ShaderData/_setByteCode()
+	at flash.display::ShaderData()
+	at flash.display::Shader/set byteCode()
+	at flash.display::Shader()
+	at Test/testLoadingShader()
+	at Test()
+ff
+0 -> ff666666
+0 -> ff666666
+0 -> ff666666
+0 -> ff666666
+0 -> ff666666
+0 -> ff666666
+0.1 -> ff666aff
+0.1 -> ff6a6a6a
+0.1 -> ff6a6a6a
+1 -> ff6a6aff
+1 -> ff6a6a6a
+1 -> ff6a6a6a
+100 -> ffff6aff
+100 -> ff6a6a6a
+100 -> ff6a6a6a
+-0.1 -> ff666200
+-0.1 -> ff626262
+-0.1 -> ff626262
+-1 -> ff626200
+-1 -> ff626262
+-1 -> ff626262
+-100 -> ff006200
+-100 -> ff626262
+-100 -> ff626262
+Infinity -> ffff6aff
+Infinity -> ff6a6a6a
+Infinity -> ff6a6a6a
+-Infinity -> ff006200
+-Infinity -> ff626262
+-Infinity -> ff626262
+NaN -> ff006666
+NaN -> ff666666
+NaN -> ff666666
+multi
+ff62666a

@@ -68,10 +68,10 @@ pub fn call_handler<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this_class = activation.avm2().classes().regexp;
 
-    if let Some(arg) = args.get_optional(0).filter(|_| args.len() == 1) {
-        if arg.as_object().and_then(|o| o.as_regexp_object()).is_some() {
-            return Ok(arg);
-        }
+    if let Some(arg) = args.get_optional(0).filter(|_| args.len() == 1)
+        && arg.as_object().and_then(|o| o.as_regexp_object()).is_some()
+    {
+        return Ok(arg);
     }
     this_class.construct(activation, args)
 }

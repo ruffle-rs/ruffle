@@ -184,15 +184,15 @@ impl<'gc> Method<'gc> {
         }
 
         let mut native_info = None;
-        if txunit.domain().is_playerglobals_domain(activation.avm2()) {
-            if let Some(native_method) = activation.avm2().native_method_table[method_index] {
-                let fast_call = activation
-                    .avm2()
-                    .native_fast_call_list
-                    .contains(&method_index);
+        if txunit.domain().is_playerglobals_domain(activation.avm2())
+            && let Some(native_method) = activation.avm2().native_method_table[method_index]
+        {
+            let fast_call = activation
+                .avm2()
+                .native_fast_call_list
+                .contains(&method_index);
 
-                native_info = Some((native_method, fast_call));
-            }
+            native_info = Some((native_method, fast_call));
         };
 
         let method_kind = if let Some((native_method, fast_call)) = native_info {

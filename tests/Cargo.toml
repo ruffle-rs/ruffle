@@ -27,11 +27,11 @@ ruffle_render_wgpu = { path = "../render/wgpu", optional = true }
 
 [dev-dependencies]
 ruffle_core = { path = "../core", features = ["deterministic", "timeline_debug", "avm_debug", "audio", "mp3", "aac", "default_font"] }
-ruffle_test_framework = { path = "framework" }
+ruffle_test_framework = { path = "framework", features = ["clap"] }
 ruffle_fs_tests_runner = { path = "fs-tests-runner" }
 libtest-mimic = { workspace = true }
 anyhow = { workspace = true }
-image = { workspace = true, features  = ["png"] }
+image = { workspace = true, features = ["png"] }
 futures = { workspace = true }
 env_logger = "0.11.10"
 tracing = { workspace = true }

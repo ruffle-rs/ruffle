@@ -103,6 +103,8 @@ jobs:
 
       - name: Run tests
         shell: bash
+        env:
+          RUFFLE_TEST_OPTS: "--compile-mode=compile-and-verify"
         run: cargo nextest run --profile ci --cargo-profile ci ${TEST_OPTS} --features ${FEATURES}
 
       - name: Run doctests

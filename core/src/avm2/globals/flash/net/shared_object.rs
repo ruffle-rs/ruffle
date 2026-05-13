@@ -149,10 +149,10 @@ pub fn get_local<'gc>(
     let mut data = None;
 
     // Load the data object from storage if it existed prior
-    if let Some(saved) = activation.context.storage.get(&full_name) {
-        if let Ok(lso) = flash_lso::read::Reader::default().parse(&saved) {
-            data = crate::avm2::amf::deserialize_lso(activation, &lso)?.into();
-        }
+    if let Some(saved) = activation.context.storage.get(&full_name)
+        && let Ok(lso) = flash_lso::read::Reader::default().parse(&saved)
+    {
+        data = crate::avm2::amf::deserialize_lso(activation, &lso)?.into();
     }
 
     let data = if let Some(data) = data {

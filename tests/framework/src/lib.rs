@@ -8,4 +8,5 @@ pub mod test;
 pub use vfs;
 
 mod backends;
+mod compiler;
 mod util;

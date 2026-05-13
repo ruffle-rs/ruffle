@@ -9,6 +9,7 @@ use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
+use ruffle_macros::istr;
 
 const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     use fn method;
@@ -170,9 +171,9 @@ fn to_string<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     if this.as_function().is_some() {
-        Ok(AvmString::new_ascii_static(activation.gc(), b"[type Function]").into())
+        Ok(istr!("[type Function]").into())
     } else {
-        Ok(AvmString::new_ascii_static(activation.gc(), b"[object Object]").into())
+        Ok(istr!("[object Object]").into())
     }
 }
 

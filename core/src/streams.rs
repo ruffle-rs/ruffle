@@ -925,11 +925,11 @@ impl<'gc> NetStream<'gc> {
         let buffer = slice.data();
 
         match (video_handle, codec, video_data.data) {
-            (maybe_video_handle, Some(codec), FlvVideoPacket::Data(mut data))
-            | (
+            (
                 maybe_video_handle,
                 Some(codec),
-                FlvVideoPacket::Vp6Data {
+                FlvVideoPacket::Data(mut data)
+                | FlvVideoPacket::Vp6Data {
                     hadjust: _,
                     vadjust: _,
                     mut data,

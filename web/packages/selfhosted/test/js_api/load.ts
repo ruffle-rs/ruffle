@@ -9,7 +9,7 @@ describe("RufflePlayer.load", () => {
     loadJsAPI();
 
     it("loads and plays a URL", async () => {
-        const player = await browser.$("<ruffle-player>");
+        const player = await browser.$("<ruffle-player>").getElement();
         await browser.execute(async (playerElement) => {
             const player = playerElement as Player.PlayerElement;
             await player.ruffle().load("/test_assets/example.swf");

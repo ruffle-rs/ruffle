@@ -565,7 +565,7 @@ impl PreferencesDialog {
         ui.end_row()
     }
 
-    fn save(&mut self) {
+    fn save(&self) {
         if let Err(e) = self.preferences.write_preferences(|preferences| {
             if self.graphics_backend_changed {
                 preferences.set_graphics_backend(self.graphics_backend);

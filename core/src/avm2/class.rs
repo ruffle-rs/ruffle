@@ -655,7 +655,7 @@ impl<'gc> Class<'gc> {
                                 (TraitKind::Getter { .. }, TraitKind::Setter { .. }) => continue,
                                 (TraitKind::Setter { .. }, TraitKind::Getter { .. }) => continue,
 
-                                (_, TraitKind::Const { .. }) | (_, TraitKind::Slot { .. }) => {
+                                (_, TraitKind::Const { .. } | TraitKind::Slot { .. }) => {
                                     did_override = true;
 
                                     // Const/Var traits override anything in avmplus

@@ -15,13 +15,13 @@ describe("URL Rewrite Rules", () => {
     it("load the test", async () => {
         await openTest(browser, "integration_tests/url_rewrite_rules");
         await injectRuffleAndWait(browser);
-        const player = await browser.$("<ruffle-object>");
+        const player = await browser.$("<ruffle-object>").getElement();
         await playAndMonitor(browser, player, ["Loaded test!"]);
         await hideHardwareAccelerationModal(browser, player);
     });
 
     it("rewrites URL of other1 to a relative one", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
         await browser.execute((el) => {
             el.focus();
@@ -42,7 +42,7 @@ describe("URL Rewrite Rules", () => {
     });
 
     it("rewrites URL of other1 to an absolute one", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
         await browser.execute((el) => {
             el.focus();
@@ -63,7 +63,7 @@ describe("URL Rewrite Rules", () => {
     });
 
     it("does not rewrite URL of other2", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
         await browser.execute((el) => {
             el.focus();
@@ -81,7 +81,7 @@ describe("URL Rewrite Rules", () => {
     });
 
     it("rewrites URL of a clicked link", async () => {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
 
         player.click();
 
@@ -102,7 +102,7 @@ describe("URL Rewrite Rules", () => {
     });
 
     it("no more traces", async function () {
-        const player = await browser.$("#objectElement");
+        const player = await browser.$("#objectElement").getElement();
         assertNoMoreTraceOutput(browser, player);
     });
 });

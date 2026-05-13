@@ -217,13 +217,13 @@ impl<'gc> ScopeChain<'gc> {
         activation: &mut Activation<'_, 'gc>,
     ) -> Result<Option<Value<'gc>>, Error<'gc>> {
         // First we check the cache of our container
-        if let Some(container) = self.container {
-            if let Some(cache) = &container.cache {
-                if let Some(cached) = cache.borrow().get_for_multiname(multiname) {
-                    return Ok(Some(*cached));
-                }
-            }
+        if let Some(container) = self.container
+            && let Some(cache) = &container.cache
+            && let Some(cached) = cache.borrow().get_for_multiname(multiname)
+        {
+            return Ok(Some(*cached));
         }
+
         let found = self.find_internal(multiname, activation)?;
         if let (Some((Some(ns), obj)), Some(container)) = (found, self.container) {
             // We found a value that hasn't been cached yet, so let's try to cache it now

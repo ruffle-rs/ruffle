@@ -1,4 +1,4 @@
-context-menu-download-swf = Stiahnuť .swf
+context-menu-download-swf = Stiahnuť SWF
 context-menu-copy-debug-info = Skopírovať debug info
 context-menu-open-save-manager = Otvoriť správcu uložení
 context-menu-about-ruffle =

@@ -201,7 +201,7 @@ impl GuiController {
         }
     }
 
-    pub fn reconfigure_surface(&mut self) {
+    pub fn reconfigure_surface(&self) {
         self.surface.configure(
             &self.descriptors.device,
             &wgpu::SurfaceConfiguration {

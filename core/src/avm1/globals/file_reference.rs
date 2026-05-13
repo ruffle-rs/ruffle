@@ -32,22 +32,22 @@ impl<'gc> FileReferenceObject<'gc> {
         self.0.is_initialised.set(true);
 
         let date_proto = activation.prototypes().date_constructor;
-        if let Some(creation_time) = result.creation_time() {
-            if let Ok(Value::Object(obj)) = date_proto.construct(
+        if let Some(creation_time) = result.creation_time()
+            && let Ok(Value::Object(obj)) = date_proto.construct(
                 activation,
                 &[(creation_time.timestamp_millis() as f64).into()],
-            ) {
-                unlock!(write, FileReferenceData, creation_date).set(Some(obj));
-            }
+            )
+        {
+            unlock!(write, FileReferenceData, creation_date).set(Some(obj));
         }
 
-        if let Some(modification_time) = result.modification_time() {
-            if let Ok(Value::Object(obj)) = date_proto.construct(
+        if let Some(modification_time) = result.modification_time()
+            && let Ok(Value::Object(obj)) = date_proto.construct(
                 activation,
                 &[(modification_time.timestamp_millis() as f64).into()],
-            ) {
-                unlock!(write, FileReferenceData, modification_date).set(Some(obj));
-            }
+            )
+        {
+            unlock!(write, FileReferenceData, modification_date).set(Some(obj));
         }
 
         let file_type = result.file_type().map(|s| AvmString::new_utf8(mc, s));

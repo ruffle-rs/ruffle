@@ -14,8 +14,8 @@ PASSED: typeof(_global.parseInt) == 'undefined' [./Global.as:77]
 PASSED: typeof(isNaN) == 'function' [./Global.as:81]
 PASSED: typeof(ASnative) == 'function' [./Global.as:86]
 FAILED: expected: 'function' obtained: undefined [./Global.as:87]
-FAILED: expected: 'function' obtained: undefined [./Global.as:88]
-FAILED: expected: 'function' obtained: undefined [./Global.as:89]
+PASSED: typeof(ASSetNative) == 'function' [./Global.as:88]
+PASSED: typeof(ASSetNativeAccessor) == 'function' [./Global.as:89]
 PASSED: parseInt('45b') == 45 [./Global.as:92]
 PASSED: parseInt('65') == 65 [./Global.as:93]
 PASSED: parseInt('-1234') == -1234 [./Global.as:94]
@@ -163,9 +163,10 @@ PASSED: int("0x10 ") == 0 [./Global.as:490]
 PASSED: int("0x10.8") == 0 [./Global.as:491]
 PASSED: int("0123.6 ") == 0 [./Global.as:492]
 PASSED: int("0x-7.8 ") == 0 [./Global.as:493]
-FAILED: expected: " t, 7i,u,z, e, w,q," obtained:  [./Global.as:504]
-FAILED: expected: " j,o," obtained:  [./Global.as:516]
-FAILED: expected: "l,j,k," obtained:  [./Global.as:525]
-#passed: 157
-#failed: 8
+PASSED: r == " t, 7i,u,z, e, w,q," [./Global.as:504]
+toString called
+PASSED: r == " j,o," [./Global.as:516]
+PASSED: r == "l,j,k," [./Global.as:525]
+#passed: 162
+#failed: 3
 #total tests run: 165

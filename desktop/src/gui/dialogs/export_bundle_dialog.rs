@@ -214,18 +214,13 @@ impl ExportBundleDialog {
         should_close
     }
 
-    fn render_info(&mut self, locale: &LanguageIdentifier, ui: &mut Ui) {
+    fn render_info(&self, locale: &LanguageIdentifier, ui: &mut Ui) {
         ui.collapsing(text(locale, "export-bundle-dialog-info-title"), |ui| {
             ui.label(text(locale, "export-bundle-dialog-info-description"));
         });
     }
 
-    fn render_status(
-        &mut self,
-        export_status: ExportStatus,
-        locale: &LanguageIdentifier,
-        ui: &mut Ui,
-    ) {
+    fn render_status(&self, export_status: ExportStatus, locale: &LanguageIdentifier, ui: &mut Ui) {
         let error_message = match export_status {
             ExportStatus::Idle | ExportStatus::Success => return,
             ExportStatus::Exporting => {
@@ -286,7 +281,7 @@ impl ExportBundleDialog {
         });
     }
 
-    fn trigger_export(&mut self) -> ExportStatus {
+    fn trigger_export(&self) -> ExportStatus {
         let dialog = rfd::AsyncFileDialog::new().set_file_name(self.bundle_name.clone() + ".ruf");
         let selected_file = self.picker.show_dialog(dialog, |d| d.save_file());
         let Some(selected_file) = selected_file else {

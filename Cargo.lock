@@ -111,6 +111,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "annotate-snippets"
+version = "0.12.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "92570a3f9c98e7e84df84b71d0965ac99b1871fcd75a3773a3bd1bad13f64cf7"
+dependencies = [
+ "anstyle",
+ "memchr",
+ "unicode-width",
+]
+
+[[package]]
 name = "anstream"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -376,6 +387,12 @@ checksum = "c4512299f36f043ab09a583e57bceb5a5aab7a73db1805848e8fef3c9e8c78b3"
 
 [[package]]
 name = "bitstream-io"
+version = "2.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6099cdc01846bc367c4e7dd630dc5966dccf36b652fae7a74e17b640411a91b2"
+
+[[package]]
+name = "bitstream-io"
 version = "4.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7eff00be299a18769011411c9def0d827e8f2d7bf0c3dbf53633147a8867fd1f"
@@ -447,7 +464,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
- "swf",
+ "swf 0.2.2",
  "walkdir",
 ]
 
@@ -1515,18 +1532,18 @@ dependencies = [
 
 [[package]]
 name = "enumset"
-version = "1.1.10"
+version = "1.1.12"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25b07a8dfbbbfc0064c0a6bdf9edcf966de6b1c33ce344bdeca3b41615452634"
+checksum = "7f96a4a12fe60ac746ae295a1a4ecb5bb02debc20856506c8635288065f142de"
 dependencies = [
  "enumset_derive",
 ]
 
 [[package]]
 name = "enumset_derive"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f43e744e4ea338060faee68ed933e46e722fb7f3617e722a5772d7e856d8b3ce"
+checksum = "4bd536557b58c682b217b8fb199afdff47cd3eff260623f19e77074eb073d63a"
 dependencies = [
  "darling 0.21.3",
  "proc-macro2",
@@ -1768,7 +1785,7 @@ dependencies = [
  "fluent-syntax",
  "intl-memoizer",
  "intl_pluralrules",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "self_cell",
  "smallvec",
  "unic-langid",
@@ -1862,9 +1879,9 @@ checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 
 [[package]]
 name = "fontconfig"
-version = "0.10.0"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b19c4bca8c705ea23bfb3e3403a9e699344d1ee3205b631f03fe4dbf1e52429f"
+checksum = "854f6a6479193c392bd820abcd2123b116f01eba7775b6bcfc26494be3285229"
 dependencies = [
  "yeslogic-fontconfig-sys",
 ]
@@ -2377,6 +2394,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashbrown"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f467dd6dccf739c208452f8014c75c18bb8301b050ad1cfb27153803edb0f51"
+
+[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2594,13 +2617,15 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.13.0"
+version = "2.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7714e70437a7dc3ac8eb7e6f8df75fd8eb422675fc7678aff7364301092b1017"
+checksum = "d466e9454f08e4a911e14806c24e16fba1b4c121d1ea474396f396069cf949d9"
 dependencies = [
  "equivalent",
- "hashbrown 0.16.1",
+ "hashbrown 0.17.0",
  "rayon",
+ "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -2788,10 +2813,12 @@ dependencies = [
 
 [[package]]
 name = "js-sys"
-version = "0.3.85"
+version = "0.3.97"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8c942ebf8e95485ca0d52d97da7c5a2c387d0e7f0ba4c35e93bfcaee045955b3"
+checksum = "a1840c94c045fbcf8ba2812c95db44499f7c64910a912551aaaa541decebcacf"
 dependencies = [
+ "cfg-if",
+ "futures-util",
  "once_cell",
  "wasm-bindgen",
 ]
@@ -3086,9 +3113,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.7.6"
+version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
+checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
 name = "memmap2"
@@ -3258,7 +3285,7 @@ name = "nellymoser-rs"
 version = "0.1.2"
 source = "git+https://github.com/ruffle-rs/nellymoser?rev=073eb48d907201f46dea0c8feb4e8d9a1d92208c#073eb48d907201f46dea0c8feb4e8d9a1d92208c"
 dependencies = [
- "bitstream-io",
+ "bitstream-io 4.10.0",
  "once_cell",
  "rustdct",
 ]
@@ -3820,13 +3847,12 @@ dependencies = [
 
 [[package]]
 name = "oxipng"
-version = "10.1.0"
+version = "10.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efc4ea5566cd49b80c4b5e8eac2167d137d2ca3007ec8976d4cd9fe8b654ba2b"
+checksum = "85eaaaa67c73558edaf5270e28abdf8d0663d88e8e7570cf894eff25305f4ed2"
 dependencies = [
  "bitvec",
  "clap",
- "crossbeam-channel",
  "env_logger",
  "glob",
  "indexmap",
@@ -3835,7 +3861,7 @@ dependencies = [
  "parse-size",
  "rayon",
  "rgb",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "zopfli",
 ]
 
@@ -4206,7 +4232,7 @@ dependencies = [
  "pin-project-lite",
  "quinn-proto",
  "quinn-udp",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "rustls",
  "socket2",
  "thiserror 2.0.18",
@@ -4226,7 +4252,7 @@ dependencies = [
  "lru-slab",
  "rand",
  "ring",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "rustls",
  "rustls-pki-types",
  "slab",
@@ -4305,6 +4331,20 @@ name = "range-alloc"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d6831663a5098ea164f89cff59c6284e95f4e3c76ce9848d4529f5ccca9bde"
+
+[[package]]
+name = "rascal"
+version = "0.2.7"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11fb37eee628f7df0d5a0dc6109250606dab3610269f85b549a4f76847e76898"
+dependencies = [
+ "annotate-snippets",
+ "byteorder",
+ "indexmap",
+ "serde",
+ "swf 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winnow 1.0.2",
+]
 
 [[package]]
 name = "raw-window-handle"
@@ -4503,9 +4543,9 @@ dependencies = [
 
 [[package]]
 name = "rgb"
-version = "0.8.52"
+version = "0.8.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c6a884d2998352bb4daf0183589aec883f16a6da1f4dde84d8e2e9a5409a1ce"
+checksum = "47b34b781b31e5d73e9fbc8689c70551fd1ade9a19e3e28cfec8580a79290cc4"
 dependencies = [
  "bytemuck",
 ]
@@ -4541,7 +4581,7 @@ dependencies = [
  "regress",
  "ruffle_macros",
  "ruffle_wstr",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
  "tracing",
  "url",
@@ -4553,7 +4593,7 @@ version = "0.1.0"
 dependencies = [
  "async-channel",
  "bitflags 2.11.1",
- "bitstream-io",
+ "bitstream-io 4.10.0",
  "build_playerglobal",
  "bytemuck",
  "byteorder",
@@ -4603,7 +4643,7 @@ dependencies = [
  "serde_json",
  "slotmap",
  "smallvec",
- "swf",
+ "swf 0.2.2",
  "symphonia",
  "thiserror 2.0.18",
  "tracing",
@@ -4746,7 +4786,7 @@ dependencies = [
  "ruffle_wstr",
  "serde",
  "smallvec",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
  "tracing",
  "wasm-bindgen",
@@ -4761,7 +4801,7 @@ dependencies = [
  "log",
  "ruffle_render",
  "ruffle_web_common",
- "swf",
+ "swf 0.2.2",
  "wasm-bindgen",
  "web-sys",
 ]
@@ -4775,7 +4815,7 @@ dependencies = [
  "log",
  "ruffle_render",
  "ruffle_web_common",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
  "wasm-bindgen",
  "web-sys",
@@ -4799,7 +4839,7 @@ dependencies = [
  "profiling",
  "ruffle_render",
  "smallvec",
- "swf",
+ "swf 0.2.2",
  "tracing",
  "web-sys",
  "wgpu",
@@ -4819,7 +4859,7 @@ dependencies = [
  "ruffle_core",
  "serde",
  "sha2",
- "swf",
+ "swf 0.2.2",
  "walkdir",
 ]
 
@@ -4840,10 +4880,12 @@ dependencies = [
  "async-channel",
  "cfg-expr",
  "chrono",
+ "clap",
  "image",
  "oxipng",
  "percent-encoding",
  "pretty_assertions",
+ "rascal",
  "regex",
  "ruffle_core",
  "ruffle_input_format",
@@ -4852,6 +4894,7 @@ dependencies = [
  "ruffle_video_external",
  "ruffle_video_software",
  "serde",
+ "sha2",
  "toml",
  "url",
  "vfs",
@@ -4863,7 +4906,7 @@ version = "0.1.0"
 dependencies = [
  "ruffle_render",
  "slotmap",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
 ]
 
@@ -4881,7 +4924,7 @@ dependencies = [
  "ruffle_video_software",
  "sha2",
  "slotmap",
- "swf",
+ "swf 0.2.2",
  "tempfile",
  "thiserror 2.0.18",
  "tracing",
@@ -4905,7 +4948,7 @@ dependencies = [
  "ruffle_render",
  "ruffle_video",
  "slotmap",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
 ]
 
@@ -4979,9 +5022,9 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustc-hash"
-version = "2.1.1"
+version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
+checksum = "94300abf3f1ae2e2b8ffb7b58043de3d399c73fa6f4b73826402a5c457614dbe"
 
 [[package]]
 name = "rustdct"
@@ -5466,7 +5509,26 @@ name = "swf"
 version = "0.2.2"
 dependencies = [
  "bitflags 2.11.1",
- "bitstream-io",
+ "bitstream-io 4.10.0",
+ "byteorder",
+ "encoding_rs",
+ "enum-map",
+ "flate2",
+ "log",
+ "lzma-rs",
+ "num-derive",
+ "num-traits",
+ "simple_asn1",
+]
+
+[[package]]
+name = "swf"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "802bff556571f7e5c6e347d5f147f91d1e5976bb43fb312437f04676707bbe4f"
+dependencies = [
+ "bitflags 2.11.1",
+ "bitstream-io 2.6.0",
  "byteorder",
  "encoding_rs",
  "enum-map",
@@ -5811,9 +5873,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.52.1"
+version = "1.52.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b67dee974fe86fd92cc45b7a95fdd2f99a36a6d7b0d431a231178d3d670bbcc6"
+checksum = "8fc7f01b389ac15039e4dc9531aa973a135d7a4135281b12d7c1bc79fd57fffe"
 dependencies = [
  "bytes",
  "libc",
@@ -5872,7 +5934,7 @@ dependencies = [
  "toml_datetime",
  "toml_parser",
  "toml_writer",
- "winnow",
+ "winnow 0.7.14",
 ]
 
 [[package]]
@@ -5894,7 +5956,7 @@ dependencies = [
  "toml_datetime",
  "toml_parser",
  "toml_writer",
- "winnow",
+ "winnow 0.7.14",
 ]
 
 [[package]]
@@ -5903,7 +5965,7 @@ version = "1.0.9+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "702d4415e08923e7e1ef96cd5727c0dfed80b4d2fa25db9647fe5eb6f7c5a4c4"
 dependencies = [
- "winnow",
+ "winnow 0.7.14",
 ]
 
 [[package]]
@@ -6107,7 +6169,7 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb30dbbd9036155e74adad6812e9898d03ec374946234fbcebd5dfc7b9187b90"
 dependencies = [
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
 ]
 
 [[package]]
@@ -6363,9 +6425,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen"
-version = "0.2.108"
+version = "0.2.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "64024a30ec1e37399cf85a7ffefebdb72205ca1c972291c51512360d90bd8566"
+checksum = "df52b6d9b87e0c74c9edfa1eb2d9bf85e5d63515474513aa50fa181b3c4f5db1"
 dependencies = [
  "cfg-if",
  "once_cell",
@@ -6376,23 +6438,19 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-futures"
-version = "0.4.58"
+version = "0.4.70"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "70a6e77fd0ae8029c9ea0063f87c46fde723e7d887703d74ad2616d792e51e6f"
+checksum = "af934872acec734c2d80e6617bbb5ff4f12b052dd8e6332b0817bce889516084"
 dependencies = [
- "cfg-if",
- "futures-util",
  "js-sys",
- "once_cell",
  "wasm-bindgen",
- "web-sys",
 ]
 
 [[package]]
 name = "wasm-bindgen-macro"
-version = "0.2.108"
+version = "0.2.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "008b239d9c740232e71bd39e8ef6429d27097518b6b30bdf9086833bd5b6d608"
+checksum = "78b1041f495fb322e64aca85f5756b2172e35cd459376e67f2a6c9dffcedb103"
 dependencies = [
  "quote",
  "wasm-bindgen-macro-support",
@@ -6400,9 +6458,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-macro-support"
-version = "0.2.108"
+version = "0.2.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5256bae2d58f54820e6490f9839c49780dff84c65aeab9e772f15d5f0e913a55"
+checksum = "9dcd0ff20416988a18ac686d4d4d0f6aae9ebf08a389ff5d29012b05af2a1b41"
 dependencies = [
  "bumpalo",
  "proc-macro2",
@@ -6413,9 +6471,9 @@ dependencies = [
 
 [[package]]
 name = "wasm-bindgen-shared"
-version = "0.2.108"
+version = "0.2.120"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1f01b580c9ac74c8d8f0c0e4afb04eeef2acf145458e52c03845ee9cd23e3d12"
+checksum = "49757b3c82ebf16c57d69365a142940b384176c24df52a087fb748e2085359ea"
 dependencies = [
  "unicode-ident",
 ]
@@ -6550,9 +6608,9 @@ checksum = "323f4da9523e9a669e1eaf9c6e763892769b1d38c623913647bfdc1532fe4549"
 
 [[package]]
 name = "web-sys"
-version = "0.3.85"
+version = "0.3.97"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "312e32e551d92129218ea9a2452120f4aabc03529ef03e4d0d82fb2780608598"
+checksum = "2eadbac71025cd7b0834f20d1fe8472e8495821b4e9801eb0a60bd1f19827602"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
@@ -7299,6 +7357,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "winnow"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ee1708bef14716a11bae175f579062d4554d95be2c6829f518df847b7b3fdd0"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "winresource"
 version = "0.1.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7435,7 +7502,7 @@ dependencies = [
  "uds_windows",
  "uuid",
  "windows-sys 0.61.2",
- "winnow",
+ "winnow 0.7.14",
  "zbus_macros",
  "zbus_names",
  "zvariant",
@@ -7464,7 +7531,7 @@ checksum = "7be68e64bf6ce8db94f63e72f0c7eb9a60d733f7e0499e628dfab0f84d6bcb97"
 dependencies = [
  "serde",
  "static_assertions",
- "winnow",
+ "winnow 0.7.14",
  "zvariant",
 ]
 
@@ -7512,9 +7579,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "8.5.1"
+version = "8.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcab981e19633ebcf0b001ddd37dd802996098bc1864f90b7c5d970ce76c1d59"
+checksum = "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
 dependencies = [
  "crc32fast",
  "flate2",
@@ -7573,7 +7640,7 @@ dependencies = [
  "enumflags2",
  "serde",
  "url",
- "winnow",
+ "winnow 0.7.14",
  "zvariant_derive",
  "zvariant_utils",
 ]
@@ -7601,5 +7668,5 @@ dependencies = [
  "quote",
  "serde",
  "syn",
- "winnow",
+ "winnow 0.7.14",
 ]

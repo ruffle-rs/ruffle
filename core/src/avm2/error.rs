@@ -69,31 +69,49 @@ impl<'gc> Error<'gc> {
             ErrorData::RustError(_) => None,
         }
     }
-}
 
-impl Debug for Error<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    /// Print this error using `tracing::error`.
+    pub fn log(&self, activation: &mut Activation<'_, 'gc>, extra_info: &str) {
         let (error, call_stack) = match &*self.0 {
             ErrorData::AvmValue(value, call_stack) => (*value, call_stack),
             ErrorData::AvmError(error) => ((*error).into(), error.call_stack()),
-            ErrorData::RustError(error) => return write!(f, "RustError({error:?})"),
+            ErrorData::RustError(error) => {
+                tracing::error!("{}: RustError({:?})", extra_info, error);
+                return;
+            }
+        };
+
+        // NOTE: When FP is writing to flashlog, it calls `stringify_error`
+        // twice. The first version goes to flashlog; the second version gets
+        // displayed. We only stringify once, assuming that most users never
+        // enabled logging in FP.
+        let stringified_error = match error.coerce_to_string(activation) {
+            Ok(stringified_error) => stringified_error,
+            Err(_) => {
+                // It's possible that trying to coerce the error to a string
+                // will also throw an error. In that case, print a dummy message
+                tracing::error!("{}: <failed to display AVM error>", extra_info);
+                return;
+            }
         };
 
         let mut output = WString::new();
 
-        // If we have an `ErrorObject`, we can properly display it.
-        // If not, just use the `Debug` impl for `Value`.
-        // TODO: This should just call the `toString` method on the error value.
-        if let Some(error) = error.as_object().and_then(|obj| obj.as_error_object()) {
-            output.push_str(&error.display());
-        } else {
-            output.push_utf8(&format!("{:?}", error));
-        }
-
-        // Also write the call stack that was included with the error
+        output.push_utf8(&format!("{}: ", extra_info));
+        output.push_str(&stringified_error);
         call_stack.display(&mut output);
 
-        write!(f, "{}", output)
+        tracing::error!("{}", output);
+    }
+}
+
+impl Debug for Error<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &*self.0 {
+            ErrorData::AvmValue(_, _) => write!(f, "AvmError"),
+            ErrorData::AvmError(_) => write!(f, "AvmError"),
+            ErrorData::RustError(error) => write!(f, "RustError({error:?})"),
+        }
     }
 }
 

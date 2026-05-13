@@ -68,7 +68,7 @@ impl Surface {
     #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
     pub fn draw_commands_and_copy_to<'frame, 'global: 'frame>(
-        &mut self,
+        &self,
         frame_view: &wgpu::TextureView,
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
@@ -108,7 +108,7 @@ impl Surface {
     #[expect(clippy::too_many_arguments)]
     #[instrument(level = "debug", skip_all)]
     pub fn draw_commands<'frame, 'global: 'frame>(
-        &mut self,
+        &self,
         render_target_mode: RenderTargetMode,
         descriptors: &'global Descriptors,
         meshes: &'global Vec<Mesh>,

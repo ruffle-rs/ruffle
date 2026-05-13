@@ -877,7 +877,6 @@ Testing _global.Array.prototype
   concat, DONT_DELETE
   pop, DONT_DELETE
   push, DONT_DELETE
-  length, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.String
   apply, DONT_DELETE
@@ -1015,6 +1014,14 @@ Testing _global.unescape
   call, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.escape
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.ASSetNativeAccessor
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.ASSetNative
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE

@@ -1,4 +1,4 @@
-context-menu-download-swf = Last ned .swf
+context-menu-download-swf = Last ned SWF
 context-menu-copy-debug-info = Kopier feilsøkningsinfo
 context-menu-open-save-manager = Åpne lagringsadministrasjon
 context-menu-about-ruffle =

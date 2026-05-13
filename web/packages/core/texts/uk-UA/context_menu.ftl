@@ -1,4 +1,4 @@
-context-menu-download-swf = Завантажити .swf
+context-menu-download-swf = Завантажити SWF
 context-menu-copy-debug-info = Копіювати інформацію про налагодження
 context-menu-open-save-manager = Відкрити менеджер збереження
 context-menu-about-ruffle =

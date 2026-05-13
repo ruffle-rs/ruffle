@@ -144,46 +144,46 @@ pub fn browse<'gc>(
     let this = this.as_file_reference().unwrap();
 
     let mut filters = Vec::new();
-    if let Some(obj) = args.try_get_object(0) {
-        if let Some(array_storage) = obj.as_array_storage() {
-            for filter in array_storage.iter() {
-                if let Some(Value::Object(obj)) = filter {
-                    let filefilter = activation
-                        .avm2()
-                        .classes()
-                        .filefilter
-                        .inner_class_definition();
-                    if !obj.is_of_type(filefilter) {
-                        return Err(make_error_2097(activation));
-                    }
-
-                    let description = obj.get_slot(file_filter_slots::_DESCRIPTION);
-                    let extension = obj.get_slot(file_filter_slots::_EXTENSION);
-                    let mac_type = obj.get_slot(file_filter_slots::_MAC_TYPE);
-
-                    // The description and extension must be non-empty strings.
-                    match (description, extension) {
-                        (Value::String(description), Value::String(extension))
-                            if !description.is_empty() && !extension.is_empty() =>
-                        {
-                            let mac_type = match mac_type {
-                                Value::String(mac_type) if !mac_type.is_empty() => {
-                                    Some(mac_type.to_string())
-                                }
-                                _ => None,
-                            };
-
-                            filters.push(FileFilter {
-                                description: description.to_string(),
-                                extensions: extension.to_string(),
-                                mac_type,
-                            });
-                        }
-                        _ => return Err(make_error_2097(activation)),
-                    }
-                } else {
+    if let Some(obj) = args.try_get_object(0)
+        && let Some(array_storage) = obj.as_array_storage()
+    {
+        for filter in array_storage.iter() {
+            if let Some(Value::Object(obj)) = filter {
+                let filefilter = activation
+                    .avm2()
+                    .classes()
+                    .filefilter
+                    .inner_class_definition();
+                if !obj.is_of_type(filefilter) {
                     return Err(make_error_2097(activation));
                 }
+
+                let description = obj.get_slot(file_filter_slots::_DESCRIPTION);
+                let extension = obj.get_slot(file_filter_slots::_EXTENSION);
+                let mac_type = obj.get_slot(file_filter_slots::_MAC_TYPE);
+
+                // The description and extension must be non-empty strings.
+                match (description, extension) {
+                    (Value::String(description), Value::String(extension))
+                        if !description.is_empty() && !extension.is_empty() =>
+                    {
+                        let mac_type = match mac_type {
+                            Value::String(mac_type) if !mac_type.is_empty() => {
+                                Some(mac_type.to_string())
+                            }
+                            _ => None,
+                        };
+
+                        filters.push(FileFilter {
+                            description: description.to_string(),
+                            extensions: extension.to_string(),
+                            mac_type,
+                        });
+                    }
+                    _ => return Err(make_error_2097(activation)),
+                }
+            } else {
+                return Err(make_error_2097(activation));
             }
         }
     }

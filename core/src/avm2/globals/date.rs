@@ -246,10 +246,10 @@ pub fn init<'gc>(
             } else {
                 timestamp.coerce_to_number(activation)?
             };
-            if timestamp.is_finite() {
-                if let LocalResult::Single(time) = Utc.timestamp_millis_opt(timestamp as i64) {
-                    this.set_date_time(Some(time))
-                }
+            if timestamp.is_finite()
+                && let LocalResult::Single(time) = Utc.timestamp_millis_opt(timestamp as i64)
+            {
+                this.set_date_time(Some(time))
             }
         }
     } else {

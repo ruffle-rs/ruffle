@@ -1,5 +1,6 @@
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
+use crate::avm1::globals::asnative::as_set_native_method;
 use crate::avm1::property_decl::DeclContext;
 use crate::avm1::{Object, Value};
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
@@ -387,7 +388,12 @@ pub fn escape<'gc>(
         return Ok(Value::Undefined);
     };
 
+    Ok(AvmString::new(activation.gc(), escape_internal(s.as_wstr())).into())
+}
+
+pub fn escape_internal(s: &WStr) -> WString {
     let mut buffer = Vec::<u8>::new();
+
     // TODO: unpaired surrogates will be lost; this is incorrect:
     // - `\u{DC00}` should become "%ED%B0%80";
     // - `\u{DFFF}` should become "%ED%BF%BF".
@@ -404,7 +410,8 @@ pub fn escape<'gc>(
             }
         };
     }
-    Ok(AvmString::new(activation.gc(), WString::from_buf(buffer)).into())
+
+    WString::from_buf(buffer)
 }
 
 pub fn unescape<'gc>(
@@ -631,8 +638,10 @@ pub fn create_globals<'gc>(
         // TODO: RemoteLSOUsage
 
         "ASSetPropFlags" => method(object::as_set_prop_flags; DONT_ENUM); // TODO: (1, 0)
-        // TODO: ASSetNative - (4, 0)
-        // TODO: ASSetAccessor - (4, 1)
+
+        use fn as_set_native_method;
+        "ASSetNative" => method(AS_SET_NATIVE; DONT_ENUM);
+        "ASSetNativeAccessor" => method(AS_SET_NATIVE_ACCESSOR; DONT_ENUM);
 
         use fn method;
         "escape" => method(ESCAPE; DONT_ENUM);

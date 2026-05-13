@@ -127,7 +127,7 @@ impl<'a> VideoData<'a> {
             (FrameType::CommandFrame, _) => VideoPacket::CommandFrame(CommandFrame::try_from(
                 *data.first().ok_or(Error::ShortVideoBlock)?,
             )?),
-            (_, CodecId::On2Vp6) | (_, CodecId::On2Vp6Alpha) => VideoPacket::Vp6Data {
+            (_, CodecId::On2Vp6 | CodecId::On2Vp6Alpha) => VideoPacket::Vp6Data {
                 hadjust: data[0] & 0x0F,
                 vadjust: (data[0] & 0xF0) >> 4,
                 data: &data[1..],

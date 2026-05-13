@@ -48,7 +48,7 @@ flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "998f47
 lzma-rs = { workspace = true, optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
 symphonia = { version = "0.5.5", default-features = false, optional = true }
-enumset = "1.1.10"
+enumset = "1.1.12"
 bytemuck = { workspace = true, features = ["derive"] }
 clap = { workspace = true, optional=true }
 realfft = "3.5.0"
@@ -76,7 +76,7 @@ itertools = "0.14.0"
 workspace = true
 
 [target.'cfg(target_family = "wasm")'.dependencies.wasm-bindgen-futures]
-version = "0.4.58"
+version = "0.4.70"
 
 [features]
 default = []

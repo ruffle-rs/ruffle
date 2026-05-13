@@ -5,6 +5,7 @@ pub mod image_comparison;
 pub mod known_failure;
 pub mod player;
 
+use crate::compiler::SwfCompilerOptions;
 use crate::environment::Environment;
 use crate::image_trigger::ImageTrigger;
 use crate::options::approximations::Approximations;
@@ -106,6 +107,7 @@ pub struct TestOptions {
     pub fonts: HashMap<String, FontOptions>,
     pub font_sorts: HashMap<String, FontSortOptions>,
     pub default_fonts: DefaultFontsOptions,
+    pub compilers: Vec<SwfCompilerOptions>,
 }
 
 impl Default for TestOptions {
@@ -130,6 +132,7 @@ impl Default for TestOptions {
             fonts: Default::default(),
             font_sorts: Default::default(),
             default_fonts: Default::default(),
+            compilers: Default::default(),
         }
     }
 }
@@ -210,6 +213,10 @@ impl TestOptions {
 
         if let Some(approx) = &self.approximations {
             approx.validate()?;
+        }
+
+        for options in &self.compilers {
+            options.validate()?;
         }
 
         Ok(())

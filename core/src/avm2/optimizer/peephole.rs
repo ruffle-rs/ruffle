@@ -138,11 +138,11 @@ pub fn postprocess_peephole(
 
     // Eliminate the `getlocal0` and `pushscope` ops at the beginning of the
     // method, if possible.
-    if let Some((getlocal0_pos, pushscope_pos)) = simple_scope_op_positions {
-        if !uses_scope_ops {
-            ops[getlocal0_pos].set(Op::Nop);
-            ops[pushscope_pos].set(Op::Nop);
-        }
+    if let Some((getlocal0_pos, pushscope_pos)) = simple_scope_op_positions
+        && !uses_scope_ops
+    {
+        ops[getlocal0_pos].set(Op::Nop);
+        ops[pushscope_pos].set(Op::Nop);
     }
 }
 

@@ -1,5 +1,7 @@
 //! `MovieClip` display object and support code.
+use crate::avm1::ActivationIdentifier as Avm1ActivationIdentifier;
 use crate::avm1::Avm1;
+use crate::avm1::ExecutionReason as Avm1ExecutionReason;
 use crate::avm1::globals::AVM_DEPTH_BIAS;
 use crate::avm1::{Activation as Avm1Activation, ActivationIdentifier};
 use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
@@ -409,10 +411,34 @@ impl<'gc> MovieClip<'gc> {
         unlock!(Gc::write(mc, self.0), MovieClipData, next_avm1_clip).set(node);
     }
 
+    pub fn call_on_construct_handler(self, context: &mut UpdateContext<'gc>) {
+        let Some(object) = self.0.object1.get() else {
+            return;
+        };
+
+        let mut activation = Avm1Activation::from_nothing(
+            context,
+            Avm1ActivationIdentifier::root("[onConstruct]"),
+            self.as_displayobject(),
+        );
+
+        let result = object.call_method(
+            istr!("onConstruct"),
+            &[],
+            &mut activation,
+            Avm1ExecutionReason::Special,
+        );
+
+        if let Err(e) = result {
+            Avm1::handle_error(&mut activation, e);
+        }
+    }
+
     /// Tries to fire events from our `LoaderInfo` object if we're ready - returns
     /// `true` if both `init` and `complete` have been fired
     pub fn try_fire_loaderinfo_events(self, context: &mut UpdateContext<'gc>) -> bool {
         if self.0.initialized()
+            && !self.avm2_constructor_failed()
             && let Some(loader_info) = self.loader_info()
         {
             return loader_info.fire_init_and_complete_events(context, 0, false);
@@ -843,6 +869,14 @@ impl<'gc> MovieClip<'gc> {
         self.clip_actions()
             .iter()
             .any(|handler| handler.events.contains(ClipEventFlag::UNLOAD))
+    }
+
+    pub fn avm2_constructor_failed(self) -> bool {
+        self.0.avm2_constructor_failed()
+    }
+
+    pub fn set_avm2_constructor_failed(self) {
+        self.0.set_avm2_constructor_failed();
     }
 
     /// Queues up a goto to the specified frame.
@@ -1778,13 +1812,12 @@ impl<'gc> MovieClip<'gc> {
                 (_, Some(prev_child), true) | (PlaceObjectAction::Modify, Some(prev_child), _) => {
                     prev_child.apply_place_object(context, &params.place_object);
                 }
-                (swf::PlaceObjectAction::Replace(id), Some(prev_child), _) => {
+                (PlaceObjectAction::Replace(id), Some(prev_child), _) => {
                     prev_child.replace_with(context, id);
                     prev_child.apply_place_object(context, &params.place_object);
                     prev_child.set_place_frame(params.frame);
                 }
-                (PlaceObjectAction::Place(id), _, _)
-                | (swf::PlaceObjectAction::Replace(id), _, _) => {
+                (PlaceObjectAction::Place(id) | PlaceObjectAction::Replace(id), _, _) => {
                     if let Some(child) =
                         clip.instantiate_child(context, id, params.depth(), &params.place_object)
                     {
@@ -2086,6 +2119,8 @@ impl<'gc> MovieClip<'gc> {
                 class_object.call_init(object.into(), Avm2FunctionArgs::empty(), &mut activation);
 
             if let Err(e) = result {
+                self.set_avm2_constructor_failed();
+
                 Avm2::uncaught_error(
                     &mut activation,
                     Some(self.into()),
@@ -3291,6 +3326,14 @@ impl<'gc> MovieClipData<'gc> {
 
     fn unset_loop_queued(&self) {
         self.set_flag(MovieClipFlags::LOOP_QUEUED, false);
+    }
+
+    fn avm2_constructor_failed(&self) -> bool {
+        self.contains_flag(MovieClipFlags::AVM2_CONSTRUCTOR_FAILED)
+    }
+
+    fn set_avm2_constructor_failed(&self) {
+        self.set_flag(MovieClipFlags::AVM2_CONSTRUCTOR_FAILED, true);
     }
 
     fn play(&self) {
@@ -4915,6 +4958,9 @@ bitflags! {
 
         /// Whether this `MovieClip` has been post-instantiated yet.
         const POST_INSTANTIATED = 1 << 6;
+
+        /// Whether the AVM2 constructor of this `MovieClip` threw an error.
+        const AVM2_CONSTRUCTOR_FAILED = 1 << 7;
     }
 }
 

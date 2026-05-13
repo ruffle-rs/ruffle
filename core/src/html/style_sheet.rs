@@ -275,7 +275,7 @@ impl<'a> CssStream<'a> {
                         self.pos = value_start;
                         let possible_value = self.consume_until_any(&[NEWLINE, RETURN]);
                         match self.peek() {
-                            Some(NEWLINE) | Some(RETURN) => {
+                            Some(NEWLINE | RETURN) => {
                                 self.pos += 1;
                                 result.insert(name, possible_value);
                                 continue 'main;

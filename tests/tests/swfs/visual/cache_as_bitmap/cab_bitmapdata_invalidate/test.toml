@@ -1,0 +1,7 @@
+num_ticks = 12
+
+[image_comparisons.output]
+tolerance = 0
+
+[player_options]
+with_renderer = { quality = "high" }

@@ -40,16 +40,16 @@ pub fn array_initializer<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(mut array) = this.as_array_storage_mut(activation.gc()) {
-        if args.len() == 1 {
-            if let Some(expected_len) = args.get_optional(0).and_then(|v| v.try_as_f64()) {
-                if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
-                    return Err(make_error_1005(activation, expected_len));
-                }
-
-                array.set_length(expected_len as usize);
-
-                return Ok(Value::Undefined);
+        if args.len() == 1
+            && let Some(expected_len) = args.get_optional(0).and_then(|v| v.try_as_f64())
+        {
+            if expected_len < 0.0 || expected_len.is_nan() || expected_len.fract() != 0.0 {
+                return Err(make_error_1005(activation, expected_len));
             }
+
+            array.set_length(expected_len as usize);
+
+            return Ok(Value::Undefined);
         }
 
         for (i, arg) in args.iter().enumerate() {

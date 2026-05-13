@@ -225,6 +225,53 @@ japanese_mincho = ["Test Font", "Test Font Fallback"]
 # Fields specified here will override the 'default' values provided in the rest of the document.
 [subtests.SUBTEST_NAME]
 # ...
+
+# To make tests easier to maintain, we encourage programatic compilation of source files where possible.
+# This is currently limited to pure AVM1 code.
+# Multiple compiler steps can be included in a single test.
+[[compilers]]
+
+# The only compiler currently supported.
+type = "Rascal"
+
+# The SWF to compile.
+target = "test.swf"
+
+# A list of AS scripts (not classes) to compile.
+scripts = ["test.as", "other.as"]
+
+# A list of class names (not paths) to compile.
+classes = ["foo.Bar", "SomeClass"]
+
+# A list of pcode files to compile.
+pcode = ["test.pcode"]
+
+# The SWF version to compile for (see https://github.com/ruffle-rs/ruffle/wiki/SWF-version-chart).
+# This is required!
+swf_version = 15
+
+# The frame rate to compile the swf with.
+frame_rate = 24
+
+# The display region of the stage, in pixels. You can usually get away with just specifying max, not min.
+stage_rect = { x_min = 0.0, y_min = 0.0, x_max = 550.0, y_max = 400.0 }
+
+# Whether the SWF is allowed to use the network.
+# If true, the SWF can access the network but not local files.
+# If false (default), the SWF can access local files but not the network.
+use_network = false
+
+# What optimization passes should run during code generation.
+# The default is to match Flash's compiler (all enabled), but this may not be desirable for some tests.
+optimizations = {
+  # Whether to evaluate constant expressions and fold in the results.
+  # For example, `1 + 2` will be folded to `3`.
+  fold_constants = true,
+
+  # Whether to promote variables to registers, enabling the `DefineFunction2` opcode.
+  promote_variables_to_registers = true,
+}
+
 ```
 
 ## Multiple tests
@@ -235,6 +282,7 @@ each configuration will be ran as a separate test.
 
 For example, if `test.swf` has different output depending on the Flash Player version, the following
 `test.toml` could be used:
+
 ```toml
 num_ticks = 1
 # other common settings...

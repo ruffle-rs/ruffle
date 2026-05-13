@@ -1394,7 +1394,6 @@ Testing _global.Array.prototype
   pop, own, DONT_ENUM, type=[function]
   push, own, DONT_ENUM, type=[function]
   constructor, own, type=[function]
-  length, own, DONT_ENUM, type=[number]
   __proto__, own, type=[object]
 Testing _global.String
   apply, type=[function]
@@ -1551,6 +1550,16 @@ Testing _global.unescape
   constructor, type=[function]
   __proto__, own, type=[object]
 Testing _global.escape
+  apply, type=[function]
+  call, type=[function]
+  constructor, type=[function]
+  __proto__, own, type=[object]
+Testing _global.ASSetNativeAccessor
+  apply, type=[function]
+  call, type=[function]
+  constructor, type=[function]
+  __proto__, own, type=[object]
+Testing _global.ASSetNative
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]

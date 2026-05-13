@@ -157,8 +157,10 @@ impl ActivePlayer {
                     }
                     content = PlayingContent::Bundle(content_descriptor.clone(), Box::new(bundle));
                 }
-                Err(BundleError::BundleDoesntExist)
-                | Err(BundleError::InvalidSource(BundleSourceError::UnknownSource)) => {
+                Err(
+                    BundleError::BundleDoesntExist
+                    | BundleError::InvalidSource(BundleSourceError::UnknownSource),
+                ) => {
                     // Do nothing and carry on opening it as a swf - this likely isn't a bundle at all
                 }
                 Err(e) => {

@@ -187,15 +187,15 @@ impl<'gc> RegExp<'gc> {
                         }
                         let mut grp_index = d_u;
                         let mut second_char = None;
-                        if let Some(&Ok(next_char)) = chars.peek() {
-                            if let Some(d1) = next_char.to_digit(10) {
-                                let d1_u = usize::try_from(d1).unwrap_or(0);
-                                let two_digit_index = d_u * 10 + d1_u;
-                                if two_digit_index <= m.captures.len() && two_digit_index != 0 {
-                                    chars.next();
-                                    grp_index = two_digit_index;
-                                    second_char = Some(next_char);
-                                }
+                        if let Some(&Ok(next_char)) = chars.peek()
+                            && let Some(d1) = next_char.to_digit(10)
+                        {
+                            let d1_u = usize::try_from(d1).unwrap_or(0);
+                            let two_digit_index = d_u * 10 + d1_u;
+                            if two_digit_index <= m.captures.len() && two_digit_index != 0 {
+                                chars.next();
+                                grp_index = two_digit_index;
+                                second_char = Some(next_char);
                             }
                         }
                         if grp_index == 0 {

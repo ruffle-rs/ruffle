@@ -1,0 +1,8 @@
+Error: Error setting property
+Read an object: [object Cls1]
+primitive
+Read an object: [object Cls2]
+toString called
+Error reading object: TypeError: Error #1050: Cannot convert Object to primitive.
+toString called
+Error reading object: Error: error from in toString

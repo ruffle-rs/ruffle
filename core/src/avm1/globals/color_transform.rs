@@ -159,9 +159,12 @@ fn get_rgb<'gc>(
         return Ok(Value::Undefined);
     };
 
-    let rgb = ((color_transform.red_offset.get() as i32) << 16)
-        | ((color_transform.green_offset.get() as i32) << 8)
-        | (color_transform.blue_offset.get() as i32);
+    use crate::ecma_conversions::f64_to_wrapping_u32;
+    let r = f64_to_wrapping_u32(color_transform.red_offset.get());
+    let g = f64_to_wrapping_u32(color_transform.green_offset.get());
+    let b = f64_to_wrapping_u32(color_transform.blue_offset.get());
+
+    let rgb = (r << 16).wrapping_add(g << 8).wrapping_add(b);
     Ok(rgb.into())
 }
 

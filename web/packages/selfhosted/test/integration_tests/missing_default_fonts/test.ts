@@ -8,7 +8,7 @@ describe("Missing Default Fonts", () => {
     it("load the test", async () => {
         await openTest(browser, "integration_tests/missing_default_fonts");
         await injectRuffleAndWait(browser);
-        const player = await browser.$("<ruffle-object>");
+        const player = await browser.$("<ruffle-object>").getElement();
         await playAndMonitor(browser, player, ["Loaded!"]);
     });
 });

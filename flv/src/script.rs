@@ -2,13 +2,13 @@ use crate::error::Error;
 use crate::reader::FlvReader;
 use std::io::Seek;
 
-fn parse_string<'a>(reader: &mut FlvReader<'a>, is_long_string: bool) -> Result<&'a [u8], Error> {
-    let length = if is_long_string {
-        reader.read_u32()?
-    } else {
-        reader.read_u16()? as u32
-    };
+fn parse_string_u32<'a>(reader: &mut FlvReader<'a>) -> Result<&'a [u8], Error> {
+    let length = reader.read_u32()?;
+    reader.read(length as usize)
+}
 
+fn parse_string_u16<'a>(reader: &mut FlvReader<'a>) -> Result<&'a [u8], Error> {
+    let length = reader.read_u16()?;
     reader.read(length as usize)
 }
 
@@ -49,7 +49,7 @@ impl<'a> Value<'a> {
         match value_type {
             0 => Ok(Self::Number(reader.read_f64()?)),
             1 => Ok(Self::Boolean(reader.read_u8()? != 0)),
-            2 => Ok(Self::String(parse_string(reader, false)?)),
+            2 => Ok(Self::String(parse_string_u16(reader)?)),
             3 => {
                 let mut variables = vec![];
                 loop {
@@ -62,7 +62,7 @@ impl<'a> Value<'a> {
                     variables.push(Variable::parse(reader)?);
                 }
             }
-            4 => Ok(Self::MovieClip(parse_string(reader, false)?)),
+            4 => Ok(Self::MovieClip(parse_string_u16(reader)?)),
             5 => Ok(Self::Null),
             6 => Ok(Self::Undefined),
             7 => Ok(Self::Reference(reader.read_u16()?)),
@@ -94,7 +94,7 @@ impl<'a> Value<'a> {
                 unix_time: reader.read_f64()?,
                 local_offset: reader.read_i16()?,
             }),
-            12 => Ok(Self::LongString(parse_string(reader, true)?)),
+            12 => Ok(Self::LongString(parse_string_u32(reader)?)),
             _ => Err(Error::UnknownValueType),
         }
     }
@@ -114,7 +114,7 @@ pub struct Variable<'a> {
 impl<'a> Variable<'a> {
     pub fn parse(reader: &mut FlvReader<'a>) -> Result<Self, Error> {
         Ok(Self {
-            name: parse_string(reader, false)?,
+            name: parse_string_u16(reader)?,
             data: Value::parse(reader)?,
         })
     }
@@ -154,14 +154,14 @@ impl<'a> ScriptData<'a> {
 #[cfg(test)]
 mod tests {
     use crate::reader::FlvReader;
-    use crate::script::{ScriptData, Value, Variable, parse_string};
+    use crate::script::{ScriptData, Value, Variable, parse_string_u16, parse_string_u32};
 
     #[test]
     fn read_string() {
         let data = [0x00, 0x03, 0x01, 0x02, 0x03];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(parse_string(&mut reader, false), Ok(&data[2..]));
+        assert_eq!(parse_string_u16(&mut reader), Ok(&data[2..]));
     }
 
     #[test]
@@ -169,7 +169,7 @@ mod tests {
         let data = [0x00, 0x00, 0x00, 0x03, 0x01, 0x02, 0x03];
         let mut reader = FlvReader::from_source(&data);
 
-        assert_eq!(parse_string(&mut reader, true), Ok(&data[4..]));
+        assert_eq!(parse_string_u32(&mut reader), Ok(&data[4..]));
     }
 
     #[test]

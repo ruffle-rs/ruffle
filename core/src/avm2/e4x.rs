@@ -532,10 +532,10 @@ impl<'gc> E4XNode<'gc> {
         }
 
         // 4. If Type(V) is XML and (V is x or an ancestor of x) throw an Error exception
-        if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object()) {
-            if self.ancestors().any(|x| E4XNode::ptr_eq(x, xml.node())) {
-                return Err(make_error_1118(activation));
-            }
+        if let Some(xml) = value.as_object().and_then(|x| x.as_xml_object())
+            && self.ancestors().any(|x| E4XNode::ptr_eq(x, xml.node()))
+        {
+            return Err(make_error_1118(activation));
         }
 
         // 10. If Type(V) is XMLList
@@ -771,14 +771,14 @@ impl<'gc> E4XNode<'gc> {
             Value::Null | Value::Undefined => istr!(""),
             // The docs claim that only String, Number or Boolean are accepted, but that's also a lie
             val => {
-                if let Some(obj) = val.as_object() {
-                    if obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some() {
-                        value = val.call_public_property(
-                            istr!("toXMLString"),
-                            FunctionArgs::empty(),
-                            activation,
-                        )?;
-                    }
+                if let Some(obj) = val.as_object()
+                    && (obj.as_xml_object().is_some() || obj.as_xml_list_object().is_some())
+                {
+                    value = val.call_public_property(
+                        istr!("toXMLString"),
+                        FunctionArgs::empty(),
+                        activation,
+                    )?;
                 }
                 value.coerce_to_string(activation)?
             }
@@ -850,14 +850,14 @@ impl<'gc> E4XNode<'gc> {
                 Err(XmlError::IllFormed(IllFormedError::MismatchedEndTag { expected, found })) => {
                     // We must accept </a/>, </a />, and </a b="c">
                     // TODO: Reject </a bc>, </a//>, <a //> etc.
-                    if let Some(rest) = found.strip_prefix(&expected) {
-                        if rest.starts_with([' ', '\t', '/']) {
-                            let node = open_tags.pop().unwrap();
-                            if open_tags.is_empty() {
-                                top_level.push(node);
-                            }
-                            continue;
+                    if let Some(rest) = found.strip_prefix(&expected)
+                        && rest.starts_with([' ', '\t', '/'])
+                    {
+                        let node = open_tags.pop().unwrap();
+                        if open_tags.is_empty() {
+                            top_level.push(node);
                         }
+                        continue;
                     }
                     return Err(make_error_1085(activation, &expected));
                 }
@@ -1261,11 +1261,11 @@ impl<'gc> E4XNode<'gc> {
             let found_index = namespaces.iter().position(|ns| Some(prefix) == ns.prefix);
 
             // 2.d. If match is not null and match.uri is not equal to N.uri
-            if let Some(found_index) = found_index {
-                if namespaces[found_index].uri != namespace.uri {
-                    // 2.d.i. Remove match from x.[[InScopeNamespaces]]
-                    namespaces.remove(found_index);
-                }
+            if let Some(found_index) = found_index
+                && namespaces[found_index].uri != namespace.uri
+            {
+                // 2.d.i. Remove match from x.[[InScopeNamespaces]]
+                namespaces.remove(found_index);
             }
 
             // 2.e. Let x.[[InScopeNamespaces]] = x.[[InScopeNamespaces]] ∪ { N }
@@ -1559,16 +1559,17 @@ fn to_xml_string_inner<'gc>(
             .copied()
     };
 
-    if let Some(ns) = node.namespace() {
-        if get_namespace(&namespace_declarations, &ns).is_none() {
-            namespace_declarations.push(ns);
-        }
+    if let Some(ns) = node.namespace()
+        && get_namespace(&namespace_declarations, &ns).is_none()
+    {
+        namespace_declarations.push(ns);
     }
+
     for attribute in attributes {
-        if let Some(ns) = attribute.namespace() {
-            if get_namespace(&namespace_declarations, &ns).is_none() {
-                namespace_declarations.push(ns);
-            }
+        if let Some(ns) = attribute.namespace()
+            && get_namespace(&namespace_declarations, &ns).is_none()
+        {
+            namespace_declarations.push(ns);
         }
     }
 
@@ -1642,12 +1643,12 @@ fn to_xml_string_inner<'gc>(
         to_xml_string_inner(E4XOrXml::E4X(*child), buf, &all_namespaces, child_pretty);
     }
 
-    if let Some((indent_level, _)) = pretty {
-        if indent_children {
-            buf.push_char('\n');
-            for _ in 0..indent_level {
-                buf.push_char(' ');
-            }
+    if let Some((indent_level, _)) = pretty
+        && indent_children
+    {
+        buf.push_char('\n');
+        for _ in 0..indent_level {
+            buf.push_char(' ');
         }
     }
 
@@ -1721,14 +1722,14 @@ pub fn name_to_multiname<'gc>(
         return Err(make_error_1010(activation, None));
     }
 
-    if let Value::Object(o) = name {
-        if let Some(qname) = o.as_qname_object() {
-            let mut name = qname.name().clone();
-            if force_attribute {
-                name.set_is_attribute(true);
-            }
-            return Ok(name);
+    if let Value::Object(o) = name
+        && let Some(qname) = o.as_qname_object()
+    {
+        let mut name = qname.name().clone();
+        if force_attribute {
+            name.set_is_attribute(true);
         }
+        return Ok(name);
     }
 
     let name = name.coerce_to_string(activation)?;
@@ -1763,18 +1764,18 @@ pub fn maybe_escape_child<'gc>(
         }
     }
 
-    if activation.caller_movie_or_root().version() >= 21 {
-        if let Some(xml) = child.as_object().and_then(|x| x.as_xml_object()) {
-            let node = xml.node();
-            let parent = node.parent();
+    if activation.caller_movie_or_root().version() >= 21
+        && let Some(xml) = child.as_object().and_then(|x| x.as_xml_object())
+    {
+        let node = xml.node();
+        let parent = node.parent();
 
-            let index = node.child_index();
+        let index = node.child_index();
 
-            if let Some(parent) = parent {
-                if let Some(index) = index {
-                    parent.delete_by_index(index, activation);
-                }
-            }
+        if let Some(parent) = parent
+            && let Some(index) = index
+        {
+            parent.delete_by_index(index, activation);
         }
     }
 

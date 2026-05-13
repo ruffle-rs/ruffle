@@ -260,10 +260,10 @@ pub fn clear<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(this) = this.as_display_object() {
-        if let Some(mut draw) = this.as_drawing() {
-            draw.clear()
-        }
+    if let Some(this) = this.as_display_object()
+        && let Some(mut draw) = this.as_drawing()
+    {
+        draw.clear()
     }
 
     Ok(Value::Undefined)
@@ -302,10 +302,10 @@ pub fn end_fill<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(this) = this.as_display_object() {
-        if let Some(mut draw) = this.as_drawing() {
-            draw.set_fill_style(None);
-        }
+    if let Some(this) = this.as_display_object()
+        && let Some(mut draw) = this.as_drawing()
+    {
+        draw.set_fill_style(None);
     }
 
     Ok(Value::Undefined)
@@ -1044,29 +1044,29 @@ pub fn draw_triangles<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let this = this.as_object().unwrap();
 
-    if let Some(this) = this.as_display_object() {
-        if let Some(mut drawing) = this.as_drawing() {
-            let vertices = args.get_object(activation, 0, "vertices")?;
+    if let Some(this) = this.as_display_object()
+        && let Some(mut drawing) = this.as_drawing()
+    {
+        let vertices = args.get_object(activation, 0, "vertices")?;
 
-            let indices = args.try_get_object(1);
+        let indices = args.try_get_object(1);
 
-            let uvt_data = args.try_get_object(2);
+        let uvt_data = args.try_get_object(2);
 
-            let culling = {
-                let culling = args.get_string(activation, 3);
-                TriangleCulling::from_string(culling)
-                    .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?
-            };
+        let culling = {
+            let culling = args.get_string(activation, 3);
+            TriangleCulling::from_string(culling)
+                .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?
+        };
 
-            draw_triangles_internal(
-                activation,
-                &mut drawing,
-                &vertices,
-                indices.as_ref(),
-                uvt_data.as_ref(),
-                culling,
-            )?;
-        }
+        draw_triangles_internal(
+            activation,
+            &mut drawing,
+            &vertices,
+            indices.as_ref(),
+            uvt_data.as_ref(),
+            culling,
+        )?;
     }
 
     Ok(Value::Undefined)

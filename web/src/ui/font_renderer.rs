@@ -85,9 +85,7 @@ impl CanvasFontRenderer {
         Ok(self.ctx.measure_text(text)?.width())
     }
 
-    fn ensure_canvas_large_enough(&self, width: f64, height: f64) {
-        let width = width.ceil() as u32;
-        let height = height.ceil() as u32;
+    fn ensure_canvas_large_enough(&self, width: u32, height: u32) {
         if self.canvas.width() < width || self.canvas.height() < height {
             self.canvas.set_width(width);
             self.canvas.set_height(height);
@@ -105,11 +103,12 @@ impl CanvasFontRenderer {
         let height = self.ascent + self.descent;
 
         let bitmap_width = metrics.actual_bounding_box_left() + metrics.actual_bounding_box_right();
-        let bitmap_width = bitmap_width.max(1.0); // TODO Support empty bitmaps.
+        let bitmap_width = bitmap_width.max(1.0).ceil() as i32; // TODO Support empty bitmaps.
+        let bitmap_height = height.max(1.0).ceil() as i32; // TODO Support empty bitmaps.
         let advance = Twips::from_pixels(metrics.width());
         let bitmap_tx = -metrics.actual_bounding_box_left();
 
-        self.ensure_canvas_large_enough(bitmap_width, height);
+        self.ensure_canvas_large_enough(bitmap_width as u32, bitmap_height as u32);
 
         self.ctx.clear_rect(
             0.0,
@@ -119,7 +118,7 @@ impl CanvasFontRenderer {
         );
         self.ctx.fill_text(text, -bitmap_tx, self.ascent)?;
 
-        let image_data = self.ctx.get_image_data(0.0, 0.0, bitmap_width, height)?;
+        let image_data = self.ctx.get_image_data(0, 0, bitmap_width, bitmap_height)?;
         let width = image_data.width();
         let height = image_data.height();
         let pixels = image_data.data().0;
