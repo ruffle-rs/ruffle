@@ -12,11 +12,6 @@ package flash.media {
         private var _videoHeight:int;
 
         public function Video(width:int = 320, height:int = 240) {
-            if (width < 0 || height < 0) {
-                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
-            }
-            this._videoWidth = width;
-            this._videoHeight = height;
             this.init(width, height);
         }
 

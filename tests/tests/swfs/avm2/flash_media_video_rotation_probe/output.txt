@@ -1,0 +1,28 @@
+
+--- getter after rotation ---
+rot=0 -> w=100.00 h=100.00 sx=1.00 sy=1.00
+rot=30 -> w=136.60 h=136.60 sx=1.00 sy=1.00
+rot=45 -> w=141.40 h=141.40 sx=1.00 sy=1.00
+rot=60 -> w=136.60 h=136.60 sx=1.00 sy=1.00
+rot=90 -> w=100.00 h=100.00 sx=1.00 sy=1.00
+rot=180 -> w=100.00 h=100.00 sx=1.00 sy=1.00
+
+--- setter after rotation: width=200 on Video(100,100) ---
+rot=0 -> w=200.00 h=100.00 sx=2.00 sy=1.00
+rot=30 -> w=176.80 h=159.80 sx=1.46 sy=1.00
+rot=45 -> w=170.70 h=170.70 sx=1.41 sy=1.00
+rot=90 -> w=100.00 h=200.00 sx=2.00 sy=1.00
+rot=180 -> w=200.00 h=100.00 sx=2.00 sy=1.00
+
+--- setter after rotation: height=200 on Video(100,100) ---
+rot=0 -> w=100.00 h=200.00 sx=1.00 sy=2.00
+rot=45 -> w=170.70 h=170.70 sx=1.00 sy=1.41
+rot=90 -> w=200.00 h=100.00 sx=1.00 sy=2.00
+
+--- non-square Video(160,120) ---
+Video(160,120) rot=0  -> w=160.00 h=120.00
+Video(160,120) rot=45 -> w=198.00 h=198.00
+Video(160,120) rot=45; w=200 -> w=199.15 h=199.15 sx=1.01 sy=1.00
+
+--- bounds vs width readback under rotation ---
+Video(100,100) rot=45 bounds=(0.00,0.00,100.00,100.00) width=141.40

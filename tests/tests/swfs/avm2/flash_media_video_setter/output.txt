@@ -1,0 +1,41 @@
+
+--- mutation: set width on a defaulted Video ---
+after new Video(0,0); width=320 -> w=320.00 sx=1.00
+after new Video(); width=0 -> w=0.00 sx=0.00
+after new Video(); height=0 -> h=0.00 sy=0.00
+
+--- setter: huge / over-threshold values (no throw expected) ---
+v.width = 0x7FFFFF -> w=8388607.20 h=240.00 sx=26214.40 sy=1.00
+v.width = 0x800000 -> w=8388608.00 h=240.00 sx=26214.40 sy=1.00
+v.width = -100 -> w=320.00 h=240.00 sx=1.00 sy=1.00
+v.width = NaN -> w=320.00 h=240.00 sx=1.00 sy=1.00
+
+--- setter: scale then width interplay ---
+scaleX=0 then width=100 -> w=100.00 sx=0.31
+width=0 then width=320 -> w=320.00 sx=1.00
+
+--- writing to read-only videoWidth/videoHeight ---
+v.videoWidth = 999 -> THROWS #1074
+v.videoHeight = 999 -> THROWS #1074
+
+--- setter: ignore vs reset on invalid ---
+after width=100; width=-1 -> w=100.00 h=240.00 sx=0.31 sy=1.00
+after width=100; width=NaN -> w=100.00 h=240.00 sx=0.31 sy=1.00
+after width=100; width=0 -> w=0.00 h=240.00 sx=0.00 sy=1.00
+after height=50;  height=-1 -> w=320.00 h=50.00 sx=1.00 sy=0.21
+
+--- setter: cap boundary ---
+v.width = 10485759 -> w=10485758.40 h=240.00 sx=32768.00 sy=1.00
+v.width = 10485760 -> w=10485760.00 h=240.00 sx=32768.00 sy=1.00
+v.width = 10485761 -> w=10485760.00 h=240.00 sx=32768.00 sy=1.00
+v.width = 10485760.5 -> w=10485760.00 h=240.00 sx=32768.00 sy=1.00
+v.width = 16777215 -> w=10485760.00 h=240.00 sx=52428.80 sy=1.00
+v.height = 10485760 -> w=320.00 h=7864320.00 sx=1.00 sy=43690.67
+v.height = 10485761 -> w=320.00 h=7864320.00 sx=1.00 sy=43690.67
+
+--- setter: very small / fractional ---
+v.width = 0.5 -> w=0.50 h=240.00 sx=0.00 sy=1.00
+v.width = 1e-10 -> w=0.00 h=240.00 sx=0.00 sy=1.00
+v.width = 0.05 -> w=0.05 h=240.00 sx=0.00 sy=1.00
+v.width = 0.0 -> w=0.00 h=240.00 sx=0.00 sy=1.00
+v.width = 1e-300 -> w=0.00 h=240.00 sx=0.00 sy=1.00
