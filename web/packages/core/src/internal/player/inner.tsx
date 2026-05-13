@@ -374,7 +374,7 @@ export class InnerPlayer {
             }
         };
 
-        modalElement.addEventListener("click", hideModal);
+        modalElement.parentNode!.addEventListener("click", hideModal);
         const modalArea = modalElement.querySelector(".modal-area");
         if (modalArea) {
             modalArea.addEventListener("click", (event) =>
