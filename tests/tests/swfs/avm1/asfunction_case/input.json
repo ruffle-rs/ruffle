@@ -16,12 +16,12 @@
     "btn": "Left"
   },
   {
-    "type": "MouseDown",
+    "type": "MouseUp",
     "pos": [95,65],
     "btn": "Left"
   },
   {
-    "type": "MouseUp",
+    "type": "MouseDown",
     "pos": [95,95],
     "btn": "Left"
   },
