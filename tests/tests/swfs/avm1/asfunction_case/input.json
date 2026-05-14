@@ -1,43 +1,43 @@
 [
   {
     "type": "MouseDown",
-    "pos": [95,65],
+    "pos": [95,40],
     "btn": "Left"
   },
   {
     "type": "MouseUp",
-    "pos": [95,65],
+    "pos": [95,40],
     "btn": "Left"
   },
 
   {
     "type": "MouseDown",
-    "pos": [95,93],
+    "pos": [95,65],
     "btn": "Left"
   },
   {
     "type": "MouseDown",
-    "pos": [95,93],
+    "pos": [95,65],
     "btn": "Left"
   },
   {
     "type": "MouseUp",
-    "pos": [95,121],
+    "pos": [95,95],
     "btn": "Left"
   },
   {
     "type": "MouseUp",
-    "pos": [95,121],
+    "pos": [95,95],
     "btn": "Left"
   },
   {
     "type": "MouseDown",
-    "pos": [95,149],
+    "pos": [95,125],
     "btn": "Left"
   },
   {
     "type": "MouseUp",
-    "pos": [95,149],
+    "pos": [95,125],
     "btn": "Left"
   }
 ]
