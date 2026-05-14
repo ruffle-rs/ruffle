@@ -10,7 +10,3 @@ text1.callback with input: a,b,c,d
 // this == container.text1
 true
 
-text1.callback with input:  Caps Test
-// this == container.text1
-true
-

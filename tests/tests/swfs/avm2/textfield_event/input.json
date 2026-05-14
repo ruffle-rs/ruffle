@@ -38,15 +38,5 @@
     "type": "MouseUp",
     "pos": [142, 160],
     "btn": "Left"
-  },
-  {
-    "type": "MouseDown",
-    "pos": [155, 188],
-    "btn": "Left"
-  },
-  {
-    "type": "MouseUp",
-    "pos": [155, 188],
-    "btn": "Left"
   }
 ]

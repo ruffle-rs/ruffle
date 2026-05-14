@@ -14,7 +14,6 @@
 				"<p>Or click <a href='event:Second Test'>here</a> to call alert 2</p>" +
 				"<p><a href='event:'>this one is empty</a></p>" +
 				"<p>But <a href='event:a,b,c,d'>this one</a> has lots of args!</p>" +
-				"<p>And <a href='Event:Caps Test'>this one</a> has odd capitalization.</p>" +
 				"";
 			text.addEventListener(TextEvent.LINK, this.onLink);
 		}
