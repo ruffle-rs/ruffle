@@ -59,6 +59,21 @@ static RUFFLE_VERSION: &str = concat!(
     ")"
 );
 
+fn truncate_to_line_boundary(text: String, max_len: usize) -> String {
+    if text.len() <= max_len {
+        return text;
+    }
+    let mut truncated = String::with_capacity(max_len + 10);
+    for line in text.lines() {
+        if truncated.len() + line.len() > max_len {
+            break;
+        }
+        truncated.push_str(line);
+        truncated.push('\n');
+    }
+    format!("{truncated}[...]")
+}
+
 fn panic_hook(info: &PanicHookInfo) {
     CALLSTACK.with(|callstack| {
         if let Some(callstack) = &*callstack.borrow() {
@@ -81,8 +96,14 @@ fn panic_hook(info: &PanicHookInfo) {
         .show()
         == MessageDialogResult::Yes
     {
+        let backtrace = std::backtrace::Backtrace::force_capture();
+        let panic_text = format!("```\n{info}\n\nStack trace:\n{backtrace}\n```");
+
+        // The URL cannot be too long.
+        let panic_text = truncate_to_line_boundary(panic_text, 2048);
+
         let mut params = vec![
-            ("panic_text", info.to_string()),
+            ("panic_text", panic_text),
             ("platform", "Desktop app".to_string()),
             ("operating_system", os_info::get().to_string()),
             ("ruffle_version", RUFFLE_VERSION.to_string()),
