@@ -19,6 +19,24 @@ pub struct CanvasFontRenderer {
     descent: f64,
 }
 
+struct FontStyle {
+    name: String,
+}
+
+impl FontStyle {
+    fn new(italic: bool, bold: bool) -> FontStyle {
+        let mut styles = Vec::new();
+        if italic {
+            styles.push("italic");
+        }
+        if bold {
+            styles.push("bold");
+        }
+        let name = styles.join(" ");
+        FontStyle { name }
+    }
+}
+
 impl CanvasFontRenderer {
     /// Render fonts with size 64px. It affects the bitmap size.
     const SIZE_PX: f64 = 64.0;
@@ -38,7 +56,8 @@ impl CanvasFontRenderer {
             .dyn_into::<OffscreenCanvasRenderingContext2d>()
             .map_err(|err| JsValue::from_str(&format!("Not a 2d context: {err:?}")))?;
 
-        let font_str = Self::to_font_str(italic, bold, Self::SIZE_PX, font_family);
+        let font_style = FontStyle::new(italic, bold);
+        let font_str = Self::to_font_str(font_style, Self::SIZE_PX, font_family);
         tracing::debug!("Using the following font string: {font_str}");
         Self::apply_style(&ctx, &font_str);
 
@@ -64,16 +83,19 @@ impl CanvasFontRenderer {
         }
     }
 
-    fn to_font_str(italic: bool, bold: bool, size: f64, font_family: &str) -> String {
-        let italic = if italic { "italic " } else { "" };
-        let bold = if bold { "bold " } else { "" };
+    fn to_font_str(font_style: FontStyle, size: f64, font_family: &str) -> String {
+        let style_name = if font_style.name.is_empty() {
+            String::new()
+        } else {
+            format!("{} ", font_style.name)
+        };
 
         // Escape font family properly
         let font_family = JSON::stringify(&JsValue::from_str(font_family))
             .ok()
             .and_then(|js_str| js_str.as_string())
             .unwrap_or_else(|| format!("\"{font_family}\""));
-        format!("{italic}{bold}{size}px {font_family}")
+        format!("{style_name}{size}px {font_family}")
     }
 
     fn apply_style(ctx: &OffscreenCanvasRenderingContext2d, font_str: &str) {
