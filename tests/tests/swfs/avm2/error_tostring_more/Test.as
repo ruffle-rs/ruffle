@@ -1,102 +1,43 @@
-﻿package {
-    import flash.display.Sprite; 
-    
-    public class Test extends Sprite {}
+package {
+    import flash.display.Sprite;
+
+    import flash.errors.IOError;
+
+    import flash.errors.DRMManagerError;
+    import flash.errors.EOFError;
+    import flash.errors.InvalidSWFError;
+    import flash.errors.MemoryError;
+    import flash.errors.ScriptTimeoutError;
+    import flash.errors.StackOverflowError;
+
+    public class Test extends Sprite {
+        public function Test() {
+            var errorClasses:Array = [DefinitionError, EOFError, EvalError, IOError, InvalidSWFError, MemoryError, ScriptTimeoutError, StackOverflowError, URIError, VerifyError];
+
+            for (var i:int = 0; i < errorClasses.length; i ++) {
+                testErrorClass(errorClasses[i]);
+            }
+
+            // DRMManagerError takes 3 params, so test it separately
+            trace("Class: " + DRMManagerError);
+            trace("cls.prototype.name = " + DRMManagerError.prototype.name);
+            var newErrorDRMManager:Error = new DRMManagerError("My Error", 42, 10);
+            trace(newErrorDRMManager.toString());
+            trace(newErrorDRMManager.name);
+            trace(newErrorDRMManager.errorID);
+            trace(newErrorDRMManager.subErrorID);
+        }
+
+        function testErrorClass(TestedErrorClass:Class) {
+            trace("Class: " + TestedErrorClass);
+            trace("cls.prototype.name = " + TestedErrorClass.prototype.name);
+            var newError:Error = new TestedErrorClass("My Error", 42);
+            trace(newError.toString());
+            trace(newError.name);
+            trace(newError.errorID);
+            trace();
+            trace();
+            trace();
+        }
+    }
 }
-
-
-import flash.errors.IOError;
-
-import flash.errors.EOFError;
-import flash.errors.InvalidSWFError;
-import flash.errors.MemoryError;
-import flash.errors.ScriptTimeoutError;
-import flash.errors.StackOverflowError;
-
-trace("Class: " + DefinitionError);
-trace("cls.prototype.name = " + DefinitionError.prototype.name);
-var newErrorDefinitionError: DefinitionError = new DefinitionError("My Error", 42);
-trace(newErrorDefinitionError.toString());
-trace(newErrorDefinitionError.name);
-trace(newErrorDefinitionError.errorID);
-trace();
-trace();
-trace();
-trace("Class: " + EOFError);
-trace("cls.prototype.name = " + EOFError.prototype.name);
-var newErrorEOFError: EOFError = new EOFError("My Error", 42);
-trace(newErrorEOFError.toString());
-trace(newErrorEOFError.name);
-trace(newErrorEOFError.errorID);
-trace();
-trace();
-trace();
-trace("Class: " + EvalError);
-trace("cls.prototype.name = " + EvalError.prototype.name);
-var newErrorEvalError: EvalError = new EvalError("My Error", 42);
-trace(newErrorEvalError.toString());
-trace(newErrorEvalError.name);
-trace(newErrorEvalError.errorID);
-trace();
-trace();
-trace();
-trace("Class: " + IOError);
-trace("cls.prototype.name = " + IOError.prototype.name);
-var newErrorIOError: IOError = new IOError("My Error", 42);
-trace(newErrorIOError.toString());
-trace(newErrorIOError.name);
-trace(newErrorIOError.errorID);
-trace();
-trace();
-trace();
-trace("Class: " + InvalidSWFError);
-trace("cls.prototype.name = " + InvalidSWFError.prototype.name);
-var newErrorInvalidSWFError: InvalidSWFError = new InvalidSWFError("My Error", 42);
-trace(newErrorInvalidSWFError.toString());
-trace(newErrorInvalidSWFError.name);
-trace(newErrorInvalidSWFError.errorID);
-trace();
-trace();
-trace();
-trace("Class: " + MemoryError);
-trace("cls.prototype.name = " + MemoryError.prototype.name);
-var newErrorMemoryError: MemoryError = new MemoryError("My Error", 42);
-trace(newErrorMemoryError.toString());
-trace(newErrorMemoryError.name);
-trace(newErrorMemoryError.errorID);
-trace();
-trace();
-trace();
-trace("Class: " + ScriptTimeoutError);
-trace("cls.prototype.name = " + ScriptTimeoutError.prototype.name);
-var newErrorScriptTimeoutError: ScriptTimeoutError = new ScriptTimeoutError("My Error", 42);
-trace(newErrorScriptTimeoutError.toString());
-trace(newErrorScriptTimeoutError.name);
-trace(newErrorScriptTimeoutError.errorID);
-trace();
-trace();
-trace();
-trace("Class: " + StackOverflowError);
-trace("cls.prototype.name = " + StackOverflowError.prototype.name);
-var newErrorStackOverflowError: StackOverflowError = new StackOverflowError("My Error", 42);
-trace(newErrorStackOverflowError.toString());
-trace(newErrorStackOverflowError.name);
-trace(newErrorStackOverflowError.errorID);
-trace();
-trace();
-trace();
-trace("Class: " + URIError);
-trace("cls.prototype.name = " + URIError.prototype.name);
-var newErrorURIError: URIError = new URIError("My Error", 42);
-trace(newErrorURIError.toString());
-trace(newErrorURIError.name);
-trace(newErrorURIError.errorID);
-trace();
-trace();
-trace();
-trace("Class: " + VerifyError);
-trace("cls.prototype.name = " + VerifyError.prototype.name);
-var newErrorVerifyError: VerifyError = new VerifyError("My Error", 42);
-trace(newErrorVerifyError.toString());
-trace(newErrorVerifyError.name);
-trace(newErrorVerifyError.errorID);
