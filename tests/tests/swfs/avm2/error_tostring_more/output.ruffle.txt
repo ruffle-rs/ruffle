@@ -79,7 +79,7 @@ VerifyError
 
 
 Class: [class DRMManagerError]
-cls.prototype.name = undefined
+cls.prototype.name = Error
 DRMManagerError: 'My Error', error ID:'42', subErrorID:'10'
 Error
 42
