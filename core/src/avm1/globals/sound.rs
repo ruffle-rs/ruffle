@@ -337,7 +337,7 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
     "start" => method(start; DONT_ENUM | DONT_DELETE | READ_ONLY);
     "getDuration" => method(duration; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
     "setDuration" => method(set_duration; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
-    "getPosition" => method(get_position; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
+    "getPosition" => method(position; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
     "setPosition" => method(set_position; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
     "loadSound" => method(load_sound; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
     "getBytesLoaded" => method(get_bytes_loaded; DONT_ENUM | DONT_DELETE | READ_ONLY | VERSION_6);
@@ -734,16 +734,5 @@ fn set_position<'gc>(
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
     avm1_stub!(activation, "Sound", "setPosition");
-    Ok(Value::Undefined)
-}
-
-fn get_position<'gc>(
-    _activation: &mut Activation<'_, 'gc>,
-    this: Object<'gc>,
-    _args: &[Value<'gc>],
-) -> Result<Value<'gc>, Error<'gc>> {
-    if let NativeObject::Sound(sound) = this.native() {
-        return Ok(sound.position().into());
-    }
     Ok(Value::Undefined)
 }
