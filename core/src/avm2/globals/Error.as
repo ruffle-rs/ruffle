@@ -2,13 +2,16 @@ package {
     [Ruffle(ConstructOnCall)]
     [Ruffle(InstanceAllocator)]
     public dynamic class Error {
+        private static native function initCustomPrototype();
+
         {
+            initCustomPrototype();
+
             prototype.name = "Error";
             prototype.message = "Error";
 
             prototype.toString = function():String {
-                var self:Error = this;
-                return self.message !== "" ? self.name + ": " + self.message : self.name;
+                return this.message !== "" ? this.name + ": " + this.message : this.name;
             };
         }
 

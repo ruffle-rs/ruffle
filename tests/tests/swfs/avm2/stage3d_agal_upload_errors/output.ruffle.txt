@@ -6,7 +6,7 @@ sampler_conflict: Error: Error #3696: AGAL validation failed: Second use of samp
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 bad_header: ArgumentError: Error #3612: Programs must be in little endian format.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -14,7 +14,7 @@ bad_header: ArgumentError: Error #3612: Programs must be in little endian format
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 truncated: ArgumentError: Error #3612: Programs must be in little endian format.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -22,7 +22,7 @@ truncated: ArgumentError: Error #3612: Programs must be in little endian format.
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 empty: ArgumentError: Error #3615: AGAL validation failed: Program size below minimum length for  program.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -30,7 +30,7 @@ empty: ArgumentError: Error #3615: AGAL validation failed: Program size below mi
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 bad_version: Error: Error #3615: AGAL validation failed: Program size below minimum length for fragment program.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -38,7 +38,7 @@ bad_version: Error: Error #3615: AGAL validation failed: Program size below mini
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 bad_shader_type: Error: Error #3615: AGAL validation failed: Program size below minimum length for fragment program.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -46,7 +46,7 @@ bad_shader_type: Error: Error #3615: AGAL validation failed: Program size below 
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 bad_opcode: Error: Error #3620: AGAL validation failed: Invalid opcode, value out of range: 255 at token 1 of fragment program.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -54,7 +54,7 @@ bad_opcode: Error: Error #3620: AGAL validation failed: Invalid opcode, value ou
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 source_output: Error: Error #3646: AGAL validation failed: Can not read from output register for source operand 1 at token 1 of fragment program.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -62,7 +62,7 @@ source_output: Error: Error #3646: AGAL validation failed: Can not read from out
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 source_sampler: Error: Error #3638: AGAL validation failed: Sampler register only allowed as second operand in texture instructions for source operand 1 at token 1 of fragment program.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -70,7 +70,7 @@ source_sampler: Error: Error #3638: AGAL validation failed: Sampler register onl
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 dest_constant: Error: Error #3652: AGAL validation failed: Constant registers can not be written to for destination operand at token 1 of fragment program.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -78,7 +78,7 @@ dest_constant: Error: Error #3652: AGAL validation failed: Constant registers ca
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 dest_attribute: Error: Error #3651: AGAL validation failed: Attribute registers can not be written to for destination operand at token 1 of vertex program.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -86,7 +86,7 @@ dest_attribute: Error: Error #3651: AGAL validation failed: Attribute registers 
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 dest_sampler: Error: Error #3649: AGAL validation failed: Sampler registers can not be written to for destination operand at token 1 of fragment program.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -94,7 +94,7 @@ dest_sampler: Error: Error #3649: AGAL validation failed: Sampler registers can 
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 dest_fragreg: Error: Error #3749: AGAL validation failed: Depth output register index out of bounds for destination operand at token 1 of fragment program.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -102,7 +102,7 @@ dest_fragreg: Error: Error #3749: AGAL validation failed: Depth output register 
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 indirect_frag: Error: Error #3639: AGAL validation failed: Indirect addressing only allowed in vertex programs for source operand 1 at token 1 of fragment program.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -110,7 +110,7 @@ indirect_frag: Error: Error #3639: AGAL validation failed: Indirect addressing o
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 indirect_non_const: Error: Error #3640: AGAL validation failed: Indirect addressing only allowed into constant registers for source operand 1 at token 1 of vertex program.
 	at flash.display3D::Program3D/upload()
 	at Test/tryUpload()
@@ -118,7 +118,7 @@ indirect_non_const: Error: Error #3640: AGAL validation failed: Indirect address
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
 indirect_valid: uploaded
 source_fragreg: Error: Error #3749: AGAL validation failed: Depth output register index out of bounds for source operand 1 at token 1 of fragment program.
 	at flash.display3D::Program3D/upload()
@@ -127,4 +127,4 @@ source_fragreg: Error: Error #3749: AGAL validation failed: Depth output registe
 	at flash.events::EventDispatcher/dispatchEventInternal()
 	at flash.events::EventDispatcher/dispatchEvent()
 	at flash.display::Stage3D/requestContext3D_internal()
-	at MethodInfo-3047()
+	at MethodInfo-3048()
