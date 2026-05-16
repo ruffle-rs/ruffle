@@ -9,12 +9,12 @@ Ruffle re-distribute Adobe's code (and will not even work in general, since
 Adobe's `playerglobal.swf` uses native methods that Ruffle doesn't implement).
 
 Globals are implemented as ActionScript code like `flash/geom/Point.as`. The
-files included from `globals.as` are compiled into a `playerglobal.swf` file
+files included from `globals.as` are compiled into a `playerglobal_avm2.swf` file
 at build time, which is included in the final Ruffle binary and loaded during
 player initialization.
 
 Flash's `playerglobal.swc` (specifically, its `library.swf`)
-cannot be used as a drop-in replacement for our `playerglobal.swf`.
+cannot be used as a drop-in replacement for our `playerglobal_avm2.swf`.
 In addition to potential copyright issues around redistributing Flash's `playerglobal.swc`,
 many of its classes rely on specific 'native' methods being provided
 by the Flash VM, which Ruffle does not implement.
@@ -122,7 +122,7 @@ include in our repository without requiring the entire Flex SDK
 to be installed.
 
 The produced ABC files are then combined into the final
-`playerglobal.swf` (which is written out into the build directory,
+`playerglobal_avm2.swf` (which is written out into the build directory,
 and not checked in to Git).
 
 The `core/build_playerglobal` tool is automatically run by `core`'s build script
