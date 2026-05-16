@@ -51,9 +51,7 @@ const METADATA_FAST_CALL: &str = "FastCall";
 // strip versioning metadata, so we have to allow this metadata name
 const API_METADATA_NAME: &str = "API";
 
-/// If successful, returns a list of paths that were used. If this is run
-/// from a build script, these paths should be printed with
-/// cargo:rerun-if-changed
+/// Builds the `playerglobal_avm2.swf` from the `core/src/avm2/globals/` directory within the repo root.
 pub fn build_avm2_playerglobal(
     repo_root: &Path,
     out_dir: &Path,
