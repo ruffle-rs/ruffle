@@ -38,6 +38,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          token: ${{ secrets.RUFFLE_BUILD_TOKEN }}
 
       - name: Configure release
         id: configure
@@ -108,7 +110,7 @@ jobs:
         if: steps.configure.outputs.enabled == 'true'
         id: create_release
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.RUFFLE_BUILD_TOKEN }}
         run: |
           $RELEASE_SCRIPT release ${{ github.repository }}
 
