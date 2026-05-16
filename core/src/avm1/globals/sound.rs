@@ -486,8 +486,8 @@ fn get_transform<'gc>(
         // Surprisingly `lr` means "right-to-left" and `rl` means "left-to-right".
         obj.set(istr!("ll"), transform.left_to_left.into(), activation)?;
         obj.set(istr!("lr"), transform.right_to_left.into(), activation)?;
-        obj.set(istr!("rl"), transform.left_to_right.into(), activation)?;
         obj.set(istr!("rr"), transform.right_to_right.into(), activation)?;
+        obj.set(istr!("rl"), transform.left_to_right.into(), activation)?;
         Ok(obj.into())
     } else {
         Ok(Value::Undefined)
