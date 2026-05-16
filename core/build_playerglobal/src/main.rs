@@ -10,7 +10,7 @@ mod cli;
 use clap::Parser;
 
 use cli::Commands;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 fn main() {
     let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"));
@@ -19,7 +19,8 @@ fn main() {
     let args = cli::Cli::parse();
     match args.command {
         Commands::Compile { out_dir } => {
-            build_playerglobal::build_avm2_playerglobal(repo_root, out_dir.into(), false).unwrap();
+            build_playerglobal::build_avm2_playerglobal(&repo_root, Path::new(&out_dir), false)
+                .unwrap();
         }
     }
 }
