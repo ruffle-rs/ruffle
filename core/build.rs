@@ -1,10 +1,11 @@
+use std::path::{Path, PathBuf};
+
 fn main() {
-    build_playerglobal::build_avm2_playerglobal(
-        "../".into(),
-        std::env::var("OUT_DIR").unwrap().into(),
-        cfg!(feature = "known_stubs"),
-    )
-    .expect("Failed to build playerglobal_avm2");
+    let repo_root = Path::new("../");
+    let out_dir = PathBuf::from(std::env::var_os("OUT_DIR").unwrap());
+
+    build_playerglobal::build_avm2_playerglobal(repo_root, &out_dir, cfg!(feature = "known_stubs"))
+        .expect("Failed to build playerglobal_avm2");
 
     // This is overly conservative - it will cause us to rebuild playerglobal_avm2.swf
     // if *any* files in this directory change, not just .as files.

@@ -9,7 +9,7 @@ use std::fs;
 use std::fs::File;
 use std::io::ErrorKind;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 use std::process::Command;
 use std::str::FromStr;
 use swf::avm2::read::Reader;
@@ -55,8 +55,8 @@ const API_METADATA_NAME: &str = "API";
 /// from a build script, these paths should be printed with
 /// cargo:rerun-if-changed
 pub fn build_avm2_playerglobal(
-    repo_root: PathBuf,
-    out_dir: PathBuf,
+    repo_root: &Path,
+    out_dir: &Path,
     with_stubs: bool,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let classes_dir = repo_root.join("core/src/avm2/globals/");
@@ -107,10 +107,10 @@ pub fn build_avm2_playerglobal(
     std::fs::remove_file(playerglobal.with_extension("h"))?;
 
     if with_stubs {
-        collect_stubs(&classes_dir, &out_dir)?;
+        collect_stubs(&classes_dir, out_dir)?;
     }
 
-    bytes = write_native_table(&bytes, &out_dir)?;
+    bytes = write_native_table(&bytes, out_dir)?;
 
     let tags = [Tag::DoAbc2(DoAbc2 {
         flags: DoAbc2Flag::LAZY_INITIALIZE,
