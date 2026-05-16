@@ -60,7 +60,7 @@ egui_extras = { version = "0.33.3", default-features = false, optional = true }
 png = { version = "0.18.1", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
-jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "2074e32a174ad45443dcf00f795a86d65cf0153a", optional = true }
+jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "5281b4ae42be742779269a9f1a986101f101f32f", optional = true }
 image = { workspace = true, features = ["tiff"] }
 enum-map = { workspace = true }
 ttf-parser = "0.25"
