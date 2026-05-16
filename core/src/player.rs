@@ -3110,6 +3110,7 @@ impl PlayerBuilder {
             context
                 .avm2
                 .set_optimizer_enabled(self.avm2_optimizer_enabled);
+            Avm1::load_player_globals(context);
             Avm2::load_player_globals(context);
 
             let stage = context.stage;

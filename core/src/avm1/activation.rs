@@ -865,8 +865,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             action,
             self.scope(),
             constant_pool,
-            // `base_clip` should always be a living `MovieClip` so this can't fail
-            MovieClipReference::try_from_stage_object(self, bc).unwrap(),
+            // `base_clip` should always be a living `MovieClip` so this can't fail during "normal" execution
+            // However, the playerglobal doesn't have any movie clips, so we want to fall back to "something" for that
+            MovieClipReference::try_from_stage_object(self, bc).unwrap_or_else(|| {
+                if self.scope.class() == ScopeClass::Global {
+                    MovieClipReference::from_path(self.gc(), WStr::from_units(b"_root"))
+                } else {
+                    panic!("No base clip for function")
+                }
+            }),
         );
         let name = func.name();
         let prototype = Object::new(&self.context.strings, Some(self.prototypes().object));
