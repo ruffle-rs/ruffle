@@ -1421,8 +1421,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if multiname.has_lazy_name() {
             let name_value = self.stack.peek(0);
 
-            if let Value::Object(o) = name_value
-                && o.as_xml_list_object().is_some()
+            if name_value
+                .as_object()
+                .and_then(|o| o.as_xml_list_object())
+                .is_some()
             {
                 // ECMA-357 11.3.1 The delete Operator
                 // If the type of the operand is XMLList, then a TypeError exception is thrown.

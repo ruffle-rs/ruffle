@@ -73,9 +73,7 @@ pub fn q_name_constructor<'gc>(
         (namespace, Some(local_name))
     } else {
         let qname_arg = args.get_optional(0).unwrap_or(Value::Undefined);
-        if let Value::Object(o) = qname_arg
-            && let Some(qname_obj) = o.as_qname_object()
-        {
+        if let Some(qname_obj) = qname_arg.as_object().and_then(|o| o.as_qname_object()) {
             let new_qname = QNameObject::from_name(activation, qname_obj.name().clone());
             return Ok(new_qname.into());
         }

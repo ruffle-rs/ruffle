@@ -50,13 +50,12 @@ pub fn namespace_constructor<'gc>(
             let prefix = args.get_value(0);
             let uri = args.get_value(1);
 
-            let namespace_uri = if let Value::Object(o) = uri
-                && let Some(qname) = o.as_qname_object()
-            {
-                qname.uri(activation.strings()).unwrap_or_else(|| istr!(""))
-            } else {
-                uri.coerce_to_string(activation)?
-            };
+            let namespace_uri =
+                if let Some(qname) = uri.as_object().and_then(|o| o.as_qname_object()) {
+                    qname.uri(activation.strings()).unwrap_or_else(|| istr!(""))
+                } else {
+                    uri.coerce_to_string(activation)?
+                };
             let namespace = Namespace::package(namespace_uri, api_version, activation.strings());
             let prefix_str = prefix.coerce_to_string(activation)?;
 

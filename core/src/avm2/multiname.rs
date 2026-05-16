@@ -1,6 +1,5 @@
 use crate::avm2::Error;
 use crate::avm2::QName;
-use crate::avm2::Value;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_1032, make_error_1080, make_error_1107};
 use crate::avm2::namespace::Namespace;
@@ -299,9 +298,7 @@ impl<'gc> Multiname<'gc> {
         let name = if self.has_lazy_name() {
             let name_value = activation.pop_stack();
 
-            if let Value::Object(o) = name_value
-                && let Some(qname_object) = o.as_qname_object()
-            {
+            if let Some(qname_object) = name_value.as_object().and_then(|o| o.as_qname_object()) {
                 if self.has_lazy_ns() {
                     let _ = activation.pop_stack(); // ignore the ns component
                 }
