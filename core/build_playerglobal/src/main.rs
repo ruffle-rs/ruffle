@@ -1,8 +1,8 @@
-//! Manually builds `playerglobal.swf` without building the `core` crate.
+//! Manually builds `playerglobal_avm2.swf` without building the `core` crate.
 //! This binary is invoked as:
 //! `cargo run --package=build_playerglobal <repo_root> <out_dir>`
 //! where `<repo_root>` is the location of the Ruffle repository,
-//! and `out_dir` is the directory where `playerglobal.swf` should
+//! and `out_dir` is the directory where `playerglobal_avm2.swf` should
 //! be written
 
 mod cli;
@@ -19,7 +19,7 @@ fn main() {
     let args = cli::Cli::parse();
     match args.command {
         Commands::Compile { out_dir } => {
-            build_playerglobal::build_playerglobal(repo_root, out_dir.into(), false).unwrap();
+            build_playerglobal::build_avm2_playerglobal(repo_root, out_dir.into(), false).unwrap();
         }
     }
 }

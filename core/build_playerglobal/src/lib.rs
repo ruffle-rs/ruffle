@@ -57,7 +57,7 @@ const API_METADATA_NAME: &str = "API";
 /// If successful, returns a list of paths that were used. If this is run
 /// from a build script, these paths should be printed with
 /// cargo:rerun-if-changed
-pub fn build_playerglobal(
+pub fn build_avm2_playerglobal(
     repo_root: PathBuf,
     out_dir: PathBuf,
     with_stubs: bool,
@@ -65,9 +65,9 @@ pub fn build_playerglobal(
     let classes_dir = repo_root.join("core/src/avm2/globals/");
     let asc_path = repo_root.join("core/build_playerglobal/asc.jar");
 
-    let out_path = out_dir.join("playerglobal.swf");
+    let out_path = out_dir.join("playerglobal_avm2.swf");
 
-    // This will create 'playerglobal.abc', 'playerglobal.cpp', and 'playerglobal.h'
+    // This will create 'playerglobal_avm2.abc', 'playerglobal_avm2.cpp', and 'playerglobal_avm2.h'
     // in `out_dir`
     let status = Command::new("java")
         .args([
@@ -82,7 +82,7 @@ pub fn build_playerglobal(
             "-outdir",
             &out_dir.to_string_lossy(),
             "-out",
-            "playerglobal",
+            "playerglobal_avm2",
             &classes_dir.join("Toplevel.as").to_string_lossy(),
             &classes_dir.join("globals.as").to_string_lossy(),
         ])
@@ -101,7 +101,7 @@ pub fn build_playerglobal(
         }
     }
 
-    let playerglobal = out_dir.join("playerglobal");
+    let playerglobal = out_dir.join("playerglobal_avm2");
     let mut bytes = std::fs::read(playerglobal.with_extension("abc"))?;
 
     // Cleanup the temporary files written out by 'asc.jar'
@@ -129,7 +129,7 @@ pub fn build_playerglobal(
 }
 
 // Resolve the 'name' field of a `Multiname`. This only handles the cases
-// that we need for our custom `playerglobal.swf` (
+// that we need for our custom `playerglobal_avm2.swf` (
 fn resolve_multiname_name<'a>(abc: &'a AbcFile, multiname: &Multiname) -> Cow<'a, str> {
     if let Multiname::QName { name, .. } | Multiname::Multiname { name, .. } = multiname {
         String::from_utf8_lossy(&abc.constant_pool.strings[name.0 as usize - 1])
