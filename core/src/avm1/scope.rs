@@ -199,10 +199,11 @@ impl<'gc> Scope<'gc> {
             // Traverse the scope chain in search of the value.
             scope.set(name, value, activation)
         } else {
-            // This probably shouldn't happen -- all AVM1 code runs in reference to some MovieClip,
-            // so we should always have a MovieClip scope.
-            // Define on the top-level scope.
-            debug_assert!(false, "Scope::set: No top-level movie clip scope");
+            debug_assert!(
+                self.class == ScopeClass::Global,
+                "Scope::set: No top-level movie clip scope"
+            );
+            // This should only happen for playerglobals; define it on the top level scope.
             self.locals().set(name, value, activation)
         }
     }

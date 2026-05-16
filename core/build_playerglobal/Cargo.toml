@@ -18,3 +18,4 @@ swf = { path = "../../swf" }
 clap = { workspace = true }
 regex = { workspace = true }
 walkdir = { workspace = true }
+rascal = { workspace = true }
