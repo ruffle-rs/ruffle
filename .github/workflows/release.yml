@@ -537,9 +537,27 @@ jobs:
         working-directory: web
         run: npm run docs
 
+      - name: Configure npm tag
+        id: npm_tag
+        env:
+          RELEASE_CHANNEL: ${{ needs.create-release.outputs.release_channel }}
+        run: |
+          if [[ "$RELEASE_CHANNEL" == "stable" ]]; then
+            tag=latest
+          elif [[ "$RELEASE_CHANNEL" == "nightly" ]]; then
+            tag=nightly
+          else
+            echo "Unknown npm tag mapping, skipping npm publish"
+            tag=
+          fi
+          echo "tag=$tag" | tee -a $GITHUB_OUTPUT
+
       - name: Publish npm package
+        if: steps.npm_tag.outputs.tag != ''
+        env:
+          NPM_TAG: ${{ steps.npm_tag.outputs.tag }}
         # npm scoped packages are private by default, explicitly make public
-        run: npm publish --tag latest --access public --provenance
+        run: npm publish --tag "$NPM_TAG" --access public --provenance
         continue-on-error: true
         working-directory: web/packages/selfhosted/dist
 
