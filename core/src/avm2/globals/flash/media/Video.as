@@ -1,5 +1,6 @@
 package flash.media {
     import __ruffle__.stub_method;
+    import __ruffle__.stub_getter;
 
     import flash.display.DisplayObject
     import flash.net.NetStream
@@ -34,11 +35,13 @@ package flash.media {
         }
 
         public function get videoWidth():int {
-            return this._videoWidth;
+            stub_getter("flash.media.Video", "videoWidth");
+            return 0;
         }
 
         public function get videoHeight():int {
-            return this._videoHeight;
+            stub_getter("flash.media.Video", "videoHeight");
+            return 0;
         }
 
         public native function attachNetStream(netStream:NetStream):void;
