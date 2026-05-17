@@ -1,0 +1,12 @@
+// new Sound(o)
+o.toString()
+// s1.setVolume(50)
+// s1.getVolume()
+50
+// s2.getVolume()
+25
+// s2.setVolume(5)
+// s2.getVolume()
+undefined
+// s2.getVolume()
+25

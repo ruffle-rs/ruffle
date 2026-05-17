@@ -1,0 +1,44 @@
+// s1.getVolume()
+50
+// s1.getPan()
+90
+// s1.getTransform()
+[object Object]
+  rl: 40
+  rr: 30
+  lr: 20
+  ll: 10
+
+// s1.getVolume()
+10
+// s1.getPan()
+50
+// s1.getTransform()
+[object Object]
+  rl: 80
+  rr: 70
+  lr: 60
+  ll: 50
+
+// s1.getVolume()
+50
+// s1.getPan()
+90
+// s1.getTransform()
+[object Object]
+  rl: 40
+  rr: 30
+  lr: 20
+  ll: 10
+
+// s1.getVolume()
+50
+// s1.getPan()
+90
+// s1.getTransform()
+[object Object]
+  rl: 40
+  rr: 30
+  lr: 20
+  ll: 10
+
