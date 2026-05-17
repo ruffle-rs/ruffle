@@ -924,7 +924,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 if matches {
                     #[cfg(feature = "avm_debug")]
-                    original_error.log(self, "Caught exception");
+                    {
+                        let stringified = original_error.to_string(self);
+                        tracing::warn!("Caught exception: {}", stringified);
+                    }
 
                     self.reset_stack();
                     self.push_stack(error);
