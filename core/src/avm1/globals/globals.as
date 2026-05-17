@@ -4,3 +4,5 @@
 // You should not reference any display objects here; this is not going to be loaded as a "real" movie.
 
 // For convenience, the use of `#include "foo.as"` is supported.
+
+trace = ASnative(100, 4);

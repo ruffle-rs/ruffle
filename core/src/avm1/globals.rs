@@ -677,7 +677,7 @@ pub fn create_globals<'gc>(
         "unescape" => method(UNESCAPE; DONT_ENUM);
         "parseInt" => method(PARSE_INT; DONT_ENUM);
         "parseFloat" => method(PARSE_FLOAT; DONT_ENUM);
-        "trace" => method(TRACE; DONT_ENUM);
+        "trace" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
 
         use default;
         "updateAfterEvent" => method(update_after_event; DONT_ENUM); // TODO: (9, 0)
