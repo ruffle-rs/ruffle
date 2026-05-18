@@ -429,11 +429,7 @@ pub fn get_stage3ds<'gc>(
 
     if let Some(stage) = this.as_display_object().and_then(|this| this.as_stage()) {
         let storage = VectorStorage::from_values(
-            stage
-                .stage3ds()
-                .iter()
-                .map(|obj| Value::Object(*obj))
-                .collect(),
+            stage.stage3ds().iter().map(|s| (*s).into()).collect(),
             false,
             Some(activation.avm2().classes().stage3d.inner_class_definition()),
         );
