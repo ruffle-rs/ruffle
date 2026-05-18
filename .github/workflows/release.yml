@@ -124,9 +124,11 @@ jobs:
         include:
           - build_name: linux-x86_64
             os: ubuntu-24.04
+            DESKTOP_FEATURES: jpegxr
 
           - build_name: linux-aarch64
             os: ubuntu-24.04-arm
+            DESKTOP_FEATURES: jpegxr
 
           # Mac does two Rust builds to make a universal binary
           - build_name: macos-x86_64
