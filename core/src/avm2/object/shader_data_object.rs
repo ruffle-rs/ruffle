@@ -2,10 +2,11 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::pixel_bender::PixelBenderShaderHandle;
 use std::cell::Cell;
@@ -28,10 +29,6 @@ pub fn shader_data_allocator<'gc>(
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct ShaderDataObject<'gc>(pub Gc<'gc, ShaderDataObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct ShaderDataObjectWeak<'gc>(pub GcWeak<'gc, ShaderDataObjectData<'gc>>);
 
 impl fmt::Debug for ShaderDataObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -58,13 +55,13 @@ impl ShaderDataObject<'_> {
 #[repr(C, align(8))]
 pub struct ShaderDataObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::ShaderDataObject>,
 
     shader: Cell<Option<PixelBenderShaderHandle>>,
 }
 
 impl<'gc> TObject<'gc> for ShaderDataObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

@@ -2,13 +2,14 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::value::Value;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::BitmapRawData;
 use crate::context::RenderContext;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use naga_agal::AgalError;
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::{
@@ -27,11 +28,7 @@ use super::{ClassObject, IndexBuffer3DObject, Stage3DObject, VertexBuffer3DObjec
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct Context3DObject<'gc>(pub Gc<'gc, Context3DData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct Context3DObjectWeak<'gc>(pub GcWeak<'gc, Context3DData<'gc>>);
+pub struct Context3DObject<'gc>(pub Gc<'gc, Context3DObjectData<'gc>>);
 
 impl<'gc> Context3DObject<'gc> {
     pub fn from_context(
@@ -43,7 +40,7 @@ impl<'gc> Context3DObject<'gc> {
 
         Context3DObject(Gc::new(
             activation.gc(),
-            Context3DData {
+            Context3DObjectData {
                 base: ScriptObjectData::new(class),
                 render_context: Cell::new(Some(context)),
                 stage3d,
@@ -497,9 +494,9 @@ impl<'gc> Context3DObject<'gc> {
 #[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
-pub struct Context3DData<'gc> {
+pub struct Context3DObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::Context3DObject>,
 
     #[collect(require_static)]
     render_context: Cell<Option<Box<dyn Context3D>>>,
@@ -509,7 +506,7 @@ pub struct Context3DData<'gc> {
 
 impl<'gc> TObject<'gc> for Context3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 

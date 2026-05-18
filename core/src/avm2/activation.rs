@@ -13,11 +13,11 @@ use crate::avm2::error::{
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
+use crate::avm2::object::TObject;
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
 };
-use crate::avm2::object::{Object, TObject};
 use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::scope::{Scope, ScopeChain, search_scope_stack};
 use crate::avm2::script::Script;
@@ -1186,10 +1186,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pop_stack()
             .coerce_to_type(self, bound_superclass_object.inner_class_definition())?;
 
-        let receiver = receiver
-            .null_check(self, Some(&multiname))?
-            .as_object()
-            .expect("Super ops should not appear in primitive functions");
+        let receiver = receiver.as_object_null_check(
+            self,
+            Some(&multiname),
+            "Super ops should not appear in primitive functions",
+        )?;
 
         let value = bound_superclass_object.call_super(&multiname, receiver, args, self)?;
 
@@ -1420,12 +1421,16 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // main path for dynamic names
         if multiname.has_lazy_name() {
             let name_value = self.stack.peek(0);
-            if matches!(name_value, Value::Object(Object::XmlListObject(_))) {
+
+            if let Value::Object(o) = name_value
+                && o.as_xml_list_object().is_some()
+            {
                 // ECMA-357 11.3.1 The delete Operator
                 // If the type of the operand is XMLList, then a TypeError exception is thrown.
                 return Err(make_error_1119(self));
             }
         }
+
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack().null_check(self, Some(&multiname))?;
 
@@ -1448,10 +1453,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pop_stack()
             .coerce_to_type(self, bound_superclass_object.inner_class_definition())?;
 
-        let receiver = receiver
-            .null_check(self, Some(&multiname))?
-            .as_object()
-            .expect("Super ops should not appear in primitive functions");
+        let receiver = receiver.as_object_null_check(
+            self,
+            Some(&multiname),
+            "Super ops should not appear in primitive functions",
+        )?;
 
         let value = bound_superclass_object.get_super(&multiname, receiver, self)?;
 
@@ -1473,10 +1479,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             .pop_stack()
             .coerce_to_type(self, bound_superclass_object.inner_class_definition())?;
 
-        let receiver = receiver
-            .null_check(self, Some(&multiname))?
-            .as_object()
-            .expect("Super ops should not appear in primitive functions");
+        let receiver = receiver.as_object_null_check(
+            self,
+            Some(&multiname),
+            "Super ops should not appear in primitive functions",
+        )?;
 
         bound_superclass_object.set_super(&multiname, value, receiver, self)?;
 
@@ -1654,11 +1661,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_get_slot(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let stack_top = self.stack.stack_top();
 
-        let object = stack_top
-            .get()
-            .null_check(self, None)?
-            .as_object()
-            .expect("Cannot get_slot on primitive");
+        let object =
+            stack_top
+                .get()
+                .as_object_null_check(self, None, "Cannot get_slot on primitive")?;
         let value = object.get_slot(index);
 
         // We use `stack_top` instead of `pop_stack` and `push_stack` here
@@ -1672,11 +1678,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_slot(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
-        let object = self
-            .pop_stack()
-            .null_check(self, None)?
-            .as_object()
-            .expect("Cannot set_slot on primitive");
+        let object =
+            self.pop_stack()
+                .as_object_null_check(self, None, "Cannot set_slot on primitive")?;
 
         object.set_slot(index, value, self)?;
 
@@ -1685,11 +1689,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_slot_coerce_i(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
-        let object = self
-            .pop_stack()
-            .null_check(self, None)?
-            .as_object()
-            .expect("Cannot set_slot on primitive");
+        let object =
+            self.pop_stack()
+                .as_object_null_check(self, None, "Cannot set_slot on primitive")?;
 
         let value = value.coerce_to_i32(self)?;
 
@@ -1700,11 +1702,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_set_slot_no_coerce(&mut self, index: usize) -> Result<(), Error<'gc>> {
         let value = self.pop_stack();
-        let object = self
-            .pop_stack()
-            .null_check(self, None)?
-            .as_object()
-            .expect("Cannot set_slot on primitive");
+        let object =
+            self.pop_stack()
+                .as_object_null_check(self, None, "Cannot set_slot on primitive")?;
 
         object.set_slot_no_coerce(index, value, self.gc());
 
@@ -1751,11 +1751,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     fn op_construct_slot(&mut self, index: usize, arg_count: u32) -> Result<(), Error<'gc>> {
         let args = self.get_args(arg_count);
-        let source = self
-            .pop_stack()
-            .null_check(self, None)?
-            .as_object()
-            .expect("Cannot get_slot on primitive");
+        let source =
+            self.pop_stack()
+                .as_object_null_check(self, None, "Cannot get_slot on primitive")?;
 
         let ctor = source.get_slot(index);
         let constructed_object = ctor.construct(self, args)?;
@@ -1842,7 +1840,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let base_class = base_value.coerce_to_type(self, class_class)?;
 
         let base_class = match base_class {
-            Value::Object(Object::ClassObject(c)) => Some(c),
+            Value::Object(o) if let Some(class_obj) = o.as_class_object() => Some(class_obj),
             Value::Null => None,
             _ => unreachable!("Coercion to Class must return Class or null"),
         };
@@ -2608,26 +2606,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Value::Object(o) => {
                 let classes = self.avm2().class_defs();
 
-                match o {
-                    Object::FunctionObject(_) => {
-                        if o.instance_class() == classes.function {
-                            istr!(self, "function")
-                        } else {
-                            // Subclasses always have a typeof = "object"
-                            istr!(self, "object")
-                        }
+                if o.as_function_object().is_some() {
+                    if o.instance_class() == classes.function {
+                        istr!(self, "function")
+                    } else {
+                        // Subclasses always have a typeof = "object"
+                        istr!(self, "object")
                     }
-                    Object::XmlObject(_) | Object::XmlListObject(_) => {
-                        if o.instance_class() == classes.xml_list
-                            || o.instance_class() == classes.xml
-                        {
-                            istr!(self, "xml")
-                        } else {
-                            // Subclasses always have a typeof = "object"
-                            istr!(self, "object")
-                        }
+                } else if o.as_xml_object().is_some() || o.as_xml_list_object().is_some() {
+                    if o.instance_class() == classes.xml_list || o.instance_class() == classes.xml {
+                        istr!(self, "xml")
+                    } else {
+                        // Subclasses always have a typeof = "object"
+                        istr!(self, "object")
                     }
-                    _ => istr!(self, "object"),
+                } else {
+                    istr!(self, "object")
                 }
             }
             Value::String(_) => istr!(self, "string"),
@@ -2665,10 +2659,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::EscXElem`
     fn op_esc_elem(&mut self) -> Result<(), Error<'gc>> {
+        // We explicitly call toXMLString on Xml/XmlListObject since the toString of these objects have special handling for simple content, which is not used here.
         let r = match self.pop_stack() {
-            // We explicitly call toXMLString on Xml/XmlListObject since the toString of these objects have special handling for simple content, which is not used here.
-            Value::Object(Object::XmlObject(x)) => x.as_xml_string(self),
-            Value::Object(Object::XmlListObject(x)) => x.as_xml_string(self),
+            Value::Object(o) if let Some(x) = o.as_xml_object() => x.as_xml_string(self),
+            Value::Object(o) if let Some(x) = o.as_xml_list_object() => x.as_xml_string(self),
             // contrary to the avmplus documentation, this escapes the value on the top of the stack using EscapeElementValue from ECMA-357 *NOT* EscapeAttributeValue.
             x => AvmString::new(self.gc(), escape_element_value(x.coerce_to_string(self)?)),
         };

@@ -5,6 +5,7 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::make_error_1064;
 use crate::avm2::function::{BoundMethod, FunctionArgs};
 use crate::avm2::method::Method;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::{ScriptObject, ScriptObjectData};
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::scope::ScopeChain;
@@ -13,7 +14,7 @@ use crate::context::UpdateContext;
 use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
+use gc_arena::{Collect, Gc, Mutation, lock::Lock};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 
@@ -21,10 +22,6 @@ use ruffle_macros::istr;
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct FunctionObject<'gc>(pub Gc<'gc, FunctionObjectData<'gc>>);
-
-#[derive(Collect, Clone, Copy, Debug)]
-#[collect(no_drop)]
-pub struct FunctionObjectWeak<'gc>(pub GcWeak<'gc, FunctionObjectData<'gc>>);
 
 impl fmt::Debug for FunctionObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -40,7 +37,7 @@ impl fmt::Debug for FunctionObject<'_> {
 #[repr(C, align(8))]
 pub struct FunctionObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::FunctionObject>,
 
     /// Executable code
     exec: BoundMethod<'gc>,
@@ -154,7 +151,7 @@ impl<'gc> FunctionObject<'gc> {
 
 impl<'gc> TObject<'gc> for FunctionObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     fn to_string(&self, mc: &Mutation<'gc>) -> AvmString<'gc> {

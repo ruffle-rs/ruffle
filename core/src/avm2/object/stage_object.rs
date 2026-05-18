@@ -3,10 +3,11 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, TObject};
 use crate::display_object::DisplayObject;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::fmt::Debug;
 
@@ -14,16 +15,12 @@ use std::fmt::Debug;
 #[collect(no_drop)]
 pub struct StageObject<'gc>(pub Gc<'gc, StageObjectData<'gc>>);
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct StageObjectWeak<'gc>(pub GcWeak<'gc, StageObjectData<'gc>>);
-
 #[derive(Clone, Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
 pub struct StageObjectData<'gc> {
     /// The base data common to all AVM2 objects.
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::StageObject>,
 
     /// The associated display object.
     display_object: DisplayObject<'gc>,
@@ -95,7 +92,7 @@ impl<'gc> StageObject<'gc> {
 
 impl<'gc> TObject<'gc> for StageObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 

@@ -1,9 +1,10 @@
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::{Activation, ClassObject, Error};
 use crate::character::Character;
 use crate::font::Font;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 use std::fmt;
 
@@ -40,10 +41,6 @@ pub fn font_allocator<'gc>(
 #[collect(no_drop)]
 pub struct FontObject<'gc>(pub Gc<'gc, FontObjectData<'gc>>);
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct FontObjectWeak<'gc>(pub GcWeak<'gc, FontObjectData<'gc>>);
-
 impl<'gc> FontObject<'gc> {
     pub fn for_font(mc: &Mutation<'gc>, class: ClassObject<'gc>, font: Font<'gc>) -> Object<'gc> {
         let base = ScriptObjectData::new(class);
@@ -64,7 +61,7 @@ impl<'gc> FontObject<'gc> {
 
 impl<'gc> TObject<'gc> for FontObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 
@@ -73,7 +70,7 @@ impl<'gc> TObject<'gc> for FontObject<'gc> {
 #[repr(C, align(8))]
 pub struct FontObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::FontObject>,
 
     font: Option<Font<'gc>>,
 }

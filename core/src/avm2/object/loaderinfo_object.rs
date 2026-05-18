@@ -1,6 +1,7 @@
 //! Loader-info object
 
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{EventObject, Object, StageObject, TObject};
 use crate::avm2::{Avm2, Error};
@@ -10,7 +11,7 @@ use crate::loader::ContentType;
 use crate::tag_utils::SwfMovie;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::RefLock};
+use gc_arena::{Collect, Gc, Mutation, lock::RefLock};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, Ref};
 use std::sync::Arc;
@@ -56,10 +57,6 @@ impl LoaderStream<'_> {
 #[collect(no_drop)]
 pub struct LoaderInfoObject<'gc>(pub Gc<'gc, LoaderInfoObjectData<'gc>>);
 
-#[derive(Collect, Clone, Copy, Debug)]
-#[collect(no_drop)]
-pub struct LoaderInfoObjectWeak<'gc>(pub GcWeak<'gc, LoaderInfoObjectData<'gc>>);
-
 impl fmt::Debug for LoaderInfoObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("LoaderInfoObject")
@@ -73,7 +70,7 @@ impl fmt::Debug for LoaderInfoObject<'_> {
 #[repr(C, align(8))]
 pub struct LoaderInfoObjectData<'gc> {
     /// All normal script data.
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::LoaderInfoObject>,
 
     /// The loaded stream that this gets its info from.
     loaded_stream: RefLock<LoaderStream<'gc>>,
@@ -289,6 +286,6 @@ impl<'gc> LoaderInfoObject<'gc> {
 
 impl<'gc> TObject<'gc> for LoaderInfoObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

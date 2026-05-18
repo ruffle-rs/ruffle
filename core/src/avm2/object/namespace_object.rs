@@ -4,11 +4,12 @@ use crate::avm2::Error;
 use crate::avm2::Namespace;
 use crate::avm2::activation::Activation;
 use crate::avm2::object::TObject;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::value::Value;
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_macros::istr;
 
@@ -16,10 +17,6 @@ use ruffle_macros::istr;
 #[derive(Collect, Clone, Copy)]
 #[collect(no_drop)]
 pub struct NamespaceObject<'gc>(pub Gc<'gc, NamespaceObjectData<'gc>>);
-
-#[derive(Collect, Clone, Copy, Debug)]
-#[collect(no_drop)]
-pub struct NamespaceObjectWeak<'gc>(pub GcWeak<'gc, NamespaceObjectData<'gc>>);
 
 impl fmt::Debug for NamespaceObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -34,7 +31,7 @@ impl fmt::Debug for NamespaceObject<'_> {
 #[repr(C, align(8))]
 pub struct NamespaceObjectData<'gc> {
     /// All normal script data.
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::NamespaceObject>,
 
     /// The namespace name this object is associated with.
     namespace: Namespace<'gc>,
@@ -92,7 +89,7 @@ impl<'gc> NamespaceObject<'gc> {
 
 impl<'gc> TObject<'gc> for NamespaceObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     fn property_is_enumerable(&self, name: AvmString<'gc>) -> bool {

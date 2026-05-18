@@ -2,13 +2,14 @@
 
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::backend::audio::SoundInstanceHandle;
 use crate::context::UpdateContext;
 use crate::display_object::SoundTransform;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, RefCell};
 
@@ -37,10 +38,6 @@ pub fn sound_channel_allocator<'gc>(
 #[collect(no_drop)]
 pub struct SoundChannelObject<'gc>(pub Gc<'gc, SoundChannelObjectData<'gc>>);
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct SoundChannelObjectWeak<'gc>(pub GcWeak<'gc, SoundChannelObjectData<'gc>>);
-
 impl fmt::Debug for SoundChannelObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("SoundChannelObject")
@@ -54,7 +51,7 @@ impl fmt::Debug for SoundChannelObject<'_> {
 #[repr(C, align(8))]
 pub struct SoundChannelObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::SoundChannelObject>,
 
     /// The sound this object holds.
     sound_channel_data: RefCell<SoundChannelData>,
@@ -195,6 +192,6 @@ impl<'gc> SoundChannelObject<'gc> {
 
 impl<'gc> TObject<'gc> for SoundChannelObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }

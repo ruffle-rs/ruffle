@@ -3,12 +3,13 @@
 use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::dynamic_map::DynamicKey;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::value::Value;
 use crate::string::AvmString;
 use core::fmt;
-use gc_arena::{Collect, Gc, GcWeak, Mutation};
+use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
 
 /// A class instance allocator that allocates Dictionary objects.
@@ -30,10 +31,6 @@ pub fn dictionary_allocator<'gc>(
 #[collect(no_drop)]
 pub struct DictionaryObject<'gc>(pub Gc<'gc, DictionaryObjectData<'gc>>);
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct DictionaryObjectWeak<'gc>(pub GcWeak<'gc, DictionaryObjectData<'gc>>);
-
 impl fmt::Debug for DictionaryObject<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         f.debug_struct("DictionaryObject")
@@ -47,7 +44,7 @@ impl fmt::Debug for DictionaryObject<'_> {
 #[repr(C, align(8))]
 pub struct DictionaryObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::DictionaryObject>,
 }
 
 impl<'gc> DictionaryObject<'gc> {
@@ -79,7 +76,7 @@ impl<'gc> DictionaryObject<'gc> {
 
 impl<'gc> TObject<'gc> for DictionaryObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 
     // Calling `setPropertyIsEnumerable` on a `Dictionary` has no effect -

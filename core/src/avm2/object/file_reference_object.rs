@@ -1,9 +1,10 @@
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, Object, TObject};
 use crate::avm2::{Activation, Error};
 use crate::backend::ui::FileDialogResult;
 use crate::context::UpdateContext;
-use gc_arena::{Collect, DynamicRoot, Gc, GcWeak, Rootable};
+use gc_arena::{Collect, DynamicRoot, Gc, Rootable};
 use ruffle_common::utils::HasPrefixField;
 use std::cell::{Cell, Ref, RefCell};
 use std::fmt;
@@ -29,10 +30,6 @@ pub fn file_reference_allocator<'gc>(
 #[collect(no_drop)]
 pub struct FileReferenceObject<'gc>(pub Gc<'gc, FileReferenceObjectData<'gc>>);
 
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct FileReferenceObjectWeak<'gc>(pub GcWeak<'gc, FileReferenceObjectData<'gc>>);
-
 #[derive(Clone)]
 pub struct FileReferenceObjectHandle(DynamicRoot<Rootable![FileReferenceObjectData<'_>]>);
 
@@ -48,7 +45,7 @@ impl FileReferenceObjectHandle {
 
 impl<'gc> TObject<'gc> for FileReferenceObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 
@@ -82,7 +79,7 @@ pub enum FileReference {
 #[repr(C, align(8))]
 pub struct FileReferenceObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::FileReferenceObject>,
 
     reference: RefCell<FileReference>,
 

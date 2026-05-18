@@ -1,9 +1,10 @@
 //! Object representation for VertexBuffer3D objects
 
 use crate::avm2::activation::Activation;
+use crate::avm2::object::kind;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{Object, TObject};
-use gc_arena::{Collect, Gc, GcWeak};
+use gc_arena::{Collect, Gc};
 use ruffle_common::utils::HasPrefixField;
 use ruffle_render::backend::VertexBuffer;
 use std::rc::Rc;
@@ -13,10 +14,6 @@ use super::Context3DObject;
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
 pub struct VertexBuffer3DObject<'gc>(pub Gc<'gc, VertexBuffer3DObjectData<'gc>>);
-
-#[derive(Clone, Collect, Copy, Debug)]
-#[collect(no_drop)]
-pub struct VertexBuffer3DObjectWeak<'gc>(pub GcWeak<'gc, VertexBuffer3DObjectData<'gc>>);
 
 impl<'gc> VertexBuffer3DObject<'gc> {
     pub fn from_handle(
@@ -57,7 +54,7 @@ impl<'gc> VertexBuffer3DObject<'gc> {
 #[repr(C, align(8))]
 pub struct VertexBuffer3DObjectData<'gc> {
     /// Base script object
-    base: ScriptObjectData<'gc>,
+    base: ScriptObjectData<'gc, kind::VertexBuffer3DObject>,
 
     context3d: Context3DObject<'gc>,
 
@@ -72,7 +69,7 @@ pub struct VertexBuffer3DObjectData<'gc> {
 
 impl<'gc> TObject<'gc> for VertexBuffer3DObject<'gc> {
     fn gc_base(&self) -> Gc<'gc, ScriptObjectData<'gc>> {
-        HasPrefixField::as_prefix_gc(self.0)
+        ScriptObjectData::erase_kind(HasPrefixField::as_prefix_gc(self.0))
     }
 }
 
