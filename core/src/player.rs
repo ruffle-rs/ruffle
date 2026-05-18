@@ -1623,6 +1623,15 @@ impl Player {
             }
 
             let cur_over_object = context.mouse_data.hovered;
+            // If the object under a stationary mouse changed, process it through
+            // the normal rollover path. Preserve hover driven by keyboard focus.
+            if skip_mouse_hover
+                && !InteractiveObject::option_ptr_eq(cur_over_object, context.focus_tracker.get())
+                && !InteractiveObject::option_ptr_eq(cur_over_object, new_over_object)
+            {
+                skip_mouse_hover = false;
+            }
+
             // Check if a new object has been hovered over.
             if !skip_mouse_hover
                 && !InteractiveObject::option_ptr_eq(cur_over_object, new_over_object)
@@ -1744,19 +1753,6 @@ impl Player {
             }
             if !skip_mouse_hover && !new_over_object_updated {
                 context.mouse_data.hovered = new_over_object;
-            }
-
-            // Even when hover events are skipped (mouse did not move), update the cursor
-            // if the object under the mouse changed, e.g. an animated object walked
-            // under a stationary cursor.
-            if skip_mouse_hover
-                && !InteractiveObject::option_ptr_eq(cur_over_object, new_over_object)
-            {
-                context.mouse_data.hovered = new_over_object;
-                new_cursor = match new_over_object {
-                    Some(obj) => obj.mouse_cursor(context),
-                    None => MouseCursor::Arrow,
-                };
             }
 
             // When the mouse moves within the same object, re-evaluate the cursor,
