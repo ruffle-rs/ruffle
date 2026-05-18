@@ -4,7 +4,6 @@ use crate::avm2::activation::Activation;
 use crate::avm2::error::{make_error_1032, make_error_1080, make_error_1107};
 use crate::avm2::namespace::Namespace;
 use crate::avm2::script::TranslationUnit;
-use crate::avm2::{Object, Value};
 use crate::string::{AvmString, StringContext, WStr, WString};
 use bitflags::bitflags;
 use gc_arena::Gc;
@@ -299,7 +298,7 @@ impl<'gc> Multiname<'gc> {
         let name = if self.has_lazy_name() {
             let name_value = activation.pop_stack();
 
-            if let Value::Object(Object::QNameObject(qname_object)) = name_value {
+            if let Some(qname_object) = name_value.as_object().and_then(|o| o.as_qname_object()) {
                 if self.has_lazy_ns() {
                     let _ = activation.pop_stack(); // ignore the ns component
                 }
