@@ -4,5 +4,5 @@ _global.uncasedcallback with input: MixedCase
 
 _global.uncasedcallback with input: ALL_CAPS
 
-_global.CasedCallback with input: Case Sensative
+_global.CasedCallback with input: Cased Function
 
