@@ -15,20 +15,12 @@ package flash.display {
         private native function requestContext3D_internal(context3DRenderMode:String, profiles:Vector.<String>):void;
 
         public function requestContext3D(context3DRenderMode:String = "auto", profile:String = "baseline"):void {
-            // Several SWFS (the examples from the Context3D documentation, and the Starling framework)
-            // rely on the `context3DCreate` being fired asynchronously - they initialize variables
-            // after the call to `requestContext3D`, and then use those variables in the event handler.
-            // Currently, we create a `Context3D` synchronously, so we need to delay the event dispatch
-            var stage3d = this;
             this.checkProfile(profile);
-            setTimeout(function() {
-                stage3d.requestContext3D_internal(context3DRenderMode, Vector.<String>([profile]));
-            }, 0);
+            this.requestContext3D_internal(context3DRenderMode, Vector.<String>([profile]));
         }
 
         [API("692")]
         public function requestContext3DMatchingProfiles(profiles:Vector.<String>):void {
-            var stage3d = this;
             var profiles = profiles.concat();
             if (profiles.length == 0) {
                 throw new ArgumentError("Error #2008: Parameter profiles must be one of the accepted values.", 2008);
@@ -36,9 +28,7 @@ package flash.display {
             for each (var profile in profiles) {
                 this.checkProfile(profile);
             }
-            setTimeout(function() {
-                stage3d.requestContext3D_internal("auto", profiles);
-            }, 0);
+            this.requestContext3D_internal("auto", profiles);
         }
 
         private function checkProfile(profile:String):Boolean {
