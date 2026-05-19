@@ -1068,7 +1068,7 @@ impl Player {
         let changed_mouse_buttons = self
             .input
             .get_mouse_down_buttons()
-            .symmetrical_difference(prev_mouse_buttons);
+            .symmetric_difference(prev_mouse_buttons);
 
         if cfg!(feature = "avm_debug") {
             match event {
