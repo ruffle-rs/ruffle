@@ -1532,9 +1532,9 @@ dependencies = [
 
 [[package]]
 name = "enumset"
-version = "1.1.12"
+version = "1.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f96a4a12fe60ac746ae295a1a4ecb5bb02debc20856506c8635288065f142de"
+checksum = "839c4174b41e75c8f7306110b2c51996a293b8d1d850edd529011841d9fede7d"
 dependencies = [
  "enumset_derive",
 ]
@@ -4334,13 +4334,14 @@ checksum = "c3d6831663a5098ea164f89cff59c6284e95f4e3c76ce9848d4529f5ccca9bde"
 
 [[package]]
 name = "rascal"
-version = "0.3.1"
+version = "0.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a00e4fbee579ba54f05a73504b5f4f0c49166f9bf0c9b6bc1e1aadc7ca9002b"
+checksum = "186ea0f6eca0e5e29b22640d9af949d510f211184c1b58e31b84a5ae34ed25a8"
 dependencies = [
  "annotate-snippets",
  "byteorder",
  "indexmap",
+ "log",
  "serde",
  "swf 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
  "winnow 1.0.2",
