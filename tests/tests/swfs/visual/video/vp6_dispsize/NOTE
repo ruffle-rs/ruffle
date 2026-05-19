@@ -1,0 +1,10 @@
+The SWF here was taken from video/colorconversion/vp6,
+then two bytes in the video frame header were changed
+manually in a hex editor to bogus (too small) values.
+These fields encode the "displayed size" of the video
+frame (in 16x16 macroblocks), after its "encoded size".
+
+The VP6 spec even defines a few scaling modes, so the
+encoded data could be different in size than the final
+output frame. Looks like Flash Player doesn't support
+this, and just ignores these fields in the header.
