@@ -124,24 +124,24 @@ jobs:
         include:
           - build_name: linux-x86_64
             os: ubuntu-24.04
-            DESKTOP_FEATURES: jpegxr
+            DESKTOP_FEATURES: jpegxr,fontconfig-dlopen
 
           - build_name: linux-aarch64
             os: ubuntu-24.04-arm
-            DESKTOP_FEATURES: jpegxr
+            DESKTOP_FEATURES: jpegxr,fontconfig-dlopen
 
           # Mac does two Rust builds to make a universal binary
           - build_name: macos-x86_64
             os: macos-15
             target: x86_64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 10.7
-            DESKTOP_FEATURES: sandbox,jpegxr
+            DESKTOP_FEATURES: sandbox,jpegxr,fontconfig-dlopen
 
           - build_name: macos-aarch64
             os: macos-15
             target: aarch64-apple-darwin
             MACOSX_DEPLOYMENT_TARGET: 11.0
-            DESKTOP_FEATURES: sandbox,jpegxr
+            DESKTOP_FEATURES: sandbox,jpegxr,fontconfig-dlopen
 
           - build_name: windows-x86_32
             os: windows-2025

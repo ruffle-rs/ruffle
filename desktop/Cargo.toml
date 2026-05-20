@@ -56,7 +56,7 @@ walkdir.workspace = true
 async-task = "4.7.1"
 
 [target.'cfg(unix)'.dependencies]
-fontconfig = { version = "0.10.2", optional = true, features = ["dlopen"] }
+fontconfig = { version = "0.10.2", optional = true }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ashpd = "0.12.1"
@@ -90,6 +90,7 @@ software_video = ["ruffle_video_software"]
 external_video = ["ruffle_video_external"]
 tracy = ["tracing-tracy", "ruffle_render_wgpu/profile-with-tracy"]
 fontconfig = ["dep:fontconfig"]
+fontconfig-dlopen = ["fontconfig", "fontconfig/dlopen"]
 
 # wgpu features
 render_debug_labels = ["ruffle_render_wgpu/render_debug_labels"]
