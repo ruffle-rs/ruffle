@@ -335,11 +335,14 @@ impl UiBackend for DesktopUiBackend {
         query: &FontQuery,
         register: &mut dyn FnMut(FontDefinition),
     ) -> Vec<FontQuery> {
-        #[cfg(feature = "fontconfig")]
-        return fontconfig_sort_device_fonts(query, register);
-
-        #[cfg(not(feature = "fontconfig"))]
-        return Vec::new();
+        cfg_select! {
+            all(unix, feature = "fontconfig") => {
+                fontconfig_sort_device_fonts(query, register)
+            }
+            _ => {
+                Vec::new()
+            }
+        }
     }
 
     // Unused on desktop
@@ -440,7 +443,7 @@ fn load_fontdb_font(name: String, face: &FaceInfo) -> Result<FontDefinition<'sta
     }
 }
 
-#[cfg(feature = "fontconfig")]
+#[cfg(all(unix, feature = "fontconfig"))]
 fn fontconfig_sort_device_fonts(
     query: &FontQuery,
     register: &mut dyn FnMut(FontDefinition),
