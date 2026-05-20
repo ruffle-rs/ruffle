@@ -1,5 +1,5 @@
 use crate::avm2::bytearray::Endian;
-use crate::avm2::error::{make_error_2162, make_error_2165};
+use crate::avm2::error::{Error2004Type, make_error_2004, make_error_2162, make_error_2165};
 use crate::avm2::globals::slots::{
     flash_display_shader as shader_slots, flash_display_shader_input as shader_input_slots,
     flash_display_shader_job as shader_job_slots,
@@ -354,7 +354,7 @@ pub fn start<'gc>(
                     .map(|p| Value::from(*p as f64));
                 vector.replace_storage_with_iter(new_values);
             } else {
-                panic!("Unexpected target object {target:?}");
+                return Err(make_error_2004(activation, Error2004Type::ArgumentError));
             }
         }
     }

@@ -17,6 +17,21 @@ public class Test extends MovieClip {
         testShader(new ShaderFloat2());
         testShader(new ShaderFloat3());
         testShader(new ShaderFloat4());
+
+        trace("=== Invalid target tests ===");
+        testInvalidTarget("Sprite", new Sprite());
+        testInvalidTarget("Object", new Object());
+    }
+
+    private function testInvalidTarget(label:String, target:*) {
+        var shader:Shader = new Shader(new ShaderFloat4());
+        try {
+            var shaderJob:ShaderJob = new ShaderJob(shader, target, 1, 1);
+            shaderJob.start(true);
+            trace(label + ": No error");
+        } catch (e:*) {
+            trace(label + ": " + e);
+        }
     }
 
     private function testShader(shaderBytes:*) {
