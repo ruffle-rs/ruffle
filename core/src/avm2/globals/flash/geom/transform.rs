@@ -47,6 +47,7 @@ pub fn set_color_transform<'gc>(
 
     let dobj = get_display_object(this);
     dobj.set_color_transform(ct);
+    dobj.set_transformed_by_script(true);
     if let Some(parent) = dobj.parent() {
         parent.invalidate_cached_bitmap();
     }
@@ -83,6 +84,7 @@ pub fn set_matrix<'gc>(
 
     let matrix = object_to_matrix(obj);
     dobj.set_matrix(matrix);
+    dobj.set_transformed_by_script(true);
     if let Some(parent) = dobj.parent() {
         // Self-transform changes are automatically handled,
         // we only want to inform ancestors to avoid unnecessary invalidations for tx/ty
