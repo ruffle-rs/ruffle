@@ -51,10 +51,12 @@ rand = "0.9.1"
 thiserror.workspace = true
 async-channel.workspace = true
 unicode-bidi = "0.3.18"
-fontconfig = { version = "0.10.2", optional = true, features = ["dlopen"]}
 memmap2.workspace = true
 walkdir.workspace = true
 async-task = "4.7.1"
+
+[target.'cfg(unix)'.dependencies]
+fontconfig = { version = "0.10.2", optional = true, features = ["dlopen"] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 ashpd = "0.12.1"
