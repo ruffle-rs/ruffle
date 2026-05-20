@@ -16,7 +16,7 @@ env:
   LLVM_COV_OPTS: --branch --profile ci
   LLVM_COV_TEST_OPTS: ${LLVM_COV_OPTS} ${TEST_OPTS} --features ${FEATURES},imgtests
 
-  LINUX_DEPENDENCIES: libasound2-dev mesa-vulkan-drivers libudev-dev
+  LINUX_DEPENDENCIES: libasound2-dev mesa-vulkan-drivers libudev-dev libfontconfig-dev
 
   # This is to counteract the disabling by rust-cache.
   # See: https://github.com/Swatinem/rust-cache/issues/43
