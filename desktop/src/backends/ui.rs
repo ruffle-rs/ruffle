@@ -322,7 +322,9 @@ impl UiBackend for DesktopUiBackend {
     ) -> Vec<FontQuery> {
         cfg_select! {
             all(unix, feature = "fontconfig") => {
-                fontconfig_sort_device_fonts(query, register)
+                fontconfig::sort_device_fonts(query, register)
+                    .inspect_err(|err| tracing::error!("Cannot sort device fonts: {err}"))
+                    .unwrap_or_default()
             }
             _ => {
                 Vec::new()
@@ -445,88 +447,107 @@ fn load_fontdb_font(name: String, face: &FaceInfo) -> Result<FontDefinition<'sta
 }
 
 #[cfg(all(unix, feature = "fontconfig"))]
-fn fontconfig_sort_device_fonts(
-    query: &FontQuery,
-    register: &mut dyn FnMut(FontDefinition),
-) -> Vec<FontQuery> {
-    use fontconfig::{FontFormat, Pattern};
-    use std::sync::LazyLock;
+mod fontconfig {
+    use crate::backends::ui::load_font_from_file;
+    use ruffle_core::backend::ui::FontDefinition;
+    use ruffle_core::font::FontQuery;
+    use std::path::Path;
 
-    static FONTCONFIG: LazyLock<Option<fontconfig::Fontconfig>> =
-        LazyLock::new(fontconfig::Fontconfig::new);
-
-    let Some(fc) = FONTCONFIG.as_ref() else {
-        return Vec::new();
-    };
-
-    let Ok(family) = std::ffi::CString::new(query.name.as_str()) else {
-        tracing::error!("Cannot sort device fonts, null in font family");
-        return Vec::new();
-    };
-
-    let mut pattern: Pattern<'static> = Pattern::new(fc);
-    pattern.add_string(fontconfig::FC_FAMILY, family.as_c_str());
-
-    if query.is_bold {
-        pattern.add_integer(fontconfig::FC_WEIGHT, fontconfig::FC_WEIGHT_BOLD);
-    }
-    if query.is_italic {
-        pattern.add_integer(fontconfig::FC_SLANT, fontconfig::FC_SLANT_ITALIC);
+    #[derive(Debug, thiserror::Error)]
+    pub enum FontconfigError {
+        #[error("Malformed font family")]
+        MalformedFontFamily,
+        #[error("Internal fontconfig error: {0}")]
+        Internal(#[from] fontconfig::FontconfigError),
     }
 
-    let font_set = pattern.sort_fonts(true);
-    let mut font_queries = Vec::new();
-    for font in font_set.iter() {
-        let is_ttf = font
-            .format()
-            .is_ok_and(|f| matches!(f, FontFormat::TrueType));
-        if !is_ttf {
-            if let Some(name) = font.name() {
-                tracing::info!("Skipping font '{name}' because it's not a TTF");
-            }
-            continue;
+    pub fn sort_device_fonts(
+        query: &FontQuery,
+        register: &mut dyn FnMut(FontDefinition),
+    ) -> Result<Vec<FontQuery>, FontconfigError> {
+        use fontconfig::{FontFormat, Pattern};
+        use std::sync::LazyLock;
+
+        static FONTCONFIG: LazyLock<Option<fontconfig::Fontconfig>> =
+            LazyLock::new(fontconfig::Fontconfig::new);
+
+        let Some(fc) = FONTCONFIG.as_ref() else {
+            return Ok(Vec::new());
+        };
+
+        let Ok(family) = std::ffi::CString::new(query.name.as_str()) else {
+            return Err(FontconfigError::MalformedFontFamily);
+        };
+
+        let mut pattern: Pattern<'static> = Pattern::new(fc)?;
+
+        pattern.add_string(fontconfig::FC_FAMILY, family.as_c_str())?;
+
+        if query.is_bold {
+            pattern.add_integer(fontconfig::FC_WEIGHT, fontconfig::FC_WEIGHT_BOLD)?;
+        }
+        if query.is_italic {
+            pattern.add_integer(fontconfig::FC_SLANT, fontconfig::FC_SLANT_ITALIC)?;
         }
 
-        let (
-            Some(name), //
-            Some(filename),
-            Some(index),
-            Some(weight),
-            Some(slant),
-        ) = (
-            font.name(),
-            font.filename(),
-            font.face_index(),
-            font.weight(),
-            font.slant(),
-        )
-        else {
-            continue;
-        };
+        let font_set = pattern.sort_fonts(fontconfig::UnicodeCoverage::Trim)?;
 
-        let Ok(index) = index.try_into() else {
-            continue;
-        };
-
-        let is_bold = weight >= fontconfig::FC_WEIGHT_BOLD;
-        let is_italic = slant >= fontconfig::FC_SLANT_ITALIC;
-
-        match load_font_from_file(
-            Path::new(filename),
-            name.to_string(),
-            index,
-            is_bold,
-            is_italic,
-        ) {
-            Ok(definition) => register(definition),
-            Err(err) => {
-                tracing::error!("Error loading font from fontconfig: {err}");
+        let mut font_queries = Vec::new();
+        for font in font_set.iter() {
+            let is_ttf = font
+                .format()
+                .is_ok_and(|f| matches!(f, FontFormat::TrueType));
+            if !is_ttf {
+                if let Ok(name) = font.name() {
+                    tracing::info!(
+                        "Skipping font '{name}' because it's not a TTF (it doesn't have a name)"
+                    );
+                }
                 continue;
             }
+
+            let (
+                Ok(name), //
+                Ok(filename),
+                Ok(index),
+                Ok(weight),
+                Ok(slant),
+            ) = (
+                font.name(),
+                font.filename(),
+                font.face_index(),
+                font.weight(),
+                font.slant(),
+            )
+            else {
+                continue;
+            };
+
+            let Ok(index) = index.try_into() else {
+                continue;
+            };
+
+            let is_bold = weight >= fontconfig::FC_WEIGHT_BOLD;
+            let is_italic = slant >= fontconfig::FC_SLANT_ITALIC;
+
+            match load_font_from_file(
+                Path::new(filename),
+                name.to_string(),
+                index,
+                is_bold,
+                is_italic,
+            ) {
+                Ok(definition) => register(definition),
+                Err(err) => {
+                    tracing::error!("Error loading font from fontconfig: {err}");
+                    continue;
+                }
+            }
+
+            let query = FontQuery::new(query.font_type, name.to_string(), is_bold, is_italic);
+            font_queries.push(query);
         }
 
-        let query = FontQuery::new(query.font_type, name.to_string(), is_bold, is_italic);
-        font_queries.push(query);
+        Ok(font_queries)
     }
-    font_queries
 }
