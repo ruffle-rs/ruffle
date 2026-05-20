@@ -970,6 +970,7 @@ pub fn clone_sprite<'gc>(
     }
 
     let movie = parent.movie();
+    #[allow(clippy::question_mark)]
     let cloned_sprite = if sprite.id() != 0 {
         // Clip from SWF; instantiate a new copy.
         let library = context.library.library_for_movie(movie).unwrap();
