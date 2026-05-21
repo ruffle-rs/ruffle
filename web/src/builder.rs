@@ -582,7 +582,7 @@ impl RuffleInstanceBuilder {
                         }
                     }
                 }
-                #[cfg(feature = "webgl")]
+                #[cfg(all(feature = "webgl", target_family = "wasm"))]
                 "webgl" => {
                     tracing::info!("Creating WebGL renderer...");
                     let canvas: HtmlCanvasElement = document

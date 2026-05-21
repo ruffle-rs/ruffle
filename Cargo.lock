@@ -5119,13 +5119,10 @@ version = "0.2.0"
 dependencies = [
  "bytemuck",
  "glow 0.17.0",
- "js-sys",
  "log",
  "ruffle_render",
  "swf 0.2.2",
  "thiserror 2.0.18",
- "wasm-bindgen",
- "web-sys",
 ]
 
 [[package]]
