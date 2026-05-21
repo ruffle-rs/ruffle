@@ -1,4 +1,4 @@
-use crate::avm2::amf::serialize_value;
+use crate::avm2::amf::{promote_dense_ecma_to_strict_array, serialize_value};
 use crate::avm2::error::make_error_2126;
 pub use crate::avm2::object::net_connection_allocator;
 use crate::avm2::parameters::ParametersExt;
@@ -284,7 +284,9 @@ pub fn call<'gc>(
     for arg in &args[2..] {
         if let Some(value) = serialize_value(activation, *arg, AMFVersion::AMF0, &mut object_table)
         {
-            arguments.push(Rc::new(value));
+            // Real Flash sends dense AS3 `Array` arguments as `StrictArray` on
+            // the NetConnection.call wire (#16381).
+            arguments.push(Rc::new(promote_dense_ecma_to_strict_array(value)));
         }
     }
 
@@ -341,6 +343,7 @@ pub fn add_header<'gc>(
         AMFVersion::AMF0,
         &mut Default::default(),
     )
+    .map(promote_dense_ecma_to_strict_array)
     .unwrap_or(AMFValue::Null);
 
     if let Some(handle) = connection.handle() {

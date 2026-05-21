@@ -198,6 +198,31 @@ pub fn deserialize_value<'gc>(
                 Value::Undefined
             }
         }
+        AmfValue::StrictArray(_, values) => {
+            // Real Flash uses `StrictArray` (AMF0 marker `0x0A`) for dense AS3
+            // `Array`s sent over `NetConnection.call` / `LocalConnection.send`
+            // (#16381), so the AVM1 receiver has to reconstruct an `Array`
+            // here rather than falling through to `Undefined`.
+            let array_constructor = activation.prototypes().array_constructor;
+            if let Ok(Value::Object(obj)) =
+                array_constructor.construct(activation, &[(values.len() as i32).into()])
+            {
+                let v: Value<'gc> = obj.into();
+
+                if let Some(reference) = lso.as_reference(val) {
+                    reference_cache.insert(reference, v);
+                }
+
+                for (i, item) in values.iter().enumerate() {
+                    let value = deserialize_value(activation, item, lso, reference_cache);
+                    obj.set_element(activation, i as i32, value).unwrap();
+                }
+
+                v
+            } else {
+                Value::Undefined
+            }
+        }
         AmfValue::Object(_, elements, _) => {
             // Deserialize Object
             let obj = Object::new(

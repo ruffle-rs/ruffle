@@ -64,22 +64,12 @@ pub fn serialize_value<'gc>(
                     }
                 }
 
-                if amf_version == AMFVersion::AMF0 && sparse.is_empty() {
-                    // Dense-only AS3 `Array` in AMF0 must be serialized as
-                    // `StrictArray` (marker `0x0A`) so that Flash decoders see
-                    // an indexed array `["a", "b"]` rather than an associative
-                    // object `{0: "a", 1: "b"}`.  Before this fix the AMF0 path
-                    // unconditionally emitted `ECMAArray` (marker `0x08`),
-                    // which broke real-world Flash Remoting endpoints that
-                    // round-trip AS3 arrays as call arguments (#16381).
-                    Some(AmfValue::StrictArray(ObjectId::INVALID, dense))
-                } else {
-                    // Mixed dense + sparse arrays use ECMAArray for both AMF0
-                    // and AMF3.  AMF3 has no `StrictArray` marker and uses
-                    // ECMAArray with both dense and sparse parts for every
-                    // AS3 `Array`.
-                    Some(AmfValue::ECMAArray(ObjectId::INVALID, dense, sparse, len))
-                }
+                // AS3 `Array` is serialized as `ECMAArray` for both AMF0 and AMF3.
+                // Callers that need `StrictArray` semantics for dense AS3 `Array`s
+                // (e.g. `NetConnection.call` / `LocalConnection.send` argument
+                // encoding, see #16381) post-process the returned tree with
+                // `promote_dense_ecma_to_strict_array`.
+                Some(AmfValue::ECMAArray(ObjectId::INVALID, dense, sparse, len))
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
                 if val_type == Some(activation.avm2().class_defs().int) {
@@ -191,6 +181,79 @@ pub fn serialize_value<'gc>(
             }
         }
     }
+}
+
+/// Recursively rewrite dense `ECMAArray` nodes in `value` as `StrictArray`.
+///
+/// Real Flash encodes the argument tree for `NetConnection.call` and
+/// `LocalConnection.send` with `StrictArray` (marker `0x0A`) for every dense
+/// AS3 `Array`, while `ByteArray.writeObject` and `Socket.writeObject` keep
+/// the `ECMAArray` (marker `0x08`) encoding for those same arrays.  The default
+/// `serialize_value` output uses `ECMAArray` to match the latter; the Flash
+/// Remoting code paths call this helper to convert the tree into the form
+/// real Flash sends on the wire (#16381).
+///
+/// An `ECMAArray` is treated as dense and promoted when its sparse portion is
+/// empty and its declared length matches the dense portion exactly.  All other
+/// nodes are walked so that nested dense arrays inside objects, vectors,
+/// dictionaries and AMF3 wrappers are promoted too.
+pub fn promote_dense_ecma_to_strict_array(value: AmfValue) -> AmfValue {
+    match value {
+        AmfValue::ECMAArray(_, dense, sparse, len)
+            if sparse.is_empty() && dense.len() as u32 == len =>
+        {
+            let promoted = dense.into_iter().map(promote_rc).collect();
+            AmfValue::StrictArray(ObjectId::INVALID, promoted)
+        }
+        AmfValue::ECMAArray(id, dense, sparse, len) => {
+            let promoted_dense = dense.into_iter().map(promote_rc).collect();
+            let promoted_sparse = sparse
+                .into_iter()
+                .map(|e| Element::new(e.name, promote_rc(e.value)))
+                .collect();
+            AmfValue::ECMAArray(id, promoted_dense, promoted_sparse, len)
+        }
+        AmfValue::StrictArray(id, values) => {
+            let promoted = values.into_iter().map(promote_rc).collect();
+            AmfValue::StrictArray(id, promoted)
+        }
+        AmfValue::Object(id, elements, class) => {
+            let promoted = elements
+                .into_iter()
+                .map(|e| Element::new(e.name, promote_rc(e.value)))
+                .collect();
+            AmfValue::Object(id, promoted, class)
+        }
+        AmfValue::AMF3(inner) => AmfValue::AMF3(promote_rc(inner)),
+        AmfValue::VectorObject(id, values, name, fixed) => {
+            let promoted = values.into_iter().map(promote_rc).collect();
+            AmfValue::VectorObject(id, promoted, name, fixed)
+        }
+        AmfValue::Dictionary(id, body, weak_keys) => {
+            let promoted = body
+                .into_iter()
+                .map(|(k, v)| (promote_rc(k), promote_rc(v)))
+                .collect();
+            AmfValue::Dictionary(id, promoted, weak_keys)
+        }
+        AmfValue::Custom(custom_elements, regular_elements, class) => {
+            let promoted_custom = custom_elements
+                .into_iter()
+                .map(|e| Element::new(e.name, promote_rc(e.value)))
+                .collect();
+            let promoted_regular = regular_elements
+                .into_iter()
+                .map(|e| Element::new(e.name, promote_rc(e.value)))
+                .collect();
+            AmfValue::Custom(promoted_custom, promoted_regular, class)
+        }
+        leaf => leaf,
+    }
+}
+
+fn promote_rc(rc: Rc<AmfValue>) -> Rc<AmfValue> {
+    let owned = Rc::try_unwrap(rc).unwrap_or_else(|shared| (*shared).clone());
+    Rc::new(promote_dense_ecma_to_strict_array(owned))
 }
 
 fn alias_to_class<'gc>(

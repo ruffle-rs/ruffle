@@ -1,4 +1,4 @@
-use crate::avm2::amf::serialize_value;
+use crate::avm2::amf::{promote_dense_ecma_to_strict_array, serialize_value};
 use crate::avm2::error::{
     Error2004Type, make_error_2004, make_error_2082, make_error_2083, make_error_2085,
 };
@@ -51,10 +51,11 @@ pub fn send<'gc>(
 
     let mut amf_arguments = Vec::with_capacity(args.len() - 2);
     for arg in &args[2..] {
-        amf_arguments.push(
-            serialize_value(activation, *arg, AMFVersion::AMF0, &mut Default::default())
-                .unwrap_or(AmfValue::Undefined),
-        );
+        let value = serialize_value(activation, *arg, AMFVersion::AMF0, &mut Default::default())
+            .unwrap_or(AmfValue::Undefined);
+        // Real Flash sends dense AS3 `Array` arguments as `StrictArray` over
+        // the LocalConnection wire (#16381).
+        amf_arguments.push(promote_dense_ecma_to_strict_array(value));
     }
 
     if let Some(local_connection) = this.as_local_connection_object() {
