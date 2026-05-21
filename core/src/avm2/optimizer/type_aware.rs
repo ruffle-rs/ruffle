@@ -364,7 +364,13 @@ impl<'gc> Stack<'gc> {
             self.pop(activation)?;
         }
         if multiname.has_lazy_ns() {
-            self.pop(activation)?;
+            let value = self.pop(activation)?;
+
+            // Make sure that it's actually a `Namespace`
+            let ns_class = activation.avm2().class_defs().namespace;
+            if value.class.is_none_or(|c| c != ns_class) {
+                return Err(make_error_1058(activation, "Namespace"));
+            }
         }
 
         Ok(())
@@ -2070,7 +2076,7 @@ fn abstract_interpret_ops<'gc>(
 
                 if value.class.is_none_or(|c| !c.is_builtin_int()) {
                     // LookupSwitch expects an int
-                    return Err(make_error_1058(activation));
+                    return Err(make_error_1058(activation, "int"));
                 }
 
                 let current_state = AbstractStateRef {
