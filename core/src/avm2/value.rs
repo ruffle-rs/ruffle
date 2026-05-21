@@ -11,7 +11,7 @@ use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::vtable::VTable;
-use crate::avm2::{Error, Multiname, Namespace};
+use crate::avm2::{Error, Multiname};
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmAtom, AvmString, WStr};
 use gc_arena::Collect;
@@ -505,15 +505,6 @@ impl<'gc> Value<'gc> {
             Value::Integer(value)
         } else {
             Value::Number(value as f64)
-        }
-    }
-
-    pub fn as_namespace(&self) -> Result<Namespace<'gc>, Error<'gc>> {
-        match self {
-            Value::Object(ns) => ns
-                .as_namespace()
-                .ok_or_else(|| "Expected Namespace, found Object".into()),
-            _ => Err(format!("Expected Namespace, found {self:?}").into()),
         }
     }
 
