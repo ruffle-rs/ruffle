@@ -51,24 +51,34 @@ pub fn serialize_value<'gc>(
                 recursive_serialize(activation, o, &mut values, None, amf_version, object_table)
                     .unwrap();
 
-                if amf_version == AMFVersion::AMF3 {
-                    let mut dense = vec![];
-                    let mut sparse = vec![];
-                    // ActionScript `Array`s can have non-number properties, and these properties
-                    // are confirmed and tested to also be serialized, so do not limit the values
-                    // iterated over by the length of the internal array data.
-                    for (i, elem) in values.into_iter().enumerate() {
-                        if elem.name == i.to_string() {
-                            dense.push(elem.value.clone());
-                        } else {
-                            sparse.push(elem);
-                        }
+                // ActionScript `Array`s can have non-number properties, and these properties
+                // are confirmed and tested to also be serialized, so do not limit the values
+                // iterated over by the length of the internal array data.
+                let mut dense = vec![];
+                let mut sparse = vec![];
+                for (i, elem) in values.into_iter().enumerate() {
+                    if elem.name == i.to_string() {
+                        dense.push(elem.value.clone());
+                    } else {
+                        sparse.push(elem);
                     }
+                }
 
-                    Some(AmfValue::ECMAArray(ObjectId::INVALID, dense, sparse, len))
+                if amf_version == AMFVersion::AMF0 && sparse.is_empty() {
+                    // Dense-only AS3 `Array` in AMF0 must be serialized as
+                    // `StrictArray` (marker `0x0A`) so that Flash decoders see
+                    // an indexed array `["a", "b"]` rather than an associative
+                    // object `{0: "a", 1: "b"}`.  Before this fix the AMF0 path
+                    // unconditionally emitted `ECMAArray` (marker `0x08`),
+                    // which broke real-world Flash Remoting endpoints that
+                    // round-trip AS3 arrays as call arguments (#16381).
+                    Some(AmfValue::StrictArray(ObjectId::INVALID, dense))
                 } else {
-                    // TODO: is this right?
-                    Some(AmfValue::ECMAArray(ObjectId::INVALID, vec![], values, len))
+                    // Mixed dense + sparse arrays use ECMAArray for both AMF0
+                    // and AMF3.  AMF3 has no `StrictArray` marker and uses
+                    // ECMAArray with both dense and sparse parts for every
+                    // AS3 `Array`.
+                    Some(AmfValue::ECMAArray(ObjectId::INVALID, dense, sparse, len))
                 }
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
