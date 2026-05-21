@@ -2,9 +2,9 @@
 // Remove this when we start using `Rc` when compiling for wasm
 #![allow(clippy::arc_with_non_send_sync)]
 
+use crate::glow::HasContext;
 use bytemuck::{Pod, Zeroable};
 pub use glow;
-use crate::glow::HasContext;
 use ruffle_render::backend::{
     BitmapCacheEntry, Context3D, Context3DProfile, PixelBenderOutput, PixelBenderTarget,
     RenderBackend, ShapeHandle, ShapeHandleImpl, ViewportDimensions,
@@ -516,13 +516,14 @@ impl WebGlRenderBackend {
         &mut self,
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
+        scale: f32,
     ) -> Result<Vec<Draw>, Error> {
         unsafe {
             use ruffle_render::tessellator::DrawType as TessDrawType;
 
-            let lyon_mesh = self
-                .shape_tessellator
-                .tessellate_shape(shape, bitmap_source);
+            let lyon_mesh =
+                self.shape_tessellator
+                    .tessellate_shape_with_scale(shape, bitmap_source, scale);
 
             let mut draws = Vec::with_capacity(lyon_mesh.draws.len());
             for draw in lyon_mesh.draws {
@@ -566,7 +567,7 @@ impl WebGlRenderBackend {
                 // Attributes can change between shaders, even if the vertex layout is otherwise "the same".
                 // This varies between platforms based on what the GLSL compiler decides to do.
                 if program.vertex_position_location != 0xffff_ffff {
-                    self.gl.vertex_attrib_pointer_f32(
+                    self.gl.vertex_attrib_pointer_i32(
                         program.vertex_position_location,
                         2,
                         glow::FLOAT,
@@ -579,7 +580,7 @@ impl WebGlRenderBackend {
                 }
 
                 if program.vertex_color_location != 0xffff_ffff {
-                    self.gl.vertex_attrib_pointer_f32(
+                    self.gl.vertex_attrib_pointer_i32(
                         program.vertex_color_location,
                         4,
                         glow::UNSIGNED_BYTE,
@@ -1005,7 +1006,16 @@ impl RenderBackend for WebGlRenderBackend {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
-        let mesh = match self.register_shape_internal(shape, bitmap_source) {
+        self.register_shape_with_scale(shape, bitmap_source, 1.0)
+    }
+
+    fn register_shape_with_scale(
+        &mut self,
+        shape: DistilledShape,
+        bitmap_source: &dyn BitmapSource,
+        scale: f32,
+    ) -> ShapeHandle {
+        let mesh = match self.register_shape_internal(shape, bitmap_source, scale) {
             Ok(draws) => Mesh {
                 draws,
                 gl2: self.gl.clone(),
@@ -1132,7 +1142,12 @@ impl RenderBackend for WebGlRenderBackend {
     fn debug_info(&self) -> Cow<'static, str> {
         let mut result = vec![];
 
-        unsafe {result.push(format!("Renderer: {}", self.gl.get_parameter_string(glow::VERSION)));}
+        unsafe {
+            result.push(format!(
+                "Renderer: {}",
+                self.gl.get_parameter_string(glow::VERSION)
+            ));
+        }
 
         let mut add_line = |name, val: String| result.push(format!("{name}: {}", val));
 
