@@ -1,4 +1,5 @@
-use super::{Object, string::AvmString};
+use crate::avm2::object::Object;
+use crate::string::AvmString;
 use fnv::FnvBuildHasher;
 use gc_arena::Collect;
 use hashbrown::HashTable;

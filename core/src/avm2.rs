@@ -73,7 +73,6 @@ pub mod script;
 #[cfg(feature = "known_stubs")]
 pub mod specification;
 mod stack;
-mod string;
 mod stubs;
 mod traits;
 mod value;
