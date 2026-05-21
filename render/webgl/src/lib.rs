@@ -535,8 +535,7 @@ impl WebGlRenderBackend {
                     .gl
                     .create_buffer()
                     .map_err(|_| Error::UnableToCreateBuffer)?;
-                self.gl
-                    .bind_buffer(glow::ARRAY_BUFFER, Some(vertex_buffer));
+                self.gl.bind_buffer(glow::ARRAY_BUFFER, Some(vertex_buffer));
 
                 let vertices: Vec<_> = draw.vertices.into_iter().map(Vertex::from).collect();
                 self.gl.buffer_data_u8_slice(
@@ -752,7 +751,8 @@ impl WebGlRenderBackend {
 
             // Bind to MSAA render buffer if using MSAA.
             if let Some(msaa_buffers) = &self.msaa_buffers {
-                self.gl.bind_framebuffer(glow::FRAMEBUFFER, Some(msaa_buffers.render_framebuffer));
+                self.gl
+                    .bind_framebuffer(glow::FRAMEBUFFER, Some(msaa_buffers.render_framebuffer));
             }
 
             self.gl
@@ -790,7 +790,8 @@ impl WebGlRenderBackend {
                     glow::READ_FRAMEBUFFER,
                     Some(msaa_buffers.render_framebuffer),
                 );
-                self.gl.bind_framebuffer(glow::DRAW_FRAMEBUFFER, Some(msaa_buffers.color_framebuffer));
+                self.gl
+                    .bind_framebuffer(glow::DRAW_FRAMEBUFFER, Some(msaa_buffers.color_framebuffer));
                 self.gl.blit_framebuffer(
                     0,
                     0,
@@ -1759,9 +1760,7 @@ impl ShaderProgram {
             gl.attach_shader(program, fragment_shader);
 
             gl.link_program(program);
-            if !gl
-                .get_program_parameter_i32(program, glow::LINK_STATUS) != 0
-            {
+            if !gl.get_program_parameter_i32(program, glow::LINK_STATUS) != 0 {
                 let msg = format!(
                     "Error linking shader program: {:?}",
                     gl.get_program_info_log(program)
