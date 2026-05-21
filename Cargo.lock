@@ -2254,18 +2254,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "glow"
-version = "0.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "29038e1c483364cc6bb3cf78feee1816002e127c331a1eec55a4d202b9e1adb5"
-dependencies = [
- "js-sys",
- "slotmap",
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
 name = "glutin_wgl_sys"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4823,7 +4811,7 @@ name = "ruffle_render_webgl"
 version = "0.2.0"
 dependencies = [
  "bytemuck",
- "glow 0.17.0",
+ "glow",
  "log",
  "ruffle_render",
  "swf 0.2.2",
@@ -4973,7 +4961,7 @@ dependencies = [
  "futures-util",
  "getrandom 0.3.4",
  "gloo-net",
- "glow 0.17.0",
+ "glow",
  "js-sys",
  "log",
  "rfd",
@@ -6782,7 +6770,7 @@ dependencies = [
  "cfg-if",
  "cfg_aliases",
  "core-graphics-types 0.2.0",
- "glow 0.16.0",
+ "glow",
  "glutin_wgl_sys",
  "gpu-alloc",
  "gpu-allocator",
