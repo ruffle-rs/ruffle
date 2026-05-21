@@ -9,9 +9,9 @@ use crate::avm2::object::{
     E4XOrXml, NotificationCommand, QNameObject, TObject, XmlListObject, XmlObject,
 };
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::string::AvmString;
 use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Multiname, Value};
 use crate::avm2_stub_method;
+use crate::string::AvmString;
 
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
