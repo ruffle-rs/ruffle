@@ -55,11 +55,39 @@ fn eq() {
 
 #[test]
 #[rustfmt::skip]
+fn eq_common_prefix() {
+    let a1 = bstr!(b"hello");
+    let b1 = bstr!(b"hello!");
+    let a2 = wstr!('h''e''l''l''o');
+    let b2 = wstr!('h''e''l''l''o''!');
+
+    assert_eq!(a1, a1); assert_eq!(a2, a1); assert_ne!(b1, a1); assert_ne!(b2, a1);
+    assert_eq!(a1, a2); assert_eq!(a2, a2); assert_ne!(b1, a2); assert_ne!(b2, a2);
+    assert_ne!(a1, b1); assert_ne!(a2, b1); assert_eq!(b1, b1); assert_eq!(b2, b1);
+    assert_ne!(a1, b2); assert_ne!(a2, b2); assert_eq!(b1, b2); assert_eq!(b2, b2);
+}
+
+#[test]
+#[rustfmt::skip]
 fn cmp() {
     let a1 = bstr!(b"hello");
     let b1 = bstr!(b"world");
     let a2 = wstr!('h''e''l''l''o');
     let b2 = wstr!('w''o''r''l''d');
+
+    assert!(a1 == a1); assert!(a2 == a1); assert!(b1 >  a1); assert!(b2 >  a1);
+    assert!(a1 == a2); assert!(a2 == a2); assert!(b1 >  a2); assert!(b2 >  a2);
+    assert!(a1 <  b1); assert!(a2 <  b1); assert!(b1 == b1); assert!(b2 == b1);
+    assert!(a1 <  b2); assert!(a2 <  b2); assert!(b1 == b2); assert!(b2 == b2);
+}
+
+#[test]
+#[rustfmt::skip]
+fn cmp_common_prefix() {
+    let a1 = bstr!(b"hello");
+    let b1 = bstr!(b"hello!");
+    let a2 = wstr!('h''e''l''l''o');
+    let b2 = wstr!('h''e''l''l''o''!');
 
     assert!(a1 == a1); assert!(a2 == a1); assert!(b1 >  a1); assert!(b2 >  a1);
     assert!(a1 == a2); assert!(a2 == a2); assert!(b1 >  a2); assert!(b2 >  a2);
