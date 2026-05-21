@@ -1,0 +1,9 @@
+This is a regression test to check that the 3 byte OffsetToAlpha field
+at the beginning of VP6SWFALPHAVIDEOPACKET type VideoFrame tags is
+correctly skipped when splitting the color and alpha frame data.
+Otherwise, the decoder errors out with "ShortData", because the
+color frame is truncated by 3 bytes.
+
+The one-frame SWF was extracted under Creative Commons 3.0 BY-NC-SA
+license from https://github.com/doctorpangloss/multics (Left Comp_2.flv)
+Author: Benjamin S. Berman
