@@ -41,7 +41,7 @@ macro_rules! avm_debug {
 }
 
 pub mod activation;
-mod amf;
+pub(crate) mod amf;
 pub mod api_version;
 mod array;
 pub mod bytearray;

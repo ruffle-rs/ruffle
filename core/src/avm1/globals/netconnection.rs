@@ -4,6 +4,7 @@ use crate::avm1::{
     Activation, ActivationIdentifier, Error, ExecutionReason, NativeObject, Object, Value,
 };
 use crate::avm1_stub;
+use crate::avm2::amf::promote_dense_ecma_to_strict_array;
 use crate::context::UpdateContext;
 use crate::net_connection::{NetConnectionHandle, NetConnections, ResponderCallback};
 use crate::string::AvmString;
@@ -274,7 +275,12 @@ fn call<'gc>(
 
     if args.len() > 2 {
         for arg in &args[2..] {
-            arguments.push(Rc::new(serialize(activation, *arg)));
+            // Real Flash sends dense AS1/AS2 `Array` arguments as `StrictArray`
+            // on the NetConnection.call wire (#16381).  Nested dense arrays
+            // produced by `recursive_serialize`'s `ECMAArray` path are promoted
+            // here as well.
+            let value = serialize(activation, *arg);
+            arguments.push(Rc::new(promote_dense_ecma_to_strict_array(value)));
         }
     }
 

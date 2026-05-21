@@ -5,7 +5,7 @@ use crate::display_object::TDisplayObject;
 use crate::string::AvmString;
 use flash_lso::amf0::read::AMF0Decoder;
 use flash_lso::amf0::writer::{Amf0Writer, CacheKey, ObjWriter};
-use flash_lso::types::{Lso, ObjectId, Reference, Value as AmfValue};
+use flash_lso::types::{Element, Lso, ObjectId, Reference, Value as AmfValue};
 use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use std::borrow::Cow;
@@ -86,11 +86,54 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
         Value::Number(number) => AmfValue::Number(number),
         Value::String(string) => AmfValue::String(string.to_string()),
         Value::Object(object) => {
-            let lso = new_lso(activation, "root", object);
-            AmfValue::Object(ObjectId::INVALID, lso.into_iter().collect(), None)
+            if let NativeObject::Array(_) = object.native() {
+                // AS1/AS2 `Array` values are serialized using the AMF0 array
+                // markers so that Flash Remoting / LocalConnection endpoints
+                // round-trip them as arrays rather than as anonymous objects
+                // with `"0"`/`"1"`/... keys.  Callers that wire the result
+                // onto a path Flash sends as `StrictArray` (NetConnection.call
+                // / LocalConnection.send argument trees, #16381) post-process
+                // with `crate::avm2::amf::promote_dense_ecma_to_strict_array`.
+                serialize_array(activation, object)
+            } else {
+                let lso = new_lso(activation, "root", object);
+                AmfValue::Object(ObjectId::INVALID, lso.into_iter().collect(), None)
+            }
         }
         Value::MovieClip(_) => AmfValue::Undefined,
     }
+}
+
+/// Serialize an AS1/AS2 `Array` into the AMF0 array form.  Dense indices fill
+/// the first slot of the returned `ECMAArray`; non-numeric or out-of-range
+/// keys go into the associative part.  The wrapping `ECMAArray` matches what
+/// flash-lso's `ObjWriter::array`/`ArrayWriter::commit` produces for nested
+/// arrays inside `recursive_serialize`, so behavior is uniform between
+/// top-level and nested `Array` serialization.
+fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>) -> AmfValue {
+    let length = array.length(activation).unwrap_or(0).max(0) as u32;
+    let mut dense: Vec<std::rc::Rc<AmfValue>> = (0..length)
+        .map(|_| std::rc::Rc::new(AmfValue::Undefined))
+        .collect();
+    let mut associative: Vec<Element> = Vec::new();
+    // Reversed to match Flash Player enumeration order, mirroring
+    // `recursive_serialize`.
+    for key in array.get_keys(activation, false).into_iter().rev() {
+        let key_str = key.to_utf8_lossy();
+        let value = array
+            .get(key, activation)
+            .map(|v| serialize(activation, v))
+            .unwrap_or(AmfValue::Undefined);
+        match key_str.parse::<u32>() {
+            Ok(idx) if idx < length => {
+                dense[idx as usize] = std::rc::Rc::new(value);
+            }
+            _ => {
+                associative.push(Element::new(key_str.to_string(), std::rc::Rc::new(value)));
+            }
+        }
+    }
+    AmfValue::ECMAArray(ObjectId::INVALID, dense, associative, length)
 }
 
 /// Serialize an Object and any children to a JSON object
