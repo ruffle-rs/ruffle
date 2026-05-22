@@ -226,7 +226,7 @@ japanese_mincho = ["Test Font", "Test Font Fallback"]
 [subtests.SUBTEST_NAME]
 # ...
 
-# To make tests easier to maintain, we encourage programatic compilation of source files where possible.
+# To make tests easier to maintain, we encourage programmatic compilation of source files where possible.
 # This is currently limited to pure AVM1 code.
 # Multiple compiler steps can be included in a single test.
 [[compilers]]

@@ -40,7 +40,7 @@ enum SoundState<'gc> {
     /// Sound is loading, plays can be queued.
     Loading { queued_plays: Vec<QueuedPlay<'gc>> },
 
-    /// Sound is loaded, plays can be started immadiately.
+    /// Sound is loaded, plays can be started immediately.
     Loaded {
         /// The sound that is attached to this object.
         #[collect(require_static)]
