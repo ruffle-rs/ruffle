@@ -357,7 +357,7 @@ jobs:
   build-stub-report:
     name: Build AVM2 stub repository
     needs: create-release
-    if: needs.create-release.outputs.enabled == 'true'
+    if: needs.create-release.outputs.enabled == 'true' && needs.create-release.outputs.release_channel == 'nightly'
     runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
