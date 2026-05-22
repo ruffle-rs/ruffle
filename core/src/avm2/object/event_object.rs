@@ -275,7 +275,7 @@ impl<'gc> EventObject<'gc> {
                 false.into(),
                 // bytesLoaded
                 (bytes_loaded as f64).into(),
-                // bytesToal
+                // bytesTotal
                 (bytes_total as f64).into(),
             ],
         )

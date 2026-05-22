@@ -25,7 +25,7 @@ pub struct SuperObject<'gc> {
     /// The prototype depth of the currently-executing method.
     depth: u8,
 
-    /// Adds a niche, so that enums contaning this type can use it for their discriminant.
+    /// Adds a niche, so that enums containing this type can use it for their discriminant.
     _niche: ruffle_common::utils::ZeroU8,
 }
 
