@@ -31,6 +31,10 @@ pub struct LayoutContext<'a, 'gc> {
     /// Type of the font used by the text field.
     font_type: FontType,
 
+    /// Whether device fonts may kern (flash.text.engine opts in; classic
+    /// TextField does not). See [EvalParameters::device_fonts_kern].
+    device_fonts_kern: bool,
+
     /// The position to put text into.
     ///
     /// We are laying out boxes so that the cursor is at their baseline.
@@ -109,6 +113,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         is_input: bool,
         is_word_wrap: bool,
         font_type: FontType,
+        device_fonts_kern: bool,
     ) -> Self {
         Self {
             movie,
@@ -131,6 +136,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             is_input,
             is_word_wrap,
             font_type,
+            device_fonts_kern,
         }
     }
 
@@ -151,7 +157,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.font_set = Some(font_set);
         self.newspan(span);
 
-        let params = EvalParameters::from_span(span);
+        let mut params = EvalParameters::from_span(span);
+        params.device_fonts_kern = self.device_fonts_kern;
 
         for text in span_text.split(&[b'\n', b'\r', b'\t'][..]) {
             let slice_start = text.offset_in(span_text).unwrap();
@@ -678,14 +685,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// work, and it should only be called internally.
     fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         let font_set = self.font_set.expect("text fragment requires a font");
-        let params = EvalParameters::from_span(span);
+        let mut params = EvalParameters::from_span(span);
+        params.device_fonts_kern = self.device_fonts_kern;
         let metrics = font_set.metrics();
         let ascent = metrics.ascent(params.height());
         let descent = metrics.descent(params.height());
         let text_width = font_set.measure(text, params);
         let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
-        let mut new_box = LayoutBox::from_text(text, start, end, font_set, span);
+        let mut new_box = LayoutBox::from_text(text, start, end, font_set, span, params);
         new_box.bounds = BoxBounds::from_position_and_size(
             box_origin,
             Size::from((text_width, ascent + descent)),
@@ -801,6 +809,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 }
 
 /// Construct a new layout from text spans.
+#[expect(clippy::too_many_arguments)]
 pub fn lower_from_text_spans<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
@@ -809,6 +818,7 @@ pub fn lower_from_text_spans<'gc>(
     is_input: bool,
     is_word_wrap: bool,
     font_type: FontType,
+    device_fonts_kern: bool,
 ) -> Layout<'gc> {
     let requested_width = requested_width.unwrap_or_else(|| {
         // When we don't know the width of the text field, we have to lay out
@@ -822,6 +832,7 @@ pub fn lower_from_text_spans<'gc>(
             is_input,
             false,
             font_type,
+            device_fonts_kern,
         );
         let max_width = layout
             .lines()
@@ -838,9 +849,11 @@ pub fn lower_from_text_spans<'gc>(
         is_input,
         is_word_wrap,
         font_type,
+        device_fonts_kern,
     )
 }
 
+#[expect(clippy::too_many_arguments)]
 fn lower_from_text_spans_known_width<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
@@ -849,6 +862,7 @@ fn lower_from_text_spans_known_width<'gc>(
     is_input: bool,
     is_word_wrap: bool,
     font_type: FontType,
+    device_fonts_kern: bool,
 ) -> Layout<'gc> {
     let mut layout_context = LayoutContext::new(
         movie,
@@ -857,6 +871,7 @@ fn lower_from_text_spans_known_width<'gc>(
         is_input,
         is_word_wrap,
         font_type,
+        device_fonts_kern,
     );
 
     layout_context.lay_out_spans(context, fs);
@@ -1088,6 +1103,75 @@ impl<'gc> LayoutLine<'gc> {
             y_max: line_bounds.extent_y(),
         })
     }
+
+    /// Trim the line-edge tracking that the layout over-applies for
+    /// flash.text.engine runs.
+    ///
+    /// Font::evaluate spaces every glyph by trackingLeft + trackingRight
+    /// (folded into letter_spacing), but Flash Player excludes the leading
+    /// trackingLeft before the line's first glyph and the trailing
+    /// trackingRight after its last glyph: tracking applies to the gaps
+    /// between glyphs, not to all of them. leading and trailing are those
+    /// two amounts; trimming them off the laid-out line makes atom metrics
+    /// and rendering match Flash. This is a no-op when both are zero, which
+    /// is the common case.
+    pub fn trim_edge_tracking(&mut self, leading: Twips, trailing: Twips) {
+        if leading == Twips::ZERO && trailing == Twips::ZERO {
+            return;
+        }
+
+        let Some(first_text) = self.boxes.iter().position(LayoutBox::is_text_box) else {
+            return;
+        };
+        let last_text = self
+            .boxes
+            .iter()
+            .rposition(LayoutBox::is_text_box)
+            .expect("a first text box implies a last one");
+
+        // Leading: the line's first glyph loses trackingLeft. Every character
+        // position in its box shifts left, the box narrows, and every later box
+        // on the line shifts left with it.
+        if leading != Twips::ZERO {
+            if let LayoutContent::Text { char_end_pos, .. } = &mut self.boxes[first_text].content {
+                for pos in char_end_pos.iter_mut() {
+                    *pos -= leading;
+                }
+            }
+            let bounds = &mut self.boxes[first_text].bounds;
+            *bounds = bounds.with_width(bounds.width() - leading);
+            for later in self.boxes.iter_mut().skip(first_text + 1) {
+                later.bounds += Position::from((Twips::ZERO - leading, Twips::ZERO));
+            }
+        }
+
+        // Trailing: the line's last glyph loses trackingRight. Trim from the
+        // last character with a positive advance onward, so a zero-width
+        // paragraph terminator at the end of the box does not go negative.
+        if trailing != Twips::ZERO {
+            if let LayoutContent::Text { char_end_pos, .. } = &mut self.boxes[last_text].content {
+                let mut prev = Twips::ZERO;
+                let mut last_glyph = None;
+                for (i, pos) in char_end_pos.iter().enumerate() {
+                    if *pos > prev {
+                        last_glyph = Some(i);
+                    }
+                    prev = *pos;
+                }
+                if let Some(k) = last_glyph {
+                    for pos in char_end_pos.iter_mut().skip(k) {
+                        *pos -= trailing;
+                    }
+                }
+            }
+            let bounds = &mut self.boxes[last_text].bounds;
+            *bounds = bounds.with_width(bounds.width() - trailing);
+        }
+
+        self.bounds = self
+            .bounds
+            .with_width(self.bounds.width() - leading - trailing);
+    }
 }
 
 /// A `LayoutBox` represents a single content box within a layout.
@@ -1228,8 +1312,8 @@ impl<'gc> LayoutBox<'gc> {
         end: usize,
         font_set: FontSet<'gc>,
         span: &TextSpan,
+        params: EvalParameters,
     ) -> Self {
-        let params = EvalParameters::from_span(span);
         let mut char_end_pos = Vec::with_capacity(end - start);
 
         font_set.evaluate(

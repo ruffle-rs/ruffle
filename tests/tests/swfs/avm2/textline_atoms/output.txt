@@ -1,0 +1,34 @@
+=== plain word, no terminator ===
+Hello: rawTextLength=5 atomCount=5 textBlockBeginIndex=0 hasGraphicElement=false
+  atom 0: tbBegin=0 tbEnd=1 bidi=0 wordBoundaryLeft=true
+  atom 1: tbBegin=1 tbEnd=2 bidi=0 wordBoundaryLeft=false
+  atom 2: tbBegin=2 tbEnd=3 bidi=0 wordBoundaryLeft=false
+  atom 3: tbBegin=3 tbEnd=4 bidi=0 wordBoundaryLeft=false
+  atom 4: tbBegin=4 tbEnd=5 bidi=0 wordBoundaryLeft=false
+atomIndexAtCharIndex:
+  char 0 -> atom 0
+  char 1 -> atom 1
+  char 2 -> atom 2
+  char 3 -> atom 3
+  char 4 -> atom 4
+  char 5 -> atom -1
+=== text with paragraph terminator ===
+Hi+PS: rawTextLength=3 atomCount=3 textBlockBeginIndex=0 hasGraphicElement=false
+  atom 0: tbBegin=0 tbEnd=1 bidi=0 wordBoundaryLeft=true
+  atom 1: tbBegin=1 tbEnd=2 bidi=0 wordBoundaryLeft=false
+  atom 2: tbBegin=2 tbEnd=3 bidi=0 wordBoundaryLeft=true
+=== two paragraphs, wrap into lines ===
+line1: rawTextLength=4 atomCount=4 textBlockBeginIndex=0 hasGraphicElement=false
+  atom 0: tbBegin=0 tbEnd=1 bidi=0 wordBoundaryLeft=true
+  atom 1: tbBegin=1 tbEnd=2 bidi=0 wordBoundaryLeft=false
+  atom 2: tbBegin=2 tbEnd=3 bidi=0 wordBoundaryLeft=false
+  atom 3: tbBegin=3 tbEnd=4 bidi=0 wordBoundaryLeft=true
+line2: rawTextLength=4 atomCount=4 textBlockBeginIndex=4 hasGraphicElement=false
+  atom 0: tbBegin=4 tbEnd=5 bidi=0 wordBoundaryLeft=true
+  atom 1: tbBegin=5 tbEnd=6 bidi=0 wordBoundaryLeft=false
+  atom 2: tbBegin=6 tbEnd=7 bidi=0 wordBoundaryLeft=false
+  atom 3: tbBegin=7 tbEnd=8 bidi=0 wordBoundaryLeft=true
+line3: null
+=== empty paragraph ===
+emptyPara: rawTextLength=1 atomCount=1 textBlockBeginIndex=0 hasGraphicElement=false
+  atom 0: tbBegin=0 tbEnd=1 bidi=0 wordBoundaryLeft=true

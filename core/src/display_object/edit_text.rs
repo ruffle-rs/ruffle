@@ -187,15 +187,6 @@ pub struct EditTextData<'gc> {
 
     /// Flags specifying how layout debug boxes should be drawn.
     layout_debug_boxes_flags: Cell<LayoutDebugBoxesFlag>,
-
-    /// Whether this EditText represents an AVM2 TextLine.
-    ///
-    /// FTE (Flash Text Engine) is a low-level API for sophisticated text control.
-    ///
-    /// See <https://docs.ruffle.rs/en_US/FlashPlatform/reference/actionscript/3/flash/text/engine/TextLine.html>
-    /// See <https://docs.ruffle.rs/en_US/FlashPlatform/reference/actionscript/3/flash/text/engine/package-detail.html>
-    /// See <https://docs.ruffle.rs/en_US/as3/dev/WS9dd7ed846a005b294b857bfa122bd808ea6-8000.html>
-    is_fte: Cell<bool>,
 }
 
 impl EditTextData<'_> {
@@ -217,8 +208,6 @@ impl EditTextData<'_> {
     fn font_type(&self) -> FontType {
         if !self.flags.get().contains(EditTextFlag::USE_OUTLINES) {
             FontType::Device
-        } else if self.is_fte.get() {
-            FontType::EmbeddedCFF
         } else {
             FontType::Embedded
         }
@@ -254,7 +243,7 @@ impl<'gc> EditText<'gc> {
     ///
     /// See <https://open-flash.github.io/mirrors/as2-language-reference/TextFormat.html#getTextExtent()>.
     /// See <https://help.adobe.com/en_US/FlashPlatform/reference/actionscript/3/flash/text/TextLineMetrics.html>.
-    const GUTTER: Twips = Twips::new(40);
+    pub const GUTTER: Twips = Twips::new(40);
 
     /// Creates a new `EditText` from an SWF `DefineEditText` tag.
     pub fn from_swf_tag(
@@ -344,7 +333,6 @@ impl<'gc> EditText<'gc> {
                 scroll: Cell::new(1),
                 max_chars: Cell::new(swf_tag.max_length().unwrap_or_default() as i32),
                 mouse_wheel_enabled: Cell::new(true),
-                is_fte: Cell::new(false),
                 restrict: RefCell::new(EditTextRestrict::allow_all()),
                 last_click: Cell::new(None),
                 layout_debug_boxes_flags: Cell::new(LayoutDebugBoxesFlag::empty()),
@@ -391,22 +379,6 @@ impl<'gc> EditText<'gc> {
         }
 
         text_field
-    }
-
-    /// Create a new, dynamic `EditText` representing an AVM2 TextLine.
-    pub fn new_fte(
-        context: &mut UpdateContext<'gc>,
-        swf_movie: Arc<SwfMovie>,
-        x: f64,
-        y: f64,
-        width: f64,
-        height: f64,
-    ) -> Self {
-        let text = Self::new(context, swf_movie, x, y, width, height);
-        text.set_is_fte(true);
-        text.set_selectable(false);
-
-        text
     }
 
     fn contains_flag(self, flag: EditTextFlag) -> bool {
@@ -738,14 +710,6 @@ impl<'gc> EditText<'gc> {
         self.relayout(context);
     }
 
-    pub fn is_fte(self) -> bool {
-        self.0.is_fte.get()
-    }
-
-    pub fn set_is_fte(self, is_fte: bool) {
-        self.0.is_fte.set(is_fte);
-    }
-
     pub fn layout_debug_boxes_flag(self, flag: LayoutDebugBoxesFlag) -> bool {
         self.0.layout_debug_boxes_flags.get().contains(flag)
     }
@@ -903,6 +867,9 @@ impl<'gc> EditText<'gc> {
             !self.0.flags.get().contains(EditTextFlag::READ_ONLY),
             is_word_wrap,
             self.0.font_type(),
+            // Classic `TextField` kerns embedded fonts only, never device
+            // fonts (Flash supports `TextFormat.kerning` for embedded fonts).
+            false,
         );
         drop(text_spans);
 

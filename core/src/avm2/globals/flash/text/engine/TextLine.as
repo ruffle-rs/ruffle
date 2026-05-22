@@ -1,21 +1,30 @@
+// Definitions for the flash.text.engine.TextLine class.
+//
+// The metric and atom accessors are native functions backed by the
+// FteTextLine DisplayObject (core/src/display_object/fte_text_line.rs).
 package flash.text.engine {
-    import __ruffle__.stub_getter;
-    import __ruffle__.stub_setter;
-    import __ruffle__.stub_method;
-
     import flash.display.DisplayObject;
     import flash.display.DisplayObjectContainer;
     import flash.errors.IllegalOperationError;
+    import flash.events.EventDispatcher;
+    import flash.geom.Point;
     import flash.geom.Rectangle;
     import flash.ui.ContextMenu;
+    import __ruffle__.stub_getter;
+    import __ruffle__.stub_method;
 
-    // FIXME: None of the DisplayObjectContainer methods actually work on
-    // the TextLine class in Ruffle, despite the methods working fine in FP-
-    // however, it's unlikely that SWFs will actually attempt to add children
-    // to a TextLine.
     [Ruffle(Abstract)]
     [API("662")]
     public final class TextLine extends DisplayObjectContainer {
+        public static const MAX_LINE_WIDTH:int = 1000000;
+
+        // Adobe declares `public var userData:*;`. We back it with a
+        // [NativeAccessible] slot so Rust code can read/write it.
+        [Ruffle(NativeAccessible)]
+        private var _userData:* = null;
+
+        // Internal slots backing the AS3-side state; not part of the
+        // public API but accessed by text_block.rs.
         [Ruffle(NativeAccessible)]
         private var _specifiedWidth:Number = 0.0;
 
@@ -25,19 +34,24 @@ package flash.text.engine {
         [Ruffle(NativeAccessible)]
         private var _rawTextLength:int = 0;
 
+        [Ruffle(NativeAccessible)]
+        private var _textBlockBeginIndex:int = 0;
+
+        [Ruffle(NativeAccessible)]
+        internal var _nextLine:TextLine = null;
+
+        [Ruffle(NativeAccessible)]
+        internal var _previousLine:TextLine = null;
+
+        [Ruffle(NativeAccessible)]
         internal var _validity:String = "valid";
 
-        public static const MAX_LINE_WIDTH:int = 1000000;
-
-        public var userData;
-
-        public function get rawTextLength():int {
-            return this._rawTextLength;
+        public function get userData():* {
+            return this._userData;
         }
 
-        public function get textBlockBeginIndex():int {
-            stub_getter("flash.text.engine.TextLine", "textBlockBeginIndex");
-            return 0;
+        public function set userData(value:*):void {
+            this._userData = value;
         }
 
         public function get specifiedWidth():Number {
@@ -48,129 +62,145 @@ package flash.text.engine {
             return this._textBlock;
         }
 
-        public function get ascent():Number {
-            stub_getter("flash.text.engine.TextLine", "ascent");
-            return 12.0;
+        public function get rawTextLength():int {
+            return this._rawTextLength;
         }
 
-        [API("670")]
-        public function get totalAscent():Number {
-            stub_getter("flash.text.engine.TextLine", "totalAscent");
-            return 12.0;
+        public function get textBlockBeginIndex():int {
+            return this._textBlockBeginIndex;
         }
 
-        public function get descent():Number {
-            stub_getter("flash.text.engine.TextLine", "descent");
-            return 3.0;
+        public function get nextLine():TextLine {
+            return this._nextLine;
         }
 
-        [API("670")]
-        public function get totalDescent():Number {
-            stub_getter("flash.text.engine.TextLine", "totalDescent");
-            return 3.0;
+        public function get previousLine():TextLine {
+            return this._previousLine;
         }
-
-        public function get unjustifiedTextWidth():Number {
-            stub_getter("flash.text.engine.TextLine", "unjustifiedTextWidth");
-            return this._specifiedWidth;
-        }
-
-        public native function get textWidth():Number;
-        public native function get textHeight():Number;
 
         public function get validity():String {
-            stub_getter("flash.text.engine.TextLine", "validity");
             return this._validity;
         }
 
         public function set validity(value:String):void {
-            stub_setter("flash.text.engine.TextLine", "validity");
             this._validity = value;
         }
 
+        // Metric and atom accessors, backed natively by FteTextLine.
+        public native function get ascent():Number;
+        public native function get descent():Number;
+        public native function get textWidth():Number;
+        public native function get textHeight():Number;
+        public native function get atomCount():int;
+        public native function getBaselinePosition(baseline:String):Number;
+        public native function getAtomBounds(index:int):Rectangle;
+        public native function getAtomCenter(index:int):Number;
+        public native function getAtomBidiLevel(index:int):int;
+        public native function getAtomIndexAtCharIndex(charIndex:int):int;
+        public native function getAtomTextBlockBeginIndex(index:int):int;
+        public native function getAtomTextBlockEndIndex(index:int):int;
+
+        // Inline graphics are not laid out, so a line never contains a
+        // GraphicElement.
         public function get hasGraphicElement():Boolean {
             stub_getter("flash.text.engine.TextLine", "hasGraphicElement");
             return false;
         }
 
-        public function get atomCount():int {
-            stub_getter("flash.text.engine.TextLine", "atomCount");
-            return this._rawTextLength;
-        }
-
-        public function get nextLine():TextLine {
-            return null;
-        }
-
-        public function get previousLine():TextLine {
-            return null;
-        }
-
-        public function getBaselinePosition(baseline:String):Number {
-            stub_method("flash.text.engine.TextLine", "getBaselinePosition");
-            return 0.0;
-        }
-
         public function get hasTabs():Boolean {
-            stub_getter("flash.text.engine.TextLine", "hasTabs");
+            var block:TextBlock = this._textBlock;
+            if (block == null || block.content == null) {
+                return false;
+            }
+            var text:String = block.content.text;
+            if (text == null) {
+                return false;
+            }
+            var end:int = this._textBlockBeginIndex + this._rawTextLength;
+            if (end > text.length) {
+                end = text.length;
+            }
+            for (var i:int = this._textBlockBeginIndex; i < end; i++) {
+                if (text.charCodeAt(i) == 0x09) {
+                    return true;
+                }
+            }
             return false;
         }
 
+        // The line is never justified, so its unjustified width is just the
+        // measured width.
+        public function get unjustifiedTextWidth():Number {
+            return this.textWidth;
+        }
+
+        // The total metrics add the extents of inline graphics onto the text
+        // metrics. With no inline graphics they equal the text ascent and
+        // descent.
+        [API("670")]
+        public function get totalAscent():Number {
+            return this.ascent;
+        }
+
+        [API("670")]
+        public function get totalDescent():Number {
+            return this.descent;
+        }
+
+        [API("670")]
+        public function get totalHeight():Number {
+            return this.ascent + this.descent;
+        }
+
+        public function get mirrorRegions():Vector.<TextLineMirrorRegion> {
+            stub_getter("flash.text.engine.TextLine", "mirrorRegions");
+            return new Vector.<TextLineMirrorRegion>();
+        }
+
+        public function getMirrorRegion(mirror:EventDispatcher):TextLineMirrorRegion {
+            var mr:Vector.<TextLineMirrorRegion> = this.mirrorRegions;
+            for (var i:int = 0; i < mr.length; i++) {
+                if (mr[i].mirror == mirror) {
+                    return mr[i];
+                }
+            }
+            return null;
+        }
+
+        // Hit testing: convert the global point into the line's own space and
+        // return the first atom whose bounds contain it, or -1 for none.
         public function getAtomIndexAtPoint(stageX:Number, stageY:Number):int {
-            stub_method("flash.text.engine.TextLine", "getAtomIndexAtPoint");
+            var p:Point = this.globalToLocal(new Point(stageX, stageY));
+            var n:int = this.atomCount;
+            for (var i:int = 0; i < n; i++) {
+                if (this.getAtomBounds(i).containsPoint(p)) {
+                    return i;
+                }
+            }
             return -1;
         }
 
-        public function getAtomIndexAtCharIndex(charIndex:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomIndexAtCharIndex");
-            return -1;
+        // A horizontal line never rotates its atoms. Verified against Flash
+        // Player: getAtomTextRotation is rotate0 for every atom of one.
+        public function getAtomTextRotation(index:int):String {
+            return TextRotation.ROTATE_0;
         }
 
-        public function getAtomBidiLevel(index:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomBidiLevel");
-            return 0;
-        }
-
-        public function getAtomBounds(index:int):Rectangle {
-            stub_method("flash.text.engine.TextLine", "getAtomBounds");
-            return new Rectangle(0, 0, 0, 0);
-        }
-
-        public function getAtomCenter(index:int):Number {
-            stub_method("flash.text.engine.TextLine", "getAtomCenter");
-            return 1.0;
-        }
+        public native function getAtomWordBoundaryOnLeft(index:int):Boolean;
 
         public function getAtomGraphic(index:int):DisplayObject {
             stub_method("flash.text.engine.TextLine", "getAtomGraphic");
             return null;
         }
 
-        public function getAtomTextBlockBeginIndex(index:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomTextBlockBeginIndex");
-            return 0;
+        // Deprecated since FP 10.1; was always a cache hint.
+        public function flushAtomData():void {}
+
+        public function dump():String {
+            return "<TextLine atomCount=" + this.atomCount + " textWidth=" + this.textWidth + ">";
         }
 
-        public function getAtomTextBlockEndIndex(index:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomTextBlockEndIndex");
-            return 0;
-        }
-
-        public function getAtomTextRotation(index:int):String {
-            stub_method("flash.text.engine.TextLine", "getAtomTextRotation");
-            return TextRotation.ROTATE_0;
-        }
-
-        public function getAtomWordBoundaryOnLeft(index:int):Boolean {
-            stub_method("flash.text.engine.TextLine", "getAtomWordBoundaryOnLeft");
-            return false;
-        }
-
-        // This function does nothing in Flash Player 32
-        public function flushAtomData():void { }
-
-        // Overrides
-
+        // TextLine forbids these inherited setters.
         override public function set contextMenu(cm:ContextMenu):void {
             throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
         }
@@ -190,7 +220,5 @@ package flash.text.engine {
         override public function set tabIndex(index:int):void {
             throw new IllegalOperationError("Error #2181: The TextLine class does not implement this property or method.", 2181);
         }
-
-        // End of overrides
     }
 }

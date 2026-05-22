@@ -24,6 +24,9 @@ package flash.text.engine {
         [Ruffle(NativeAccessible)]
         private var _firstLine:TextLine = null;
 
+        [Ruffle(NativeAccessible)]
+        private var _lastLine:TextLine = null;
+
         public function TextBlock(
             content:ContentElement = null,
             tabStops:Vector.<TabStop> = null,
@@ -146,28 +149,13 @@ package flash.text.engine {
             fitSomething:Boolean = false
         ):TextLine;
 
-        public function recreateTextLine(
+        public native function recreateTextLine(
             textLine:TextLine,
             previousLine:TextLine = null,
             width:Number = 1000000,
             lineOffset:Number = 0,
             fitSomething:Boolean = false
-        ):TextLine {
-            if (textLine == null) {
-                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
-            }
-
-            if (previousLine) {
-                return null;
-            }
-
-            stub_method("flash.text.engine.TextBlock", "recreateTextLine");
-
-            // FIXME: Properly recalculate new properties of new TextLine. Text layout
-            // modules often depend on this returning the same textLine, so we can't
-            // call `createTextLine` again.
-            return textLine;
-        }
+        ):TextLine;
 
         public function get textLineCreationResult():String {
             return this._textLineCreationResult;
@@ -178,17 +166,147 @@ package flash.text.engine {
         }
 
         public function get lastLine():TextLine {
-            stub_getter("flash.text.engine.TextBlock", "lastLine");
-            return this._firstLine;
+            return this._lastLine;
         }
 
         public function releaseLines(start:TextLine, end:TextLine):void {
-            if (start != end || end != this._firstLine) {
-                stub_method("flash.text.engine.TextBlock", "releaseLines", "with start != end or multiple lines");
+            if (!start || !end) {
                 return;
             }
-            this._firstLine._validity = "invalid";
-            this._firstLine._textBlock = null;
+            // Walk the chain from start to end (inclusive) marking each
+            // released. TLF (BaseCompose.as) relies on firstLine/lastLine
+            // and the previousLine/nextLine chain being kept consistent
+            // after a release; without this, peekTextLine traverses stale
+            // links and returns null, which crashes the compose pipeline.
+            var beforeStart:TextLine = start._previousLine;
+            var afterEnd:TextLine = end._nextLine;
+            var node:TextLine = start;
+            while (node) {
+                var nxt:TextLine = node._nextLine;
+                node._validity = "invalid";
+                node._textBlock = null;
+                node._previousLine = null;
+                node._nextLine = null;
+                if (node == end) {
+                    break;
+                }
+                node = nxt;
+            }
+            // Stitch the chain back together: beforeStart → afterEnd.
+            if (beforeStart) {
+                beforeStart._nextLine = afterEnd;
+            } else {
+                this._firstLine = afterEnd;
+            }
+            if (afterEnd) {
+                afterEnd._previousLine = beforeStart;
+            } else {
+                this._lastLine = beforeStart;
+            }
+        }
+
+        // First line in the block whose validity is not VALID. TLF
+        // doesn't actually rely on this (it walks firstLine.nextLine
+        // itself), but include it for API parity.
+        public function get firstInvalidLine():TextLine {
+            var line:TextLine = this._firstLine;
+            while (line != null) {
+                if (line.validity != TextLineValidity.VALID) {
+                    return line;
+                }
+                line = line._nextLine;
+            }
+            return null;
+        }
+
+        // Find the TextLine that contains the given character index.
+        public function getTextLineAtCharIndex(charIndex:int):TextLine {
+            var line:TextLine = this._firstLine;
+            while (line != null) {
+                var start:int = line.textBlockBeginIndex;
+                var end:int = start + line.rawTextLength;
+                if (charIndex >= start && charIndex < end) {
+                    return line;
+                }
+                line = line._nextLine;
+            }
+            return null;
+        }
+
+        // Atom and word boundary lookups. For plain ASCII text an atom is a
+        // single code unit, so the next or previous atom boundary is just
+        // charPos offset by one.
+        public function findNextAtomBoundary(charPos:int):int {
+            var content:ContentElement = this._content;
+            if (content == null) {
+                return charPos;
+            }
+            var total:int = content.text != null ? content.text.length : 0;
+            var next:int = charPos + 1;
+            if (next > total) {
+                next = total;
+            }
+            return next;
+        }
+
+        public function findPreviousAtomBoundary(charPos:int):int {
+            var next:int = charPos - 1;
+            if (next < 0) {
+                next = 0;
+            }
+            return next;
+        }
+
+        // Word boundaries: walk to the next or previous whitespace.
+        public function findNextWordBoundary(charPos:int):int {
+            var content:ContentElement = this._content;
+            if (content == null) {
+                return charPos;
+            }
+            var text:String = content.text;
+            if (text == null) {
+                return charPos;
+            }
+            var len:int = text.length;
+            var i:int = charPos;
+            while (i < len && !_isWhitespace(text.charCodeAt(i))) {
+                i++;
+            }
+            while (i < len && _isWhitespace(text.charCodeAt(i))) {
+                i++;
+            }
+            return i;
+        }
+
+        public function findPreviousWordBoundary(charPos:int):int {
+            var content:ContentElement = this._content;
+            if (content == null) {
+                return charPos;
+            }
+            var text:String = content.text;
+            if (text == null) {
+                return charPos;
+            }
+            var i:int = charPos - 1;
+            while (i > 0 && _isWhitespace(text.charCodeAt(i))) {
+                i--;
+            }
+            while (i > 0 && !_isWhitespace(text.charCodeAt(i - 1))) {
+                i--;
+            }
+            return i < 0 ? 0 : i;
+        }
+
+        private static function _isWhitespace(code:int):Boolean {
+            return code == 0x20 || code == 0x09 || code == 0x0A || code == 0x0D || code == 0x2028 || code == 0x2029;
+        }
+
+        // Cache-flush hint; no-op for our impl.
+        [API("670")]
+        public function releaseLineCreationData():void {}
+
+        public function dump():String {
+            return "<TextBlock>";
         }
     }
 }

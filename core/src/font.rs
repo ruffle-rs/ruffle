@@ -125,6 +125,16 @@ pub struct EvalParameters {
     /// pairs of letters, separate from the ordinary width between glyphs. This
     /// parameter allows enabling or disabling that feature.
     pub kerning: bool,
+
+    /// Whether device fonts may kern.
+    ///
+    /// flash.text.engine kerns device fonts, so ElementFormat.kerning
+    /// applies to them. Classic TextField does not: Flash supports the
+    /// TextFormat.kerning flag for embedded fonts only, so a classic field
+    /// using a device font is never kerned regardless of [Self::kerning].
+    /// This flag has no effect on embedded fonts, which always honor
+    /// kerning.
+    pub device_fonts_kern: bool,
 }
 
 impl EvalParameters {
@@ -135,6 +145,9 @@ impl EvalParameters {
             height: Twips::from_pixels(span.font.size),
             letter_spacing: Twips::from_pixels(span.font.letter_spacing),
             kerning: span.font.kerning,
+            // Classic TextField (the from_span caller) does not kern
+            // device fonts; the flash.text.engine layout opts in.
+            device_fonts_kern: false,
         }
     }
 
@@ -238,6 +251,13 @@ pub struct FontFace {
 
     ascender: i32,
     descender: i32,
+    /// OS/2 typographic ascender and descender, in EM-square units. These are
+    /// the line-spacing metrics Flash's flash.text.engine reports for
+    /// TextLine.ascent and descent. They are distinct from the hhea
+    /// ascender and descender used for general glyph layout, and fall back to
+    /// the hhea values when the font has no OS/2 table.
+    typo_ascender: i32,
+    typo_descender: i32,
     leading: i16,
     scale: f32,
     might_have_kerning: bool,
@@ -252,6 +272,13 @@ impl FontFace {
 
         let ascender = face.ascender() as i32;
         let descender = -face.descender() as i32;
+        let (typo_ascender, typo_descender) = match face.tables().os2 {
+            Some(os2) => (
+                os2.typographic_ascender() as i32,
+                -os2.typographic_descender() as i32,
+            ),
+            None => (ascender, descender),
+        };
         let leading = face.line_gap();
         let scale = face.units_per_em() as f32;
         let glyphs = vec![OnceCell::new(); face.number_of_glyphs() as usize];
@@ -274,6 +301,8 @@ impl FontFace {
             glyphs,
             ascender,
             descender,
+            typo_ascender,
+            typo_descender,
             leading,
             scale,
             might_have_kerning,
@@ -328,10 +357,24 @@ impl FontFace {
         let face = ttf_parser::Face::parse(&self.data, self.font_index)
             .expect("Font was already checked to be valid");
 
-        if let Some(kern) = face.tables().kern
-            && let (Some(left_glyph), Some(right_glyph)) =
-                (face.glyph_index(left), face.glyph_index(right))
+        let (Some(left_glyph), Some(right_glyph)) =
+            (face.glyph_index(left), face.glyph_index(right))
+        else {
+            return Twips::ZERO;
+        };
+
+        // Prefer GPOS kerning. It is what modern shapers and Flash Player use,
+        // and a font's GPOS kern feature can disagree with its legacy kern
+        // table. Liberation Sans, for one, kerns "AV" more tightly in the old
+        // kern table than in GPOS. The kern table is only a fallback for
+        // fonts that ship no GPOS kerning.
+        if let Some(gpos) = face.tables().gpos
+            && let Some(value) = gpos_horizontal_kerning(&gpos, left_glyph, right_glyph)
         {
+            return Twips::new(value as i32);
+        }
+
+        if let Some(kern) = face.tables().kern {
             for subtable in kern.subtables {
                 if subtable.horizontal
                     && let Some(value) = subtable.glyphs_kerning(left_glyph, right_glyph)
@@ -342,6 +385,69 @@ impl FontFace {
         }
 
         Twips::ZERO
+    }
+}
+
+/// Look up the horizontal kerning between two glyphs in a font's GPOS kern
+/// feature. Returns the first glyph's x-advance adjustment in font design
+/// units, or None if the pair is not kerned.
+fn gpos_horizontal_kerning(
+    gpos: &ttf_parser::opentype_layout::LayoutTable,
+    left: ttf_parser::GlyphId,
+    right: ttf_parser::GlyphId,
+) -> Option<i16> {
+    use ttf_parser::gpos::PositioningSubtable;
+
+    let kern_tag = ttf_parser::Tag::from_bytes(b"kern");
+    for feature_index in 0..gpos.features.len() {
+        let Some(feature) = gpos.features.get(feature_index) else {
+            continue;
+        };
+        if feature.tag != kern_tag {
+            continue;
+        }
+        for lookup_index in feature.lookup_indices {
+            let Some(lookup) = gpos.lookups.get(lookup_index) else {
+                continue;
+            };
+            for subtable in lookup.subtables.into_iter::<PositioningSubtable>() {
+                if let PositioningSubtable::Pair(pair) = subtable
+                    && let Some(value) = gpos_pair_kerning(pair, left, right)
+                {
+                    return Some(value);
+                }
+            }
+        }
+    }
+    None
+}
+
+/// Look up a glyph pair in a single GPOS pair-adjustment subtable.
+fn gpos_pair_kerning(
+    pair: ttf_parser::gpos::PairAdjustment,
+    left: ttf_parser::GlyphId,
+    right: ttf_parser::GlyphId,
+) -> Option<i16> {
+    use ttf_parser::gpos::PairAdjustment;
+
+    match pair {
+        // Format 1: explicit list of pairs, indexed by the first glyph.
+        PairAdjustment::Format1 { coverage, sets } => {
+            let set = sets.get(coverage.get(left)?)?;
+            let (first, _second) = set.get(right)?;
+            Some(first.x_advance)
+        }
+        // Format 2: a class matrix. The first glyph must be covered, then the
+        // adjustment is looked up by the two glyphs' classes.
+        PairAdjustment::Format2 {
+            coverage,
+            classes,
+            matrix,
+        } => {
+            coverage.get(left)?;
+            let (first, _second) = matrix.get((classes.0.get(left), classes.1.get(right)))?;
+            Some(first.x_advance)
+        }
     }
 }
 
@@ -488,6 +594,19 @@ impl GlyphSource {
             GlyphSource::FontFace { metrics, .. } => *metrics,
             GlyphSource::ExternalRenderer { font_renderer, .. } => font_renderer.get_font_metrics(),
             GlyphSource::Empty => FontMetrics::ZERO,
+        }
+    }
+
+    /// OS/2 typographic ascender/descender, in EM-square units. Only
+    /// FontFace fonts carry an OS/2 table; SWF-embedded and external fonts
+    /// fall back to their regular (hhea-derived) ascent/descent.
+    pub fn typo_metrics(&self) -> (i32, i32) {
+        match self {
+            GlyphSource::FontFace { face, .. } => (face.typo_ascender, face.typo_descender),
+            other => {
+                let m = other.metrics();
+                (m.ascent, m.descent)
+            }
         }
     }
 }
@@ -808,6 +927,20 @@ impl<'gc> Font<'gc> {
     pub fn has_layout(self) -> bool {
         self.0.has_layout
     }
+
+    /// Typographic (OS/2) ascent at height. This is the metric
+    /// flash.text.engine reports for TextLine.ascent, which drives TLF
+    /// line spacing.
+    pub fn typo_ascent(self, height: Twips) -> Twips {
+        let (ascender, _) = self.0.glyphs.typo_metrics();
+        Twips::new((ascender as f32 * height.get() as f32 / self.0.scale) as i32)
+    }
+
+    /// Typographic (OS/2) descent at height. See [Font::typo_ascent].
+    pub fn typo_descent(self, height: Twips) -> Twips {
+        let (_, descender) = self.0.glyphs.typo_metrics();
+        Twips::new((descender as f32 * height.get() as f32 / self.0.scale) as i32)
+    }
 }
 
 impl<'gc> FontLike<'gc> for Font<'gc> {
@@ -858,6 +991,25 @@ pub trait FontLike<'gc> {
 
     fn font_type(&self) -> FontType;
 
+    /// The kerning adjustment to apply between left and right, scaled for
+    /// params, in twips.
+    ///
+    /// Returns zero when the format disables kerning (params.kerning) or the
+    /// font carries no kerning data. Shared by [FontLike::evaluate] and the
+    /// flash.text.engine atom builder so both kern identically.
+    fn pair_kerning(&self, params: EvalParameters, left: char, right: char) -> Twips {
+        // Classic TextField kerns embedded fonts only; flash.text.engine
+        // also kerns device fonts. See [EvalParameters::device_fonts_kern].
+        if !params.kerning
+            || !self.has_kerning_info()
+            || (self.font_type().is_device() && !params.device_fonts_kern)
+        {
+            return Twips::ZERO;
+        }
+        let units = self.get_kerning_offset(left, right).get() as f32;
+        Twips::new((units * params.height.get() as f32 / self.scale()) as i32)
+    }
+
     /// Evaluate this font against a particular string on a glyph-by-glyph
     /// basis.
     ///
@@ -885,34 +1037,33 @@ pub trait FontLike<'gc> {
             .map(|(pos, c)| (pos, c.unwrap_or(char::REPLACEMENT_CHARACTER)))
             .peekable();
 
-        let kerning_enabled =
-            self.has_kerning_info() && (self.font_type().is_device() || params.kerning);
-
         let mut x = Twips::ZERO;
         while let Some((pos, c)) = char_indices.next() {
             if let Some(resolution) = self.resolve_glyph(c) {
                 let glyph = resolution.glyph;
                 let scale = params.height.get() as f32 / resolution.font.scale();
-                let mut advance = glyph.advance();
-                if kerning_enabled {
-                    let next_char = char_indices.peek().map(|(_, ch)| *ch);
-                    let kerning = next_char
-                        .map(|ch| self.get_kerning_offset(c, ch))
-                        .unwrap_or_default();
-                    advance += kerning;
-                }
+                let advance = glyph.advance();
+                let kerning = match char_indices.peek() {
+                    Some((_, next)) => self.pair_kerning(params, c, *next),
+                    None => Twips::ZERO,
+                };
                 let twips_advance = if self.font_type() == FontType::Device {
-                    let unspaced_advance =
-                        round_to_pixel(Twips::new((advance.get() as f32 * scale) as i32));
-                    let spaced_advance =
-                        unspaced_advance + params.letter_spacing.round_to_pixel_ties_even();
+                    // Flash Player pixel-snaps the base device-font glyph
+                    // advance, which is what makes plain device text crisp and
+                    // whole-pixel, then applies kerning and letter spacing on
+                    // top at full twip precision. Snapping with kerning folded
+                    // in would quantize it away, drifting kerned lines.
+                    let base = round_to_pixel(Twips::new((advance.get() as f32 * scale) as i32));
+                    let spaced_advance = base + kerning + params.letter_spacing;
                     if spaced_advance > Twips::ZERO {
                         spaced_advance
                     } else {
-                        unspaced_advance
+                        base
                     }
                 } else {
-                    Twips::new((advance.get() as f32 * scale) as i32) + params.letter_spacing
+                    Twips::new((advance.get() as f32 * scale) as i32)
+                        + kerning
+                        + params.letter_spacing
                 };
 
                 transform.matrix.a = scale;
@@ -1471,7 +1622,7 @@ impl Default for TextRenderSettings {
 
 /// Font set contains a set of fonts used to render text.
 ///
-/// It always contains at least one font—the main font. It may also contain
+/// It always contains at least one font, the main font. It may also contain
 /// fallback fonts, which will be used in case glyphs are missing from the main
 /// font. Fallback fonts are always used in order.
 ///

@@ -1,1 +1,17 @@
-num_ticks = 1
+num_frames = 1
+
+[fonts.sans]
+family = "Liberation Sans"
+path = "LiberationSans-Regular.ttf"
+bold = false
+italic = false
+
+[default_fonts]
+sans = ["Liberation Sans"]
+
+[image_comparisons.output]
+tolerance = 12
+max_outliers = 12000
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }

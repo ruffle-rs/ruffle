@@ -7,6 +7,7 @@ package flash.text.engine {
     public final class ElementFormat {
         private var _alignmentBaseline:String;
         private var _alpha:Number;
+        [Ruffle(NativeAccessible)]
         private var _baselineShift:Number;
         private var _breakOpportunity:String;
         [Ruffle(NativeAccessible)]
@@ -18,12 +19,16 @@ package flash.text.engine {
         private var _fontDescription:FontDescription;
         [Ruffle(NativeAccessible)]
         private var _fontSize:Number;
+        [Ruffle(NativeAccessible)]
         private var _kerning:String;
         private var _ligatureLevel:String;
         private var _locale:String;
         private var _textRotation:String;
+        [Ruffle(NativeAccessible)]
         private var _trackingLeft:Number;
+        [Ruffle(NativeAccessible)]
         private var _trackingRight:Number;
+        [Ruffle(NativeAccessible)]
         private var _typographicCase:String;
 
         public function ElementFormat(

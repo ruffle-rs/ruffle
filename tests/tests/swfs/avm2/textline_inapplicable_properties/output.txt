@@ -1,10 +1,10 @@
-Error: Error: Error #2181: The TextLine class does not implement this property or method.
-null
-Error: Error: Error #2181: The TextLine class does not implement this property or method.
-null
-Error: Error: Error #2181: The TextLine class does not implement this property or method.
-false
-Error: Error: Error #2181: The TextLine class does not implement this property or method.
-false
-Error: Error: Error #2181: The TextLine class does not implement this property or method.
--1
+contextMenu set: throws #2181
+contextMenu = null
+focusRect set: throws #2181
+focusRect = null
+tabChildren set: throws #2181
+tabChildren = false
+tabEnabled set: throws #2181
+tabEnabled = false
+tabIndex set: throws #2181
+tabIndex = -1

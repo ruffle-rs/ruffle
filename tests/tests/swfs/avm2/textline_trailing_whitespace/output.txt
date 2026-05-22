@@ -1,0 +1,6 @@
+no spaces: rawTextLength=4 atomCount=4 textWidth=37.71 textHeight=15.02
+one trailing: rawTextLength=5 atomCount=5 textWidth=37.71 textHeight=15.02
+three trailing: rawTextLength=7 atomCount=7 textWidth=37.71 textHeight=15.02
+leading kept: rawTextLength=6 atomCount=6 textWidth=45.71 textHeight=15.02
+leading+trailing: rawTextLength=8 atomCount=8 textWidth=45.71 textHeight=15.02
+spaces only: rawTextLength=4 atomCount=4 textWidth=0.00 textHeight=15.02

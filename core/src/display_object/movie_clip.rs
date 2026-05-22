@@ -1957,6 +1957,7 @@ impl<'gc> MovieClip<'gc> {
             DisplayObject::Avm1Button(_)
             | DisplayObject::Avm2Button(_)
             | DisplayObject::EditText(_)
+            | DisplayObject::FteTextLine(_)
             | DisplayObject::Bitmap(_)
             | DisplayObject::Video(_) => ratio_equals && id_equals && clip_depth_equals,
             DisplayObject::MovieClip(_)

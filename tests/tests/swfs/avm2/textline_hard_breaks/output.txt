@@ -1,0 +1,19 @@
+plain:
+  line 0 [0,7) rawTextLength=7 atomCount=7
+  lineCount=1
+paragraph U+2029:
+  line 0 [0,4) rawTextLength=4 atomCount=4
+  line 1 [4,7) rawTextLength=3 atomCount=3
+  lineCount=2
+line U+2028:
+  line 0 [0,4) rawTextLength=4 atomCount=4
+  line 1 [4,7) rawTextLength=3 atomCount=3
+  lineCount=2
+trailing U+2029:
+  line 0 [0,4) rawTextLength=4 atomCount=4
+  lineCount=1
+two U+2028:
+  line 0 [0,2) rawTextLength=2 atomCount=2
+  line 1 [2,4) rawTextLength=2 atomCount=2
+  line 2 [4,5) rawTextLength=1 atomCount=1
+  lineCount=3

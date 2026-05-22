@@ -1348,6 +1348,16 @@ pub fn make_error_2008<'gc>(activation: &mut Activation<'_, 'gc>, param_name: &s
 
 #[inline(never)]
 #[cold]
+pub fn make_error_2175<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+    make_error!(error(
+        activation,
+        "Error #2175: One or more elements of the content of the TextBlock has a null ElementFormat.",
+        2175,
+    ))
+}
+
+#[inline(never)]
+#[cold]
 pub fn make_error_2012<'gc>(
     activation: &mut Activation<'_, 'gc>,
     class_name: impl Display,
