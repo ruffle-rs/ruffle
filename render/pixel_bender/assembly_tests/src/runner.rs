@@ -19,7 +19,7 @@ const TEST_TOML_NAME: &str = "test.toml";
 enum TestType {
     Roundtrip,
     Assemble,
-    Dissassemble,
+    Disassemble,
 }
 
 impl TestType {
@@ -28,7 +28,7 @@ impl TestType {
     }
 
     fn performs_disassembly(self) -> bool {
-        matches!(self, TestType::Dissassemble | TestType::Roundtrip)
+        matches!(self, TestType::Disassemble | TestType::Roundtrip)
     }
 }
 
