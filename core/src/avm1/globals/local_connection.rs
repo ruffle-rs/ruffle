@@ -6,6 +6,7 @@ use crate::avm1::globals::shared_object::{deserialize_value, serialize};
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{ActivationIdentifier, ExecutionReason, NativeObject, Object, Value};
 use crate::avm1_stub;
+use crate::avm2::amf::promote_dense_ecma_to_strict_array;
 use crate::context::UpdateContext;
 use crate::display_object::TDisplayObject;
 use crate::local_connection::{LocalConnectionHandle, LocalConnections};
@@ -226,7 +227,10 @@ pub fn send<'gc>(
 
     let mut amf_arguments = Vec::with_capacity(args.len() - 2);
     for arg in &args[2..] {
-        amf_arguments.push(serialize(activation, *arg));
+        // Real Flash sends dense AS1/AS2 `Array` arguments as `StrictArray`
+        // over the LocalConnection wire (#16381).
+        let value = serialize(activation, *arg);
+        amf_arguments.push(promote_dense_ecma_to_strict_array(value));
     }
 
     activation.context.local_connections.send(

@@ -6,6 +6,7 @@ package flash.net {
     public class NetConnection extends EventDispatcher {
         public static var defaultObjectEncoding:uint = 3;
 
+        [Ruffle(NativeAccessible)]
         private var _objectEncoding:uint = NetConnection.defaultObjectEncoding;
         private var _client:Object = this;
         private var _maxPeerConnections:uint = 8;

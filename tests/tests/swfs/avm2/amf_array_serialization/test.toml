@@ -1,0 +1,11 @@
+num_ticks = 10
+log_fetch = true
+# The first two hex values of a NetConnection call with objectEncoding 3 should be 00 03, but are currently 00 00
+known_failure = true
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 9

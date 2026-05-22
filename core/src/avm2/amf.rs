@@ -67,8 +67,35 @@ pub fn serialize_value<'gc>(
 
                     Some(AmfValue::ECMAArray(ObjectId::INVALID, dense, sparse, len))
                 } else {
-                    // TODO: is this right?
-                    Some(AmfValue::ECMAArray(ObjectId::INVALID, vec![], values, len))
+                    // Determine if we must downgrade to an ECMA Array due to string keys
+                    let mut has_string_keys = false;
+                    for elem in &values {
+                        if elem.name.parse::<u32>().is_err() {
+                            has_string_keys = true;
+                            break;
+                        }
+                    }
+
+                    if has_string_keys {
+                        // Custom properties exist: degrade to ECMA Array (0x08)
+                        Some(AmfValue::ECMAArray(ObjectId::INVALID, vec![], values, len))
+                    } else {
+                        // Strict Array (0x0A): Pre-fill with Undefined to maintain sparse length gaps
+                        let mut strict_values = {
+                            let mut v = Vec::with_capacity(len as usize);
+                            (0..len as usize).for_each(|_| v.push(Rc::new(AmfValue::Undefined)));
+                            v
+                        };
+
+                        for elem in values {
+                            if let Ok(idx) = elem.name.parse::<usize>()
+                                && idx < len as usize
+                            {
+                                strict_values[idx] = elem.value;
+                            }
+                        }
+                        Some(AmfValue::StrictArray(ObjectId::INVALID, strict_values))
+                    }
                 }
             } else if let Some(vec) = o.as_vector_storage() {
                 let val_type = vec.value_type();
@@ -181,6 +208,65 @@ pub fn serialize_value<'gc>(
             }
         }
     }
+}
+
+pub fn promote_dense_ecma_to_strict_array(value: AmfValue) -> AmfValue {
+    match value {
+        AmfValue::ECMAArray(_, dense, sparse, len)
+            if sparse.is_empty() && dense.len() as u32 == len =>
+        {
+            let promoted = dense.into_iter().map(promote_rc).collect();
+            AmfValue::StrictArray(ObjectId::INVALID, promoted)
+        }
+        AmfValue::ECMAArray(id, dense, sparse, len) => {
+            let promoted_dense = dense.into_iter().map(promote_rc).collect();
+            let promoted_sparse = sparse
+                .into_iter()
+                .map(|e| Element::new(e.name, promote_rc(e.value)))
+                .collect();
+            AmfValue::ECMAArray(id, promoted_dense, promoted_sparse, len)
+        }
+        AmfValue::StrictArray(id, values) => {
+            let promoted = values.into_iter().map(promote_rc).collect();
+            AmfValue::StrictArray(id, promoted)
+        }
+        AmfValue::Object(id, elements, class) => {
+            let promoted = elements
+                .into_iter()
+                .map(|e| Element::new(e.name, promote_rc(e.value)))
+                .collect();
+            AmfValue::Object(id, promoted, class)
+        }
+        AmfValue::AMF3(inner) => AmfValue::AMF3(promote_rc(inner)),
+        AmfValue::VectorObject(id, values, name, fixed) => {
+            let promoted = values.into_iter().map(promote_rc).collect();
+            AmfValue::VectorObject(id, promoted, name, fixed)
+        }
+        AmfValue::Dictionary(id, body, weak_keys) => {
+            let promoted = body
+                .into_iter()
+                .map(|(k, v)| (promote_rc(k), promote_rc(v)))
+                .collect();
+            AmfValue::Dictionary(id, promoted, weak_keys)
+        }
+        AmfValue::Custom(custom_elements, regular_elements, class) => {
+            let promoted_custom = custom_elements
+                .into_iter()
+                .map(|e| Element::new(e.name, promote_rc(e.value)))
+                .collect();
+            let promoted_regular = regular_elements
+                .into_iter()
+                .map(|e| Element::new(e.name, promote_rc(e.value)))
+                .collect();
+            AmfValue::Custom(promoted_custom, promoted_regular, class)
+        }
+        leaf => leaf,
+    }
+}
+
+fn promote_rc(rc: Rc<AmfValue>) -> Rc<AmfValue> {
+    let owned = Rc::try_unwrap(rc).unwrap_or_else(|shared| (*shared).clone());
+    Rc::new(promote_dense_ecma_to_strict_array(owned))
 }
 
 fn alias_to_class<'gc>(

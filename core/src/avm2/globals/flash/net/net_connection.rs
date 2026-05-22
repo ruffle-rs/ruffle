@@ -1,11 +1,12 @@
 use crate::avm2::amf::serialize_value;
 use crate::avm2::error::make_error_2126;
+use crate::avm2::globals::slots::flash_net_net_connection as slots;
 pub use crate::avm2::object::net_connection_allocator;
 use crate::avm2::parameters::ParametersExt;
 use crate::net_connection::NetConnections;
 use crate::string::AvmString;
 use crate::{
-    avm2::{Activation, Error, Value},
+    avm2::{Activation, Error, TObject, Value},
     avm2_stub_method,
 };
 use flash_lso::packet::Header;
@@ -276,14 +277,24 @@ pub fn call<'gc>(
         .as_net_connection()
         .expect("Must be NetConnection object");
 
+    let object_encoding = this.get_slot(slots::_OBJECT_ENCODING).as_u32();
+
+    let amf_version = if object_encoding == 3 {
+        AMFVersion::AMF3
+    } else {
+        AMFVersion::AMF0
+    };
+
     let command = args.get_string(activation, 0);
     let responder = args.try_get_object(1).and_then(|o| o.as_responder());
     let mut arguments = Vec::new();
 
     let mut object_table = FnvHashMap::default();
     for arg in &args[2..] {
-        if let Some(value) = serialize_value(activation, *arg, AMFVersion::AMF0, &mut object_table)
-        {
+        if let Some(mut value) = serialize_value(activation, *arg, amf_version, &mut object_table) {
+            if amf_version == AMFVersion::AMF3 {
+                value = AMFValue::AMF3(Rc::new(value));
+            }
             arguments.push(Rc::new(value));
         }
     }
