@@ -1563,7 +1563,7 @@ pub fn get_url<'gc>(
         };
         let vars_method = method.map(|m| (m, activation.locals_into_form_values()));
 
-        activation.context.navigator.navigate_to_url(
+        activation.context.navigator.navigate_to_url_normalized(
             &url.to_utf8_lossy(),
             &window.to_utf8_lossy(),
             vars_method,
