@@ -10,6 +10,7 @@ use gc_arena::{Collect, Gc};
 use ruffle_macros::istr;
 use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::rc::Rc;
 
 #[derive(Default, Clone, Collect)]
 #[collect(require_static)]
@@ -104,33 +105,38 @@ pub fn serialize<'gc>(activation: &mut Activation<'_, 'gc>, value: Value<'gc>) -
     }
 }
 
-/// Serialize an AS1/AS2 `Array` into the AMF0 array form.  Dense indices fill
-/// the first slot of the returned `ECMAArray`; non-numeric or out-of-range
-/// keys go into the associative part.  The wrapping `ECMAArray` matches what
-/// flash-lso's `ObjWriter::array`/`ArrayWriter::commit` produces for nested
-/// arrays inside `recursive_serialize`, so behavior is uniform between
-/// top-level and nested `Array` serialization.
+/// Serialize an AS1/AS2 `Array` into the AMF0 array form, matching real Flash's
+/// wire encoding for `NetConnection.call` / `LocalConnection.send` arguments
+/// (#16381).  Keys that line up with the enumeration index (i.e. the array
+/// starts with a dense `0..n` prefix) fill the `ECMAArray`'s dense slot;
+/// every later key falls into the associative slot.  This mirrors AVM2's
+/// `serialize_value` Array branch and, combined with `promote_dense_ecma_to_strict_array`
+/// at NetConnection/LocalConnection call sites, yields `StrictArray` for pure
+/// dense arrays and an insertion-ordered `ECMAArray` for arrays with custom
+/// properties.
 fn serialize_array<'gc>(activation: &mut Activation<'_, 'gc>, array: Object<'gc>) -> AmfValue {
     let length = array.length(activation).unwrap_or(0).max(0) as u32;
-    let mut dense: Vec<std::rc::Rc<AmfValue>> = (0..length)
-        .map(|_| std::rc::Rc::new(AmfValue::Undefined))
-        .collect();
+    let mut dense: Vec<Rc<AmfValue>> = Vec::new();
     let mut associative: Vec<Element> = Vec::new();
-    // Reversed to match Flash Player enumeration order, mirroring
-    // `recursive_serialize`.
-    for key in array.get_keys(activation, false).into_iter().rev() {
-        let key_str = key.to_utf8_lossy();
+    // `PropertyMap::iter` yields most-recently-added first, so `.rev()`
+    // restores Flash's enumeration (insertion) order.  Preserving this order
+    // is what lets the associative slot serialize as the exact byte sequence
+    // real Flash sends for mixed arrays.
+    for (i, key) in array
+        .get_keys(activation, false)
+        .into_iter()
+        .rev()
+        .enumerate()
+    {
+        let name = key.to_utf8_lossy().to_string();
         let value = array
             .get(key, activation)
             .map(|v| serialize(activation, v))
             .unwrap_or(AmfValue::Undefined);
-        match key_str.parse::<u32>() {
-            Ok(idx) if idx < length => {
-                dense[idx as usize] = std::rc::Rc::new(value);
-            }
-            _ => {
-                associative.push(Element::new(key_str.to_string(), std::rc::Rc::new(value)));
-            }
+        if name == i.to_string() {
+            dense.push(Rc::new(value));
+        } else {
+            associative.push(Element::new(name, Rc::new(value)));
         }
     }
     AmfValue::ECMAArray(ObjectId::INVALID, dense, associative, length)
