@@ -88,8 +88,13 @@ pub fn build_avm2_playerglobal(
     let playerglobal = out_dir.join("playerglobal_avm2");
     let mut bytes = std::fs::read(playerglobal.with_extension("abc"))?;
 
+    // Keep a copy of the raw ABC for use as an asc.jar import library.
+    std::fs::rename(
+        playerglobal.with_extension("abc"),
+        out_dir.join("playerglobal_import.abc"),
+    )?;
+
     // Cleanup the temporary files written out by 'asc.jar'
-    std::fs::remove_file(playerglobal.with_extension("abc"))?;
     std::fs::remove_file(playerglobal.with_extension("cpp"))?;
     std::fs::remove_file(playerglobal.with_extension("h"))?;
 
