@@ -4889,6 +4889,7 @@ version = "0.2.0"
 dependencies = [
  "anyhow",
  "approx",
+ "asc",
  "async-channel",
  "cfg-expr",
  "chrono",
@@ -4907,6 +4908,7 @@ dependencies = [
  "ruffle_video_software",
  "serde",
  "sha2",
+ "tempfile",
  "toml",
  "url",
  "vfs",

@@ -231,7 +231,7 @@ japanese_mincho = ["Test Font", "Test Font Fallback"]
 # Multiple compiler steps can be included in a single test.
 [[compilers]]
 
-# The only compiler currently supported.
+# Rascal can be used to compile AVM1 code.
 type = "Rascal"
 
 # The SWF to compile.
@@ -271,6 +271,35 @@ optimizations = {
   # Whether to promote variables to registers, enabling the `DefineFunction2` opcode.
   promote_variables_to_registers = true,
 }
+
+[[compilers]]
+
+# asc can be used to compile AVM2 code.
+type = "Asc"
+
+# The SWF to compile.
+target = "test.swf"
+
+# The root class name to use.
+class = ""
+
+# A list of all source files to compile.
+scripts = ["test.as", "other.as"]
+
+# Same as in "Rascal".
+swf_version = 15
+
+# Translation of the display region of the stage, in pixels.
+stage_transform = { x = 0.0, y = 0.0 }
+
+# Same as in "Rascal".
+use_network = false
+
+# Whether to enable asc optimizations.
+optimize = true
+
+# Whether to include debug info in the bytecode.
+debug = true
 
 ```
 
