@@ -1348,11 +1348,10 @@ impl<'gc> MovieClip<'gc> {
             || self.current_frame() < self.frames_loaded() as u16
         {
             NextFrame::Next
-        // The `current_frame` can be larger than `header_frames` if the SWF header
-        // declared fewer frames than we actually have. We only stop the swf if there
-        // was *really* at most a single frame (we declared at most 1 frame, and reached the end
-        // of the stream after executing 0 or 1 frames)
-        } else if self.header_frames() <= 1 && self.current_frame() <= 1 {
+        // Stop instead of looping if there was really only one frame,
+        // regardless of what the SWF header declared. A SWF may declare more
+        // or fewer frames than it actually has.
+        } else if self.frames_loaded() <= 1 {
             NextFrame::Same
         } else {
             NextFrame::First
