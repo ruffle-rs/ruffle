@@ -1,0 +1,16 @@
+in frame 1/1:
+undefined
+in frame 1/2:
+  value from frame 1/1
+in child frame 1/1:
+  value from frame 1/2
+in child frame 1/2:
+  value from child frame 1/1
+in frame 1/3:
+  value from child frame 1/2
+in child frame 2/1:
+undefined
+in child frame 2/2:
+  value from child frame 2/1
+in frame 2/1:
+  value from child frame 2/2
