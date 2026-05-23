@@ -92,7 +92,7 @@ pub fn navigate_to_url<'gc>(
             let data = request.get_slot(url_request_slots::_DATA);
             let (url, vars) = parse_data(activation, &url, &data)?;
 
-            activation.context.navigator.navigate_to_url(
+            activation.context.navigator.navigate_to_url_normalized(
                 &url,
                 &target.to_utf8_lossy(),
                 Some((method, vars)),

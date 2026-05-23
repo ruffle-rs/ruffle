@@ -1180,7 +1180,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(fscommand) = fscommand::parse(&url) {
             fscommand::handle(fscommand, &target, self)?;
         } else {
-            self.context.navigator.navigate_to_url(
+            self.context.navigator.navigate_to_url_normalized(
                 &url.to_utf8_lossy(),
                 &target.to_utf8_lossy(),
                 None,
@@ -1326,9 +1326,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             None => None,
         };
 
-        self.context
-            .navigator
-            .navigate_to_url(&url.to_utf8_lossy(), &target.to_utf8_lossy(), vars);
+        self.context.navigator.navigate_to_url_normalized(
+            &url.to_utf8_lossy(),
+            &target.to_utf8_lossy(),
+            vars,
+        );
 
         Ok(FrameControl::Continue)
     }
