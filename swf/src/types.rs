@@ -358,6 +358,10 @@ pub enum PlaceObjectAction {
     Place(CharacterId),
     Modify,
     Replace(CharacterId),
+    /// PlaceObject3 with HasClassName flag and no CharacterId -- AS3 export-symbol
+    /// placement. The class name itself is carried in PlaceObject::class_name.
+    /// (LCE Phase 4 spike, see project_lce_ruffle_spike memory.)
+    PlaceByClass,
 }
 
 #[derive(Clone, Debug, PartialEq)]

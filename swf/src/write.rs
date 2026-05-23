@@ -1731,7 +1731,7 @@ impl<W: Write> Writer<W> {
             match place_object.action {
                 PlaceObjectAction::Place(character_id)
                 | PlaceObjectAction::Replace(character_id) => writer.write_u16(character_id)?,
-                PlaceObjectAction::Modify => (),
+                PlaceObjectAction::Modify | PlaceObjectAction::PlaceByClass => (),
             }
             if let Some(ref matrix) = place_object.matrix {
                 writer.write_matrix(matrix)?;

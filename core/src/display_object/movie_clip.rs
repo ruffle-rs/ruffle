@@ -8,9 +8,11 @@ use crate::avm1::{NativeObject as Avm1NativeObject, Object as Avm1Object};
 use crate::avm2::Activation as Avm2Activation;
 use crate::avm2::object::LoaderStream;
 use crate::avm2::script::Script;
+use crate::avm2::api_version::ApiVersion as Avm2ApiVersion;
 use crate::avm2::{
     Avm2, ClassObject as Avm2ClassObject, FunctionArgs as Avm2FunctionArgs, LoaderInfoObject,
-    Object as Avm2Object, StageObject as Avm2StageObject, Value as Avm2Value,
+    Multiname as Avm2Multiname, Namespace as Avm2Namespace, Object as Avm2Object,
+    QName as Avm2QName, StageObject as Avm2StageObject, Value as Avm2Value,
 };
 use crate::backend::audio::{AudioManager, SoundInstanceHandle};
 use crate::backend::navigator::Request;
@@ -2575,17 +2577,24 @@ impl<'gc> TDisplayObject<'gc> for MovieClip<'gc> {
             && (self.frames_loaded() >= 1 || self.header_frames() == 0)
         {
             let is_load_frame = !self.0.initialized();
-            let needs_construction = if self.0.object2.get().is_none() {
+            let object2_was_present = self.0.object2.get().is_some();
+            let init_done = self.0.contains_flag(MovieClipFlags::AVM2_INIT_DONE);
+            let needs_construction = if !object2_was_present {
                 self.allocate_as_avm2_object(context, self.into());
                 true
             } else {
-                false
+                // LCE Phase 4 spike (Step 3d): if object2 was eagerly allocated
+                // by a PlaceByClass placement during tag processing, the AS3
+                // constructor body has NOT yet been invoked. AVM2_INIT_DONE
+                // tells us whether to still run it.
+                !init_done
             };
 
             self.0.unset_loop_queued();
 
             if needs_construction {
                 self.construct_as_avm2_object(context);
+                self.0.set_flag(MovieClipFlags::AVM2_INIT_DONE, true);
                 self.on_construction_complete(context);
                 // If we're in the load frame and we were constructed by ActionScript,
                 // then we want to wait for the Sprite constructor to run
@@ -4461,6 +4470,161 @@ impl<'gc, 'a> MovieClip<'gc> {
                     child.apply_place_object(context, &place_object);
                 }
             }
+            PlaceObjectAction::PlaceByClass => {
+                // LCE Phase 4 spike (Step 3b+3d): resolve the AS3 class via the
+                // movie's AVM2 domain, construct an instance, extract the backing
+                // DisplayObject, and add it to the display list at the requested
+                // depth with the PlaceObject params applied. Step 3d: eagerly
+                // allocate self's AVM2 object2 (without running its constructor)
+                // so the child's set_on_parent_field can bind successfully. The
+                // parent's constructor still runs later in construct_frame,
+                // where AVM2_INIT_DONE flag gates the call.
+                if self.movie().is_action_script_3() && self.0.object2.get().is_none() {
+                    self.allocate_as_avm2_object(context, self.into());
+                }
+                if let Some(class_name) = place_object.class_name {
+                    let encoding = swf::SwfStr::encoding_for_version(self.swf_version());
+                    let cn_wstring = class_name.decode(encoding);
+                    let depth = place_object.depth as Depth;
+
+                    // Split "fourj.Buttons.FJ_MenuButton_Normal" into package + local.
+                    let mut last_dot: Option<usize> = None;
+                    for (i, c) in cn_wstring.iter().enumerate() {
+                        if c == '.' as u16 {
+                            last_dot = Some(i);
+                        }
+                    }
+                    let (pkg_w, local_w) = match last_dot {
+                        Some(i) => (
+                            WString::from(&cn_wstring[..i]),
+                            WString::from(&cn_wstring[i + 1..]),
+                        ),
+                        None => (WString::new(), WString::from(&cn_wstring[..])),
+                    };
+
+                    let movie = self.movie();
+                    let domain = context
+                        .library
+                        .library_for_movie_mut(movie)
+                        .avm2_domain();
+
+                    // Build QName + look up + construct, all under one Activation.
+                    let constructed: Option<DisplayObject<'gc>> = {
+                        let mut activation = Avm2Activation::from_nothing(context);
+                        let pkg_avm = AvmString::new(activation.gc(), pkg_w);
+                        let local_avm = AvmString::new(activation.gc(), local_w);
+                        let ns = Avm2Namespace::package(
+                            pkg_avm,
+                            Avm2ApiVersion::VM_INTERNAL,
+                            activation.strings(),
+                        );
+                        let qname = Avm2QName::new(ns, local_avm);
+
+                        match domain.get_defined_value(&mut activation, qname) {
+                            Ok(class_value) => {
+                                let class_object_opt = class_value
+                                    .as_object()
+                                    .and_then(|o| o.as_class_object());
+                                match class_object_opt {
+                                    Some(class_object) => {
+                                        match class_object.construct(&mut activation, &[]) {
+                                            Ok(val) => val
+                                                .as_object()
+                                                .and_then(|o| o.as_display_object()),
+                                            Err(err) => {
+                                                tracing::error!(
+                                                    "PlaceByClass at depth {}: AS3 class {} construct() failed: {:?}",
+                                                    depth, cn_wstring, err
+                                                );
+                                                None
+                                            }
+                                        }
+                                    }
+                                    None => {
+                                        tracing::warn!(
+                                            "PlaceByClass at depth {}: {} resolved but not a ClassObject",
+                                            depth, cn_wstring
+                                        );
+                                        None
+                                    }
+                                }
+                            }
+                            Err(err) => {
+                                tracing::warn!(
+                                    "PlaceByClass at depth {}: get_defined_value({}) failed: {:?}",
+                                    depth, cn_wstring, err
+                                );
+                                None
+                            }
+                        }
+                    }; // activation dropped here
+
+                    if let Some(child) = constructed {
+                        // Same post-instantiation as MovieClip::instantiate_child.
+                        if self.has_child_at_depth(depth) {
+                            context.avm_warning(&format!(
+                                "PlaceByClass: failed to place {} at depth {} (already occupied)",
+                                cn_wstring, depth
+                            ));
+                        } else {
+                            let prev_child = self.replace_at_depth(context, child, depth);
+                            child.set_instantiated_by_timeline(true);
+                            child.set_depth(depth);
+                            child.set_parent(context, Some(self.into()));
+                            child.set_place_frame(self.current_frame());
+                            let has_object2_allocated = self.object2().is_none();
+                            child.set_manual_frame_construct(has_object2_allocated);
+
+                            child.apply_place_object(context, &place_object);
+                            if let Some(name) = &place_object.name {
+                                let n_enc = swf::SwfStr::encoding_for_version(self.swf_version());
+                                let n = AvmString::new(context.gc(), name.decode(n_enc));
+                                child.set_name(context.gc(), n);
+                                child.set_has_explicit_name(true);
+                            }
+                            if let Some(clip_depth) = place_object.clip_depth {
+                                child.set_clip_depth(clip_depth.into());
+                            }
+
+                            child.post_instantiation(context, None, Instantiator::Movie, false);
+                            child.enter_frame(context);
+
+                            // Step 3e: explicit init_property write to the parent's
+                            // typed trait slot, BEFORE the parent's AS3 constructor
+                            // runs (gated by AVM2_INIT_DONE in construct_frame).
+                            // This is what makes `this.<name>` resolve correctly
+                            // in __setProp_<name>_* methods.
+                            if let (Some(parent_obj), Some(child_obj), Some(name)) =
+                                (self.object2(), child.object2(), child.name())
+                            {
+                                let mut act = Avm2Activation::from_nothing(context);
+                                let pv = Avm2Value::from(parent_obj);
+                                let cv: Avm2Value = child_obj.into();
+                                let mn = Avm2Multiname::new(
+                                    act.avm2().find_public_namespace(),
+                                    name,
+                                );
+                                let _ = pv.init_property(&mn, cv, &mut act);
+                            }
+                            child.on_construction_complete(context);
+
+                            if let Some(prev_child) = prev_child {
+                                dispatch_removed_event(prev_child, context);
+                            }
+
+                            tracing::info!(
+                                "PlaceByClass at depth {}: {} placed + bound to parent",
+                                depth, cn_wstring
+                            );
+                        }
+                    }
+                } else {
+                    tracing::warn!(
+                        "PlaceByClass at depth {} with no class_name -- skipped",
+                        place_object.depth,
+                    );
+                }
+            }
         }
 
         Ok(())
@@ -4930,7 +5094,7 @@ pub enum QueuedTagAction {
 bitflags! {
     /// Boolean state flags used by `MovieClip`.
     #[derive(Clone, Copy)]
-    struct MovieClipFlags: u8 {
+    struct MovieClipFlags: u16 {
         /// Whether this `MovieClip` has run its initial frame.
         const INITIALIZED             = 1 << 0;
 
@@ -4961,6 +5125,13 @@ bitflags! {
 
         /// Whether the AVM2 constructor of this `MovieClip` threw an error.
         const AVM2_CONSTRUCTOR_FAILED = 1 << 7;
+
+        /// LCE Phase 4 spike (Step 3d): set after `construct_as_avm2_object`
+        /// completes. Allows the PlaceByClass path to eagerly allocate
+        /// `object2` for binding `set_on_parent_field` to work, while still
+        /// letting `construct_frame` know that the AS3 constructor body has
+        /// not yet been invoked and should still be called.
+        const AVM2_INIT_DONE          = 1 << 8;
     }
 }
 
