@@ -36,6 +36,8 @@ members = [
     "tests/socket-format",
     "tests/mocket",
     "tests/framework",
+
+    "tools/asc",
 ]
 default-members = ["desktop"]
 resolver = "2"
