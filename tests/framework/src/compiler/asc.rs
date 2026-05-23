@@ -1,12 +1,12 @@
 use crate::compiler::SwfCompiler;
-use crate::util::{read_bytes, write_bytes};
+use crate::util::read_bytes;
+use crate::util::write_bytes_and_verify_if_changed;
 use anyhow::anyhow;
 use ruffle_core::swf::{
     Compression, DoAbc2, DoAbc2Flag, FileAttributes, Fixed8, Header, Rectangle, SwfStr,
     SymbolClassLink, Tag, Twips,
 };
 use serde::Deserialize;
-use sha2::{Digest, Sha256};
 use tempfile::TempDir;
 use vfs::VfsPath;
 
@@ -169,33 +169,8 @@ impl SwfCompiler for AscCompiler {
         ruffle_core::swf::write_swf(&header, &tags, &mut swf_bytes)?;
 
         let output_path = root_dir.join(&self.target)?;
-        if verify_if_changed {
-            if !output_path.is_file()? {
-                write_bytes(&output_path, &swf_bytes)?;
-                return Err(anyhow::anyhow!(
-                    "Output file '{}' does not exist or is not a file",
-                    self.target
-                ));
-            }
 
-            let mut existing_hash = Sha256::new();
-            existing_hash.update(read_bytes(&output_path)?);
-
-            let mut new_hash = Sha256::new();
-            new_hash.update(&swf_bytes);
-
-            if existing_hash.finalize() != new_hash.finalize() {
-                write_bytes(&output_path, &swf_bytes)?;
-                Err(anyhow::anyhow!(
-                    "Output file '{}' has changed during compilation",
-                    self.target
-                ))
-            } else {
-                Ok(())
-            }
-        } else {
-            Ok(write_bytes(&output_path, &swf_bytes)?)
-        }
+        write_bytes_and_verify_if_changed(&output_path, &swf_bytes, verify_if_changed)
     }
 }
 
