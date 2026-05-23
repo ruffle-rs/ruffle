@@ -36,5 +36,5 @@ sha2 = { workspace = true }
 clap = { workspace = true, optional = true }
 
 [features]
-jpegxr = ["ruffle_core/jpegxr"]
+jpegxr = ["ruffle_core/jpegxr", "ruffle_render/jpegxr"]
 lzma = ["ruffle_core/lzma"]

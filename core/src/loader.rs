@@ -116,6 +116,7 @@ impl FromStr for LoadBehavior {
 pub enum ContentType {
     Swf,
     Jpeg,
+    JpegXr,
     Png,
     Gif,
     Unknown,
@@ -125,6 +126,7 @@ impl From<JpegTagFormat> for ContentType {
     fn from(jtf: JpegTagFormat) -> Self {
         match jtf {
             JpegTagFormat::Jpeg => Self::Jpeg,
+            JpegTagFormat::JpegXr => Self::JpegXr,
             JpegTagFormat::Png => Self::Png,
             JpegTagFormat::Gif => Self::Gif,
             JpegTagFormat::Unknown => Self::Unknown,
@@ -137,6 +139,7 @@ impl fmt::Display for ContentType {
         match self {
             Self::Swf => write!(f, "SWF"),
             Self::Jpeg => write!(f, "JPEG"),
+            Self::JpegXr => write!(f, "JPEG-XR"),
             Self::Png => write!(f, "PNG"),
             Self::Gif => write!(f, "GIF"),
             Self::Unknown => write!(f, "Unknown"),
@@ -1658,7 +1661,7 @@ impl<'gc> MovieLoader<'gc> {
 
                 Arc::new(movie)
             }
-            ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
+            ContentType::Gif | ContentType::Jpeg | ContentType::JpegXr | ContentType::Png => {
                 let (width, height) =
                     ruffle_render::utils::decode_define_bits_jpeg_dimensions(data)
                         .unwrap_or((0, 0));
@@ -1797,7 +1800,7 @@ impl<'gc> MovieLoader<'gc> {
 
                 return Ok(());
             }
-            ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
+            ContentType::Gif | ContentType::Jpeg | ContentType::JpegXr | ContentType::Png => {
                 let mut activation = Avm2Activation::from_nothing(uc);
 
                 let library = activation.context.library.library_for_movie_mut(movie);

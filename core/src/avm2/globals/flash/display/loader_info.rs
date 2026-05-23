@@ -162,6 +162,7 @@ pub fn get_content_type<'gc>(
         let content_type = match loader_info.content_type_hide_before_init() {
             ContentType::Swf => "application/x-shockwave-flash",
             ContentType::Jpeg => "image/jpeg",
+            ContentType::JpegXr => "image/jpegxr",
             ContentType::Png => "image/png",
             ContentType::Gif => "image/gif",
             ContentType::Unknown => return Ok(Value::Null),
