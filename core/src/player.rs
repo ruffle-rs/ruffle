@@ -2222,9 +2222,6 @@ impl Player {
                     Avm1::notify_system_listeners(action.clip, listener, method, &args, context);
                 }
             }
-
-            // Do not let garbage values accumulate across multiple executions and/or frames.
-            context.avm1.clear();
         }
     }
 

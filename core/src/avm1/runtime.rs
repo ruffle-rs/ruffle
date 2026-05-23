@@ -514,6 +514,9 @@ impl<'gc> Avm1<'gc> {
             .movie_clip_on_load(context.action_queue, &context.strings);
 
         *context.frame_phase = FramePhase::Idle;
+
+        // Looks like the stack is cleared between frames.
+        context.avm1.clear();
     }
 
     /// Adds a movie clip to the execution list.
