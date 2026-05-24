@@ -1,0 +1,25 @@
+[package]
+name = "ruffle_iggy_shim"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish = false
+description = "C-ABI bridge from LCE's IggyPlayer* API to Ruffle (Phase 4.1)"
+
+[lib]
+crate-type = ["cdylib", "staticlib"]
+
+# Phase 4.3: pulls in ruffle_core for SwfMovie loading. Player
+# construction depends on ruffle_core's PlayerBuilder pattern.
+#
+# Phase 4.4(a): + ruffle_render_wgpu for headless rasterisation via
+# WgpuRenderBackend::for_offscreen + capture_frame() readback. The host
+# side reads the resulting RGBA bytes and uploads them as a D3D11
+# texture for PS_BLIT compositing (see 4J_Render_open::BlitRuffleFrame).
+
+[dependencies]
+ruffle_core         = { path = "../core" }
+ruffle_render       = { path = "../render" }
+ruffle_render_wgpu  = { path = "../render/wgpu" }
+image               = { workspace = true }
+wgpu                = { workspace = true }

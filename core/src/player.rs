@@ -2470,6 +2470,244 @@ impl Player {
         })
     }
 
+    /// Invoke `name(args)` on the root display object's AS3 class. Bypasses
+    /// `ExternalInterface.addCallback` -- looks up the method directly via
+    /// AVM2 reflection on the root. Returns `ExternalValue::Null` on any
+    /// failure (no root, AS3 method missing, runtime error).
+    ///
+    /// Added for the LCE / Iggy integration: stock Iggy's
+    /// `IggyPlayerCallMethodRS` can call any AS3 method on any path; for
+    /// the common LCE case where target = root, this is the bridge.
+    pub fn call_root_method_avm2(
+        &mut self,
+        name: &str,
+        args: Vec<ExternalValue>,
+    ) -> ExternalValue {
+        self.mutate_with_update_context(|context| {
+            use crate::avm2::Multiname;
+            use crate::string::AvmString;
+            let domain = match context
+                .library
+                .library_for_movie(context.root_swf.clone())
+                .map(|l| l.avm2_domain())
+            {
+                Some(d) => d,
+                None => return ExternalValue::Null,
+            };
+            let mut activation = Avm2Activation::from_domain(context, domain);
+            let root = match activation.context.stage.root_clip() {
+                Some(r) => r,
+                None => return ExternalValue::Null,
+            };
+            let root_obj = match root.object2() {
+                Some(o) => crate::avm2::Value::from(o),
+                None => return ExternalValue::Null,
+            };
+            let avm2_args: Vec<crate::avm2::Value> = args
+                .into_iter()
+                .map(|v| v.into_avm2(activation.context))
+                .collect();
+            let public_ns = activation.avm2().find_public_namespace();
+            let name_str = AvmString::new_utf8(activation.gc(), name);
+            let multiname = Multiname::new(public_ns, name_str);
+            match root_obj.call_property(
+                &multiname,
+                crate::avm2::FunctionArgs::from_slice(&avm2_args),
+                &mut activation,
+            ) {
+                Ok(value) => match ExternalValue::from_avm2(&mut activation, value) {
+                    Ok(v) => v,
+                    Err(_) => ExternalValue::Null,
+                },
+                Err(e) => {
+                    static FAIL_LOG: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+                    let n = FAIL_LOG.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    if n < 8 {
+                        use std::io::Write;
+                        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true)
+                            .open(r"C:\Users\poopo\Desktop\Projects\LCE\LCE_orig\as3_errors.log") {
+                            let _ = writeln!(f, "call '{}' nargs={} err={:?}", name, avm2_args.len(), e);
+                        }
+                    }
+                    ExternalValue::Null
+                }
+            }
+        })
+    }
+
+    /// Inject the AS3 class definitions from a secondary SWF into THIS
+    /// player's ROOT ApplicationDomain. After this call, PlaceByClass
+    /// references in the root movie (and any sub-movies sharing the root
+    /// domain) will find classes defined in `lib_movie` via
+    /// `domain.get_defined_value`.
+    ///
+    /// LCE / Iggy extension: stock Iggy lets multiple `IggyPlayer`
+    /// instances share `IggyLibrary` handles (SWFs parsed once, classes
+    /// accessible from any player built against any of the loaded
+    /// libraries). Real Flash supports this via Loader.load with
+    /// LoaderContext.applicationDomain = ApplicationDomain.currentDomain;
+    /// Ruffle has no programmatic equivalent, so we walk the secondary
+    /// SWF's DoAbc/DoAbc2 tags ourselves and execute each one against
+    /// the root movie's domain via Avm2::do_abc.
+    ///
+    /// Only AS3 class definitions land in the domain. SymbolClass linkage
+    /// to DefineCharacter tags in `lib_movie` is NOT processed; classes
+    /// whose visual content lives on a Flash-IDE-authored timeline will
+    /// instantiate as empty Sprites. Pure-AS3 classes (graphics drawn in
+    /// the constructor) work fine.
+    pub fn inject_secondary_swf_abc(&mut self, lib_movie: Arc<SwfMovie>) -> u32 {
+        self.mutate_with_update_context(|context| {
+            let root_movie = context.root_swf.clone();
+            if Arc::ptr_eq(&lib_movie, &root_movie) {
+                return 0;
+            }
+            let root_domain = context
+                .library
+                .library_for_movie_mut(root_movie)
+                .avm2_domain();
+            let mut count: u32 = 0;
+            let slice = crate::tag_utils::SwfSlice::from(lib_movie.clone());
+            let mut reader = slice.read_from(0);
+            let _ = crate::tag_utils::decode_tags(&mut reader, |reader, tag_code, _tag_len| {
+                use crate::string::{AvmString, SwfStrExt};
+                use crate::tag_utils::ControlFlow;
+                use swf::extensions::ReadSwfExt;
+                use swf::{DoAbc2Flag, TagCode};
+                match tag_code {
+                    TagCode::DoAbc => {
+                        let data = reader.read_slice_to_end();
+                        if !data.is_empty()
+                            && Avm2::do_abc(
+                                context,
+                                data,
+                                None,
+                                DoAbc2Flag::empty(),
+                                root_domain,
+                                lib_movie.clone(),
+                            )
+                            .is_ok()
+                        {
+                            count += 1;
+                        }
+                    }
+                    TagCode::DoAbc2 => {
+                        if let Ok(do_abc) = reader.read_do_abc_2()
+                            && !do_abc.data.is_empty()
+                        {
+                            let name = AvmString::new(
+                                context.gc(),
+                                do_abc.name.decode(reader.encoding()),
+                            );
+                            if Avm2::do_abc(
+                                context,
+                                do_abc.data,
+                                Some(name),
+                                do_abc.flags,
+                                root_domain,
+                                lib_movie.clone(),
+                            )
+                            .is_ok()
+                            {
+                                count += 1;
+                            }
+                        }
+                    }
+                    TagCode::End => return Ok(ControlFlow::Exit),
+                    _ => {}
+                }
+                Ok(ControlFlow::Continue)
+            });
+            count
+        })
+    }
+
+    /// Full cross-library injection: characters + DoABC + SymbolClass.
+    ///
+    /// Like `inject_secondary_swf_abc` but ALSO registers `lib_movie`'s
+    /// DefineCharacter tags into its own MovieLibrary entry AND processes
+    /// SymbolClass tags so that AS3 classes referenced from the root SWF
+    /// via PlaceByClass instantiate with their authored visual content
+    /// (DefineSprite-linked button skins, bitmap-backed graphics, etc.).
+    ///
+    /// Strategy: rebind `lib_movie`'s `MovieLibrary.avm2_domain` to the
+    /// ROOT movie's domain BEFORE driving preload, so that the in-tree
+    /// preload machinery's call to
+    /// `library_for_movie_mut(self.movie()).avm2_domain()` (movie_clip.rs
+    /// `do_abc_2`, `run_abc_and_symbol_tags`, etc.) ends up loading
+    /// classes into ROOT's domain rather than a per-movie domain. Then a
+    /// transient MovieClip from `lib_movie` is preloaded to completion
+    /// off the display tree -- side effects (character registration,
+    /// eager_tags storage) land in lib_movie's library; eager_tags are
+    /// then drained per-frame via `run_abc_and_symbol_tags` which both
+    /// executes the AS3 class definitions AND binds class objects (now
+    /// in root_domain) to lib_movie's library characters.
+    ///
+    /// Returns the number of frames whose eager_tags were drained
+    /// (rough proxy for "how much got loaded").
+    pub fn inject_secondary_swf_full(&mut self, lib_movie: Arc<SwfMovie>) -> u32 {
+        self.mutate_with_update_context(|context| {
+            let root_movie = context.root_swf.clone();
+            // Don't replay the root SWF itself as a "library" -- the Player's
+            // own preload pass on the root movie will register the same
+            // classes / symbols, and a second pass through `Avm2::do_abc`
+            // double-defines the class in the domain (AvmError on lookup).
+            if Arc::ptr_eq(&lib_movie, &root_movie) {
+                return 0;
+            }
+            let root_domain = context
+                .library
+                .library_for_movie_mut(root_movie)
+                .avm2_domain();
+
+            // Rebind lib_movie's library entry to use root_domain so
+            // every subsequent `library_for_movie_mut(lib_movie).avm2_domain()`
+            // lookup (driven by the preload code paths below) resolves to
+            // root, putting injected classes in the shared domain.
+            {
+                let lib_library = context
+                    .library
+                    .library_for_movie_mut(lib_movie.clone());
+                lib_library.set_avm2_domain(root_domain);
+            }
+
+            // Transient MovieClip backing lib_movie. Never added to the
+            // display tree -- we only want preload side effects:
+            //   * DefineCharacter tags -> library_for_movie_mut(lib_movie)
+            //   * DoAbc/DoAbc2 + SymbolClass tags -> eager_tags[frame]
+            let temp_clip = crate::display_object::MovieClip::new_for_lce_inject(
+                lib_movie.clone(),
+                context.gc(),
+            );
+            let mut limit = crate::limits::ExecutionLimit::none();
+            let mut iterations = 0u32;
+            // Preload returns true when complete (or stalled). Bound the
+            // loop in case a malformed SWF keeps it under-budget forever.
+            while !temp_clip.preload(context, &mut limit) && iterations < 4096 {
+                iterations += 1;
+            }
+
+            // Drain eager_tags by actual frame keys, not by SWF-header
+            // num_frames. Libraries like skinHD.swf advertise small
+            // root-timeline num_frames in the header but stash
+            // SymbolClass / DoABC on whatever frame the preload counter
+            // happened to be at when the tag was decoded -- which can be
+            // far past num_frames when DefineSprite tag streams have
+            // already advanced cur_preload_frame.
+            let mut frame_keys = temp_clip.eager_frame_keys();
+            frame_keys.sort_unstable();
+            let mut processed_frames: u32 = 0;
+            for frame in frame_keys {
+                if temp_clip
+                    .run_abc_and_symbol_tags(context, frame)
+                    .is_ok()
+                {
+                    processed_frames += 1;
+                }
+            }
+            processed_frames
+        })
+    }
+
     pub fn spoofed_url(&self) -> Option<&str> {
         self.spoofed_url.as_deref()
     }

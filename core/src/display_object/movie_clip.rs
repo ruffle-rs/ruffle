@@ -283,6 +283,20 @@ impl<'gc> MovieClip<'gc> {
         MovieClip(Gc::new(mc, MovieClipData::new(shared, mc)))
     }
 
+    /// LCE Phase 4.8: construct a transient MovieClip backed by the FULL
+    /// SwfMovie tag stream (unlike `new`, which uses an empty SwfSlice
+    /// and pre-marks preload as complete). Used by
+    /// `Player::inject_secondary_swf_full` so that calling preload()
+    /// actually walks the lib's tags into eager_tags + library
+    /// characters. Never added to the display tree.
+    pub fn new_for_lce_inject(movie: Arc<SwfMovie>, mc: &Mutation<'gc>) -> Self {
+        let num_frames = movie.num_frames();
+        let shared = MovieClipShared::with_data(0, movie.into(), num_frames, None, None);
+        let data = MovieClipData::new(shared, mc);
+        data.flags.set(MovieClipFlags::PLAYING);
+        MovieClip(Gc::new(mc, data))
+    }
+
     pub fn new_with_avm2(
         movie: Arc<SwfMovie>,
         this: Avm2StageObject<'gc>,
@@ -566,14 +580,26 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::SoundStreamHead2 => shared.sound_stream_head(reader, 2),
                 TagCode::VideoFrame => shared.preload_video_frame(context, reader),
                 TagCode::DefineBinaryData => shared.define_binary_data(context, reader),
-                TagCode::ImportAssets => {
-                    self.import_assets(context, reader, chunk_limit, 1)?;
-                    return Ok(ControlFlow::Exit);
-                }
-                TagCode::ImportAssets2 => {
-                    self.import_assets(context, reader, chunk_limit, 2)?;
-                    return Ok(ControlFlow::Exit);
-                }
+                // LCE Phase 4.7: skip ImportAssets entirely. Stock Ruffle
+                // calls `self.import_assets` which dispatches an async URL
+                // fetch through `context.navigator` and sets
+                // `awaiting_import=true` on the SWF's preload progress
+                // (movie_clip.rs:815). The NullNavigatorBackend used by
+                // ruffle_iggy_shim returns an immediate error for any
+                // URL, but the `awaiting_import` flag stays latched on
+                // forever -- subsequent calls to `preload` early-return
+                // (line 494) before processing any tags after the
+                // ImportAssets, so all PlaceObject3 / SymbolClass tags
+                // declared later in the SWF never execute.
+                //
+                // For LCE we pre-load every Iggy Library's DoAbc into
+                // each new Player's ApplicationDomain via
+                // Player::inject_secondary_swf_abc at create-time, so
+                // ImportAssets is functionally redundant: the AS3
+                // classes referenced by the dependent SWF are already
+                // resolvable in the root domain by the time PlaceByClass
+                // runs.
+                TagCode::ImportAssets | TagCode::ImportAssets2 => Ok(()),
                 TagCode::DoAbc | TagCode::DoAbc2 => shared.preload_bytecode_tag(tag_code, reader),
                 TagCode::SymbolClass => shared.preload_symbol_class(reader),
                 TagCode::End => {
@@ -4266,7 +4292,19 @@ impl<'gc, 'a> MovieClip<'gc> {
     //
     // We need to match this behavior exactly, in order for flascc/crossbridge games like 'minidash'
     // to work correctly.
-    fn run_abc_and_symbol_tags(
+    /// LCE Phase 4.8: snapshot the frame numbers that currently have
+    /// queued eager tags (DoABC + SymbolClass). Used by
+    /// `Player::inject_secondary_swf_full` to drain libraries whose
+    /// root timeline reports num_frames=1 but stash SymbolClass on a
+    /// much later frame number (skinHD.swf has SymbolClass at tag
+    /// 283/27198 covering 9137 ShowFrames inside nested DefineSprites).
+    pub fn eager_frame_keys(self) -> Vec<FrameNumber> {
+        let shared = self.0.shared.get();
+        let read = shared.cell.borrow();
+        read.eager_tags.keys().copied().collect()
+    }
+
+    pub fn run_abc_and_symbol_tags(
         self,
         context: &mut UpdateContext<'gc>,
         current_frame: FrameNumber,
@@ -4897,6 +4935,7 @@ impl<'gc> MovieClipShared<'gc> {
         }
         tags
     }
+
 }
 
 /// Stores the placement settings for display objects during a

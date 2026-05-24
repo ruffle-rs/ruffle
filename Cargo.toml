@@ -36,6 +36,10 @@ members = [
     "tests/socket-format",
     "tests/mocket",
     "tests/framework",
+
+    # LCE rebuild Phase 4.1+: C-ABI bridge crate that lets the iggy_open
+    # C++ shim DLL drive Ruffle internally. See REBUILD_PLAN_iggy.md.
+    "ruffle_iggy_shim",
 ]
 default-members = ["desktop"]
 resolver = "2"

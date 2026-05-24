@@ -4745,6 +4745,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ruffle_iggy_shim"
+version = "0.2.0"
+dependencies = [
+ "image",
+ "ruffle_core",
+ "ruffle_render",
+ "ruffle_render_wgpu",
+ "wgpu",
+]
+
+[[package]]
 name = "ruffle_input_format"
 version = "0.2.0"
 dependencies = [
