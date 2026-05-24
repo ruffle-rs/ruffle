@@ -1,0 +1,3 @@
+kerningOff: textWidth=112.99
+maxWidth: atomCount=14
+recreate: atomCount=11

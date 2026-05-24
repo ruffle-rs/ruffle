@@ -296,3 +296,140 @@ fn apply_format<'gc>(
 
     Ok(())
 }
+
+pub fn recreate_text_line<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this
+        .as_object()
+        .expect("TextBlock native method receiver must be an object");
+    let Some(text_line) = args.try_get_object(0) else {
+        return Ok(Value::Null);
+    };
+    let previous_text_line = args.try_get_object(1);
+
+    let content = this.get_slot(block_slots::_CONTENT);
+    if matches!(content, Value::Null) {
+        return Ok(Value::Null);
+    }
+
+    let text = content
+        .call_method(element_methods::GET_TEXT, &[], activation)
+        .unwrap_or_else(|_| istr!("").into());
+    let text = match text {
+        Value::Null => return Ok(Value::Null),
+        v => v.coerce_to_string(activation)?,
+    };
+
+    let next_line_start = match previous_text_line {
+        Some(prev) => {
+            let begin = prev
+                .get_slot(line_slots::_TEXT_BLOCK_BEGIN_INDEX)
+                .coerce_to_i32(activation)? as usize;
+            let raw_len = prev
+                .get_slot(line_slots::_RAW_TEXT_LENGTH)
+                .coerce_to_i32(activation)? as usize;
+            begin + raw_len
+        }
+        None => 0,
+    };
+
+    if next_line_start >= text.len() {
+        this.set_slot(
+            block_slots::_TEXT_LINE_CREATION_RESULT,
+            istr!("complete").into(),
+            activation,
+        )?;
+        return Ok(Value::Null);
+    }
+
+    let Some(content_obj) = content.as_object() else {
+        return Ok(Value::Null);
+    };
+    use crate::avm2::globals::slots::flash_text_engine_content_element as element_slots;
+    use crate::avm2::globals::slots::flash_text_engine_element_format as format_slots;
+    let mut displayed_text = WString::from(
+        text.as_wstr()
+            .slice(next_line_start..)
+            .unwrap_or_else(WStr::empty),
+    );
+    if let Some(ef) = content_obj
+        .get_slot(element_slots::_ELEMENT_FORMAT)
+        .as_object()
+    {
+        let typographic_case = ef
+            .get_slot(format_slots::_TYPOGRAPHIC_CASE)
+            .coerce_to_string(activation)?;
+        let transformed = match typographic_case.to_utf8_lossy().as_ref() {
+            "uppercase" => Some(displayed_text.to_utf8_lossy().to_uppercase()),
+            "lowercase" => Some(displayed_text.to_utf8_lossy().to_lowercase()),
+            _ => None,
+        };
+        if let Some(transformed) = transformed {
+            let transformed = WString::from_utf8(&transformed);
+            if transformed.len() == displayed_text.len() {
+                displayed_text = transformed;
+            }
+        }
+    }
+    let spans = FormatSpans::from_text(
+        displayed_text.clone(),
+        format_from_content(activation, content_obj)?,
+    );
+    let width = args.get_f64(2);
+    let requested_width = if width >= 1_000_000.0 {
+        None
+    } else {
+        Some(Twips::from_pixels(width))
+    };
+    let movie = activation.caller_movie_or_root();
+    let layout = lower_from_text_spans_for_text_line(
+        &spans,
+        activation.context,
+        movie.clone(),
+        requested_width,
+        false,
+        true,
+        FontType::Device,
+    );
+    let Some(html_line) = layout.lines().first().cloned() else {
+        return Ok(Value::Null);
+    };
+    let text_line_layout = TextLineLayout::new(html_line, displayed_text, next_line_start);
+    let raw_text_length = text_line_layout.raw_text_length();
+
+    let text_line_display = text_line
+        .as_display_object()
+        .expect("TextBlock.recreateTextLine target must be a display object")
+        .as_text_line()
+        .expect("TextBlock.recreateTextLine target must be a TextLine");
+    let fallback = EditText::new_fte(activation.context, movie, 0.0, 0.0, width, 15.0);
+    fallback.set_text(text.as_wstr(), activation.context);
+    let element_format = content_obj
+        .get_slot(element_slots::_ELEMENT_FORMAT)
+        .as_object();
+    apply_format(activation, fallback, text.as_wstr(), element_format)?;
+    text_line_display.set_line(activation.context, text_line_layout, fallback);
+
+    text_line.set_slot(line_slots::_TEXT_BLOCK, this.into(), activation)?;
+    text_line.set_slot(line_slots::_SPECIFIED_WIDTH, width.into(), activation)?;
+    text_line.set_slot(
+        line_slots::_RAW_TEXT_LENGTH,
+        Value::from_usize_lossy(raw_text_length),
+        activation,
+    )?;
+    text_line.set_slot(
+        line_slots::_TEXT_BLOCK_BEGIN_INDEX,
+        Value::Integer(next_line_start as i32),
+        activation,
+    )?;
+    this.set_slot(
+        block_slots::_TEXT_LINE_CREATION_RESULT,
+        istr!("success").into(),
+        activation,
+    )?;
+
+    Ok(text_line.into())
+}

@@ -205,7 +205,7 @@ pub struct TextLineData<'gc> {
     base: InteractiveObjectBase<'gc>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
     line: RefLock<TextLineLayout<'gc>>,
-    fallback: EditText<'gc>,
+    fallback: RefLock<EditText<'gc>>,
     #[collect(require_static)]
     movie: Arc<SwfMovie>,
 }
@@ -223,7 +223,7 @@ impl<'gc> TextLine<'gc> {
                 base: Default::default(),
                 avm2_object: Lock::new(None),
                 line: RefLock::new(line),
-                fallback,
+                fallback: RefLock::new(fallback),
                 movie,
             },
         ))
@@ -231,6 +231,17 @@ impl<'gc> TextLine<'gc> {
 
     pub fn line(self) -> Ref<'gc, TextLineLayout<'gc>> {
         Gc::as_ref(self.0).line.borrow()
+    }
+
+    pub fn set_line(
+        self,
+        context: &mut UpdateContext<'gc>,
+        line: TextLineLayout<'gc>,
+        fallback: EditText<'gc>,
+    ) {
+        let mc = context.gc();
+        unlock!(Gc::write(mc, self.0), TextLineData, line).replace(line);
+        *unlock!(Gc::write(mc, self.0), TextLineData, fallback).borrow_mut() = fallback;
     }
 }
 
@@ -255,7 +266,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                     ascent: borrowed.ascent,
                     descent: borrowed.descent,
                 }),
-                fallback: self.0.fallback,
+                fallback: RefLock::new(*self.0.fallback.borrow()),
                 movie: self.0.movie.clone(),
             },
         ))
@@ -295,7 +306,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
             }
         }
         if !has_renderable_content {
-            self.0.fallback.render_self(context);
+            self.0.fallback.borrow().render_self(context);
             return;
         }
 

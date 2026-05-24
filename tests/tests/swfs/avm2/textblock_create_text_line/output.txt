@@ -1,0 +1,14 @@
+line1 != null: true
+rawTextLength: 5
+textBlockBeginIndex: 0
+result: success
+line1b == null: true
+result after complete: complete
+null content line: null
+before recreate rawTextLength: 6
+same object: true
+after recreate rawTextLength: 6
+after recreate beginIndex: 0
+result: success
+firstLine before: null
+firstLine after: true
