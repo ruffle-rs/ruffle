@@ -1,0 +1,12 @@
+_sans@8: ascent=5.82 descent=1.68 textHeight=7.51 textWidth=48.00 baseline.roman=0.00 baseline.ascent=-5.82 baseline.descent=1.68
+_sans@12: ascent=8.74 descent=2.53 textHeight=11.26 textWidth=73.00 baseline.roman=0.00 baseline.ascent=-8.74 baseline.descent=2.53
+_sans@24: ascent=17.47 descent=5.05 textHeight=22.52 textWidth=145.00 baseline.roman=0.00 baseline.ascent=-17.47 baseline.descent=5.05
+_sans@40: ascent=29.12 descent=8.42 textHeight=37.54 textWidth=241.99 baseline.roman=0.00 baseline.ascent=-29.12 baseline.descent=8.42
+_serif@8: ascent=5.55 descent=1.73 textHeight=7.27 textWidth=44.00 baseline.roman=0.00 baseline.ascent=-5.55 baseline.descent=1.73
+_serif@12: ascent=8.32 descent=2.59 textHeight=10.91 textWidth=68.00 baseline.roman=0.00 baseline.ascent=-8.32 baseline.descent=2.59
+_serif@24: ascent=16.64 descent=5.18 textHeight=21.82 textWidth=136.98 baseline.roman=0.00 baseline.ascent=-16.64 baseline.descent=5.18
+_serif@40: ascent=27.73 descent=8.63 textHeight=36.37 textWidth=227.97 baseline.roman=0.00 baseline.ascent=-27.73 baseline.descent=8.63
+_typewriter@8: ascent=4.90 descent=1.51 textHeight=6.41 textWidth=60.00 baseline.roman=0.00 baseline.ascent=-4.90 baseline.descent=1.51
+_typewriter@12: ascent=7.35 descent=2.26 textHeight=9.62 textWidth=84.02 baseline.roman=0.00 baseline.ascent=-7.35 baseline.descent=2.26
+_typewriter@24: ascent=14.71 descent=4.52 textHeight=19.23 textWidth=168.05 baseline.roman=0.00 baseline.ascent=-14.71 baseline.descent=4.52
+_typewriter@40: ascent=24.51 descent=7.54 textHeight=32.05 textWidth=288.05 baseline.roman=0.00 baseline.ascent=-24.51 baseline.descent=7.54

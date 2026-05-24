@@ -108,16 +108,14 @@ pub fn get_atom_bounds<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let (x, y, width, height) = match text_line_layout(this) {
-        Some(line) => match atom_at(&line, args.get_i32(0)) {
-            Some(atom) => (
-                atom.x as f64,
-                -line.ascent() as f64,
-                atom.width as f64,
-                (line.ascent() + line.descent()) as f64,
-            ),
-            None => (0.0, 0.0, 0.0, 0.0),
-        },
+    let line = text_line_layout(this);
+    let (x, y, width, height) = match atom_at(&line, args.get_i32(0)) {
+        Some(atom) => (
+            atom.x as f64,
+            -line.ascent() as f64,
+            atom.width as f64,
+            (line.ascent() + line.descent()) as f64,
+        ),
         None => (0.0, 0.0, 0.0, 0.0),
     };
 
@@ -132,9 +130,7 @@ pub fn get_atom_center<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let Some(line) = text_line_layout(this) else {
-        return Ok(0.0.into());
-    };
+    let line = text_line_layout(this);
     let Some(atom) = atom_at(&line, args.get_i32(0)) else {
         return Ok(0.0.into());
     };
@@ -146,9 +142,7 @@ pub fn get_atom_word_boundary_on_left<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let Some(line) = text_line_layout(this) else {
-        return Ok(false.into());
-    };
+    let line = text_line_layout(this);
     let Some(atom) = atom_at(&line, args.get_i32(0)) else {
         return Ok(false.into());
     };

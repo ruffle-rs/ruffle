@@ -1,0 +1,3 @@
+_sans: textWidth=156.01 ascent=18.93 descent=5.47 atomCount=13
+_serif: textWidth=145.98 ascent=18.03 descent=5.61 atomCount=14
+_typewriter: textWidth=303.93 ascent=15.93 descent=4.90 atomCount=19

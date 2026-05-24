@@ -1,0 +1,4 @@
+line 0: rawTextLength=9 atomCount=9 textWidth=103.97
+line 1: rawTextLength=13 atomCount=13 textWidth=138.97
+line 2: rawTextLength=13 atomCount=13 textWidth=155.98
+line 3: rawTextLength=21 atomCount=21 textWidth=223.08

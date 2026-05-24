@@ -8,6 +8,7 @@ use crate::display_object::{
     Avm2MousePick, BoundsMode, DisplayObjectBase, EditText, InteractiveObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
+use crate::font::FontLike;
 use crate::html::LayoutLine;
 use crate::prelude::*;
 use crate::string::{WStr, WString};
@@ -17,6 +18,8 @@ use gc_arena::barrier::unlock;
 use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
+use ruffle_render::quality::StageQuality;
+use ruffle_render::transform::Transform;
 use std::cell::Ref;
 use std::sync::Arc;
 
@@ -90,15 +93,23 @@ impl<'gc> TextLineLayout<'gc> {
         let chars: Vec<u16> = self.text.iter().collect();
         for atom in self.atoms.iter().rev() {
             let pos = atom.char_start.saturating_sub(self.text_block_begin);
-            let blank = chars
-                .get(pos)
-                .map(|c| matches!(c, 0x20 | 0x09 | 0x0a | 0x0d | 0x2028 | 0x2029))
-                .unwrap_or(true);
-            if !blank {
+            if !is_blank_unit(chars.get(pos).copied()) {
                 return atom.x + atom.width;
             }
         }
         0.0
+    }
+
+    pub fn width(&self) -> f32 {
+        if self
+            .html_line
+            .text_range()
+            .all(|pos| is_blank_unit(self.text.get(pos)))
+        {
+            return 0.0;
+        }
+
+        self.html_line.bounds().width().to_pixels() as f32
     }
 
     pub fn raw_text_length(&self) -> usize {
@@ -262,11 +273,91 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
     fn replace_with(self, _context: &mut UpdateContext<'gc>, _id: CharacterId) {}
 
     fn render_self(self, context: &mut RenderContext<'_, 'gc>) {
-        self.0.fallback.render_self(context);
+        let line = self.0.line.borrow();
+        let mut has_renderable_content = false;
+        for lbox in line.html_line.boxes_iter() {
+            if lbox.as_renderable_drawing().is_some() {
+                has_renderable_content = true;
+                break;
+            }
+            if let Some((text, _tf, font, params, _color)) = lbox.as_renderable_text(&line.text) {
+                font.evaluate(
+                    text,
+                    Default::default(),
+                    params,
+                    &mut |_pos, _glyph_transform, glyph, _advance, _x| {
+                        has_renderable_content |= glyph.renderable(context);
+                    },
+                );
+                if has_renderable_content {
+                    break;
+                }
+            }
+        }
+        if !has_renderable_content {
+            self.0.fallback.render_self(context);
+            return;
+        }
+
+        let baseline = line.html_line.bounds().origin().y() + line.html_line.ascent();
+        let (quality_offset, low_quality_line_offset) =
+            if context.stage.quality() == StageQuality::Low {
+                (Twips::from_pixels(2.0), Twips::new(15))
+            } else {
+                (Twips::ZERO, Twips::ZERO)
+            };
+        let line_offset = if line.atoms.first().is_some_and(|atom| atom.char_start > 0) {
+            low_quality_line_offset
+        } else {
+            Twips::ZERO
+        };
+        context.transform_stack.push(&Transform {
+            matrix: Matrix::translate(quality_offset, quality_offset + line_offset - baseline),
+            ..Default::default()
+        });
+
+        for lbox in line.html_line.boxes_iter() {
+            let origin = lbox.bounds().origin();
+            context.transform_stack.push(&Transform {
+                matrix: Matrix::translate(origin.x(), origin.y()),
+                ..Default::default()
+            });
+
+            if let Some((text, _tf, font, params, color)) = lbox.as_renderable_text(&line.text) {
+                let mut transform: Transform = Default::default();
+                transform.color_transform.set_mult_color(color);
+                font.evaluate(
+                    text,
+                    transform,
+                    params,
+                    &mut |_pos, glyph_transform, glyph, _advance, _x| {
+                        if glyph.renderable(context) {
+                            context.transform_stack.push(glyph_transform);
+                            glyph.render(context);
+                            context.transform_stack.pop();
+                        }
+                    },
+                );
+            }
+
+            if let Some(drawing) = lbox.as_renderable_drawing() {
+                drawing.render(context);
+            }
+
+            context.transform_stack.pop();
+        }
+
+        context.transform_stack.pop();
     }
 
-    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
-        self.0.fallback.self_bounds(mode)
+    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
+        let line = self.0.line.borrow();
+        Rectangle {
+            x_min: Twips::ZERO,
+            x_max: Twips::from_pixels(line.width() as f64),
+            y_min: Twips::from_pixels(-(line.ascent() as f64)),
+            y_max: Twips::from_pixels(line.descent() as f64),
+        }
     }
 
     fn hit_test_shape(

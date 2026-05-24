@@ -1,0 +1,39 @@
+num_frames = 1
+
+[fonts.sans]
+family = "Liberation Sans"
+path = "LiberationSans-Regular.ttf"
+bold = false
+italic = false
+
+[fonts.sansbold]
+family = "Liberation Sans"
+path = "LiberationSans-Bold.ttf"
+bold = true
+italic = false
+
+[fonts.sansitalic]
+family = "Liberation Sans"
+path = "LiberationSans-Italic.ttf"
+bold = false
+italic = true
+
+[fonts.sansbolditalic]
+family = "Liberation Sans"
+path = "LiberationSans-BoldItalic.ttf"
+bold = true
+italic = true
+
+[default_fonts]
+sans = ["Liberation Sans"]
+
+[approximations]
+number_patterns = ["=(-?[0-9]+\\.[0-9]+)"]
+epsilon = 0.5
+
+[image_comparisons.output]
+tolerance = 12
+max_outliers = 27000
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }

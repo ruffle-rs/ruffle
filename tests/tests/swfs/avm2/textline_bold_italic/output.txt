@@ -1,0 +1,4 @@
+regular: textWidth=182.97 ascent=20.38 descent=5.89 atomCount=15
+bold: textWidth=163.95 ascent=20.38 descent=5.89 atomCount=12
+italic: textWidth=150.99 ascent=20.38 descent=5.81 atomCount=14
+bold italic: textWidth=236.93 ascent=20.38 descent=5.89 atomCount=19

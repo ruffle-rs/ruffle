@@ -1,0 +1,3 @@
+日本語: atomCount=3 textWidth=144.00 ascent=42.24
+中文字: atomCount=3 textWidth=144.00 ascent=42.24
+한국어: atomCount=3 textWidth=132.05 ascent=42.24
