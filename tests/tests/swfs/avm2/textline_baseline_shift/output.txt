@@ -1,0 +1,5 @@
+none: atom0.top=-14.56 atom0.height=18.77 ascent=14.56 descent=4.21 textWidth=72.98
++6: atom0.top=-14.56 atom0.height=18.77 ascent=14.56 descent=4.21 textWidth=51.99
+-6: atom0.top=-14.56 atom0.height=18.77 ascent=14.56 descent=4.21 textWidth=46.99
+superscript: atom0.top=-14.56 atom0.height=18.77 ascent=14.56 descent=4.21 textWidth=126.98
+subscript: atom0.top=-14.56 atom0.height=18.77 ascent=14.56 descent=4.21 textWidth=108.98

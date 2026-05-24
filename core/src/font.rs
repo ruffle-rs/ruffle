@@ -238,6 +238,8 @@ pub struct FontFace {
 
     ascender: i32,
     descender: i32,
+    typo_ascender: i32,
+    typo_descender: i32,
     leading: i16,
     scale: f32,
     might_have_kerning: bool,
@@ -252,6 +254,13 @@ impl FontFace {
 
         let ascender = face.ascender() as i32;
         let descender = -face.descender() as i32;
+        let (typo_ascender, typo_descender) = match face.tables().os2 {
+            Some(os2) => (
+                os2.typographic_ascender() as i32,
+                -os2.typographic_descender() as i32,
+            ),
+            None => (ascender, descender),
+        };
         let leading = face.line_gap();
         let scale = face.units_per_em() as f32;
         let glyphs = vec![OnceCell::new(); face.number_of_glyphs() as usize];
@@ -274,6 +283,8 @@ impl FontFace {
             glyphs,
             ascender,
             descender,
+            typo_ascender,
+            typo_descender,
             leading,
             scale,
             might_have_kerning,
@@ -488,6 +499,16 @@ impl GlyphSource {
             GlyphSource::FontFace { metrics, .. } => *metrics,
             GlyphSource::ExternalRenderer { font_renderer, .. } => font_renderer.get_font_metrics(),
             GlyphSource::Empty => FontMetrics::ZERO,
+        }
+    }
+
+    pub fn typo_metrics(&self) -> (i32, i32) {
+        match self {
+            GlyphSource::FontFace { face, .. } => (face.typo_ascender, face.typo_descender),
+            other => {
+                let metrics = other.metrics();
+                (metrics.ascent, metrics.descent)
+            }
         }
     }
 }
@@ -807,6 +828,16 @@ impl<'gc> Font<'gc> {
 
     pub fn has_layout(self) -> bool {
         self.0.has_layout
+    }
+
+    pub fn typo_ascent(self, height: Twips) -> Twips {
+        let (ascender, _) = self.0.glyphs.typo_metrics();
+        Twips::new((ascender as f32 * height.get() as f32 / self.0.scale) as i32)
+    }
+
+    pub fn typo_descent(self, height: Twips) -> Twips {
+        let (_, descender) = self.0.glyphs.typo_metrics();
+        Twips::new((descender as f32 * height.get() as f32 / self.0.scale) as i32)
     }
 }
 

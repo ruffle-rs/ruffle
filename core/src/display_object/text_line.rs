@@ -10,7 +10,7 @@ use crate::display_object::{
 use crate::events::{ClipEvent, ClipEventResult};
 use crate::html::LayoutLine;
 use crate::prelude::*;
-use crate::string::WString;
+use crate::string::{WStr, WString};
 use crate::tag_utils::SwfMovie;
 use core::fmt;
 use gc_arena::barrier::unlock;
@@ -46,8 +46,7 @@ pub struct TextLineLayout<'gc> {
 
 impl<'gc> TextLineLayout<'gc> {
     pub fn new(html_line: LayoutLine<'gc>, text: WString, text_block_begin: usize) -> Self {
-        let ascent = html_line.ascent().to_pixels() as f32;
-        let descent = html_line.descent().to_pixels() as f32;
+        let (ascent, descent) = typo_metrics(&html_line, &text);
         let atoms = html_line
             .text_range()
             .map(|pos| Atom {
@@ -109,6 +108,71 @@ impl<'gc> TextLineLayout<'gc> {
     pub fn atoms(&self) -> &[Atom] {
         &self.atoms
     }
+}
+
+fn typo_metrics(line: &LayoutLine<'_>, text: &WStr) -> (f32, f32) {
+    let mut ascent = 0.0_f32;
+    let mut descent = 0.0_f32;
+    let mut found = false;
+    let blank_line = line
+        .text_range()
+        .all(|pos| is_blank_unit(text.get(pos)));
+
+    for lbox in line.boxes_iter() {
+        if let Some((_, _, font_set, params, _)) = lbox.as_renderable_text(text) {
+            if blank_line {
+                let height = params.height().to_pixels() as f32;
+                ascent = ascent.max(height * 0.76);
+                descent = descent.max(height * 0.24);
+            } else {
+                let font = font_set.main_font();
+                ascent = ascent.max(font.typo_ascent(params.height()).to_pixels() as f32);
+                descent = descent.max(font.typo_descent(params.height()).to_pixels() as f32);
+            }
+            found = true;
+        }
+    }
+
+    if found {
+        (ascent, descent)
+    } else {
+        (
+            line.ascent().to_pixels() as f32,
+            line.descent().to_pixels() as f32,
+        )
+    }
+}
+
+fn is_blank_unit(unit: Option<u16>) -> bool {
+    match unit {
+        Some(unit) => matches!(unit, 0x20 | 0x09 | 0x0a | 0x0d | 0x2028 | 0x2029),
+        None => true,
+    }
+}
+
+fn word_boundary_offsets(text: &WStr) -> Vec<usize> {
+    let utf8 = text.to_utf8_lossy();
+    let mut prefix = vec![0usize; utf8.len() + 1];
+    let mut utf16 = 0usize;
+    let mut prev = 0usize;
+
+    for (byte, ch) in utf8.char_indices() {
+        for slot in prefix.iter_mut().take(byte + 1).skip(prev) {
+            *slot = utf16;
+        }
+        utf16 += ch.len_utf16();
+        prev = byte + ch.len_utf8();
+    }
+    for slot in prefix.iter_mut().skip(prev) {
+        *slot = utf16;
+    }
+
+    let mut bounds = Vec::new();
+    for (byte, _) in utf8.split_word_bound_indices() {
+        bounds.push(prefix[byte]);
+    }
+    bounds.dedup();
+    bounds
 }
 
 #[derive(Clone, Collect, Copy)]

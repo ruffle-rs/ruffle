@@ -1,0 +1,5 @@
+small ascent typographic: true
+small descent typographic: true
+large ascent typographic: true
+large descent typographic: true
+ascent scales by size: true

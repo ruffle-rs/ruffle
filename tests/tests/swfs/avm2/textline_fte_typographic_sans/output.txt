@@ -1,0 +1,3 @@
+ascent is typographic: true
+descent is typographic: true
+textHeight sums typographic metrics: true
