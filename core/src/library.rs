@@ -49,6 +49,14 @@ pub struct Avm2ClassRegistry<'gc> {
     /// A list of AVM2 class objects and the character IDs they are expected to
     /// instantiate.
     class_map: WeakValueHashMap<Avm2Class<'gc>, WeakMovieSymbol>,
+    /// LCE Phase 4.8c: secondary QName-keyed index for `class_symbol_by_name`
+    /// lookups. Needed because LCE's root SWFs (e.g. HUD1080.swf) ship stub
+    /// AS3 class definitions that REDEFINE classes already registered via
+    /// `inject_secondary_swf_full`. The two DoABC runs produce two distinct
+    /// `Avm2Class` Gc pointers for the same QName; the primary `class_map`
+    /// (keyed by pointer) holds the inject-time entry, but PlaceByClass
+    /// resolves the root-DoABC entry. Fallback: look up by name.
+    name_map: std::collections::HashMap<String, MovieSymbol>,
 }
 
 unsafe impl<'gc> Collect<'gc> for Avm2ClassRegistry<'gc> {
@@ -69,6 +77,7 @@ impl<'gc> Avm2ClassRegistry<'gc> {
     pub fn new() -> Self {
         Self {
             class_map: WeakValueHashMap::new(),
+            name_map: std::collections::HashMap::new(),
         }
     }
 
@@ -81,6 +90,20 @@ impl<'gc> Avm2ClassRegistry<'gc> {
             Some(MovieSymbol(movie, symbol)) => Some((movie, symbol)),
             None => None,
         }
+    }
+
+    /// LCE Phase 4.8c: name-keyed fallback. Returns the symbol for the most
+    /// recent `set_class_symbol` call with the same qualified name. Used by
+    /// sprite_allocator when the pointer-keyed lookup misses due to per-Player
+    /// class-definition duplication (root SWF DoABC redefining classes that
+    /// secondary inject already bound).
+    pub fn class_symbol_by_name(
+        &self,
+        name: &str,
+    ) -> Option<(Arc<SwfMovie>, CharacterId)> {
+        self.name_map
+            .get(name)
+            .map(|MovieSymbol(movie, sym)| (movie.clone(), *sym))
     }
 
     /// Associate an AVM2 class definition with a given library symbol.
@@ -111,6 +134,15 @@ impl<'gc> Avm2ClassRegistry<'gc> {
             // instantiates the clip on the timeline.
             return;
         }
+        // LCE Phase 4.8c: also record by qualified name for fallback lookup.
+        use either::Either;
+        let qname_either = class_def.name().to_qualified_name_no_mc();
+        let qname = match qname_either {
+            Either::Left(av) => av.to_string(),
+            Either::Right(ws) => ws.to_string(),
+        };
+        self.name_map
+            .insert(qname, MovieSymbol(movie.clone(), symbol));
         self.class_map.insert(class_def, MovieSymbol(movie, symbol));
     }
 }
