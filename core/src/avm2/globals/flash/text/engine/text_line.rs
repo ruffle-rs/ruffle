@@ -141,6 +141,20 @@ pub fn get_atom_center<'gc>(
     Ok(((atom.x + atom.width / 2.0) as f64).into())
 }
 
+pub fn get_atom_word_boundary_on_left<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let Some(line) = fte_line(this) else {
+        return Ok(false.into());
+    };
+    let Some(atom) = atom_at(&line, args.get_i32(0)) else {
+        return Ok(false.into());
+    };
+    Ok(atom.word_boundary_on_left.into())
+}
+
 pub fn get_atom_text_block_begin_index<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,

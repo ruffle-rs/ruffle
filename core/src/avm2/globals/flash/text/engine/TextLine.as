@@ -160,10 +160,7 @@ package flash.text.engine {
             return TextRotation.ROTATE_0;
         }
 
-        public function getAtomWordBoundaryOnLeft(index:int):Boolean {
-            stub_method("flash.text.engine.TextLine", "getAtomWordBoundaryOnLeft");
-            return false;
-        }
+        public native function getAtomWordBoundaryOnLeft(index:int):Boolean;
 
         // This function does nothing in Flash Player 32
         public function flushAtomData():void { }

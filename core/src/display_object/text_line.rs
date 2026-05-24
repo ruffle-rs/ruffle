@@ -26,6 +26,7 @@ pub struct Atom {
     pub char_end: usize,
     pub x: f32,
     pub width: f32,
+    pub word_boundary_on_left: bool,
 }
 
 #[derive(Collect)]
@@ -59,6 +60,12 @@ impl<'gc> TextLineLayout<'gc> {
                     .char_bounds(pos)
                     .map(|bounds| bounds.width().to_pixels() as f32)
                     .unwrap_or(0.0),
+                word_boundary_on_left: pos == html_line.text_range().start
+                    || text
+                        .iter()
+                        .nth(pos)
+                        .map(|c| matches!(c, 0x20 | 0x09 | 0x0a | 0x0d))
+                        .unwrap_or(false),
             })
             .collect();
         Self {
