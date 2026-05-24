@@ -22,6 +22,7 @@ use ruffle_render::quality::StageQuality;
 use ruffle_render::transform::Transform;
 use std::cell::Ref;
 use std::sync::Arc;
+use unicode_segmentation::UnicodeSegmentation;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Atom {
@@ -55,6 +56,7 @@ impl<'gc> TextLineLayout<'gc> {
             .get(range.end)
             .is_some_and(|unit| matches!(unit, 0x2028 | 0x2029))
             && range.end + 1 == text.len();
+        let word_bounds = word_boundary_offsets(&text);
         let mut atoms: Vec<Atom> = range
             .clone()
             .map(|pos| Atom {
@@ -69,11 +71,7 @@ impl<'gc> TextLineLayout<'gc> {
                     .map(|bounds| bounds.width().to_pixels() as f32)
                     .unwrap_or(0.0),
                 word_boundary_on_left: pos == range.start
-                    || text
-                        .iter()
-                        .nth(pos)
-                        .map(|c| matches!(c, 0x20 | 0x09 | 0x0a | 0x0d))
-                        .unwrap_or(false),
+                    || word_bounds.binary_search(&pos).is_ok(),
             })
             .collect();
         if consumes_trailing_hard_break {
@@ -83,11 +81,7 @@ impl<'gc> TextLineLayout<'gc> {
                 x: html_line.bounds().width().to_pixels() as f32,
                 width: 0.0,
                 word_boundary_on_left: range.end == range.start
-                    || text
-                        .iter()
-                        .nth(range.end)
-                        .map(|c| matches!(c, 0x20 | 0x09 | 0x0a | 0x0d))
-                        .unwrap_or(false),
+                    || word_bounds.binary_search(&range.end).is_ok(),
             });
         }
         Self {
