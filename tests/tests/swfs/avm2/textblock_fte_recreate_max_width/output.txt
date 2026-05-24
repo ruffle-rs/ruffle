@@ -1,0 +1,5 @@
+wrapped before: true
+same object: true
+raw length reused: true
+specified width reused: true
+result: success

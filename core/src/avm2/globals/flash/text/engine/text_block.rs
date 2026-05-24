@@ -451,7 +451,15 @@ pub fn recreate_text_line<'gc>(
         .expect("TextBlock content slot must be null or ContentElement");
     let (displayed_text, spans, tracking_left, tracking_right) =
         spans_from_content(activation, content_obj, next_line_start)?;
-    let width = args.get_f64(2);
+    let raw_width = args.get_f64(2);
+    let width = if raw_width >= 1_000_000.0 {
+        text_line
+            .get_slot(line_slots::_SPECIFIED_WIDTH)
+            .coerce_to_number(activation)
+            .unwrap_or(raw_width)
+    } else {
+        raw_width
+    };
     let requested_width = if width >= 1_000_000.0 {
         None
     } else {
