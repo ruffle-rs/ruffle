@@ -1,0 +1,11 @@
+num_ticks = 1
+
+[fonts.libsans]
+family = "Liberation Serif"
+italic = false
+path = "LiberationSerif-Regular.ttf"
+
+[fonts.libsans_italic]
+family = "Liberation Serif"
+italic = true
+path = "LiberationSerif-Italic.ttf"

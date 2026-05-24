@@ -55,6 +55,14 @@ fn format_from_content<'gc>(
                     .coerce_to_string(activation)?
                     .as_wstr(),
             ));
+            let weight = fd
+                .get_slot(font_desc_slots::_FONT_WEIGHT)
+                .coerce_to_string(activation)?;
+            format.bold = Some(weight.to_utf8_lossy() == "bold");
+            let posture = fd
+                .get_slot(font_desc_slots::_FONT_POSTURE)
+                .coerce_to_string(activation)?;
+            format.italic = Some(posture.to_utf8_lossy() == "italic");
         }
     }
 

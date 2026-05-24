@@ -1,0 +1,3 @@
+bold changes width: true
+bold keeps atoms: true
+bold keeps text length: true

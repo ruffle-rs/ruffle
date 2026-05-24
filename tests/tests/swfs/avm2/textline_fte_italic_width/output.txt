@@ -1,0 +1,3 @@
+italic changes width: true
+italic keeps atoms: true
+italic keeps text length: true

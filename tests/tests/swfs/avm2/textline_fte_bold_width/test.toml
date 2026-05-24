@@ -1,0 +1,10 @@
+num_ticks = 1
+
+[fonts.libsans]
+family = "Liberation Sans"
+path = "LiberationSans-Regular.ttf"
+
+[fonts.libsans_bold]
+family = "Liberation Sans"
+bold = true
+path = "LiberationSans-Bold.ttf"
