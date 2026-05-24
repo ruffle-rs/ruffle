@@ -1,0 +1,8 @@
+next atom 0: 1
+next atom end clamps: 14
+prev atom 0 clamps: 0
+prev atom 5: 4
+next word 0: 5
+next word 4: 5
+previous word 8: 5
+previous word 14: 9

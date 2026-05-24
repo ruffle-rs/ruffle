@@ -170,12 +170,111 @@ package flash.text.engine {
         }
 
         public function releaseLines(start:TextLine, end:TextLine):void {
-            if (start != end || end != this._firstLine) {
-                stub_method("flash.text.engine.TextBlock", "releaseLines", "with start != end or multiple lines");
+            if (!start || !end) {
                 return;
             }
-            this._firstLine._validity = "invalid";
-            this._firstLine._textBlock = null;
+            var beforeStart:TextLine = start._previousLine;
+            var afterEnd:TextLine = end._nextLine;
+            var node:TextLine = start;
+            while (node) {
+                var next:TextLine = node._nextLine;
+                node._validity = TextLineValidity.INVALID;
+                node._textBlock = null;
+                node._previousLine = null;
+                node._nextLine = null;
+                if (node == end) {
+                    break;
+                }
+                node = next;
+            }
+
+            if (beforeStart) {
+                beforeStart._nextLine = afterEnd;
+            } else {
+                this._firstLine = afterEnd;
+            }
+            if (afterEnd) {
+                afterEnd._previousLine = beforeStart;
+            } else {
+                this._lastLine = beforeStart;
+            }
+        }
+
+        public function get firstInvalidLine():TextLine {
+            var line:TextLine = this._firstLine;
+            while (line != null) {
+                if (line.validity != TextLineValidity.VALID) {
+                    return line;
+                }
+                line = line._nextLine;
+            }
+            return null;
+        }
+
+        public function getTextLineAtCharIndex(charIndex:int):TextLine {
+            var line:TextLine = this._firstLine;
+            while (line != null) {
+                var start:int = line.textBlockBeginIndex;
+                var end:int = start + line.rawTextLength;
+                if (charIndex >= start && charIndex < end) {
+                    return line;
+                }
+                line = line._nextLine;
+            }
+            return null;
+        }
+
+        public function findNextAtomBoundary(charPos:int):int {
+            var content:ContentElement = this._content;
+            if (content == null || content.text == null) {
+                return charPos;
+            }
+            var next:int = charPos + 1;
+            if (next > content.text.length) {
+                next = content.text.length;
+            }
+            return next;
+        }
+
+        public function findPreviousAtomBoundary(charPos:int):int {
+            var prev:int = charPos - 1;
+            return prev < 0 ? 0 : prev;
+        }
+
+        public function findNextWordBoundary(charPos:int):int {
+            var content:ContentElement = this._content;
+            if (content == null || content.text == null) {
+                return charPos;
+            }
+            var text:String = content.text;
+            var i:int = charPos;
+            while (i < text.length && !_isWhitespace(text.charCodeAt(i))) {
+                i++;
+            }
+            while (i < text.length && _isWhitespace(text.charCodeAt(i))) {
+                i++;
+            }
+            return i;
+        }
+
+        public function findPreviousWordBoundary(charPos:int):int {
+            var content:ContentElement = this._content;
+            if (content == null || content.text == null) {
+                return charPos;
+            }
+            var text:String = content.text;
+            var i:int = charPos - 1;
+            while (i > 0 && _isWhitespace(text.charCodeAt(i))) {
+                i--;
+            }
+            while (i > 0 && !_isWhitespace(text.charCodeAt(i - 1))) {
+                i--;
+            }
+            return i < 0 ? 0 : i;
+        }
+
+        private static function _isWhitespace(code:int):Boolean {
+            return code == 0x20 || code == 0x09 || code == 0x0A || code == 0x0D || code == 0x2028 || code == 0x2029;
         }
     }
 }

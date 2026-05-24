@@ -1,0 +1,10 @@
+initial chain: 3
+line at b begin is b: true
+released validity: invalid
+released textBlock null: true
+a next is c: true
+c previous is a: true
+first remains a: true
+last remains c: true
+firstInvalid null: true
+line at b begin now null: true
