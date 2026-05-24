@@ -105,10 +105,7 @@ package flash.text.engine {
             return false;
         }
 
-        public function get atomCount():int {
-            stub_getter("flash.text.engine.TextLine", "atomCount");
-            return this._rawTextLength;
-        }
+        public native function get atomCount():int;
 
         public native function getBaselinePosition(baseline:String):Number;
 
@@ -138,10 +135,7 @@ package flash.text.engine {
             return -1;
         }
 
-        public function getAtomIndexAtCharIndex(charIndex:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomIndexAtCharIndex");
-            return -1;
-        }
+        public native function getAtomIndexAtCharIndex(charIndex:int):int;
 
         public function getAtomBidiLevel(index:int):int {
             stub_method("flash.text.engine.TextLine", "getAtomBidiLevel");
@@ -163,15 +157,9 @@ package flash.text.engine {
             return null;
         }
 
-        public function getAtomTextBlockBeginIndex(index:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomTextBlockBeginIndex");
-            return 0;
-        }
+        public native function getAtomTextBlockBeginIndex(index:int):int;
 
-        public function getAtomTextBlockEndIndex(index:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomTextBlockEndIndex");
-            return 0;
-        }
+        public native function getAtomTextBlockEndIndex(index:int):int;
 
         public function getAtomTextRotation(index:int):String {
             stub_method("flash.text.engine.TextLine", "getAtomTextRotation");

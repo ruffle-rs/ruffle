@@ -1,0 +1,25 @@
+package {
+import flash.display.Sprite;
+import flash.text.engine.ElementFormat;
+import flash.text.engine.FontDescription;
+import flash.text.engine.TextBlock;
+import flash.text.engine.TextElement;
+import flash.text.engine.TextLine;
+
+public class Test extends Sprite {
+    public function Test() {
+        var fd:FontDescription = new FontDescription();
+        fd.fontName = "Liberation Sans";
+        var line:TextLine = new TextBlock(
+            new TextElement("X", new ElementFormat(fd, 18))
+        ).createTextLine(null, 400);
+
+        trace("begin -1: " + line.getAtomTextBlockBeginIndex(-1));
+        trace("end -1: " + line.getAtomTextBlockEndIndex(-1));
+        trace("begin 1: " + line.getAtomTextBlockBeginIndex(1));
+        trace("end 1: " + line.getAtomTextBlockEndIndex(1));
+        trace("char -1: " + line.getAtomIndexAtCharIndex(-1));
+        trace("char 1: " + line.getAtomIndexAtCharIndex(1));
+    }
+}
+}

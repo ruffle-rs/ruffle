@@ -127,7 +127,8 @@ pub fn create_text_line<'gc>(
     let Some(html_line) = layout.lines().first().cloned() else {
         return Ok(Value::Null);
     };
-    let text_line_layout = TextLineLayout::new(html_line, WString::from(text.as_wstr()));
+    let text_line_layout =
+        TextLineLayout::new(html_line, WString::from(text.as_wstr()), next_line_start);
     let raw_text_length = text_line_layout.raw_text_length();
 
     let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);

@@ -20,6 +20,12 @@ use ruffle_common::utils::HasPrefixField;
 use std::cell::Ref;
 use std::sync::Arc;
 
+#[derive(Clone, Copy, Debug)]
+pub struct Atom {
+    pub char_start: usize,
+    pub char_end: usize,
+}
+
 #[derive(Collect)]
 #[collect(no_drop)]
 pub struct TextLineLayout<'gc> {
@@ -27,18 +33,28 @@ pub struct TextLineLayout<'gc> {
     #[collect(require_static)]
     text: WString,
     #[collect(require_static)]
+    atoms: Vec<Atom>,
+    #[collect(require_static)]
     ascent: f32,
     #[collect(require_static)]
     descent: f32,
 }
 
 impl<'gc> TextLineLayout<'gc> {
-    pub fn new(html_line: LayoutLine<'gc>, text: WString) -> Self {
+    pub fn new(html_line: LayoutLine<'gc>, text: WString, text_block_begin: usize) -> Self {
         let ascent = html_line.ascent().to_pixels() as f32;
         let descent = html_line.descent().to_pixels() as f32;
+        let atoms = html_line
+            .text_range()
+            .map(|pos| Atom {
+                char_start: text_block_begin + pos,
+                char_end: text_block_begin + pos + 1,
+            })
+            .collect();
         Self {
             html_line,
             text,
+            atoms,
             ascent,
             descent,
         }
@@ -58,6 +74,10 @@ impl<'gc> TextLineLayout<'gc> {
 
     pub fn raw_text_length(&self) -> usize {
         self.html_line.text_range().len()
+    }
+
+    pub fn atoms(&self) -> &[Atom] {
+        &self.atoms
     }
 }
 
@@ -125,6 +145,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 line: RefLock::new(TextLineLayout {
                     html_line: borrowed.html_line.clone(),
                     text: borrowed.text.clone(),
+                    atoms: borrowed.atoms.clone(),
                     ascent: borrowed.ascent,
                     descent: borrowed.descent,
                 }),
