@@ -1,0 +1,3 @@
+mirror length: 0
+mirror lookup null: true
+dump shape: true

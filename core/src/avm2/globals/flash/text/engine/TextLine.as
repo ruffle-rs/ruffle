@@ -6,6 +6,7 @@ package flash.text.engine {
     import flash.display.DisplayObject;
     import flash.display.DisplayObjectContainer;
     import flash.errors.IllegalOperationError;
+    import flash.events.EventDispatcher;
     import flash.geom.Point;
     import flash.geom.Rectangle;
     import flash.ui.ContextMenu;
@@ -131,6 +132,22 @@ package flash.text.engine {
             return false;
         }
 
+        public function get mirrorRegions():Vector.<TextLineMirrorRegion> {
+            stub_getter("flash.text.engine.TextLine", "mirrorRegions");
+            return new Vector.<TextLineMirrorRegion>();
+        }
+
+        public function getMirrorRegion(mirror:EventDispatcher):TextLineMirrorRegion {
+            stub_method("flash.text.engine.TextLine", "getMirrorRegion");
+            var regions:Vector.<TextLineMirrorRegion> = this.mirrorRegions;
+            for (var i:int = 0; i < regions.length; i++) {
+                if (regions[i].mirror == mirror) {
+                    return regions[i];
+                }
+            }
+            return null;
+        }
+
         public function getAtomIndexAtPoint(stageX:Number, stageY:Number):int {
             var p:Point = this.globalToLocal(new Point(stageX, stageY));
             var n:int = this.atomCount;
@@ -168,6 +185,11 @@ package flash.text.engine {
 
         // This function does nothing in Flash Player 32
         public function flushAtomData():void { }
+
+        public function dump():String {
+            stub_method("flash.text.engine.TextLine", "dump");
+            return "<TextLine atomCount=" + this.atomCount + " textWidth=" + this.textWidth + ">";
+        }
 
         // Overrides
 
