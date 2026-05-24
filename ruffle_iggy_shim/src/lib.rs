@@ -140,6 +140,7 @@ pub unsafe extern "C" fn iggy_open_install_truetype_utf8(
     ttf_data: *const u8,
     ttf_len: usize,
 ) {
+    _install_panic_hook();
     if name_utf8.is_null() || ttf_data.is_null() || ttf_len == 0 { return; }
     let name = if name_len > 0 {
         let slice = unsafe { std::slice::from_raw_parts(name_utf8 as *const u8, name_len as usize) };
@@ -317,16 +318,13 @@ pub unsafe extern "C" fn iggy_open_call_as3_path(
     };
     let method = unsafe { CStr::from_ptr(method_utf8) }.to_string_lossy().into_owned();
     let ext_args = unsafe { _decode_iggy_args(args, num_args) };
-    // LCE Phase 4.8b: path plumbing works (Hud.Description.Init now lands
-    // on the right target), but actually invoking the previously-failing
-    // child Init() bodies exposes a downstream crash inside the game
-    // (~3s in, 0xC0000409 stack-buffer-overrun fastfail, around the
-    // first TutorialPopup/Hud Init chain). Until that's diagnosed we
-    // default to bypass-child-calls so the boot baseline keeps booting
-    // (mirrors pre-plumbing AS3-side behaviour). Set LCE_CHILD_CALLS=1
-    // to opt in for repro / continued work on the downstream crash.
-    let allow_child = std::env::var_os("LCE_CHILD_CALLS").is_some();
-    if !allow_child && !path.is_empty() {
+    // LCE Phase 4.8b: child-path dispatch is on by default now that
+    // call_method_at_path_avm2 guards against Null/Undefined targets
+    // (those previously panicked Ruffle's call_property invariant).
+    // Set LCE_NO_CHILD_CALLS=1 to fall back to root-only behaviour for
+    // bisecting any future regressions.
+    let skip_child = std::env::var_os("LCE_NO_CHILD_CALLS").is_some();
+    if skip_child && !path.is_empty() {
         static SKIP_LOGGED: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
         let n = SKIP_LOGGED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         if n < 30 {
@@ -482,8 +480,34 @@ pub extern "C" fn iggy_open_magic() -> u32 {
 #[unsafe(no_mangle)]
 pub extern "C" fn iggy_open_init(_allocator: *const c_void) {
     _bc("iggy_open_init enter");
-    // No-op for Phase 4.1. 4.3 wires the real lifecycle.
+    _install_panic_hook();
     _bc("iggy_open_init exit");
+}
+
+// Idempotent panic-hook installer. The C++ stub does not call
+// iggy_open_init (its IggyInit is a no-op) so we lazily install at every
+// FFI entry. Without this, Rust panics inside this cdylib disappear into
+// the GUI subsystem's discarded stderr and surface only as opaque
+// __fastfail(7) crashes.
+static PANIC_HOOK_INSTALLED: std::sync::Once = std::sync::Once::new();
+fn _install_panic_hook() {
+    PANIC_HOOK_INSTALLED.call_once(|| {
+        std::panic::set_hook(Box::new(|info| {
+            use std::io::Write;
+            let payload = info.payload();
+            let msg = if let Some(s) = payload.downcast_ref::<&'static str>() { *s }
+                      else if let Some(s) = payload.downcast_ref::<String>() { s.as_str() }
+                      else { "<non-string panic payload>" };
+            let loc = info.location()
+                .map(|l| format!("{}:{}", l.file(), l.line()))
+                .unwrap_or_else(|| "<unknown>".into());
+            if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true)
+                .open(r"C:\Users\poopo\Desktop\Projects\LCE\LCE_orig\panics.log") {
+                let _ = writeln!(f, "PANIC @ {loc}: {msg}");
+                let _ = writeln!(f, "  backtrace = {}", std::backtrace::Backtrace::force_capture());
+            }
+        }));
+    });
 }
 
 /// One-shot global shutdown. Mirrors `IggyShutdown()`.
@@ -511,6 +535,7 @@ pub unsafe extern "C" fn iggy_open_library_create_from_memory(
     len: usize,
     name_utf8: *const c_char,
 ) -> *mut OpaqueLibrary {
+    _install_panic_hook();
     _bc(&format!("library_create len={}", len));
     if data.is_null() || len == 0 {
         return std::ptr::null_mut();

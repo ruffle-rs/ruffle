@@ -2598,6 +2598,26 @@ impl Player {
                     };
                 }
             }
+            // Guard: target may have resolved to Null/Undefined if any
+            // segment of `path` was a declared-but-unassigned AS3 slot
+            // (e.g. `public var Description:FJ_Label` on TutorialPopup
+            // before its SymbolClass binding has populated the slot).
+            // Invoking call_property on a non-Object value triggers
+            // `Should not have Undefined or Null in vtable` panic in
+            // avm2/value.rs. Log + bail safely instead.
+            if target.as_object().is_none() {
+                static FAIL_LOG: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+                let n = FAIL_LOG.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                if n < 32 {
+                    use std::io::Write;
+                    if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true)
+                        .open(r"C:\Users\poopo\Desktop\Projects\LCE\LCE_orig\as3_errors.log") {
+                        let _ = writeln!(f, "call path='{}' '{}' nargs=- err=target resolved to {:?} (not Object)",
+                            path, name, target);
+                    }
+                }
+                return ExternalValue::Null;
+            }
             let avm2_args: Vec<crate::avm2::Value> = args
                 .into_iter()
                 .map(|v| v.into_avm2(activation.context))
