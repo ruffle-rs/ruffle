@@ -142,15 +142,9 @@ package flash.text.engine {
             return 0;
         }
 
-        public function getAtomBounds(index:int):Rectangle {
-            stub_method("flash.text.engine.TextLine", "getAtomBounds");
-            return new Rectangle(0, 0, 0, 0);
-        }
+        public native function getAtomBounds(index:int):Rectangle;
 
-        public function getAtomCenter(index:int):Number {
-            stub_method("flash.text.engine.TextLine", "getAtomCenter");
-            return 1.0;
-        }
+        public native function getAtomCenter(index:int):Number;
 
         public function getAtomGraphic(index:int):DisplayObject {
             stub_method("flash.text.engine.TextLine", "getAtomGraphic");

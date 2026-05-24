@@ -103,6 +103,44 @@ pub fn get_atom_index_at_char_index<'gc>(
     Ok(atom.into())
 }
 
+pub fn get_atom_bounds<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let (x, y, width, height) = match fte_line(this) {
+        Some(line) => match atom_at(&line, args.get_i32(0)) {
+            Some(atom) => (
+                atom.x as f64,
+                -line.ascent() as f64,
+                atom.width as f64,
+                (line.ascent() + line.descent()) as f64,
+            ),
+            None => (0.0, 0.0, 0.0, 0.0),
+        },
+        None => (0.0, 0.0, 0.0, 0.0),
+    };
+
+    activation.avm2().classes().rectangle.construct(
+        activation,
+        &[x.into(), y.into(), width.into(), height.into()],
+    )
+}
+
+pub fn get_atom_center<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let Some(line) = fte_line(this) else {
+        return Ok(0.0.into());
+    };
+    let Some(atom) = atom_at(&line, args.get_i32(0)) else {
+        return Ok(0.0.into());
+    };
+    Ok(((atom.x + atom.width / 2.0) as f64).into())
+}
+
 pub fn get_atom_text_block_begin_index<'gc>(
     _activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,

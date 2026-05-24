@@ -1,0 +1,6 @@
+0 center in bounds: true
+0 center midpoint: true
+1 center in bounds: true
+1 center midpoint: true
+2 center in bounds: true
+2 center midpoint: true

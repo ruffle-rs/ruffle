@@ -24,6 +24,8 @@ use std::sync::Arc;
 pub struct Atom {
     pub char_start: usize,
     pub char_end: usize,
+    pub x: f32,
+    pub width: f32,
 }
 
 #[derive(Collect)]
@@ -49,6 +51,14 @@ impl<'gc> TextLineLayout<'gc> {
             .map(|pos| Atom {
                 char_start: text_block_begin + pos,
                 char_end: text_block_begin + pos + 1,
+                x: html_line
+                    .char_bounds(pos)
+                    .map(|bounds| bounds.x_min.to_pixels() as f32)
+                    .unwrap_or_else(|| html_line.bounds().width().to_pixels() as f32),
+                width: html_line
+                    .char_bounds(pos)
+                    .map(|bounds| bounds.width().to_pixels() as f32)
+                    .unwrap_or(0.0),
             })
             .collect();
         Self {
