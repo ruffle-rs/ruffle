@@ -1,0 +1,4 @@
+line before release: true
+release callable: true
+dump value: <TextBlock>
+line after release: true

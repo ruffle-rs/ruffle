@@ -277,5 +277,15 @@ package flash.text.engine {
         private static function _isWhitespace(code:int):Boolean {
             return code == 0x20 || code == 0x09 || code == 0x0A || code == 0x0D || code == 0x2028 || code == 0x2029;
         }
+
+        [API("670")]
+        public function releaseLineCreationData():void {
+            stub_method("flash.text.engine.TextBlock", "releaseLineCreationData");
+        }
+
+        public function dump():String {
+            stub_method("flash.text.engine.TextBlock", "dump");
+            return "<TextBlock>";
+        }
     }
 }
