@@ -62,17 +62,27 @@ static LIBRARY_REGISTRY: Mutex<Vec<Arc<SwfMovie>>> = Mutex::new(Vec::new());
 // The early Players are the menu chain that needs button visuals; later
 // Players are intro/transition scenes whose missed button bindings are
 // imperceptible.
+// LCE Phase 4.8c: NOW a concurrent cap (refunded on player_destroy)
+// instead of lifetime cap. Combined with C++ UIScene::loadMovie destroy
+// guard, peak concurrent full-inject Players should stay bounded.
+//
+// Held at 4 for now: budget>=5 lets Hud full-inject which trips a
+// Rust type assertion at avm2/activation.rs:347 deep in skinHDHud's
+// nested PlaceByClass chain (FJ_Label_HUD_White -> FJ_LabelWhite).
+// Separate untouched issue -- see [[project-lce-phase4-5-menu-landing]].
 static FULL_INJECT_BUDGET: std::sync::atomic::AtomicU32 =
     std::sync::atomic::AtomicU32::new(4);
 
-fn _inject_library_abcs(player: &Arc<Mutex<Player>>) {
+/// Returns true if this Player consumed a full-inject budget slot
+/// (caller stashes flag in OpaquePlayer for refund on destroy).
+fn _inject_library_abcs(player: &Arc<Mutex<Player>>) -> bool {
     let libs: Vec<Arc<SwfMovie>> = match LIBRARY_REGISTRY.lock() {
         Ok(g) => g.clone(),
-        Err(_) => { _bc("inject_abcs: registry poisoned"); return; }
+        Err(_) => { _bc("inject_abcs: registry poisoned"); return false; }
     };
     if libs.is_empty() {
         _bc("inject_abcs: registry empty");
-        return;
+        return false;
     }
     let use_full = FULL_INJECT_BUDGET
         .fetch_update(
@@ -105,6 +115,7 @@ fn _inject_library_abcs(player: &Arc<Mutex<Player>>) {
     } else {
         _bc("inject_abcs: player lock fail");
     }
+    use_full
 }
 
 fn _apply_registered_fonts(player: &Arc<Mutex<Player>>) {
@@ -448,6 +459,11 @@ pub struct OpaquePlayer {
     /// to gate frame advancement to the SWF's nominal frame rate. Stock
     /// Iggy compares accumulated wall-clock against `1/swf.frame_rate`.
     pub next_frame_due_us: u64,
+    /// LCE Phase 4.8c: tracks whether this Player consumed a full-inject
+    /// budget slot. Refunded on destroy so the cap becomes a *concurrent*
+    /// limit instead of a *lifetime* one. Combined with C++ side fix in
+    /// UIScene::loadMovie that closes the leak that motivated the cap.
+    pub used_full_inject: bool,
 }
 
 fn _now_us() -> u64 {
@@ -674,7 +690,7 @@ pub unsafe extern "C" fn iggy_open_player_create_from_memory(
     // SWF into this new Player's root ApplicationDomain so PlaceByClass
     // refs (e.g. MainMenu's fourj.Buttons.FJ_MenuButton_Normal -> skinHD)
     // resolve.
-    _inject_library_abcs(&player);
+    let used_full_inject = _inject_library_abcs(&player);
     _bc("  player built");
     unsafe {
         std::ptr::write(opaque_ptr, OpaquePlayer {
@@ -682,6 +698,7 @@ pub unsafe extern "C" fn iggy_open_player_create_from_memory(
             last_frame: None,
             viewport: (init_w, init_h),
             next_frame_due_us: _now_us(),
+            used_full_inject,
         });
     }
     opaque_ptr
@@ -697,8 +714,13 @@ pub unsafe extern "C" fn iggy_open_player_destroy(p: *mut OpaquePlayer) {
     if p.is_null() {
         return;
     }
-    _bc(&format!("player_destroy p={:p}", p));
+    // Read flag BEFORE drop so we can refund the budget slot.
+    let used_full = unsafe { (*p).used_full_inject };
+    _bc(&format!("player_destroy p={:p} used_full={}", p, used_full));
     drop(unsafe { Box::from_raw(p) });
+    if used_full {
+        FULL_INJECT_BUDGET.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
     _bc("player_destroy done");
 }
 
