@@ -410,9 +410,7 @@ pub fn recreate_text_line<'gc>(
     let this = this
         .as_object()
         .expect("TextBlock native method receiver must be an object");
-    let Some(text_line) = args.try_get_object(0) else {
-        return Ok(Value::Null);
-    };
+    let text_line = args.get_object(activation, 0, "textLine")?;
     let previous_text_line = args.try_get_object(1);
 
     let content = this.get_slot(block_slots::_CONTENT);
