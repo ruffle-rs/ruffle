@@ -22,7 +22,9 @@ package flash.text.engine {
         private var _ligatureLevel:String;
         private var _locale:String;
         private var _textRotation:String;
+        [Ruffle(NativeAccessible)]
         private var _trackingLeft:Number;
+        [Ruffle(NativeAccessible)]
         private var _trackingRight:Number;
         private var _typographicCase:String;
 

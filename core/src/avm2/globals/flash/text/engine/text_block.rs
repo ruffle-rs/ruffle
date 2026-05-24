@@ -42,6 +42,13 @@ fn format_from_content<'gc>(
             ef.get_slot(format_slots::_FONT_SIZE)
                 .coerce_to_number(activation)?,
         );
+        let tracking_left = ef
+            .get_slot(format_slots::_TRACKING_LEFT)
+            .coerce_to_number(activation)?;
+        let tracking_right = ef
+            .get_slot(format_slots::_TRACKING_RIGHT)
+            .coerce_to_number(activation)?;
+        format.letter_spacing = Some(tracking_left + tracking_right);
         if let Value::Object(fd) = ef.get_slot(format_slots::_FONT_DESCRIPTION) {
             format.font = Some(WString::from(
                 fd.get_slot(font_desc_slots::_FONT_NAME)
