@@ -1,0 +1,4 @@
+firstLine === first: true
+lastLine === first: true
+complete line: null
+result: complete

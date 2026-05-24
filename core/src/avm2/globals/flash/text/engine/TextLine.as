@@ -28,6 +28,12 @@ package flash.text.engine {
         [Ruffle(NativeAccessible)]
         private var _textBlockBeginIndex:int = 0;
 
+        [Ruffle(NativeAccessible)]
+        internal var _nextLine:TextLine = null;
+
+        [Ruffle(NativeAccessible)]
+        internal var _previousLine:TextLine = null;
+
         internal var _validity:String = "valid";
 
         public static const MAX_LINE_WIDTH:int = 1000000;
@@ -48,6 +54,14 @@ package flash.text.engine {
 
         public function get textBlock():TextBlock {
             return this._textBlock;
+        }
+
+        public function get nextLine():TextLine {
+            return this._nextLine;
+        }
+
+        public function get previousLine():TextLine {
+            return this._previousLine;
         }
 
         public function get ascent():Number {
@@ -98,14 +112,6 @@ package flash.text.engine {
         public function get atomCount():int {
             stub_getter("flash.text.engine.TextLine", "atomCount");
             return this._rawTextLength;
-        }
-
-        public function get nextLine():TextLine {
-            return null;
-        }
-
-        public function get previousLine():TextLine {
-            return null;
         }
 
         public function getBaselinePosition(baseline:String):Number {

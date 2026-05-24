@@ -24,6 +24,9 @@ package flash.text.engine {
         [Ruffle(NativeAccessible)]
         private var _firstLine:TextLine = null;
 
+        [Ruffle(NativeAccessible)]
+        private var _lastLine:TextLine = null;
+
         public function TextBlock(
             content:ContentElement = null,
             tabStops:Vector.<TabStop> = null,
@@ -178,8 +181,7 @@ package flash.text.engine {
         }
 
         public function get lastLine():TextLine {
-            stub_getter("flash.text.engine.TextBlock", "lastLine");
-            return this._firstLine;
+            return this._lastLine;
         }
 
         public function releaseLines(start:TextLine, end:TextLine):void {

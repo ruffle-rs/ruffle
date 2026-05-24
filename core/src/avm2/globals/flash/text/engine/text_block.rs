@@ -64,6 +64,28 @@ pub fn create_text_line<'gc>(
         }
     };
 
+    let next_line_start = match previous_text_line {
+        Some(prev) => {
+            let begin = prev
+                .get_slot(line_slots::_TEXT_BLOCK_BEGIN_INDEX)
+                .coerce_to_i32(activation)? as usize;
+            let raw_len = prev
+                .get_slot(line_slots::_RAW_TEXT_LENGTH)
+                .coerce_to_i32(activation)? as usize;
+            begin + raw_len
+        }
+        None => 0,
+    };
+
+    if next_line_start >= text.len() {
+        this.set_slot(
+            block_slots::_TEXT_LINE_CREATION_RESULT,
+            istr!("complete").into(),
+            activation,
+        )?;
+        return Ok(Value::Null);
+    }
+
     let class = activation.avm2().classes().textline;
     let movie = activation.caller_movie_or_root();
 
@@ -88,17 +110,28 @@ pub fn create_text_line<'gc>(
     instance.set_slot(line_slots::_SPECIFIED_WIDTH, args.get_value(1), activation)?;
     instance.set_slot(
         line_slots::_RAW_TEXT_LENGTH,
-        Value::from_usize_lossy(text.len()),
+        Value::from_usize_lossy(text.len() - next_line_start),
         activation,
     )?;
-    instance.set_slot(line_slots::_TEXT_BLOCK_BEGIN_INDEX, 0.into(), activation)?;
+    instance.set_slot(
+        line_slots::_TEXT_BLOCK_BEGIN_INDEX,
+        Value::Integer(next_line_start as i32),
+        activation,
+    )?;
+
+    if let Some(prev) = previous_text_line {
+        prev.set_slot(line_slots::_NEXT_LINE, instance.into(), activation)?;
+        instance.set_slot(line_slots::_PREVIOUS_LINE, prev.into(), activation)?;
+    } else {
+        this.set_slot(block_slots::_FIRST_LINE, instance.into(), activation)?;
+    }
+    this.set_slot(block_slots::_LAST_LINE, instance.into(), activation)?;
 
     this.set_slot(
         block_slots::_TEXT_LINE_CREATION_RESULT,
         istr!("success").into(),
         activation,
     )?;
-    this.set_slot(block_slots::_FIRST_LINE, instance.into(), activation)?;
 
     Ok(instance.into())
 }
