@@ -1,0 +1,3 @@
+case changes width: true
+first atom unchanged: true
+second atom upper wider: true

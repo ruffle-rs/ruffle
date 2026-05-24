@@ -1,0 +1,15 @@
+mixed run line: ascent=21.84 descent=6.31 textHeight=28.15 textWidth=108.00 atomCount=14
+  atom 0 x=0.00 width=20.00 top=-21.84 height=28.15
+  atom 1 x=20.00 width=7.00 top=-21.84 height=28.15
+  atom 2 x=27.00 width=17.01 top=-21.84 height=28.15
+  atom 3 x=44.00 width=8.00 top=-21.84 height=28.15
+  atom 4 x=52.00 width=3.00 top=-21.84 height=28.15
+  atom 5 x=55.00 width=2.00 top=-21.84 height=28.15
+  atom 6 x=57.00 width=6.00 top=-21.84 height=28.15
+  atom 7 x=63.00 width=5.00 top=-21.84 height=28.15
+  atom 8 x=68.00 width=3.00 top=-21.84 height=28.15
+  atom 9 x=71.00 width=8.00 top=-21.84 height=28.15
+  atom 10 x=79.00 width=9.00 top=-21.84 height=28.15
+  atom 11 x=88.00 width=7.00 top=-21.84 height=28.15
+  atom 12 x=95.00 width=6.00 top=-21.84 height=28.15
+  atom 13 x=101.00 width=7.00 top=-21.84 height=28.15

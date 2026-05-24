@@ -1,0 +1,4 @@
+group raw length: 2
+group atom count: 2
+second child affects width: true
+second atom wider: true
