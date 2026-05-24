@@ -144,6 +144,10 @@ fn resolve_path_property<'gc>(
     name: AvmString<'gc>,
     activation: &mut Activation<'_, 'gc>,
 ) -> Option<Value<'gc>> {
+    if activation.swf_version() < 5 {
+        return None;
+    }
+
     let case_sensitive = activation.is_case_sensitive();
     if name.eq_with_case(b"_root", case_sensitive) {
         return Some(dobj.avm1_root().object1_or_undef());
