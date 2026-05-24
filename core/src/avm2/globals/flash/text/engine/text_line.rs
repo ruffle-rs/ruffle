@@ -1,6 +1,7 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
 use crate::avm2::value::Value;
+use crate::avm2_stub_getter;
 
 pub fn get_text_width<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -11,6 +12,7 @@ pub fn get_text_width<'gc>(
 
     let display_object = this.as_display_object().unwrap();
     if let Some(text_line) = display_object.as_text_line() {
+        avm2_stub_getter!(activation, "flash.text.engine.TextLine", "textWidth");
         if let Some(measured_text) = text_line.measure_text(activation.context) {
             return Ok(measured_text.0.to_pixels().into());
         }
@@ -33,6 +35,7 @@ pub fn get_text_height<'gc>(
 
     let display_object = this.as_display_object().unwrap();
     if let Some(text_line) = display_object.as_text_line() {
+        avm2_stub_getter!(activation, "flash.text.engine.TextLine", "textHeight");
         if let Some(measured_text) = text_line.measure_text(activation.context) {
             return Ok(measured_text.1.to_pixels().into());
         }

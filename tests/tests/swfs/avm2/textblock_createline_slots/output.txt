@@ -1,0 +1,4 @@
+rawTextLength: 5
+begin: 0
+specifiedWidth: 321
+textBlock linked: true

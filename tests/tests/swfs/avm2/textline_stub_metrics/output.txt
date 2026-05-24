@@ -1,0 +1,2 @@
+textWidth follows glyph advance (these are still stubs): true
+textHeight is stable for same format (these are still stubs): true

@@ -31,11 +31,9 @@ pub fn create_text_line<'gc>(
 
     let content = this.get_slot(block_slots::_CONTENT);
 
-    let content = if matches!(content, Value::Null) {
+    if matches!(content, Value::Null) {
         return Ok(Value::Null);
-    } else {
-        content
-    };
+    }
 
     let text = match previous_text_line {
         Some(_) => {
@@ -93,6 +91,7 @@ pub fn create_text_line<'gc>(
         Value::from_usize_lossy(text.len()),
         activation,
     )?;
+    instance.set_slot(line_slots::_TEXT_BLOCK_BEGIN_INDEX, 0.into(), activation)?;
 
     this.set_slot(
         block_slots::_TEXT_LINE_CREATION_RESULT,
