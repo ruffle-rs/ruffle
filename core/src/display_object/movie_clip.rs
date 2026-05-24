@@ -4598,7 +4598,16 @@ impl<'gc, 'a> MovieClip<'gc> {
                     }; // activation dropped here
 
                     if let Some(child) = constructed {
-                        // Same post-instantiation as MovieClip::instantiate_child.
+                        // LCE Phase 4.8 root-cause fix: sprite_allocator ->
+                        // initialize_for_allocator (display_object.rs:33) ALREADY
+                        // ran the full child lifecycle:
+                        //   set_placed_by_avm2_script(true), set_object2,
+                        //   post_instantiation(Avm2), enter_frame, construct_frame,
+                        //   set_skip_next_enter_frame(true), on_construction_complete
+                        // Re-running them here breaks the second-through-Nth
+                        // instance per parent (causes 5 of 6 buttons to construct
+                        // but render empty). Just do the timeline-side wiring:
+                        // depth, parent, transform, name -- NOT the lifecycle.
                         if self.has_child_at_depth(depth) {
                             context.avm_warning(&format!(
                                 "PlaceByClass: failed to place {} at depth {} (already occupied)",
@@ -4610,8 +4619,6 @@ impl<'gc, 'a> MovieClip<'gc> {
                             child.set_depth(depth);
                             child.set_parent(context, Some(self.into()));
                             child.set_place_frame(self.current_frame());
-                            let has_object2_allocated = self.object2().is_none();
-                            child.set_manual_frame_construct(has_object2_allocated);
 
                             child.apply_place_object(context, &place_object);
                             if let Some(name) = &place_object.name {
@@ -4623,9 +4630,6 @@ impl<'gc, 'a> MovieClip<'gc> {
                             if let Some(clip_depth) = place_object.clip_depth {
                                 child.set_clip_depth(clip_depth.into());
                             }
-
-                            child.post_instantiation(context, None, Instantiator::Movie, false);
-                            child.enter_frame(context);
 
                             // Step 3e: explicit init_property write to the parent's
                             // typed trait slot, BEFORE the parent's AS3 constructor
@@ -4644,7 +4648,8 @@ impl<'gc, 'a> MovieClip<'gc> {
                                 );
                                 let _ = pv.init_property(&mn, cv, &mut act);
                             }
-                            child.on_construction_complete(context);
+                            // NOTE: on_construction_complete already called by
+                            // initialize_for_allocator. Do NOT re-call.
 
                             if let Some(prev_child) = prev_child {
                                 dispatch_removed_event(prev_child, context);
