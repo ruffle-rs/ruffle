@@ -1,0 +1,21 @@
+num_frames = 1
+
+# The .fla authors this text with the device font `_sans`; pin it to a
+# bundled Liberation Sans so the wrap points and metrics are deterministic
+# (the `output.expected.png` reference was captured from Flash Player with
+# the same metric-compatible font).
+[fonts.sans]
+family = "Liberation Sans"
+path = "LiberationSans-Regular.ttf"
+bold = false
+italic = false
+
+[default_fonts]
+sans = ["Liberation Sans"]
+
+[image_comparisons.output]
+tolerance = 12
+max_outliers = 8000
+
+[player_options]
+with_renderer = { optional = false, quality = "high" }

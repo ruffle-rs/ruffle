@@ -1,0 +1,5 @@
+left delta trimmed: true
+right delta trimmed: true
+both delta trimmed: true
+first atom starts at zero: true
+last atom ends at textWidth: true

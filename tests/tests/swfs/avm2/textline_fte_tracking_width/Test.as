@@ -11,7 +11,7 @@ public class Test extends Sprite {
         var normal:TextLine = lineWithTracking(0, 0);
         var spaced:TextLine = lineWithTracking(2, 3);
 
-        trace("tracking increases width: " + (spaced.textWidth > normal.textWidth + 15));
+        trace("tracking delta is interior gaps: " + near(spaced.textWidth - normal.textWidth, 15));
         trace("tracking keeps atom count: " + (spaced.atomCount == normal.atomCount));
     }
 
@@ -22,6 +22,10 @@ public class Test extends Sprite {
         ef.trackingLeft = left;
         ef.trackingRight = right;
         return new TextBlock(new TextElement("ABCD", ef)).createTextLine(null, 400);
+    }
+
+    private function near(a:Number, b:Number):Boolean {
+        return Math.abs(a - b) < 0.05;
     }
 }
 }

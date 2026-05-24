@@ -1,0 +1,6 @@
+plain: textWidth=134.99 atomCount=11 atom1.x=13.00 lastAtom.right=134.99
+kerning on: textWidth=128.31 atomCount=11 atom1.x=12.26 lastAtom.right=128.31
+trackingRight +2: textWidth=155.01 atomCount=11 atom1.x=15.00 lastAtom.right=155.01
+trackingRight -1: textWidth=125.13 atomCount=11 atom1.x=12.01 lastAtom.right=125.13
+trackingLeft +3: textWidth=164.97 atomCount=11 atom1.x=13.00 lastAtom.right=164.97
+tracking both 1+1: textWidth=154.91 atomCount=11 atom1.x=13.99 lastAtom.right=154.91

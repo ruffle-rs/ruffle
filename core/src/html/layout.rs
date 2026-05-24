@@ -1159,6 +1159,58 @@ impl<'gc> LayoutLine<'gc> {
             y_max: line_bounds.extent_y(),
         })
     }
+
+    pub fn trim_edge_tracking(&mut self, leading: Twips, trailing: Twips) {
+        if leading == Twips::ZERO && trailing == Twips::ZERO {
+            return;
+        }
+
+        let Some(first_text) = self.boxes.iter().position(LayoutBox::is_text_box) else {
+            return;
+        };
+        let last_text = self
+            .boxes
+            .iter()
+            .rposition(LayoutBox::is_text_box)
+            .expect("a first text box implies a last one");
+
+        if leading != Twips::ZERO {
+            if let LayoutContent::Text { char_end_pos, .. } = &mut self.boxes[first_text].content {
+                for pos in char_end_pos {
+                    *pos -= leading;
+                }
+            }
+            let bounds = &mut self.boxes[first_text].bounds;
+            *bounds = bounds.with_width(bounds.width() - leading);
+            for later in self.boxes.iter_mut().skip(first_text + 1) {
+                later.bounds += Position::from((Twips::ZERO - leading, Twips::ZERO));
+            }
+        }
+
+        if trailing != Twips::ZERO {
+            if let LayoutContent::Text { char_end_pos, .. } = &mut self.boxes[last_text].content {
+                let mut prev = Twips::ZERO;
+                let mut last_glyph = None;
+                for (i, pos) in char_end_pos.iter().enumerate() {
+                    if *pos > prev {
+                        last_glyph = Some(i);
+                    }
+                    prev = *pos;
+                }
+                if let Some(index) = last_glyph {
+                    for pos in char_end_pos.iter_mut().skip(index) {
+                        *pos -= trailing;
+                    }
+                }
+            }
+            let bounds = &mut self.boxes[last_text].bounds;
+            *bounds = bounds.with_width(bounds.width() - trailing);
+        }
+
+        self.bounds = self
+            .bounds
+            .with_width(self.bounds.width() - leading - trailing);
+    }
 }
 
 /// A `LayoutBox` represents a single content box within a layout.
