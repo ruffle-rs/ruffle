@@ -1786,9 +1786,16 @@ impl Player {
                         context.mouse_data.pressed(button),
                         context.mouse_data.hovered,
                     );
+                    // The structural equality check below exists to handle AVM1 buttons
+                    // that get re-instantiated by a `gotoAndPlay` while held down (see
+                    // `check_display_object_equality`). It must not run for AVM2, where
+                    // dynamically-created display objects share `depth() == 0` and
+                    // `id() == 0`, which would otherwise make every release look "inside"
+                    // and incorrectly dispatch a `click` event when releasing outside.
                     if let Some(down) = context.mouse_data.pressed(button)
                         && let Some(over) = context.mouse_data.hovered
                         && !released_inside
+                        && !down.as_displayobject().movie().is_action_script_3()
                     {
                         released_inside = Self::check_display_object_equality(
                             down.as_displayobject(),
