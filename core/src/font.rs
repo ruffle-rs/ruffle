@@ -345,10 +345,19 @@ impl FontFace {
         let face = ttf_parser::Face::parse(&self.data, self.font_index)
             .expect("Font was already checked to be valid");
 
-        if let Some(kern) = face.tables().kern
-            && let (Some(left_glyph), Some(right_glyph)) =
-                (face.glyph_index(left), face.glyph_index(right))
+        let (Some(left_glyph), Some(right_glyph)) =
+            (face.glyph_index(left), face.glyph_index(right))
+        else {
+            return Twips::ZERO;
+        };
+
+        if let Some(gpos) = face.tables().gpos
+            && let Some(value) = gpos_horizontal_kerning(&gpos, left_glyph, right_glyph)
         {
+            return Twips::new(value as i32);
+        }
+
+        if let Some(kern) = face.tables().kern {
             for subtable in kern.subtables {
                 if subtable.horizontal
                     && let Some(value) = subtable.glyphs_kerning(left_glyph, right_glyph)
@@ -359,6 +368,62 @@ impl FontFace {
         }
 
         Twips::ZERO
+    }
+}
+
+fn gpos_horizontal_kerning(
+    gpos: &ttf_parser::opentype_layout::LayoutTable,
+    left: ttf_parser::GlyphId,
+    right: ttf_parser::GlyphId,
+) -> Option<i16> {
+    use ttf_parser::gpos::PositioningSubtable;
+
+    let kern_tag = ttf_parser::Tag::from_bytes(b"kern");
+    for feature_index in 0..gpos.features.len() {
+        let Some(feature) = gpos.features.get(feature_index) else {
+            continue;
+        };
+        if feature.tag != kern_tag {
+            continue;
+        }
+        for lookup_index in feature.lookup_indices {
+            let Some(lookup) = gpos.lookups.get(lookup_index) else {
+                continue;
+            };
+            for subtable in lookup.subtables.into_iter::<PositioningSubtable>() {
+                if let PositioningSubtable::Pair(pair) = subtable
+                    && let Some(value) = gpos_pair_kerning(pair, left, right)
+                {
+                    return Some(value);
+                }
+            }
+        }
+    }
+    None
+}
+
+fn gpos_pair_kerning(
+    pair: ttf_parser::gpos::PairAdjustment,
+    left: ttf_parser::GlyphId,
+    right: ttf_parser::GlyphId,
+) -> Option<i16> {
+    use ttf_parser::gpos::PairAdjustment;
+
+    match pair {
+        PairAdjustment::Format1 { coverage, sets } => {
+            let set = sets.get(coverage.get(left)?)?;
+            let (first, _second) = set.get(right)?;
+            Some(first.x_advance)
+        }
+        PairAdjustment::Format2 {
+            coverage,
+            classes,
+            matrix,
+        } => {
+            coverage.get(left)?;
+            let (first, _second) = matrix.get((classes.0.get(left), classes.1.get(right)))?;
+            Some(first.x_advance)
+        }
     }
 }
 

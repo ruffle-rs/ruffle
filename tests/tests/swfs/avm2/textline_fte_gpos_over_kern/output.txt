@@ -1,0 +1,3 @@
+kerning enabled: true
+uses gpos not kern: true
+legacy kern would be huge: true
