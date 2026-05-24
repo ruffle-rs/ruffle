@@ -318,12 +318,20 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
 
         for lbox in line.html_line.boxes_iter() {
             let origin = lbox.bounds().origin();
+            let renderable = lbox.as_renderable_text(&line.text);
+            let baseline_shift = match renderable.as_ref() {
+                Some((_, tf, ..)) => match tf.baseline_shift {
+                    Some(shift) => Twips::from_pixels(shift),
+                    None => Twips::ZERO,
+                },
+                None => Twips::ZERO,
+            };
             context.transform_stack.push(&Transform {
-                matrix: Matrix::translate(origin.x(), origin.y()),
+                matrix: Matrix::translate(origin.x(), origin.y() + baseline_shift),
                 ..Default::default()
             });
 
-            if let Some((text, _tf, font, params, color)) = lbox.as_renderable_text(&line.text) {
+            if let Some((text, _tf, font, params, color)) = renderable {
                 let mut transform: Transform = Default::default();
                 transform.color_transform.set_mult_color(color);
                 font.evaluate(

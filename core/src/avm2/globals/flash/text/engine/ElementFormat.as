@@ -7,6 +7,7 @@ package flash.text.engine {
     public final class ElementFormat {
         private var _alignmentBaseline:String;
         private var _alpha:Number;
+        [Ruffle(NativeAccessible)]
         private var _baselineShift:Number;
         private var _breakOpportunity:String;
         [Ruffle(NativeAccessible)]

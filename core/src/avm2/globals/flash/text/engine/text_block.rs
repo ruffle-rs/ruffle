@@ -53,6 +53,10 @@ fn format_from_content<'gc>(
             .get_slot(format_slots::_KERNING)
             .coerce_to_string(activation)?;
         format.kerning = Some(kerning.to_utf8_lossy() != "off");
+        let baseline_shift = ef
+            .get_slot(format_slots::_BASELINE_SHIFT)
+            .coerce_to_number(activation)?;
+        format.baseline_shift = baseline_shift.is_finite().then_some(baseline_shift);
         if let Value::Object(fd) = ef.get_slot(format_slots::_FONT_DESCRIPTION) {
             let font_name = fd
                 .get_slot(font_desc_slots::_FONT_NAME)

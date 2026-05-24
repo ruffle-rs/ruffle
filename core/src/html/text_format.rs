@@ -138,6 +138,7 @@ pub struct TextFormat {
     pub kerning: Option<bool>,
     pub leading: Option<f64>,
     pub letter_spacing: Option<f64>,
+    pub baseline_shift: Option<f64>,
     pub tab_stops: Option<Vec<f64>>,
     pub bullet: Option<bool>,
     pub url: Option<WString>,
@@ -172,6 +173,7 @@ impl TextFormat {
             kerning: None,
             leading: None,
             letter_spacing: None,
+            baseline_shift: None,
             tab_stops: None,
             bullet: None,
             url: None,
@@ -252,6 +254,7 @@ impl TextFormat {
             kerning: Some(false),
             leading: Some(leading),
             letter_spacing: Some(0.0),
+            baseline_shift: Some(0.0),
             tab_stops: Some(vec![]),
             bullet: Some(false),
             url: Some(WString::new()),
@@ -338,6 +341,11 @@ impl TextFormat {
             } else {
                 None
             },
+            baseline_shift: if self.baseline_shift == rhs.baseline_shift {
+                self.baseline_shift
+            } else {
+                None
+            },
             tab_stops: if self.tab_stops == rhs.tab_stops {
                 self.tab_stops
             } else {
@@ -383,6 +391,7 @@ impl TextFormat {
             kerning: self.kerning.or(rhs.kerning),
             leading: self.leading.or(rhs.leading),
             letter_spacing: self.letter_spacing.or(rhs.letter_spacing),
+            baseline_shift: self.baseline_shift.or(rhs.baseline_shift),
             tab_stops: self.tab_stops.or(rhs.tab_stops),
             bullet: self.bullet.or(rhs.bullet),
             url: self.url.or(rhs.url),
@@ -417,6 +426,7 @@ pub struct TextSpan {
     pub indent: f64,
     pub block_indent: f64,
     pub leading: f64,
+    pub baseline_shift: f64,
     pub tab_stops: Vec<f64>,
     pub bullet: bool,
     pub url: WString,
@@ -453,6 +463,7 @@ impl Default for TextSpan {
             indent: 0.0,
             block_indent: 0.0,
             leading: 0.0,
+            baseline_shift: 0.0,
             tab_stops: vec![],
             bullet: false,
             url: WString::new(),
@@ -591,6 +602,10 @@ impl TextSpan {
             self.leading = *leading;
         }
 
+        if let Some(baseline_shift) = &tf.baseline_shift {
+            self.baseline_shift = *baseline_shift;
+        }
+
         if let Some(tab_stops) = &tf.tab_stops {
             self.tab_stops = tab_stops.clone();
         }
@@ -634,6 +649,7 @@ impl TextSpan {
             kerning: Some(self.font.kerning),
             leading: Some(self.leading),
             letter_spacing: Some(self.font.letter_spacing),
+            baseline_shift: Some(self.baseline_shift),
             tab_stops: Some(self.tab_stops.clone()),
             bullet: Some(self.bullet),
             url: Some(self.url.clone()),
