@@ -1,0 +1,5 @@
+num_ticks = 1
+
+[approximations]
+number_patterns = ["width=([0-9]+\\.[0-9]+)"]
+epsilon = 0.5

@@ -152,10 +152,7 @@ package flash.text.engine {
             );
         }
 
-        public static function isFontCompatible(fontName:String, fontWeight:String, fontPosture:String):Boolean {
-            stub_method("flash.text.engine.FontDescription", "isFontCompatible");
-            return false;
-        }
+        public static native function isFontCompatible(fontName:String, fontWeight:String, fontPosture:String):Boolean;
 
         private static function throwNonNull(name:String) {
             throw new TypeError("Error #2007: Parameter " + name + " must be non-null.", 2007);

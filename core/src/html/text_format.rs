@@ -1,6 +1,7 @@
 //! Classes that store formatting options
 
 use crate::context::UpdateContext;
+use crate::font::FontType;
 use crate::html::iterators::TextSpanIter;
 use crate::string::{Integer, SwfStrExt as _, Units, WStr, WString};
 use crate::tag_utils::SwfMovie;
@@ -123,6 +124,7 @@ pub enum TextDisplay {
 #[collect(require_static)]
 pub struct TextFormat {
     pub font: Option<WString>,
+    pub font_type: Option<FontType>,
     pub size: Option<f64>,
     pub color: Option<swf::Color>,
     pub align: Option<swf::TextAlign>,
@@ -156,6 +158,7 @@ impl TextFormat {
     pub fn empty() -> Self {
         Self {
             font: None,
+            font_type: None,
             size: None,
             color: None,
             align: None,
@@ -222,6 +225,7 @@ impl TextFormat {
 
         Self {
             font: Some(font_class),
+            font_type: None,
             size: Some(et.height().map(|h| h.to_pixels()).unwrap_or(12.0)),
             color: Some(
                 et.color()
@@ -261,6 +265,11 @@ impl TextFormat {
         TextFormat {
             font: if self.font == rhs.font {
                 self.font
+            } else {
+                None
+            },
+            font_type: if self.font_type == rhs.font_type {
+                self.font_type
             } else {
                 None
             },
@@ -360,6 +369,7 @@ impl TextFormat {
     pub fn mix_with(self, rhs: TextFormat) -> Self {
         Self {
             font: self.font.filter(|f| !f.is_empty()).or(rhs.font),
+            font_type: self.font_type.or(rhs.font_type),
             size: self.size.or(rhs.size),
             color: self.color.or(rhs.color),
             align: self.align.or(rhs.align),
@@ -417,6 +427,7 @@ pub struct TextSpan {
 #[derive(Clone, Debug, PartialEq)]
 pub struct TextSpanFont {
     pub face: WString,
+    pub font_type: Option<FontType>,
     pub size: f64,
     pub color: swf::Color,
     pub letter_spacing: f64,
@@ -455,6 +466,7 @@ impl Default for TextSpanFont {
     fn default() -> Self {
         Self {
             face: WString::new(),
+            font_type: None,
             size: 12.0,
             color: swf::Color {
                 r: 0,
@@ -478,6 +490,10 @@ impl TextSpanFont {
     fn set_text_format(&mut self, tf: &TextFormat) {
         if let Some(font) = tf.font.as_ref().filter(|f| !f.is_empty()) {
             self.face = font.clone();
+        }
+
+        if let Some(font_type) = tf.font_type {
+            self.font_type = Some(font_type);
         }
 
         if let Some(size) = &tf.size {
@@ -604,6 +620,7 @@ impl TextSpan {
     pub fn get_text_format(&self) -> TextFormat {
         TextFormat {
             font: Some(self.font.face.clone()),
+            font_type: self.font.font_type,
             size: Some(self.font.size),
             color: Some(self.font.color),
             align: Some(self.align),

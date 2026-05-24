@@ -54,11 +54,17 @@ fn format_from_content<'gc>(
             .coerce_to_string(activation)?;
         format.kerning = Some(kerning.to_utf8_lossy() != "off");
         if let Value::Object(fd) = ef.get_slot(format_slots::_FONT_DESCRIPTION) {
-            format.font = Some(WString::from(
-                fd.get_slot(font_desc_slots::_FONT_NAME)
-                    .coerce_to_string(activation)?
-                    .as_wstr(),
-            ));
+            let font_name = fd
+                .get_slot(font_desc_slots::_FONT_NAME)
+                .coerce_to_string(activation)?;
+            let font_lookup = fd
+                .get_slot(font_desc_slots::_FONT_LOOKUP)
+                .coerce_to_string(activation)?;
+            format.font_type = Some(match font_lookup.to_utf8_lossy().as_ref() {
+                "embeddedCFF" => FontType::EmbeddedCFF,
+                _ => FontType::Device,
+            });
+            format.font = Some(WString::from(font_name.as_wstr()));
             let weight = fd
                 .get_slot(font_desc_slots::_FONT_WEIGHT)
                 .coerce_to_string(activation)?;

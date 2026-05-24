@@ -1,0 +1,9 @@
+num_ticks = 1
+
+[image_comparisons.output]
+tolerance = 3
+max_outliers = 40
+
+[player_options]
+viewport_dimensions = { width = 240, height = 120, scale_factor = 1 }
+with_renderer = { optional = false, quality = "high" }
