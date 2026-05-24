@@ -1,0 +1,3 @@
+atom 0 hit: 0
+atom 1 hit: 1
+atom 2 hit: 2

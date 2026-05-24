@@ -1,0 +1,4 @@
+inside transformed first: 0
+inside transformed second: 1
+left outside: -1
+right outside: -1
