@@ -9,6 +9,7 @@ mod text_format;
 pub use dimensions::Position;
 pub use layout::{
     Layout, LayoutBox, LayoutContent, LayoutLine, LayoutMetrics, lower_from_text_spans,
+    lower_from_text_spans_for_text_line,
 };
 pub use line_wrapping::wrap_line;
 pub use style_sheet::{CssStream, StyleSheet, parse_font_list, transform_dashes_to_camel_case};

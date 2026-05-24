@@ -125,6 +125,10 @@ pub struct EvalParameters {
     /// pairs of letters, separate from the ordinary width between glyphs. This
     /// parameter allows enabling or disabling that feature.
     pub kerning: bool,
+
+    pub device_fonts_obey_kerning: bool,
+
+    pub device_font_kerning_after_pixel_snap: bool,
 }
 
 impl EvalParameters {
@@ -135,6 +139,8 @@ impl EvalParameters {
             height: Twips::from_pixels(span.font.size),
             letter_spacing: Twips::from_pixels(span.font.letter_spacing),
             kerning: span.font.kerning,
+            device_fonts_obey_kerning: false,
+            device_font_kerning_after_pixel_snap: false,
         }
     }
 
@@ -889,6 +895,18 @@ pub trait FontLike<'gc> {
 
     fn font_type(&self) -> FontType;
 
+    fn pair_kerning(&self, params: EvalParameters, left: char, right: char) -> Twips {
+        if !self.has_kerning_info()
+            || (!params.kerning
+                && (!self.font_type().is_device() || params.device_fonts_obey_kerning))
+        {
+            return Twips::ZERO;
+        }
+
+        let units = self.get_kerning_offset(left, right).get() as f32;
+        Twips::new((units * params.height.get() as f32 / self.scale()) as i32)
+    }
+
     /// Evaluate this font against a particular string on a glyph-by-glyph
     /// basis.
     ///
@@ -916,16 +934,19 @@ pub trait FontLike<'gc> {
             .map(|(pos, c)| (pos, c.unwrap_or(char::REPLACEMENT_CHARACTER)))
             .peekable();
 
-        let kerning_enabled =
-            self.has_kerning_info() && (self.font_type().is_device() || params.kerning);
+        let kerning_enabled = self.has_kerning_info()
+            && (params.kerning
+                || (self.font_type().is_device() && !params.device_fonts_obey_kerning));
 
         let mut x = Twips::ZERO;
         while let Some((pos, c)) = char_indices.next() {
             if let Some(resolution) = self.resolve_glyph(c) {
                 let glyph = resolution.glyph;
                 let scale = params.height.get() as f32 / resolution.font.scale();
+                let kern_after_pixel_snap = self.font_type() == FontType::Device
+                    && params.device_font_kerning_after_pixel_snap;
                 let mut advance = glyph.advance();
-                if kerning_enabled {
+                if kerning_enabled && !kern_after_pixel_snap {
                     let next_char = char_indices.peek().map(|(_, ch)| *ch);
                     let kerning = next_char
                         .map(|ch| self.get_kerning_offset(c, ch))
@@ -935,8 +956,20 @@ pub trait FontLike<'gc> {
                 let twips_advance = if self.font_type() == FontType::Device {
                     let unspaced_advance =
                         round_to_pixel(Twips::new((advance.get() as f32 * scale) as i32));
-                    let spaced_advance =
-                        unspaced_advance + params.letter_spacing.round_to_pixel_ties_even();
+                    let kerning = if kern_after_pixel_snap {
+                        char_indices
+                            .peek()
+                            .map(|(_, ch)| self.pair_kerning(params, c, *ch))
+                            .unwrap_or_default()
+                    } else {
+                        Twips::ZERO
+                    };
+                    let letter_spacing = if kern_after_pixel_snap {
+                        params.letter_spacing
+                    } else {
+                        params.letter_spacing.round_to_pixel_ties_even()
+                    };
+                    let spaced_advance = unspaced_advance + kerning + letter_spacing;
                     if spaced_advance > Twips::ZERO {
                         spaced_advance
                     } else {

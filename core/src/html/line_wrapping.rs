@@ -208,6 +208,8 @@ mod tests {
             height,
             letter_spacing,
             kerning,
+            device_fonts_obey_kerning: false,
+            device_font_kerning_after_pixel_snap: false,
         }
     }
 

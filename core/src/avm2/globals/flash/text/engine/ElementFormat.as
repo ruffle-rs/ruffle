@@ -18,6 +18,7 @@ package flash.text.engine {
         private var _fontDescription:FontDescription;
         [Ruffle(NativeAccessible)]
         private var _fontSize:Number;
+        [Ruffle(NativeAccessible)]
         private var _kerning:String;
         private var _ligatureLevel:String;
         private var _locale:String;
