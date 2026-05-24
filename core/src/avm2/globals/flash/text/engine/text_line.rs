@@ -108,7 +108,7 @@ pub fn get_atom_bounds<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let (x, y, width, height) = match fte_line(this) {
+    let (x, y, width, height) = match text_line_layout(this) {
         Some(line) => match atom_at(&line, args.get_i32(0)) {
             Some(atom) => (
                 atom.x as f64,
@@ -132,7 +132,7 @@ pub fn get_atom_center<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let Some(line) = fte_line(this) else {
+    let Some(line) = text_line_layout(this) else {
         return Ok(0.0.into());
     };
     let Some(atom) = atom_at(&line, args.get_i32(0)) else {
@@ -146,7 +146,7 @@ pub fn get_atom_word_boundary_on_left<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let Some(line) = fte_line(this) else {
+    let Some(line) = text_line_layout(this) else {
         return Ok(false.into());
     };
     let Some(atom) = atom_at(&line, args.get_i32(0)) else {

@@ -105,8 +105,12 @@ pub fn create_text_line<'gc>(
     let content_obj = content
         .as_object()
         .expect("TextBlock content slot must be null or ContentElement");
+    let displayed_text = text
+        .as_wstr()
+        .slice(next_line_start..)
+        .unwrap_or_else(WStr::empty);
     let spans = FormatSpans::from_text(
-        WString::from(text.as_wstr()),
+        WString::from(displayed_text),
         format_from_content(activation, content_obj)?,
     );
     let requested_width = if width >= TEXT_LINE_MAX_LINE_WIDTH {
@@ -128,7 +132,7 @@ pub fn create_text_line<'gc>(
         return Ok(Value::Null);
     };
     let text_line_layout =
-        TextLineLayout::new(html_line, WString::from(text.as_wstr()), next_line_start);
+        TextLineLayout::new(html_line, WString::from(displayed_text), next_line_start);
     let raw_text_length = text_line_layout.raw_text_length();
 
     let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);

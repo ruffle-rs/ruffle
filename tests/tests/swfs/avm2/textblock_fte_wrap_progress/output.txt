@@ -1,0 +1,4 @@
+first begins at zero: true
+first is short word: true
+second begins after first: true
+second consumes longer run: true

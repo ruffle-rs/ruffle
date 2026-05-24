@@ -1,0 +1,4 @@
+second text starts with long word: true
+second has remaining-text break: true
+third advances again: true
+three lines make progress: true
