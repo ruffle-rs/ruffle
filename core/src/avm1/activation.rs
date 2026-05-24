@@ -2756,7 +2756,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // Special case, mutating `this`
-        if path.as_wstr() == b"this" {
+        if path.as_wstr() == b"this" && self.swf_version() >= 5 {
             self.this = value;
             return Ok(());
         }
@@ -2856,7 +2856,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.is_case_sensitive()
         };
 
-        if name.eq_with_case(b"this", this_case_sensitive) {
+        if name.eq_with_case(b"this", this_case_sensitive) && self.swf_version() >= 5 {
             return Ok(CallableValue::UnCallable(self.this_cell()));
         }
 
