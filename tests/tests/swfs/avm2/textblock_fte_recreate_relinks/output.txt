@@ -1,0 +1,7 @@
+initial chain: true
+initial second begin: 6
+same object: true
+valid after recreate: valid
+previous cleared: true
+first line rebound: true
+recreated begin: 0

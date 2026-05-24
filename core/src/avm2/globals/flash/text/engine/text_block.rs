@@ -508,11 +508,31 @@ pub fn recreate_text_line<'gc>(
         Value::Integer(next_line_start as i32),
         activation,
     )?;
+    let valid = crate::string::AvmString::new_utf8(activation.gc(), "valid");
+    text_line.set_slot(line_slots::_VALIDITY, valid.into(), activation)?;
     this.set_slot(
         block_slots::_TEXT_LINE_CREATION_RESULT,
         istr!("success").into(),
         activation,
     )?;
+
+    if let Some(prev) = previous_text_line {
+        prev.set_slot(line_slots::_NEXT_LINE, text_line.into(), activation)?;
+        text_line.set_slot(line_slots::_PREVIOUS_LINE, prev.into(), activation)?;
+    } else {
+        text_line.set_slot(line_slots::_PREVIOUS_LINE, Value::Null, activation)?;
+        this.set_slot(block_slots::_FIRST_LINE, text_line.into(), activation)?;
+    }
+
+    let current_last = this.get_slot(block_slots::_LAST_LINE).as_object();
+    let should_set_last = match (previous_text_line, current_last) {
+        (Some(prev), Some(last)) => prev.as_ptr() == last.as_ptr(),
+        (None, None) => true,
+        _ => false,
+    };
+    if should_set_last {
+        this.set_slot(block_slots::_LAST_LINE, text_line.into(), activation)?;
+    }
 
     Ok(text_line.into())
 }
