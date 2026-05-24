@@ -26,6 +26,7 @@ package flash.text.engine {
         private var _trackingLeft:Number;
         [Ruffle(NativeAccessible)]
         private var _trackingRight:Number;
+        [Ruffle(NativeAccessible)]
         private var _typographicCase:String;
 
         public function ElementFormat(

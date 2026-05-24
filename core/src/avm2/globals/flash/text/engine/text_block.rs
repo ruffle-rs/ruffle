@@ -112,12 +112,33 @@ pub fn create_text_line<'gc>(
     let content_obj = content
         .as_object()
         .expect("TextBlock content slot must be null or ContentElement");
-    let displayed_text = text
-        .as_wstr()
-        .slice(next_line_start..)
-        .unwrap_or_else(WStr::empty);
+    let mut displayed_text = WString::from(
+        text.as_wstr()
+            .slice(next_line_start..)
+            .unwrap_or_else(WStr::empty),
+    );
+    if let Some(ef) = content_obj
+        .get_slot(element_slots::_ELEMENT_FORMAT)
+        .as_object()
+    {
+        let typographic_case = ef
+            .get_slot(format_slots::_TYPOGRAPHIC_CASE)
+            .coerce_to_string(activation)?;
+        let transformed = match typographic_case.to_utf8_lossy().as_ref() {
+            "uppercase" => Some(displayed_text.to_utf8_lossy().to_uppercase()),
+            "lowercase" => Some(displayed_text.to_utf8_lossy().to_lowercase()),
+            _ => None,
+        };
+        if let Some(transformed) = transformed {
+            let transformed = WString::from_utf8(&transformed);
+            if transformed.len() == displayed_text.len() {
+                displayed_text = transformed;
+            }
+        }
+    }
+    let displayed_text = displayed_text;
     let spans = FormatSpans::from_text(
-        WString::from(displayed_text),
+        displayed_text.clone(),
         format_from_content(activation, content_obj)?,
     );
     let requested_width = if width >= TEXT_LINE_MAX_LINE_WIDTH {
@@ -138,8 +159,7 @@ pub fn create_text_line<'gc>(
     let Some(html_line) = layout.lines().first().cloned() else {
         return Ok(Value::Null);
     };
-    let text_line_layout =
-        TextLineLayout::new(html_line, WString::from(displayed_text), next_line_start);
+    let text_line_layout = TextLineLayout::new(html_line, displayed_text, next_line_start);
     let raw_text_length = text_line_layout.raw_text_length();
 
     let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);

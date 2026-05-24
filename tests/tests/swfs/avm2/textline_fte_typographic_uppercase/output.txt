@@ -1,0 +1,3 @@
+uppercase widens mixed text: true
+uppercase preserves atom count: true
+uppercase preserves raw length: true
