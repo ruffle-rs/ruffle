@@ -5,3 +5,7 @@ tolerance = 0
 
 [player_options]
 with_renderer = { optional = false, quality = "high" }
+
+[fonts.a]
+family = "TestFont"
+path = "TestFont.ttf"

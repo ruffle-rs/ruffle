@@ -31,6 +31,8 @@ pub struct LayoutContext<'a, 'gc> {
     /// Type of the font used by the text field.
     font_type: FontType,
 
+    device_fonts_kern: bool,
+
     /// The position to put text into.
     ///
     /// We are laying out boxes so that the cursor is at their baseline.
@@ -109,6 +111,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         is_input: bool,
         is_word_wrap: bool,
         font_type: FontType,
+        device_fonts_kern: bool,
     ) -> Self {
         Self {
             movie,
@@ -131,6 +134,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
             is_input,
             is_word_wrap,
             font_type,
+            device_fonts_kern,
         }
     }
 
@@ -151,7 +155,8 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
         self.font_set = Some(font_set);
         self.newspan(span);
 
-        let params = EvalParameters::from_span(span);
+        let mut params = EvalParameters::from_span(span);
+        params.device_fonts_kern = self.device_fonts_kern;
 
         for text in span_text.split(&[b'\n', b'\r', b'\t'][..]) {
             let slice_start = text.offset_in(span_text).unwrap();
@@ -678,14 +683,15 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
     /// work, and it should only be called internally.
     fn append_text_fragment(&mut self, text: &'a WStr, start: usize, end: usize, span: &TextSpan) {
         let font_set = self.font_set.expect("text fragment requires a font");
-        let params = EvalParameters::from_span(span);
+        let mut params = EvalParameters::from_span(span);
+        params.device_fonts_kern = self.device_fonts_kern;
         let metrics = font_set.metrics();
         let ascent = metrics.ascent(params.height());
         let descent = metrics.descent(params.height());
         let text_width = font_set.measure(text, params);
         let box_origin = self.cursor - (Twips::ZERO, ascent).into();
 
-        let mut new_box = LayoutBox::from_text(text, start, end, font_set, span);
+        let mut new_box = LayoutBox::from_text(text, start, end, font_set, span, params);
         new_box.bounds = BoxBounds::from_position_and_size(
             box_origin,
             Size::from((text_width, ascent + descent)),
@@ -801,6 +807,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 }
 
 /// Construct a new layout from text spans.
+#[expect(clippy::too_many_arguments)]
 pub fn lower_from_text_spans<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
@@ -809,6 +816,7 @@ pub fn lower_from_text_spans<'gc>(
     is_input: bool,
     is_word_wrap: bool,
     font_type: FontType,
+    device_fonts_kern: bool,
 ) -> Layout<'gc> {
     let requested_width = requested_width.unwrap_or_else(|| {
         // When we don't know the width of the text field, we have to lay out
@@ -822,6 +830,7 @@ pub fn lower_from_text_spans<'gc>(
             is_input,
             false,
             font_type,
+            device_fonts_kern,
         );
         let max_width = layout
             .lines()
@@ -838,9 +847,11 @@ pub fn lower_from_text_spans<'gc>(
         is_input,
         is_word_wrap,
         font_type,
+        device_fonts_kern,
     )
 }
 
+#[expect(clippy::too_many_arguments)]
 fn lower_from_text_spans_known_width<'gc>(
     fs: &FormatSpans,
     context: &mut UpdateContext<'gc>,
@@ -849,6 +860,7 @@ fn lower_from_text_spans_known_width<'gc>(
     is_input: bool,
     is_word_wrap: bool,
     font_type: FontType,
+    device_fonts_kern: bool,
 ) -> Layout<'gc> {
     let mut layout_context = LayoutContext::new(
         movie,
@@ -857,6 +869,7 @@ fn lower_from_text_spans_known_width<'gc>(
         is_input,
         is_word_wrap,
         font_type,
+        device_fonts_kern,
     );
 
     layout_context.lay_out_spans(context, fs);
@@ -1228,8 +1241,8 @@ impl<'gc> LayoutBox<'gc> {
         end: usize,
         font_set: FontSet<'gc>,
         span: &TextSpan,
+        params: EvalParameters,
     ) -> Self {
-        let params = EvalParameters::from_span(span);
         let mut char_end_pos = Vec::with_capacity(end - start);
 
         font_set.evaluate(

@@ -8,10 +8,9 @@ public class Test extends Sprite {
     private var TestFont:Class;
 
     public function Test() {
-        Font.registerFont(TestFont);
         stage.scaleMode = "noScale";
 
-        addTextField(0, 0, true);
+        addTextField(0, 0, false);
         addTextField(0, 25, true);
     }
 
@@ -23,7 +22,6 @@ public class Test extends Sprite {
         field.height = 25;
         field.y = y;
         field.border = true;
-        field.embedFonts = true;
 
         var tf:TextFormat = new TextFormat("TestFont", 10);
         tf.kerning = kerning;

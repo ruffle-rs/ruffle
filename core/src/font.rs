@@ -125,6 +125,8 @@ pub struct EvalParameters {
     /// pairs of letters, separate from the ordinary width between glyphs. This
     /// parameter allows enabling or disabling that feature.
     pub kerning: bool,
+
+    pub device_fonts_kern: bool,
 }
 
 impl EvalParameters {
@@ -135,6 +137,7 @@ impl EvalParameters {
             height: Twips::from_pixels(span.font.size),
             letter_spacing: Twips::from_pixels(span.font.letter_spacing),
             kerning: span.font.kerning,
+            device_fonts_kern: false,
         }
     }
 
@@ -858,6 +861,17 @@ pub trait FontLike<'gc> {
 
     fn font_type(&self) -> FontType;
 
+    fn pair_kerning(&self, params: EvalParameters, left: char, right: char) -> Twips {
+        if !params.kerning
+            || !self.has_kerning_info()
+            || (self.font_type().is_device() && !params.device_fonts_kern)
+        {
+            return Twips::ZERO;
+        }
+        let units = self.get_kerning_offset(left, right).get() as f32;
+        Twips::new((units * params.height.get() as f32 / self.scale()) as i32)
+    }
+
     /// Evaluate this font against a particular string on a glyph-by-glyph
     /// basis.
     ///
@@ -885,34 +899,28 @@ pub trait FontLike<'gc> {
             .map(|(pos, c)| (pos, c.unwrap_or(char::REPLACEMENT_CHARACTER)))
             .peekable();
 
-        let kerning_enabled =
-            self.has_kerning_info() && (self.font_type().is_device() || params.kerning);
-
         let mut x = Twips::ZERO;
         while let Some((pos, c)) = char_indices.next() {
             if let Some(resolution) = self.resolve_glyph(c) {
                 let glyph = resolution.glyph;
                 let scale = params.height.get() as f32 / resolution.font.scale();
-                let mut advance = glyph.advance();
-                if kerning_enabled {
-                    let next_char = char_indices.peek().map(|(_, ch)| *ch);
-                    let kerning = next_char
-                        .map(|ch| self.get_kerning_offset(c, ch))
-                        .unwrap_or_default();
-                    advance += kerning;
-                }
+                let advance = glyph.advance();
+                let kerning = match char_indices.peek() {
+                    Some((_, next)) => self.pair_kerning(params, c, *next),
+                    None => Twips::ZERO,
+                };
                 let twips_advance = if self.font_type() == FontType::Device {
-                    let unspaced_advance =
-                        round_to_pixel(Twips::new((advance.get() as f32 * scale) as i32));
-                    let spaced_advance =
-                        unspaced_advance + params.letter_spacing.round_to_pixel_ties_even();
+                    let base = round_to_pixel(Twips::new((advance.get() as f32 * scale) as i32));
+                    let spaced_advance = base + kerning + params.letter_spacing;
                     if spaced_advance > Twips::ZERO {
                         spaced_advance
                     } else {
-                        unspaced_advance
+                        base
                     }
                 } else {
-                    Twips::new((advance.get() as f32 * scale) as i32) + params.letter_spacing
+                    Twips::new((advance.get() as f32 * scale) as i32)
+                        + kerning
+                        + params.letter_spacing
                 };
 
                 transform.matrix.a = scale;
@@ -929,8 +937,16 @@ pub trait FontLike<'gc> {
                 transform.matrix.tx += twips_advance;
                 x += twips_advance;
             } else {
-                // No glyph, zero advance.  This makes it possible to use this method for purposes
-                // other than rendering the font, e.g. measurement, iterating over characters.
+                // No glyph for this character. We report zero advance so
+                // callers can use evaluate for measurement and iteration
+                // without confusing the text cursor.
+                //
+                // This does not match Flash. When a device-font lookup
+                // misses a glyph, Flash falls back to a system font and
+                // uses that font's advance for the missing character. The
+                // requested font's .notdef glyph is never consulted.
+                // Matching Flash would mean wiring a system-fallback chain
+                // into device-font FontSets.
                 glyph_func(pos, &transform, Glyph::empty(c).as_ref(), Twips::ZERO, x);
             }
         }

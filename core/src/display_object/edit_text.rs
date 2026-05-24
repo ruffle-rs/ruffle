@@ -903,6 +903,7 @@ impl<'gc> EditText<'gc> {
             !self.0.flags.get().contains(EditTextFlag::READ_ONLY),
             is_word_wrap,
             self.0.font_type(),
+            false,
         );
         drop(text_spans);
 
