@@ -2309,13 +2309,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.context.avm1.pop();
         match value {
             // Undefined/null with is ignored.
-            Value::Undefined | Value::Null => {
-                // Mimic Flash's error output.
-                self.context.avm_trace(
-                    "Error: A 'with' action failed because the specified object did not exist.\n",
-                );
-                Ok(FrameControl::Continue)
-            }
+            Value::Undefined | Value::Null => Ok(FrameControl::Continue),
 
             value => {
                 // Note that primitives get boxed at this point.
