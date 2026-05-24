@@ -2524,16 +2524,11 @@ impl Player {
                     let n = FAIL_LOG.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
                     if n < 32 {
                         use std::io::Write;
-                        // Try to pull the AVM2 thrown value as a string so we
-                        // see WHY Init/SetDragonLabel/etc are throwing, not
-                        // just the opaque outer Error::AvmError variant.
-                        let detail = match &e {
-                            crate::avm2::Error::AvmError(av) => match av.coerce_to_string(&mut activation) {
-                                Ok(s) => format!("AvmError({s})"),
-                                Err(_) => format!("AvmError(<unprintable {av:?}>)"),
-                            },
-                            other => format!("{other:?}"),
-                        };
+                        // Pulls the inner thrown ErrorObject / Value and
+                        // stringifies it (incl. call stack) so we see WHY
+                        // Init/SetDragonLabel/etc are throwing, not just the
+                        // opaque outer Error wrapper.
+                        let detail = e.to_string(&mut activation);
                         if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true)
                             .open(r"C:\Users\poopo\Desktop\Projects\LCE\LCE_orig\as3_errors.log") {
                             let _ = writeln!(f, "call '{}' nargs={} err={}", name, avm2_args.len(), detail);
