@@ -1,0 +1,3 @@
+first.rawTextLength: 4
+second.textBlockBeginIndex: 4
+second begins after first: true

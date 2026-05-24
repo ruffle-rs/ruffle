@@ -8,14 +8,58 @@ use crate::display_object::{
     Avm2MousePick, BoundsMode, DisplayObjectBase, EditText, InteractiveObject,
 };
 use crate::events::{ClipEvent, ClipEventResult};
+use crate::html::LayoutLine;
 use crate::prelude::*;
+use crate::string::WString;
 use crate::tag_utils::SwfMovie;
 use core::fmt;
 use gc_arena::barrier::unlock;
-use gc_arena::lock::Lock;
+use gc_arena::lock::{Lock, RefLock};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_common::utils::HasPrefixField;
+use std::cell::Ref;
 use std::sync::Arc;
+
+#[derive(Collect)]
+#[collect(no_drop)]
+pub struct TextLineLayout<'gc> {
+    html_line: LayoutLine<'gc>,
+    #[collect(require_static)]
+    text: WString,
+    #[collect(require_static)]
+    ascent: f32,
+    #[collect(require_static)]
+    descent: f32,
+}
+
+impl<'gc> TextLineLayout<'gc> {
+    pub fn new(html_line: LayoutLine<'gc>, text: WString) -> Self {
+        let ascent = html_line.ascent().to_pixels() as f32;
+        let descent = html_line.descent().to_pixels() as f32;
+        Self {
+            html_line,
+            text,
+            ascent,
+            descent,
+        }
+    }
+
+    pub fn ascent(&self) -> f32 {
+        self.ascent
+    }
+
+    pub fn descent(&self) -> f32 {
+        self.descent
+    }
+
+    pub fn text_width(&self) -> f32 {
+        self.html_line.bounds().width().to_pixels() as f32
+    }
+
+    pub fn raw_text_length(&self) -> usize {
+        self.html_line.text_range().len()
+    }
+}
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
@@ -35,6 +79,7 @@ impl fmt::Debug for TextLine<'_> {
 pub struct TextLineData<'gc> {
     base: InteractiveObjectBase<'gc>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
+    line: RefLock<TextLineLayout<'gc>>,
     fallback: Option<EditText<'gc>>,
     #[collect(require_static)]
     movie: Arc<SwfMovie>,
@@ -44,6 +89,7 @@ impl<'gc> TextLine<'gc> {
     pub fn new(
         context: &mut UpdateContext<'gc>,
         movie: Arc<SwfMovie>,
+        line: TextLineLayout<'gc>,
         fallback: Option<EditText<'gc>>,
     ) -> Self {
         TextLine(Gc::new(
@@ -51,10 +97,15 @@ impl<'gc> TextLine<'gc> {
             TextLineData {
                 base: Default::default(),
                 avm2_object: Lock::new(None),
+                line: RefLock::new(line),
                 fallback,
                 movie,
             },
         ))
+    }
+
+    pub fn line(self) -> Ref<'gc, TextLineLayout<'gc>> {
+        Gc::as_ref(self.0).line.borrow()
     }
 
     pub fn measure_text(self, context: &mut UpdateContext<'gc>) -> Option<(Twips, Twips)> {
@@ -71,11 +122,18 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
     }
 
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
+        let borrowed = self.0.line.borrow();
         Self(Gc::new(
             gc_context,
             TextLineData {
                 base: Default::default(),
                 avm2_object: Lock::new(None),
+                line: RefLock::new(TextLineLayout {
+                    html_line: borrowed.html_line.clone(),
+                    text: borrowed.text.clone(),
+                    ascent: borrowed.ascent,
+                    descent: borrowed.descent,
+                }),
                 fallback: self.0.fallback,
                 movie: self.0.movie.clone(),
             },
@@ -99,11 +157,19 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
         }
     }
 
-    fn self_bounds(self, _mode: BoundsMode) -> Rectangle<Twips> {
+    fn self_bounds(self, mode: BoundsMode) -> Rectangle<Twips> {
         self.0
             .fallback
-            .map(|fallback| fallback.self_bounds(_mode))
-            .unwrap_or_default()
+            .map(|fallback| fallback.self_bounds(mode))
+            .unwrap_or_else(|| {
+                let line = self.0.line.borrow();
+                Rectangle {
+                    x_min: Twips::ZERO,
+                    x_max: Twips::from_pixels(line.text_width() as f64),
+                    y_min: Twips::from_pixels(-(line.ascent() as f64)),
+                    y_max: Twips::from_pixels(line.descent() as f64),
+                }
+            })
     }
 
     fn hit_test_shape(

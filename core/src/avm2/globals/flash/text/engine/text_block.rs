@@ -3,7 +3,6 @@ use ruffle_macros::istr;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
-use crate::avm2::globals::methods::flash_text_engine_content_element as element_methods;
 use crate::avm2::globals::slots::flash_text_engine_content_element as element_slots;
 use crate::avm2::globals::slots::flash_text_engine_element_format as format_slots;
 use crate::avm2::globals::slots::flash_text_engine_font_description as font_desc_slots;
@@ -12,10 +11,55 @@ use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::avm2_stub_method;
-use crate::display_object::{EditText, TDisplayObject, TextLine};
-use crate::html::TextFormat;
-use crate::string::WStr;
+use crate::display_object::{EditText, TDisplayObject, TextLine, TextLineLayout};
+use crate::font::FontType;
+use crate::html::{FormatSpans, TextFormat, lower_from_text_spans};
+use crate::string::{AvmString, WStr, WString};
+use crate::{avm2_stub_method, context_stub};
+use swf::Twips;
+
+const TEXT_LINE_MAX_LINE_WIDTH: f64 = 1_000_000.0;
+
+fn format_from_content<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    content: Object<'gc>,
+) -> Result<TextFormat, Error<'gc>> {
+    {
+        let context = &mut activation.context;
+        context_stub!(
+            context,
+            "flash.text.engine.TextBlock.createTextLine TextFormat conversion"
+        );
+    }
+
+    // Match the AS defaults from new ElementFormat() and new FontDescription().
+    let mut format = TextFormat {
+        font: Some(WString::from_utf8("_serif")),
+        size: Some(12.0),
+        color: Some(swf::Color::from_rgb(0, 0xff)),
+        ..Default::default()
+    };
+
+    if let Some(ef) = content.get_slot(element_slots::_ELEMENT_FORMAT).as_object() {
+        let color = ef
+            .get_slot(format_slots::_COLOR)
+            .coerce_to_u32(activation)?;
+        format.color = Some(swf::Color::from_rgb(color & 0xff_ffff, 0xff));
+        format.size = Some(
+            ef.get_slot(format_slots::_FONT_SIZE)
+                .coerce_to_number(activation)?,
+        );
+        if let Value::Object(fd) = ef.get_slot(format_slots::_FONT_DESCRIPTION) {
+            format.font = Some(WString::from(
+                fd.get_slot(font_desc_slots::_FONT_NAME)
+                    .coerce_to_string(activation)?
+                    .as_wstr(),
+            ));
+        }
+    }
+
+    Ok(format)
+}
 
 pub fn create_text_line<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -35,33 +79,13 @@ pub fn create_text_line<'gc>(
         return Ok(Value::Null);
     }
 
-    let text = match previous_text_line {
-        Some(_) => {
-            // Some SWFs rely on eventually getting `null` from createLineText.
-            // TODO: Support multiple lines
-            this.set_slot(
-                block_slots::_TEXT_LINE_CREATION_RESULT,
-                istr!("complete").into(),
-                activation,
-            )?;
-            return Ok(Value::Null);
-        }
-        // Get the content element's text property (it's a getter).
-        // TODO: GraphicElement?
-        None => {
-            let txt = content
-                .call_method(element_methods::GET_TEXT, &[], activation)
-                .unwrap_or_else(|_| istr!("").into());
-
-            if matches!(txt, Value::Null) {
-                // FP returns a null TextLine when `o` is null- note that
-                // `o` is already coerced to a String because of the AS bindings.
-                return Ok(Value::Null);
-            } else {
-                txt.coerce_to_string(activation)
-                    .expect("Guaranteed by AS bindings")
-            }
-        }
+    let text_name = AvmString::new_utf8(activation.gc(), "text");
+    let text = content
+        .get_public_property(text_name, activation)
+        .unwrap_or_else(|_| istr!("").into());
+    let text = match text {
+        Value::Null => return Ok(Value::Null),
+        v => v.coerce_to_string(activation)?,
     };
 
     let next_line_start = match previous_text_line {
@@ -86,31 +110,50 @@ pub fn create_text_line<'gc>(
         return Ok(Value::Null);
     }
 
-    let class = activation.avm2().classes().textline;
+    let Some(content_obj) = content.as_object() else {
+        return Ok(Value::Null);
+    };
+    let spans = FormatSpans::from_text(
+        WString::from(text.as_wstr()),
+        format_from_content(activation, content_obj)?,
+    );
+    let requested_width = if width >= TEXT_LINE_MAX_LINE_WIDTH {
+        None
+    } else {
+        Some(Twips::from_pixels(width))
+    };
     let movie = activation.caller_movie_or_root();
+    let layout = lower_from_text_spans(
+        &spans,
+        activation.context,
+        movie.clone(),
+        requested_width,
+        false,
+        true,
+        FontType::Device,
+    );
+    let Some(html_line) = layout.lines().first().cloned() else {
+        return Ok(Value::Null);
+    };
+    let text_line_layout = TextLineLayout::new(html_line, WString::from(text.as_wstr()));
+    let raw_text_length = text_line_layout.raw_text_length();
 
     let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);
-
     fallback.set_text(text.as_wstr(), activation.context);
-
-    // FIXME: This needs to use `intrinsic_bounds` to measure the width
-    // of the provided text, and set the width of the EditText to that.
-    // Some games depend on this (e.g. Realm Grinder).
-
-    let content_obj = content.as_object().unwrap();
     let element_format = content_obj
         .get_slot(element_slots::_ELEMENT_FORMAT)
         .as_object();
     apply_format(activation, fallback, text.as_wstr(), element_format)?;
 
-    let fte = TextLine::new(activation.context, movie, Some(fallback));
-    let instance = initialize_for_allocator(activation.context, fte.into(), class);
+    let text_line = TextLine::new(activation.context, movie, text_line_layout, Some(fallback));
+    let class = activation.avm2().classes().textline;
+    let instance = initialize_for_allocator(activation.context, text_line.into(), class);
 
     instance.set_slot(line_slots::_TEXT_BLOCK, this.into(), activation)?;
     instance.set_slot(line_slots::_SPECIFIED_WIDTH, args.get_value(1), activation)?;
     instance.set_slot(
         line_slots::_RAW_TEXT_LENGTH,
-        Value::from_usize_lossy(text.len() - next_line_start),
+        Value::from_usize_lossy(raw_text_length),
         activation,
     )?;
     instance.set_slot(

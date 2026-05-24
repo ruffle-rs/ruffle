@@ -1,0 +1,11 @@
+textWidth follows glyph advance (these are still stubs): true
+textHeight equals ascent plus descent (these are still stubs): true
+larger font has larger ascent (these are still stubs): true
+larger font has larger descent (these are still stubs): true
+larger font has larger textHeight (these are still stubs): true
+ascent is not fixed fallback (these are still stubs): true
+descent is not fixed fallback (these are still stubs): true
+max line width: 1000000
+narrow width wraps: true
+max width takes full text: true
+above max takes full text: true
