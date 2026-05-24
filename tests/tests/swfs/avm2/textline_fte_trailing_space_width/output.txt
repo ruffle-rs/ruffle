@@ -1,0 +1,3 @@
+has trailing atoms: true
+textWidth trims trailing spaces: true
+textWidth keeps first glyph: true

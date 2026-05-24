@@ -35,6 +35,7 @@ pub struct TextLineLayout<'gc> {
     html_line: LayoutLine<'gc>,
     #[collect(require_static)]
     text: WString,
+    text_block_begin: usize,
     #[collect(require_static)]
     atoms: Vec<Atom>,
     #[collect(require_static)]
@@ -71,6 +72,7 @@ impl<'gc> TextLineLayout<'gc> {
         Self {
             html_line,
             text,
+            text_block_begin,
             atoms,
             ascent,
             descent,
@@ -86,7 +88,18 @@ impl<'gc> TextLineLayout<'gc> {
     }
 
     pub fn text_width(&self) -> f32 {
-        self.html_line.bounds().width().to_pixels() as f32
+        let chars: Vec<u16> = self.text.iter().collect();
+        for atom in self.atoms.iter().rev() {
+            let pos = atom.char_start.saturating_sub(self.text_block_begin);
+            let blank = chars
+                .get(pos)
+                .map(|c| matches!(c, 0x20 | 0x09 | 0x0a | 0x0d | 0x2028 | 0x2029))
+                .unwrap_or(true);
+            if !blank {
+                return atom.x + atom.width;
+            }
+        }
+        0.0
     }
 
     pub fn raw_text_length(&self) -> usize {
@@ -162,6 +175,7 @@ impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
                 line: RefLock::new(TextLineLayout {
                     html_line: borrowed.html_line.clone(),
                     text: borrowed.text.clone(),
+                    text_block_begin: borrowed.text_block_begin,
                     atoms: borrowed.atoms.clone(),
                     ascent: borrowed.ascent,
                     descent: borrowed.descent,
