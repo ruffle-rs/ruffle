@@ -280,8 +280,13 @@ pub fn create_text_line<'gc>(
         Twips::from_pixels(tracking_left),
         Twips::from_pixels(tracking_right),
     );
+    let bidi_level = this
+        .get_slot(block_slots::_BIDI_LEVEL)
+        .coerce_to_u32(activation)?
+        .min(u8::MAX as u32) as u8;
     let fallback_text = displayed_text.clone();
-    let text_line_layout = TextLineLayout::new(html_line, displayed_text, next_line_start);
+    let text_line_layout =
+        TextLineLayout::new(html_line, displayed_text, next_line_start, bidi_level);
     let raw_text_length = text_line_layout.raw_text_length();
 
     let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);
@@ -469,8 +474,13 @@ pub fn recreate_text_line<'gc>(
         Twips::from_pixels(tracking_left),
         Twips::from_pixels(tracking_right),
     );
+    let bidi_level = this
+        .get_slot(block_slots::_BIDI_LEVEL)
+        .coerce_to_u32(activation)?
+        .min(u8::MAX as u32) as u8;
     let fallback_text = displayed_text.clone();
-    let text_line_layout = TextLineLayout::new(html_line, displayed_text, next_line_start);
+    let text_line_layout =
+        TextLineLayout::new(html_line, displayed_text, next_line_start, bidi_level);
     let raw_text_length = text_line_layout.raw_text_length();
 
     let text_line_display = text_line

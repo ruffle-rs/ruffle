@@ -144,10 +144,7 @@ package flash.text.engine {
 
         public native function getAtomIndexAtCharIndex(charIndex:int):int;
 
-        public function getAtomBidiLevel(index:int):int {
-            stub_method("flash.text.engine.TextLine", "getAtomBidiLevel");
-            return 0;
-        }
+        public native function getAtomBidiLevel(index:int):int;
 
         public native function getAtomBounds(index:int):Rectangle;
 

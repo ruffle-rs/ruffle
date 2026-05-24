@@ -1,0 +1,5 @@
+atomCount: 3
+level first: 1
+level middle: 1
+level before: 0
+level after: 0

@@ -10,6 +10,7 @@ package flash.text.engine {
         private var _baselineFontDescription:FontDescription = null;
         private var _baselineFontSize:Number = 12;
         private var _baselineZero:String = "roman";
+        [Ruffle(NativeAccessible)]
         private var _bidiLevel:int;
         private var _lineRotation:String;
         private var _tabStops:Vector.<TabStop>;

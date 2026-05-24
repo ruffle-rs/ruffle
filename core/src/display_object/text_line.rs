@@ -49,8 +49,13 @@ pub struct TextLineLayout<'gc> {
 }
 
 impl<'gc> TextLineLayout<'gc> {
-    pub fn new(html_line: LayoutLine<'gc>, text: WString, text_block_begin: usize) -> Self {
-        let atoms = build_atoms(&html_line, &text, text_block_begin);
+    pub fn new(
+        html_line: LayoutLine<'gc>,
+        text: WString,
+        text_block_begin: usize,
+        bidi_level: u8,
+    ) -> Self {
+        let atoms = build_atoms(&html_line, &text, text_block_begin, bidi_level);
         let (ascent, descent) = typo_metrics(&html_line, &text);
         Self {
             html_line,
@@ -111,7 +116,12 @@ impl<'gc> TextLineLayout<'gc> {
     }
 }
 
-fn build_atoms(line: &LayoutLine<'_>, text: &WStr, text_block_begin: usize) -> Vec<Atom> {
+fn build_atoms(
+    line: &LayoutLine<'_>,
+    text: &WStr,
+    text_block_begin: usize,
+    bidi_level: u8,
+) -> Vec<Atom> {
     let range = line.text_range();
     let line_width = line.bounds().width().to_pixels() as f32;
     let word_bounds = word_boundary_offsets(text);
@@ -160,7 +170,7 @@ fn build_atoms(line: &LayoutLine<'_>, text: &WStr, text_block_begin: usize) -> V
             char_end: text_block_begin + pos + 1,
             x,
             width,
-            bidi_level: 0,
+            bidi_level,
             word_boundary_on_left: pos == range.start || word_bounds.binary_search(&pos).is_ok(),
         });
     }
