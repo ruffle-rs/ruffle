@@ -50,8 +50,13 @@ pub struct TextLineLayout<'gc> {
 impl<'gc> TextLineLayout<'gc> {
     pub fn new(html_line: LayoutLine<'gc>, text: WString, text_block_begin: usize) -> Self {
         let (ascent, descent) = typo_metrics(&html_line, &text);
-        let atoms = html_line
-            .text_range()
+        let range = html_line.text_range();
+        let consumes_trailing_hard_break = text
+            .get(range.end)
+            .is_some_and(|unit| matches!(unit, 0x2028 | 0x2029))
+            && range.end + 1 == text.len();
+        let mut atoms: Vec<Atom> = range
+            .clone()
             .map(|pos| Atom {
                 char_start: text_block_begin + pos,
                 char_end: text_block_begin + pos + 1,
@@ -63,7 +68,7 @@ impl<'gc> TextLineLayout<'gc> {
                     .char_bounds(pos)
                     .map(|bounds| bounds.width().to_pixels() as f32)
                     .unwrap_or(0.0),
-                word_boundary_on_left: pos == html_line.text_range().start
+                word_boundary_on_left: pos == range.start
                     || text
                         .iter()
                         .nth(pos)
@@ -71,6 +76,20 @@ impl<'gc> TextLineLayout<'gc> {
                         .unwrap_or(false),
             })
             .collect();
+        if consumes_trailing_hard_break {
+            atoms.push(Atom {
+                char_start: text_block_begin + range.end,
+                char_end: text_block_begin + range.end + 1,
+                x: html_line.bounds().width().to_pixels() as f32,
+                width: 0.0,
+                word_boundary_on_left: range.end == range.start
+                    || text
+                        .iter()
+                        .nth(range.end)
+                        .map(|c| matches!(c, 0x20 | 0x09 | 0x0a | 0x0d))
+                        .unwrap_or(false),
+            });
+        }
         Self {
             html_line,
             text,
@@ -113,7 +132,17 @@ impl<'gc> TextLineLayout<'gc> {
     }
 
     pub fn raw_text_length(&self) -> usize {
-        self.html_line.text_range().len()
+        let range = self.html_line.text_range();
+        let mut len = range.len();
+        if self
+            .text
+            .get(range.end)
+            .is_some_and(|unit| matches!(unit, 0x2028 | 0x2029))
+            && range.end + 1 == self.text.len()
+        {
+            len += 1;
+        }
+        len
     }
 
     pub fn atoms(&self) -> &[Atom] {

@@ -83,6 +83,18 @@ fn format_from_content<'gc>(
     Ok(format)
 }
 
+fn text_until_hard_break(text: &WStr, start: usize) -> WString {
+    let tail = text.slice(start..).unwrap_or_else(WStr::empty);
+    let mut len = tail.len();
+    for (pos, unit) in tail.iter().enumerate() {
+        if matches!(unit, 0x2028 | 0x2029) {
+            len = pos + 1;
+            break;
+        }
+    }
+    WString::from(tail.slice(..len).unwrap_or_else(WStr::empty))
+}
+
 pub fn create_text_line<'gc>(
     activation: &mut Activation<'_, 'gc>,
     this: Value<'gc>,
@@ -134,11 +146,7 @@ pub fn create_text_line<'gc>(
     let content_obj = content
         .as_object()
         .expect("TextBlock content slot must be null or ContentElement");
-    let mut displayed_text = WString::from(
-        text.as_wstr()
-            .slice(next_line_start..)
-            .unwrap_or_else(WStr::empty),
-    );
+    let mut displayed_text = text_until_hard_break(text.as_wstr(), next_line_start);
     if let Some(ef) = content_obj
         .get_slot(element_slots::_ELEMENT_FORMAT)
         .as_object()
@@ -345,16 +353,10 @@ pub fn recreate_text_line<'gc>(
         return Ok(Value::Null);
     }
 
-    let Some(content_obj) = content.as_object() else {
-        return Ok(Value::Null);
-    };
-    use crate::avm2::globals::slots::flash_text_engine_content_element as element_slots;
-    use crate::avm2::globals::slots::flash_text_engine_element_format as format_slots;
-    let mut displayed_text = WString::from(
-        text.as_wstr()
-            .slice(next_line_start..)
-            .unwrap_or_else(WStr::empty),
-    );
+    let content_obj = content
+        .as_object()
+        .expect("TextBlock content slot must be null or ContentElement");
+    let mut displayed_text = text_until_hard_break(text.as_wstr(), next_line_start);
     if let Some(ef) = content_obj
         .get_slot(element_slots::_ELEMENT_FORMAT)
         .as_object()
