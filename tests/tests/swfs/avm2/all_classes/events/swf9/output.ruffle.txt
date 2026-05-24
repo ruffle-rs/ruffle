@@ -281,7 +281,40 @@ DRMErrorEvent not accessible
       <method name="toString" declaredBy="flash.events::Event" returnType="String"/>
   </factory>
 </type>
-DRMMetadataEvent not accessible
+<type name="flash.events::DRMMetadataEvent" base="Class" isDynamic="true" isFinal="true" isStatic="true">
+  <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
+  <constant name="DRM_METADATA" type="String"/>
+  <extendsClass type="Class"/>
+  <extendsClass type="Object"/>
+  <factory type="flash.events::DRMMetadataEvent">
+      <accessor name="bubbles" access="readonly" type="Boolean" declaredBy="flash.events::Event"/>
+      <accessor name="cancelable" access="readonly" type="Boolean" declaredBy="flash.events::Event"/>
+      <accessor name="currentTarget" access="readonly" type="Object" declaredBy="flash.events::Event"/>
+      <accessor name="drmMetadata" access="readonly" type="flash.net.drm::DRMContentData" declaredBy="flash.events::DRMMetadataEvent"/>
+      <accessor name="eventPhase" access="readonly" type="uint" declaredBy="flash.events::Event"/>
+      <accessor name="target" access="readonly" type="Object" declaredBy="flash.events::Event"/>
+      <accessor name="timestamp" access="readonly" type="Number" declaredBy="flash.events::DRMMetadataEvent"/>
+      <accessor name="type" access="readonly" type="String" declaredBy="flash.events::Event"/>
+      <constructor>
+          <parameter index="1" type="String" optional="true"/>
+          <parameter index="2" type="Boolean" optional="true"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="flash.utils::ByteArray" optional="true"/>
+          <parameter index="5" type="Number" optional="true"/>
+    </constructor>
+      <extendsClass type="Object"/>
+      <extendsClass type="flash.events::Event"/>
+      <method name="clone" declaredBy="flash.events::Event" returnType="flash.events::Event"/>
+      <method name="formatToString" declaredBy="flash.events::Event" returnType="String">
+          <parameter index="1" type="String" optional="false"/>
+    </method>
+      <method name="isDefaultPrevented" declaredBy="flash.events::Event" returnType="Boolean"/>
+      <method name="preventDefault" declaredBy="flash.events::Event" returnType="void"/>
+      <method name="stopImmediatePropagation" declaredBy="flash.events::Event" returnType="void"/>
+      <method name="stopPropagation" declaredBy="flash.events::Event" returnType="void"/>
+      <method name="toString" declaredBy="flash.events::Event" returnType="String"/>
+  </factory>
+</type>
 DRMReturnVoucherCompleteEvent not accessible
 <type name="flash.events::DRMReturnVoucherErrorEvent" base="Class" isDynamic="true" isFinal="true" isStatic="true">
   <accessor name="prototype" access="readonly" type="*" declaredBy="Class"/>
