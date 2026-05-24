@@ -10,6 +10,7 @@ use crate::display_object::avm1_button::Avm1Button;
 use crate::display_object::avm2_button::Avm2Button;
 use crate::display_object::container::DisplayObjectContainer;
 use crate::display_object::edit_text::EditText;
+use crate::display_object::fte_text_line::FteTextLine;
 use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
@@ -138,6 +139,7 @@ impl<'gc> InteractiveObjectBase<'gc> {
         Avm2Button(Avm2Button<'gc>),
         MovieClip(MovieClip<'gc>),
         EditText(EditText<'gc>),
+        FteTextLine(FteTextLine<'gc>),
         LoaderDisplay(LoaderDisplay<'gc>),
     }
 )]

@@ -1963,7 +1963,8 @@ impl<'gc> MovieClip<'gc> {
             | DisplayObject::Video(_) => ratio_equals && id_equals && clip_depth_equals,
             DisplayObject::MovieClip(_)
             | DisplayObject::Stage(_)
-            | DisplayObject::LoaderDisplay(_) => ratio_equals,
+            | DisplayObject::LoaderDisplay(_)
+            | DisplayObject::FteTextLine(_) => ratio_equals,
         }
     }
 
