@@ -231,6 +231,43 @@ pub unsafe extern "C" fn iggy_open_set_as3_dispatch(fn_ptr: Option<As3DispatchFn
 /// scenes register `Init`, `SetSafeZone`, `SetIntroPlatform`, etc. on
 /// the AS3 side via `ExternalInterface.addCallback(...)` and the C++
 /// scene constructor invokes them by name.
+unsafe fn _decode_iggy_args(args: *const IggyDataValueRaw, num_args: i32) -> Vec<ExtValue> {
+    let mut out: Vec<ExtValue> = Vec::with_capacity(num_args.max(0) as usize);
+    if num_args <= 0 || args.is_null() { return out; }
+    for i in 0..num_args as isize {
+        let raw = unsafe { &*args.offset(i) };
+        out.push(match raw.typ {
+            1 => ExtValue::Undefined,
+            2 => ExtValue::Null,
+            3 => {
+                let b = i32::from_le_bytes([raw.union_data[0], raw.union_data[1], raw.union_data[2], raw.union_data[3]]);
+                ExtValue::Bool(b != 0)
+            }
+            4 => {
+                let n = f64::from_le_bytes([
+                    raw.union_data[0], raw.union_data[1], raw.union_data[2], raw.union_data[3],
+                    raw.union_data[4], raw.union_data[5], raw.union_data[6], raw.union_data[7],
+                ]);
+                ExtValue::Number(n)
+            }
+            6 => {
+                let ptr_bytes = &raw.union_data[0..8];
+                let len_bytes = &raw.union_data[8..12];
+                let ptr_v = usize::from_le_bytes(ptr_bytes.try_into().unwrap_or([0;8])) as *const u16;
+                let len = i32::from_le_bytes(len_bytes.try_into().unwrap_or([0;4]));
+                if ptr_v.is_null() || len <= 0 {
+                    ExtValue::String(String::new())
+                } else {
+                    let slice = unsafe { std::slice::from_raw_parts(ptr_v, len as usize) };
+                    ExtValue::String(String::from_utf16_lossy(slice))
+                }
+            }
+            _ => ExtValue::Undefined,
+        });
+    }
+    out
+}
+
 #[unsafe(no_mangle)]
 pub unsafe extern "C" fn iggy_open_call_as3(
     p: *mut OpaquePlayer,
@@ -241,48 +278,68 @@ pub unsafe extern "C" fn iggy_open_call_as3(
     if p.is_null() || name_utf8.is_null() { return 0; }
     let opaque = unsafe { &mut *p };
     let name = unsafe { CStr::from_ptr(name_utf8) }.to_string_lossy().into_owned();
-    // Translate args from IggyDataValueRaw -> ExtValue.
-    let mut ext_args: Vec<ExtValue> = Vec::with_capacity(num_args.max(0) as usize);
-    if num_args > 0 && !args.is_null() {
-        for i in 0..num_args as isize {
-            let raw = unsafe { &*args.offset(i) };
-            ext_args.push(match raw.typ {
-                1 => ExtValue::Undefined,
-                2 => ExtValue::Null,
-                3 => {
-                    let b = i32::from_le_bytes([raw.union_data[0], raw.union_data[1], raw.union_data[2], raw.union_data[3]]);
-                    ExtValue::Bool(b != 0)
-                }
-                4 => {
-                    let n = f64::from_le_bytes([
-                        raw.union_data[0], raw.union_data[1], raw.union_data[2], raw.union_data[3],
-                        raw.union_data[4], raw.union_data[5], raw.union_data[6], raw.union_data[7],
-                    ]);
-                    ExtValue::Number(n)
-                }
-                6 => {
-                    // UTF16 string: ptr at [0..8], len at [8..12]
-                    let ptr_bytes = &raw.union_data[0..8];
-                    let len_bytes = &raw.union_data[8..12];
-                    let ptr_v = usize::from_le_bytes(ptr_bytes.try_into().unwrap_or([0;8])) as *const u16;
-                    let len = i32::from_le_bytes(len_bytes.try_into().unwrap_or([0;4]));
-                    if ptr_v.is_null() || len <= 0 {
-                        ExtValue::String(String::new())
-                    } else {
-                        let slice = unsafe { std::slice::from_raw_parts(ptr_v, len as usize) };
-                        ExtValue::String(String::from_utf16_lossy(slice))
-                    }
-                }
-                _ => ExtValue::Undefined,
-            });
-        }
-    }
+    let ext_args = unsafe { _decode_iggy_args(args, num_args) };
     if let Ok(mut player) = opaque.player.try_lock() {
         let ret = player.call_root_method_avm2(&name, ext_args);
         static CALL_LOGGED: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
         let n = CALL_LOGGED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
         if n < 30 {
             _bc(&format!("call_as3 '{}' -> {:?}", name, ret));
+        }
+        1
+    } else {
+        0
+    }
+}
+
+/// Phase 4.8b: path-aware AS3 method dispatch. `path_utf8` is a "."-joined
+/// chain of AS3 property names from root (e.g. "Button1" or "myDoc.skin").
+/// Empty path or NULL = invoke on root (same as iggy_open_call_as3).
+///
+/// # Safety
+/// `p` must be a valid OpaquePlayer handle. Strings must be NUL-terminated
+/// UTF-8 (or NULL for path). `args`/`num_args` follow IggyDataValueRaw
+/// conventions.
+#[unsafe(no_mangle)]
+pub unsafe extern "C" fn iggy_open_call_as3_path(
+    p: *mut OpaquePlayer,
+    path_utf8: *const c_char,
+    method_utf8: *const c_char,
+    args: *const IggyDataValueRaw,
+    num_args: i32,
+) -> i32 {
+    if p.is_null() || method_utf8.is_null() { return 0; }
+    let opaque = unsafe { &mut *p };
+    let path = if path_utf8.is_null() {
+        String::new()
+    } else {
+        unsafe { CStr::from_ptr(path_utf8) }.to_string_lossy().into_owned()
+    };
+    let method = unsafe { CStr::from_ptr(method_utf8) }.to_string_lossy().into_owned();
+    let ext_args = unsafe { _decode_iggy_args(args, num_args) };
+    // LCE Phase 4.8b: path plumbing works (Hud.Description.Init now lands
+    // on the right target), but actually invoking the previously-failing
+    // child Init() bodies exposes a downstream crash inside the game
+    // (~3s in, 0xC0000409 stack-buffer-overrun fastfail, around the
+    // first TutorialPopup/Hud Init chain). Until that's diagnosed we
+    // default to bypass-child-calls so the boot baseline keeps booting
+    // (mirrors pre-plumbing AS3-side behaviour). Set LCE_CHILD_CALLS=1
+    // to opt in for repro / continued work on the downstream crash.
+    let allow_child = std::env::var_os("LCE_CHILD_CALLS").is_some();
+    if !allow_child && !path.is_empty() {
+        static SKIP_LOGGED: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let n = SKIP_LOGGED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        if n < 30 {
+            _bc(&format!("call_as3_path SKIP path='{}' method='{}'", path, method));
+        }
+        return 1;
+    }
+    if let Ok(mut player) = opaque.player.try_lock() {
+        let ret = player.call_method_at_path_avm2(&path, &method, ext_args);
+        static CALL_LOGGED: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+        let n = CALL_LOGGED.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        if n < 30 {
+            _bc(&format!("call_as3_path path='{}' method='{}' -> {:?}", path, method, ret));
         }
         1
     } else {

@@ -2540,6 +2540,97 @@ impl Player {
         })
     }
 
+    /// Like `call_root_method_avm2` but navigates `path` (a "."-joined
+    /// chain of public AS3 property names) from the root before invoking
+    /// `name`. Empty path = root. LCE Phase 4.8b: stock Iggy's
+    /// `IggyPlayerCallMethodRS(target, method)` aims at any AS3 object the
+    /// game built a path to via `IggyValuePathMakeNameRef`; we walk it
+    /// here so `Button1.Init(...)` lands on the actual button child, not
+    /// the document root.
+    pub fn call_method_at_path_avm2(
+        &mut self,
+        path: &str,
+        name: &str,
+        args: Vec<ExternalValue>,
+    ) -> ExternalValue {
+        self.mutate_with_update_context(|context| {
+            use crate::avm2::Multiname;
+            use crate::string::AvmString;
+            let domain = match context
+                .library
+                .library_for_movie(context.root_swf.clone())
+                .map(|l| l.avm2_domain())
+            {
+                Some(d) => d,
+                None => return ExternalValue::Null,
+            };
+            let mut activation = Avm2Activation::from_domain(context, domain);
+            let root = match activation.context.stage.root_clip() {
+                Some(r) => r,
+                None => return ExternalValue::Null,
+            };
+            let mut target = match root.object2() {
+                Some(o) => crate::avm2::Value::from(o),
+                None => return ExternalValue::Null,
+            };
+            let public_ns = activation.avm2().find_public_namespace();
+            // Navigate "a.b.c" by chained get_property. Any failure logs +
+            // returns Null -- caller (Iggy) interprets that as no-op.
+            if !path.is_empty() {
+                for seg in path.split('.') {
+                    let seg_str = AvmString::new_utf8(activation.gc(), seg);
+                    let mn = Multiname::new(public_ns, seg_str);
+                    target = match target.get_property(&mn, &mut activation) {
+                        Ok(v) => v,
+                        Err(e) => {
+                            static FAIL_LOG: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+                            let n = FAIL_LOG.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                            if n < 32 {
+                                use std::io::Write;
+                                let detail = e.to_string(&mut activation);
+                                if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true)
+                                    .open(r"C:\Users\poopo\Desktop\Projects\LCE\LCE_orig\as3_errors.log") {
+                                    let _ = writeln!(f, "path '{}' seg '{}' err={}", path, seg, detail);
+                                }
+                            }
+                            return ExternalValue::Null;
+                        }
+                    };
+                }
+            }
+            let avm2_args: Vec<crate::avm2::Value> = args
+                .into_iter()
+                .map(|v| v.into_avm2(activation.context))
+                .collect();
+            let name_str = AvmString::new_utf8(activation.gc(), name);
+            let multiname = Multiname::new(public_ns, name_str);
+            match target.call_property(
+                &multiname,
+                crate::avm2::FunctionArgs::from_slice(&avm2_args),
+                &mut activation,
+            ) {
+                Ok(value) => match ExternalValue::from_avm2(&mut activation, value) {
+                    Ok(v) => v,
+                    Err(_) => ExternalValue::Null,
+                },
+                Err(e) => {
+                    static FAIL_LOG: std::sync::atomic::AtomicU32 = std::sync::atomic::AtomicU32::new(0);
+                    let n = FAIL_LOG.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+                    if n < 32 {
+                        use std::io::Write;
+                        let detail = e.to_string(&mut activation);
+                        if let Ok(mut f) = std::fs::OpenOptions::new().create(true).append(true)
+                            .open(r"C:\Users\poopo\Desktop\Projects\LCE\LCE_orig\as3_errors.log") {
+                            let _ = writeln!(f, "call path='{}' '{}' nargs={} err={}",
+                                path, name, avm2_args.len(), detail);
+                        }
+                    }
+                    ExternalValue::Null
+                }
+            }
+        })
+    }
+
     /// Inject the AS3 class definitions from a secondary SWF into THIS
     /// player's ROOT ApplicationDomain. After this call, PlaceByClass
     /// references in the root movie (and any sub-movies sharing the root
