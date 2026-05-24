@@ -28,6 +28,10 @@ pub struct ExecuteOptions {
     /// Whether tests should be compiled before running.
     #[arg(short, long)]
     compile: bool,
+
+    /// Skip tests which require a Flash Player version we don't have.
+    #[arg(long)]
+    skip_no_player: bool,
 }
 
 pub fn main_execute(options: ExecuteOptions) {
@@ -58,12 +62,22 @@ pub fn main_execute(options: ExecuteOptions) {
             .player_options
             .version()
             .unwrap_or(DEFAULT_PLAYER_VERSION);
-        let definition = config.get_player(version).unwrap_or_else(|| {
-            panic!(
-                "Could not find a Flash Player debug executable for version {} in .flash_players.toml",
-                version
-            )
-        });
+
+        let Some(definition) = config.get_player(version) else {
+            if options.skip_no_player {
+                eprintln!(
+                    "Skipping '{}' because it requires player {}, which was not found",
+                    test.name, version
+                );
+                continue;
+            } else {
+                panic!(
+                    "Could not find a Flash Player debug executable for version {} in .flash_players.toml",
+                    version
+                )
+            }
+        };
+
         let player = FlashPlayer::new(definition);
         test.compile(match options.compile {
             true => CompileMode::CompileSilently,
