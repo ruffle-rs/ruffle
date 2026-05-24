@@ -1,0 +1,5 @@
+num_ticks = 1
+
+[fonts.gpos_over_kern]
+family = "FTE GPOS Over Kern"
+path = "FteGposOverKern.ttf"

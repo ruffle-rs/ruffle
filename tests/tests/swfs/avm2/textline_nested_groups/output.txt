@@ -1,0 +1,12 @@
+nested group: textWidth=124.33 atomCount=11 ascent=21.84
+  atom 0 x=0.00 width=19.17
+  atom 1 x=19.17 width=7.17
+  atom 2 x=26.34 width=7.00
+  atom 3 x=33.34 width=12.00
+  atom 4 x=45.34 width=12.00
+  atom 5 x=57.34 width=12.00
+  atom 6 x=69.34 width=5.00
+  atom 7 x=74.33 width=12.00
+  atom 8 x=86.33 width=12.00
+  atom 9 x=98.33 width=8.00
+  atom 10 x=106.33 width=18.00

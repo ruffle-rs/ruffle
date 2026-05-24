@@ -1,0 +1,4 @@
+kerning shrink positive: true
+left atom loses half: true
+right atom starts halfway: true
+right atom keeps right edge: true
