@@ -1,0 +1,14 @@
+char 0: aa
+char 1: aa
+char 2: bbb
+char 5: c
+char 6: null
+after group count: 2
+nested count: 2
+nested text: bbbc
+outer text: aabbbc
+after ungroup count: 3
+after ungroup text: aabbbc
+merged text: aabbb
+after merge count: 2
+after merge text: aabbbc

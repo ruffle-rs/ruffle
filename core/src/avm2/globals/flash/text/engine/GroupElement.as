@@ -62,6 +62,72 @@ package flash.text.engine {
             return old;
         }
 
+        public function getElementAtCharIndex(charIndex:int):ContentElement {
+            var pos:int = 0;
+            for (var i:int = 0; i < this._elements.length; i++) {
+                var elem:ContentElement = this._elements[i];
+                var len:int = elem.text != null ? elem.text.length : 0;
+                if (charIndex >= pos && charIndex < pos + len) {
+                    return elem;
+                }
+                pos += len;
+            }
+            return null;
+        }
+
+        public function groupElements(beginIndex:int, endIndex:int):GroupElement {
+            if (beginIndex < 0 || endIndex < beginIndex || endIndex > this._elements.length) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+
+            var taken:Vector.<ContentElement> = this._elements.AS3::splice(beginIndex, endIndex - beginIndex);
+            var grouped:GroupElement = new GroupElement(taken, this.elementFormat);
+            this._elements.AS3::insertAt(beginIndex, grouped);
+            return grouped;
+        }
+
+        public function ungroupElements(groupIndex:int):void {
+            if (groupIndex < 0 || groupIndex >= this._elements.length) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+
+            var elem:ContentElement = this._elements[groupIndex];
+            if (!(elem is GroupElement)) {
+                throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+            }
+
+            var inner:Vector.<ContentElement> = new Vector.<ContentElement>();
+            var grp:GroupElement = elem as GroupElement;
+            for (var i:int = 0; i < grp.elementCount; i++) {
+                inner.push(grp.getElementAt(i));
+            }
+
+            this._elements.AS3::splice(groupIndex, 1);
+            for (var j:int = 0; j < inner.length; j++) {
+                this._elements.AS3::insertAt(groupIndex + j, inner[j]);
+            }
+        }
+
+        public function mergeTextElements(beginIndex:int, endIndex:int):TextElement {
+            if (beginIndex < 0 || endIndex < beginIndex || endIndex > this._elements.length) {
+                throw new RangeError("Error #2006: The supplied index is out of bounds.", 2006);
+            }
+
+            var merged:String = "";
+            for (var i:int = beginIndex; i < endIndex; i++) {
+                var e:ContentElement = this._elements[i];
+                if (!(e is TextElement)) {
+                    throw new ArgumentError("Error #2004: One of the parameters is invalid.", 2004);
+                }
+                merged += (e as TextElement).text;
+            }
+
+            var first:TextElement = this._elements[beginIndex] as TextElement;
+            first.text = merged;
+            this._elements.AS3::splice(beginIndex + 1, endIndex - beginIndex - 1);
+            return first;
+        }
+
         public function splitTextElement(elementIndex:int, splitIndex:int):TextElement {
             var element = getElementAt(elementIndex);
             if (!(element instanceof TextElement)) {

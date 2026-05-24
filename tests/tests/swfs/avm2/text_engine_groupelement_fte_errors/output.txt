@@ -1,0 +1,6 @@
+group range: 2006
+ungroup range: 2006
+ungroup non-group: 2004
+merge range: 2006
+merge non-text: 2004
+nested still grouped: aabb
