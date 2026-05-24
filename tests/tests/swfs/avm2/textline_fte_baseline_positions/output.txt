@@ -1,0 +1,8 @@
+ascent positive: true
+descent positive: true
+roman zero: true
+ascent matches: true
+descent matches: true
+ideo top matches: true
+ideo center matches: true
+ideo bottom matches: true

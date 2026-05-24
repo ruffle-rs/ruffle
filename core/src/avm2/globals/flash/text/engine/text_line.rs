@@ -1,5 +1,6 @@
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
+use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
 use crate::display_object::TextLineLayout;
 use std::cell::Ref;
@@ -48,4 +49,26 @@ pub fn get_descent<'gc>(
 ) -> Result<Value<'gc>, Error<'gc>> {
     let line = text_line_layout(this);
     Ok((line.descent() as f64).into())
+}
+
+pub fn get_baseline_position<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let baseline = args.get_value(0).coerce_to_string(activation)?;
+    let (ascent, descent) = match fte_line(this) {
+        Some(line) => (line.ascent(), line.descent()),
+        None => (12.0, 3.0),
+    };
+    let position = match baseline.to_utf8_lossy().as_ref() {
+        "roman" => 0.0,
+        "ascent" => -ascent,
+        "descent" => descent,
+        "ideographicTop" => -ascent,
+        "ideographicCenter" => (descent - ascent) / 2.0,
+        "ideographicBottom" => descent,
+        _ => 0.0,
+    };
+    Ok((position as f64).into())
 }

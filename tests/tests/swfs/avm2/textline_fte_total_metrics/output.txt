@@ -1,0 +1,4 @@
+totalAscent mirrors ascent: true
+totalDescent mirrors descent: true
+totalHeight sums metrics: true
+unjustified mirrors textWidth: true

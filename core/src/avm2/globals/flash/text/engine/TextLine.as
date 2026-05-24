@@ -68,25 +68,27 @@ package flash.text.engine {
 
         [API("670")]
         public function get totalAscent():Number {
-            stub_getter("flash.text.engine.TextLine", "totalAscent");
-            return 12.0;
+            return this.ascent;
         }
 
         public native function get descent():Number;
 
         [API("670")]
         public function get totalDescent():Number {
-            stub_getter("flash.text.engine.TextLine", "totalDescent");
-            return 3.0;
+            return this.descent;
         }
 
         public function get unjustifiedTextWidth():Number {
-            stub_getter("flash.text.engine.TextLine", "unjustifiedTextWidth");
-            return this._specifiedWidth;
+            return this.textWidth;
         }
 
         public native function get textWidth():Number;
         public native function get textHeight():Number;
+
+        [API("670")]
+        public function get totalHeight():Number {
+            return this.ascent + this.descent;
+        }
 
         public function get validity():String {
             stub_getter("flash.text.engine.TextLine", "validity");
@@ -108,13 +110,26 @@ package flash.text.engine {
             return this._rawTextLength;
         }
 
-        public function getBaselinePosition(baseline:String):Number {
-            stub_method("flash.text.engine.TextLine", "getBaselinePosition");
-            return 0.0;
-        }
+        public native function getBaselinePosition(baseline:String):Number;
 
         public function get hasTabs():Boolean {
-            stub_getter("flash.text.engine.TextLine", "hasTabs");
+            var block:TextBlock = this._textBlock;
+            if (block == null || block.content == null) {
+                return false;
+            }
+            var text:String = block.content.text;
+            if (text == null) {
+                return false;
+            }
+            var end:int = this._textBlockBeginIndex + this._rawTextLength;
+            if (end > text.length) {
+                end = text.length;
+            }
+            for (var i:int = this._textBlockBeginIndex; i < end; i++) {
+                if (text.charCodeAt(i) == 0x09) {
+                    return true;
+                }
+            }
             return false;
         }
 
