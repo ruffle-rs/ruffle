@@ -179,6 +179,8 @@ pub struct SystemClasses<'gc> {
     pub workerdomain: ClassObject<'gc>,
     pub messagechannel: ClassObject<'gc>,
     pub securitydomain: ClassObject<'gc>,
+    pub jpegencoder_options: ClassObject<'gc>,
+    pub pngencoder_options: ClassObject<'gc>,
 }
 
 #[derive(Clone, Collect)]
@@ -357,6 +359,8 @@ impl<'gc> SystemClasses<'gc> {
             workerdomain: object,
             messagechannel: object,
             securitydomain: object,
+            jpegencoder_options: object,
+            pngencoder_options: object,
         }
     }
 }
@@ -696,6 +700,8 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
             ("flash.display", "Sprite", sprite),
             ("flash.display", "Stage", stage),
             ("flash.display", "Stage3D", stage3d),
+            ("flash.display", "JPEGEncoderOptions", jpegencoder_options),
+            ("flash.display", "PNGEncoderOptions", pngencoder_options),
             ("flash.display3D", "Context3D", context3d),
             ("flash.display3D", "IndexBuffer3D", indexbuffer3d),
             ("flash.display3D", "Program3D", program3d),

@@ -124,6 +124,7 @@ ruffle_macros::define_common_strings! {
     "error",
     "extension",
     "false",
+    "fastCompression",
     "flushed",
     "focusEnabled",
     "fontStyle",
