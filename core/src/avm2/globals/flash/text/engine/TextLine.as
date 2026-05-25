@@ -48,10 +48,7 @@ package flash.text.engine {
             return this._textBlock;
         }
 
-        public function get ascent():Number {
-            stub_getter("flash.text.engine.TextLine", "ascent");
-            return 12.0;
-        }
+        public native function get ascent():Number;
 
         [API("670")]
         public function get totalAscent():Number {
@@ -59,10 +56,7 @@ package flash.text.engine {
             return 12.0;
         }
 
-        public function get descent():Number {
-            stub_getter("flash.text.engine.TextLine", "descent");
-            return 3.0;
-        }
+        public native function get descent():Number;
 
         [API("670")]
         public function get totalDescent():Number {

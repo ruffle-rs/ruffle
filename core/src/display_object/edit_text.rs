@@ -772,6 +772,23 @@ impl<'gc> EditText<'gc> {
     /// Returns the matrix for transforming from layout
     /// coordinate space into this object's local space.
     fn layout_to_local_matrix(self) -> Matrix {
+        if self.is_fte() {
+            // FTE TextLines use baseline y-coordinates: y=0 in local space is
+            // the baseline, with glyphs extending upward by ascent and downward
+            // by descent. In layout space the baseline sits at y=ascent (after
+            // baseline_adjustment). Map layout→local so that layout_y=ascent
+            // lands at local_y=0, i.e. translate by -ascent. No gutter applies.
+            let ascent = self
+                .0
+                .layout
+                .borrow()
+                .lines()
+                .first()
+                .map(|l| l.ascent())
+                .unwrap_or(Twips::ZERO);
+            return Matrix::translate(Twips::ZERO, -ascent);
+        }
+
         let bounds = self.0.bounds.get();
         let matrix = Matrix::translate(
             bounds.x_min + Self::GUTTER - Twips::from_pixels(self.0.hscroll.get()),
@@ -2728,16 +2745,21 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             }
         }
 
-        context.commands.push_mask();
+        // FTE TextLines must not be clipped to their nominal bounds — text
+        // extends above y=0 by the ascent. Regular EditText is clipped.
+        let mask = (!self.is_fte()).then(|| {
+            let bounds = self.0.bounds.get().grow_x(-Self::GUTTER);
+            Matrix::create_box_from_rectangle(&bounds)
+        });
 
-        let mask_bounds = self.0.bounds.get().grow_x(-Self::GUTTER);
-        let mask = Matrix::create_box_from_rectangle(&mask_bounds);
-
-        context.commands.draw_rect(
-            Color::WHITE,
-            context.transform_stack.transform().matrix * mask,
-        );
-        context.commands.activate_mask();
+        if let Some(mask) = mask {
+            context.commands.push_mask();
+            context.commands.draw_rect(
+                Color::WHITE,
+                context.transform_stack.transform().matrix * mask,
+            );
+            context.commands.activate_mask();
+        }
 
         context.transform_stack.push(&Transform {
             matrix: self.layout_to_local_matrix(),
@@ -2755,12 +2777,14 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
 
         context.transform_stack.pop();
 
-        context.commands.deactivate_mask();
-        context.commands.draw_rect(
-            Color::WHITE,
-            context.transform_stack.transform().matrix * mask,
-        );
-        context.commands.pop_mask();
+        if let Some(mask) = mask {
+            context.commands.deactivate_mask();
+            context.commands.draw_rect(
+                Color::WHITE,
+                context.transform_stack.transform().matrix * mask,
+            );
+            context.commands.pop_mask();
+        }
 
         if let Some(draw_caret_command) = render_state.draw_caret_command {
             context.commands.commands.push(draw_caret_command);

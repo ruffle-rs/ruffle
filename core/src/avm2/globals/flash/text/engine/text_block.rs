@@ -66,6 +66,10 @@ pub fn create_text_line<'gc>(
         }
     };
 
+    if text.is_empty() {
+        return Ok(Value::Null);
+    }
+
     let class = activation.avm2().classes().textline;
     let movie = activation.caller_movie_or_root();
 

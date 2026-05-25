@@ -1,0 +1,12 @@
+ascent > 0: true
+descent > 0: true
+lineHeight > 0: true
+ascent > descent: true
+24px ascent > 12px ascent: true
+24px descent > 12px descent: true
+ascent stable: true
+descent stable: true
+12px ascent: 12.8
+12px descent: 3.5
+24px ascent: 25.7
+24px descent: 7
