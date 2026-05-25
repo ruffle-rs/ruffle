@@ -4,8 +4,8 @@ package flash.events {
     public class SampleDataEvent extends Event {
         public static const SAMPLE_DATA:String = "sampleData";
 
-        public var _position:Number;
-        public var _data:ByteArray;
+        private var _position:Number;
+        private var _data:ByteArray;
 
         public function SampleDataEvent(
             type:String,

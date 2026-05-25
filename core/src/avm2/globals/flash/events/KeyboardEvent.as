@@ -84,18 +84,22 @@ package flash.events {
             this._shiftKey = val;
         }
 
+        [API("661")]
         public function get controlKey():Boolean {
             return this._controlKey;
         }
 
+        [API("661")]
         public function set controlKey(val:Boolean) {
             this._controlKey = val;
         }
 
+        [API("661")]
         public function get commandKey():Boolean {
             return this._commandKey;
         }
 
+        [API("661")]
         public function set commandKey(val:Boolean) {
             this._commandKey = val;
         }
