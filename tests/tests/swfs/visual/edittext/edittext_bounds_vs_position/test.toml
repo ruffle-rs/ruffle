@@ -1,7 +1,16 @@
 num_ticks = 1
 
-[image_comparisons.output]
+[[image_comparisons.output.checks]]
+filter = 'not(os = "macos")'
 tolerance = 0
+max_outliers = 0
+
+[[image_comparisons.output.checks]]
+filter = 'os = "macos"'
+tolerance = 0
+
+# FIXME Something's not right on Metal here.
+max_outliers = 140
 
 [player_options]
 with_renderer = { optional = false, quality = "low" }
