@@ -5,9 +5,9 @@ package flash.events{
     public class ShaderEvent extends Event {
         public static const COMPLETE:String = "complete";
 
-        public var vector:Vector.<Number>;
-        public var bitmapData:BitmapData;
-        public var byteArray:ByteArray;
+        private var _vector:Vector.<Number>;
+        private var _bitmapData:BitmapData;
+        private var _byteArray:ByteArray;
 
         public function ShaderEvent(
             type:String,
@@ -18,9 +18,30 @@ package flash.events{
             vector:Vector.<Number> = null
         ) {
             super(type, bubbles, cancelable);
-            this.bitmapData = bitmap;
-            this.byteArray = array;
-            this.vector = vector;
+            this._bitmapData = bitmap;
+            this._byteArray = array;
+            this._vector = vector;
+        }
+
+        public function get bitmapData():BitmapData {
+            return this._bitmapData;
+        }
+        public function set bitmapData(bitmapData:BitmapData) {
+            this._bitmapData = bitmapData;
+        }
+
+        public function get byteArray():ByteArray {
+            return this._byteArray;
+        }
+        public function set byteArray(byteArray:ByteArray) {
+            this._byteArray = byteArray;
+        }
+
+        public function get vector():Vector.<Number> {
+            return this._vector;
+        }
+        public function set vector(vector:Vector.<Number>) {
+            this._vector = vector;
         }
 
         override public function clone():Event {
@@ -28,6 +49,8 @@ package flash.events{
                 this.type,
                 this.bubbles,
                 this.cancelable,
+                this.bitmapData,
+                this.byteArray,
                 this.vector
             );
         }

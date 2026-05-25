@@ -8,7 +8,7 @@ package flash.events {
         private var _time:Number;
 
         public function AVDictionaryDataEvent(
-            type:String,
+            type:String = "avDictionaryData",
             bubbles:Boolean = false,
             cancelable:Boolean = false,
             init_dictionary:Dictionary = null,
