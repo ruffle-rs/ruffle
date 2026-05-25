@@ -1,0 +1,100 @@
+
+// PNG default, full rect, transparent bd
+class: flash.utils::ByteArray
+length > 0: true
+PNG sig: 89 50 4e 47 0d 0a 1a 0a 
+IHDR len=13 type=IHDR w=20 h=20
+
+// PNG fastCompression=true, full rect, transparent bd
+class: flash.utils::ByteArray
+length > 0: true
+PNG sig: 89 50 4e 47 0d 0a 1a 0a 
+IHDR len=13 type=IHDR w=20 h=20
+
+// PNG default, subrect (2,3,5,7), transparent bd
+class: flash.utils::ByteArray
+length > 0: true
+PNG sig: 89 50 4e 47 0d 0a 1a 0a 
+IHDR len=13 type=IHDR w=5 h=7
+
+// PNG default, full rect, opaque bd
+class: flash.utils::ByteArray
+length > 0: true
+PNG sig: 89 50 4e 47 0d 0a 1a 0a 
+IHDR len=13 type=IHDR w=20 h=20
+
+// JPEG quality=80, full rect, opaque bd
+class: flash.utils::ByteArray
+length > 0: true
+SOI: ff d8
+SOF segLen=17 precision=8 w=20 h=20 components=3
+EOI present: true
+
+// JPEG quality=1, full rect, opaque bd
+class: flash.utils::ByteArray
+length > 0: true
+SOI: ff d8
+SOF segLen=17 precision=8 w=20 h=20 components=3
+EOI present: true
+
+// JPEG quality=100, full rect, opaque bd
+class: flash.utils::ByteArray
+length > 0: true
+SOI: ff d8
+SOF segLen=17 precision=8 w=20 h=20 components=3
+EOI present: true
+
+// JPEG quality=80, subrect (2,3,5,7)
+class: flash.utils::ByteArray
+length > 0: true
+SOI: ff d8
+SOF segLen=17 precision=8 w=5 h=7 components=3
+EOI present: true
+
+// Default output ByteArray (third arg omitted)
+class: flash.utils::ByteArray
+length > 0: true
+endian: bigEndian
+
+// Provided output ByteArray, returned === provided
+ret === provided: true
+length > 0: true
+
+// Provided output ByteArray with existing data is overwritten from position 0
+length > 0: true
+byte[0..2]: 137,80,78
+
+// Provided output ByteArray, position past existing data preserves earlier bytes
+byte[0]: 17
+
+// Zero-area rect: width=0
+threw #2006
+
+// Zero-area rect: height=0
+threw #2006
+
+// Negative width rect
+threw #2006
+
+// Out-of-bounds rect (partially overlapping)
+length > 0: true
+IHDR len=13 type=IHDR w=5 h=5
+
+// Rect fully outside bounds
+threw #2006
+
+// Negative origin rect
+length > 0: true
+IHDR len=13 type=IHDR w=5 h=5
+
+// Null rect
+threw #2007
+
+// Null compressor
+threw #2007
+
+// Deterministic: same input -> same length
+same length: true
+
+// Disposed bitmap
+threw #2015
