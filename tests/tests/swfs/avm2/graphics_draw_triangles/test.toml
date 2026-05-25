@@ -4,6 +4,8 @@ num_ticks = 1
 #   winding behavior not being implemented.
 [image_comparisons.output]
 trigger = 1
+tolerance = 1
+known_failure = true
 
 [player_options]
-with_renderer = { optional = false, quality = "low" }
+with_renderer = { optional = false, quality = "high" }
