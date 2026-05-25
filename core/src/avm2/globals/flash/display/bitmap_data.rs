@@ -4,8 +4,8 @@ use crate::avm2::Error;
 use crate::avm2::activation::Activation;
 use crate::avm2::bytearray::ByteArrayStorage;
 use crate::avm2::error::{
-    Error2004Type, make_error_2004, make_error_2005, make_error_2008, make_error_2015,
-    make_error_2027,
+    Error2004Type, Error2006Type, make_error_2004, make_error_2005, make_error_2006,
+    make_error_2008, make_error_2015, make_error_2027, make_error_3699,
 };
 use crate::avm2::filters::FilterAvm2Ext;
 use crate::avm2::function::FunctionArgs;
@@ -13,6 +13,8 @@ use crate::avm2::globals::flash::display::display_object::object_to_rectangle;
 use crate::avm2::globals::flash::geom::transform::object_to_color_transform;
 use crate::avm2::globals::flash::geom::transform::object_to_matrix;
 use crate::avm2::globals::slots::{
+    flash_display_jpeg_encoder_options as jpeg_encoder_options_slots,
+    flash_display_png_encoder_options as png_encoder_options_slots,
     flash_geom_point as point_slots, flash_geom_rectangle as rectangle_slots,
 };
 pub use crate::avm2::object::bitmap_data_allocator;
@@ -23,10 +25,13 @@ use crate::avm2::vector::VectorStorage;
 use crate::avm2_stub_method;
 use crate::bitmap::bitmap_data::{BitmapData, ChannelOptions, ThresholdOperation};
 use crate::bitmap::bitmap_data::{BitmapDataDrawError, IBitmapDrawable};
-use crate::bitmap::{is_size_valid, operations};
+use crate::bitmap::is_size_valid;
+use crate::bitmap::operations::{self, EncodeOptions};
 use crate::character::{Character, CompressedBitmap};
 use crate::ecma_conversions::round_to_even;
 use crate::swf::BlendMode;
+use image::ImageError;
+use ruffle_render::bitmap::PixelRegion;
 use ruffle_render::filters::Filter;
 use ruffle_render::transform::Transform;
 use std::str::FromStr;
@@ -1596,4 +1601,97 @@ pub fn merge<'gc>(
     }
 
     Ok(Value::Undefined)
+}
+
+/// Implements `BitmapData.encode`
+pub fn encode<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: FunctionArgs<'_, 'gc>,
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(bitmap_data) = this.as_bitmap_data() {
+        bitmap_data.check_valid(activation)?;
+
+        let rectangle = args.get_object(activation, 0, "rect")?;
+        let (x, y, width, height) = get_rectangle_x_y_width_height(activation, rectangle)?;
+
+        let compressor = args.get_object(activation, 1, "compressor")?;
+
+        if width <= 0 || height <= 0 {
+            return Err(make_error_2006(activation, Error2006Type::ArgumentError));
+        }
+
+        let mut region = PixelRegion::for_region_i32(x, y, width, height);
+        region.clamp(bitmap_data.width(), bitmap_data.height());
+
+        if region.width() == 0 || region.height() == 0 {
+            return Err(make_error_2006(activation, Error2006Type::ArgumentError));
+        }
+
+        let output_bytearray = if let Some(ba) = args.try_get_object(2) {
+            ba.as_bytearray_object().unwrap()
+        } else {
+            let storage = ByteArrayStorage::new(activation.context);
+            ByteArrayObject::from_storage(activation.context, storage)
+        };
+
+        let class_defs = activation.avm2().class_defs();
+
+        let options = if compressor.is_of_type(class_defs.jpegencoder_options) {
+            let quality = compressor
+                .get_slot(jpeg_encoder_options_slots::QUALITY)
+                .as_u32();
+
+            if quality > 100 {
+                return Err(make_error_2006(activation, Error2006Type::RangeError));
+            }
+
+            // Flash treats a quality of 0 like 1.
+            EncodeOptions::Jpeg {
+                quality: quality.max(1) as u8,
+            }
+        } else if compressor.is_of_type(class_defs.pngencoder_options) {
+            let fast_compression = compressor
+                .get_slot(png_encoder_options_slots::FAST_COMPRESSION)
+                .coerce_to_boolean();
+
+            EncodeOptions::Png { fast_compression }
+        } else if compressor.is_of_type(class_defs.jpegxrencoder_options) {
+            avm2_stub_method!(
+                activation,
+                "flash.display.BitmapData",
+                "encode",
+                "with JPEGXREncoderOptions"
+            );
+            return Ok(Value::Null);
+        } else {
+            return Err(make_error_2004(activation, Error2004Type::ArgumentError));
+        };
+
+        // Flash's JPEG encoder has the same size limit as libjpeg.
+        const JPEG_MAX_DIMENSION: u32 = 65500;
+        if matches!(options, EncodeOptions::Jpeg { .. })
+            && (region.width() > JPEG_MAX_DIMENSION || region.height() > JPEG_MAX_DIMENSION)
+        {
+            return Err(make_error_3699(activation));
+        }
+
+        operations::encode(
+            bitmap_data,
+            activation.context.renderer,
+            region,
+            options,
+            &mut output_bytearray.storage_mut(),
+        )
+        .map_err(|e| match e {
+            ImageError::IoError(_) => make_error_2006(activation, Error2006Type::RangeError),
+            _ => make_error_3699(activation),
+        })?;
+
+        return Ok(output_bytearray.into());
+    }
+
+    Ok(Value::Null)
 }

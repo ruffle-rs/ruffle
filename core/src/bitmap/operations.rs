@@ -10,6 +10,9 @@ use crate::bitmap::turbulence::Turbulence;
 use crate::context::{RenderContext, UpdateContext};
 use crate::display_object::{RenderOptions, TDisplayObject};
 use gc_arena::Mutation;
+use image::codecs::jpeg::JpegEncoder;
+use image::codecs::png::{CompressionType, FilterType, PngEncoder};
+use image::{ExtendedColorType, ImageEncoder, ImageError};
 use ruffle_render::backend::RenderBackend;
 use ruffle_render::bitmap::{PixelRegion, PixelSnapping};
 use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
@@ -1918,4 +1921,73 @@ pub fn pixel_dissolve<'gc>(
     write.set_cpu_dirty(mc, dest_region);
 
     raw_perm_index as i32
+}
+
+pub enum EncodeOptions {
+    Jpeg { quality: u8 },
+    Png { fast_compression: bool },
+}
+
+pub fn encode(
+    bitmap: BitmapData,
+    renderer: &mut dyn RenderBackend,
+    region: PixelRegion,
+    options: EncodeOptions,
+    bytearray: &mut ByteArrayStorage,
+) -> Result<(), ImageError> {
+    let read = bitmap.read_area(region, renderer);
+
+    let pixels: Vec<_> = (region.y_min..region.y_max)
+        .flat_map(|y| (region.x_min..region.x_max).map(move |x| (x, y)))
+        .map(|(x, y)| read.get_pixel32_raw(x, y))
+        .collect();
+
+    match options {
+        EncodeOptions::Jpeg { quality } => {
+            // Flash encodes the premultiplied color, i.e. as if composited onto black.
+            let rgb_data: Vec<u8> = pixels
+                .iter()
+                .flat_map(|color| [color.red(), color.green(), color.blue()])
+                .collect();
+
+            let encoder = JpegEncoder::new_with_quality(bytearray, quality);
+
+            encoder.write_image(
+                &rgb_data,
+                region.width(),
+                region.height(),
+                ExtendedColorType::Rgb8,
+            )?;
+        }
+        EncodeOptions::Png { fast_compression } => {
+            // Flash only writes an alpha channel if the encoded area has a non-opaque pixel.
+            let has_alpha = pixels.iter().any(|color| color.alpha() != 255);
+            let pixels = pixels.iter().map(|color| color.to_un_multiplied_alpha());
+
+            let (data, color_type): (Vec<u8>, _) = if has_alpha {
+                let data = pixels
+                    .flat_map(|color| [color.red(), color.green(), color.blue(), color.alpha()])
+                    .collect();
+                (data, ExtendedColorType::Rgba8)
+            } else {
+                let data = pixels
+                    .flat_map(|color| [color.red(), color.green(), color.blue()])
+                    .collect();
+                (data, ExtendedColorType::Rgb8)
+            };
+
+            let compression = if fast_compression {
+                CompressionType::Fast
+            } else {
+                CompressionType::Default
+            };
+
+            let encoder =
+                PngEncoder::new_with_quality(bytearray, compression, FilterType::Adaptive);
+
+            encoder.write_image(&data, region.width(), region.height(), color_type)?;
+        }
+    };
+
+    Ok(())
 }

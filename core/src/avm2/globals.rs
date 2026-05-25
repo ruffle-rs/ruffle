@@ -229,6 +229,9 @@ pub struct SystemClassDefs<'gc> {
     pub urlrequestheader: Class<'gc>,
     pub contentelement: Class<'gc>,
     pub contextmenuitem: Class<'gc>,
+    pub jpegencoder_options: Class<'gc>,
+    pub jpegxrencoder_options: Class<'gc>,
+    pub pngencoder_options: Class<'gc>,
 }
 
 impl<'gc> SystemClasses<'gc> {
@@ -408,6 +411,9 @@ impl<'gc> SystemClassDefs<'gc> {
             urlrequestheader: object,
             contentelement: object,
             contextmenuitem: object,
+            jpegencoder_options: object,
+            jpegxrencoder_options: object,
+            pngencoder_options: object,
         }
     }
 }
@@ -810,6 +816,13 @@ pub fn init_native_system_classes(activation: &mut Activation<'_, '_>) {
             ("flash.display", "GraphicsSolidFill", graphicssolidfill),
             ("flash.display", "GraphicsShaderFill", graphicsshaderfill),
             ("flash.display", "GraphicsStroke", graphicsstroke),
+            ("flash.display", "JPEGEncoderOptions", jpegencoder_options),
+            (
+                "flash.display",
+                "JPEGXREncoderOptions",
+                jpegxrencoder_options
+            ),
+            ("flash.display", "PNGEncoderOptions", pngencoder_options),
             ("flash.display", "Sprite", sprite),
             ("flash.display3D.textures", "CubeTexture", cubetexture),
             (

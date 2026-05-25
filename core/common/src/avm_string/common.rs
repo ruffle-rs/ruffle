@@ -153,6 +153,7 @@ ruffle_macros::define_common_strings! {
     "exotic",
     "extension",
     "false",
+    "fastCompression",
     "fileList",
     "FileReference",
     "filters",
