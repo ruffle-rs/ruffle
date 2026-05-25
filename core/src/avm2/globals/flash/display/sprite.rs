@@ -55,7 +55,15 @@ pub fn sprite_allocator<'gc>(
                 }
             }
             let movie = activation.caller_movie_or_root();
-            let display_object = MovieClip::new(movie, activation.gc()).into();
+            let new_mc = MovieClip::new(movie, activation.gc());
+            // LCE Phase 4.8c-3: bind the fresh MovieClip's avm2_class to
+            // orig_class so its `construct_as_avm2_object` runs orig_class's
+            // instance_init instead of falling back to the builtin
+            // `movieclip` class (which would trip activation.rs:347's
+            // bound_class != this.instance_class assertion when orig_class
+            // is something other than MovieClip, e.g. literal Sprite).
+            new_mc.set_avm2_class(activation.gc(), Some(orig_class));
+            let display_object = new_mc.into();
             return Ok(
                 initialize_for_allocator(activation.context, display_object, orig_class).into(),
             );

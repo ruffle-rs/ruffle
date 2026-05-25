@@ -974,8 +974,22 @@ impl<'gc> Class<'gc> {
     pub fn has_class_in_chain(self, test_class: Class<'gc>) -> bool {
         let mut my_class = Some(self);
 
+        // LCE Phase 4.8c-3: QName fallback. LCE injects secondary SWF DoABCs
+        // into a Player's root domain BEFORE the root SWF's own DoABC runs.
+        // When a root SWF redefines a class already injected (e.g. HUD1080.swf
+        // restubbing `fourj.Labels.FJ_Label_HUD_White` from skinHDHud.swf), two
+        // distinct `Avm2Class` GC pointers exist for the same QName in the
+        // same domain. Without this fallback, `this.is_of_type(bound_class)`
+        // would fail ptr-equality on every chain step and trip the assertion
+        // at activation.rs:347 -- even though semantically the class identity
+        // matches. See [[project-lce-phase4-5-menu-landing]] Phase 4.8c-2.
+        let test_name = test_class.name();
+
         while let Some(class) = my_class {
             if class == test_class {
+                return true;
+            }
+            if class.name() == test_name {
                 return true;
             }
 
@@ -987,6 +1001,9 @@ impl<'gc> Class<'gc> {
         if test_class.is_interface() {
             for interface in self.all_interfaces() {
                 if *interface == test_class {
+                    return true;
+                }
+                if interface.name() == test_name {
                     return true;
                 }
             }

@@ -66,12 +66,13 @@ static LIBRARY_REGISTRY: Mutex<Vec<Arc<SwfMovie>>> = Mutex::new(Vec::new());
 // instead of lifetime cap. Combined with C++ UIScene::loadMovie destroy
 // guard, peak concurrent full-inject Players should stay bounded.
 //
-// Held at 4 for now: budget>=5 lets Hud full-inject which trips a
-// Rust type assertion at avm2/activation.rs:347 deep in skinHDHud's
-// nested PlaceByClass chain (FJ_Label_HUD_White -> FJ_LabelWhite).
-// Separate untouched issue -- see [[project-lce-phase4-5-menu-landing]].
+// LCE Phase 4.8c-3: bumped 4 -> 8 after has_class_in_chain QName fallback
+// landed in core/src/avm2/class.rs. Budget>=5 previously tripped the
+// activation.rs:347 assertion due to dual-DoABC class-def pointer mismatch;
+// the fallback makes is_of_type accept ptr-different-but-name-matching
+// classes so Hud full-inject is now safe.
 static FULL_INJECT_BUDGET: std::sync::atomic::AtomicU32 =
-    std::sync::atomic::AtomicU32::new(4);
+    std::sync::atomic::AtomicU32::new(8);
 
 /// Returns true if this Player consumed a full-inject budget slot
 /// (caller stashes flag in OpaquePlayer for refund on destroy).
