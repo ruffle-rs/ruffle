@@ -1,0 +1,2 @@
+mixed ascent == 48px ascent: true
+mixed descent == 48px descent: true

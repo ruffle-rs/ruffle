@@ -1,0 +1,3 @@
+line1 != null: true
+line1 ascent: 12.8
+line2 != null: false

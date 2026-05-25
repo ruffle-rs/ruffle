@@ -10,3 +10,9 @@ descent stable: true
 12px descent: 3.5
 24px ascent: 25.7
 24px descent: 7
+content-independent ascent: true
+content-independent descent: true
+caps descent > 0: true
+empty is null: true
+rot90 ascent == ascent: true
+rot90 descent == descent: true

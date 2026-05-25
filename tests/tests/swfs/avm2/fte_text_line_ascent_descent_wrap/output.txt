@@ -1,0 +1,5 @@
+line1 != null: true
+line1 ascent: 12.8
+line2 != null: true
+line2 ascent: 12.8
+line2 ascent == line1 ascent: true
