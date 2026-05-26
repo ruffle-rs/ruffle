@@ -1,5 +1,5 @@
 package flash.events {
-    // TODO: [API("724")]
+    [API("724")]
     public class AudioOutputChangeEvent extends Event {
         public static const AUDIO_OUTPUT_CHANGE:String = "audioOutputChange";
 
