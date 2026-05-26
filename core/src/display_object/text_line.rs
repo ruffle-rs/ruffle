@@ -1,4 +1,4 @@
-//! The FteTextLine DisplayObject, backing flash.text.engine TextLine.
+//! The TextLine DisplayObject, backing flash.text.engine TextLine.
 
 use crate::avm2::StageObject as Avm2StageObject;
 use crate::backend::ui::MouseCursor;
@@ -19,11 +19,11 @@ use std::sync::Arc;
 
 #[derive(Clone, Collect, Copy)]
 #[collect(no_drop)]
-pub struct FteTextLine<'gc>(Gc<'gc, FteTextLineData<'gc>>);
+pub struct TextLine<'gc>(Gc<'gc, TextLineData<'gc>>);
 
-impl fmt::Debug for FteTextLine<'_> {
+impl fmt::Debug for TextLine<'_> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("FteTextLine")
+        f.debug_struct("TextLine")
             .field("ptr", &Gc::as_ptr(self.0))
             .finish()
     }
@@ -32,7 +32,7 @@ impl fmt::Debug for FteTextLine<'_> {
 #[derive(Collect, HasPrefixField)]
 #[collect(no_drop)]
 #[repr(C, align(8))]
-pub struct FteTextLineData<'gc> {
+pub struct TextLineData<'gc> {
     base: InteractiveObjectBase<'gc>,
     avm2_object: Lock<Option<Avm2StageObject<'gc>>>,
     fallback: Option<EditText<'gc>>,
@@ -40,15 +40,15 @@ pub struct FteTextLineData<'gc> {
     movie: Arc<SwfMovie>,
 }
 
-impl<'gc> FteTextLine<'gc> {
+impl<'gc> TextLine<'gc> {
     pub fn new(
         context: &mut UpdateContext<'gc>,
         movie: Arc<SwfMovie>,
         fallback: Option<EditText<'gc>>,
     ) -> Self {
-        FteTextLine(Gc::new(
+        TextLine(Gc::new(
             context.gc(),
-            FteTextLineData {
+            TextLineData {
                 base: Default::default(),
                 avm2_object: Lock::new(None),
                 fallback,
@@ -64,7 +64,7 @@ impl<'gc> FteTextLine<'gc> {
     }
 }
 
-impl<'gc> TDisplayObject<'gc> for FteTextLine<'gc> {
+impl<'gc> TDisplayObject<'gc> for TextLine<'gc> {
     fn base(self) -> Gc<'gc, DisplayObjectBase<'gc>> {
         let interactive: Gc<'gc, InteractiveObjectBase<'gc>> = HasPrefixField::as_prefix_gc(self.0);
         HasPrefixField::as_prefix_gc(interactive)
@@ -73,7 +73,7 @@ impl<'gc> TDisplayObject<'gc> for FteTextLine<'gc> {
     fn instantiate(self, gc_context: &Mutation<'gc>) -> DisplayObject<'gc> {
         Self(Gc::new(
             gc_context,
-            FteTextLineData {
+            TextLineData {
                 base: Default::default(),
                 avm2_object: Lock::new(None),
                 fallback: self.0.fallback,
@@ -128,11 +128,11 @@ impl<'gc> TDisplayObject<'gc> for FteTextLine<'gc> {
 
     fn set_object2(self, context: &mut UpdateContext<'gc>, to: Avm2StageObject<'gc>) {
         let mc = context.gc();
-        unlock!(Gc::write(mc, self.0), FteTextLineData, avm2_object).set(Some(to));
+        unlock!(Gc::write(mc, self.0), TextLineData, avm2_object).set(Some(to));
     }
 }
 
-impl<'gc> TInteractiveObject<'gc> for FteTextLine<'gc> {
+impl<'gc> TInteractiveObject<'gc> for TextLine<'gc> {
     fn raw_interactive(self) -> Gc<'gc, InteractiveObjectBase<'gc>> {
         HasPrefixField::as_prefix_gc(self.0)
     }

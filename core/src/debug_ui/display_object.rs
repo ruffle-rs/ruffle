@@ -1771,7 +1771,7 @@ fn display_object_type(object: DisplayObject) -> &'static str {
         DisplayObject::MorphShape(_) => "MorphShape",
         DisplayObject::MovieClip(_) => "MovieClip",
         DisplayObject::Text(_) => "Text",
-        DisplayObject::FteTextLine(_) => "FteTextLine",
+        DisplayObject::TextLine(_) => "TextLine",
         DisplayObject::Video(_) => "Video",
         DisplayObject::LoaderDisplay(_) => "LoaderDisplay",
     }

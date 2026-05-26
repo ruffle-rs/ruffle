@@ -12,7 +12,8 @@ use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
-use crate::display_object::{EditText, FteTextLine, TDisplayObject};
+use crate::avm2_stub_method;
+use crate::display_object::{EditText, TDisplayObject, TextLine};
 use crate::html::TextFormat;
 use crate::string::WStr;
 
@@ -21,17 +22,25 @@ pub fn create_text_line<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let this = this
-        .as_object()
-        .expect("TextBlock native method receiver must be an object");
+    let this = this.as_object().unwrap();
+
+    avm2_stub_method!(activation, "flash.text.TextBlock", "createTextLine");
+
+    let previous_text_line = args.try_get_object(0);
+    let width = args.get_f64(1);
 
     let content = this.get_slot(block_slots::_CONTENT);
-    if matches!(content, Value::Null) {
+
+    let content = if matches!(content, Value::Null) {
         return Ok(Value::Null);
-    }
-    let previous_text_line = args.try_get_object(0);
+    } else {
+        content
+    };
+
     let text = match previous_text_line {
         Some(_) => {
+            // Some SWFs rely on eventually getting `null` from createLineText.
+            // TODO: Support multiple lines
             this.set_slot(
                 block_slots::_TEXT_LINE_CREATION_RESULT,
                 istr!("complete").into(),
@@ -45,32 +54,36 @@ pub fn create_text_line<'gc>(
             let txt = content
                 .call_method(element_methods::GET_TEXT, &[], activation)
                 .unwrap_or_else(|_| istr!("").into());
+
             if matches!(txt, Value::Null) {
+                // FP returns a null TextLine when `o` is null- note that
+                // `o` is already coerced to a String because of the AS bindings.
                 return Ok(Value::Null);
             } else {
-                txt.coerce_to_string(activation)?
+                txt.coerce_to_string(activation)
+                    .expect("Guaranteed by AS bindings")
             }
         }
     };
 
+    let class = activation.avm2().classes().textline;
     let movie = activation.caller_movie_or_root();
-    let fallback = EditText::new_fte(
-        activation.context,
-        movie.clone(),
-        0.0,
-        0.0,
-        args.get_f64(1),
-        15.0,
-    );
+
+    let fallback = EditText::new_fte(activation.context, movie.clone(), 0.0, 0.0, width, 15.0);
+
     fallback.set_text(text.as_wstr(), activation.context);
+
+    // FIXME: This needs to use `intrinsic_bounds` to measure the width
+    // of the provided text, and set the width of the EditText to that.
+    // Some games depend on this (e.g. Realm Grinder).
+
     let content_obj = content.as_object().unwrap();
     let element_format = content_obj
         .get_slot(element_slots::_ELEMENT_FORMAT)
         .as_object();
     apply_format(activation, fallback, text.as_wstr(), element_format)?;
 
-    let fte = FteTextLine::new(activation.context, movie, Some(fallback));
-    let class = activation.avm2().classes().textline;
+    let fte = TextLine::new(activation.context, movie, Some(fallback));
     let instance = initialize_for_allocator(activation.context, fte.into(), class);
 
     instance.set_slot(line_slots::_TEXT_BLOCK, this.into(), activation)?;
@@ -98,6 +111,7 @@ fn apply_format<'gc>(
     element_format: Option<Object<'gc>>,
 ) -> Result<(), Error<'gc>> {
     if let Some(element_format) = element_format {
+        // TODO: Support more ElementFormat properties
         let color = element_format
             .get_slot(format_slots::_COLOR)
             .coerce_to_u32(activation)?;
@@ -154,7 +168,9 @@ fn apply_format<'gc>(
     }
 
     display_object.set_word_wrap(true, activation.context);
+
     let measured_text = display_object.measure_text(activation.context);
+
     display_object.set_height(activation.context, measured_text.1.to_pixels());
 
     Ok(())

@@ -33,7 +33,6 @@ mod avm2_button;
 mod bitmap;
 mod container;
 mod edit_text;
-mod fte_text_line;
 mod graphic;
 mod interactive;
 mod loader_display;
@@ -41,6 +40,7 @@ mod morph_shape;
 mod movie_clip;
 mod stage;
 mod text;
+mod text_line;
 mod video;
 
 use crate::avm1::Activation;
@@ -55,7 +55,6 @@ pub use bitmap::{Bitmap, BitmapClass};
 #[allow(unused)]
 pub use edit_text::LayoutDebugBoxesFlag;
 pub use edit_text::{AutoSizeMode, EditText, TextSelection};
-pub use fte_text_line::FteTextLine;
 pub use graphic::Graphic;
 pub use interactive::{Avm2MousePick, InteractiveObject, TInteractiveObject};
 pub use loader_display::LoaderDisplay;
@@ -68,6 +67,7 @@ use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode};
 pub use text::{Text, TextSnapshot};
+pub use text_line::TextLine;
 pub use video::Video;
 
 use self::loader_display::LoaderDisplayWeak;
@@ -1274,7 +1274,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         Avm1Button(Avm1Button<'gc>),
         Avm2Button(Avm2Button<'gc>),
         EditText(EditText<'gc>),
-        FteTextLine(FteTextLine<'gc>),
+        TextLine(TextLine<'gc>),
         Graphic(Graphic<'gc>),
         MorphShape(MorphShape<'gc>),
         MovieClip(MovieClip<'gc>),
@@ -2894,7 +2894,7 @@ impl<'gc> DisplayObject<'gc> {
         pub fn as_avm2_button for Avm2Button;
         pub fn as_movie_clip for MovieClip;
         pub fn as_edit_text for EditText;
-        pub fn as_fte_text_line for FteTextLine;
+        pub fn as_text_line for TextLine;
         pub fn as_text for Text;
         pub fn as_morph_shape for MorphShape;
         pub fn as_video for Video;
@@ -2906,7 +2906,7 @@ impl<'gc> DisplayObject<'gc> {
             Self::Avm1Button(dobj) => Some(InteractiveObject::Avm1Button(dobj)),
             Self::Avm2Button(dobj) => Some(InteractiveObject::Avm2Button(dobj)),
             Self::EditText(dobj) => Some(InteractiveObject::EditText(dobj)),
-            Self::FteTextLine(dobj) => Some(InteractiveObject::FteTextLine(dobj)),
+            Self::TextLine(dobj) => Some(InteractiveObject::TextLine(dobj)),
             Self::LoaderDisplay(dobj) => Some(InteractiveObject::LoaderDisplay(dobj)),
             Self::MovieClip(dobj) => Some(InteractiveObject::MovieClip(dobj)),
             Self::Stage(dobj) => Some(InteractiveObject::Stage(dobj)),
