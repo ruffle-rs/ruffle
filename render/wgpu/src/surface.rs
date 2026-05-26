@@ -9,7 +9,7 @@ use crate::filters::FilterSource;
 use crate::mesh::Mesh;
 use crate::pixel_bender::{ShaderMode, run_pixelbender_shader_impl};
 use crate::surface::commands::{Chunk, CommandRenderer, chunk_blends};
-use crate::utils::{remove_srgb, supported_sample_count};
+use crate::utils::supported_sample_count;
 use crate::{Descriptors, MaskState, Pipelines};
 use ruffle_render::commands::CommandList;
 use ruffle_render::pixel_bender_support::{ImageInputTexture, PixelBenderShaderArgument};
@@ -31,7 +31,6 @@ pub struct Surface {
     sample_count: u32,
     pipelines: Arc<Pipelines>,
     format: wgpu::TextureFormat,
-    actual_surface_format: wgpu::TextureFormat,
 }
 
 impl Surface {
@@ -40,14 +39,13 @@ impl Surface {
         quality: StageQuality,
         width: u32,
         height: u32,
-        surface_format: wgpu::TextureFormat,
+        frame_buffer_format: wgpu::TextureFormat,
     ) -> Self {
         let size = wgpu::Extent3d {
             width,
             height,
             depth_or_array_layers: 1,
         };
-        let frame_buffer_format = remove_srgb(surface_format);
 
         let sample_count = supported_sample_count(
             &descriptors.adapter,
@@ -61,7 +59,6 @@ impl Surface {
             sample_count,
             pipelines,
             format: frame_buffer_format,
-            actual_surface_format: surface_format,
         }
     }
 
@@ -95,7 +92,6 @@ impl Surface {
         run_copy_pipeline(
             descriptors,
             self.format,
-            self.actual_surface_format,
             frame_view,
             target.color_view(),
             target.whole_frame_bind_group(descriptors),

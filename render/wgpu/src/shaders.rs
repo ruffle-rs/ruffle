@@ -13,7 +13,6 @@ pub struct Shaders {
     /// dividing by the alpha value would produce an out-of-range value).
     pub bitmap_shader: wgpu::ShaderModule,
     pub gradient_shader: wgpu::ShaderModule,
-    pub copy_srgb_shader: wgpu::ShaderModule,
     pub copy_shader: wgpu::ShaderModule,
     pub alpha_mask_shader: wgpu::ShaderModule,
     pub blend_shaders: EnumMap<ComplexBlend, wgpu::ShaderModule>,
@@ -31,11 +30,6 @@ impl Shaders {
             device,
             "bitmap.wgsl",
             include_str!("../shaders/bitmap.wgsl"),
-        );
-        let copy_srgb_shader = make_shader(
-            device,
-            "copy_srgb.wgsl",
-            include_str!("../shaders/copy_srgb.wgsl"),
         );
         let copy_shader = make_shader(device, "copy.wgsl", include_str!("../shaders/copy.wgsl"));
         let color_matrix_filter = make_filter_shader(
@@ -90,7 +84,6 @@ impl Shaders {
             color_shader,
             bitmap_shader,
             gradient_shader,
-            copy_srgb_shader,
             copy_shader,
             alpha_mask_shader,
             blend_shaders,
