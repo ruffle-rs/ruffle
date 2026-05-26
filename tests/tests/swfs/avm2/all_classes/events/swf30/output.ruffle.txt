@@ -1100,9 +1100,16 @@ DRMAuthenticateEvent not accessible
       <accessor name="bubbles" access="readonly" type="Boolean" declaredBy="flash.events::Event"/>
       <accessor name="cancelable" access="readonly" type="Boolean" declaredBy="flash.events::Event"/>
       <accessor name="currentTarget" access="readonly" type="Object" declaredBy="flash.events::Event"/>
+      <accessor name="device" access="readonly" type="flash.ui::GameInputDevice" declaredBy="flash.events::GameInputEvent"/>
       <accessor name="eventPhase" access="readonly" type="uint" declaredBy="flash.events::Event"/>
       <accessor name="target" access="readonly" type="Object" declaredBy="flash.events::Event"/>
       <accessor name="type" access="readonly" type="String" declaredBy="flash.events::Event"/>
+      <constructor>
+          <parameter index="1" type="String" optional="false"/>
+          <parameter index="2" type="Boolean" optional="true"/>
+          <parameter index="3" type="Boolean" optional="true"/>
+          <parameter index="4" type="flash.ui::GameInputDevice" optional="true"/>
+    </constructor>
       <extendsClass type="Object"/>
       <extendsClass type="flash.events::Event"/>
       <method name="clone" declaredBy="flash.events::Event" returnType="flash.events::Event"/>
