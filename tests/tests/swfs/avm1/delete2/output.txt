@@ -1,0 +1,74 @@
+delete2 'a'
+true
+undefined
+delete2 ' b'
+false
+b
+delete2 'b '
+false
+b
+delete2 'C'
+false
+c
+delete2 'o.a'
+true
+  b
+[object Object]
+undefined
+delete2 'o:b'
+true
+[object Object]
+undefined
+delete2 'o.t.y'
+Parameters of primitive types are no longer coerced into the required type - Object.
+false
+o.t
+delete2 'o.t.y'
+Parameters of primitive types are no longer coerced into the required type - Object.
+false
+2
+delete2 'o.t.y'
+false
+undefined
+delete2 'o.t.y'
+false
+null
+delete2 'o.t.y'
+Parameters of primitive types are no longer coerced into the required type - Object.
+false
+true
+delete2 'o.t.y'
+false
+_level0
+delete2 'o.t.y'
+true
+undefined
+undefined
+delete2 'o.c.d'
+true
+undefined
+delete2 'o.c:e'
+true
+undefined
+delete2 'o:c.f'
+true
+undefined
+delete2 'o:c:g'
+true
+undefined
+d
+inner delete2 'd'
+true
+undefined
+undefined
+q
+with delete2 'q'
+true
+undefined
+with delete2 'q'
+true
+undefined
+with delete2 'p.r'
+true
+undefined
+undefined
