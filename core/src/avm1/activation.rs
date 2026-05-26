@@ -943,9 +943,25 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
 
+        let success = if let Some((path, var_name)) = name.rsplit_once(b":.".as_ref()) {
+            let path = AvmString::new(self.gc(), path);
+            let var_name = AvmString::new(self.gc(), var_name);
+
+            let var: Value<'gc> = self.get_variable(path)?.into();
+            if let Some(obj) = var.as_object(self) {
+                obj.delete(self, var_name)
+            } else {
+                if !matches!(var, Value::Null | Value::Undefined) {
+                    self.context.avm_trace("Parameters of primitive types are no longer coerced into the required type - Object.");
+                }
+                false
+            }
+        } else {
+            self.scope().delete(self, name)
+        };
+
         // Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         // a boolean based on if the delete actually deleted something.
-        let success = self.scope().delete(self, name);
         self.context.avm1.push(success.into());
 
         Ok(FrameControl::Continue)
