@@ -3578,8 +3578,11 @@ impl EditTextRestrict {
     pub fn filter_allowed(&self, text: &WStr) -> WString {
         let mut filtered = WString::with_capacity(text.len(), text.is_wide());
         for c in text.chars() {
-            if let Some(c) = c.ok().and_then(|c| self.to_allowed(c)) {
-                filtered.push_char(c);
+            if let Some(c) = c.ok() {
+                // Always allow newlines so Enter key still starts new lines
+                if c == '\n' || self.to_allowed(c).is_some() {
+                    filtered.push_char(c);
+                }
             }
         }
         filtered
