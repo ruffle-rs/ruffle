@@ -1168,6 +1168,7 @@ GeolocationEvent not accessible
       <method name="stopImmediatePropagation" declaredBy="flash.events::Event" returnType="void"/>
       <method name="stopPropagation" declaredBy="flash.events::Event" returnType="void"/>
       <method name="toString" declaredBy="flash.events::GestureEvent" returnType="String"/>
+      <method name="updateAfterEvent" declaredBy="flash.events::GestureEvent" returnType="void"/>
   </factory>
 </type>
 <type name="flash.events::GesturePhase" base="Class" isDynamic="true" isFinal="true" isStatic="true">
@@ -1649,6 +1650,7 @@ GeolocationEvent not accessible
       <method name="stopImmediatePropagation" declaredBy="flash.events::Event" returnType="void"/>
       <method name="stopPropagation" declaredBy="flash.events::Event" returnType="void"/>
       <method name="toString" declaredBy="flash.events::PressAndTapGestureEvent" returnType="String"/>
+      <method name="updateAfterEvent" declaredBy="flash.events::GestureEvent" returnType="void"/>
   </factory>
 </type>
 <type name="flash.events::ProgressEvent" base="Class" isDynamic="true" isFinal="true" isStatic="true">
@@ -2215,6 +2217,7 @@ GeolocationEvent not accessible
       <method name="stopImmediatePropagation" declaredBy="flash.events::Event" returnType="void"/>
       <method name="stopPropagation" declaredBy="flash.events::Event" returnType="void"/>
       <method name="toString" declaredBy="flash.events::TransformGestureEvent" returnType="String"/>
+      <method name="updateAfterEvent" declaredBy="flash.events::GestureEvent" returnType="void"/>
   </factory>
 </type>
 <type name="flash.events::UncaughtErrorEvent" base="Class" isDynamic="true" isFinal="true" isStatic="true">
