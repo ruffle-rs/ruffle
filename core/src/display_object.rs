@@ -933,6 +933,51 @@ struct DrawCacheInfo {
     filters: Vec<Filter>,
 }
 
+/// Walks the subtree rooted at `obj` looking for any ActionScript-created
+/// `Drawing` (the backing store of `Sprite.graphics` / `Graphic.drawing`)
+/// that contains at least one 1-pixel orthogonal stroke. The result gates
+/// the bounds floor-snap applied to the cacheAsBitmap offscreen offset:
+/// such a stroke is the only situation in which `Drawing::stretch_bounds`
+/// expands `shape_bounds` by ±0.5 px, producing a fractional `x_min`/`y_min`
+/// that would otherwise propagate as a half-pixel shift inside the cached
+/// bitmap and blur every vertex of the subtree (the original Flex
+/// `DataGrid` + `horizontalGridLines` repro). Snapping bounds in subtrees
+/// that *don't* contain such a stroke is wrong: fractional bounds there
+/// come from legitimate placements (e.g. a bitmap positioned at half-pixel
+/// coordinates for anti-aliasing) and snapping would clobber that intent.
+fn subtree_contains_drawing_with_hairline_stroke<'gc>(obj: DisplayObject<'gc>) -> bool {
+    // Check this object's own dynamic `Drawing` (Graphic created from AS,
+    // or a MovieClip/Sprite's `graphics`). We **must** use the read-only
+    // `drawing()` accessor (not `drawing_mut()`): the mutable accessor
+    // initializes the `OnceCell` with an empty `Drawing`, and `Graphic::
+    // render_self` then renders that empty `Drawing` instead of the SWF-
+    // embedded `shared.shape`, making the original geometry disappear.
+    // SWF-embedded shapes are intentionally skipped here — they store
+    // geometry in `shared.shape`, not in the dynamic `Drawing`, and the
+    // original blurry-separator bug is exclusively reproduced through the
+    // AS-side `Drawing` path.
+    if let DisplayObject::Graphic(g) = obj
+        && let Some(d) = g.drawing()
+        && d.contains_orthogonal_hairline_stroke()
+    {
+        return true;
+    }
+    if let Some(mc) = obj.as_movie_clip()
+        && let Some(d) = mc.drawing()
+        && d.contains_orthogonal_hairline_stroke()
+    {
+        return true;
+    }
+    if let Some(container) = obj.as_container() {
+        for child in container.iter_render_list() {
+            if subtree_contains_drawing_with_hairline_stroke(child) {
+                return true;
+            }
+        }
+    }
+    false
+}
+
 pub fn render_base<'gc>(
     this: DisplayObject<'gc>,
     context: &mut RenderContext<'_, 'gc>,
@@ -958,11 +1003,33 @@ pub fn render_base<'gc>(
     let cache_info = if context.use_bitmap_cache && this.is_bitmap_cached() {
         let mut cache_info: Option<DrawCacheInfo> = None;
         let base_transform = context.transform_stack.transform();
-        let bounds: Rectangle<Twips> = this.render_bounds_with_transform(
+        let mut bounds: Rectangle<Twips> = this.render_bounds_with_transform(
             &base_transform.matrix,
             false, // we want to do the filter growth for this object ourselves, to know the offsets
             &context.stage.view_matrix(),
         );
+        // Snap bounds to whole pixels so the offscreen translation is a
+        // whole-pixel shift — but ONLY when the subtree actually contains an
+        // ActionScript-drawn 1-pixel orthogonal stroke. That stroke is the
+        // only thing that artificially expands bounds by half a pixel (the
+        // stroke radius) via `Drawing::stretch_bounds`, which otherwise
+        // propagates as a half-pixel shift inside the cached bitmap and
+        // blurs every vertex of the subtree — including drawRect fills that
+        // would have been pixel-aligned in isolation. Repro:
+        // `mx.controls.DataGrid` with `horizontalGridLines: true`
+        // (stroke-based horizontal lines + fill-rect vertical lines in the
+        // same `lines.cacheAsBitmap` subtree) rendered all separators
+        // blurry; without horizontal lines only fills were drawn and bounds
+        // stayed pixel-aligned. When no such stroke is in the subtree we
+        // leave bounds untouched: fractional `x_min`/`y_min` there comes
+        // from legitimate placements (e.g. bitmaps intentionally positioned
+        // at half-pixel coordinates for sub-pixel AA, filtered content
+        // whose offscreen texture must preserve the same fractional offset)
+        // and snapping would visibly shift the result.
+        if subtree_contains_drawing_with_hairline_stroke(this) {
+            bounds.x_min = Twips::from_pixels(bounds.x_min.to_pixels().floor());
+            bounds.y_min = Twips::from_pixels(bounds.y_min.to_pixels().floor());
+        }
         let name = this.name();
         let mut filters: Vec<Filter> = this.filters().to_owned();
         let swf_version = this.swf_version();
