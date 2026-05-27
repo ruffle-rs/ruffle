@@ -5,6 +5,7 @@ use crate::avm2::object::{Object, TextureObject};
 use crate::avm2_stub_method;
 use ruffle_render::atf::ATFTexture;
 use ruffle_render::atf::ATFTextureData;
+use ruffle_render::bitmap::{Bitmap, BitmapFormat};
 use std::io::Cursor;
 
 use jpegxr::PixelFormat;
@@ -35,17 +36,20 @@ pub fn do_compressed_upload<'gc>(
 
     // Just use the first mip level for now. We ignore the builtin format - the JPEG-XR format
     // appears to override it
-    let bitmap = match &atf_texture.face_mip_data[0][0] {
-        ATFTextureData::JpegXR(bytes) => jpegxr_to_tiff(
-            atf_texture.width,
-            atf_texture.height,
-            &mut Cursor::new(bytes),
-        )
-        .0
-        .to_rgba8()
-        .pixels()
-        .flat_map(|p| p.0)
-        .collect(),
+    let (data, format) = match &atf_texture.face_mip_data[0][0] {
+        ATFTextureData::JpegXR(bytes) => (
+            jpegxr_to_tiff(
+                atf_texture.width,
+                atf_texture.height,
+                &mut Cursor::new(bytes),
+            )
+            .0
+            .to_rgba8()
+            .pixels()
+            .flat_map(|p| p.0)
+            .collect(),
+            BitmapFormat::Rgba,
+        ),
         ATFTextureData::CompressedAlpha {
             dxt1_alpha_compressed,
             jpegxr_alpha: orig_jpegxr_alpha,
@@ -141,7 +145,7 @@ pub fn do_compressed_upload<'gc>(
                 reconstructed_dxt.extend(rgb_lookup_table);
             }
 
-            reconstructed_dxt
+            (reconstructed_dxt, BitmapFormat::Bc3RgbaUnorm)
         }
         ATFTextureData::CompressedRawAlpha {
             dxt5,
@@ -160,12 +164,14 @@ pub fn do_compressed_upload<'gc>(
                     "with empty DXT5 data in CompressedRawAlpha"
                 );
             }
-            dxt5.clone()
+            (dxt5.clone(), BitmapFormat::Bc3RgbaUnorm)
         }
         ATFTextureData::Unknown(_) => {
             return Err(format!("Unsupported ATF format: {:?}", atf_texture.format).into());
         }
     };
+
+    let bitmap = Bitmap::new(atf_texture.width, atf_texture.height, format, data);
 
     texture
         .context3d()
