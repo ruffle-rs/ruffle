@@ -61,7 +61,7 @@ png = { version = "0.18.1", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
 jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "5281b4ae42be742779269a9f1a986101f101f32f", optional = true }
-image = { workspace = true, features = ["tiff"] }
+image = { workspace = true, features = ["tiff", "png", "jpeg"] }
 enum-map = { workspace = true }
 ttf-parser = "0.25"
 num-bigint = "0.4"

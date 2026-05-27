@@ -1,0 +1,8 @@
+num_ticks = 20
+
+[image_comparisons.output]
+tolerance = 1
+max_outliers = 10000
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
