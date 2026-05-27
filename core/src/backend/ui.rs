@@ -63,13 +63,11 @@ impl FileFilter {
     }
 }
 
-/// A result of a file selection
-pub trait FileDialogResult: Any {
-    /// Was the file selection canceled by the user
-    fn is_cancelled(&self) -> bool;
+/// Data for a single selected file.
+pub trait FileDialogSelection: Any {
     fn creation_time(&self) -> Option<DateTime<Utc>>;
     fn modification_time(&self) -> Option<DateTime<Utc>>;
-    fn file_name(&self) -> Option<String>;
+    fn file_name(&self) -> String;
     fn size(&self) -> Option<u64>;
     fn file_type(&self) -> Option<String>;
     fn creator(&self) -> Option<String> {
@@ -77,13 +75,21 @@ pub trait FileDialogResult: Any {
     }
     fn contents(&self) -> &[u8];
     /// Write the given data to the chosen file and refresh any internal metadata.
-    /// Any future calls to other functions (such as [FileDialogResult::size]) will reflect
+    /// Any future calls to other functions (such as [FileDialogSelection::size]) will reflect
     /// the state at the time of the last refresh
     fn write_and_refresh(&mut self, data: &[u8]);
 }
 
+/// Result of a file dialog (open or save).
+pub enum FileDialogResult {
+    /// The user selected a file.
+    Selection(Box<dyn FileDialogSelection>),
+    /// The user canceled the dialog.
+    Canceled,
+}
+
 /// Future representing a file selection in process
-pub type DialogResultFuture = OwnedFuture<Box<dyn FileDialogResult>, DialogLoaderError>;
+pub type DialogResultFuture = OwnedFuture<FileDialogResult, DialogLoaderError>;
 
 pub trait UiBackend: Any {
     fn mouse_visible(&self) -> bool;
@@ -237,11 +243,7 @@ impl UiBackend for NullUiBackend {
         &mut self,
         _filters: Vec<FileFilter>,
     ) -> Option<DialogResultFuture> {
-        Some(Box::pin(async move {
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> =
-                Ok(Box::new(NullFileDialogResult::new()));
-            result
-        }))
+        Some(Box::pin(async move { Ok(FileDialogResult::Canceled) }))
     }
 
     fn close_file_dialog(&mut self) {}
@@ -259,45 +261,4 @@ impl Default for NullUiBackend {
     fn default() -> Self {
         NullUiBackend::new()
     }
-}
-
-pub struct NullFileDialogResult {}
-
-impl NullFileDialogResult {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl Default for NullFileDialogResult {
-    fn default() -> Self {
-        NullFileDialogResult::new()
-    }
-}
-
-impl FileDialogResult for NullFileDialogResult {
-    fn is_cancelled(&self) -> bool {
-        true
-    }
-
-    fn creation_time(&self) -> Option<DateTime<Utc>> {
-        None
-    }
-    fn modification_time(&self) -> Option<DateTime<Utc>> {
-        None
-    }
-    fn file_name(&self) -> Option<String> {
-        None
-    }
-    fn size(&self) -> Option<u64> {
-        None
-    }
-    fn file_type(&self) -> Option<String> {
-        None
-    }
-    fn contents(&self) -> &[u8] {
-        &[]
-    }
-
-    fn write_and_refresh(&mut self, _data: &[u8]) {}
 }

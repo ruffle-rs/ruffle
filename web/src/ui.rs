@@ -3,7 +3,7 @@ mod font_renderer;
 use super::JavascriptPlayer;
 use rfd::{AsyncFileDialog, FileHandle};
 use ruffle_core::backend::ui::{
-    DialogLoaderError, DialogResultFuture, FileDialogResult, FileFilter,
+    DialogResultFuture, FileDialogResult, FileDialogSelection, FileFilter,
 };
 use ruffle_core::backend::ui::{
     FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, US_ENGLISH, UiBackend,
@@ -21,39 +21,22 @@ use web_sys::{
 use chrono::{DateTime, Utc};
 use js_sys::{Array, Uint8Array};
 
-pub struct WebFileDialogResult {
-    canceled: bool,
-    file_name: Option<String>,
+pub struct WebFileSelection {
+    file_name: String,
     modification_time: Option<DateTime<Utc>>,
     contents: Vec<u8>,
 }
 
-impl WebFileDialogResult {
-    pub async fn new_pick(handle: Option<FileHandle>) -> Self {
-        let contents = if let Some(handle) = handle.as_ref() {
-            handle.read().await
-        } else {
-            Vec::new()
-        };
+impl WebFileSelection {
+    pub async fn new_pick(handle: FileHandle) -> Self {
+        let contents = handle.read().await;
 
-        #[cfg(not(target_arch = "wasm32"))]
-        let file_name = None;
-
-        #[cfg(target_arch = "wasm32")]
-        let file_name = handle.as_ref().map(|handle| handle.file_name());
-
-        #[cfg(not(target_arch = "wasm32"))]
-        let modification_time = None;
-
-        #[cfg(target_arch = "wasm32")]
-        let modification_time = if let Some(ref handle) = handle {
-            DateTime::from_timestamp(handle.inner().last_modified() as i64, 0)
-        } else {
-            None
+        let (file_name, modification_time) = cfg_select! {
+            target_arch = "wasm32" => (handle.file_name(), DateTime::from_timestamp(handle.inner().last_modified() as i64, 0)),
+            _ => (String::new(), None)
         };
 
         Self {
-            canceled: handle.is_none(),
             file_name,
             modification_time,
             contents,
@@ -62,8 +45,7 @@ impl WebFileDialogResult {
 
     fn new_download(file_name: String) -> Self {
         Self {
-            canceled: false,
-            file_name: Some(file_name),
+            file_name,
             modification_time: None,
             contents: Vec::new(),
         }
@@ -94,11 +76,7 @@ fn download_as_file(filename: Option<&str>, data: &[u8]) -> Result<(), JsValue> 
     Ok(())
 }
 
-impl FileDialogResult for WebFileDialogResult {
-    fn is_cancelled(&self) -> bool {
-        self.canceled
-    }
-
+impl FileDialogSelection for WebFileSelection {
     fn creation_time(&self) -> Option<DateTime<Utc>> {
         // Creation time is not available in JS
         None
@@ -108,7 +86,7 @@ impl FileDialogResult for WebFileDialogResult {
         self.modification_time
     }
 
-    fn file_name(&self) -> Option<String> {
+    fn file_name(&self) -> String {
         self.file_name.clone()
     }
 
@@ -117,11 +95,7 @@ impl FileDialogResult for WebFileDialogResult {
     }
 
     fn file_type(&self) -> Option<String> {
-        if let Some(ref file_name) = self.file_name {
-            get_extension_from_filename(file_name)
-        } else {
-            None
-        }
+        get_extension_from_filename(&self.file_name)
     }
 
     fn contents(&self) -> &[u8] {
@@ -132,7 +106,7 @@ impl FileDialogResult for WebFileDialogResult {
         self.contents = data.to_vec();
         self.modification_time = Some(Utc::now());
 
-        if let Err(err) = download_as_file(self.file_name.as_deref(), &self.contents[..]) {
+        if let Err(err) = download_as_file(Some(&self.file_name), &self.contents[..]) {
             tracing::error!("Download failed: {:?}", err);
         }
     }
@@ -376,10 +350,11 @@ impl UiBackend for WebUiBackend {
                 dialog = dialog.add_filter(&filter.description, &extensions);
             }
 
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> = Ok(Box::new(
-                WebFileDialogResult::new_pick(dialog.pick_file().await).await,
-            ));
-            result
+            Ok(if let Some(handle) = dialog.pick_file().await {
+                FileDialogResult::Selection(Box::new(WebFileSelection::new_pick(handle).await))
+            } else {
+                FileDialogResult::Canceled
+            })
         }))
     }
 
@@ -399,9 +374,9 @@ impl UiBackend for WebUiBackend {
         self.dialog_open = true;
 
         Some(Box::pin(async move {
-            let result: Result<Box<dyn FileDialogResult>, DialogLoaderError> =
-                Ok(Box::new(WebFileDialogResult::new_download(file_name)));
-            result
+            Ok(FileDialogResult::Selection(Box::new(
+                WebFileSelection::new_download(file_name),
+            )))
         }))
     }
 }

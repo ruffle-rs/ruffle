@@ -8,7 +8,7 @@ use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
 use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
 use crate::avm1::{NativeObject, Object, Value};
 use crate::avm1_stub;
-use crate::backend::ui::{FileDialogResult, FileFilter};
+use crate::backend::ui::{FileDialogSelection, FileFilter};
 use crate::string::AvmString;
 use gc_arena::barrier::unlock;
 use gc_arena::lock::Lock;
@@ -21,10 +21,10 @@ use url::Url;
 pub struct FileReferenceObject<'gc>(Gc<'gc, FileReferenceData<'gc>>);
 
 impl<'gc> FileReferenceObject<'gc> {
-    pub fn init_from_dialog_result(
+    pub fn init_from_file_selection(
         self,
         activation: &mut Activation<'_, 'gc>,
-        result: &dyn FileDialogResult,
+        result: &dyn FileDialogSelection,
     ) {
         let mc = activation.gc();
         let write = Gc::write(mc, self.0);
@@ -53,7 +53,7 @@ impl<'gc> FileReferenceObject<'gc> {
         let file_type = result.file_type().map(|s| AvmString::new_utf8(mc, s));
         unlock!(write, FileReferenceData, file_type).set(file_type);
 
-        let file_name = result.file_name().map(|s| AvmString::new_utf8(mc, s));
+        let file_name = Some(AvmString::new_utf8(mc, result.file_name()));
         unlock!(write, FileReferenceData, name).set(file_name);
 
         let creator = result.creator().map(|s| AvmString::new_utf8(mc, s));

@@ -20,7 +20,7 @@ use crate::avm2_stub_method_context;
 use crate::backend::navigator::{
     ErrorResponse, FetchReason, OwnedFuture, Request, SuccessResponse,
 };
-use crate::backend::ui::DialogResultFuture;
+use crate::backend::ui::{DialogResultFuture, FileDialogResult};
 use crate::bitmap::bitmap_data::BitmapData;
 use crate::bitmap::bitmap_data::Color;
 use crate::context::{ActionQueue, ActionType, UpdateContext};
@@ -42,7 +42,6 @@ use indexmap::IndexMap;
 use ruffle_macros::istr;
 use ruffle_render::utils::{JpegTagFormat, determine_jpeg_tag_format};
 use slotmap::{SlotMap, new_key_type};
-use std::borrow::Borrow;
 use std::fmt;
 use std::str::FromStr;
 use std::sync::{Arc, Mutex, MutexGuard};
@@ -2345,12 +2344,11 @@ fn run_file_dialog<D: 'static>(
         let dialog_result = dialog.await;
 
         // Dialog is done, allow opening new dialogs.
-        player.lock().unwrap().ui_mut().close_file_dialog();
+        let mut player = player.lock().unwrap();
 
-        player
-            .lock()
-            .unwrap()
-            .update(|uc| on_result(uc, dialog_result))
+        player.ui_mut().close_file_dialog();
+
+        player.update(|uc| on_result(uc, dialog_result))
     })
 }
 
@@ -2376,25 +2374,26 @@ pub fn select_file_dialog_avm1<'gc>(
         let mut activation = Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
 
         match dialog_result {
-            Ok(dialog_result) => {
+            Ok(FileDialogResult::Selection(selection)) => {
                 use crate::avm1::globals::as_broadcaster;
 
-                if !dialog_result.is_cancelled() {
-                    file_ref.init_from_dialog_result(&mut activation, dialog_result.borrow());
-                    as_broadcaster::broadcast_internal(
-                        target_object,
-                        &[target_object.into()],
-                        istr!("onSelect"),
-                        &mut activation,
-                    )?;
-                } else {
-                    as_broadcaster::broadcast_internal(
-                        target_object,
-                        &[target_object.into()],
-                        istr!("onCancel"),
-                        &mut activation,
-                    )?;
-                }
+                file_ref.init_from_file_selection(&mut activation, &*selection);
+                as_broadcaster::broadcast_internal(
+                    target_object,
+                    &[target_object.into()],
+                    istr!("onSelect"),
+                    &mut activation,
+                )?;
+            }
+            Ok(FileDialogResult::Canceled) => {
+                use crate::avm1::globals::as_broadcaster;
+
+                as_broadcaster::broadcast_internal(
+                    target_object,
+                    &[target_object.into()],
+                    istr!("onCancel"),
+                    &mut activation,
+                )?;
             }
             Err(err) => {
                 tracing::warn!("Error on file dialog: {:?}", err);
@@ -2420,16 +2419,15 @@ pub fn select_file_dialog_avm2<'gc>(
         let target_object = handle.fetch(uc);
 
         match dialog_result {
-            Ok(dialog_result) => {
-                if !dialog_result.is_cancelled() {
-                    target_object.init_from_dialog_result(dialog_result);
+            Ok(FileDialogResult::Selection(selection)) => {
+                target_object.init_from_file_selection(selection);
 
-                    let select_event = Avm2EventObject::bare_default_event(uc, "select");
-                    Avm2::dispatch_event(uc, select_event, target_object.into());
-                } else {
-                    let cancel_event = Avm2EventObject::bare_default_event(uc, "cancel");
-                    Avm2::dispatch_event(uc, cancel_event, target_object.into());
-                }
+                let select_event = Avm2EventObject::bare_default_event(uc, "select");
+                Avm2::dispatch_event(uc, select_event, target_object.into());
+            }
+            Ok(FileDialogResult::Canceled) => {
+                let cancel_event = Avm2EventObject::bare_default_event(uc, "cancel");
+                Avm2::dispatch_event(uc, cancel_event, target_object.into());
             }
             Err(err) => {
                 tracing::warn!("Error on file dialog: {:?}", err);
@@ -2454,36 +2452,34 @@ pub fn save_file_dialog<'gc>(
         let target_object = handle.fetch(uc);
 
         match dialog_result {
-            Ok(mut dialog_result) => {
-                if !dialog_result.is_cancelled() {
-                    dialog_result.write_and_refresh(&data);
-                    target_object.init_from_dialog_result(dialog_result);
+            Ok(FileDialogResult::Selection(mut selection)) => {
+                selection.write_and_refresh(&data);
+                target_object.init_from_file_selection(selection);
 
-                    let mut activation = Avm2Activation::from_nothing(uc);
+                let mut activation = Avm2Activation::from_nothing(uc);
 
-                    let select_event =
-                        Avm2EventObject::bare_default_event(activation.context, "select");
-                    Avm2::dispatch_event(activation.context, select_event, target_object.into());
+                let select_event =
+                    Avm2EventObject::bare_default_event(activation.context, "select");
+                Avm2::dispatch_event(activation.context, select_event, target_object.into());
 
-                    let open_event =
-                        Avm2EventObject::bare_default_event(activation.context, "open");
-                    Avm2::dispatch_event(activation.context, open_event, target_object.into());
+                let open_event = Avm2EventObject::bare_default_event(activation.context, "open");
+                Avm2::dispatch_event(activation.context, open_event, target_object.into());
 
-                    let progress_evt = Avm2EventObject::progress_event(
-                        &mut activation,
-                        "progress",
-                        data.len(),
-                        data.len(),
-                    );
-                    Avm2::dispatch_event(activation.context, progress_evt, target_object.into());
+                let progress_evt = Avm2EventObject::progress_event(
+                    &mut activation,
+                    "progress",
+                    data.len(),
+                    data.len(),
+                );
+                Avm2::dispatch_event(activation.context, progress_evt, target_object.into());
 
-                    let complete_event =
-                        Avm2EventObject::bare_default_event(activation.context, "complete");
-                    Avm2::dispatch_event(activation.context, complete_event, target_object.into());
-                } else {
-                    let cancel_event = Avm2EventObject::bare_default_event(uc, "cancel");
-                    Avm2::dispatch_event(uc, cancel_event, target_object.into());
-                }
+                let complete_event =
+                    Avm2EventObject::bare_default_event(activation.context, "complete");
+                Avm2::dispatch_event(activation.context, complete_event, target_object.into());
+            }
+            Ok(FileDialogResult::Canceled) => {
+                let cancel_event = Avm2EventObject::bare_default_event(uc, "cancel");
+                Avm2::dispatch_event(uc, cancel_event, target_object.into());
             }
             Err(err) => {
                 tracing::warn!("Save dialog had an error {:?}", err);
@@ -2536,145 +2532,141 @@ pub fn download_file_dialog<'gc>(
             use crate::avm1::globals::as_broadcaster;
 
             match dialog_result {
-                Ok(mut dialog_result) => {
-                    if !dialog_result.is_cancelled() {
-                        // onSelect and onOpen should be called before the download begins
-                        // We simulate this by using the initial dialog result
-                        file_ref.init_from_dialog_result(&mut activation, dialog_result.borrow());
+                Ok(FileDialogResult::Selection(mut selection)) => {
+                    // onSelect and onOpen should be called before the download begins
+                    // We simulate this by using the initial dialog result
+                    file_ref.init_from_file_selection(&mut activation, &*selection);
 
-                        as_broadcaster::broadcast_internal(
-                            target_object,
-                            &[target_object.into()],
-                            istr!("onSelect"),
-                            &mut activation,
-                        )?;
+                    as_broadcaster::broadcast_internal(
+                        target_object,
+                        &[target_object.into()],
+                        istr!("onSelect"),
+                        &mut activation,
+                    )?;
 
-                        match download_res {
-                            Ok((body, _, _, _)) => {
-                                as_broadcaster::broadcast_internal(
-                                    target_object,
-                                    &[target_object.into()],
-                                    istr!("onOpen"),
-                                    &mut activation,
-                                )?;
+                    match download_res {
+                        Ok((body, _, _, _)) => {
+                            as_broadcaster::broadcast_internal(
+                                target_object,
+                                &[target_object.into()],
+                                istr!("onOpen"),
+                                &mut activation,
+                            )?;
 
-                                // onProgress and onComplete expect to receive the current state
-                                // of the file, as we simulate an instant 100% download from the
-                                // perspective of AS, we want to refresh the file_ref internal data
-                                // before invoking the callbacks
+                            // onProgress and onComplete expect to receive the current state
+                            // of the file, as we simulate an instant 100% download from the
+                            // perspective of AS, we want to refresh the file_ref internal data
+                            // before invoking the callbacks
 
-                                dialog_result.write_and_refresh(&body);
-                                file_ref.init_from_dialog_result(
-                                    &mut activation,
-                                    dialog_result.borrow(),
-                                );
+                            selection.write_and_refresh(&body);
+                            file_ref.init_from_file_selection(&mut activation, &*selection);
 
-                                let total_bytes = body.len();
+                            let total_bytes = body.len();
 
-                                as_broadcaster::broadcast_internal(
-                                    target_object,
-                                    &[
-                                        target_object.into(),
-                                        Value::from_usize_lossy(total_bytes),
-                                        Value::from_usize_lossy(total_bytes),
-                                    ],
-                                    istr!("onProgress"),
-                                    &mut activation,
-                                )?;
+                            as_broadcaster::broadcast_internal(
+                                target_object,
+                                &[
+                                    target_object.into(),
+                                    Value::from_usize_lossy(total_bytes),
+                                    Value::from_usize_lossy(total_bytes),
+                                ],
+                                istr!("onProgress"),
+                                &mut activation,
+                            )?;
 
-                                as_broadcaster::broadcast_internal(
-                                    target_object,
-                                    &[target_object.into()],
-                                    istr!("onComplete"),
-                                    &mut activation,
-                                )?;
-                            }
-                            Err(err) => {
-                                match err.error {
-                                    Error::InvalidDomain(_) => {
-                                        activation
-                                            .context
-                                            .avm_trace(&format!("Error opening URL '{url}'"));
+                            as_broadcaster::broadcast_internal(
+                                target_object,
+                                &[target_object.into()],
+                                istr!("onComplete"),
+                                &mut activation,
+                            )?;
+                        }
+                        Err(err) => {
+                            match err.error {
+                                Error::InvalidDomain(_) => {
+                                    activation
+                                        .context
+                                        .avm_trace(&format!("Error opening URL '{url}'"));
 
-                                        as_broadcaster::broadcast_internal(
-                                            target_object,
-                                            &[target_object.into()],
-                                            istr!("onIOError"),
-                                            &mut activation,
-                                        )?;
-                                    }
-                                    Error::HttpNotOk(_, _, _, body_len) => {
-                                        // If the error happens before the connection is
-                                        // established, then don't invoke onOpen
-                                        as_broadcaster::broadcast_internal(
-                                            target_object,
-                                            &[target_object.into()],
-                                            istr!("onOpen"),
-                                            &mut activation,
-                                        )?;
+                                    as_broadcaster::broadcast_internal(
+                                        target_object,
+                                        &[target_object.into()],
+                                        istr!("onIOError"),
+                                        &mut activation,
+                                    )?;
+                                }
+                                Error::HttpNotOk(_, _, _, body_len) => {
+                                    // If the error happens before the connection is
+                                    // established, then don't invoke onOpen
+                                    as_broadcaster::broadcast_internal(
+                                        target_object,
+                                        &[target_object.into()],
+                                        istr!("onOpen"),
+                                        &mut activation,
+                                    )?;
 
-                                        activation
-                                            .context
-                                            .avm_trace(&format!("Error opening URL '{url}'"));
+                                    activation
+                                        .context
+                                        .avm_trace(&format!("Error opening URL '{url}'"));
 
-                                        as_broadcaster::broadcast_internal(
-                                            target_object,
-                                            &[target_object.into()],
-                                            istr!("onIOError"),
-                                            &mut activation,
-                                        )?;
+                                    as_broadcaster::broadcast_internal(
+                                        target_object,
+                                        &[target_object.into()],
+                                        istr!("onIOError"),
+                                        &mut activation,
+                                    )?;
 
-                                        // Flash still executes the onProgress callback, even after an error
-                                        // However it should only be called if the error occurred after the connection was established
-                                        as_broadcaster::broadcast_internal(
-                                            target_object,
-                                            &[
-                                                target_object.into(),
-                                                Value::from_u64_lossy(body_len),
-                                                Value::from_u64_lossy(body_len),
-                                            ],
-                                            istr!("onProgress"),
-                                            &mut activation,
-                                        )?;
-                                    }
-                                    Error::FetchError(_) => {
-                                        // If the error happens before the connection is
-                                        // established, then don't invoke onOpen
-                                        as_broadcaster::broadcast_internal(
-                                            target_object,
-                                            &[target_object.into()],
-                                            istr!("onOpen"),
-                                            &mut activation,
-                                        )?;
+                                    // Flash still executes the onProgress callback, even after an error
+                                    // However it should only be called if the error occurred after the connection was established
+                                    as_broadcaster::broadcast_internal(
+                                        target_object,
+                                        &[
+                                            target_object.into(),
+                                            Value::from_u64_lossy(body_len),
+                                            Value::from_u64_lossy(body_len),
+                                        ],
+                                        istr!("onProgress"),
+                                        &mut activation,
+                                    )?;
+                                }
+                                Error::FetchError(_) => {
+                                    // If the error happens before the connection is
+                                    // established, then don't invoke onOpen
+                                    as_broadcaster::broadcast_internal(
+                                        target_object,
+                                        &[target_object.into()],
+                                        istr!("onOpen"),
+                                        &mut activation,
+                                    )?;
 
-                                        activation
-                                            .context
-                                            .avm_trace(&format!("Error opening URL '{url}'"));
+                                    activation
+                                        .context
+                                        .avm_trace(&format!("Error opening URL '{url}'"));
 
-                                        as_broadcaster::broadcast_internal(
-                                            target_object,
-                                            &[target_object.into()],
-                                            istr!("onIOError"),
-                                            &mut activation,
-                                        )?;
-                                    }
-                                    _ => {
-                                        tracing::warn!(
-                                            "Unhandled non-fetch error on download: {:?}",
-                                            err.error
-                                        );
-                                    }
+                                    as_broadcaster::broadcast_internal(
+                                        target_object,
+                                        &[target_object.into()],
+                                        istr!("onIOError"),
+                                        &mut activation,
+                                    )?;
+                                }
+                                _ => {
+                                    tracing::warn!(
+                                        "Unhandled non-fetch error on download: {:?}",
+                                        err.error
+                                    );
                                 }
                             }
                         }
-                    } else {
-                        as_broadcaster::broadcast_internal(
-                            target_object,
-                            &[target_object.into()],
-                            istr!("onCancel"),
-                            &mut activation,
-                        )?;
                     }
+                }
+                Ok(FileDialogResult::Canceled) => {
+                    as_broadcaster::broadcast_internal(
+                        target_object,
+                        &[target_object.into()],
+                        istr!("onCancel"),
+                        &mut activation,
+                    )?;
                 }
                 Err(err) => {
                     tracing::warn!("Download dialog had an error {:?}", err);
