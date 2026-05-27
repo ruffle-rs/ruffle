@@ -90,6 +90,12 @@ jobs:
         shell: bash
         run: echo FEATURES=${FEATURES},imgtests | tee -a $GITHUB_ENV
 
+        # TODO: Remove this once https://github.com/actions/runner-images/issues/14176 is fixed.
+      - name: Enable fontconfig-dlopen on macOS
+        if: runner.os == 'macOS'
+        shell: bash
+        run: echo FEATURES=${FEATURES},fontconfig-dlopen | tee -a $GITHUB_ENV
+
       - name: Cache Cargo output
         uses: Swatinem/rust-cache@v2
         with:
