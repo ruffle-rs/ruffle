@@ -687,3 +687,4 @@ impl<'gc> Avm2<'gc> {
         // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
     }
 }
+

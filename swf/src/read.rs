@@ -1940,6 +1940,11 @@ impl<'a> Reader<'a> {
                 let id = self.read_u16()?;
                 PlaceObjectAction::Replace(id)
             }
+            // LCE Phase 4 spike: PlaceObject3 with HasClassName && !HasCharacter
+            // is the AS3 export-symbol placement pattern. Class name was read
+            // above into place_object.class_name; consumer must look up the AS3
+            // class via the AVM2 registry, not the library's character map.
+            (false, false) if has_class_name => PlaceObjectAction::PlaceByClass,
             _ => return Err(Error::invalid_data("Invalid PlaceObject type")),
         };
         let matrix = if flags.contains(PlaceFlag::HAS_MATRIX) {
