@@ -10,7 +10,15 @@ pub fn get_text_width<'gc>(
     let this = this.as_object().unwrap();
 
     let display_object = this.as_display_object().unwrap();
-    let edit_text = display_object.as_edit_text().unwrap();
+    if let Some(text_line) = display_object.as_text_line() {
+        if let Some(measured_text) = text_line.measure_text(activation.context) {
+            return Ok(measured_text.0.to_pixels().into());
+        }
+        return Ok(0.0.into());
+    }
+    let Some(edit_text) = display_object.as_edit_text() else {
+        return Ok(0.0.into());
+    };
 
     let measured_text = edit_text.measure_text(activation.context);
     Ok(measured_text.0.to_pixels().into())
@@ -24,7 +32,15 @@ pub fn get_text_height<'gc>(
     let this = this.as_object().unwrap();
 
     let display_object = this.as_display_object().unwrap();
-    let edit_text = display_object.as_edit_text().unwrap();
+    if let Some(text_line) = display_object.as_text_line() {
+        if let Some(measured_text) = text_line.measure_text(activation.context) {
+            return Ok(measured_text.1.to_pixels().into());
+        }
+        return Ok(0.0.into());
+    }
+    let Some(edit_text) = display_object.as_edit_text() else {
+        return Ok(0.0.into());
+    };
 
     let measured_text = edit_text.measure_text(activation.context);
     Ok(measured_text.1.to_pixels().into())
