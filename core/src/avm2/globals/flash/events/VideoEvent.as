@@ -1,4 +1,5 @@
 package flash.events {
+    [API("670")]
     public class VideoEvent extends Event {
         public const codecInfo:String;
         public static const RENDER_STATE:String = "renderState";

@@ -2,6 +2,7 @@ package flash.events{
     import flash.display.BitmapData;
     import flash.utils.ByteArray;
 
+    [API("662")]
     public class ShaderEvent extends Event {
         public static const COMPLETE:String = "complete";
 
