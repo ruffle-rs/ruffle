@@ -71,8 +71,7 @@ export const openPlayerPage: () => Promise<void> = async () => {
     await tabs.create({ url: "/player.html", index });
 };
 export const openOnboardPage: () => Promise<void> = async () => {
-    const index = await getAdjacentTabIndex();
-    await tabs.create({ url: "/onboard.html", index });
+    await tabs.create({ url: "/onboard.html" });
 };
 
 export async function getOptions(): Promise<Options> {
