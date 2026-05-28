@@ -1,0 +1,5 @@
+# This test verifies the bytes sent over the network, see README.md.
+# AS3 sends a dense Array as an AMF0 StrictArray over NetConnection.call (#16381).
+
+num_ticks = 10
+log_fetch = true
