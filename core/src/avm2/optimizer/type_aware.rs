@@ -994,6 +994,11 @@ fn abstract_interpret_ops<'gc>(
             Op::Add => {
                 let value2 = stack.pop(activation)?;
                 let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::AddIntegral);
+                }
+
                 if (value1.class == Some(types.int)
                     || value1.class == Some(types.uint)
                     || value1.class == Some(types.number))
@@ -1011,8 +1016,13 @@ fn abstract_interpret_ops<'gc>(
                 }
             }
             Op::Subtract => {
-                stack.pop(activation)?;
-                stack.pop(activation)?;
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::SubtractIntegral);
+                }
+
                 stack.push_class(activation, types.number)?;
             }
             Op::Multiply => {
@@ -2123,7 +2133,8 @@ fn abstract_interpret_ops<'gc>(
                 return Ok(());
             }
 
-            Op::CallMethod { .. }
+            Op::AddIntegral
+            | Op::CallMethod { .. }
             | Op::CallNative { .. }
             | Op::CoerceSwapPop { .. }
             | Op::CoerceDSwapPop
@@ -2133,7 +2144,8 @@ fn abstract_interpret_ops<'gc>(
             | Op::GetScriptGlobals { .. }
             | Op::PopJump { .. }
             | Op::SetSlotCoerceI { .. }
-            | Op::SetSlotNoCoerce { .. } => unreachable!("Custom ops should not be encountered"),
+            | Op::SetSlotNoCoerce { .. }
+            | Op::SubtractIntegral => unreachable!("Custom ops should not be encountered"),
         }
     }
 
