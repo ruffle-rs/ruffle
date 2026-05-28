@@ -21,8 +21,8 @@ pub fn preprocess_peephole(ops: &[Cell<Op<'_>>]) {
 
 /// A peephole optimizer to run after type-aware optimizations. This should be
 /// called once on the entire code slice.
-pub fn postprocess_peephole(
-    ops: &[Cell<Op<'_>>],
+pub fn postprocess_peephole<'a>(
+    ops: &'a [Cell<Op<'_>>],
     jump_targets: &HashSet<usize>,
     has_exceptions: bool,
 ) {
@@ -58,7 +58,7 @@ pub fn postprocess_peephole(
         simple_scope_structure(ops, jump_targets).filter(|_| !has_exceptions);
 
     // Now actually run the peephole optimizer.
-    let mut last_op = None;
+    let mut last_op: Option<&'a Cell<Op<'_>>> = None;
 
     for (i, current_op) in ops.iter().enumerate() {
         if jump_targets.contains(&i) {
@@ -94,6 +94,42 @@ pub fn postprocess_peephole(
                     // SetLocal+GetLocal becomes Nop+StoreLocal
                     last_op.set(Op::Nop);
                     current_op.set(Op::StoreLocal { index: index1 });
+                }
+                (Op::AddIntegral, Op::CoerceI) => {
+                    // An integral addition that yields Number on overflow
+                    // followed by coerce-to-integer is equivalent to wrapping
+                    // integral addition
+                    last_op.set(Op::AddI);
+                    current_op.set(Op::Nop);
+                }
+                (Op::SubtractIntegral, Op::CoerceI) => {
+                    // The same is true for subtraction
+                    last_op.set(Op::SubtractI);
+                    current_op.set(Op::Nop);
+                }
+                (
+                    Op::AddIntegral,
+                    Op::Li8 | Op::Li16 | Op::Li32 | Op::Si8 | Op::Si16 | Op::Si32,
+                ) => {
+                    // See comments above
+                    last_op.set(Op::AddI);
+                }
+                (
+                    Op::SubtractIntegral,
+                    Op::Li8 | Op::Li16 | Op::Li32 | Op::Si8 | Op::Si16 | Op::Si32,
+                ) => {
+                    // The same is true for subtraction
+                    last_op.set(Op::SubtractI);
+                }
+                (Op::AddIntegral, Op::SetSlotCoerceI { index }) => {
+                    // See comments above
+                    last_op.set(Op::AddI);
+                    current_op.set(Op::SetSlotNoCoerce { index });
+                }
+                (Op::SubtractIntegral, Op::SetSlotCoerceI { index }) => {
+                    // The same is true for subtraction
+                    last_op.set(Op::SubtractI);
+                    current_op.set(Op::SetSlotNoCoerce { index });
                 }
                 _ => {}
             }
