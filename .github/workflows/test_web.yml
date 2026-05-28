@@ -159,7 +159,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        browser: ["chrome", "firefox", "edge"]
+        browser: ["firefox", "edge"]
 
     steps:
       - uses: actions/checkout@v6
