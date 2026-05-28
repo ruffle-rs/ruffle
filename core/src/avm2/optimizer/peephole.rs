@@ -66,44 +66,46 @@ pub fn postprocess_peephole(
             last_op = None;
         }
 
-        match (last_op, last_op.map(Cell::get), current_op.get()) {
-            (Some(last_op), Some(push_op), Op::Pop) if push_op.is_pure_push() => {
-                // Eliminate PushXXX+Pop and GetLocal+Pop
-                last_op.set(Op::Nop);
-                current_op.set(Op::Nop);
+        if let Some(last_op) = last_op {
+            // Optimizations on both the current and the last op
+            match (last_op.get(), current_op.get()) {
+                (push_op, Op::Pop) if push_op.is_pure_push() => {
+                    // Eliminate PushXXX+Pop and GetLocal+Pop
+                    last_op.set(Op::Nop);
+                    current_op.set(Op::Nop);
+                }
+                (push_op, Op::PopJump { offset }) if push_op.is_pure_push() => {
+                    // PushXXX+PopJump becomes Nop+Jump
+                    last_op.set(Op::Nop);
+                    current_op.set(Op::Jump { offset });
+                }
+                (Op::CoerceB, Op::IfTrue { .. } | Op::IfFalse { .. } | Op::Not) => {
+                    // Remove CoerceB before IfTrue, IfFalse, and Not
+                    last_op.set(Op::Nop);
+                }
+                (Op::Dup, Op::SetLocal { index }) => {
+                    // Dup+SetLocal becomes Nop+StoreLocal
+                    last_op.set(Op::Nop);
+                    current_op.set(Op::StoreLocal { index });
+                }
+                (Op::SetLocal { index: index1 }, Op::GetLocal { index: index2 })
+                    if index1 == index2 =>
+                {
+                    // SetLocal+GetLocal becomes Nop+StoreLocal
+                    last_op.set(Op::Nop);
+                    current_op.set(Op::StoreLocal { index: index1 });
+                }
+                _ => {}
             }
-            (Some(last_op), Some(push_op), Op::PopJump { offset }) if push_op.is_pure_push() => {
-                // PushXXX+PopJump becomes Nop+Jump
-                last_op.set(Op::Nop);
-                current_op.set(Op::Jump { offset });
-            }
-            (
-                Some(last_op),
-                Some(Op::CoerceB),
-                Op::IfTrue { .. } | Op::IfFalse { .. } | Op::Not,
-            ) => {
-                // Remove CoerceB before IfTrue, IfFalse, and Not
-                last_op.set(Op::Nop);
-            }
-            (_, _, Op::GetScopeObject { index: 0 })
+        }
+
+        // Optimizations on the current op
+        match current_op.get() {
+            Op::GetScopeObject { index: 0 }
                 if simple_scope_op_positions.is_some() && !sets_local_0 =>
             {
                 // Replace `getscopeobject 0` with `getlocal 0` if possible
                 current_op.set(Op::GetLocal { index: 0 })
-            }
-            (Some(last_op), Some(Op::Dup), Op::SetLocal { index }) => {
-                // Dup+SetLocal becomes Nop+StoreLocal
-                last_op.set(Op::Nop);
-                current_op.set(Op::StoreLocal { index });
-            }
-            (
-                Some(last_op),
-                Some(Op::SetLocal { index: index1 }),
-                Op::GetLocal { index: index2 },
-            ) if index1 == index2 => {
-                // SetLocal+GetLocal becomes Nop+StoreLocal
-                last_op.set(Op::Nop);
-                current_op.set(Op::StoreLocal { index: index1 });
             }
             _ => {}
         }
