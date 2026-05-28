@@ -12,6 +12,7 @@ use std::cell::Cell;
 #[collect(no_drop)]
 pub enum Op<'gc> {
     Add,
+    AddIntegral,
     AddI,
     ApplyType {
         num_types: u32,
@@ -327,6 +328,7 @@ pub enum Op<'gc> {
         index: u32,
     },
     Subtract,
+    SubtractIntegral,
     SubtractI,
     Swap,
     Sxi1,
