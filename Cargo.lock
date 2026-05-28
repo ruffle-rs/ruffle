@@ -2066,6 +2066,7 @@ name = "gc-arena"
 version = "0.5.3"
 source = "git+https://github.com/kyren/gc-arena.git?rev=75671ae03f53718357b741ed4027560f14e90836#75671ae03f53718357b741ed4027560f14e90836"
 dependencies = [
+ "enum-map",
  "gc-arena-derive",
  "hashbrown 0.16.1",
  "indexmap",
