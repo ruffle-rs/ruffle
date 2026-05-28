@@ -52,8 +52,14 @@ pub fn send<'gc>(
     let mut amf_arguments = Vec::with_capacity(args.len() - 2);
     for arg in &args[2..] {
         amf_arguments.push(
-            serialize_value(activation, *arg, AMFVersion::AMF0, &mut Default::default())
-                .unwrap_or(AmfValue::Undefined),
+            serialize_value(
+                activation,
+                *arg,
+                AMFVersion::AMF0,
+                &mut Default::default(),
+                true,
+            )
+            .unwrap_or(AmfValue::Undefined),
         );
     }
 

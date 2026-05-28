@@ -23,6 +23,7 @@ fn new_lso<'gc>(
         None,
         AMFVersion::AMF3,
         &mut Default::default(),
+        true,
     )?;
     Ok(Lso::new(
         elements,

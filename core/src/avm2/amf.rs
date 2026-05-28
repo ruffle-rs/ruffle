@@ -24,6 +24,7 @@ pub fn serialize_value<'gc>(
     elem: Value<'gc>,
     amf_version: AMFVersion,
     object_table: &mut ObjectTable<'gc>,
+    allow_amf0_strict_arrays: bool,
 ) -> Option<AmfValue> {
     match elem.normalize() {
         Value::Undefined => Some(AmfValue::Undefined),
@@ -48,8 +49,16 @@ pub fn serialize_value<'gc>(
 
                 let mut values = Vec::new();
                 // Don't serialize properties from the vtable (we don't want a 'length' field)
-                recursive_serialize(activation, o, &mut values, None, amf_version, object_table)
-                    .unwrap();
+                recursive_serialize(
+                    activation,
+                    o,
+                    &mut values,
+                    None,
+                    amf_version,
+                    object_table,
+                    allow_amf0_strict_arrays,
+                )
+                .unwrap();
 
                 if amf_version == AMFVersion::AMF3 {
                     let mut dense = vec![];
@@ -76,7 +85,7 @@ pub fn serialize_value<'gc>(
                         }
                     }
 
-                    if has_string_keys {
+                    if has_string_keys || !allow_amf0_strict_arrays {
                         // Custom properties exist: degrade to ECMA Array (0x08)
                         Some(AmfValue::ECMAArray(ObjectId::INVALID, vec![], values, len))
                     } else {
@@ -112,8 +121,14 @@ pub fn serialize_value<'gc>(
                     let obj_vec: Vec<_> = vec
                         .iter()
                         .map(|v| {
-                            serialize_value(activation, v, amf_version, object_table)
-                                .unwrap_or(AmfValue::Undefined)
+                            serialize_value(
+                                activation,
+                                v,
+                                amf_version,
+                                object_table,
+                                allow_amf0_strict_arrays,
+                            )
+                            .unwrap_or(AmfValue::Undefined)
                         })
                         .collect();
 
@@ -154,8 +169,20 @@ pub fn serialize_value<'gc>(
                         .unwrap();
 
                     // Serialize both name and value
-                    let name = get_or_create_value(activation, name, object_table, amf_version);
-                    let value = get_or_create_value(activation, value, object_table, amf_version);
+                    let name = get_or_create_value(
+                        activation,
+                        name,
+                        object_table,
+                        amf_version,
+                        allow_amf0_strict_arrays,
+                    );
+                    let value = get_or_create_value(
+                        activation,
+                        value,
+                        object_table,
+                        amf_version,
+                        allow_amf0_strict_arrays,
+                    );
 
                     if let (Some(name), Some(value)) = (name, value) {
                         dictionary_body.push((name, value));
@@ -189,6 +216,7 @@ pub fn serialize_value<'gc>(
                     Some(&mut static_properties),
                     amf_version,
                     object_table,
+                    allow_amf0_strict_arrays,
                 )
                 .unwrap();
                 Some(AmfValue::Object(
@@ -296,6 +324,7 @@ pub fn recursive_serialize<'gc>(
     static_properties: Option<&mut Vec<String>>,
     amf_version: AMFVersion,
     object_table: &mut ObjectTable<'gc>,
+    allow_amf0_strict_arrays: bool,
 ) -> Result<(), Error<'gc>> {
     if let Some(static_properties) = static_properties {
         let vtable = obj.vtable();
@@ -316,9 +345,14 @@ pub fn recursive_serialize<'gc>(
             }
             let value = Value::from(obj).get_public_property(name, activation)?;
             let name = name.to_utf8_lossy().to_string();
-            if let Some(elem) =
-                get_or_create_element(activation, name.clone(), value, object_table, amf_version)
-            {
+            if let Some(elem) = get_or_create_element(
+                activation,
+                name.clone(),
+                value,
+                object_table,
+                amf_version,
+                allow_amf0_strict_arrays,
+            ) {
                 elements.push(elem);
                 static_properties.push(name);
             }
@@ -334,9 +368,14 @@ pub fn recursive_serialize<'gc>(
         let value = obj.get_enumerant_value(last_index, activation)?;
 
         let name = name.to_utf8_lossy().to_string();
-        if let Some(elem) =
-            get_or_create_element(activation, name.clone(), value, object_table, amf_version)
-        {
+        if let Some(elem) = get_or_create_element(
+            activation,
+            name.clone(),
+            value,
+            object_table,
+            amf_version,
+            allow_amf0_strict_arrays,
+        ) {
             elements.push(elem);
         }
         last_index = obj.get_next_enumerant(last_index, activation)?;
@@ -350,8 +389,15 @@ fn get_or_create_element<'gc>(
     val: Value<'gc>,
     object_table: &mut ObjectTable<'gc>,
     amf_version: AMFVersion,
+    allow_amf0_strict_arrays: bool,
 ) -> Option<Element> {
-    let value = get_or_create_value(activation, val, object_table, amf_version);
+    let value = get_or_create_value(
+        activation,
+        val,
+        object_table,
+        amf_version,
+        allow_amf0_strict_arrays,
+    );
     if let Some(value) = value {
         Some(Element::new(name, value))
     } else {
@@ -364,6 +410,7 @@ fn get_or_create_value<'gc>(
     val: Value<'gc>,
     object_table: &mut ObjectTable<'gc>,
     amf_version: AMFVersion,
+    allow_amf0_strict_arrays: bool,
 ) -> Option<Rc<AmfValue>> {
     if let Some(obj) = val.as_object() {
         match object_table.get(&obj) {
@@ -379,7 +426,13 @@ fn get_or_create_value<'gc>(
                 Some(rc_val.clone())
             }
             None => {
-                if let Some(value) = serialize_value(activation, val, amf_version, object_table) {
+                if let Some(value) = serialize_value(
+                    activation,
+                    val,
+                    amf_version,
+                    object_table,
+                    allow_amf0_strict_arrays,
+                ) {
                     let rc_val = Rc::new(value);
                     // We cannot use Entry, since we need to pass in 'object_table' to 'serialize_value'
                     object_table.insert(obj, rc_val.clone());
@@ -389,7 +442,13 @@ fn get_or_create_value<'gc>(
                 }
             }
         }
-    } else if let Some(value) = serialize_value(activation, val, amf_version, object_table) {
+    } else if let Some(value) = serialize_value(
+        activation,
+        val,
+        amf_version,
+        object_table,
+        allow_amf0_strict_arrays,
+    ) {
         Some(Rc::new(value))
     } else {
         None

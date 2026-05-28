@@ -291,7 +291,9 @@ pub fn call<'gc>(
 
     let mut object_table = FnvHashMap::default();
     for arg in &args[2..] {
-        if let Some(mut value) = serialize_value(activation, *arg, amf_version, &mut object_table) {
+        if let Some(mut value) =
+            serialize_value(activation, *arg, amf_version, &mut object_table, true)
+        {
             if amf_version == AMFVersion::AMF3 {
                 value = AMFValue::AMF3(Rc::new(value));
             }
@@ -351,6 +353,7 @@ pub fn add_header<'gc>(
         args.get_value(2),
         AMFVersion::AMF0,
         &mut Default::default(),
+        true,
     )
     .unwrap_or(AMFValue::Null);
 

@@ -838,6 +838,7 @@ pub fn write_object<'gc>(
             obj,
             amf_version,
             &mut Default::default(),
+            false,
         )
         .unwrap_or(flash_lso::types::Value::Undefined);
 

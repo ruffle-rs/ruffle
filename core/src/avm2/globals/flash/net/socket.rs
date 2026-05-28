@@ -720,6 +720,7 @@ pub fn write_object<'gc>(
             obj,
             amf_version,
             &mut Default::default(),
+            true,
         )
         .unwrap_or(flash_lso::types::Value::Undefined);
 
