@@ -379,6 +379,24 @@ impl<'gc> Domain<'gc> {
             if domain_memory.storage().len() < MIN_DOMAIN_MEMORY_LENGTH {
                 return Err(make_error_1504(activation));
             }
+
+            // We rely on negative indices into domain memory becoming positive
+            // indices greater than i32::MAX due to 2's complement. If the
+            // domain memory bytearray's length is never greater than i32::MAX,
+            // all such negative indices will always be out of bounds, allowing
+            // us to skip extra checks for indices being positive in the
+            // interpreter.
+
+            // However, this requires us to actually guarantee that all byte-
+            // arrays that are used as domain memory never have a length greater
+            // than i32::MAX.
+
+            // TODO: This check should be moved somewhere to bytearray code, and
+            // should throw Error #1000 from there instead of panicking.
+            if domain_memory.storage().len() > i32::MAX as usize {
+                panic!("Domain memory bytearray must not be larger than i32::MAX!");
+            }
+
             domain_memory
         } else {
             let memory = self.0.default_domain_memory.get();
