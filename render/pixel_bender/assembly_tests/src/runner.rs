@@ -19,7 +19,7 @@ const TEST_TOML_NAME: &str = "test.toml";
 enum TestType {
     Roundtrip,
     Assemble,
-    Dissassemble,
+    Disassemble,
 }
 
 impl TestType {
@@ -28,7 +28,7 @@ impl TestType {
     }
 
     fn performs_disassembly(self) -> bool {
-        matches!(self, TestType::Dissassemble | TestType::Roundtrip)
+        matches!(self, TestType::Disassemble | TestType::Roundtrip)
     }
 }
 
@@ -75,12 +75,14 @@ fn main() {
     let mut runner = FsTestsRunner::new();
 
     runner
+        .with_args_from_libtest_mimic()
         .with_descriptor_name(Cow::Borrowed(TEST_TOML_NAME))
         .with_test_loader(Box::new(|params, register_trial| {
             register_trial(load_test(params))
-        }));
+        }))
+        .sorted_by_name();
 
-    runner.run()
+    runner.run().exit()
 }
 
 fn load_test(params: TestLoaderParams) -> Trial {

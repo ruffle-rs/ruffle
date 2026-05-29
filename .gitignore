@@ -16,3 +16,6 @@ RECOVER_*.fla
 
 # Mac junk
 .DS_Store
+
+# A developers local Flash Player harness config
+.flash_players.toml

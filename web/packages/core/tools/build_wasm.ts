@@ -77,13 +77,27 @@ function cargoBuild({
     if (process.env["CARGO_FLAGS"]) {
         args = args.concat(process.env["CARGO_FLAGS"].split(" "));
     }
-    execFileSync("cargo", args, {
-        env: Object.assign(Object.assign({}, process.env), {
-            RUSTFLAGS: totalRustFlags,
-            RUSTC_BOOTSTRAP: extensions ? "0" : "1",
-        }),
-        stdio: "inherit",
-    });
+    const env: NodeJS.ProcessEnv = {
+        ...process.env,
+        RUSTFLAGS: totalRustFlags,
+        RUSTC_BOOTSTRAP: extensions ? "0" : "1",
+    };
+
+    if (!extensions) {
+        // C dependencies (e.g. jpegxr's jxrlib) are compiled by cc-rs/clang,
+        // whose default wasm32 target enables post-MVP features like
+        // reference-types and multivalue. Those bits end up in the linked
+        // module's target_features section, which makes wasm-bindgen attempt
+        // externref transforms and then fail with "failed to find the
+        // __wbindgen_externref_table_dealloc function". Force clang to MVP too.
+        // See: https://github.com/ruffle-rs/ruffle/issues/23751
+        // and: https://github.com/wasm-bindgen/wasm-bindgen/issues/4654
+        env["CFLAGS_wasm32_unknown_unknown"] ??= "";
+        env["CFLAGS_wasm32_unknown_unknown"] +=
+            " -mno-reference-types -mno-multivalue";
+    }
+
+    execFileSync("cargo", args, { env, stdio: "inherit" });
 }
 function buildWasm(
     profile: string,

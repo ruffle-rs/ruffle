@@ -780,6 +780,7 @@ impl RuffleHandle {
 
                                 if let Some(control_code) = web_to_ruffle_text_control(
                                     &js_event.key(),
+                                    &js_event.code(),
                                     is_ctrl_cmd,
                                     js_event.shift_key(),
                                 ) {

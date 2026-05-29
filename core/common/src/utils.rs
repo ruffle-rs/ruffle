@@ -16,7 +16,7 @@ pub use ruffle_macros::HasPrefixField;
 /// # Safety
 /// - `Self` must have a field of type `Inner` at the start of its layout;
 /// - `Self` must not impose additional safety invariants on the `Inner` prefix;
-/// - The methods of this trait should not be overriden;
+/// - The methods of this trait should not be overridden;
 /// - Any layout constraints that can't be checked by the type-system should
 ///   be checked by assertions in the `ASSERT_PREFIX_FIELD` constant.
 pub unsafe trait HasPrefixField<Inner>: Sized {

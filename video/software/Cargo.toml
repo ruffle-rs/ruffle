@@ -21,9 +21,9 @@ log = { workspace = true }
 
 h263-rs = { git = "https://github.com/ruffle-rs/h263-rs", rev = "b3f905511acc7b80861dac45fdc5ca913b6029e5", optional = true }
 h263-rs-deblock = { git = "https://github.com/ruffle-rs/h263-rs", rev = "b3f905511acc7b80861dac45fdc5ca913b6029e5", optional = true }
-nihav_core = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "83c7e1094d603d9fc1212d39d99abb17f3a3226b", optional = true }
-nihav_codec_support = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "83c7e1094d603d9fc1212d39d99abb17f3a3226b", optional = true }
-nihav_duck = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "83c7e1094d603d9fc1212d39d99abb17f3a3226b", optional = true }
+nihav_core = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "12d0bdf10a85641dc2de3d6900c747894431ed77", optional = true }
+nihav_codec_support = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "12d0bdf10a85641dc2de3d6900c747894431ed77", optional = true }
+nihav_duck = { git = "https://github.com/ruffle-rs/nihav-vp6", rev = "12d0bdf10a85641dc2de3d6900c747894431ed77", optional = true }
 
 [features]
 default = ["h263", "vp6", "screenvideo"]

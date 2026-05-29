@@ -1,0 +1,10 @@
+d.getTime = [type Function]
+d.getTime() = 1234
+d.id16 = [type Function]
+d.id16() = 1234
+d.getTime2() = 1234
+d.getTime3() = 1234
+d.getTime4() = 1234
+valueOf
+d.getTime5() = 1234
+Caught: some error

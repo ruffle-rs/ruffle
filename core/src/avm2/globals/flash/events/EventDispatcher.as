@@ -25,7 +25,6 @@ package flash.events {
 
         public native function hasEventListener(type:String):Boolean;
 
-        [Ruffle(NativeCallable)]
         public function dispatchEvent(event:Event):Boolean {
             // Some SWFs rely on the getter for `target` being called
             if (event.target) {

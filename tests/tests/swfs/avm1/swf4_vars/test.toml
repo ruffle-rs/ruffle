@@ -1,0 +1,9 @@
+num_frames = 1
+log_warnings = false
+known_failure = true
+
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 4

@@ -1,0 +1,16 @@
+Caught error
+The stack was not preserved!
+Outside catch block:
+The stack was not preserved!
+
+--- and again without throwing ---
+
+Outside catch block:
+The stack was preserved!
+
+--- and now in reverse ---
+
+Caught error
+2
+Outside catch block:
+2

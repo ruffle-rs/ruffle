@@ -163,7 +163,9 @@ pub use crate::avm2::object::worker_object::{WorkerObject, WorkerObjectWeak};
 pub use crate::avm2::object::xml_list_object::{
     E4XOrXml, XmlListObject, XmlListObjectWeak, xml_list_allocator,
 };
-pub use crate::avm2::object::xml_object::{XmlObject, XmlObjectWeak, xml_allocator};
+pub use crate::avm2::object::xml_object::{
+    NotificationCommand, XmlObject, XmlObjectWeak, xml_allocator,
+};
 use crate::font::Font;
 
 /// Represents an object that can be directly interacted with by the AVM2

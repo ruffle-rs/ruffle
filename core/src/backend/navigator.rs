@@ -97,6 +97,26 @@ impl fmt::Display for NavigationMethod {
     }
 }
 
+/// Normalize a browser window target string passed to `getURL`/`navigateToURL`.
+///
+/// Flash Player matches `_blank` case-insensitively and also accepts it
+/// without the leading underscore. For example, `"blank"`, `"BLANK"`, and
+/// `"_Blank"` are all treated as `"_blank"`. This function maps any such
+/// spelling to `"_blank"` so the navigator backend always receives the
+/// standard token.
+///
+/// Only `_blank` is normalized here, matching the behavior verified in
+/// <https://github.com/ruffle-rs/ruffle/issues/21416>. The other reserved
+/// targets (`_self`, `_parent`, `_top`) are left untouched.
+pub fn normalize_navigate_target(target: &str) -> &str {
+    let stripped = target.strip_prefix('_').unwrap_or(target);
+    if stripped.eq_ignore_ascii_case("blank") {
+        "_blank"
+    } else {
+        target
+    }
+}
+
 /// A fetch request.
 pub struct Request {
     /// The URL of the request.
@@ -271,6 +291,19 @@ pub trait NavigatorBackend: Any {
         target: &str,
         vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
     );
+
+    /// Like [`NavigatorBackend::navigate_to_url`], but normalizes `target`
+    /// via [`normalize_navigate_target`] first. AVM-side `getURL` and
+    /// `navigateToURL` call sites should go through this method so the
+    /// backend always receives the canonical target token.
+    fn navigate_to_url_normalized(
+        &self,
+        url: &str,
+        target: &str,
+        vars_method: Option<(NavigationMethod, IndexMap<String, String>)>,
+    ) {
+        self.navigate_to_url(url, normalize_navigate_target(target), vars_method);
+    }
 
     /// Fetch data and return it some time in the future.
     fn fetch(&self, request: Request) -> OwnedFuture<Box<dyn SuccessResponse>, ErrorResponse>;

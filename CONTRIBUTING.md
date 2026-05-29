@@ -75,10 +75,7 @@ Additionally, if you build Ruffle with `--features avm_debug` then you will acti
 
 ### Logging caught exceptions
 
-Some SWFs may catch and suppress exceptions, which can hide the fact that the SWF is trying to use an unimplemented definition. To log call caught exceptions:
-
-1. Add `avm_caught=info` to your `RUST_LOG` environment variable (e.g. `RUST_LOG=warn,avm_caught=debug`)
-2. Build ruffle with `--features avm_debug`
+Some SWFs may catch and suppress exceptions, which can hide the fact that the SWF is trying to use an unimplemented definition. To log call caught exceptions, build ruffle with `--features avm_debug`.
 
 Caught exceptions will be logged as "Caught exception: <exception object>"
 Note that some SWFs throw and catch exceptions as part of their normal control flow, so a caught exception
@@ -194,6 +191,32 @@ Some tests also compare Ruffle's visual output to an expected image. To properly
 When adding a new image test, make sure to include the expected visual output by taking a screenshot of Flash Player and cropping it.
 
 Heavily algorithmic code may benefit from unit tests in Rust: create a module `mod tests` conditionally compiled with `#[cfg(test)]`, and add your tests in there.
+
+### Compile from Ruffle
+
+We are building up the capabilities to compile actionscript-only tests through Ruffle's test infrastructure. Currently, only AVM1 (ActionScript 1 and 2) is supported, using [Rascal](https://github.com/Dinnerbone/Rascal).
+
+This is the recommended way to write AVM1-only tests, as the .swf will never desync with the .as source, you don't need to configure any external programs, and we can easily generate multiple versions of the same swf with little effort.
+
+In the `test.toml`, add a section like the following:
+```toml
+[[compilers]]
+type = "Rascal"
+target = "test.swf"
+scripts = ["test.as"]
+swf_version = 15
+```
+
+Then, whenever you run the tests it'll automatically build `test.swf` (version 15) with the source code of `test.as`. Consult the [full documentation](tests/README.md) for more details about this format.
+
+There is also the ability to only compile the test and not run it - use `cargo testutils compile` to compile all swfs (which takes the same filters as tests does, e.g. `cargo testutils compile avm1/movieclip_lockroot`).
+
+If you want to conveniently run the test that you create in Flash Player, we also have a `cargo testutils execute` command - this only works on Linux currently, and you must configure the Flash Player paths in a `.flash_players.toml` file which looks something like:
+```toml
+[[players]]
+version = 32
+path = "/path/to/flashplayerdebugger"
+```
 
 ### Flash authoring tool
 

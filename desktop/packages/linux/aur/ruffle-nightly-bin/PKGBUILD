@@ -1,4 +1,6 @@
-# Maintainer: relrel <relrelbachar@gmail.com>
+# Maintainer: Kamil Jarosz <kjarosh256@gmail.com>
+# Maintainer: Ruffle LLC <ruffle@ruffle.rs>
+# Contributor: relrel <relrelbachar@gmail.com>
 pkgname=ruffle-nightly-bin
 pkgver=@VERSION@
 pkgrel=1

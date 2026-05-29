@@ -129,9 +129,12 @@ impl VideoDecoder for Vp6Decoder {
                 .parse_header(&mut bool_coder)
                 .map_err(Vp6Error::DecoderError)?;
 
+            // NOTE: It seems that the disp_w and disp_h fields in the header
+            // are just ignored by Flash Player (and by VLC too), whatever the
+            // VP6 spec has to say about ScalingMode functionality...
             let video_info = NAVideoInfo::new(
-                header.disp_w as usize * 16,
-                header.disp_h as usize * 16,
+                header.mb_w as usize * 16,
+                header.mb_h as usize * 16,
                 true,
                 if self.with_alpha {
                     VP_YUVA420_FORMAT

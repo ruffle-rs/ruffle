@@ -1,4 +1,4 @@
-context-menu-download-swf = .swf 다운로드
+context-menu-download-swf = SWF 다운로드
 context-menu-copy-debug-info = 디버그 정보 복사
 context-menu-open-save-manager = 저장 관리자 열기
 context-menu-about-ruffle =

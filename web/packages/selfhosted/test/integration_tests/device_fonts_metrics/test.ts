@@ -25,13 +25,13 @@ describe("Device Fonts: Metrics", () => {
                 `index.html?deviceFontRenderer=${deviceFontRenderer}`,
             );
             await injectRuffleAndWait(browser);
-            const player = await browser.$("<ruffle-object>");
+            const player = await browser.$("<ruffle-object>").getElement();
             await playAndMonitor(browser, player, ["Loaded test!"]);
             await hideHardwareAccelerationModal(browser, player);
         });
 
         it("check metrics", async () => {
-            const player = await browser.$("#objectElement");
+            const player = await browser.$("#objectElement").getElement();
 
             await expectTraceOutput(browser, player, [
                 "Displayed text metrics:",
@@ -70,7 +70,7 @@ describe("Device Fonts: Metrics", () => {
         });
 
         it("no more traces", async function () {
-            const player = await browser.$("#objectElement");
+            const player = await browser.$("#objectElement").getElement();
             assertNoMoreTraceOutput(browser, player);
         });
     }

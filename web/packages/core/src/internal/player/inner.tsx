@@ -93,6 +93,12 @@ interface ContextMenuItem {
      * @default true
      */
     enabled?: boolean;
+
+    /**
+     * Whether this item has a checkmark next to it.
+     * When defined, a checkmark column is shown for all items in the context menu.
+     */
+    checked?: boolean;
 }
 
 /**
@@ -1503,7 +1509,6 @@ export class InnerPlayer {
     }
 
     private contextMenuItems(): Array<ContextMenuItem | null> {
-        const CHECKMARK = String.fromCharCode(0x2713);
         const items: Array<ContextMenuItem | null> = [];
         const addSeparator = () => {
             // Don't start with or duplicate separators.
@@ -1524,12 +1529,11 @@ export class InnerPlayer {
                     addSeparator();
                 }
                 items.push({
-                    // TODO: better checkboxes
-                    text:
-                        item.caption + (item.checked ? ` (${CHECKMARK})` : ``),
+                    text: item.caption,
                     onClick: async () =>
                         this.instance?.run_context_menu_callback(index),
                     enabled: item.enabled,
+                    checked: item.checked,
                 });
             });
 
@@ -1669,6 +1673,14 @@ export class InnerPlayer {
             return;
         }
 
+        // If Shift is held while right-clicking, hide our custom menu and show
+        // the browser's native context menu instead.
+        // Shift+right-click works consistently on Windows, macOS, and Linux.
+        if (event.type === "contextmenu" && event.shiftKey) {
+            this.hideContextMenu();
+            return;
+        }
+
         event.preventDefault();
 
         if (this._suppressContextMenu) {
@@ -1720,8 +1732,17 @@ export class InnerPlayer {
             );
         }
 
+        const items = this.contextMenuItems();
+        const hasCheckmarks = items.some(
+            (item) => item !== null && item.checked !== undefined,
+        );
+        this.contextMenuElement.classList.toggle(
+            "has-checkmarks",
+            hasCheckmarks,
+        );
+
         // Populate context menu items.
-        for (const item of this.contextMenuItems()) {
+        for (const item of items) {
             if (item === null) {
                 this.contextMenuElement.appendChild(
                     <li class="menu-separator">
@@ -1729,13 +1750,14 @@ export class InnerPlayer {
                     </li>,
                 );
             } else {
-                const { text, onClick, enabled } = item;
+                const { text, onClick, enabled, checked } = item;
 
                 const menuItem = (
                     <li
                         class={{
                             "menu-item": true,
                             disabled: enabled === false,
+                            checked: checked === true,
                         }}
                         data-text={text}
                     >
@@ -1786,19 +1808,31 @@ export class InnerPlayer {
         // mode and get the body when it's null.
         const viewportElement = document.scrollingElement || document.body;
 
-        // Keep the entire context menu inside the viewport.
-        const overflowX = Math.max(
-            0,
-            event.clientX + contextMenuRect.width - viewportElement.clientWidth,
-        );
-        const overflowY = Math.max(
-            0,
-            event.clientY +
-                contextMenuRect.height -
-                viewportElement.clientHeight,
-        );
-        const x = event.clientX - playerRect.x - overflowX;
-        const y = event.clientY - playerRect.y - overflowY;
+        const menuWidth = contextMenuRect.width;
+        const menuHeight = contextMenuRect.height;
+        const vw = viewportElement.clientWidth;
+        const vh = viewportElement.clientHeight;
+
+        // Flip the menu above/left of the cursor (like native context menus)
+        // when it would overflow, falling back to clamping if there's no room.
+        let cx = event.clientX;
+        if (cx + menuWidth > vw) {
+            cx =
+                event.clientX - menuWidth >= 0
+                    ? event.clientX - menuWidth
+                    : vw - menuWidth;
+        }
+
+        let cy = event.clientY;
+        if (cy + menuHeight > vh) {
+            cy =
+                event.clientY - menuHeight >= 0
+                    ? event.clientY - menuHeight
+                    : vh - menuHeight;
+        }
+
+        const x = cx - playerRect.x;
+        const y = cy - playerRect.y;
 
         const isRtl =
             getComputedStyle(this.contextMenuElement).direction === "rtl";
@@ -2070,13 +2104,12 @@ export class InnerPlayer {
                         `Error stack:\n\`\`\`\n${error.stack}\n\`\`\`\n`,
                     ) - 1;
                 if (error.avmStack) {
-                    const avmStackIndex =
+                    errorArray.avmStackIndex =
                         errorArray.push(
                             `AVM2 stack:\n\`\`\`\n    ${error.avmStack
                                 .trim()
                                 .replace(/\t/g, "    ")}\n\`\`\`\n`,
                         ) - 1;
-                    errorArray.avmStackIndex = avmStackIndex;
                 }
                 errorArray.stackIndex = stackIndex;
             }
@@ -2497,8 +2530,7 @@ function base64ToArray(bytesBase64: string): Uint8Array<ArrayBuffer> {
  */
 function base64ToBlob(bytesBase64: string, mimeString: string): Blob {
     const ab = base64ToArray(bytesBase64);
-    const blob = new Blob([ab], { type: mimeString });
-    return blob;
+    return new Blob([ab], { type: mimeString });
 }
 
 /**

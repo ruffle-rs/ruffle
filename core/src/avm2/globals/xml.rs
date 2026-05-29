@@ -5,11 +5,13 @@ use ruffle_macros::istr;
 use crate::avm2::e4x::{E4XNamespace, E4XNode, E4XNodeKind, name_to_multiname};
 use crate::avm2::error::{make_error_1088, make_error_1117};
 pub use crate::avm2::object::xml_allocator;
-use crate::avm2::object::{E4XOrXml, QNameObject, TObject, XmlListObject, XmlObject};
+use crate::avm2::object::{
+    E4XOrXml, NotificationCommand, QNameObject, TObject, XmlListObject, XmlObject,
+};
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::string::AvmString;
-use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Multiname, Object, Value};
+use crate::avm2::{Activation, ArrayObject, ArrayStorage, Error, Multiname, Value};
 use crate::avm2_stub_method;
+use crate::string::AvmString;
 
 pub fn init<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -243,7 +245,10 @@ pub fn set_name<'gc>(
 
     let name = match args.get_value(0) {
         // 2. If (Type(name) is Object) and (name.[[Class]] == "QName") and (name.uri == null)
-        Value::Object(Object::QNameObject(qname)) if qname.is_any_namespace() => {
+        Value::Object(o)
+            if let Some(qname) = o.as_qname_object()
+                && qname.is_any_namespace() =>
+        {
             // a. Let name = name.localName
             qname.local_name(activation.strings()).into()
         }
@@ -301,6 +306,13 @@ pub fn set_name<'gc>(
             node.add_in_scope_namespace(activation.gc(), ns);
         }
     }
+
+    xml.trigger_notification(
+        activation,
+        NotificationCommand::NameSet,
+        new_name.into(),
+        new_local_name.into(),
+    );
 
     Ok(Value::Undefined)
 }
@@ -1310,8 +1322,19 @@ pub fn set_local_name<'gc>(
         return Err(make_error_1117(activation, name));
     }
 
+    let previous_name = node.local_name();
+
     // 4. Let x.[[Name]].localName = name
     node.set_local_name(name, activation.gc());
+
+    if let Some(previous_name) = previous_name {
+        xml.trigger_notification(
+            activation,
+            NotificationCommand::NameSet,
+            name.into(),
+            previous_name.into(),
+        );
+    }
 
     Ok(Value::Undefined)
 }

@@ -1,11 +1,11 @@
-# Description
+## Description
 
 _Please explain the changes made within this PR.
 Why did you make this change; does it add a feature, or fix a bug?
 Be sure to link to any content or issues that it affects!
 Please also remember that each commit message should describe its own changes too._
 
-# Testing
+## Testing
 
 _How can we test this PR?_
 
@@ -13,7 +13,7 @@ _If you're able to, please follow our [test guidelines](https://github.com/ruffl
 
 _If you need help with making tests, or do not believe this change is easily automatically testable, please describe how we can verify the changes ourselves. If there is real world content that we can test on, that helps a lot!_
 
-# Checklist
+## Checklist
 
 <!-- Please check the lines that are applicable. You do not need to check every box to open a PR. -->
 

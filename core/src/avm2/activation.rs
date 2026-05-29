@@ -13,11 +13,11 @@ use crate::avm2::error::{
 };
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
+use crate::avm2::object::TObject;
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
 };
-use crate::avm2::object::{Object, TObject};
 use crate::avm2::op::{LookupSwitch, Op};
 use crate::avm2::scope::{Scope, ScopeChain, search_scope_stack};
 use crate::avm2::script::Script;
@@ -924,7 +924,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
                 if matches {
                     #[cfg(feature = "avm_debug")]
-                    tracing::info!(target: "avm_caught", "Caught exception: {:?}", original_error);
+                    {
+                        let stringified = original_error.to_string(self);
+                        tracing::warn!("Caught exception: {}", stringified);
+                    }
 
                     self.reset_stack();
                     self.push_stack(error);
@@ -1420,12 +1423,18 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // main path for dynamic names
         if multiname.has_lazy_name() {
             let name_value = self.stack.peek(0);
-            if matches!(name_value, Value::Object(Object::XmlListObject(_))) {
+
+            if name_value
+                .as_object()
+                .and_then(|o| o.as_xml_list_object())
+                .is_some()
+            {
                 // ECMA-357 11.3.1 The delete Operator
                 // If the type of the operand is XMLList, then a TypeError exception is thrown.
                 return Err(make_error_1119(self));
             }
         }
+
         let multiname = multiname.fill_with_runtime_params(self)?;
         let object = self.pop_stack().null_check(self, Some(&multiname))?;
 
@@ -1842,7 +1851,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let base_class = base_value.coerce_to_type(self, class_class)?;
 
         let base_class = match base_class {
-            Value::Object(Object::ClassObject(c)) => Some(c),
+            Value::Object(o) if let Some(class_obj) = o.as_class_object() => Some(class_obj),
             Value::Null => None,
             _ => unreachable!("Coercion to Class must return Class or null"),
         };
@@ -2064,10 +2073,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_add_i(&mut self) -> Result<(), Error<'gc>> {
-        let value2 = self.pop_stack().coerce_to_i32(self)?;
-        let value1 = self.pop_stack().coerce_to_i32(self)?;
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
 
-        self.push_stack(value1.wrapping_add(value2));
+        let sum_value = match (value1, value2) {
+            (Value::Integer(n1), Value::Integer(n2)) => n1.wrapping_add(n2),
+            (value1, value2) => {
+                let value1 = value1.coerce_to_i32(self)?;
+                let value2 = value2.coerce_to_i32(self)?;
+
+                value1.wrapping_add(value2)
+            }
+        };
+
+        self.push_stack(sum_value);
 
         Ok(())
     }
@@ -2279,10 +2298,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_subtract_i(&mut self) -> Result<(), Error<'gc>> {
-        let value2 = self.pop_stack().coerce_to_i32(self)?;
-        let value1 = self.pop_stack().coerce_to_i32(self)?;
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
 
-        self.push_stack(value1.wrapping_sub(value2));
+        let sum_value = match (value1, value2) {
+            (Value::Integer(n1), Value::Integer(n2)) => n1.wrapping_sub(n2),
+            (value1, value2) => {
+                let value1 = value1.coerce_to_i32(self)?;
+                let value2 = value2.coerce_to_i32(self)?;
+
+                value1.wrapping_sub(value2)
+            }
+        };
+
+        self.push_stack(sum_value);
 
         Ok(())
     }
@@ -2608,26 +2637,22 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             Value::Object(o) => {
                 let classes = self.avm2().class_defs();
 
-                match o {
-                    Object::FunctionObject(_) => {
-                        if o.instance_class() == classes.function {
-                            istr!(self, "function")
-                        } else {
-                            // Subclasses always have a typeof = "object"
-                            istr!(self, "object")
-                        }
+                if o.as_function_object().is_some() {
+                    if o.instance_class() == classes.function {
+                        istr!(self, "function")
+                    } else {
+                        // Subclasses always have a typeof = "object"
+                        istr!(self, "object")
                     }
-                    Object::XmlObject(_) | Object::XmlListObject(_) => {
-                        if o.instance_class() == classes.xml_list
-                            || o.instance_class() == classes.xml
-                        {
-                            istr!(self, "xml")
-                        } else {
-                            // Subclasses always have a typeof = "object"
-                            istr!(self, "object")
-                        }
+                } else if o.as_xml_object().is_some() || o.as_xml_list_object().is_some() {
+                    if o.instance_class() == classes.xml_list || o.instance_class() == classes.xml {
+                        istr!(self, "xml")
+                    } else {
+                        // Subclasses always have a typeof = "object"
+                        istr!(self, "object")
                     }
-                    _ => istr!(self, "object"),
+                } else {
+                    istr!(self, "object")
                 }
             }
             Value::String(_) => istr!(self, "string"),
@@ -2665,10 +2690,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
     /// Implements `Op::EscXElem`
     fn op_esc_elem(&mut self) -> Result<(), Error<'gc>> {
+        // We explicitly call toXMLString on Xml/XmlListObject since the toString of these objects have special handling for simple content, which is not used here.
         let r = match self.pop_stack() {
-            // We explicitly call toXMLString on Xml/XmlListObject since the toString of these objects have special handling for simple content, which is not used here.
-            Value::Object(Object::XmlObject(x)) => x.as_xml_string(self),
-            Value::Object(Object::XmlListObject(x)) => x.as_xml_string(self),
+            Value::Object(o) if let Some(x) = o.as_xml_object() => x.as_xml_string(self),
+            Value::Object(o) if let Some(x) = o.as_xml_list_object() => x.as_xml_string(self),
             // contrary to the avmplus documentation, this escapes the value on the top of the stack using EscapeElementValue from ECMA-357 *NOT* EscapeAttributeValue.
             x => AvmString::new(self.gc(), escape_element_value(x.coerce_to_string(self)?)),
         };

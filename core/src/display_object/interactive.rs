@@ -13,6 +13,7 @@ use crate::display_object::edit_text::EditText;
 use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
+use crate::display_object::text_line::TextLine;
 use crate::display_object::{
     BoundsMode, DisplayObject, DisplayObjectBase, TDisplayObject, TDisplayObjectContainer,
 };
@@ -138,6 +139,7 @@ impl<'gc> InteractiveObjectBase<'gc> {
         Avm2Button(Avm2Button<'gc>),
         MovieClip(MovieClip<'gc>),
         EditText(EditText<'gc>),
+        TextLine(TextLine<'gc>),
         LoaderDisplay(LoaderDisplay<'gc>),
     }
 )]
@@ -802,7 +804,9 @@ impl<'gc> Avm2MousePick<'gc> {
                 // by the parent `mouseEnabled` property.
                 // However, the root object of a loader or stage is never a valid target of hit
                 // events (even if moved out of the loader's hierarchy).
-                if parent.raw_container().mouse_children() && !target.as_displayobject().is_root() {
+                if parent.raw_container().mouse_children()
+                    && target.as_displayobject().loader_info().is_none()
+                {
                     *self
                 // If the parent has `mouseChildren=false`, then the eventual
                 // MouseEvent (if it gets fired) will *not* have a `target`
@@ -813,7 +817,7 @@ impl<'gc> Avm2MousePick<'gc> {
                     // targeting the parent - it 'absorbs' child events.
                     if parent_int.mouse_enabled() {
                         Avm2MousePick::Hit(parent_int)
-                    // If the parent has `mouseChildren=false` and `mouseEnabled=true`,
+                    // If the parent has `mouseChildren=false` and `mouseEnabled=false`,
                     // we have a weird case. The event can propagate through this 'fully disabled'
                     // parent - if it reaches an ancestor with `mouseEnabled=true`, it will get
                     // 'absorbed' by that ancestor. Otherwise, no event will be fired.

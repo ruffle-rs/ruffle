@@ -118,7 +118,11 @@ impl<'gc> OptValue<'gc> {
         }
     }
 
-    pub fn merged_with(self, other: OptValue<'gc>) -> OptValue<'gc> {
+    pub fn merged_with(
+        self,
+        activation: &mut Activation<'_, 'gc>,
+        other: OptValue<'gc>,
+    ) -> OptValue<'gc> {
         let mut created_value = OptValue::any();
 
         if self.class == other.class {
@@ -139,22 +143,35 @@ impl<'gc> OptValue<'gc> {
                 created_value.class = other.class;
             }
         } else if let (Some(self_class), Some(other_class)) = (self.class, other.class) {
-            // Check for a common superclass.
-            // FIXME: Make this faster?
-            let mut other_class = Some(other_class);
-            'outer: while let Some(current_other_class) = other_class {
-                let mut self_class = Some(self_class);
-                while let Some(current_self_class) = self_class {
-                    if current_other_class == current_self_class {
-                        // Found a common superclass; we're done
-                        created_value.class = Some(current_self_class);
-                        break 'outer;
+            let self_is_numeric = self_class.is_builtin_int()
+                || self_class.is_builtin_uint()
+                || self_class.is_builtin_number();
+
+            let other_is_numeric = other_class.is_builtin_int()
+                || other_class.is_builtin_uint()
+                || other_class.is_builtin_number();
+
+            if self_is_numeric && other_is_numeric {
+                // int/uint/Number merged with int/uint/Number becomes Number
+                created_value.class = Some(activation.avm2().class_defs().number);
+            } else {
+                // Check for a common superclass.
+                // FIXME: Make this faster?
+                let mut other_class = Some(other_class);
+                'outer: while let Some(current_other_class) = other_class {
+                    let mut self_class = Some(self_class);
+                    while let Some(current_self_class) = self_class {
+                        if current_other_class == current_self_class {
+                            // Found a common superclass; we're done
+                            created_value.class = Some(current_self_class);
+                            break 'outer;
+                        }
+
+                        self_class = current_self_class.super_class();
                     }
 
-                    self_class = current_self_class.super_class();
+                    other_class = current_other_class.super_class();
                 }
-
-                other_class = current_other_class.super_class();
             }
         }
 
@@ -364,7 +381,13 @@ impl<'gc> Stack<'gc> {
             self.pop(activation)?;
         }
         if multiname.has_lazy_ns() {
-            self.pop(activation)?;
+            let value = self.pop(activation)?;
+
+            // Make sure that it's actually a `Namespace`
+            let ns_class = activation.avm2().class_defs().namespace;
+            if value.class.is_none_or(|c| c != ns_class) {
+                return Err(make_error_1058(activation, "Namespace"));
+            }
         }
 
         Ok(())
@@ -506,7 +529,7 @@ impl<'gc> AbstractState<'gc> {
             let our_local = self.locals.at(i);
             let other_local = other.locals.at(i);
 
-            let merged = our_local.merged_with(other_local);
+            let merged = our_local.merged_with(activation, other_local);
             self.locals.set(i, merged);
             if merged != our_local {
                 changed = true;
@@ -526,7 +549,7 @@ impl<'gc> AbstractState<'gc> {
             let our_entry = self.stack.at(i);
             let other_entry = other.stack.at(i);
 
-            let merged = our_entry.merged_with(other_entry);
+            let merged = our_entry.merged_with(activation, other_entry);
             self.stack.set(i, merged);
             if merged != our_entry {
                 changed = true;
@@ -550,7 +573,7 @@ impl<'gc> AbstractState<'gc> {
                 return Err(make_error_1068(activation));
             }
 
-            let merged = our_scope.0.merged_with(other_scope.0);
+            let merged = our_scope.0.merged_with(activation, other_scope.0);
             self.scope_stack.set(i, merged, our_scope.1);
             if merged != our_scope.0 {
                 changed = true;
@@ -2070,7 +2093,7 @@ fn abstract_interpret_ops<'gc>(
 
                 if value.class.is_none_or(|c| !c.is_builtin_int()) {
                     // LookupSwitch expects an int
-                    return Err(make_error_1058(activation));
+                    return Err(make_error_1058(activation, "int"));
                 }
 
                 let current_state = AbstractStateRef {

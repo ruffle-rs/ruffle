@@ -36,6 +36,8 @@ members = [
     "tests/socket-format",
     "tests/mocket",
     "tests/framework",
+
+    "tools/asc",
 ]
 default-members = ["desktop"]
 resolver = "2"
@@ -46,7 +48,7 @@ edition = "2024"
 homepage = "https://ruffle.rs"
 license = "MIT OR Apache-2.0"
 repository = "https://github.com/ruffle-rs/ruffle"
-version = "0.1.0"
+version = "0.2.0"
 
 [workspace.dependencies]
 tracing = "0.1.43"
@@ -57,7 +59,7 @@ egui = "0.33.3"
 clap = { version = "4.6.1", features = ["derive"] }
 cpal = "0.16.0"
 anyhow = "1.0"
-gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["hashbrown", "indexmap", "smallvec", "slotmap"] }
+gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["enum-map", "hashbrown", "indexmap", "slotmap", "smallvec"] }
 slotmap = "1.1.1"
 async-channel = "2.5.0"
 bitflags = "2.11.1"
@@ -80,7 +82,7 @@ regress = { git = "https://github.com/ruffle-rs/regras3", rev = "6d48179d6bd448f
 # Make sure to match wasm-bindgen-cli version to this everywhere.
 wasm-bindgen = "=0.2.120"
 walkdir = "2.5.0"
-tokio = "1.52.1"
+tokio = "1.52.3"
 rfd = { version = "0.17.2", default-features = false, features = ["wayland", "xdg-portal"] }
 memmap2 = "0.9.10"
 libtest-mimic = "0.8.2"
@@ -89,7 +91,7 @@ toml = "1.0.6"
 toml_edit = "0.25.4"
 vfs = "0.13.0"
 smallvec = { version = "1.15.1", features = ["const_new", "union"] }
-serde_json = "1.0.149"
+serde_json = "1.0.150"
 percent-encoding = "2.3.2"
 approx = "0.5.1"
 encoding_rs = "0.8.35"
@@ -105,6 +107,8 @@ fluent-templates = "0.13.3"
 lzma-rs = "0.3.0"
 tempfile = "3.27.0"
 tracing-wasm = "0.2.1"
+rascal = "0.3.4"
+jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "5281b4ae42be742779269a9f1a986101f101f32f" }
 
 [workspace.lints.rust]
 # Clippy nightly often adds new/buggy lints that we want to ignore.
@@ -125,6 +129,7 @@ used_underscore_items = "deny"
 dbg_macro = "warn"
 enum_glob_use = "deny"
 branches_sharing_code = "warn"
+needless_pass_by_ref_mut = "warn"
 
 # TODO Enable used_underscore_binding when false positives get fixed.
 

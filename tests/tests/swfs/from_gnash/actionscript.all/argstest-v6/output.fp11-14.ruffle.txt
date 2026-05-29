@@ -1021,6 +1021,18 @@ Object was constructed
 Testing constructor()
 Testing __constructor__()
 Testing __proto__()
+testing _global.ASSetNativeAccessor(function)
+Trying to construct _global.ASSetNativeAccessor
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
+testing _global.ASSetNative(function)
+Trying to construct _global.ASSetNative
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+Testing __proto__()
 testing _global.ASSetPropFlags(function)
 Trying to construct _global.ASSetPropFlags
 Object was constructed

@@ -73,7 +73,6 @@ pub mod script;
 #[cfg(feature = "known_stubs")]
 pub mod specification;
 mod stack;
-mod string;
 mod stubs;
 mod traits;
 mod value;
@@ -95,7 +94,7 @@ pub use crate::avm2::multiname::Multiname;
 pub use crate::avm2::namespace::{CommonNamespaces, Namespace};
 pub use crate::avm2::object::{
     ArrayObject, BitmapDataObject, ClassObject, EventObject, LoaderInfoObject, Object,
-    SharedObjectObject, SoundChannelObject, StageObject, TObject,
+    SharedObjectObject, SoundChannelObject, Stage3DObject, StageObject, TObject,
 };
 pub use crate::avm2::qname::QName;
 pub use crate::avm2::value::Value;
@@ -676,12 +675,14 @@ impl<'gc> Avm2<'gc> {
     #[cold]
     #[inline(never)]
     pub fn uncaught_error(
-        _activation: &mut Activation<'_, 'gc>,
+        activation: &mut Activation<'_, 'gc>,
         _display_object: Option<DisplayObject<'gc>>,
         error: Error<'gc>,
-        info: &str,
+        extra_info: &str,
     ) {
-        tracing::error!("{}: {:?}", info, error);
+        // This will print the properly formatted error
+        let stringified = error.to_string(activation);
+        tracing::error!("{}: {}", extra_info, stringified);
 
         // TODO: push the error onto `loaderInfo.uncaughtErrorEvents`
     }

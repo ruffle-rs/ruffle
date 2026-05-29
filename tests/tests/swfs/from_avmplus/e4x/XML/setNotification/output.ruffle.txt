@@ -4,5 +4,6 @@ attributeAdded-detail PASSED!
 attributeChanged-command PASSED!
 attributeChanged-value PASSED!
 attributeChanged-detail PASSED!
+nameSet-command PASSED!
 Asserting for TypeError PASSED!
 StringNotifier PASSED!

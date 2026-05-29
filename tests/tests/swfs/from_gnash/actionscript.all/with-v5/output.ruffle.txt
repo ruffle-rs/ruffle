@@ -19,26 +19,12 @@ PASSED: b == 2 [./with.as:65]
 PASSED: found7 == 1 [./with.as:81]
 PASSED: get_name() == "timeline" [./with.as:115]
 PASSED: get_name() == "obj1" [./with.as:118]
-Error: A 'with' action failed because the specified object did not exist.
-
 PASSED: checkpoint == 1 [./with.as:135]
-Error: A 'with' action failed because the specified object did not exist.
-
 PASSED: checkpoint == 1 [./with.as:138]
 PASSED: checkpoint == 3 [./with.as:141]
 PASSED: Number.prototype.checkpoint == 'three' [./with.as:142]
 PASSED: checkpoint == 4 [./with.as:145]
 PASSED: String.prototype.checkpoint == 'four' [./with.as:146]
-Error: A 'with' action failed because the specified object did not exist.
-
-Error: A 'with' action failed because the specified object did not exist.
-
-Error: A 'with' action failed because the specified object did not exist.
-
-Error: A 'with' action failed because the specified object did not exist.
-
-Error: A 'with' action failed because the specified object did not exist.
-
 PASSED: this == objA [./with.as:234]
 PASSED: this == objA [./with.as:237]
 PASSED: a == 4 [./with.as:424]

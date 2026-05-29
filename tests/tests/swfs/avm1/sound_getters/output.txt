@@ -1,0 +1,100 @@
+// s1.getVolume()
+undefined
+// s1.getPan()
+undefined
+// s1.getTransform()
+undefined
+// s1.getDuration()
+undefined
+// s1.getPosition()
+undefined
+// s1.duration
+undefined
+// s1.position
+undefined
+
+created mc
+
+// s1.getVolume()
+100
+// s1.getPan()
+0
+// s1.getTransform()
+[object Object]
+// s1.getDuration()
+undefined
+// s1.getPosition()
+undefined
+// s1.duration
+undefined
+// s1.position
+undefined
+
+removed mc
+
+// s1.getVolume()
+undefined
+// s1.getPan()
+undefined
+// s1.getTransform()
+undefined
+// s1.getDuration()
+undefined
+// s1.getPosition()
+undefined
+// s1.duration
+undefined
+// s1.position
+undefined
+
+created new mc, sound will be made with MCR
+
+// s1.getVolume()
+50
+// s1.getPan()
+0
+// s1.getTransform()
+[object Object]
+// s1.getDuration()
+undefined
+// s1.getPosition()
+undefined
+// s1.duration
+undefined
+// s1.position
+undefined
+
+removed mc2
+
+// s1.getVolume()
+undefined
+// s1.getPan()
+undefined
+// s1.getTransform()
+undefined
+// s1.getDuration()
+undefined
+// s1.getPosition()
+undefined
+// s1.duration
+undefined
+// s1.position
+undefined
+
+recreated mc2
+
+// s1.getVolume()
+100
+// s1.getPan()
+0
+// s1.getTransform()
+[object Object]
+// s1.getDuration()
+undefined
+// s1.getPosition()
+undefined
+// s1.duration
+undefined
+// s1.position
+undefined
+

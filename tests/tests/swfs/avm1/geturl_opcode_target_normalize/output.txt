@@ -1,0 +1,45 @@
+Navigator::navigate_to_url:
+  URL: https://example.com/0
+  Target: _blank
+Navigator::navigate_to_url:
+  URL: https://example.com/1
+  Target: _blank
+Navigator::navigate_to_url:
+  URL: https://example.com/2
+  Target: _blank
+Navigator::navigate_to_url:
+  URL: https://example.com/3
+  Target: _blank
+Navigator::navigate_to_url:
+  URL: https://example.com/4
+  Target: _blank
+Navigator::navigate_to_url:
+  URL: https://example.com/5
+  Target: _self
+Navigator::navigate_to_url:
+  URL: https://example.com/6
+  Target: self
+Navigator::navigate_to_url:
+  URL: https://example.com/7
+  Target: myWindow
+Navigator::navigate_to_url:
+  URL: https://example.com/8
+  Target: 
+Navigator::navigate_to_url:
+  URL: https://example.com/10
+  Target: _blank
+Navigator::navigate_to_url:
+  URL: https://example.com/11
+  Target: _blank
+Navigator::navigate_to_url:
+  URL: https://example.com/12
+  Target: _blank
+Navigator::navigate_to_url:
+  URL: https://example.com/13
+  Target: _blank
+Navigator::navigate_to_url:
+  URL: https://example.com/14
+  Target: _self
+Navigator::navigate_to_url:
+  URL: https://example.com/15
+  Target: myWindow

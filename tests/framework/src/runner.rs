@@ -293,7 +293,7 @@ impl TestRunner {
         Ok(())
     }
 
-    fn test_audio(&mut self) -> Result<()> {
+    fn test_audio(&self) -> Result<()> {
         if self.audio_assertions.is_empty() {
             return Ok(());
         }

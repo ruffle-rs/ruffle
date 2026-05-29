@@ -9,9 +9,9 @@ use crate::avm2::error::make_error_1087;
 use crate::avm2::function::FunctionArgs;
 use crate::avm2::object::script_object::ScriptObjectData;
 use crate::avm2::object::{ClassObject, NamespaceObject, Object, TObject, XmlListObject};
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
 use crate::avm2::{Error, Multiname};
+use crate::string::AvmString;
 use core::fmt;
 use gc_arena::barrier::unlock;
 use gc_arena::{Collect, Gc, GcWeak, Mutation, lock::Lock};
@@ -67,6 +67,7 @@ pub struct XmlObjectData<'gc> {
 pub enum NotificationCommand {
     AttributeAdded,
     AttributeChanged,
+    NameSet,
 }
 
 impl<'gc> XmlObject<'gc> {
@@ -306,6 +307,7 @@ impl<'gc> XmlObject<'gc> {
                 let command = match command {
                     NotificationCommand::AttributeAdded => istr!("attributeAdded"),
                     NotificationCommand::AttributeChanged => istr!("attributeChanged"),
+                    NotificationCommand::NameSet => istr!("nameSet"),
                 };
                 let args = [
                     current_target.into(),

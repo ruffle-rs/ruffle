@@ -3,7 +3,8 @@ use std::sync::LazyLock;
 use crate::PlayerRuntime;
 use enum_map::{Enum, EnumMap, enum_map};
 
-// Based on https://github.com/adobe/avmplus/blob/master/core/api-versions.h
+// Based on https://github.com/adobe/avmplus/blob/master/core/api-versions.h,
+// extended to SWFv40/AIRv29
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug, FromPrimitive, Enum)]
 #[expect(non_camel_case_types)]
 pub enum ApiVersion {
@@ -59,7 +60,25 @@ pub enum ApiVersion {
     AIR_19_0 = 49,
     SWF_31 = 50,
     AIR_20_0 = 51,
-    VM_INTERNAL = 52,
+    SWF_32 = 52,
+    AIR_21_0 = 53,
+    SWF_33 = 54,
+    AIR_22_0 = 55,
+    SWF_34 = 56,
+    AIR_23_0 = 57,
+    SWF_35 = 58,
+    AIR_24_0 = 59,
+    SWF_36 = 60,
+    AIR_25_0 = 61,
+    SWF_37 = 62,
+    AIR_26_0 = 63,
+    SWF_38 = 64,
+    AIR_27_0 = 65,
+    SWF_39 = 66,
+    AIR_28_0 = 67,
+    SWF_40 = 68,
+    AIR_29_0 = 69,
+    VM_INTERNAL = 70,
 }
 
 // This maps an ApiVersion from our playerglobals SWF to the closest valid version,
@@ -130,6 +149,24 @@ static TRANSFER_TABLE: LazyLock<EnumMap<ApiVersion, (ApiVersion, ApiVersion)>> =
             ApiVersion::AIR_19_0 => (ApiVersion::AIR_19_0, ApiVersion::VM_INTERNAL),
             ApiVersion::SWF_31 => (ApiVersion::AIR_20_0, ApiVersion::SWF_31),
             ApiVersion::AIR_20_0 => (ApiVersion::AIR_20_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_32 => (ApiVersion::AIR_21_0, ApiVersion::SWF_32),
+            ApiVersion::AIR_21_0 => (ApiVersion::AIR_21_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_33 => (ApiVersion::AIR_22_0, ApiVersion::SWF_33),
+            ApiVersion::AIR_22_0 => (ApiVersion::AIR_22_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_34 => (ApiVersion::AIR_23_0, ApiVersion::SWF_34),
+            ApiVersion::AIR_23_0 => (ApiVersion::AIR_23_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_35 => (ApiVersion::AIR_24_0, ApiVersion::SWF_35),
+            ApiVersion::AIR_24_0 => (ApiVersion::AIR_24_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_36 => (ApiVersion::AIR_25_0, ApiVersion::SWF_36),
+            ApiVersion::AIR_25_0 => (ApiVersion::AIR_25_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_37 => (ApiVersion::AIR_26_0, ApiVersion::SWF_37),
+            ApiVersion::AIR_26_0 => (ApiVersion::AIR_26_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_38 => (ApiVersion::AIR_27_0, ApiVersion::SWF_38),
+            ApiVersion::AIR_27_0 => (ApiVersion::AIR_27_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_39 => (ApiVersion::AIR_28_0, ApiVersion::SWF_39),
+            ApiVersion::AIR_28_0 => (ApiVersion::AIR_28_0, ApiVersion::VM_INTERNAL),
+            ApiVersion::SWF_40 => (ApiVersion::AIR_29_0, ApiVersion::SWF_40),
+            ApiVersion::AIR_29_0 => (ApiVersion::AIR_29_0, ApiVersion::VM_INTERNAL),
             ApiVersion::VM_INTERNAL => (ApiVersion::VM_INTERNAL, ApiVersion::VM_INTERNAL),
         }
     });
@@ -197,11 +234,29 @@ impl ApiVersion {
             (30, PlayerRuntime::AIR) => ApiVersion::AIR_19_0,
             (31, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_31,
             (31, PlayerRuntime::AIR) => ApiVersion::AIR_20_0,
+            (32, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_32,
+            (32, PlayerRuntime::AIR) => ApiVersion::AIR_21_0,
+            (33, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_33,
+            (33, PlayerRuntime::AIR) => ApiVersion::AIR_22_0,
+            (34, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_34,
+            (34, PlayerRuntime::AIR) => ApiVersion::AIR_23_0,
+            (35, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_35,
+            (35, PlayerRuntime::AIR) => ApiVersion::AIR_24_0,
+            (36, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_36,
+            (36, PlayerRuntime::AIR) => ApiVersion::AIR_25_0,
+            (37, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_37,
+            (37, PlayerRuntime::AIR) => ApiVersion::AIR_26_0,
+            (38, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_38,
+            (38, PlayerRuntime::AIR) => ApiVersion::AIR_27_0,
+            (39, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_39,
+            (39, PlayerRuntime::AIR) => ApiVersion::AIR_28_0,
+            (40, PlayerRuntime::FlashPlayer) => ApiVersion::SWF_40,
+            (40, PlayerRuntime::AIR) => ApiVersion::AIR_29_0,
 
             // We haven't yet created entries from higher versions - just map them
             // to the highest non-VM_INTERNAL version.
-            (32.., PlayerRuntime::FlashPlayer) => ApiVersion::SWF_31,
-            (32.., PlayerRuntime::AIR) => ApiVersion::AIR_20_0,
+            (41.., PlayerRuntime::FlashPlayer) => ApiVersion::SWF_40,
+            (41.., PlayerRuntime::AIR) => ApiVersion::AIR_29_0,
         }
     }
 }

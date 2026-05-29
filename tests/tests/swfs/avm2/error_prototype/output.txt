@@ -1,0 +1,15 @@
+[object Error]
+[object Object]
+undefined: undefined
+function Function() {}
+undefined
+undefined
+undefined: undefined
+Error: Error
+function Function() {}
+Error
+Error
+Error: Error
+true
+[class DRMManagerError]
+[class Error]

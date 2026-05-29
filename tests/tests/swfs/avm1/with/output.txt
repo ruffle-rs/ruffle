@@ -42,10 +42,6 @@ object
 root
 
 // with(undefined)
-Error: A 'with' action failed because the specified object did not exist.
-
 
 // with(null)
-Error: A 'with' action failed because the specified object did not exist.
-
 

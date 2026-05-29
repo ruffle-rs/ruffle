@@ -1,0 +1,10 @@
+# Note: This test will not pass in FP due to a few reasons:
+#   1. FP does not immediately display all uncaught errors; errors are displayed
+#      one at a time as "Continue" is pressed on the uncaught error popup
+#   2. Enabling flashlog in FP results in it stringifying errors twice, which
+#      will result in test output lines being duplicated
+#   3. FP logs error output to flashlog, but we don't record it in our test
+#      runner, so those need to be stripped out before copying flashlog into the
+#      `output.txt` file.
+
+num_frames = 5

@@ -408,11 +408,12 @@ pub fn deserialize_value_impl<'gc>(
                     tracing::warn!(
                         "Ignoring error deserializing AMF property for field {name:?}: {e:?}"
                     );
-                    if let Some(e) = e.as_avm_error()
-                        && let Some(e) = e.as_object().and_then(|o| o.as_error_object())
-                    {
+
+                    if let Some(e) = e.as_avm_error() {
+                        let stringified = e.coerce_to_string(activation)?;
+
                         // Flash player *traces* the error (without a stacktrace)
-                        activation.context.avm_trace(&e.display().to_string());
+                        activation.context.avm_trace(&stringified.to_string());
                     }
                 }
             }

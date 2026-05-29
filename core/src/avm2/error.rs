@@ -69,31 +69,45 @@ impl<'gc> Error<'gc> {
             ErrorData::RustError(_) => None,
         }
     }
-}
 
-impl Debug for Error<'_> {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    /// Return a stringified representation of the error, including its stack
+    /// trace if it has one.
+    pub fn to_string(&self, activation: &mut Activation<'_, 'gc>) -> String {
         let (error, call_stack) = match &*self.0 {
             ErrorData::AvmValue(value, call_stack) => (*value, call_stack),
             ErrorData::AvmError(error) => ((*error).into(), error.call_stack()),
-            ErrorData::RustError(error) => return write!(f, "RustError({error:?})"),
+            ErrorData::RustError(error) => return format!("RustError({:?})", error),
+        };
+
+        // NOTE: When FP is writing to flashlog, it calls `stringify_error`
+        // twice. The first version goes to flashlog; the second version gets
+        // displayed. We only stringify once, assuming that most users never
+        // enabled logging in FP.
+        let stringified_error = match error.coerce_to_string(activation) {
+            Ok(stringified_error) => stringified_error,
+            Err(_) => {
+                // It's possible that trying to coerce the error to a string
+                // will also throw an error. In that case, print a dummy message
+                return "<failed to display AVM error>".to_string();
+            }
         };
 
         let mut output = WString::new();
 
-        // If we have an `ErrorObject`, we can properly display it.
-        // If not, just use the `Debug` impl for `Value`.
-        // TODO: This should just call the `toString` method on the error value.
-        if let Some(error) = error.as_object().and_then(|obj| obj.as_error_object()) {
-            output.push_str(&error.display());
-        } else {
-            output.push_utf8(&format!("{:?}", error));
-        }
-
-        // Also write the call stack that was included with the error
+        output.push_str(&stringified_error);
         call_stack.display(&mut output);
 
-        write!(f, "{}", output)
+        format!("{}", output)
+    }
+}
+
+impl Debug for Error<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &*self.0 {
+            ErrorData::AvmValue(_, _) => write!(f, "AvmError"),
+            ErrorData::AvmError(_) => write!(f, "AvmError"),
+            ErrorData::RustError(error) => write!(f, "RustError({error:?})"),
+        }
     }
 }
 
@@ -686,10 +700,16 @@ pub fn make_error_1054<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1058<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_1058<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    expected_type: &str,
+) -> Error<'gc> {
     make_error!(verify_error(
         activation,
-        "#1058: Illegal operand type.",
+        format!(
+            "Error #1058: Illegal operand type: must be {}.",
+            expected_type
+        ),
         1058
     ))
 }

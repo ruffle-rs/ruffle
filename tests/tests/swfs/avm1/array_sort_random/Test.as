@@ -1,5 +1,3 @@
-// Compile with:
-//  mtasc -main -version 8 Test.as -out test.swf 
 class Test {
 
   static function main(current) {
@@ -25,6 +23,7 @@ class Test {
 
     trace("// contents of array");
     trace(array);
+    fscommand("quit");
   }
 
   // A simple deterministic PRNG; namely, Xorshift.

@@ -90,6 +90,14 @@ impl<'gc> MovieClipReference<'gc> {
         Some(Self(Gc::new(activation.gc(), mc_ref)))
     }
 
+    pub fn from_path(gc: &'gc Mutation<'gc>, path: &WStr) -> Self {
+        let mc_ref = MovieClipReferenceData {
+            path: MovieClipPath::new_from_path(gc, path.to_owned()),
+            cached_object: None.into(),
+        };
+        Self(Gc::new(gc, mc_ref))
+    }
+
     /// Handle the logic of swfv5 DisplayObjects
     fn process_swf5_references(
         activation: &mut Activation<'_, 'gc>,

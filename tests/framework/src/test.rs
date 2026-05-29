@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::environment::Environment;
+use crate::environment::{CompileMode, Environment};
 use crate::options::TestOptions;
 use crate::options::known_failure::KnownFailure;
 use crate::runner::TestRunner;
@@ -47,6 +47,10 @@ impl Test {
         })
     }
 
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
     pub fn create_test_runner(&self, environment: &impl Environment) -> Result<TestRunner> {
         let movie = self.movie()?;
         let viewport_dimensions = self.options.player_options.viewport_dimensions(&movie);
@@ -55,6 +59,7 @@ impl Test {
             .player_options
             .create_renderer(environment, viewport_dimensions);
 
+        self.compile(environment.compile_mode())?;
         let injector = self.input_injector()?;
         let socket_events = self.socket_events()?;
         let runner = TestRunner::new(
@@ -156,5 +161,19 @@ impl Test {
         }
 
         self.options.can_run(check_renderer, environment)
+    }
+
+    pub fn compile(&self, compile_mode: CompileMode) -> Result<()> {
+        let verify_if_changed = match compile_mode {
+            CompileMode::CompileSilently => false,
+            CompileMode::CompileAndVerify => true,
+            CompileMode::UsePrecompiled => return Ok(()), // Pretend all is well!
+        };
+        for options in &self.options.compilers {
+            options
+                .create_compiler()?
+                .compile(&self.root_path, verify_if_changed)?;
+        }
+        Ok(())
     }
 }

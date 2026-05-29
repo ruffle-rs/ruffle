@@ -40,6 +40,7 @@ mod morph_shape;
 mod movie_clip;
 mod stage;
 mod text;
+mod text_line;
 mod video;
 
 use crate::avm1::Activation;
@@ -66,6 +67,7 @@ use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode};
 pub use text::{Text, TextSnapshot};
+pub use text_line::TextLine;
 pub use video::Video;
 
 use self::loader_display::LoaderDisplayWeak;
@@ -1272,6 +1274,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         Avm1Button(Avm1Button<'gc>),
         Avm2Button(Avm2Button<'gc>),
         EditText(EditText<'gc>),
+        TextLine(TextLine<'gc>),
         Graphic(Graphic<'gc>),
         MorphShape(MorphShape<'gc>),
         MovieClip(MovieClip<'gc>),
@@ -2891,6 +2894,7 @@ impl<'gc> DisplayObject<'gc> {
         pub fn as_avm2_button for Avm2Button;
         pub fn as_movie_clip for MovieClip;
         pub fn as_edit_text for EditText;
+        pub fn as_text_line for TextLine;
         pub fn as_text for Text;
         pub fn as_morph_shape for MorphShape;
         pub fn as_video for Video;
@@ -2902,6 +2906,7 @@ impl<'gc> DisplayObject<'gc> {
             Self::Avm1Button(dobj) => Some(InteractiveObject::Avm1Button(dobj)),
             Self::Avm2Button(dobj) => Some(InteractiveObject::Avm2Button(dobj)),
             Self::EditText(dobj) => Some(InteractiveObject::EditText(dobj)),
+            Self::TextLine(dobj) => Some(InteractiveObject::TextLine(dobj)),
             Self::LoaderDisplay(dobj) => Some(InteractiveObject::LoaderDisplay(dobj)),
             Self::MovieClip(dobj) => Some(InteractiveObject::MovieClip(dobj)),
             Self::Stage(dobj) => Some(InteractiveObject::Stage(dobj)),
@@ -3098,11 +3103,12 @@ impl SoundTransform {
         const MAX_VOLUME: i64 = SoundTransform::MAX_VOLUME as i64;
 
         // It seems like Flash masks the results below to 30-bit integers:
-        // * Negative values are equivalent to their absolute value (their sign bit is unset).
         // * Specifically, 0x40000000, -0x40000000 and -0x80000000 are equivalent to zero.
+        // Negative values are equivalent to their absolute value.
         const MASK: i32 = (1 << 30) - 1;
 
-        self.volume = (i64::from(self.volume) * i64::from(other.volume) / MAX_VOLUME) as i32 & MASK;
+        self.volume =
+            (i64::from(self.volume) * i64::from(other.volume) / MAX_VOLUME).abs() as i32 & MASK;
 
         // This is a 2x2 matrix multiply between the transforms.
         // Done with integer math to match Flash behavior.

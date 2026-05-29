@@ -477,6 +477,19 @@ impl<'gc> TDisplayObject<'gc> for Video<'gc> {
         }
     }
 
+    // FP-compat: clamp the width/height readback at `unscaled * 32768`
+    fn width(self) -> f64 {
+        let aabb = self.local_bounds(BoundsMode::Script).width().to_pixels();
+        let (size_x, _) = self.0.size.get();
+        aabb.min(size_x as f64 * 32768.0)
+    }
+
+    fn height(self) -> f64 {
+        let aabb = self.local_bounds(BoundsMode::Script).height().to_pixels();
+        let (_, size_y) = self.0.size.get();
+        aabb.min(size_y as f64 * 32768.0)
+    }
+
     fn render_with_options(self, context: &mut RenderContext<'_, 'gc>, options: RenderOptions) {
         if !context.is_offscreen
             && !self

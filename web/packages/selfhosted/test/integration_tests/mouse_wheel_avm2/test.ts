@@ -13,7 +13,7 @@ use(chaiHtml);
 
 async function scroll(
     browser: WebdriverIO.Browser,
-    player: ChainablePromiseElement,
+    player: WebdriverIO.Element,
     x: number,
     y: number,
     lines: number,
@@ -74,14 +74,14 @@ interface TestParams {
                 "index_" + testParams.name + ".html",
             );
             await injectRuffleAndWait(browser);
-            const player = await browser.$("<ruffle-object>");
+            const player = await browser.$("<ruffle-object>").getElement();
             await playAndMonitor(browser, player, ["Loaded!"]);
             await hideHardwareAccelerationModal(browser, player);
             // await new Promise(f => setTimeout(f, 10000000));
         });
 
         it("scroll the first clip", async () => {
-            const player = await browser.$("#objectElement");
+            const player = await browser.$("#objectElement").getElement();
 
             expect(await scroll(browser, player, 100, 100, 1)).to.equal(
                 expectedScroll ?? false,
@@ -92,7 +92,7 @@ interface TestParams {
         });
 
         it("scroll the text field up", async () => {
-            const player = await browser.$("#objectElement");
+            const player = await browser.$("#objectElement").getElement();
 
             expect(await scroll(browser, player, 300, 100, -1)).to.equal(
                 expectedScroll ?? true,
@@ -100,7 +100,7 @@ interface TestParams {
         });
 
         it("scroll the text field", async () => {
-            const player = await browser.$("#objectElement");
+            const player = await browser.$("#objectElement").getElement();
 
             expect(await scroll(browser, player, 300, 100, 2)).to.equal(
                 expectedScroll ?? false,
@@ -108,7 +108,7 @@ interface TestParams {
         });
 
         it("scroll the text field back up", async () => {
-            const player = await browser.$("#objectElement");
+            const player = await browser.$("#objectElement").getElement();
 
             expect(await scroll(browser, player, 300, 100, -1)).to.equal(
                 expectedScroll ?? false,
@@ -116,7 +116,7 @@ interface TestParams {
         });
 
         it("scroll the second clip", async () => {
-            const player = await browser.$("#objectElement");
+            const player = await browser.$("#objectElement").getElement();
 
             expect(await scroll(browser, player, 500, 100, 1)).to.equal(
                 expectedScroll ?? false,
@@ -127,7 +127,7 @@ interface TestParams {
         });
 
         it("scroll non-interactive content", async () => {
-            const player = await browser.$("#objectElement");
+            const player = await browser.$("#objectElement").getElement();
 
             expect(await scroll(browser, player, 700, 100, 1)).to.equal(
                 expectedScroll ?? true,
@@ -135,7 +135,7 @@ interface TestParams {
         });
 
         it("no more traces", async function () {
-            const player = await browser.$("#objectElement");
+            const player = await browser.$("#objectElement").getElement();
             assertNoMoreTraceOutput(browser, player);
         });
     });

@@ -126,11 +126,11 @@ impl HeaderExt {
     }
 
     /// Returns the header for a loaded image (JPEG, GIF or PNG).
-    pub fn default_with_uncompressed_len(length: i32) -> Self {
+    pub fn default_with_uncompressed_len(length: i32, stage_size: Rectangle<Twips>) -> Self {
         let header = Header {
             compression: Compression::None,
             version: 0,
-            stage_size: Default::default(),
+            stage_size,
             frame_rate: Fixed8::ONE,
             num_frames: 1,
         };

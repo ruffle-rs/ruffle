@@ -1,0 +1,44 @@
+frame 1
+// s1.getDuration()
+undefined
+// s1.getPosition() > 400
+undefined
+// s1.getPosition() == 0
+false
+// s1.duration
+undefined
+// s1.position > 400
+undefined
+// s1.position == 0
+false
+
+frame 2
+// s1.getDuration()
+1071
+// s1.getPosition() > 400
+false
+// s1.getPosition() == 0
+true
+// s1.duration
+1071
+// s1.position > 400
+false
+// s1.position == 0
+true
+
+frame 3
+// s1.getDuration()
+1071
+// s1.getPosition() > 400
+false
+// s1.getPosition() == 0
+true
+// s1.duration
+1071
+// s1.position > 400
+false
+// s1.position == 0
+true
+
+frame 4
+frame 5

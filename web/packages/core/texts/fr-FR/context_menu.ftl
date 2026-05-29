@@ -1,4 +1,4 @@
-context-menu-download-swf = Télécharger en tant que .swf
+context-menu-download-swf = Télécharger en tant que SWF
 context-menu-copy-debug-info = Copier les infos de débogage
 context-menu-open-save-manager = Ouvrir le gestionnaire de stockage
 context-menu-about-ruffle =

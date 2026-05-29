@@ -569,7 +569,7 @@ impl DisplayObjectWindow {
                     if ui.button(format!("{:p}", style_sheet.as_ptr())).clicked() {
                         messages.push(Message::TrackAVM2Object(AVM2ObjectHandle::new(
                             context,
-                            crate::avm2::Object::StyleSheetObject(style_sheet),
+                            style_sheet.into(),
                         )));
                     }
                 } else {
@@ -1771,6 +1771,7 @@ fn display_object_type(object: DisplayObject) -> &'static str {
         DisplayObject::MorphShape(_) => "MorphShape",
         DisplayObject::MovieClip(_) => "MovieClip",
         DisplayObject::Text(_) => "Text",
+        DisplayObject::TextLine(_) => "TextLine",
         DisplayObject::Video(_) => "Video",
         DisplayObject::LoaderDisplay(_) => "LoaderDisplay",
     }

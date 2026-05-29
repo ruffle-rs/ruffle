@@ -730,15 +730,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         } else {
             // An optional path to a MovieClip and a frame #/label, such as "/clip:framelabel".
             let frame_path = arg.coerce_to_string(self)?;
-            if let Some((clip, frame)) = self.resolve_variable_path(target, &frame_path)? {
-                if let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip()) {
-                    if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
-                        // First try to parse as a frame number.
-                        call_frame = Some((clip, frame));
-                    } else if let Some(frame) = clip.frame_label_to_number(frame, self.context) {
-                        // Otherwise, it's a frame label.
-                        call_frame = Some((clip, frame.into()));
-                    }
+            if let Some((clip, frame)) = self.resolve_variable_path(target, &frame_path)?
+                && let Some(clip) = clip.as_display_object().and_then(|o| o.as_movie_clip())
+            {
+                if let Ok(frame) = frame.parse().map(f64_to_wrapping_u32) {
+                    // First try to parse as a frame number.
+                    call_frame = Some((clip, frame));
+                } else if let Some(frame) = clip.frame_label_to_number(frame, self.context) {
+                    // Otherwise, it's a frame label.
+                    call_frame = Some((clip, frame.into()));
                 }
             }
         };
@@ -865,8 +865,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             action,
             self.scope(),
             constant_pool,
-            // `base_clip` should always be a living `MovieClip` so this can't fail
-            MovieClipReference::try_from_stage_object(self, bc).unwrap(),
+            // `base_clip` should always be a living `MovieClip` so this can't fail during "normal" execution
+            // However, the playerglobal doesn't have any movie clips, so we want to fall back to "something" for that
+            MovieClipReference::try_from_stage_object(self, bc).unwrap_or_else(|| {
+                if self.scope.class() == ScopeClass::Global {
+                    MovieClipReference::from_path(self.gc(), WStr::from_units(b"_root"))
+                } else {
+                    panic!("No base clip for function")
+                }
+            }),
         );
         let name = func.name();
         let prototype = Object::new(&self.context.strings, Some(self.prototypes().object));
@@ -936,9 +943,25 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
 
+        let success = if let Some((path, var_name)) = name.rsplit_once(b":.".as_ref()) {
+            let path = AvmString::new(self.gc(), path);
+            let var_name = AvmString::new(self.gc(), var_name);
+
+            let var: Value<'gc> = self.get_variable(path)?.into();
+            if let Some(obj) = var.as_object(self) {
+                obj.delete(self, var_name)
+            } else {
+                if !matches!(var, Value::Null | Value::Undefined) {
+                    self.context.avm_trace("Parameters of primitive types are no longer coerced into the required type - Object.");
+                }
+                false
+            }
+        } else {
+            self.scope().delete(self, name)
+        };
+
         // Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         // a boolean based on if the delete actually deleted something.
-        let success = self.scope().delete(self, name);
         self.context.avm1.push(success.into());
 
         Ok(FrameControl::Continue)
@@ -1173,7 +1196,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(fscommand) = fscommand::parse(&url) {
             fscommand::handle(fscommand, &target, self)?;
         } else {
-            self.context.navigator.navigate_to_url(
+            self.context.navigator.navigate_to_url_normalized(
                 &url.to_utf8_lossy(),
                 &target.to_utf8_lossy(),
                 None,
@@ -1319,9 +1342,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             None => None,
         };
 
-        self.context
-            .navigator
-            .navigate_to_url(&url.to_utf8_lossy(), &target.to_utf8_lossy(), vars);
+        self.context.navigator.navigate_to_url_normalized(
+            &url.to_utf8_lossy(),
+            &target.to_utf8_lossy(),
+            vars,
+        );
 
         Ok(FrameControl::Continue)
     }
@@ -2172,45 +2197,43 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         action: &Try,
         parent_data: &SwfSlice,
     ) -> Result<FrameControl<'gc>, Error<'gc>> {
+        let original_stack_size = self.context.avm1.stack_len();
         let mut result = self.run_actions(parent_data.to_unbounded_subslice(action.try_body));
 
-        if let Some((catch_vars, actions)) = &action.catch_body {
-            if let Err(Error::ThrownValue(value)) = &result {
-                let mut activation = Activation::from_action(
-                    self.context,
-                    self.id.child("[Catch]"),
-                    self.swf_version(),
-                    self.scope,
-                    self.constant_pool,
-                    self.base_clip,
-                    self.this,
-                    self.callee,
-                    &[],
-                );
+        if let Some((catch_vars, actions)) = &action.catch_body
+            && let Err(Error::ThrownValue(value)) = &result
+        {
+            self.context.avm1.truncate_stack(original_stack_size);
+            let mut activation = Activation::from_action(
+                self.context,
+                self.id.child("[Catch]"),
+                self.swf_version(),
+                self.scope,
+                self.constant_pool,
+                self.base_clip,
+                self.this,
+                self.callee,
+                &[],
+            );
 
-                activation.local_registers = self.local_registers;
+            activation.local_registers = self.local_registers;
 
-                match catch_vars {
-                    CatchVar::Var(name) => {
-                        let name =
-                            AvmString::new(activation.gc(), name.decode(activation.encoding()));
-                        activation.set_variable(name, value.to_owned())?
-                    }
-                    CatchVar::Register(id) => {
-                        activation.set_current_register(*id, value.to_owned())
-                    }
+            match catch_vars {
+                CatchVar::Var(name) => {
+                    let name = AvmString::new(activation.gc(), name.decode(activation.encoding()));
+                    activation.set_variable(name, value.to_owned())?
                 }
-
-                result = activation.run_actions(parent_data.to_unbounded_subslice(actions));
+                CatchVar::Register(id) => activation.set_current_register(*id, value.to_owned()),
             }
+
+            result = activation.run_actions(parent_data.to_unbounded_subslice(actions));
         }
 
-        if let Some(actions) = action.finally_body {
-            if let ReturnType::Explicit(value) =
+        if let Some(actions) = action.finally_body
+            && let ReturnType::Explicit(value) =
                 self.run_actions(parent_data.to_unbounded_subslice(actions))?
-            {
-                return Ok(FrameControl::Return(ReturnType::Explicit(value)));
-            }
+        {
+            return Ok(FrameControl::Return(ReturnType::Explicit(value)));
         }
 
         match result? {
@@ -2304,13 +2327,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.context.avm1.pop();
         match value {
             // Undefined/null with is ignored.
-            Value::Undefined | Value::Null => {
-                // Mimic Flash's error output.
-                self.context.avm_trace(
-                    "Error: A 'with' action failed because the specified object did not exist.\n",
-                );
-                Ok(FrameControl::Continue)
-            }
+            Value::Undefined | Value::Null => Ok(FrameControl::Continue),
 
             value => {
                 // Note that primitives get boxed at this point.
@@ -2358,10 +2375,10 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     ///
     /// If a given register does not exist, this function does nothing.
     pub fn set_current_register(&mut self, id: u8, value: Value<'gc>) {
-        if !self.set_local_register(id, value) {
-            if let Some(reg) = self.context.avm1.get_register_mut(id as usize) {
-                *reg = value;
-            }
+        if !self.set_local_register(id, value)
+            && let Some(reg) = self.context.avm1.get_register_mut(id as usize)
+        {
+            *reg = value;
         }
     }
 
@@ -2755,7 +2772,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // Special case, mutating `this`
-        if path.as_wstr() == b"this" {
+        if path.as_wstr() == b"this" && self.swf_version() >= 5 {
             self.this = value;
             return Ok(());
         }
@@ -2855,7 +2872,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.is_case_sensitive()
         };
 
-        if name.eq_with_case(b"this", this_case_sensitive) {
+        if name.eq_with_case(b"this", this_case_sensitive) && self.swf_version() >= 5 {
             return Ok(CallableValue::UnCallable(self.this_cell()));
         }
 

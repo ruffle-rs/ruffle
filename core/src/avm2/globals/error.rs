@@ -1,10 +1,27 @@
-use crate::avm2::Error;
 use crate::avm2::activation::Activation;
-pub use crate::avm2::object::error_allocator;
+use crate::avm2::error::Error;
+use crate::avm2::object::ErrorObject;
 use crate::avm2::parameters::ParametersExt;
-use crate::avm2::string::AvmString;
 use crate::avm2::value::Value;
+use crate::string::{AvmString, WString};
 use crate::{PlayerMode, avm2_stub_method};
+
+pub use crate::avm2::object::error_allocator;
+
+pub fn init_custom_prototype<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+    let this = this.as_class_object().unwrap();
+
+    let prototype_error_object = ErrorObject::new(activation, this);
+
+    this.link_prototype(activation.context, prototype_error_object.into());
+
+    Ok(Value::Undefined)
+}
 
 pub fn get_error_message<'gc>(
     activation: &mut Activation<'_, 'gc>,
@@ -42,10 +59,13 @@ pub fn get_stack_trace<'gc>(
     }
 
     if let Some(error) = this.as_error_object() {
-        let call_stack = error.call_stack();
-        if !call_stack.is_empty() {
-            return Ok(AvmString::new(activation.gc(), error.display_full()).into());
-        }
+        let stringified = Value::from(error).coerce_to_string(activation)?;
+
+        let mut output = WString::new();
+        output.push_str(&stringified);
+        error.call_stack().display(&mut output);
+
+        return Ok(AvmString::new(activation.gc(), output).into());
     }
     Ok(Value::Null)
 }

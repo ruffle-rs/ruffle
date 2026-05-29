@@ -29,7 +29,6 @@ use crate::display_object::{
     TInteractiveObject,
 };
 use crate::events::ClipEvent;
-use crate::frame_lifecycle::catchup_display_object_to_frame;
 use crate::limits::ExecutionLimit;
 use crate::player::{Player, PostFrameCallback};
 use crate::streams::{NetStream, NetStreamHandle};
@@ -117,6 +116,7 @@ impl FromStr for LoadBehavior {
 pub enum ContentType {
     Swf,
     Jpeg,
+    JpegXr,
     Png,
     Gif,
     Unknown,
@@ -126,6 +126,7 @@ impl From<JpegTagFormat> for ContentType {
     fn from(jtf: JpegTagFormat) -> Self {
         match jtf {
             JpegTagFormat::Jpeg => Self::Jpeg,
+            JpegTagFormat::JpegXr => Self::JpegXr,
             JpegTagFormat::Png => Self::Png,
             JpegTagFormat::Gif => Self::Gif,
             JpegTagFormat::Unknown => Self::Unknown,
@@ -138,6 +139,7 @@ impl fmt::Display for ContentType {
         match self {
             Self::Swf => write!(f, "SWF"),
             Self::Jpeg => write!(f, "JPEG"),
+            Self::JpegXr => write!(f, "JPEG-XR"),
             Self::Png => write!(f, "PNG"),
             Self::Gif => write!(f, "GIF"),
             Self::Unknown => write!(f, "Unknown"),
@@ -253,6 +255,30 @@ impl<'gc> LoadManager<'gc> {
     /// Retrieve a loader by handle for mutation.
     pub fn get_loader_mut(&mut self, handle: LoaderHandle) -> Option<&mut MovieLoader<'gc>> {
         self.0.get_mut(handle)
+    }
+
+    /// Checks if the target clip on the given handle's loader
+    /// has been `avm1_removed()`. If so, it will set the `loader_status`
+    /// to `Failed` and return `true`.
+    /// This is used to prevent a loaded movie from executing
+    /// if its target clip was removed before it finished loading.
+    // TODO: Does this need adjusted for clip unloading?
+    // (see the avm1/load_cancel_via_unloadclip and avm1/load_cancel_via_unloadmovie tests)
+    pub fn load_cancelled_avm1(&mut self, handle: LoaderHandle) -> bool {
+        match self.get_loader_mut(handle) {
+            Some(MovieLoader {
+                loader_status,
+                target_clip,
+                ..
+            }) => {
+                if target_clip.avm1_removed() {
+                    *loader_status = LoaderStatus::Failed;
+                    return true;
+                }
+            }
+            _ => unreachable!(),
+        }
+        false
     }
 
     /// Kick off a movie clip load.
@@ -658,6 +684,11 @@ impl<'gc> MovieLoader<'gc> {
                     Some(MovieLoader { target_clip, .. }) => *target_clip,
                     None => return Err(Error::Cancelled),
                 };
+
+                if uc.load_manager.load_cancelled_avm1(handle) {
+                    tracing::warn!("movie_loader: Target clip was already AVM1 removed");
+                    return Err(Error::Cancelled);
+                }
 
                 replacing_root_movie = uc
                     .stage
@@ -1591,6 +1622,11 @@ impl<'gc> MovieLoader<'gc> {
             None => return Err(Error::Cancelled),
         };
 
+        if uc.load_manager.load_cancelled_avm1(handle) {
+            tracing::warn!("movie_loader_data: Target clip was already avm1_removed");
+            return Ok(());
+        }
+
         let domain = if let MovieLoaderVMData::Avm2 {
             context,
             default_domain,
@@ -1625,8 +1661,16 @@ impl<'gc> MovieLoader<'gc> {
 
                 Arc::new(movie)
             }
-            ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
-                Arc::new(SwfMovie::from_loaded_image(url.clone(), length))
+            ContentType::Gif | ContentType::Jpeg | ContentType::JpegXr | ContentType::Png => {
+                let (width, height) =
+                    ruffle_render::utils::decode_define_bits_jpeg_dimensions(data)
+                        .unwrap_or((0, 0));
+                Arc::new(SwfMovie::from_loaded_image(
+                    url.clone(),
+                    length,
+                    width,
+                    height,
+                ))
             }
             ContentType::Unknown => Arc::new(SwfMovie::error_movie(url.clone())),
         };
@@ -1756,7 +1800,7 @@ impl<'gc> MovieLoader<'gc> {
 
                 return Ok(());
             }
-            ContentType::Gif | ContentType::Jpeg | ContentType::Png => {
+            ContentType::Gif | ContentType::Jpeg | ContentType::JpegXr | ContentType::Png => {
                 let mut activation = Avm2Activation::from_nothing(uc);
 
                 let library = activation.context.library.library_for_movie_mut(movie);
@@ -1990,7 +2034,12 @@ impl<'gc> MovieLoader<'gc> {
             // we add the loaded clip as a child. The frame constructor should see
             // 'this.parent == null' and 'this.stage == null'
             mc.post_instantiation(uc, None, Instantiator::Movie, false);
-            catchup_display_object_to_frame(uc, mc.into());
+
+            if mc.movie().is_action_script_3() {
+                mc.enter_frame(uc);
+                mc.construct_frame(uc);
+            }
+
             // Movie clips created from ActionScript (including from a Loader) skip the next enterFrame,
             // and consequently are observed to have their currentFrame lag one
             // frame behind objects placed by the timeline (even if they were
@@ -2011,6 +2060,8 @@ impl<'gc> MovieLoader<'gc> {
         }
 
         if let MovieLoaderVMData::Avm2 { loader_info, .. } = vm_data {
+            let dobj = dobj.unwrap();
+
             let mut loader = loader_info
                 .loader()
                 .expect("Loader should be Some")
@@ -2018,29 +2069,39 @@ impl<'gc> MovieLoader<'gc> {
                 .as_container()
                 .unwrap();
 
-            // This isn't completely correct - the 'large_preload' test observes the child
-            // being set after an 'enterFrame' call. However, our current logic should
-            // hopefully be good enough.
-            avm2_stub_method_context!(
-                uc,
-                "flash.display.Loader",
-                "load",
-                "addChild at the correct time"
-            );
+            // If the AS3 constructor for the movie clip threw an error, Flash
+            // doesn't add the movie clip to the loader, and doesn't expose
+            // properties of the loaded child (doesn't call its equivalent of
+            // `set_expose_content`).
+            let constructor_errored = dobj
+                .as_movie_clip()
+                .is_some_and(|m| m.avm2_constructor_failed());
 
-            loader_info.set_expose_content();
+            if !constructor_errored {
+                // This isn't completely correct - the 'large_preload' test observes
+                // the child being set after an 'enterFrame' call. However, our
+                // current logic should hopefully be good enough.
+                avm2_stub_method_context!(
+                    uc,
+                    "flash.display.Loader",
+                    "load",
+                    "addChild at the correct time"
+                );
 
-            // Note that we do *not* use the 'addChild' method here:
-            // Per the flash docs, our implementation always throws
-            // an 'unsupported' error. Also, the AVM2 side of our movie
-            // clip does not yet exist. Any children added inside the movie
-            // frame constructor will see an 'added' event immediately, and
-            // an 'addedToStage' event *after* the constructor finishes
-            // when we add the movie as a child of the loader.
-            loader.insert_at_index(uc, dobj.unwrap(), 0);
+                loader_info.set_expose_content();
 
-            if !movie.unwrap().is_action_script_3() {
-                loader.insert_child_into_depth_list(uc, LOADER_INSERTED_AVM1_DEPTH, dobj.unwrap());
+                // Note that we do *not* use the 'addChild' method here:
+                // Per the flash docs, our implementation always throws
+                // an 'unsupported' error. Also, the AVM2 side of our movie
+                // clip does not yet exist. Any children added inside the movie
+                // frame constructor will see an 'added' event immediately, and
+                // an 'addedToStage' event *after* the constructor finishes
+                // when we add the movie as a child of the loader.
+                loader.insert_at_index(uc, dobj, 0);
+
+                if !movie.unwrap().is_action_script_3() {
+                    loader.insert_child_into_depth_list(uc, LOADER_INSERTED_AVM1_DEPTH, dobj);
+                }
             }
         } else if let Some(dobj) = dobj {
             // This is a load of an image into AVM1 - add it as a child of the target clip.
@@ -2272,6 +2333,27 @@ impl<'gc> MovieLoader<'gc> {
     }
 }
 
+fn run_file_dialog<D: 'static>(
+    uc: &UpdateContext<'_>,
+    dialog: OwnedFuture<D, Error>,
+    on_result: impl for<'gc> FnOnce(&mut UpdateContext<'gc>, Result<D, Error>) -> Result<(), Error>
+    + 'static,
+) -> OwnedFuture<(), Error> {
+    let player = uc.player_handle();
+
+    Box::pin(async move {
+        let dialog_result = dialog.await;
+
+        // Dialog is done, allow opening new dialogs.
+        player.lock().unwrap().ui_mut().close_file_dialog();
+
+        player
+            .lock()
+            .unwrap()
+            .update(|uc| on_result(uc, dialog_result))
+    })
+}
+
 /// Display a dialog allowing a user to select a file from an AVM1 scope.
 ///
 /// Returns a future that will be resolved when a file is selected.
@@ -2282,7 +2364,45 @@ pub fn select_file_dialog_avm1<'gc>(
     dialog: DialogResultFuture,
 ) -> OwnedFuture<(), Error> {
     let handle = ObjectHandle::stash(uc, target_object);
-    select_file_dialog(uc, FileReferenceHandle::Avm1(handle), dialog)
+
+    run_file_dialog(uc, dialog, move |uc, dialog_result| {
+        let target_object = handle.fetch(uc);
+
+        let file_ref = match target_object.native() {
+            NativeObject::FileReference(fr) => fr,
+            _ => panic!("NativeObject must be FileReference"),
+        };
+
+        let mut activation = Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
+
+        match dialog_result {
+            Ok(dialog_result) => {
+                use crate::avm1::globals::as_broadcaster;
+
+                if !dialog_result.is_cancelled() {
+                    file_ref.init_from_dialog_result(&mut activation, dialog_result.borrow());
+                    as_broadcaster::broadcast_internal(
+                        target_object,
+                        &[target_object.into()],
+                        istr!("onSelect"),
+                        &mut activation,
+                    )?;
+                } else {
+                    as_broadcaster::broadcast_internal(
+                        target_object,
+                        &[target_object.into()],
+                        istr!("onCancel"),
+                        &mut activation,
+                    )?;
+                }
+            }
+            Err(err) => {
+                tracing::warn!("Error on file dialog: {:?}", err);
+            }
+        }
+
+        Ok(())
+    })
 }
 
 /// Display a dialog allowing a user to select a file from an AVM2 scope.
@@ -2295,96 +2415,28 @@ pub fn select_file_dialog_avm2<'gc>(
     dialog: DialogResultFuture,
 ) -> OwnedFuture<(), Error> {
     let handle = FileReferenceObjectHandle::stash(uc, target_object);
-    select_file_dialog(uc, FileReferenceHandle::Avm2(handle), dialog)
-}
 
-enum FileReferenceHandle {
-    Avm1(ObjectHandle),
-    Avm2(FileReferenceObjectHandle),
-}
+    run_file_dialog(uc, dialog, move |uc, dialog_result| {
+        let target_object = handle.fetch(uc);
 
-fn select_file_dialog<'gc>(
-    uc: &UpdateContext<'gc>,
-    target_object: FileReferenceHandle,
-    dialog: DialogResultFuture,
-) -> OwnedFuture<(), Error> {
-    let player = uc.player_handle();
+        match dialog_result {
+            Ok(dialog_result) => {
+                if !dialog_result.is_cancelled() {
+                    target_object.init_from_dialog_result(dialog_result);
 
-    Box::pin(async move {
-        let dialog_result = dialog.await;
-
-        // Dialog is done, allow opening new dialogs
-        player.lock().unwrap().ui_mut().close_file_dialog();
-
-        // Fire the load handler.
-        player.lock().unwrap().update(|uc| -> Result<(), Error> {
-            match target_object {
-                FileReferenceHandle::Avm1(target_object) => {
-                    let target_object = target_object.fetch(uc);
-
-                    let file_ref = match target_object.native() {
-                        NativeObject::FileReference(fr) => fr,
-                        _ => panic!("NativeObject must be FileReference"),
-                    };
-
-                    let mut activation =
-                        Activation::from_stub(uc, ActivationIdentifier::root("[File Dialog]"));
-
-                    match dialog_result {
-                        Ok(dialog_result) => {
-                            use crate::avm1::globals::as_broadcaster;
-
-                            if !dialog_result.is_cancelled() {
-                                file_ref.init_from_dialog_result(
-                                    &mut activation,
-                                    dialog_result.borrow(),
-                                );
-                                as_broadcaster::broadcast_internal(
-                                    target_object,
-                                    &[target_object.into()],
-                                    istr!("onSelect"),
-                                    &mut activation,
-                                )?;
-                            } else {
-                                as_broadcaster::broadcast_internal(
-                                    target_object,
-                                    &[target_object.into()],
-                                    istr!("onCancel"),
-                                    &mut activation,
-                                )?;
-                            }
-                        }
-                        Err(err) => {
-                            tracing::warn!("Error on file dialog: {:?}", err);
-                        }
-                    }
-                    Ok(())
-                }
-                FileReferenceHandle::Avm2(target_object) => {
-                    let target_object = target_object.fetch(uc);
-                    match dialog_result {
-                        Ok(dialog_result) => {
-                            if !dialog_result.is_cancelled() {
-                                target_object.init_from_dialog_result(dialog_result);
-
-                                let select_event =
-                                    Avm2EventObject::bare_default_event(uc, "select");
-                                Avm2::dispatch_event(uc, select_event, target_object.into());
-                            } else {
-                                let cancel_event =
-                                    Avm2EventObject::bare_default_event(uc, "cancel");
-                                Avm2::dispatch_event(uc, cancel_event, target_object.into());
-                            }
-                        }
-                        Err(err) => {
-                            tracing::warn!("Error on file dialog: {:?}", err);
-                        }
-                    }
-
-                    Ok(())
+                    let select_event = Avm2EventObject::bare_default_event(uc, "select");
+                    Avm2::dispatch_event(uc, select_event, target_object.into());
+                } else {
+                    let cancel_event = Avm2EventObject::bare_default_event(uc, "cancel");
+                    Avm2::dispatch_event(uc, cancel_event, target_object.into());
                 }
             }
-        })
+            Err(err) => {
+                tracing::warn!("Error on file dialog: {:?}", err);
+            }
+        }
+
+        Ok(())
     })
 }
 
@@ -2396,69 +2448,49 @@ pub fn save_file_dialog<'gc>(
     dialog: DialogResultFuture,
     data: Vec<u8>,
 ) -> OwnedFuture<(), Error> {
-    let player = uc.player_handle();
-    let target_object = FileReferenceObjectHandle::stash(uc, target_object);
-    Box::pin(async move {
-        let dialog_result = dialog.await;
+    let handle = FileReferenceObjectHandle::stash(uc, target_object);
 
-        // Dialog is done, allow opening new dialogs
-        player.lock().unwrap().ui_mut().close_file_dialog();
+    run_file_dialog(uc, dialog, move |uc, dialog_result| {
+        let target_object = handle.fetch(uc);
 
-        // Fire the load handler.
-        player.lock().unwrap().update(|uc| -> Result<(), Error> {
-            let target_object = target_object.fetch(uc);
+        match dialog_result {
+            Ok(mut dialog_result) => {
+                if !dialog_result.is_cancelled() {
+                    dialog_result.write_and_refresh(&data);
+                    target_object.init_from_dialog_result(dialog_result);
 
-            match dialog_result {
-                Ok(mut dialog_result) => {
-                    if !dialog_result.is_cancelled() {
-                        dialog_result.write_and_refresh(&data);
-                        target_object.init_from_dialog_result(dialog_result);
+                    let mut activation = Avm2Activation::from_nothing(uc);
 
-                        let mut activation = Avm2Activation::from_nothing(uc);
+                    let select_event =
+                        Avm2EventObject::bare_default_event(activation.context, "select");
+                    Avm2::dispatch_event(activation.context, select_event, target_object.into());
 
-                        let select_event =
-                            Avm2EventObject::bare_default_event(activation.context, "select");
-                        Avm2::dispatch_event(
-                            activation.context,
-                            select_event,
-                            target_object.into(),
-                        );
+                    let open_event =
+                        Avm2EventObject::bare_default_event(activation.context, "open");
+                    Avm2::dispatch_event(activation.context, open_event, target_object.into());
 
-                        let open_event =
-                            Avm2EventObject::bare_default_event(activation.context, "open");
-                        Avm2::dispatch_event(activation.context, open_event, target_object.into());
+                    let progress_evt = Avm2EventObject::progress_event(
+                        &mut activation,
+                        "progress",
+                        data.len(),
+                        data.len(),
+                    );
+                    Avm2::dispatch_event(activation.context, progress_evt, target_object.into());
 
-                        let progress_evt = Avm2EventObject::progress_event(
-                            &mut activation,
-                            "progress",
-                            data.len(),
-                            data.len(),
-                        );
-                        Avm2::dispatch_event(
-                            activation.context,
-                            progress_evt,
-                            target_object.into(),
-                        );
-
-                        let complete_event =
-                            Avm2EventObject::bare_default_event(activation.context, "complete");
-                        Avm2::dispatch_event(
-                            activation.context,
-                            complete_event,
-                            target_object.into(),
-                        );
-                    } else {
-                        let cancel_event = Avm2EventObject::bare_default_event(uc, "cancel");
-                        Avm2::dispatch_event(uc, cancel_event, target_object.into());
-                    }
-                }
-                Err(err) => {
-                    tracing::warn!("Save dialog had an error {:?}", err);
+                    let complete_event =
+                        Avm2EventObject::bare_default_event(activation.context, "complete");
+                    Avm2::dispatch_event(activation.context, complete_event, target_object.into());
+                } else {
+                    let cancel_event = Avm2EventObject::bare_default_event(uc, "cancel");
+                    Avm2::dispatch_event(uc, cancel_event, target_object.into());
                 }
             }
+            Err(err) => {
+                tracing::warn!("Save dialog had an error {:?}", err);
+            }
+        }
 
-            Ok(())
-        })
+        Ok(())
     })
 }
 

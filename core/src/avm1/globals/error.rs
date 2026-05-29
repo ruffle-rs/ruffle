@@ -40,6 +40,5 @@ fn to_string<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let message = this.get(istr!("message"), activation)?;
-    Ok(message.coerce_to_string(activation)?.into())
+    this.get(istr!("message"), activation)
 }

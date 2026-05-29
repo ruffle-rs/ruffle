@@ -1,6 +1,6 @@
 {
     "name": "ruffle-selfhosted",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Putting Flash back on the web. Ruffle will polyfill all Flash content and replace it with the Ruffle flash player.",
     "license": "(MIT OR Apache-2.0)",
     "private": true,
@@ -22,15 +22,15 @@
         "checkTypes": "tsc --noemit"
     },
     "dependencies": {
-        "ruffle-core": "^0.1.0"
+        "ruffle-core": "^0.2.0"
     },
     "devDependencies": {
         "@types/chai": "^5.2.3",
         "@types/chai-html": "^3.0.0",
         "json5": "^2.2.3",
         "ts-node": "^10.9.2",
-        "webpack": "^5.106.2",
-        "webpack-cli": "^6.0.1",
-        "webpack-dev-server": "^5.2.3"
+        "webpack": "^5.107.2",
+        "webpack-cli": "^7.0.2",
+        "webpack-dev-server": "^5.2.4"
     }
 }

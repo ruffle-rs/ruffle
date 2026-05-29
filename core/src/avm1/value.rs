@@ -333,9 +333,9 @@ impl<'gc> Value<'gc> {
                         Value::String(s) => s,
                         _ => {
                             if object.as_function().is_some() {
-                                AvmString::new_ascii_static(activation.gc(), b"[type Function]")
+                                istr!("[type Function]")
                             } else {
-                                AvmString::new_ascii_static(activation.gc(), b"[type Object]")
+                                istr!("[type Object]")
                             }
                         }
                     }

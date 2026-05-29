@@ -75,3 +75,12 @@ cls.prototype.name = VerifyError
 VerifyError: My Error
 VerifyError
 42
+
+
+
+Class: [class DRMManagerError]
+cls.prototype.name = undefined
+DRMManagerError: 'My Error', error ID:'42', subErrorID:'10'
+Error
+42
+10

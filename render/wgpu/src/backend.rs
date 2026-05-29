@@ -255,11 +255,12 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         &mut self,
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
+        scale: f32,
     ) -> Mesh {
         let shape_id = shape.id;
-        let lyon_mesh = self
-            .shape_tessellator
-            .tessellate_shape(shape, bitmap_source);
+        let lyon_mesh =
+            self.shape_tessellator
+                .tessellate_shape_with_scale(shape, bitmap_source, scale);
 
         let mut draws = Vec::with_capacity(lyon_mesh.draws.len());
         let mut uniform_buffer = BufferBuilder::new_for_uniform(&self.descriptors.limits);
@@ -319,7 +320,7 @@ impl<T: RenderTarget> WgpuRenderBackend<T> {
         }
     }
 
-    fn clamp_bitmap(&mut self, bitmap: &mut Bitmap) -> bool {
+    fn clamp_bitmap(&self, bitmap: &mut Bitmap) -> bool {
         let max_size = self.descriptors.limits.max_texture_dimension_2d;
         if bitmap.width() > max_size || bitmap.height() > max_size {
             let image =
@@ -492,7 +493,18 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
         shape: DistilledShape,
         bitmap_source: &dyn BitmapSource,
     ) -> ShapeHandle {
-        let mesh = self.register_shape_internal(shape, bitmap_source);
+        let mesh = self.register_shape_internal(shape, bitmap_source, 1.0);
+        ShapeHandle(Arc::new(mesh))
+    }
+
+    #[instrument(level = "debug", skip_all)]
+    fn register_shape_with_scale(
+        &mut self,
+        shape: DistilledShape,
+        bitmap_source: &dyn BitmapSource,
+        scale: f32,
+    ) -> ShapeHandle {
+        let mesh = self.register_shape_internal(shape, bitmap_source, scale);
         ShapeHandle(Arc::new(mesh))
     }
 
@@ -519,7 +531,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
 
         for entry in cache_entries {
             let texture = as_texture(&entry.handle);
-            let mut surface = Surface::new(
+            let surface = Surface::new(
                 &self.descriptors,
                 self.surface.quality(),
                 texture.texture.width(),
@@ -582,7 +594,6 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
                 }
                 run_copy_pipeline(
                     &self.descriptors,
-                    target.color_texture().format(),
                     texture.texture.format(),
                     &texture.texture.create_view(&Default::default()),
                     target.color_view(),
@@ -752,7 +763,7 @@ impl<T: RenderTarget + 'static> RenderBackend for WgpuRenderBackend<T> {
             .get_next_texture()
             .expect("TextureTargetFrame.get_next_texture is infallible");
 
-        let mut surface = Surface::new(
+        let surface = Surface::new(
             &self.descriptors,
             quality,
             texture.texture.width(),

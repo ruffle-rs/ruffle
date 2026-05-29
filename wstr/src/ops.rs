@@ -113,10 +113,7 @@ pub fn str_eq(left: &WStr, right: &WStr) -> bool {
         return false;
     }
 
-    (0..bytes.len()).all(|i| {
-        // SAFETY: Both slices have the same length.
-        unsafe { *bytes.get_unchecked(i) as u16 == *wide.get_unchecked(i) }
-    })
+    core::iter::zip(bytes.iter(), wide.iter()).all(|(&b, &w)| b as u16 == w)
 }
 
 pub fn str_eq_ignore_case(left: &WStr, right: &WStr) -> bool {

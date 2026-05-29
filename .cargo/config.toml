@@ -15,3 +15,8 @@ linker = "rust-lld.exe"
 # Set the minimum stack size for tests to 8 MiB.
 # Otherwise some tests overflow the stack.
 RUST_MIN_STACK = "8388608"
+LOCAL_RUFFLE_TESTS_SWFS_DIR = { value = "tests/tests/swfs", relative = true }
+FLASH_PLAYERS_TEST_CONFIG = { value = ".flash_players.toml", relative = true }
+
+[alias]
+testutils = "run --package tests --"

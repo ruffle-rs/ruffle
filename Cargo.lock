@@ -111,6 +111,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "annotate-snippets"
+version = "0.12.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "f211a51805bc641f3ad5b7664c77d2547af685cc33b4cd8d31964027a46f13f1"
+dependencies = [
+ "anstyle",
+ "memchr",
+ "unicode-width",
+]
+
+[[package]]
 name = "anstream"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -212,6 +223,13 @@ name = "as-raw-xcb-connection"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "175571dd1d178ced59193a6fc02dde1b972eb0bc56c892cde9beeceac5bf0f6b"
+
+[[package]]
+name = "asc"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+]
 
 [[package]]
 name = "ash"
@@ -329,9 +347,9 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "bindgen"
-version = "0.70.1"
+version = "0.72.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f49d8fed880d473ea71efb9bf597651e77201bdd4893efe54c9e5d65ae04ce6f"
+checksum = "993776b509cfb49c750f11b8f07a46fa23e0a1386ffc01fb1e7d343efc387895"
 dependencies = [
  "bitflags 2.11.1",
  "cexpr",
@@ -342,7 +360,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "regex",
- "rustc-hash 1.1.0",
+ "rustc-hash 2.1.2",
  "shlex",
  "syn",
 ]
@@ -373,6 +391,12 @@ name = "bitflags"
 version = "2.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c4512299f36f043ab09a583e57bceb5a5aab7a73db1805848e8fef3c9e8c78b3"
+
+[[package]]
+name = "bitstream-io"
+version = "2.6.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6099cdc01846bc367c4e7dd630dc5966dccf36b652fae7a74e17b640411a91b2"
 
 [[package]]
 name = "bitstream-io"
@@ -440,14 +464,16 @@ dependencies = [
 
 [[package]]
 name = "build_playerglobal"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
+ "asc",
  "clap",
  "convert_case",
  "proc-macro2",
  "quote",
+ "rascal",
  "regex",
- "swf",
+ "swf 0.2.2",
  "walkdir",
 ]
 
@@ -1438,9 +1464,9 @@ dependencies = [
 
 [[package]]
 name = "either"
-version = "1.15.0"
+version = "1.16.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
+checksum = "91622ff5e7162018101f2fea40d6ebf4a78bbe5a49736a2020649edf9693679e"
 
 [[package]]
 name = "emath"
@@ -1515,18 +1541,18 @@ dependencies = [
 
 [[package]]
 name = "enumset"
-version = "1.1.10"
+version = "1.1.13"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "25b07a8dfbbbfc0064c0a6bdf9edcf966de6b1c33ce344bdeca3b41615452634"
+checksum = "839c4174b41e75c8f7306110b2c51996a293b8d1d850edd529011841d9fede7d"
 dependencies = [
  "enumset_derive",
 ]
 
 [[package]]
 name = "enumset_derive"
-version = "0.14.0"
+version = "0.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f43e744e4ea338060faee68ed933e46e722fb7f3617e722a5772d7e856d8b3ce"
+checksum = "4bd536557b58c682b217b8fb199afdff47cd3eff260623f19e77074eb073d63a"
 dependencies = [
  "darling 0.21.3",
  "proc-macro2",
@@ -1641,7 +1667,7 @@ dependencies = [
 
 [[package]]
 name = "exporter"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -1656,7 +1682,7 @@ dependencies = [
 
 [[package]]
 name = "exporter_integration_tests"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -1768,7 +1794,7 @@ dependencies = [
  "fluent-syntax",
  "intl-memoizer",
  "intl_pluralrules",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "self_cell",
  "smallvec",
  "unic-langid",
@@ -1836,7 +1862,7 @@ dependencies = [
 
 [[package]]
 name = "flv-rs"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bitflags 2.11.1",
  "thiserror 2.0.18",
@@ -1862,9 +1888,9 @@ checksum = "77ce24cb58228fbb8aa041425bb1050850ac19177686ea6e0f41a70416f56fdb"
 
 [[package]]
 name = "fontconfig"
-version = "0.10.0"
+version = "0.10.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b19c4bca8c705ea23bfb3e3403a9e699344d1ee3205b631f03fe4dbf1e52429f"
+checksum = "854f6a6479193c392bd820abcd2123b116f01eba7775b6bcfc26494be3285229"
 dependencies = [
  "yeslogic-fontconfig-sys",
 ]
@@ -2040,6 +2066,7 @@ name = "gc-arena"
 version = "0.5.3"
 source = "git+https://github.com/kyren/gc-arena.git?rev=75671ae03f53718357b741ed4027560f14e90836#75671ae03f53718357b741ed4027560f14e90836"
 dependencies = [
+ "enum-map",
  "gc-arena-derive",
  "hashbrown 0.16.1",
  "indexmap",
@@ -2377,6 +2404,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "hashbrown"
+version = "0.17.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4f467dd6dccf739c208452f8014c75c18bb8301b050ad1cfb27153803edb0f51"
+
+[[package]]
 name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2594,13 +2627,15 @@ dependencies = [
 
 [[package]]
 name = "indexmap"
-version = "2.13.0"
+version = "2.14.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7714e70437a7dc3ac8eb7e6f8df75fd8eb422675fc7678aff7364301092b1017"
+checksum = "d466e9454f08e4a911e14806c24e16fba1b4c121d1ea474396f396069cf949d9"
 dependencies = [
  "equivalent",
- "hashbrown 0.16.1",
+ "hashbrown 0.17.0",
  "rayon",
+ "serde",
+ "serde_core",
 ]
 
 [[package]]
@@ -2778,7 +2813,7 @@ checksum = "00810f1d8b74be64b13dbf3db89ac67740615d6c891f0e7b6179326533011a07"
 [[package]]
 name = "jpegxr"
 version = "0.3.1"
-source = "git+https://github.com/ruffle-rs/jpegxr?rev=2074e32a174ad45443dcf00f795a86d65cf0153a#2074e32a174ad45443dcf00f795a86d65cf0153a"
+source = "git+https://github.com/ruffle-rs/jpegxr?rev=5281b4ae42be742779269a9f1a986101f101f32f#5281b4ae42be742779269a9f1a986101f101f32f"
 dependencies = [
  "bindgen",
  "cc",
@@ -2949,9 +2984,9 @@ dependencies = [
 
 [[package]]
 name = "log"
-version = "0.4.29"
+version = "0.4.30"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5e5032e24019045c762d3c0f28f5b6b8bbf38563a65908389bf7978758920897"
+checksum = "616ec5685824bcc94416c6d4a7a446eea774a31efd7062c8480ba6fd06d7a6e5"
 
 [[package]]
 name = "loom"
@@ -3088,9 +3123,9 @@ dependencies = [
 
 [[package]]
 name = "memchr"
-version = "2.7.6"
+version = "2.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
+checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
 name = "memmap2"
@@ -3160,7 +3195,7 @@ dependencies = [
 
 [[package]]
 name = "mocket"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -3207,7 +3242,7 @@ dependencies = [
 
 [[package]]
 name = "naga-agal"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bitflags 2.11.1",
  "insta",
@@ -3218,7 +3253,7 @@ dependencies = [
 
 [[package]]
 name = "naga-pixelbender"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "naga",
@@ -3260,7 +3295,7 @@ name = "nellymoser-rs"
 version = "0.1.2"
 source = "git+https://github.com/ruffle-rs/nellymoser?rev=073eb48d907201f46dea0c8feb4e8d9a1d92208c#073eb48d907201f46dea0c8feb4e8d9a1d92208c"
 dependencies = [
- "bitstream-io",
+ "bitstream-io 4.10.0",
  "once_cell",
  "rustdct",
 ]
@@ -3268,7 +3303,7 @@ dependencies = [
 [[package]]
 name = "nihav_codec_support"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=83c7e1094d603d9fc1212d39d99abb17f3a3226b#83c7e1094d603d9fc1212d39d99abb17f3a3226b"
+source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=12d0bdf10a85641dc2de3d6900c747894431ed77#12d0bdf10a85641dc2de3d6900c747894431ed77"
 dependencies = [
  "nihav_core",
 ]
@@ -3276,12 +3311,12 @@ dependencies = [
 [[package]]
 name = "nihav_core"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=83c7e1094d603d9fc1212d39d99abb17f3a3226b#83c7e1094d603d9fc1212d39d99abb17f3a3226b"
+source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=12d0bdf10a85641dc2de3d6900c747894431ed77#12d0bdf10a85641dc2de3d6900c747894431ed77"
 
 [[package]]
 name = "nihav_duck"
 version = "0.1.0"
-source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=83c7e1094d603d9fc1212d39d99abb17f3a3226b#83c7e1094d603d9fc1212d39d99abb17f3a3226b"
+source = "git+https://github.com/ruffle-rs/nihav-vp6?rev=12d0bdf10a85641dc2de3d6900c747894431ed77#12d0bdf10a85641dc2de3d6900c747894431ed77"
 dependencies = [
  "nihav_codec_support",
  "nihav_core",
@@ -3822,13 +3857,12 @@ dependencies = [
 
 [[package]]
 name = "oxipng"
-version = "10.1.0"
+version = "10.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "efc4ea5566cd49b80c4b5e8eac2167d137d2ca3007ec8976d4cd9fe8b654ba2b"
+checksum = "85eaaaa67c73558edaf5270e28abdf8d0663d88e8e7570cf894eff25305f4ed2"
 dependencies = [
  "bitvec",
  "clap",
- "crossbeam-channel",
  "env_logger",
  "glob",
  "indexmap",
@@ -3837,7 +3871,7 @@ dependencies = [
  "parse-size",
  "rayon",
  "rgb",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "zopfli",
 ]
 
@@ -3971,7 +4005,7 @@ checksum = "8b870d8c151b6f2fb93e84a13146138f05d02ed11c7e7c54f8826aaaf7c9f184"
 
 [[package]]
 name = "pixel_bender"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "byteorder",
  "num-derive",
@@ -3984,7 +4018,7 @@ dependencies = [
 
 [[package]]
 name = "pixel_bender_assembly_tests"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -4208,7 +4242,7 @@ dependencies = [
  "pin-project-lite",
  "quinn-proto",
  "quinn-udp",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "rustls",
  "socket2",
  "thiserror 2.0.18",
@@ -4228,7 +4262,7 @@ dependencies = [
  "lru-slab",
  "rand",
  "ring",
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
  "rustls",
  "rustls-pki-types",
  "slab",
@@ -4307,6 +4341,21 @@ name = "range-alloc"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c3d6831663a5098ea164f89cff59c6284e95f4e3c76ce9848d4529f5ccca9bde"
+
+[[package]]
+name = "rascal"
+version = "0.3.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "186ea0f6eca0e5e29b22640d9af949d510f211184c1b58e31b84a5ae34ed25a8"
+dependencies = [
+ "annotate-snippets",
+ "byteorder",
+ "indexmap",
+ "log",
+ "serde",
+ "swf 0.2.2 (registry+https://github.com/rust-lang/crates.io-index)",
+ "winnow 1.0.2",
+]
 
 [[package]]
 name = "raw-window-handle"
@@ -4505,9 +4554,9 @@ dependencies = [
 
 [[package]]
 name = "rgb"
-version = "0.8.52"
+version = "0.8.53"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c6a884d2998352bb4daf0183589aec883f16a6da1f4dde84d8e2e9a5409a1ce"
+checksum = "47b34b781b31e5d73e9fbc8689c70551fd1ade9a19e3e28cfec8580a79290cc4"
 dependencies = [
  "bytemuck",
 ]
@@ -4534,7 +4583,7 @@ checksum = "6c20b6793b5c2fa6553b250154b78d6d0db37e72700ae35fad9387a46f487c97"
 
 [[package]]
 name = "ruffle_common"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "fnv",
  "gc-arena",
@@ -4543,7 +4592,7 @@ dependencies = [
  "regress",
  "ruffle_macros",
  "ruffle_wstr",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
  "tracing",
  "url",
@@ -4551,11 +4600,11 @@ dependencies = [
 
 [[package]]
 name = "ruffle_core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-channel",
  "bitflags 2.11.1",
- "bitstream-io",
+ "bitstream-io 4.10.0",
  "build_playerglobal",
  "bytemuck",
  "byteorder",
@@ -4605,7 +4654,7 @@ dependencies = [
  "serde_json",
  "slotmap",
  "smallvec",
- "swf",
+ "swf 0.2.2",
  "symphonia",
  "thiserror 2.0.18",
  "tracing",
@@ -4620,7 +4669,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_desktop"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "ashpd",
@@ -4674,7 +4723,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_frontend_utils"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-channel",
  "async-io",
@@ -4697,7 +4746,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_fs_tests_runner"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "libtest-mimic",
@@ -4708,7 +4757,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_input_format"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bitflags 2.11.1",
  "serde",
@@ -4717,7 +4766,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_macros"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -4726,7 +4775,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_render"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "approx",
  "byteorder",
@@ -4735,8 +4784,10 @@ dependencies = [
  "flate2",
  "gif",
  "h263-rs-yuv",
+ "image",
  "indexmap",
  "jpeg-decoder",
+ "jpegxr",
  "lyon",
  "lyon_geom",
  "naga-agal",
@@ -4748,7 +4799,7 @@ dependencies = [
  "ruffle_wstr",
  "serde",
  "smallvec",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
  "tracing",
  "wasm-bindgen",
@@ -4757,27 +4808,27 @@ dependencies = [
 
 [[package]]
 name = "ruffle_render_canvas"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "js-sys",
  "log",
  "ruffle_render",
  "ruffle_web_common",
- "swf",
+ "swf 0.2.2",
  "wasm-bindgen",
  "web-sys",
 ]
 
 [[package]]
 name = "ruffle_render_webgl"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bytemuck",
  "js-sys",
  "log",
  "ruffle_render",
  "ruffle_web_common",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
  "wasm-bindgen",
  "web-sys",
@@ -4785,7 +4836,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_render_wgpu"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bytemuck",
  "clap",
@@ -4801,7 +4852,7 @@ dependencies = [
  "profiling",
  "ruffle_render",
  "smallvec",
- "swf",
+ "swf 0.2.2",
  "tracing",
  "web-sys",
  "wgpu",
@@ -4809,7 +4860,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_scanner"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "clap",
  "crossbeam-channel",
@@ -4821,13 +4872,13 @@ dependencies = [
  "ruffle_core",
  "serde",
  "sha2",
- "swf",
+ "swf 0.2.2",
  "walkdir",
 ]
 
 [[package]]
 name = "ruffle_socket_format"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "serde_json",
@@ -4835,17 +4886,20 @@ dependencies = [
 
 [[package]]
 name = "ruffle_test_framework"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "approx",
+ "asc",
  "async-channel",
  "cfg-expr",
  "chrono",
+ "clap",
  "image",
  "oxipng",
  "percent-encoding",
  "pretty_assertions",
+ "rascal",
  "regex",
  "ruffle_core",
  "ruffle_input_format",
@@ -4854,6 +4908,8 @@ dependencies = [
  "ruffle_video_external",
  "ruffle_video_software",
  "serde",
+ "sha2",
+ "tempfile",
  "toml",
  "url",
  "vfs",
@@ -4861,17 +4917,17 @@ dependencies = [
 
 [[package]]
 name = "ruffle_video"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ruffle_render",
  "slotmap",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
 ]
 
 [[package]]
 name = "ruffle_video_external"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "bzip2",
  "hex",
@@ -4883,7 +4939,7 @@ dependencies = [
  "ruffle_video_software",
  "sha2",
  "slotmap",
- "swf",
+ "swf 0.2.2",
  "tempfile",
  "thiserror 2.0.18",
  "tracing",
@@ -4895,7 +4951,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_video_software"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "flate2",
  "h263-rs",
@@ -4907,13 +4963,13 @@ dependencies = [
  "ruffle_render",
  "ruffle_video",
  "slotmap",
- "swf",
+ "swf 0.2.2",
  "thiserror 2.0.18",
 ]
 
 [[package]]
 name = "ruffle_web"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-channel",
  "base64",
@@ -4950,7 +5006,7 @@ dependencies = [
 
 [[package]]
 name = "ruffle_web_common"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "tracing",
  "wasm-bindgen",
@@ -4958,14 +5014,14 @@ dependencies = [
 
 [[package]]
 name = "ruffle_web_safari"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "objc2 0.6.4",
 ]
 
 [[package]]
 name = "ruffle_wstr"
-version = "0.1.0"
+version = "0.2.0"
 
 [[package]]
 name = "rustc-demangle"
@@ -4981,9 +5037,9 @@ checksum = "08d43f7aa6b08d49f382cde6a7982047c3426db949b1424bc4b7ec9ae12c6ce2"
 
 [[package]]
 name = "rustc-hash"
-version = "2.1.1"
+version = "2.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "357703d41365b4b27c590e3ed91eabb1b663f07c4c084095e60cbed4362dff0d"
+checksum = "94300abf3f1ae2e2b8ffb7b58043de3d399c73fa6f4b73826402a5c457614dbe"
 
 [[package]]
 name = "rustdct"
@@ -5227,9 +5283,9 @@ dependencies = [
 
 [[package]]
 name = "serde_json"
-version = "1.0.149"
+version = "1.0.150"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "83fc039473c5595ace860d8c4fafa220ff474b3fc6bfdb4293327f1a37e94d86"
+checksum = "e8014e44b4736ed0538adeecded0fce2a272f22dc9578a7eb6b2d9993c74cfb9"
 dependencies = [
  "indexmap",
  "itoa",
@@ -5450,7 +5506,7 @@ checksum = "7da8b5736845d9f2fcb837ea5d9e2628564b3b043a70948a3f0b778838c5fb4f"
 
 [[package]]
 name = "stub-report"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -5468,7 +5524,26 @@ name = "swf"
 version = "0.2.2"
 dependencies = [
  "bitflags 2.11.1",
- "bitstream-io",
+ "bitstream-io 4.10.0",
+ "byteorder",
+ "encoding_rs",
+ "enum-map",
+ "flate2",
+ "log",
+ "lzma-rs",
+ "num-derive",
+ "num-traits",
+ "simple_asn1",
+]
+
+[[package]]
+name = "swf"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "802bff556571f7e5c6e347d5f147f91d1e5976bb43fb312437f04676707bbe4f"
+dependencies = [
+ "bitflags 2.11.1",
+ "bitstream-io 2.6.0",
  "byteorder",
  "encoding_rs",
  "enum-map",
@@ -5615,6 +5690,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "55937e1799185b12863d447f42597ed69d9928686b8d88a1df17376a097d8369"
 
 [[package]]
+name = "temp-dir"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "016ef9739649996fcc983b9c588fe3d557cf216d4d98503ce1b057ab5a66d689"
+
+[[package]]
 name = "tempfile"
 version = "3.27.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5648,7 +5729,7 @@ dependencies = [
 
 [[package]]
 name = "tests"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "clap",
@@ -5660,6 +5741,9 @@ dependencies = [
  "ruffle_fs_tests_runner",
  "ruffle_render_wgpu",
  "ruffle_test_framework",
+ "serde",
+ "temp-dir",
+ "toml",
  "tracing",
  "tracing-subscriber",
 ]
@@ -5813,9 +5897,9 @@ checksum = "1f3ccbac311fea05f86f61904b462b55fb3df8837a366dfc601a0161d0532f20"
 
 [[package]]
 name = "tokio"
-version = "1.52.1"
+version = "1.52.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b67dee974fe86fd92cc45b7a95fdd2f99a36a6d7b0d431a231178d3d670bbcc6"
+checksum = "8fc7f01b389ac15039e4dc9531aa973a135d7a4135281b12d7c1bc79fd57fffe"
 dependencies = [
  "bytes",
  "libc",
@@ -5874,7 +5958,7 @@ dependencies = [
  "toml_datetime",
  "toml_parser",
  "toml_writer",
- "winnow",
+ "winnow 0.7.14",
 ]
 
 [[package]]
@@ -5896,7 +5980,7 @@ dependencies = [
  "toml_datetime",
  "toml_parser",
  "toml_writer",
- "winnow",
+ "winnow 0.7.14",
 ]
 
 [[package]]
@@ -5905,7 +5989,7 @@ version = "1.0.9+spec-1.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "702d4415e08923e7e1ef96cd5727c0dfed80b4d2fa25db9647fe5eb6f7c5a4c4"
 dependencies = [
- "winnow",
+ "winnow 0.7.14",
 ]
 
 [[package]]
@@ -6109,7 +6193,7 @@ version = "0.5.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cb30dbbd9036155e74adad6812e9898d03ec374946234fbcebd5dfc7b9187b90"
 dependencies = [
- "rustc-hash 2.1.1",
+ "rustc-hash 2.1.2",
 ]
 
 [[package]]
@@ -7297,6 +7381,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "winnow"
+version = "1.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2ee1708bef14716a11bae175f579062d4554d95be2c6829f518df847b7b3fdd0"
+dependencies = [
+ "memchr",
+]
+
+[[package]]
 name = "winresource"
 version = "0.1.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7433,7 +7526,7 @@ dependencies = [
  "uds_windows",
  "uuid",
  "windows-sys 0.61.2",
- "winnow",
+ "winnow 0.7.14",
  "zbus_macros",
  "zbus_names",
  "zvariant",
@@ -7462,7 +7555,7 @@ checksum = "7be68e64bf6ce8db94f63e72f0c7eb9a60d733f7e0499e628dfab0f84d6bcb97"
 dependencies = [
  "serde",
  "static_assertions",
- "winnow",
+ "winnow 0.7.14",
  "zvariant",
 ]
 
@@ -7510,9 +7603,9 @@ dependencies = [
 
 [[package]]
 name = "zip"
-version = "8.5.1"
+version = "8.6.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dcab981e19633ebcf0b001ddd37dd802996098bc1864f90b7c5d970ce76c1d59"
+checksum = "2d04a6b5381502aa6087c94c669499eb1602eb9c5e8198e534de571f7154809b"
 dependencies = [
  "crc32fast",
  "flate2",
@@ -7571,7 +7664,7 @@ dependencies = [
  "enumflags2",
  "serde",
  "url",
- "winnow",
+ "winnow 0.7.14",
  "zvariant_derive",
  "zvariant_utils",
 ]
@@ -7599,5 +7692,5 @@ dependencies = [
  "quote",
  "serde",
  "syn",
- "winnow",
+ "winnow 0.7.14",
 ]

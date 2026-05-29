@@ -306,10 +306,10 @@ fn close<'gc>(
     this: Object<'gc>,
     _args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    if let Some(net_connection) = NetConnection::cast(this.into()) {
-        if let Some(previous_handle) = net_connection.set_handle(None) {
-            NetConnections::close(activation.context, previous_handle, true);
-        }
+    if let Some(net_connection) = NetConnection::cast(this.into())
+        && let Some(previous_handle) = net_connection.set_handle(None)
+    {
+        NetConnections::close(activation.context, previous_handle, true);
     }
     Ok(Value::Undefined)
 }

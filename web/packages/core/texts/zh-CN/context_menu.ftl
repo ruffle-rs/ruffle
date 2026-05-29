@@ -1,4 +1,4 @@
-context-menu-download-swf = 下载 .swf
+context-menu-download-swf = 下载 SWF
 context-menu-copy-debug-info = 复制调试信息
 context-menu-open-save-manager = 打开存档管理器
 context-menu-about-ruffle =

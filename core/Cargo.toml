@@ -48,7 +48,7 @@ flash-lso = { git = "https://github.com/ruffle-rs/rust-flash-lso", rev = "998f47
 lzma-rs = { workspace = true, optional = true }
 dasp = { version = "0.11.0", features = ["interpolate", "interpolate-linear", "signal"], optional = true }
 symphonia = { version = "0.5.5", default-features = false, optional = true }
-enumset = "1.1.10"
+enumset = "1.1.13"
 bytemuck = { workspace = true, features = ["derive"] }
 clap = { workspace = true, optional=true }
 realfft = "3.5.0"
@@ -60,14 +60,14 @@ egui_extras = { version = "0.33.3", default-features = false, optional = true }
 png = { version = "0.18.1", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
-jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "2074e32a174ad45443dcf00f795a86d65cf0153a", optional = true }
+jpegxr = { workspace = true, optional = true }
 image = { workspace = true, features = ["tiff"] }
 enum-map = { workspace = true }
 ttf-parser = "0.25"
 num-bigint = "0.4"
 unicode-segmentation = "1.13.2"
 id3 = "1.16.4"
-either = "1.15.0"
+either = "1.16.0"
 chardetng = "0.1.17"
 tracy-client = { version = "0.18.2", optional = true, default-features = false }
 itertools = "0.14.0"

@@ -843,6 +843,6 @@ pub fn dispose<'gc>(
     this.as_context_3d()
         .unwrap()
         .stage3d()
-        .set_context3d(None, activation.gc());
+        .clear_context3d(activation.gc());
     Ok(Value::Undefined)
 }

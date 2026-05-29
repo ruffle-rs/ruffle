@@ -165,7 +165,7 @@ impl WgpuContext3D {
         }
     }
 
-    fn create_depth_texture(&mut self, width: u32, height: u32, sample_count: u32) -> TextureView {
+    fn create_depth_texture(&self, width: u32, height: u32, sample_count: u32) -> TextureView {
         self.descriptors
             .device
             .create_texture(&wgpu::TextureDescriptor {

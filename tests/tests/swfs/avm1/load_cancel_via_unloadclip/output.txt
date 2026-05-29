@@ -1,0 +1,3 @@
+mc_mcl: _level0.mc_mcl
+mc_mcl: _level0.mc_mcl
+MovieClipLoader.onLoadStart

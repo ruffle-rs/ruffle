@@ -1,6 +1,6 @@
 use crate::Error;
 use crate::buffer_pool::PoolEntry;
-use crate::utils::BufferDimensions;
+use crate::utils::{BufferDimensions, remove_srgb};
 use ruffle_render::bitmap::PixelRegion;
 use std::fmt::Debug;
 use std::ops::Deref;
@@ -63,10 +63,10 @@ impl SwapChainTarget {
         (width, height): (u32, u32),
         device: &wgpu::Device,
     ) -> Self {
-        // Ideally we want to use an RGBA non-sRGB surface format, because Flash colors and
-        // blending are done in sRGB space -- we don't want the GPU to adjust the colors.
-        // Some platforms may only support an sRGB surface, in which case we will draw to an
-        // intermediate linear buffer and then copy to the sRGB surface.
+        // Flash colors and blending are done in sRGB space -- we don't want the GPU to
+        // adjust the colors. We prefer a non-sRGB surface format directly, but on platforms
+        // that only expose sRGB surface formats we view the surface texture as its non-sRGB
+        // counterpart so writes skip the linear->sRGB encode step.
         let capabilities = surface.get_capabilities(adapter);
         let format = capabilities
             .formats
@@ -82,6 +82,7 @@ impl SwapChainTarget {
             // No surface (rendering to texture), default to linear RBGA.
             .unwrap_or(wgpu::TextureFormat::Rgba8Unorm);
 
+        let linear_format = remove_srgb(format);
         let surface_config = wgpu::SurfaceConfiguration {
             usage: wgpu::TextureUsages::RENDER_ATTACHMENT,
             format,
@@ -90,7 +91,11 @@ impl SwapChainTarget {
             present_mode: wgpu::PresentMode::Fifo,
             desired_maximum_frame_latency: 2,
             alpha_mode: capabilities.alpha_modes[0],
-            view_formats: vec![format],
+            view_formats: if linear_format == format {
+                vec![format]
+            } else {
+                vec![format, linear_format]
+            },
         };
         surface.configure(device, &surface_config);
         Self {
@@ -110,7 +115,7 @@ impl RenderTarget for SwapChainTarget {
     }
 
     fn format(&self) -> wgpu::TextureFormat {
-        self.surface_config.format
+        remove_srgb(self.surface_config.format)
     }
 
     fn width(&self) -> u32 {
@@ -123,7 +128,13 @@ impl RenderTarget for SwapChainTarget {
 
     fn get_next_texture(&mut self) -> Result<Self::Frame, wgpu::SurfaceError> {
         let texture = self.window_surface.get_current_texture()?;
-        let view = texture.texture.create_view(&Default::default());
+        let view_format = remove_srgb(self.surface_config.format);
+
+        let view = texture.texture.create_view(&wgpu::TextureViewDescriptor {
+            format: Some(view_format),
+            ..Default::default()
+        });
+
         Ok(SwapChainTargetFrame { texture, view })
     }
 

@@ -11,7 +11,7 @@ use crate::avm2::object::{NamespaceObject, Object, TObject};
 use crate::avm2::property::Property;
 use crate::avm2::script::TranslationUnit;
 use crate::avm2::vtable::VTable;
-use crate::avm2::{Error, Multiname, Namespace};
+use crate::avm2::{Error, Multiname};
 use crate::ecma_conversions::{f64_to_wrapping_i32, f64_to_wrapping_u32};
 use crate::string::{AvmAtom, AvmString, WStr};
 use gc_arena::Collect;
@@ -505,15 +505,6 @@ impl<'gc> Value<'gc> {
             Value::Integer(value)
         } else {
             Value::Number(value as f64)
-        }
-    }
-
-    pub fn as_namespace(&self) -> Result<Namespace<'gc>, Error<'gc>> {
-        match self {
-            Value::Object(ns) => ns
-                .as_namespace()
-                .ok_or_else(|| "Expected Namespace, found Object".into()),
-            _ => Err(format!("Expected Namespace, found {self:?}").into()),
         }
     }
 
@@ -1516,9 +1507,11 @@ impl<'gc> Value<'gc> {
         receiver: Value<'gc>,
         args: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        match self.as_object() {
-            Some(Object::ClassObject(class_object)) => class_object.call(activation, args),
-            Some(Object::FunctionObject(function_object)) => {
+        match self {
+            Value::Object(o) if let Some(class_object) = o.as_class_object() => {
+                class_object.call(activation, args)
+            }
+            Value::Object(o) if let Some(function_object) = o.as_function_object() => {
                 function_object.call(activation, receiver, args)
             }
             _ => Err(make_error_1006(activation)),
@@ -1530,11 +1523,11 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc>,
         args: FunctionArgs<'_, 'gc>,
     ) -> Result<Value<'gc>, Error<'gc>> {
-        match self.as_object() {
-            Some(Object::ClassObject(class_object)) => {
+        match self {
+            Value::Object(o) if let Some(class_object) = o.as_class_object() => {
                 class_object.construct_with_args(activation, args)
             }
-            Some(Object::FunctionObject(function_object)) => {
+            Value::Object(o) if let Some(function_object) = o.as_function_object() => {
                 function_object.construct(activation, args).map(Into::into)
             }
             _ => Err(make_error_1007(activation)),
@@ -1740,10 +1733,12 @@ impl<'gc> Value<'gc> {
         activation: &mut Activation<'_, 'gc>,
         class_or_function_object: Object<'gc>,
     ) -> bool {
-        let type_proto = match class_or_function_object {
-            Object::ClassObject(class_object) => Some(class_object.prototype()),
-            Object::FunctionObject(function_object) => function_object.prototype(),
-            _ => panic!("Object must be either ClassObject or FunctionObject"),
+        let type_proto = if let Some(class_object) = class_or_function_object.as_class_object() {
+            Some(class_object.prototype())
+        } else if let Some(function_object) = class_or_function_object.as_function_object() {
+            function_object.prototype()
+        } else {
+            panic!("Object must be either ClassObject or FunctionObject")
         };
 
         if let Some(type_proto) = type_proto {
@@ -1800,7 +1795,8 @@ impl<'gc> Value<'gc> {
             }
 
             if let Some(self_qname) = obj.as_qname_object()
-                && let Value::Object(Object::QNameObject(other_qname)) = other
+                && let Value::Object(o) = other
+                && let Some(other_qname) = o.as_qname_object()
             {
                 return Ok(self_qname.uri(activation.strings())
                     == other_qname.uri(activation.strings())
@@ -1809,7 +1805,8 @@ impl<'gc> Value<'gc> {
             }
 
             if let Some(self_ns) = obj.as_namespace_object()
-                && let Value::Object(Object::NamespaceObject(other_ns)) = other
+                && let Value::Object(o) = other
+                && let Some(other_ns) = o.as_namespace_object()
             {
                 return Ok(self_ns.namespace().as_uri(activation.strings())
                     == other_ns.namespace().as_uri(activation.strings()));

@@ -144,13 +144,13 @@ fn get_prefix_for_namespace<'gc>(
             // is returned.
             for (key, value) in ancestor.attributes().own_properties() {
                 let value = value.coerce_to_string(activation)?;
-                if value == uri {
-                    if let Some(prefix) = key.strip_prefix(WStr::from_units(b"xmlns")) {
-                        if let Some(prefix) = prefix.strip_prefix(b':') {
-                            return Ok(AvmString::new(activation.gc(), prefix).into());
-                        } else {
-                            return Ok(istr!("").into());
-                        }
+                if value == uri
+                    && let Some(prefix) = key.strip_prefix(WStr::from_units(b"xmlns"))
+                {
+                    if let Some(prefix) = prefix.strip_prefix(b':') {
+                        return Ok(AvmString::new(activation.gc(), prefix).into());
+                    } else {
+                        return Ok(istr!("").into());
                     }
                 }
             }

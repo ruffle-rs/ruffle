@@ -1,0 +1,81 @@
+ASSetNativeAccessor: [type Function]
+typeof(ASSetNativeAccessor): function
+typeof(ASSetNativeAccessor()): function
+typeof(ASSetNativeAccessor(o)): undefined
+typeof(ASSetNativeAccessor(o, 2200)): undefined
+typeof(ASSetNativeAccessor(o, 2200, "a")): undefined
+typeof(ASSetNativeAccessor(o, 2200, "b", undefined)): undefined
+ASSetNativeAccessor(o, 200, "a")
+  a,
+ASSetNativeAccessor(o, 200, "a,b,c")
+  c,b,a,
+ASSetNativeAccessor(o, 200, "a,b,")
+  b,a,
+ASSetNativeAccessor(o, 200, ",a,b")
+  b,a,
+ASSetNativeAccessor(o, 200, " a , b , c")
+   c, b , a ,
+ASSetNativeAccessor(o, 200, "")
+  
+ASSetNativeAccessor(o, 200, ",")
+  
+ASSetNativeAccessor(o, 200, "1a,2b,3c,4d,5e,6f,7g,8h,9i,10j,11k,12l,13m")
+  3m,2l,1k,j,i,h,g,f,5e,4d,3c,2b,a,
+  a: NaN
+  b: undefined
+  c: undefined
+  d: undefined
+  e: undefined
+  f: NaN
+  g: NaN
+  h: undefined
+  i: undefined
+  j: undefined
+  k: undefined
+  l: undefined
+  m: undefined
+ASSetNativeAccessor(o, 200, "1a,2b,3c,4d,5e,6f,7g,8h,9i,10j,11k,12l,13m")
+  3m,2l,1k,5e,4d,3c,2b,m,l,k,j,i,h,g,f,e,d,c,b,a,
+  a: NaN
+  b: b
+  c: c
+  d: d
+  e: e
+  f: NaN
+  g: NaN
+  h: undefined
+  i: undefined
+  j: undefined
+  k: k
+  l: l
+  m: m
+ASSetNativeAccessor(o, 200, "1a,2b,3c,4d,5e,6f,7g,8h,9i,10j,11k,12l,13m")
+  m,l,k,e,d,c,b,3m,2l,1k,j,i,h,g,f,5e,4d,3c,2b,a,
+  a: NaN
+  b: b_base
+  c: c_base
+  d: d_base
+  e: e_base
+  f: NaN
+  g: NaN
+  h: h_base
+  i: i_base
+  j: j_base
+  k: k_base
+  l: l_base
+  m: m_base
+ASSetNativeAccessor(o, 200, "1a,2b,3c,4d,5e,6f,7g,8h,9i,10j,11k,12l,13m")
+  3m,2l,1k,5e,4d,3c,2b,m,l,k,j,i,h,g,f,e,d,c,b,a,
+  a: NaN
+  b: b
+  c: c
+  d: d
+  e: e
+  f: NaN
+  g: NaN
+  h: h_base
+  i: i_base
+  j: j_base
+  k: k
+  l: l
+  m: m

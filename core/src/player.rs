@@ -1068,7 +1068,7 @@ impl Player {
         let changed_mouse_buttons = self
             .input
             .get_mouse_down_buttons()
-            .symmetrical_difference(prev_mouse_buttons);
+            .symmetric_difference(prev_mouse_buttons);
 
         if cfg!(feature = "avm_debug") {
             match event {
@@ -2222,9 +2222,6 @@ impl Player {
                     Avm1::notify_system_listeners(action.clip, listener, method, &args, context);
                 }
             }
-
-            // Do not let garbage values accumulate across multiple executions and/or frames.
-            context.avm1.clear();
         }
     }
 
@@ -3113,6 +3110,7 @@ impl PlayerBuilder {
             context
                 .avm2
                 .set_optimizer_enabled(self.avm2_optimizer_enabled);
+            Avm1::load_player_globals(context);
             Avm2::load_player_globals(context);
 
             let stage = context.stage;
