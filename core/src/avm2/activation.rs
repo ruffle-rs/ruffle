@@ -12,13 +12,14 @@ use crate::avm2::error::{
     make_null_or_undefined_error,
 };
 use crate::avm2::function::FunctionArgs;
+use crate::avm2::int_interpreter::IntInterpreter;
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
 use crate::avm2::object::TObject;
 use crate::avm2::object::{
     ArrayObject, ByteArrayObject, ClassObject, FunctionObject, NamespaceObject, ScriptObject,
     XmlListObject,
 };
-use crate::avm2::op::{LookupSwitch, Op};
+use crate::avm2::op::{IntInterpreterInfo, LookupSwitch, Op};
 use crate::avm2::scope::{Scope, ScopeChain, search_scope_stack};
 use crate::avm2::script::Script;
 use crate::avm2::stack::StackFrame;
@@ -833,6 +834,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Sxi8 => self.op_sxi8(),
                 Op::Sxi16 => self.op_sxi16(),
                 Op::Throw => self.op_throw(),
+
+                Op::RunIntInterpreter(info) => {
+                    self.run_int_interpreter(info);
+
+                    ip = info.exit_offset.get();
+
+                    continue;
+                }
 
                 // Branch ops
                 Op::Jump { offset } => {
@@ -3093,5 +3102,42 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     fn op_throw(&mut self) -> Result<(), Error<'gc>> {
         let error_val = self.pop_stack();
         Err(Error::from_value(self, error_val))
+    }
+
+    fn run_int_interpreter(&mut self, info: &IntInterpreterInfo) {
+        let mut interpreter = IntInterpreter::new();
+
+        // Synchronize all the int locals in this interpreter to the int
+        // interpreter
+        for (i, is_int) in info.input_locals.iter().enumerate() {
+            if is_int {
+                // This local might be read from the code run in the int
+                // interpreter, so pass it to it properly.
+                interpreter.push_stack(self.local_register(i as u32).as_i32());
+            } else {
+                // This local won't be read from by the code run in the int
+                // interpreter, so we can just pass nothing.
+                interpreter.push_stack(0);
+            }
+        }
+
+        interpreter.run(&info.ops);
+
+        // Synchronize all the int locals in the int interpreter to this
+        // interpreter
+        for (i, is_int) in info.output_locals.iter().enumerate() {
+            if is_int {
+                // This local might have been written to by the code run in the
+                // int interpreter, so synchronize it back to us.
+                self.set_local_register(i as u32, interpreter.frame_at(i as u32));
+            }
+        }
+
+        // Finally, synchronize the stack from the int interpreter to this
+        // interpreter.
+        let num_locals = info.input_locals.len();
+        for i in num_locals..num_locals + info.final_stack_height {
+            self.push_stack(interpreter.frame_at(i as u32));
+        }
     }
 }
