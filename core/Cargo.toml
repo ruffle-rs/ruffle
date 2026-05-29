@@ -92,7 +92,7 @@ audio = ["dasp"]
 known_stubs = ["linkme", "serde"]
 default_compatibility_rules = []
 egui = ["dep:egui", "dep:egui_extras", "png"]
-jpegxr = ["dep:jpegxr", "lzma"]
+jpegxr = ["dep:jpegxr", "ruffle_render/jpegxr", "lzma"]
 default_font = []
 serde = ["serde/derive"]
 

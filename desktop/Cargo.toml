@@ -81,7 +81,7 @@ OriginalFilename = "ruffle.exe"
 
 [features]
 default = ["software_video", "external_video", "lzma", "fontconfig"]
-jpegxr = ["ruffle_core/jpegxr", "ruffle_render/jpegxr"]
+jpegxr = ["ruffle_core/jpegxr"]
 
 # core features
 avm_debug = ["ruffle_core/avm_debug"]
