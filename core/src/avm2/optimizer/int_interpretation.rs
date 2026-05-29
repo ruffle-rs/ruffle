@@ -1,0 +1,258 @@
+use crate::avm2::activation::Activation;
+use crate::avm2::int_interpreter::MAX_INT_INTERPRETER_FRAME;
+use crate::avm2::method::Method;
+use crate::avm2::op::{IntInterpreterInfo, IntOp, Op};
+use crate::avm2::optimizer::utils::SmallBitSet;
+
+use gc_arena::Gc;
+use std::cell::Cell;
+use std::collections::BTreeMap;
+use std::ops::Range;
+
+/// The minimum number of consecutive ops that will be run in the integer
+/// interpreter. If this number is too low, the overhead of entering and exiting
+/// the integer interpreter may be greater than the speedup of having faster
+/// ops. On the other hand, if this number is too high, some sequences of ops
+/// that would benefit from being run in the integer interpreter may end up
+/// being considered too short to be run in it.
+const MIN_INT_OPS_LENGTH: usize = 30;
+
+/// The maximum number of ops in a method that can be considered for int
+/// interpreter analysis.
+const MAX_METHOD_OPS_LENGTH: usize = 300;
+
+pub fn run_analysis<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    ops: &[Cell<Op<'gc>>],
+    int_analysis_info: &IntAnalysisInfo,
+) {
+    if !int_analysis_info.is_valid() {
+        return;
+    }
+
+    // Keep track of the ranges that we've already created int interpreter
+    // promotions for so that we don't create even more int interpreter
+    // promotions within them. Because `empty_stack_positions` is a `BTreeMap`,
+    // iterating over it will result in earlier positions (the ones that will
+    // yield the largest promoted areas) being handled first.
+    let mut covered_ranges: Vec<Range<usize>> = Vec::new();
+
+    // Now we can actually run the analysis pass.
+    for (start_index, locals_state) in int_analysis_info.empty_stack_positions.iter() {
+        let start_index = *start_index;
+
+        if covered_ranges.iter().any(|r| r.contains(&start_index)) {
+            // See above comment
+            continue;
+        }
+
+        if let Some(info) = run_single_analysis(ops, start_index, locals_state) {
+            covered_ranges.push(start_index..info.exit_offset.get());
+
+            let op = Op::RunIntInterpreter(Gc::new(activation.gc(), info));
+            ops[start_index].set(op);
+        }
+    }
+}
+
+fn run_single_analysis<'gc>(
+    ops: &[Cell<Op<'gc>>],
+    start_index: usize,
+    entry_locals_state: &SmallBitSet,
+) -> Option<IntInterpreterInfo> {
+    let mut output_vec = Vec::new();
+
+    let mut current_locals_state = entry_locals_state.clone();
+    let mut stack_height = 0;
+
+    // We run a simplified abstract interpreter pass. We know that at this point,
+    // the stack is empty and locals are either integral or non-integral. Loading
+    // a non-integral local results in the pass being aborted, so we can be
+    // certain that these ops are only working on integers.
+    let mut i = start_index;
+    while i < ops.len() {
+        let op = ops[i].get();
+
+        let translated_op = match op {
+            Op::AddI => {
+                stack_height -= 1;
+
+                IntOp::Add
+            }
+            Op::BitAnd => {
+                stack_height -= 1;
+
+                IntOp::BitAnd
+            }
+            Op::BitNot => IntOp::BitNot,
+            Op::BitOr => {
+                stack_height -= 1;
+
+                IntOp::BitOr
+            }
+            Op::BitXor => {
+                stack_height -= 1;
+
+                IntOp::BitXor
+            }
+            Op::DecLocalI { index } => {
+                if !current_locals_state.get(index as usize) {
+                    // Can't access a non-int
+                    break;
+                }
+
+                IntOp::DecLocal { index }
+            }
+            Op::Dup => {
+                stack_height += 1;
+
+                IntOp::Dup
+            }
+            Op::GetLocal { index } => {
+                if !current_locals_state.get(index as usize) {
+                    // Can't access a non-int
+                    break;
+                }
+
+                stack_height += 1;
+
+                IntOp::GetLocal { index }
+            }
+            Op::IncLocalI { index } => {
+                if !current_locals_state.get(index as usize) {
+                    // Can't access a non-int
+                    break;
+                }
+
+                IntOp::IncLocal { index }
+            }
+            Op::Nop => IntOp::Nop,
+            Op::PushInt { value } => {
+                stack_height += 1;
+
+                IntOp::PushInt { value }
+            }
+            Op::SetLocal { index } => {
+                stack_height -= 1;
+
+                current_locals_state.set(index as usize, true);
+                IntOp::SetLocal { index }
+            }
+            Op::StoreLocal { index } => {
+                current_locals_state.set(index as usize, true);
+                IntOp::StoreLocal { index }
+            }
+            Op::SubtractI => {
+                stack_height -= 1;
+
+                IntOp::Subtract
+            }
+            _ => {
+                break;
+            }
+        };
+
+        output_vec.push(translated_op);
+
+        i += 1;
+    }
+
+    let num_ops = output_vec.len();
+
+    output_vec.push(IntOp::End);
+
+    // Not enough ops for entering the int interpreter to be worth it
+    if num_ops < MIN_INT_OPS_LENGTH {
+        return None;
+    }
+
+    let info = IntInterpreterInfo {
+        input_locals: entry_locals_state.clone(),
+        output_locals: current_locals_state,
+        final_stack_height: stack_height,
+        exit_offset: Cell::new(start_index + num_ops),
+        ops: output_vec,
+    };
+
+    Some(info)
+}
+
+/// Information about if and where to perform int interpreter analysis.
+///
+/// This struct is filled out before the int interpreter analysis begins (in the
+/// type-aware optimizer), and is used by the int interpreter analysis code.
+pub struct IntAnalysisInfo {
+    /// Every op index in this method where the stack is empty. For each of
+    /// these positions, previously, in the type-aware optimizer, we recorded
+    /// which of the locals was integral. That information is stored in the
+    /// `SmallBitSet` corresponding to each location.
+    ///
+    /// NOTE: these op indices are indices of ops before the nop remover has
+    /// been run.
+    empty_stack_positions: BTreeMap<usize, SmallBitSet>,
+
+    /// Whether int interpreter analysis should be performed at all.
+    is_valid: bool,
+}
+
+impl IntAnalysisInfo {
+    pub fn new<'gc>(
+        activation: &mut Activation<'_, 'gc>,
+        method: Method<'gc>,
+        has_exceptions: bool,
+        ops: &[Cell<Op<'gc>>],
+    ) -> Self {
+        let method_body = method
+            .body()
+            .expect("Cannot verify non-native method without body!");
+        let max_locals = method_body.num_locals;
+        let max_stack = method_body.max_stack;
+
+        let is_valid = if ops.len() > MAX_METHOD_OPS_LENGTH {
+            // Not worth trying to optimize a method this large
+            false
+        } else if has_exceptions {
+            // The int interpreter and the analysis do not handle exceptions
+            false
+        } else if method
+            .translation_unit()
+            .domain()
+            .is_playerglobals_domain(activation.avm2())
+        {
+            // Some playerglobals code will run before domain memory is initialized,
+            // so if playerglobals code attempts to access domain memory there'll
+            // be a panic on startup
+            false
+        } else if (max_locals + max_stack) as usize >= MAX_INT_INTERPRETER_FRAME {
+            // Frame is too large to run in the int interpreter
+            false
+        } else {
+            true
+        };
+
+        Self {
+            empty_stack_positions: BTreeMap::new(),
+            is_valid,
+        }
+    }
+
+    /// Determine if this `IntAnalysisInfo` claims that it is valid to perform
+    /// an int-interpretation analysis.
+    pub fn is_valid(&self) -> bool {
+        self.is_valid
+    }
+
+    /// Mark an position in the method where the stack is empty.
+    ///
+    /// This method requires a `SmallBitSet` of which locals are integral at
+    /// that point, as that is necessary for the analysis.
+    pub fn mark_empty_stack_position(&mut self, position: usize, integral_locals: SmallBitSet) {
+        self.empty_stack_positions.insert(position, integral_locals);
+    }
+
+    /// Mark an position in the method where the stack was previously marked as
+    /// empty but now no longer is.
+    pub fn remove_empty_stack_position(&mut self, position: usize) {
+        self.empty_stack_positions.remove(&position);
+    }
+}
