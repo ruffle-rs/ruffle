@@ -1,7 +1,8 @@
 use crate::avm2::op::Op;
+use crate::avm2::optimizer::utils::SmallBitSet;
 
 use std::cell::Cell;
-use std::collections::HashSet;
+use std::collections::{BTreeMap, HashSet};
 
 /// A peephole optimizer to run before type-aware optimizations. This should be
 /// called once on the entire code slice.
@@ -24,6 +25,7 @@ pub fn preprocess_peephole(ops: &[Cell<Op<'_>>]) {
 pub fn postprocess_peephole<'a>(
     ops: &'a [Cell<Op<'_>>],
     jump_targets: &HashSet<usize>,
+    empty_stack_positions: &mut BTreeMap<usize, SmallBitSet>,
     has_exceptions: bool,
 ) {
     // Gather some information...
@@ -66,6 +68,10 @@ pub fn postprocess_peephole<'a>(
             last_op = None;
         }
 
+        // NOTE: If a peephole optimization changes the stack from being empty
+        // to being non-empty at a certain position, it MUST make sure to
+        // invalidate that position in `empty_stack_positions`.
+
         if let Some(last_op) = last_op {
             // Optimizations on both the current and the last op
             match (last_op.get(), current_op.get()) {
@@ -94,6 +100,13 @@ pub fn postprocess_peephole<'a>(
                     // SetLocal+GetLocal becomes Nop+StoreLocal
                     last_op.set(Op::Nop);
                     current_op.set(Op::StoreLocal { index: index1 });
+
+                    // It's possible that before this peephole optimization, the
+                    // stack was empty at the `GetLocal`'s position. However,
+                    // after this optimization, it is guaranteed that the stack
+                    // is no longer empty at the `GetLocal`'s position, as the
+                    // `StoreLocal` keeps one entry on the stack.
+                    empty_stack_positions.remove(&i);
                 }
                 (
                     Op::Add {

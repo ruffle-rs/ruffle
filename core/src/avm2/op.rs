@@ -2,6 +2,7 @@ use crate::avm2::class::Class;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::namespace::Namespace;
+use crate::avm2::optimizer::utils::SmallBitSet;
 use crate::avm2::script::Script;
 use crate::string::AvmAtom;
 
@@ -287,6 +288,7 @@ pub enum Op<'gc> {
     ReturnVoid {
         return_type: Option<Class<'gc>>,
     },
+    RunIntInterpreter(Gc<'gc, IntInterpreterInfo>),
     RShift,
     SetGlobalSlot {
         // note: 0-indexed, as opposed to FP.
@@ -344,6 +346,9 @@ pub enum Op<'gc> {
     Timestamp,
     URShift,
 }
+
+#[cfg(target_pointer_width = "64")]
+const _: () = assert!(std::mem::size_of::<Op>() == 16);
 
 impl Op<'_> {
     pub fn can_throw_error(&self) -> bool {
@@ -430,5 +435,48 @@ pub struct LookupSwitch {
     pub case_offsets: Box<[Cell<usize>]>,
 }
 
-#[cfg(target_pointer_width = "64")]
-const _: () = assert!(std::mem::size_of::<Op>() == 16);
+#[derive(Collect, Debug)]
+#[collect(require_static)]
+pub struct IntInterpreterInfo {
+    /// The locals that should be provided as inputs to the int interpreter.
+    pub input_locals: SmallBitSet,
+
+    /// The locals that are modified by the int interpreter.
+    pub output_locals: SmallBitSet,
+
+    /// The stack height of the int interpreter after execution ends.
+    pub final_stack_height: usize,
+
+    /// The offset in normal code that should be jumped to after execution ends.
+    ///
+    /// This has interior mutability so that we can rewrite the offset from the
+    /// optimizer when we need to.
+    pub exit_offset: Cell<usize>,
+
+    /// The ops run by the int interpreter.
+    pub ops: Vec<IntOp>,
+}
+
+/// An op used in the int interpreter.
+///
+/// These ops only work on `i32` values.
+#[derive(Debug)]
+pub enum IntOp {
+    Add,
+    BitAnd,
+    BitNot,
+    BitOr,
+    BitXor,
+    DecLocal { index: u32 },
+    Dup,
+    End,
+    GetLocal { index: u32 },
+    IncLocal { index: u32 },
+    Nop,
+    PushInt { value: i32 },
+    SetLocal { index: u32 },
+    StoreLocal { index: u32 },
+    Subtract,
+}
+
+const _: () = assert!(std::mem::size_of::<IntOp>() == 8);

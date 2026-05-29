@@ -1,8 +1,10 @@
 mod blocks;
 mod dce;
+mod int_interpretation;
 mod nop_remover;
 mod peephole;
 mod type_aware;
+pub(crate) mod utils;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
@@ -11,6 +13,7 @@ use crate::avm2::op::Op;
 use crate::avm2::verify::Exception;
 
 use std::cell::Cell;
+use std::collections::BTreeMap;
 use std::collections::HashSet;
 
 /// Run all the optimizer passes on the given code. This method should be
@@ -32,6 +35,8 @@ pub fn optimize<'gc>(
     // zero-length jumps, which usually reduces the number of blocks in obfuscated code.
     peephole::preprocess_peephole(code_slice);
 
+    let mut empty_stack_positions = BTreeMap::new();
+
     type_aware::type_aware_optimize(
         activation,
         method,
@@ -39,11 +44,25 @@ pub fn optimize<'gc>(
         method_exceptions,
         resolved_parameters,
         &mut jump_targets,
+        &mut empty_stack_positions,
     )?;
 
-    peephole::postprocess_peephole(code_slice, &jump_targets, !method_exceptions.is_empty());
+    peephole::postprocess_peephole(
+        code_slice,
+        &jump_targets,
+        &mut empty_stack_positions,
+        !method_exceptions.is_empty(),
+    );
 
     dce::eliminate_dead_code(code_slice, &jump_targets);
+
+    int_interpretation::run_analysis(
+        activation,
+        method,
+        code_slice,
+        &empty_stack_positions,
+        !method_exceptions.is_empty(),
+    );
 
     nop_remover::remove_nops(code, method_exceptions);
 
