@@ -38,5 +38,5 @@ clap = { workspace = true, optional = true }
 tempfile = { workspace = true }
 
 [features]
-jpegxr = ["ruffle_core/jpegxr", "ruffle_render/jpegxr"]
+jpegxr = ["ruffle_core/jpegxr"]
 lzma = ["ruffle_core/lzma"]
