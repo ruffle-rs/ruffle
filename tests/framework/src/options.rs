@@ -79,6 +79,8 @@ pub struct AudioAssertion {
     pub frames: FrameSelection,
     pub max_amplitude: Option<f32>,
     pub min_max_amplitude: Option<f32>,
+    #[serde(default)]
+    pub known_failure: bool,
 }
 
 #[derive(Clone, Deserialize)]
