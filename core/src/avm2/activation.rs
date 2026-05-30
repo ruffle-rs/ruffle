@@ -2784,7 +2784,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+            .expect("Just checked that the address was valid");
 
         Ok(())
     }
@@ -2803,7 +2803,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+            .expect("Just checked that the address was valid");
 
         Ok(())
     }
@@ -2822,7 +2822,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+            .expect("Just checked that the address was valid");
 
         Ok(())
     }
@@ -2841,7 +2841,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
         dm.write_at_nongrowing(&val.to_le_bytes(), address)
-            .map_err(|e| e.to_avm(self))?;
+            .expect("Just checked that the address was valid");
 
         Ok(())
     }
@@ -2879,7 +2879,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        let val = dm.read_at(2, address).map_err(|e| e.to_avm(self))?;
+        let val = dm
+            .read_at(2, address)
+            .expect("Just checked that the address was valid");
         self.push_stack(u16::from_le_bytes(val.try_into().unwrap()));
 
         Ok(())
@@ -2898,7 +2900,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
+        let val = dm
+            .read_at(4, address)
+            .expect("Just checked that the address was valid");
         self.push_stack(i32::from_le_bytes(val.try_into().unwrap()));
         Ok(())
     }
@@ -2916,7 +2920,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        let val = dm.read_at(4, address).map_err(|e| e.to_avm(self))?;
+        let val = dm
+            .read_at(4, address)
+            .expect("Just checked that the address was valid");
         self.push_stack(f32::from_le_bytes(val.try_into().unwrap()));
 
         Ok(())
@@ -2935,7 +2941,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             return Err(make_error_1506(self));
         }
 
-        let val = dm.read_at(8, address).map_err(|e| e.to_avm(self))?;
+        let val = dm
+            .read_at(8, address)
+            .expect("Just checked that the address was valid");
         self.push_stack(f64::from_le_bytes(val.try_into().unwrap()));
         Ok(())
     }
