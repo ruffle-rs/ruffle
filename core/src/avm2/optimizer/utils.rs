@@ -4,7 +4,7 @@ use std::fmt;
 ///
 /// Trying to create a bitset with more items will result in it being silently
 /// truncated.
-#[derive(Clone)]
+#[derive(Clone, Copy)]
 pub struct SmallBitSet {
     bits: u32,
     len: u8,

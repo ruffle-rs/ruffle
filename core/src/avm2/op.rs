@@ -182,7 +182,9 @@ pub enum Op<'gc> {
         multiname: Gc<'gc, Multiname<'gc>>,
     },
     GreaterEquals,
+    GreaterEqualsIntegral,
     GreaterThan,
+    GreaterThanIntegral,
     HasNext,
     HasNext2 {
         object_register: u32,
@@ -218,7 +220,9 @@ pub enum Op<'gc> {
         index: u32,
     },
     LessEquals,
+    LessEqualsIntegral,
     LessThan,
+    LessThanIntegral,
     Lf32,
     Lf64,
     Li16,
@@ -433,14 +437,8 @@ pub struct LookupSwitch {
 #[derive(Collect, Debug)]
 #[collect(require_static)]
 pub struct IntInterpreterInfo {
-    /// The locals that should be provided as inputs to the int interpreter.
-    pub input_locals: SmallBitSet,
-
-    /// The locals that are modified by the int interpreter.
-    pub output_locals: SmallBitSet,
-
-    /// The stack height of the int interpreter after execution ends.
-    pub final_stack_height: usize,
+    /// The locals that are read and written to by the int interpreter.
+    pub synchronize_locals: SmallBitSet,
 
     /// The ops run by the int interpreter.
     pub ops: Vec<IntOp>,
@@ -460,20 +458,52 @@ pub enum IntOp {
         index: u32,
     },
     Dup,
-    ExternalJump {
+    GetLocal {
+        index: u32,
+    },
+    GreaterEquals,
+    GreaterThan,
+    IfFalse {
+        offset: u32,
+    },
+    IfFalseExternal {
         // NOTE: This has interior mutability so that we can rewrite the offset
         // from the optimizer when we need to.
         offset: Cell<u32>,
+
+        // There can be at most 15 stack entries :p
+        // Each external branch can lead to execution ending with a different
+        // number of entries left on the stack, so we have to keep track
+        final_stack_height: u8,
     },
-    GetLocal {
-        index: u32,
+    IfTrue {
+        offset: u32,
+    },
+    IfTrueExternal {
+        // See comments on IfFalseExternal
+        offset: Cell<u32>,
+
+        final_stack_height: u8,
+    },
+    Jump {
+        offset: u32,
+    },
+    JumpExternal {
+        // See comment on IfFalseExternal
+        offset: Cell<u32>,
+
+        final_stack_height: u8,
     },
     IncLocal {
         index: u32,
     },
+    LessEquals,
+    LessThan,
     Li32,
     Li8,
     Nop,
+    Not,
+    Pop,
     PushInt {
         value: i32,
     },

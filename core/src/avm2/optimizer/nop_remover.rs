@@ -44,7 +44,13 @@ pub fn remove_nops<'gc>(code: &mut Vec<Op<'gc>>, exceptions: &mut [Exception<'gc
             Op::RunIntInterpreter(info) => {
                 for op in &info.ops {
                     match op {
-                        IntOp::ExternalJump { offset } => {
+                        IntOp::IfFalseExternal { offset, .. } => {
+                            offset.set(offset_vec[offset.get() as usize] as u32);
+                        }
+                        IntOp::IfTrueExternal { offset, .. } => {
+                            offset.set(offset_vec[offset.get() as usize] as u32);
+                        }
+                        IntOp::JumpExternal { offset, .. } => {
                             offset.set(offset_vec[offset.get() as usize] as u32);
                         }
                         _ => {}

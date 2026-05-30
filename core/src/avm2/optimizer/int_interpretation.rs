@@ -70,7 +70,7 @@ pub fn run_analysis<'gc>(
             continue;
         }
 
-        if let Some((info, num_ops)) = run_single_analysis(ops, start_index, locals_state) {
+        if let Some((info, num_ops)) = run_single_analysis(ops, start_index, *locals_state) {
             covered_ranges.push(start_index..start_index + num_ops);
 
             let op = Op::RunIntInterpreter(Gc::new(activation.gc(), info));
@@ -82,12 +82,11 @@ pub fn run_analysis<'gc>(
 fn run_single_analysis<'gc>(
     ops: &[Cell<Op<'gc>>],
     start_index: usize,
-    entry_locals_state: &SmallBitSet,
+    used_locals: SmallBitSet,
 ) -> Option<(IntInterpreterInfo, usize)> {
     let mut output_vec = Vec::new();
 
-    let mut current_locals_state = entry_locals_state.clone();
-    let mut stack_height = 0;
+    let mut stack = Stack::new();
 
     // We run a simplified abstract interpreter pass. We know that at this point,
     // the stack is empty and locals are either integral or non-integral. Loading
@@ -99,28 +98,41 @@ fn run_single_analysis<'gc>(
 
         let translated_op = match op {
             Op::AddI => {
-                stack_height -= 1;
+                stack.pop();
+                stack.pop();
+                stack.push_int();
 
                 IntOp::Add
             }
             Op::BitAnd => {
-                stack_height -= 1;
+                stack.pop();
+                stack.pop();
+                stack.push_int();
 
                 IntOp::BitAnd
             }
-            Op::BitNot => IntOp::BitNot,
+            Op::BitNot => {
+                stack.pop();
+                stack.push_int();
+
+                IntOp::BitNot
+            }
             Op::BitOr => {
-                stack_height -= 1;
+                stack.pop();
+                stack.pop();
+                stack.push_int();
 
                 IntOp::BitOr
             }
             Op::BitXor => {
-                stack_height -= 1;
+                stack.pop();
+                stack.pop();
+                stack.push_int();
 
                 IntOp::BitXor
             }
             Op::DecLocalI { index } => {
-                if !current_locals_state.get(index as usize) {
+                if !used_locals.get(index as usize) {
                     // Can't access a non-int
                     break;
                 }
@@ -128,61 +140,187 @@ fn run_single_analysis<'gc>(
                 IntOp::DecLocal { index }
             }
             Op::Dup => {
-                stack_height += 1;
+                let value = stack.pop();
+                stack.push(value);
+                stack.push(value);
 
                 IntOp::Dup
             }
             Op::GetLocal { index } => {
-                if !current_locals_state.get(index as usize) {
+                if !used_locals.get(index as usize) {
                     // Can't access a non-int
                     break;
                 }
 
-                stack_height += 1;
+                // Only integers can be stored in locals
+                stack.push_int();
 
                 IntOp::GetLocal { index }
             }
+            Op::GreaterEqualsIntegral => {
+                stack.pop();
+                stack.pop();
+                stack.push_bool();
+
+                IntOp::GreaterEquals
+            }
+            Op::GreaterThanIntegral => {
+                stack.pop();
+                stack.pop();
+                stack.push_bool();
+
+                IntOp::GreaterThan
+            }
+            Op::IfFalse { offset } => {
+                stack.pop();
+
+                if !stack.is_entirely_ints() {
+                    // It's fairly rare for booleans to be on the stack during
+                    // merging, and this allows us to avoid dealing with state
+                    // merging
+                    break;
+                }
+
+                IntOp::IfFalseExternal {
+                    offset: Cell::new(offset as u32),
+
+                    // The frame size of the abstract interpreter should fit in
+                    // a u8
+                    final_stack_height: stack.len() as u8,
+                }
+            }
+            Op::IfTrue { offset } => {
+                stack.pop();
+
+                if !stack.is_entirely_ints() {
+                    // See comment on `Op::IfFalse`
+                    break;
+                }
+
+                IntOp::IfTrueExternal {
+                    offset: Cell::new(offset as u32),
+
+                    // See comment on `Op::IfFalse`
+                    final_stack_height: stack.len() as u8,
+                }
+            }
+            Op::Jump { offset } => {
+                if !stack.is_entirely_ints() {
+                    // See comment on `Op::IfFalse`
+                    break;
+                }
+
+                IntOp::JumpExternal {
+                    offset: Cell::new(offset as u32),
+
+                    // See comment on `Op::IfFalse`
+                    final_stack_height: stack.len() as u8,
+                }
+            }
             Op::IncLocalI { index } => {
-                if !current_locals_state.get(index as usize) {
+                if !used_locals.get(index as usize) {
                     // Can't access a non-int
                     break;
                 }
 
                 IntOp::IncLocal { index }
             }
-            Op::Jump { offset } => IntOp::ExternalJump {
-                offset: Cell::new(offset as u32),
-            },
-            Op::Li8 => IntOp::Li8,
-            Op::Li32 => IntOp::Li32,
+            Op::LessEqualsIntegral => {
+                stack.pop();
+                stack.pop();
+                stack.push_bool();
+
+                IntOp::LessEquals
+            }
+            Op::LessThanIntegral => {
+                stack.pop();
+                stack.pop();
+                stack.push_bool();
+
+                IntOp::LessThan
+            }
+            Op::Li8 => {
+                stack.pop();
+                stack.push_int();
+
+                IntOp::Li8
+            }
+            Op::Li32 => {
+                stack.pop();
+                stack.push_int();
+
+                IntOp::Li32
+            }
             Op::Nop => IntOp::Nop,
+            Op::Not => {
+                stack.pop();
+                stack.push_bool();
+
+                IntOp::Not
+            }
+            Op::Pop => {
+                stack.pop();
+
+                IntOp::Pop
+            }
             Op::PushInt { value } => {
-                stack_height += 1;
+                stack.push_int();
 
                 IntOp::PushInt { value }
             }
             Op::SetLocal { index } => {
-                stack_height -= 1;
+                if !used_locals.get(index as usize) {
+                    // Can't access a non-int
 
-                current_locals_state.set(index as usize, true);
+                    // i.e. we cannot set a non-int to an int, which would
+                    // break certain guarantees that simplify handling of
+                    // branching. For example, if the program proceeded for a
+                    // while assuming that local #X was non-integral, then
+                    // local #X were to be set to be integral in a branch, then
+                    // we would have to implement proper state merging to
+                    // determine that local #X was non-integral.
+                    break;
+                }
+
+                if !stack.pop_expecting_int() {
+                    // Can't store a non-integer into a local
+                    break;
+                }
+
                 IntOp::SetLocal { index }
             }
             Op::Si8 => {
-                stack_height -= 2;
+                stack.pop();
+                stack.pop();
 
                 IntOp::Si8
             }
             Op::Si32 => {
-                stack_height -= 2;
+                stack.pop();
+                stack.pop();
 
                 IntOp::Si32
             }
             Op::StoreLocal { index } => {
-                current_locals_state.set(index as usize, true);
+                if !used_locals.get(index as usize) {
+                    // Can't access a non-int
+
+                    // See comment on `Op::SetLocal`
+                    break;
+                }
+
+                if !stack.pop_expecting_int() {
+                    // Can't store a non-integer into a local
+                    break;
+                }
+                stack.push_int();
+
                 IntOp::StoreLocal { index }
             }
             Op::SubtractI => {
-                stack_height -= 1;
+                stack.pop();
+                stack.pop();
+                stack.push_int();
 
                 IntOp::Subtract
             }
@@ -200,8 +338,9 @@ fn run_single_analysis<'gc>(
 
     // Once all ops are done executing, jump to the normal interpreter at the
     // position where we should continue.
-    output_vec.push(IntOp::ExternalJump {
+    output_vec.push(IntOp::JumpExternal {
         offset: Cell::new((start_index + num_ops) as u32),
+        final_stack_height: stack.len() as u8,
     });
 
     // Not enough ops for entering the int interpreter to be worth it
@@ -209,12 +348,109 @@ fn run_single_analysis<'gc>(
         return None;
     }
 
+    // This massively complicates synchronization of locals between the normal
+    // interpreter and the int interpreter, so we don't support it
+    if !stack.is_entirely_ints() {
+        return None;
+    }
+
+    // Right now all the branches/jumps are external, i.e. they will exit the int
+    // interpreter into normal code. This is technically correct, but let's see
+    // which of the branches we can make internal branches (branches that
+    // remain in the int interpreter). We want to stay in the int interpreter
+    // as much as possible.
+    for op in &mut output_vec {
+        match op {
+            IntOp::IfFalseExternal { offset, .. } => {
+                let offset = offset.get() as usize;
+                if (start_index..start_index + num_ops).contains(&offset) {
+                    *op = IntOp::IfFalse {
+                        offset: (offset - start_index) as u32,
+                    };
+                }
+            }
+            IntOp::IfTrueExternal { offset, .. } => {
+                let offset = offset.get() as usize;
+                if (start_index..start_index + num_ops).contains(&offset) {
+                    *op = IntOp::IfTrue {
+                        offset: (offset - start_index) as u32,
+                    };
+                }
+            }
+            IntOp::JumpExternal { offset, .. } => {
+                let offset = offset.get() as usize;
+                if (start_index..start_index + num_ops).contains(&offset) {
+                    *op = IntOp::Jump {
+                        offset: (offset - start_index) as u32,
+                    };
+                }
+            }
+            _ => {}
+        }
+    }
+
     let info = IntInterpreterInfo {
-        input_locals: entry_locals_state.clone(),
-        output_locals: current_locals_state,
-        final_stack_height: stack_height,
+        synchronize_locals: used_locals,
         ops: output_vec,
     };
 
     Some((info, num_ops))
+}
+
+/// A value in the int interpreter.
+///
+/// Currently the int interpreter supports dealing with integers and booleans.
+/// However, booleans are limited- they cannot be stored in locals, and they
+/// cannot exist on the stack when a jump/branch is made or when the code ends.
+///
+/// Note that when coercing booleans to integers, AVM2 coerces `false` to `0`,
+/// and `true` to `1`. This is advantageous to us because we represent those two
+/// boolean values as those two integer values at runtime, which means we don't
+/// need to ensure that e.g. `add_i` is always being passed two integers- even
+/// if it's being passed two booleans, it'll still return the correct result at
+/// runtime. The same applies to the rest of the integral ops.
+#[derive(Clone, Copy)]
+enum ValueType {
+    Bool,
+    Int,
+}
+
+/// The stack of the abstract interpreter.
+///
+/// As the abstract interpreter only supports up to MAX_INT_INTERPRETER_FRAME
+/// slots, this will never have a length greater than MAX_INT_INTERPRETER_FRAME.
+struct Stack(Vec<ValueType>);
+
+impl Stack {
+    pub fn new() -> Self {
+        Stack(Vec::with_capacity(MAX_INT_INTERPRETER_FRAME - 1))
+    }
+
+    pub fn push(&mut self, value: ValueType) {
+        self.0.push(value);
+    }
+
+    pub fn push_bool(&mut self) {
+        self.0.push(ValueType::Bool);
+    }
+
+    pub fn push_int(&mut self) {
+        self.0.push(ValueType::Int);
+    }
+
+    pub fn pop(&mut self) -> ValueType {
+        self.0.pop().expect("Guaranteed by verifier previously")
+    }
+
+    pub fn pop_expecting_int(&mut self) -> bool {
+        matches!(self.pop(), ValueType::Int)
+    }
+
+    pub fn is_entirely_ints(&self) -> bool {
+        self.0.iter().all(|v| matches!(v, ValueType::Int))
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
 }

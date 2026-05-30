@@ -3,6 +3,8 @@ use crate::avm2::op::IntOp;
 
 use std::cell::RefMut;
 
+/// The maximum number of items on the interpreter frame. This value should be
+/// able to fit in a `u8`, as there is logic in the optimizer that depends on it.
 pub const MAX_INT_INTERPRETER_FRAME: usize = 16;
 
 pub struct DomainMemoryError;
@@ -50,7 +52,7 @@ impl<'a> IntInterpreter<'a> {
     }
 
     #[inline(never)]
-    pub fn run(&mut self, opcodes: &[IntOp]) -> Result<usize, DomainMemoryError> {
+    pub fn run(&mut self, opcodes: &[IntOp]) -> Result<(usize, usize), DomainMemoryError> {
         let mut ip = 0;
 
         loop {
@@ -66,10 +68,16 @@ impl<'a> IntInterpreter<'a> {
                 IntOp::DecLocal { index } => self.op_dec_local(*index),
                 IntOp::Dup => self.op_dup(),
                 IntOp::GetLocal { index } => self.op_get_local(*index),
+                IntOp::GreaterEquals => self.op_greater_equals(),
+                IntOp::GreaterThan => self.op_greater_than(),
                 IntOp::IncLocal { index } => self.op_inc_local(*index),
+                IntOp::LessEquals => self.op_less_equals(),
+                IntOp::LessThan => self.op_less_than(),
                 IntOp::Li32 => self.op_li32()?,
                 IntOp::Li8 => self.op_li8()?,
                 IntOp::Nop => {}
+                IntOp::Not => self.op_not(),
+                IntOp::Pop => self.op_pop(),
                 IntOp::PushInt { value } => self.op_push_int(*value),
                 IntOp::SetLocal { index } => self.op_set_local(*index),
                 IntOp::Si32 => self.op_si32()?,
@@ -77,9 +85,43 @@ impl<'a> IntInterpreter<'a> {
                 IntOp::StoreLocal { index } => self.op_store_local(*index),
                 IntOp::Subtract => self.op_subtract(),
 
-                IntOp::ExternalJump { offset } => {
+                IntOp::IfFalse { offset } => {
+                    if self.pop_stack() == 0 {
+                        ip = *offset as usize;
+                    }
+                }
+                IntOp::IfFalseExternal {
+                    offset,
+                    final_stack_height,
+                } => {
+                    if self.pop_stack() == 0 {
+                        // Jump back into the normal interpreter
+                        return Ok((offset.get() as usize, *final_stack_height as usize));
+                    }
+                }
+                IntOp::IfTrue { offset } => {
+                    if self.pop_stack() != 0 {
+                        ip = *offset as usize;
+                    }
+                }
+                IntOp::IfTrueExternal {
+                    offset,
+                    final_stack_height,
+                } => {
+                    if self.pop_stack() != 0 {
+                        // Jump back into the normal interpreter
+                        return Ok((offset.get() as usize, *final_stack_height as usize));
+                    }
+                }
+                IntOp::Jump { offset } => {
+                    ip = *offset as usize;
+                }
+                IntOp::JumpExternal {
+                    offset,
+                    final_stack_height,
+                } => {
                     // Jump back into the normal interpreter
-                    return Ok(offset.get() as usize);
+                    return Ok((offset.get() as usize, *final_stack_height as usize));
                 }
             }
         }
@@ -129,9 +171,45 @@ impl<'a> IntInterpreter<'a> {
         self.push_stack(value);
     }
 
+    fn op_greater_equals(&mut self) {
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
+
+        let result = value1 >= value2;
+
+        self.push_stack(result as i32);
+    }
+
+    fn op_greater_than(&mut self) {
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
+
+        let result = value1 > value2;
+
+        self.push_stack(result as i32);
+    }
+
     fn op_inc_local(&mut self, index: u32) {
         let value = self.frame_at(index);
         self.set_frame_at(index, value.wrapping_add(1));
+    }
+
+    fn op_less_equals(&mut self) {
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
+
+        let result = value1 <= value2;
+
+        self.push_stack(result as i32);
+    }
+
+    fn op_less_than(&mut self) {
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
+
+        let result = value1 < value2;
+
+        self.push_stack(result as i32);
     }
 
     fn op_li32(&mut self) -> Result<(), DomainMemoryError> {
@@ -165,6 +243,20 @@ impl<'a> IntInterpreter<'a> {
         }
 
         Ok(())
+    }
+
+    fn op_not(&mut self) {
+        let value = self.pop_stack();
+
+        if value == 0 {
+            self.push_stack(1);
+        } else {
+            self.push_stack(0);
+        }
+    }
+
+    fn op_pop(&mut self) {
+        self.pop_stack();
     }
 
     fn op_push_int(&mut self, value: i32) {

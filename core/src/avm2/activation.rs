@@ -785,9 +785,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::StrictEquals => self.op_strict_equals(),
                 Op::Equals => self.op_equals(),
                 Op::GreaterEquals => self.op_greater_equals(),
+                Op::GreaterEqualsIntegral => self.op_greater_equals_integral(),
                 Op::GreaterThan => self.op_greater_than(),
+                Op::GreaterThanIntegral => self.op_greater_than_integral(),
                 Op::LessEquals => self.op_less_equals(),
+                Op::LessEqualsIntegral => self.op_less_equals_integral(),
                 Op::LessThan => self.op_less_than(),
+                Op::LessThanIntegral => self.op_less_than_integral(),
                 Op::Nop => Ok(()),
                 Op::Not => self.op_not(),
                 Op::HasNext => self.op_has_next(),
@@ -2434,11 +2438,33 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
+    fn op_greater_equals_integral(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack().as_i32();
+        let value1 = self.pop_stack().as_i32();
+
+        let result = value1 >= value2;
+
+        self.push_stack(result);
+
+        Ok(())
+    }
+
     fn op_greater_than(&mut self) -> Result<(), Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
         let result = value2.abstract_lt(&value1, self)?.unwrap_or(false);
+
+        self.push_stack(result);
+
+        Ok(())
+    }
+
+    fn op_greater_than_integral(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack().as_i32();
+        let value1 = self.pop_stack().as_i32();
+
+        let result = value1 > value2;
 
         self.push_stack(result);
 
@@ -2456,11 +2482,33 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
+    fn op_less_equals_integral(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack().as_i32();
+        let value1 = self.pop_stack().as_i32();
+
+        let result = value1 <= value2;
+
+        self.push_stack(result);
+
+        Ok(())
+    }
+
     fn op_less_than(&mut self) -> Result<(), Error<'gc>> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
 
         let result = value1.abstract_lt(&value2, self)?.unwrap_or(false);
+
+        self.push_stack(result);
+
+        Ok(())
+    }
+
+    fn op_less_than_integral(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack().as_i32();
+        let value1 = self.pop_stack().as_i32();
+
+        let result = value1 < value2;
 
         self.push_stack(result);
 
@@ -3121,8 +3169,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Synchronize all the int locals in this interpreter to the int
         // interpreter
-        for (i, is_int) in info.input_locals.iter().enumerate() {
-            if is_int {
+        for (i, is_read) in info.synchronize_locals.iter().enumerate() {
+            if is_read {
                 // This local might be read from the code run in the int
                 // interpreter, so pass it to it properly.
                 interpreter.push_stack(self.local_register(i as u32).as_i32());
@@ -3139,8 +3187,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // exception handlers to which that state is observable to (this method
         // will simply immediately return to its caller with the error).
         let result = interpreter.run(&info.ops);
-        let new_ip = match result {
-            Ok(new_ip) => new_ip,
+        let (new_ip, final_stack_height) = match result {
+            Ok(info) => info,
             Err(_) => {
                 // The only exception that can happen from the int interpreter is
                 // an out-of-bounds domain memory read/write.
@@ -3150,8 +3198,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Synchronize all the int locals in the int interpreter to this
         // interpreter
-        for (i, is_int) in info.output_locals.iter().enumerate() {
-            if is_int {
+        for (i, is_read) in info.synchronize_locals.iter().enumerate() {
+            if is_read {
                 // This local might have been written to by the code run in the
                 // int interpreter, so synchronize it back to us.
                 self.set_local_register(i as u32, interpreter.frame_at(i as u32));
@@ -3160,8 +3208,8 @@ impl<'a, 'gc> Activation<'a, 'gc> {
 
         // Finally, synchronize the stack from the int interpreter to this
         // interpreter.
-        let num_locals = info.input_locals.len();
-        for i in num_locals..num_locals + info.final_stack_height {
+        let num_locals = info.synchronize_locals.len();
+        for i in num_locals..num_locals + final_stack_height {
             self.push_stack(interpreter.frame_at(i as u32));
         }
 

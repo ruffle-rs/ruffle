@@ -920,14 +920,50 @@ fn abstract_interpret_ops<'gc>(
                 }
                 stack.push_class(activation, types.uint)?;
             }
-            Op::Equals
-            | Op::StrictEquals
-            | Op::LessEquals
-            | Op::LessThan
-            | Op::GreaterThan
-            | Op::GreaterEquals => {
+            Op::Equals | Op::StrictEquals => {
                 stack.pop(activation)?;
                 stack.pop(activation)?;
+
+                stack.push_class(activation, types.boolean)?;
+            }
+            Op::GreaterEquals => {
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::GreaterEqualsIntegral);
+                }
+
+                stack.push_class(activation, types.boolean)?;
+            }
+            Op::GreaterThan => {
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::GreaterThanIntegral);
+                }
+
+                stack.push_class(activation, types.boolean)?;
+            }
+            Op::LessEquals => {
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::LessEqualsIntegral);
+                }
+
+                stack.push_class(activation, types.boolean)?;
+            }
+            Op::LessThan => {
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::LessThanIntegral);
+                }
+
                 stack.push_class(activation, types.boolean)?;
             }
             Op::Not => {
@@ -2169,6 +2205,10 @@ fn abstract_interpret_ops<'gc>(
             | Op::CoerceUSwapPop
             | Op::ConstructSlot { .. }
             | Op::GetScriptGlobals { .. }
+            | Op::GreaterEqualsIntegral
+            | Op::GreaterThanIntegral
+            | Op::LessEqualsIntegral
+            | Op::LessThanIntegral
             | Op::PopJump { .. }
             | Op::RunIntInterpreter { .. }
             | Op::SetSlotCoerceI { .. }
