@@ -261,6 +261,13 @@ fn run_single_analysis<'gc>(
 
                 IntOp::Li32
             }
+            Op::LShift => {
+                stack.pop();
+                stack.pop();
+                stack.push_int();
+
+                IntOp::LShift
+            }
             Op::Nop => IntOp::Nop,
             Op::Not => {
                 stack.pop();
@@ -298,6 +305,13 @@ fn run_single_analysis<'gc>(
                 }
 
                 IntOp::SetLocal { index }
+            }
+            Op::RShift => {
+                stack.pop();
+                stack.pop();
+                stack.push_int();
+
+                IntOp::RShift
             }
             Op::Si8 => {
                 stack.pop();

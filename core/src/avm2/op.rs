@@ -503,12 +503,14 @@ pub enum IntOp {
     LessThan,
     Li32,
     Li8,
+    LShift,
     Nop,
     Not,
     Pop,
     PushInt {
         value: i32,
     },
+    RShift,
     SetLocal {
         index: u32,
     },

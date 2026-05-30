@@ -76,10 +76,12 @@ impl<'a> IntInterpreter<'a> {
                 IntOp::LessThan => self.op_less_than(),
                 IntOp::Li32 => self.op_li32()?,
                 IntOp::Li8 => self.op_li8()?,
+                IntOp::LShift => self.op_lshift(),
                 IntOp::Nop => {}
                 IntOp::Not => self.op_not(),
                 IntOp::Pop => self.op_pop(),
                 IntOp::PushInt { value } => self.op_push_int(*value),
+                IntOp::RShift => self.op_rshift(),
                 IntOp::SetLocal { index } => self.op_set_local(*index),
                 IntOp::Si32 => self.op_si32()?,
                 IntOp::Si8 => self.op_si8()?,
@@ -255,6 +257,13 @@ impl<'a> IntInterpreter<'a> {
         Ok(())
     }
 
+    fn op_lshift(&mut self) {
+        let value2 = self.pop_stack() as u32;
+        let value1 = self.pop_stack();
+
+        self.push_stack(value1 << (value2 & 0x1F));
+    }
+
     fn op_not(&mut self) {
         let value = self.pop_stack();
 
@@ -271,6 +280,13 @@ impl<'a> IntInterpreter<'a> {
 
     fn op_push_int(&mut self, value: i32) {
         self.push_stack(value);
+    }
+
+    fn op_rshift(&mut self) {
+        let value2 = self.pop_stack() as u32;
+        let value1 = self.pop_stack();
+
+        self.push_stack(value1 >> (value2 & 0x1F));
     }
 
     fn op_set_local(&mut self, index: u32) {
