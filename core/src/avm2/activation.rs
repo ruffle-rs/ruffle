@@ -3219,6 +3219,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Err(Error::from_value(self, error_val))
     }
 
+    #[inline(never)]
     fn run_int_interpreter(&mut self, info: &IntInterpreterInfo) -> Result<usize, Error<'gc>> {
         // Code run in the int interpreter does not have the ability to borrow
         // or swap out the domain memory, so borrow it here. This means that

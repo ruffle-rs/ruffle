@@ -56,6 +56,10 @@ pub fn optimize<'gc>(
 
     dce::eliminate_dead_code(code_slice, &jump_targets);
 
+    let mut s = crate::string::WString::new();
+    crate::avm2::function::display_function(&mut s, method);
+    println!("Analyzing {}", s);
+
     int_interpretation::run_analysis(
         activation,
         method,
