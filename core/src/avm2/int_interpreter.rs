@@ -49,6 +49,7 @@ impl<'a> IntInterpreter<'a> {
         self.frame[index as usize] = value;
     }
 
+    #[inline(never)]
     pub fn run(&mut self, opcodes: &[IntOp]) -> Result<(), DomainMemoryError> {
         let mut ip = 0;
 
