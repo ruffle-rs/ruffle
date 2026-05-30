@@ -318,7 +318,11 @@ impl<'gc> Multiname<'gc> {
 
         let ns = if self.has_lazy_ns() {
             let ns_value = activation.pop_stack();
-            let ns = ns_value.as_namespace()?;
+            let ns = ns_value
+                .as_object()
+                .and_then(|o| o.as_namespace())
+                .expect("Guaranteed by verifier");
+
             NamespaceSet::single(ns)
         } else {
             self.ns

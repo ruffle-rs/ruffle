@@ -285,7 +285,6 @@ impl CommandTarget {
                 run_copy_pipeline(
                     descriptors,
                     format,
-                    format,
                     frame_buffer.texture.view(),
                     &texture.create_view(&Default::default()),
                     get_whole_frame_bind_group(&whole_frame_bind_group, descriptors, size),

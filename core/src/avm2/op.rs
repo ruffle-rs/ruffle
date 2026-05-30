@@ -382,11 +382,15 @@ impl Op<'_> {
 
     pub fn is_nop(&self) -> bool {
         if cfg!(feature = "avm_debug") {
-            matches!(self, Op::Nop)
+            matches!(self, Op::Nop | Op::CoerceA)
         } else {
             matches!(
                 self,
-                Op::Nop | Op::Debug { .. } | Op::DebugFile { .. } | Op::DebugLine { .. }
+                Op::Nop
+                    | Op::CoerceA
+                    | Op::Debug { .. }
+                    | Op::DebugFile { .. }
+                    | Op::DebugLine { .. }
             )
         }
     }

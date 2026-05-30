@@ -153,7 +153,7 @@ impl<'a, 'gc> LayoutContext<'a, 'gc> {
 
         let params = EvalParameters::from_span(span);
 
-        for text in span_text.split(&[b'\n', b'\r', b'\t'][..]) {
+        for text in span_text.split(&b"\n\r\t"[..]) {
             let slice_start = text.offset_in(span_text).unwrap();
             let delimiter = if slice_start > 0 {
                 span_text

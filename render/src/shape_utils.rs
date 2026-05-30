@@ -1094,7 +1094,7 @@ fn winding_number_curve(
             }
         }
 
-        // Second subcurve is moving downard, include extrema point.
+        // Second subcurve is moving downward, include extrema point.
         if is_t1_valid && (y_min..y2).contains(&0.0) {
             let x = x0 + bx * t1 + ax * t1 * t1;
             if x > 0.0 {

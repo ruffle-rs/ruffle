@@ -67,7 +67,7 @@ impl TestRunner {
         if test.options.num_frames.is_none() && test.options.num_ticks.is_none() {
             return Err(anyhow!(
                 "Test {} must specify at least one of num_frames or num_ticks",
-                &test.name
+                test.name
             ));
         }
 

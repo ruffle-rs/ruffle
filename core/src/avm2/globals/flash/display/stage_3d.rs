@@ -1,5 +1,3 @@
-use crate::avm2::globals::methods::flash_events_event_dispatcher as event_dispatcher_methods;
-use crate::avm2::object::{Context3DObject, EventObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use ruffle_render::backend::Context3DProfile;
@@ -53,19 +51,18 @@ pub fn request_context3d_internal<'gc>(
         })
         .unwrap();
 
-    if this_stage3d.context3d().is_none() {
-        let context = activation.context.renderer.create_context3d(profile)?;
-        let context3d_obj = Context3DObject::from_context(activation, context, this_stage3d);
-        this_stage3d.set_context3d(Some(context3d_obj), activation.gc());
+    // Several SWFS (the examples from the Context3D documentation, and the
+    // Starling framework) rely on the `context3DCreate` being fired
+    // asynchronously - they initialize variables after the call to
+    // `requestContext3D`, and then use those variables in the event handler.
 
-        let event = EventObject::bare_default_event(activation.context, "context3DCreate");
+    // Our context3D creation is synchronous, so we need to delay it. Set the
+    // parameters that the context3d was requested with here, then actually
+    // create the context3d at the end of this frame in
+    // `frame_lifecycle::run_all_phases_avm2` and dispatch the context3DCreate
+    // event.
 
-        this.call_method(
-            event_dispatcher_methods::DISPATCH_EVENT,
-            &[event.into()],
-            activation,
-        )?;
-    }
+    this_stage3d.set_requesting_context3d(activation.gc(), profile);
 
     Ok(Value::Undefined)
 }

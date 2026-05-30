@@ -700,10 +700,16 @@ pub fn make_error_1054<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> 
 
 #[inline(never)]
 #[cold]
-pub fn make_error_1058<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
+pub fn make_error_1058<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    expected_type: &str,
+) -> Error<'gc> {
     make_error!(verify_error(
         activation,
-        "#1058: Illegal operand type.",
+        format!(
+            "Error #1058: Illegal operand type: must be {}.",
+            expected_type
+        ),
         1058
     ))
 }

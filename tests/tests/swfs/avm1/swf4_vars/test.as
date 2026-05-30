@@ -1,0 +1,40 @@
+trace(this);
+trace(_root);
+trace(_level0);
+trace(_global);
+trace(_parent);
+trace(_accProps);
+trace(_focusrect);
+trace(_highquality);
+trace(maxscroll);
+trace(_quality);
+trace(scroll);
+trace(_soundbuftime);
+
+this = "a";
+_root = "b";
+_level0 = "c";
+_global = "d";
+_parent = "e";
+_accProps = "f";
+_focusrect = "g";
+_highquality = "h";
+maxscroll = "i";
+_quality = "j";
+scroll = "k";
+_soundbuftime = "l";
+
+trace("After:");
+
+trace(this);
+trace(_root);
+trace(_level0);
+trace(_global);
+trace(_parent);
+trace(_accProps);
+trace(_focusrect);
+trace(_highquality);
+trace(maxscroll);
+trace(_quality);
+trace(scroll);
+trace(_soundbuftime);

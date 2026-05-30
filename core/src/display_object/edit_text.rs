@@ -1378,7 +1378,7 @@ impl<'gc> EditText<'gc> {
     }
 
     /// Attempts to bind this text field to a property of a display object.
-    /// If we find a parent display object matching the given path, we register oursevles and a property name with it.
+    /// If we find a parent display object matching the given path, we register ourselves and a property name with it.
     /// `set_text` will be called by the stage object whenever the property changes.
     /// If we don't find a display object, we register ourselves on a list of pending unbound text fields.
     /// Whenever a display object is created, the unbound list is checked to see if the new object should be bound.
@@ -2711,10 +2711,18 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .get()
             .intersects(EditTextFlag::BORDER | EditTextFlag::HAS_BACKGROUND)
         {
-            let background_color = Some(self.0.background_color.get())
-                .filter(|_| self.0.flags.get().contains(EditTextFlag::HAS_BACKGROUND));
-            let border_color = Some(self.0.border_color.get())
-                .filter(|_| self.0.flags.get().contains(EditTextFlag::BORDER));
+            let background_color = self
+                .0
+                .flags
+                .get()
+                .contains(EditTextFlag::HAS_BACKGROUND)
+                .then_some(self.0.background_color.get());
+            let border_color = self
+                .0
+                .flags
+                .get()
+                .contains(EditTextFlag::BORDER)
+                .then_some(self.0.border_color.get());
 
             if self.is_device_font() {
                 self.draw_device_text_box(

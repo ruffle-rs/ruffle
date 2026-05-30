@@ -137,6 +137,7 @@ impl InputManager {
         let event = match event {
             // Optionally transform gamepad button events into key events.
             PlayerEvent::GamepadButtonDown { button } => {
+                #[allow(clippy::question_mark)]
                 if let Some(key_code) = self.gamepad_button_mapping.get(&button) {
                     InputEvent::KeyDown {
                         key_code: *key_code,
@@ -150,6 +151,7 @@ impl InputManager {
                 }
             }
             PlayerEvent::GamepadButtonUp { button } => {
+                #[allow(clippy::question_mark)]
                 if let Some(key_code) = self.gamepad_button_mapping.get(&button) {
                     InputEvent::KeyUp {
                         key_code: *key_code,

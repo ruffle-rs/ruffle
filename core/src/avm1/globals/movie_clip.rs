@@ -970,6 +970,7 @@ pub fn clone_sprite<'gc>(
     }
 
     let movie = parent.movie();
+    #[allow(clippy::question_mark)]
     let cloned_sprite = if sprite.id() != 0 {
         // Clip from SWF; instantiate a new copy.
         let library = context.library.library_for_movie(movie).unwrap();
@@ -1563,7 +1564,7 @@ pub fn get_url<'gc>(
         };
         let vars_method = method.map(|m| (m, activation.locals_into_form_values()));
 
-        activation.context.navigator.navigate_to_url(
+        activation.context.navigator.navigate_to_url_normalized(
             &url.to_utf8_lossy(),
             &window.to_utf8_lossy(),
             vars_method,

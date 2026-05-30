@@ -520,7 +520,6 @@ impl<'gc> MovieClip<'gc> {
             }
         }
 
-        let mut end_tag_found = false;
         let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
             match tag_code {
                 TagCode::CsmTextSettings => shared.csm_text_settings(context, reader),
@@ -575,7 +574,7 @@ impl<'gc> MovieClip<'gc> {
                 TagCode::DoAbc | TagCode::DoAbc2 => shared.preload_bytecode_tag(tag_code, reader),
                 TagCode::SymbolClass => shared.preload_symbol_class(reader),
                 TagCode::End => {
-                    end_tag_found = true;
+                    progress.has_end_tag.set(true);
                     return Ok(ControlFlow::Exit);
                 }
                 _ => Ok(()),
@@ -595,7 +594,10 @@ impl<'gc> MovieClip<'gc> {
             Ok(true)
         };
         let is_finished = !progress.awaiting_import.get()
-            && (end_tag_found || result.is_err() || !result.unwrap_or_default());
+            && (progress.has_end_tag.get()
+                || result.is_err()
+                || !result.unwrap_or_default()
+                || reader.get_ref().is_empty());
 
         shared.import_exports_of_importer(context);
 
@@ -1348,11 +1350,11 @@ impl<'gc> MovieClip<'gc> {
             || self.current_frame() < self.frames_loaded() as u16
         {
             NextFrame::Next
-        // The `current_frame` can be larger than `header_frames` if the SWF header
-        // declared fewer frames than we actually have. We only stop the swf if there
-        // was *really* at most a single frame (we declared at most 1 frame, and reached the end
-        // of the stream after executing 0 or 1 frames)
-        } else if self.header_frames() <= 1 && self.current_frame() <= 1 {
+        // The movie clip does not loop on 2 conditions:
+        //  1. There was really only one frame, regardless of what the header
+        //     declared.
+        //  2. The movie clip does not have an End tag.
+        } else if self.frames_loaded() <= 1 || !mc.preload_progress.has_end_tag.get() {
             NextFrame::Same
         } else {
             NextFrame::First
@@ -1961,7 +1963,8 @@ impl<'gc> MovieClip<'gc> {
             | DisplayObject::Video(_) => ratio_equals && id_equals && clip_depth_equals,
             DisplayObject::MovieClip(_)
             | DisplayObject::Stage(_)
-            | DisplayObject::LoaderDisplay(_) => ratio_equals,
+            | DisplayObject::LoaderDisplay(_)
+            | DisplayObject::TextLine(_) => ratio_equals,
         }
     }
 
@@ -4616,6 +4619,10 @@ struct PreloadProgress {
     /// If this movie is currently executing an ImportAssets/2.
     /// If true, this movie should **not** execute, and should be considered as still loading.
     awaiting_import: Cell<bool>,
+
+    /// Whether preloading encountered an explicit End tag.
+    /// Clips without an End tag should not loop, even if they have multiple frames.
+    has_end_tag: Cell<bool>,
 }
 
 impl Default for PreloadProgress {
@@ -4627,6 +4634,7 @@ impl Default for PreloadProgress {
             start_pos: Cell::new(0),
             cur_preload_symbol: Cell::new(None),
             awaiting_import: Cell::new(false),
+            has_end_tag: Cell::new(false),
         }
     }
 }

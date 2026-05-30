@@ -10,10 +10,16 @@ pub struct PlayerEnvironment {
 }
 
 impl PlayerEnvironment {
-    pub fn new() -> Self {
+    pub fn new(log_warnings: bool) -> Self {
         let root = TempDir::new().unwrap();
         let log_file = root.child(".macromedia/Flash_Player/Logs/flashlog.txt");
-        fs::write(root.child("mm.cfg"), "TraceOutputFileEnable=1\n").unwrap();
+
+        let mut config = "TraceOutputFileEnable=1\n".to_string();
+        if log_warnings {
+            config.push_str("ErrorReportingEnable=1\n");
+        }
+
+        fs::write(root.child("mm.cfg"), config).unwrap();
         Self { root, log_file }
     }
 

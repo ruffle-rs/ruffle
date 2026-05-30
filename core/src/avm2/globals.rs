@@ -541,7 +541,7 @@ pub fn init_early_classes<'gc>(
 
 /// This file is built by 'core/build_playerglobal/'
 /// See that tool, and 'core/src/avm2/globals/README.md', for more details
-const PLAYERGLOBAL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal.swf"));
+const PLAYERGLOBAL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal_avm2.swf"));
 
 mod native {
     include!(concat!(env!("OUT_DIR"), "/native_table.rs"));
@@ -826,7 +826,7 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'
 
     let movie = Arc::new(
         SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
-            .expect("playerglobal.swf should be valid"),
+            .expect("playerglobal_avm2.swf should be valid"),
     );
 
     let slice = SwfSlice::from(movie.clone());
@@ -837,7 +837,7 @@ pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>, domain: Domain<'
         if tag_code == TagCode::DoAbc2 {
             let do_abc = reader
                 .read_do_abc_2()
-                .expect("playerglobal.swf should be valid");
+                .expect("playerglobal_avm2.swf should be valid");
             Avm2::load_builtin_abc(context, do_abc.data, domain, movie.clone());
         } else if tag_code != TagCode::End {
             panic!("playerglobal should only contain `DoAbc2` tag - found tag {tag_code:?}")

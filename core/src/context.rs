@@ -231,7 +231,7 @@ pub struct UpdateContext<'gc> {
     pub notification_sender: Option<&'gc Sender<PlayerNotification>>,
 
     // Movie clips whose frame scripts were registered during frame script phase
-    // requires a seperate clean-up pass when running frame-scripts instead of executing them in place
+    // requires a separate clean-up pass when running frame-scripts instead of executing them in place
     pub frame_script_cleanup_queue: VecDeque<MovieClip<'gc>>,
 }
 

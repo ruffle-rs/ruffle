@@ -865,8 +865,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             action,
             self.scope(),
             constant_pool,
-            // `base_clip` should always be a living `MovieClip` so this can't fail
-            MovieClipReference::try_from_stage_object(self, bc).unwrap(),
+            // `base_clip` should always be a living `MovieClip` so this can't fail during "normal" execution
+            // However, the playerglobal doesn't have any movie clips, so we want to fall back to "something" for that
+            MovieClipReference::try_from_stage_object(self, bc).unwrap_or_else(|| {
+                if self.scope.class() == ScopeClass::Global {
+                    MovieClipReference::from_path(self.gc(), WStr::from_units(b"_root"))
+                } else {
+                    panic!("No base clip for function")
+                }
+            }),
         );
         let name = func.name();
         let prototype = Object::new(&self.context.strings, Some(self.prototypes().object));
@@ -936,9 +943,25 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let name_val = self.context.avm1.pop();
         let name = name_val.coerce_to_string(self)?;
 
+        let success = if let Some((path, var_name)) = name.rsplit_once(b":.".as_ref()) {
+            let path = AvmString::new(self.gc(), path);
+            let var_name = AvmString::new(self.gc(), var_name);
+
+            let var: Value<'gc> = self.get_variable(path)?.into();
+            if let Some(obj) = var.as_object(self) {
+                obj.delete(self, var_name)
+            } else {
+                if !matches!(var, Value::Null | Value::Undefined) {
+                    self.context.avm_trace("Parameters of primitive types are no longer coerced into the required type - Object.");
+                }
+                false
+            }
+        } else {
+            self.scope().delete(self, name)
+        };
+
         // Fun fact: This isn't in the Adobe SWF19 spec, but this opcode returns
         // a boolean based on if the delete actually deleted something.
-        let success = self.scope().delete(self, name);
         self.context.avm1.push(success.into());
 
         Ok(FrameControl::Continue)
@@ -1173,7 +1196,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         if let Some(fscommand) = fscommand::parse(&url) {
             fscommand::handle(fscommand, &target, self)?;
         } else {
-            self.context.navigator.navigate_to_url(
+            self.context.navigator.navigate_to_url_normalized(
                 &url.to_utf8_lossy(),
                 &target.to_utf8_lossy(),
                 None,
@@ -1319,9 +1342,11 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             None => None,
         };
 
-        self.context
-            .navigator
-            .navigate_to_url(&url.to_utf8_lossy(), &target.to_utf8_lossy(), vars);
+        self.context.navigator.navigate_to_url_normalized(
+            &url.to_utf8_lossy(),
+            &target.to_utf8_lossy(),
+            vars,
+        );
 
         Ok(FrameControl::Continue)
     }
@@ -2302,13 +2327,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value = self.context.avm1.pop();
         match value {
             // Undefined/null with is ignored.
-            Value::Undefined | Value::Null => {
-                // Mimic Flash's error output.
-                self.context.avm_trace(
-                    "Error: A 'with' action failed because the specified object did not exist.\n",
-                );
-                Ok(FrameControl::Continue)
-            }
+            Value::Undefined | Value::Null => Ok(FrameControl::Continue),
 
             value => {
                 // Note that primitives get boxed at this point.
@@ -2753,7 +2772,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         }
 
         // Special case, mutating `this`
-        if path.as_wstr() == b"this" {
+        if path.as_wstr() == b"this" && self.swf_version() >= 5 {
             self.this = value;
             return Ok(());
         }
@@ -2853,7 +2872,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.is_case_sensitive()
         };
 
-        if name.eq_with_case(b"this", this_case_sensitive) {
+        if name.eq_with_case(b"this", this_case_sensitive) && self.swf_version() >= 5 {
             return Ok(CallableValue::UnCallable(self.this_cell()));
         }
 

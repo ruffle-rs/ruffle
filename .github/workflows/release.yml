@@ -101,7 +101,7 @@ jobs:
           git push
 
       - name: Get current time with underscores
-        uses: josStorer/get-current-time@v2.1.2
+        uses: josStorer/get-current-time@v2.1.3
         id: current_time_underscores
         with:
           format: YYYY_MM_DD
@@ -357,7 +357,7 @@ jobs:
   build-stub-report:
     name: Build AVM2 stub repository
     needs: create-release
-    if: needs.create-release.outputs.enabled == 'true'
+    if: needs.create-release.outputs.enabled == 'true' && needs.create-release.outputs.release_channel == 'nightly'
     runs-on: ubuntu-24.04
     steps:
       - name: Clone Ruffle repo
@@ -660,13 +660,13 @@ jobs:
           ref: ${{ needs.create-release.outputs.tag_name }}
 
       - name: Get current time with dashes
-        uses: josStorer/get-current-time@v2.1.2
+        uses: josStorer/get-current-time@v2.1.3
         id: current_time_dashes
         with:
           format: YYYY-MM-DD
 
       - name: Get current time with dots
-        uses: josStorer/get-current-time@v2.1.2
+        uses: josStorer/get-current-time@v2.1.3
         id: current_time_dots
         with:
           format: YYYY.M.D

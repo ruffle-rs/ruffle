@@ -1,0 +1,9 @@
+1
+Running frameConstructed, currentFrame=1
+Running exitFrame, currentFrame=1
+context3DCreate dispatched, currentFrame=1
+Stack trace from within context3DCreate: Error
+	at Test/context3DCreateHandler()
+Running enterFrame, currentFrame=2
+Running frameConstructed, currentFrame=2
+Running exitFrame, currentFrame=2

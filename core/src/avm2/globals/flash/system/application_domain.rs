@@ -115,7 +115,7 @@ pub fn get_qualified_definition_names<'gc>(
     let this = this.as_object().unwrap();
 
     if let Some(appdomain) = this.as_application_domain() {
-        // NOTE: According to the docs of 'getQualifiedDeinitionNames',
+        // NOTE: According to the docs of 'getQualifiedDefinitionNames',
         // it is able to throw a 'SecurityError' if "The definition belongs
         // to a domain to which the calling code does not have access."
         //

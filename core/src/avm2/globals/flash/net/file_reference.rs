@@ -266,7 +266,7 @@ pub fn save_internal<'gc>(
 
     // Create and spawn dialog
     let dialog = activation.context.ui.display_file_save_dialog(
-        file_name.to_owned().to_string(),
+        file_name.to_string(),
         format!("Select location to save the file {file_name}"),
     );
 

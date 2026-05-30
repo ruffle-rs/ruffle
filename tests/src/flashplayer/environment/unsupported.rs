@@ -4,7 +4,7 @@ use std::time::SystemTime;
 pub struct PlayerEnvironment;
 
 impl PlayerEnvironment {
-    pub fn new() -> Self {
+    pub fn new(_log_warnings: bool) -> Self {
         panic!("Unsupported platform :( Feel free to add support and open a PR!");
     }
 

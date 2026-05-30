@@ -6,7 +6,9 @@ use crate::avm1::property_map::PropertyMap;
 use crate::avm1::scope::Scope;
 use crate::avm1::{Activation, ActivationIdentifier, Error, Object, Value, scope};
 use crate::context::UpdateContext;
-use crate::display_object::{DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer};
+use crate::display_object::{
+    DisplayObject, MovieClip, TDisplayObject, TDisplayObjectContainer, TInteractiveObject,
+};
 use crate::frame_lifecycle::FramePhase;
 use crate::string::{AvmString, StringContext};
 use crate::tag_utils::SwfSlice;
@@ -133,6 +135,10 @@ impl<'gc> Avm1<'gc> {
         }
     }
 
+    pub fn load_player_globals(context: &mut UpdateContext<'gc>) {
+        avm1::globals::load_playerglobal(context);
+    }
+
     /// Add a stack frame that executes code in timeline scope
     ///
     /// This creates a new frame stack.
@@ -170,6 +176,36 @@ impl<'gc> Avm1<'gc> {
         );
         if let Err(e) = child_activation.run_actions(code) {
             Self::handle_error(&mut child_activation, e);
+        }
+    }
+
+    /// Add a stack frame that executes code in globals scope
+    ///
+    /// This creates a new frame stack.
+    pub fn run_stack_frame_for_globals(code: SwfSlice, context: &mut UpdateContext<'gc>) {
+        if context.avm1.halted {
+            // We've been told to ignore all future execution.
+            return;
+        }
+
+        let constant_pool = context.avm1.constant_pool;
+        // Let's do this once for swf 6 (case sensitive) and once for swf 7 (case insensitive),
+        // as we keep separate _global objects around for those two cases.
+        for swf_version in [6, 7] {
+            let mut child_activation = Activation::from_action(
+                context,
+                ActivationIdentifier::root("playerglobal"),
+                swf_version,
+                context.avm1.global_scope(swf_version),
+                constant_pool,
+                context.stage.as_displayobject(),
+                Value::Null,
+                None,
+                &[],
+            );
+            if let Err(e) = child_activation.run_actions(code.clone()) {
+                Self::handle_error(&mut child_activation, e);
+            }
         }
     }
 
@@ -514,6 +550,9 @@ impl<'gc> Avm1<'gc> {
             .movie_clip_on_load(context.action_queue, &context.strings);
 
         *context.frame_phase = FramePhase::Idle;
+
+        // Looks like the stack is cleared between frames.
+        context.avm1.clear();
     }
 
     /// Adds a movie clip to the execution list.

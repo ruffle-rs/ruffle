@@ -1,5 +1,0 @@
-A
-B
-B
-XFAILED: expected 'ABB' on clip event.. 
-END OF TEST

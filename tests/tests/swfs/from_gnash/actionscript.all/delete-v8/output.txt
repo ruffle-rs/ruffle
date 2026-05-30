@@ -40,6 +40,7 @@ PASSED: o.b == undefined [./delete.as:179]
 PASSED: o.b == 5 [./delete.as:192]
 PASSED: o.b == undefined [./delete.as:203]
 PASSED: o.b.c == 5 [./delete.as:218]
+Parameters of primitive types are no longer coerced into the required type - Object.
 PASSED: o.b.c == 5 [./delete.as:231]
 PASSED: o.b.c == undefined [./delete.as:246]
 PASSED: o.b.c == 5 [./delete.as:259]

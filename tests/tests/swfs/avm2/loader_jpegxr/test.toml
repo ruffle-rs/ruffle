@@ -1,0 +1,15 @@
+# logo.jxr generated with ImageMagick:
+# magick logo.svg -define jxr logo.jxr
+#
+# gradient.jxr generated with gradient.png via https://www.aconvert.com/image/png-to-jxr/
+
+num_frames = 3
+
+[image_comparisons.output]
+tolerance = 1
+
+[player_options]
+with_renderer = { optional = true, quality = "high" }
+
+[required_features]
+jpegxr = true

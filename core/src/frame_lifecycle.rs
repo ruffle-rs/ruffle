@@ -100,6 +100,9 @@ pub fn run_all_phases_avm2(context: &mut UpdateContext<'_>) {
     *context.frame_phase = FramePhase::Exit;
     broadcast_frame_exited(context);
 
+    // The correct time to run context3DCreated events seems to be here
+    stage.check_requested_context3ds(context);
+
     // We cannot easily remove dead `GcWeak` instances from the orphan list
     // inside `each_orphan_movie`, since the callback may modify the orphan list.
     // Instead, we do one cleanup at the end of the frame.

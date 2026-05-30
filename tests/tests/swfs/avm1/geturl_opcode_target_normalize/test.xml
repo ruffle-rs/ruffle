@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<swf version="7" compressed="0">
+  <Header framerate="24" frames="1">
+    <size><Rectangle left="0" right="2000" top="0" bottom="2000"/></size>
+    <tags>
+      <DoAction>
+        <actions>
+          <GetURL url="https://example.com/0" target="_blank"/>
+          <GetURL url="https://example.com/1" target="blank"/>
+          <GetURL url="https://example.com/2" target="BLANK"/>
+          <GetURL url="https://example.com/3" target="_Blank"/>
+          <GetURL url="https://example.com/4" target="bLaNk"/>
+          <GetURL url="https://example.com/5" target="_self"/>
+          <GetURL url="https://example.com/6" target="self"/>
+          <GetURL url="https://example.com/7" target="myWindow"/>
+          <GetURL url="https://example.com/8" target=""/>
+          <PushData><items>
+            <StackString value="https://example.com/10"/>
+            <StackString value="_blank"/>
+          </items></PushData>
+          <GetURL2 method="0" load_target="0" load_variables="0"/>
+          <PushData><items>
+            <StackString value="https://example.com/11"/>
+            <StackString value="blank"/>
+          </items></PushData>
+          <GetURL2 method="0" load_target="0" load_variables="0"/>
+          <PushData><items>
+            <StackString value="https://example.com/12"/>
+            <StackString value="BLANK"/>
+          </items></PushData>
+          <GetURL2 method="0" load_target="0" load_variables="0"/>
+          <PushData><items>
+            <StackString value="https://example.com/13"/>
+            <StackString value="_BlAnK"/>
+          </items></PushData>
+          <GetURL2 method="0" load_target="0" load_variables="0"/>
+          <PushData><items>
+            <StackString value="https://example.com/14"/>
+            <StackString value="_self"/>
+          </items></PushData>
+          <GetURL2 method="0" load_target="0" load_variables="0"/>
+          <PushData><items>
+            <StackString value="https://example.com/15"/>
+            <StackString value="myWindow"/>
+          </items></PushData>
+          <GetURL2 method="0" load_target="0" load_variables="0"/>
+          <EndAction/>
+        </actions>
+      </DoAction>
+      <ShowFrame/>
+      <End/>
+    </tags>
+  </Header>
+</swf>

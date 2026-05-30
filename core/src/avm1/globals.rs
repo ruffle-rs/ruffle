@@ -2,11 +2,17 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::asnative::as_set_native_method;
 use crate::avm1::property_decl::DeclContext;
-use crate::avm1::{Object, Value};
+use crate::avm1::{Avm1, Object, Value};
+use crate::context::UpdateContext;
 use crate::display_object::{DisplayObject, TDisplayObject, TDisplayObjectContainer};
 use crate::string::{AvmString, StringContext, WStr, WString};
+use crate::tag_utils;
+use crate::tag_utils::ControlFlow;
 use gc_arena::Collect;
+use ruffle_common::tag_utils::{SwfMovie, SwfSlice, SwfStream};
 use std::str;
+use std::sync::Arc;
+use swf::TagCode;
 
 mod accessibility;
 pub(super) mod array;
@@ -74,6 +80,9 @@ mod video;
 pub(crate) mod xml;
 mod xml_node;
 pub(crate) mod xml_socket;
+
+/// This file is built by 'core/build_playerglobal/'
+const PLAYERGLOBAL: &[u8] = include_bytes!(concat!(env!("OUT_DIR"), "/playerglobal_avm1.swf"));
 
 mod method {
     pub const ESCAPE: u16 = 0;
@@ -507,6 +516,26 @@ pub struct SystemPrototypes<'gc> {
     pub gradient_glow_filter: Object<'gc>,
 }
 
+pub fn load_playerglobal<'gc>(context: &mut UpdateContext<'gc>) {
+    let movie = Arc::new(
+        SwfMovie::from_data(PLAYERGLOBAL, "file:///".into(), None)
+            .expect("playerglobal_avm1.swf should be valid"),
+    );
+
+    let slice = SwfSlice::from(movie);
+
+    let mut reader = slice.read_from(0);
+
+    let tag_callback = |reader: &mut SwfStream<'_>, tag_code, tag_len| {
+        if tag_code == TagCode::DoAction {
+            Avm1::run_stack_frame_for_globals(slice.resize_to_reader(reader, tag_len), context);
+        }
+        Ok(ControlFlow::Continue)
+    };
+
+    let _ = tag_utils::decode_tags(&mut reader, tag_callback);
+}
+
 /// Initialize default global scope and builtins for an AVM1 instance.
 pub fn create_globals<'gc>(
     context: &mut StringContext<'gc>,
@@ -648,7 +677,7 @@ pub fn create_globals<'gc>(
         "unescape" => method(UNESCAPE; DONT_ENUM);
         "parseInt" => method(PARSE_INT; DONT_ENUM);
         "parseFloat" => method(PARSE_FLOAT; DONT_ENUM);
-        "trace" => method(TRACE; DONT_ENUM);
+        "trace" => value(null; DONT_ENUM); // Actually in globals.as, reserve the spot here
 
         use default;
         "updateAfterEvent" => method(update_after_event; DONT_ENUM); // TODO: (9, 0)
