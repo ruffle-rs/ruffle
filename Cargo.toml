@@ -139,6 +139,9 @@ manual_range_contains = "allow"  # Less readable: Suggests `(a..b).contains(n)` 
 assigning_clones = "allow"       # Sometimes useful, but more often than not it doesn't do anything as
                                  # we overwrite an empty item. And sometimes it can even be a footgun
                                  # by keeping big allocations alive.
+byte_char_slices = "allow"       # Less expressive: Suggests `b"abc"` byte string literal instead of an explicit
+                                 # `[b'a', b'b', b'c']` array. The array form is clearer when the elements
+                                 # represent a set of alternatives (any-of) rather than a byte sequence.
 
 # Don't optimize build scripts and macros.
 [profile.release.build-override]
