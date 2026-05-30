@@ -126,6 +126,8 @@ fn run_single_analysis<'gc>(
 
                 IntOp::IncLocal { index }
             }
+            Op::Li8 => IntOp::Li8,
+            Op::Li32 => IntOp::Li32,
             Op::Nop => IntOp::Nop,
             Op::PushInt { value } => {
                 stack_height += 1;
@@ -137,6 +139,16 @@ fn run_single_analysis<'gc>(
 
                 current_locals_state.set(index as usize, true);
                 IntOp::SetLocal { index }
+            }
+            Op::Si8 => {
+                stack_height -= 2;
+
+                IntOp::Si8
+            }
+            Op::Si32 => {
+                stack_height -= 2;
+
+                IntOp::Si32
             }
             Op::StoreLocal { index } => {
                 current_locals_state.set(index as usize, true);

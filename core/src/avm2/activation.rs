@@ -834,7 +834,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::Throw => self.op_throw(),
 
                 Op::RunIntInterpreter(info) => {
-                    self.run_int_interpreter(info);
+                    // NOTE: Int interpreter promotion is never done if this
+                    // method has exception handlers. This means that we don't
+                    // need to worry about this error not making it to an
+                    // exception handler; we can simply throw it from here (as
+                    // there are no exception handlers in this method that could
+                    // handle the error).
+                    self.run_int_interpreter(info)?;
 
                     ip = info.exit_offset.get();
 
@@ -3063,8 +3069,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Err(Error::from_value(self, error_val))
     }
 
-    fn run_int_interpreter(&mut self, info: &IntInterpreterInfo) {
-        let mut interpreter = IntInterpreter::new();
+    fn run_int_interpreter(&mut self, info: &IntInterpreterInfo) -> Result<(), Error<'gc>> {
+        // Code run in the int interpreter does not have the ability to borrow
+        // or swap out the domain memory, so borrow it here. This means that
+        // domain memory ops run in the int interpreter can just access the
+        // stored domain memory bytearray.
+        let domain_memory = self.domain_memory().storage_mut();
+
+        let mut interpreter = IntInterpreter::new(domain_memory);
 
         // Synchronize all the int locals in this interpreter to the int
         // interpreter
@@ -3080,7 +3092,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             }
         }
 
-        interpreter.run(&info.ops);
+        // NOTE: Int interpreter promotion is never done if this method has
+        // exception handlers. This means that it's fine to not synchronize
+        // correct state of locals once this throws an error, as there are no
+        // exception handlers to which that state is observable to (this method
+        // will simply immediately return to its caller with the error).
+        let result = interpreter.run(&info.ops);
+        if result.is_err() {
+            // The only exception that can happen from the int interpreter is
+            // an out-of-bounds domain memory read/write.
+            return Err(make_error_1506(self));
+        }
 
         // Synchronize all the int locals in the int interpreter to this
         // interpreter
@@ -3098,5 +3120,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         for i in num_locals..num_locals + info.final_stack_height {
             self.push_stack(interpreter.frame_at(i as u32));
         }
+
+        Ok(())
     }
 }

@@ -476,9 +476,13 @@ pub enum IntOp {
     End,
     GetLocal { index: u32 },
     IncLocal { index: u32 },
+    Li32,
+    Li8,
     Nop,
     PushInt { value: i32 },
     SetLocal { index: u32 },
+    Si32,
+    Si8,
     StoreLocal { index: u32 },
     Subtract,
 }
