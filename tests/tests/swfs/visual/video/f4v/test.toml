@@ -1,0 +1,17 @@
+num_frames = 75
+sleep_to_meet_frame_rate = true
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
+with_video = true
+
+[image_comparisons."output.70"]
+trigger = 70
+tolerance = 0
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 9
