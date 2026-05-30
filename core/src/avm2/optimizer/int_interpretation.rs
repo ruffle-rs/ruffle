@@ -22,7 +22,7 @@ const MIN_INT_OPS_LENGTH: usize = 30;
 
 /// The maximum number of ops in a method that can be considered for int
 /// interpreter analysis.
-const MAX_METHOD_OPS_LENGTH: usize = 600;
+const MAX_METHOD_OPS_LENGTH: usize = 40000;
 
 pub fn run_analysis<'gc>(
     activation: &mut Activation<'_, 'gc>,

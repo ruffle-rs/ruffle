@@ -8,8 +8,11 @@ use num_traits::FromPrimitive;
 use std::cell::RefMut;
 
 /// The maximum number of items on the interpreter frame. This value should be
-/// able to fit in a `u8`, as there is logic in the optimizer that depends on it.
-pub const MAX_INT_INTERPRETER_FRAME: usize = 16;
+/// less than the number of bits that `avm2::optimizer::utils::SmallBitSet` can
+/// store. NOTE(uqers): Synchronizing a large number of locals/stack from the
+/// int interpreter to the normal interpreter can have high performance costs!
+/// Increasing this may result in worse overall performance in some SWFs.
+pub const MAX_INT_INTERPRETER_FRAME: usize = 20;
 
 #[derive(Clone, Copy, Debug, Enum, FromPrimitive)]
 pub enum ObjectType {
