@@ -3,6 +3,7 @@ use crate::avm2::object::{Object, TObject};
 use crate::avm2::op::IntOp;
 
 use enum_map::{Enum, EnumMap};
+use gc_arena::Mutation;
 use num_traits::FromPrimitive;
 use std::cell::RefMut;
 
@@ -13,6 +14,7 @@ pub const MAX_INT_INTERPRETER_FRAME: usize = 16;
 #[derive(Clone, Copy, Debug, Enum, FromPrimitive)]
 pub enum ObjectType {
     TopOuterScope = 0,
+    Receiver = 1,
 }
 
 pub struct DomainMemoryError;
@@ -29,10 +31,13 @@ pub struct IntInterpreter<'a, 'gc: 'a> {
 
     /// The domain memory, pre-borrowed for speed.
     domain_memory: RefMut<'a, ByteArrayStorage>,
+
+    mc: &'gc Mutation<'gc>,
 }
 
 impl<'a, 'gc> IntInterpreter<'a, 'gc> {
     pub fn new(
+        mc: &'gc Mutation<'gc>,
         domain_memory: RefMut<'a, ByteArrayStorage>,
         objects: EnumMap<ObjectType, Option<Object<'gc>>>,
     ) -> Self {
@@ -41,6 +46,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
             stack_pointer: 0,
             objects,
             domain_memory,
+            mc,
         }
     }
 
@@ -101,6 +107,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                 IntOp::PushObject { value } => self.op_push_int(*value as i32),
                 IntOp::RShift => self.op_rshift(),
                 IntOp::SetLocal { index } => self.op_set_local(*index),
+                IntOp::SetSlot { index } => self.op_set_slot(*index),
                 IntOp::Si16 => self.op_si16()?,
                 IntOp::Si32 => self.op_si32()?,
                 IntOp::Si8 => self.op_si8()?,
@@ -339,6 +346,18 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
     fn op_set_local(&mut self, index: u32) {
         let value = self.pop_stack();
         self.set_frame_at(index, value);
+    }
+
+    fn op_set_slot(&mut self, index: u32) {
+        let value = self.pop_stack();
+
+        let object_type = self.pop_stack();
+        let object_type = ObjectType::from_i32(object_type).expect("Is a valid object type");
+
+        let object =
+            self.objects[object_type].expect("Guaranteed by int interpreter promotion analysis");
+
+        object.set_slot_no_coerce(index as usize, value.into(), self.mc);
     }
 
     fn op_si16(&mut self) -> Result<(), DomainMemoryError> {

@@ -522,6 +522,9 @@ pub enum IntOp {
     SetLocal {
         index: u32,
     },
+    SetSlot {
+        index: u32,
+    },
     Si16,
     Si32,
     Si8,

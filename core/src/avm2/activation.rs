@@ -3179,12 +3179,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let domain_memory = self.domain_memory().storage_mut();
 
         let topmost_outer_scope = self.outer().get(0).and_then(|o| o.values().as_object());
+        let receiver = self.local_register(0).as_object();
 
         let objects = EnumMap::from_fn(|t| match t {
             ObjectType::TopOuterScope => topmost_outer_scope,
+            ObjectType::Receiver => receiver,
         });
 
-        let mut interpreter = IntInterpreter::new(domain_memory, objects);
+        let mut interpreter = IntInterpreter::new(self.gc(), domain_memory, objects);
 
         // Synchronize all the int locals in this interpreter to the int
         // interpreter

@@ -63,8 +63,40 @@ pub fn run_analysis<'gc>(
         .and_then(|s| s.values().as_object())
         .map(|o| o.instance_class());
 
+    // TODO we already have this information from earlier from
+    // `peephole::postprocess_peephole`; figure out some way to reuse it
+    let mut sets_local_0 = false;
+
+    for op in ops {
+        match op.get() {
+            Op::SetLocal { index }
+            | Op::Kill { index }
+            | Op::DecLocal { index }
+            | Op::DecLocalI { index }
+            | Op::IncLocal { index }
+            | Op::IncLocalI { index }
+                if index == 0 =>
+            {
+                sets_local_0 = true;
+                break;
+            }
+            Op::HasNext2 {
+                object_register,
+                index_register,
+            } if object_register == 0 || index_register == 0 => {
+                sets_local_0 = true;
+                break;
+            }
+
+            _ => {}
+        }
+    }
+
+    let receiver_class = method.bound_class().filter(|_| !sets_local_0);
+
     let object_classes = EnumMap::from_fn(|t| match t {
         ObjectType::TopOuterScope => top_outer_scope_class,
+        ObjectType::Receiver => receiver_class,
     });
 
     // Keep track of the ranges that we've already created int interpreter
@@ -83,8 +115,13 @@ pub fn run_analysis<'gc>(
             continue;
         }
 
-        let analysis_results =
-            run_single_analysis(ops, start_index, *locals_state, &object_classes);
+        let analysis_results = run_single_analysis(
+            ops,
+            start_index,
+            *locals_state,
+            &object_classes,
+            sets_local_0,
+        );
 
         if let Some((info, num_ops)) = analysis_results {
             covered_ranges.push(start_index..start_index + num_ops);
@@ -100,6 +137,7 @@ fn run_single_analysis<'gc>(
     start_index: usize,
     used_locals: SmallBitSet,
     object_classes: &EnumMap<ObjectType, Option<Class<'gc>>>,
+    sets_local_0: bool,
 ) -> Option<(IntInterpreterInfo, usize)> {
     let mut output_vec = Vec::new();
 
@@ -171,15 +209,23 @@ fn run_single_analysis<'gc>(
                 IntOp::Equals
             }
             Op::GetLocal { index } => {
-                if !used_locals.get(index as usize) {
-                    // Can't access a non-int
-                    break;
+                if !sets_local_0 && index == 0 {
+                    stack.push_object(ObjectType::Receiver);
+
+                    IntOp::PushObject {
+                        value: ObjectType::Receiver,
+                    }
+                } else {
+                    if !used_locals.get(index as usize) {
+                        // Can't access a non-int
+                        break;
+                    }
+
+                    // Only integers can be stored in locals
+                    stack.push_int();
+
+                    IntOp::GetLocal { index }
                 }
-
-                // Only integers can be stored in locals
-                stack.push_int();
-
-                IntOp::GetLocal { index }
             }
             Op::GetOuterScope { index: 0 } => {
                 stack.push_object(ObjectType::TopOuterScope);
@@ -376,6 +422,27 @@ fn run_single_analysis<'gc>(
                 }
 
                 IntOp::SetLocal { index }
+            }
+            Op::SetSlotNoCoerce { index } => {
+                if !stack.pop_expecting_int() {
+                    // Can't store a non-integer into a slot
+                    break;
+                }
+
+                if stack.pop_expecting_object().is_none() {
+                    // Getslot on a primitive is impossible thanks to the
+                    // verifier
+                    unreachable!();
+                }
+
+                // We just guaranteed that the stack has an integer on it and
+                // that the value was about to be stored without coercion
+                // (this is a SetSlotNoCoerce op), so we know that this is an
+                // integer store
+
+                IntOp::SetSlot {
+                    index: index as u32,
+                }
             }
             Op::RShift => {
                 stack.pop();
