@@ -1,4 +1,5 @@
 use crate::avm2::class::Class;
+use crate::avm2::int_interpreter::ObjectType;
 use crate::avm2::method::{Method, NativeMethodImpl};
 use crate::avm2::multiname::Multiname;
 use crate::avm2::namespace::Namespace;
@@ -463,6 +464,9 @@ pub enum IntOp {
     GetLocal {
         index: u32,
     },
+    GetSlot {
+        index: u32,
+    },
     GreaterEquals,
     GreaterThan,
     IfFalse {
@@ -509,6 +513,9 @@ pub enum IntOp {
     Pop,
     PushInt {
         value: i32,
+    },
+    PushObject {
+        value: ObjectType,
     },
     RShift,
     SetLocal {

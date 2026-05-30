@@ -1,30 +1,45 @@
 use crate::avm2::bytearray::ByteArrayStorage;
+use crate::avm2::object::{Object, TObject};
 use crate::avm2::op::IntOp;
 
+use enum_map::{Enum, EnumMap};
+use num_traits::FromPrimitive;
 use std::cell::RefMut;
 
 /// The maximum number of items on the interpreter frame. This value should be
 /// able to fit in a `u8`, as there is logic in the optimizer that depends on it.
 pub const MAX_INT_INTERPRETER_FRAME: usize = 16;
 
+#[derive(Clone, Copy, Debug, Enum, FromPrimitive)]
+pub enum ObjectType {
+    TopOuterScope = 0,
+}
+
 pub struct DomainMemoryError;
 
-pub struct IntInterpreter<'a> {
+pub struct IntInterpreter<'a, 'gc: 'a> {
     /// The frame, which stores both the locals and the stack.
     frame: [i32; MAX_INT_INTERPRETER_FRAME],
 
     /// The current stack pointer.
     stack_pointer: usize,
 
+    /// Objects that code from the int interpreter can use.
+    objects: EnumMap<ObjectType, Option<Object<'gc>>>,
+
     /// The domain memory, pre-borrowed for speed.
     domain_memory: RefMut<'a, ByteArrayStorage>,
 }
 
-impl<'a> IntInterpreter<'a> {
-    pub fn new(domain_memory: RefMut<'a, ByteArrayStorage>) -> Self {
+impl<'a, 'gc> IntInterpreter<'a, 'gc> {
+    pub fn new(
+        domain_memory: RefMut<'a, ByteArrayStorage>,
+        objects: EnumMap<ObjectType, Option<Object<'gc>>>,
+    ) -> Self {
         Self {
             frame: [0; MAX_INT_INTERPRETER_FRAME],
             stack_pointer: 0,
+            objects,
             domain_memory,
         }
     }
@@ -69,6 +84,7 @@ impl<'a> IntInterpreter<'a> {
                 IntOp::Dup => self.op_dup(),
                 IntOp::Equals => self.op_equals(),
                 IntOp::GetLocal { index } => self.op_get_local(*index),
+                IntOp::GetSlot { index } => self.op_get_slot(*index),
                 IntOp::GreaterEquals => self.op_greater_equals(),
                 IntOp::GreaterThan => self.op_greater_than(),
                 IntOp::IncLocal { index } => self.op_inc_local(*index),
@@ -81,6 +97,7 @@ impl<'a> IntInterpreter<'a> {
                 IntOp::Not => self.op_not(),
                 IntOp::Pop => self.op_pop(),
                 IntOp::PushInt { value } => self.op_push_int(*value),
+                IntOp::PushObject { value } => self.op_push_int(*value as i32),
                 IntOp::RShift => self.op_rshift(),
                 IntOp::SetLocal { index } => self.op_set_local(*index),
                 IntOp::Si32 => self.op_si32()?,
@@ -181,6 +198,18 @@ impl<'a> IntInterpreter<'a> {
     fn op_get_local(&mut self, index: u32) {
         let value = self.frame_at(index);
         self.push_stack(value);
+    }
+
+    fn op_get_slot(&mut self, index: u32) {
+        let object_type = self.pop_stack();
+        let object_type = ObjectType::from_i32(object_type).expect("Is a valid object type");
+
+        let object =
+            self.objects[object_type].expect("Guaranteed by int interpreter promotion analysis");
+
+        let value = object.get_slot(index as usize);
+
+        self.push_stack(value.as_i32());
     }
 
     fn op_greater_equals(&mut self) {

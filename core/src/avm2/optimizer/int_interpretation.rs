@@ -1,9 +1,12 @@
 use crate::avm2::activation::Activation;
-use crate::avm2::int_interpreter::MAX_INT_INTERPRETER_FRAME;
+use crate::avm2::class::Class;
+use crate::avm2::int_interpreter::{MAX_INT_INTERPRETER_FRAME, ObjectType};
 use crate::avm2::method::Method;
+use crate::avm2::object::TObject;
 use crate::avm2::op::{IntInterpreterInfo, IntOp, Op};
 use crate::avm2::optimizer::utils::SmallBitSet;
 
+use enum_map::EnumMap;
 use gc_arena::Gc;
 use std::cell::Cell;
 use std::collections::BTreeMap;
@@ -54,6 +57,16 @@ pub fn run_analysis<'gc>(
         return;
     }
 
+    let top_outer_scope_class = activation
+        .outer()
+        .get(0)
+        .and_then(|s| s.values().as_object())
+        .map(|o| o.instance_class());
+
+    let object_classes = EnumMap::from_fn(|t| match t {
+        ObjectType::TopOuterScope => top_outer_scope_class,
+    });
+
     // Keep track of the ranges that we've already created int interpreter
     // promotions for so that we don't create even more int interpreter
     // promotions within them. Because `empty_stack_positions` is a `BTreeMap`,
@@ -70,7 +83,10 @@ pub fn run_analysis<'gc>(
             continue;
         }
 
-        if let Some((info, num_ops)) = run_single_analysis(ops, start_index, *locals_state) {
+        let analysis_results =
+            run_single_analysis(ops, start_index, *locals_state, &object_classes);
+
+        if let Some((info, num_ops)) = analysis_results {
             covered_ranges.push(start_index..start_index + num_ops);
 
             let op = Op::RunIntInterpreter(Gc::new(activation.gc(), info));
@@ -83,6 +99,7 @@ fn run_single_analysis<'gc>(
     ops: &[Cell<Op<'gc>>],
     start_index: usize,
     used_locals: SmallBitSet,
+    object_classes: &EnumMap<ObjectType, Option<Class<'gc>>>,
 ) -> Option<(IntInterpreterInfo, usize)> {
     let mut output_vec = Vec::new();
 
@@ -163,6 +180,54 @@ fn run_single_analysis<'gc>(
                 stack.push_int();
 
                 IntOp::GetLocal { index }
+            }
+            Op::GetOuterScope { index: 0 } => {
+                stack.push_object(ObjectType::TopOuterScope);
+
+                IntOp::PushObject {
+                    value: ObjectType::TopOuterScope,
+                }
+            }
+            Op::GetSlot { index } => {
+                let Some(object_type) = stack.pop_expecting_object() else {
+                    // Getslot on a primitive is impossible thanks to the
+                    // verifier
+                    unreachable!()
+                };
+
+                let Some(class) = object_classes[object_type] else {
+                    // We couldn't conclude the class from the simplified
+                    // analysis that we perform. This is a very rare case.
+
+                    // We need to restore the stack to how it was before this
+                    // op was considered.
+                    stack.push_object(object_type);
+
+                    break;
+                };
+
+                let vtable = class.vtable();
+
+                let value_class = vtable
+                    .slot_class(index)
+                    .expect("Guaranteed by verifier")
+                    .get_existing_class();
+
+                if value_class.is_none_or(|c| !c.is_builtin_int()) {
+                    // Can't access a non-integral slot from an object.
+
+                    // We need to restore the stack to how it was before this
+                    // op was considered.
+                    stack.push_object(object_type);
+
+                    break;
+                }
+
+                stack.push_int();
+
+                IntOp::GetSlot {
+                    index: index as u32,
+                }
             }
             Op::GreaterEqualsIntegral => {
                 stack.pop();
@@ -358,18 +423,16 @@ fn run_single_analysis<'gc>(
         i += 1;
     }
 
-    let num_ops = output_vec.len();
+    // A single `pushobject` at the end of the output vec can lead to the pass
+    // failing. So if there is one, let's remove it now.
+    if matches!(output_vec.last(), Some(IntOp::PushObject { .. })) {
+        output_vec.pop();
 
-    // Once all ops are done executing, jump to the normal interpreter at the
-    // position where we should continue. Unless we got to the end of the
-    // method, in which case don't add this last op, as it'll confuse the nop
-    // remover.
-    if start_index + num_ops != ops.len() {
-        output_vec.push(IntOp::JumpExternal {
-            offset: Cell::new((start_index + num_ops) as u32),
-            final_stack_height: stack.len() as u8,
-        });
+        // Also remove the object from the stack
+        stack.pop();
     }
+
+    let num_ops = output_vec.len();
 
     // Not enough ops for entering the int interpreter to be worth it
     if num_ops < MIN_INT_OPS_LENGTH {
@@ -380,6 +443,17 @@ fn run_single_analysis<'gc>(
     // interpreter and the int interpreter, so we don't support it
     if !stack.is_entirely_ints() {
         return None;
+    }
+
+    // Once all ops are done executing, jump to the normal interpreter at the
+    // position where we should continue. Unless we got to the end of the
+    // method, in which case don't add this last op, as it'll confuse the nop
+    // remover.
+    if start_index + num_ops != ops.len() {
+        output_vec.push(IntOp::JumpExternal {
+            offset: Cell::new((start_index + num_ops) as u32),
+            final_stack_height: stack.len() as u8,
+        });
     }
 
     // Right now all the branches/jumps are external, i.e. they will exit the int
@@ -427,9 +501,9 @@ fn run_single_analysis<'gc>(
 
 /// A value in the int interpreter.
 ///
-/// Currently the int interpreter supports dealing with integers and booleans.
-/// However, booleans are limited- they cannot be stored in locals, and they
-/// cannot exist on the stack when the code ends.
+/// Currently the int interpreter supports dealing with integers, booleans, and
+/// some objects. However, non-integers are limited- they cannot be stored in
+/// locals, and they cannot exist on the stack when the code ends.
 ///
 /// Note that when coercing booleans to integers, AVM2 coerces `false` to `0`,
 /// and `true` to `1`. This is advantageous to us because we represent those two
@@ -441,6 +515,7 @@ fn run_single_analysis<'gc>(
 enum ValueType {
     Bool,
     Int,
+    Object(ObjectType),
 }
 
 /// The stack of the abstract interpreter.
@@ -466,12 +541,23 @@ impl Stack {
         self.0.push(ValueType::Int);
     }
 
+    pub fn push_object(&mut self, object_type: ObjectType) {
+        self.0.push(ValueType::Object(object_type));
+    }
+
     pub fn pop(&mut self) -> ValueType {
         self.0.pop().expect("Guaranteed by verifier previously")
     }
 
     pub fn pop_expecting_int(&mut self) -> bool {
         matches!(self.pop(), ValueType::Int)
+    }
+
+    pub fn pop_expecting_object(&mut self) -> Option<ObjectType> {
+        match self.pop() {
+            ValueType::Object(object_type) => Some(object_type),
+            _ => None,
+        }
     }
 
     pub fn is_entirely_ints(&self) -> bool {

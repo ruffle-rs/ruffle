@@ -12,7 +12,7 @@ use crate::avm2::error::{
     make_null_or_undefined_error,
 };
 use crate::avm2::function::FunctionArgs;
-use crate::avm2::int_interpreter::IntInterpreter;
+use crate::avm2::int_interpreter::{IntInterpreter, ObjectType};
 use crate::avm2::method::{Method, NativeMethodImpl, ResolvedParamConfig};
 use crate::avm2::object::TObject;
 use crate::avm2::object::{
@@ -28,6 +28,7 @@ use crate::avm2::{Avm2, Error};
 use crate::context::UpdateContext;
 use crate::string::{AvmAtom, AvmString, HasStringContext, StringContext};
 use crate::tag_utils::SwfMovie;
+use enum_map::EnumMap;
 use gc_arena::Gc;
 use ruffle_macros::istr;
 use std::cell::Cell;
@@ -3177,7 +3178,13 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // stored domain memory bytearray.
         let domain_memory = self.domain_memory().storage_mut();
 
-        let mut interpreter = IntInterpreter::new(domain_memory);
+        let topmost_outer_scope = self.outer().get(0).and_then(|o| o.values().as_object());
+
+        let objects = EnumMap::from_fn(|t| match t {
+            ObjectType::TopOuterScope => topmost_outer_scope,
+        });
+
+        let mut interpreter = IntInterpreter::new(domain_memory, objects);
 
         // Synchronize all the int locals in this interpreter to the int
         // interpreter
