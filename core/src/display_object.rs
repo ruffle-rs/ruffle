@@ -40,6 +40,7 @@ mod morph_shape;
 mod movie_clip;
 mod stage;
 mod text;
+mod text_line;
 mod video;
 
 use crate::avm1::Activation;
@@ -66,6 +67,7 @@ use ruffle_render::commands::{CommandHandler, CommandList, RenderBlendMode};
 use ruffle_render::filters::Filter;
 pub use stage::{Stage, StageAlign, StageDisplayState, StageScaleMode, WindowMode};
 pub use text::{Text, TextSnapshot};
+pub use text_line::TextLine;
 pub use video::Video;
 
 use self::loader_display::LoaderDisplayWeak;
@@ -1272,6 +1274,7 @@ pub fn apply_standard_mask_and_scroll<'gc, F>(
         Avm1Button(Avm1Button<'gc>),
         Avm2Button(Avm2Button<'gc>),
         EditText(EditText<'gc>),
+        TextLine(TextLine<'gc>),
         Graphic(Graphic<'gc>),
         MorphShape(MorphShape<'gc>),
         MovieClip(MovieClip<'gc>),
@@ -1292,9 +1295,14 @@ pub trait TDisplayObject<'gc>:
 
     /// The `SCALE_ROTATION_CACHED` flag should only be set in SWFv5+.
     /// So scaling/rotation values always have to get recalculated from the matrix in SWFv4.
+    /// SWF version 0 means non-SWF content (a loaded image); since loading images requires
+    /// `loadMovie` (SWFv5+) or `MovieClipLoader` (SWFv6+), this can't occur in a SWFv4 context.
+    /// Therefore, loaded images are supposed to work the way SWF >= 5 movies do in this regard,
+    /// but the SWF version of the MovieClips created for loaded images can't inherit their
+    /// version from the loading movie - they have to be reported as -1 to ActionScript.
     #[no_dynamic]
     fn set_scale_rotation_cached(self) {
-        if self.swf_version() >= 5 {
+        if self.swf_version() == 0 || self.swf_version() >= 5 {
             self.base().set_scale_rotation_cached(true);
         }
     }
@@ -2891,6 +2899,7 @@ impl<'gc> DisplayObject<'gc> {
         pub fn as_avm2_button for Avm2Button;
         pub fn as_movie_clip for MovieClip;
         pub fn as_edit_text for EditText;
+        pub fn as_text_line for TextLine;
         pub fn as_text for Text;
         pub fn as_morph_shape for MorphShape;
         pub fn as_video for Video;
@@ -2902,6 +2911,7 @@ impl<'gc> DisplayObject<'gc> {
             Self::Avm1Button(dobj) => Some(InteractiveObject::Avm1Button(dobj)),
             Self::Avm2Button(dobj) => Some(InteractiveObject::Avm2Button(dobj)),
             Self::EditText(dobj) => Some(InteractiveObject::EditText(dobj)),
+            Self::TextLine(dobj) => Some(InteractiveObject::TextLine(dobj)),
             Self::LoaderDisplay(dobj) => Some(InteractiveObject::LoaderDisplay(dobj)),
             Self::MovieClip(dobj) => Some(InteractiveObject::MovieClip(dobj)),
             Self::Stage(dobj) => Some(InteractiveObject::Stage(dobj)),

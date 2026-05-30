@@ -2,7 +2,7 @@ use crate::blend::{ComplexBlend, TrivialBlend};
 use crate::layouts::BindLayouts;
 use crate::shaders::Shaders;
 use crate::{MaskState, PosColorVertex, PosVertex};
-use enum_map::{Enum, EnumMap, enum_map};
+use enum_map::{EnumMap, enum_map};
 use wgpu::{BlendState, PrimitiveTopology, vertex_attr_array};
 
 pub const VERTEX_BUFFERS_DESCRIPTION_POS: [wgpu::VertexBufferLayout; 1] =
@@ -63,15 +63,10 @@ impl ShapePipeline {
     /// for each possible `MaskState`.
     fn build(
         stencilless: wgpu::RenderPipeline,
-        mut f: impl FnMut(MaskState) -> wgpu::RenderPipeline,
+        f: impl FnMut(MaskState) -> wgpu::RenderPipeline,
     ) -> Self {
-        let mask_array: [wgpu::RenderPipeline; MaskState::LENGTH] =
-            std::array::from_fn(|mask_enum| {
-                let mask_state = MaskState::from_usize(mask_enum);
-                f(mask_state)
-            });
         ShapePipeline {
-            pipelines: EnumMap::from_array(mask_array),
+            pipelines: EnumMap::from_fn(f),
             stencilless,
         }
     }
@@ -159,23 +154,20 @@ impl Pipelines {
             &bind_layouts.bitmap,
         ];
 
-        let bitmap_pipelines: [ShapePipeline; TrivialBlend::LENGTH] =
-            std::array::from_fn(|blend| {
-                let blend = TrivialBlend::from_usize(blend);
-                let name = format!("Bitmap ({blend:?})");
-                create_shape_pipeline(
-                    &name,
-                    device,
-                    format,
-                    &shaders.bitmap_shader,
-                    msaa_sample_count,
-                    &VERTEX_BUFFERS_DESCRIPTION_POS,
-                    &bitmap_blend_bindings,
-                    blend.blend_state(),
-                    &[],
-                    PrimitiveTopology::TriangleList,
-                )
-            });
+        let bitmap_pipelines = EnumMap::from_fn(|blend: TrivialBlend| {
+            create_shape_pipeline(
+                &format!("Bitmap ({blend:?})"),
+                device,
+                format,
+                &shaders.bitmap_shader,
+                msaa_sample_count,
+                &VERTEX_BUFFERS_DESCRIPTION_POS,
+                &bitmap_blend_bindings,
+                blend.blend_state(),
+                &[],
+                PrimitiveTopology::TriangleList,
+            )
+        });
 
         let bitmap_opaque_pipeline_layout_label =
             create_debug_label!("Opaque bitmap pipeline layout");
@@ -253,7 +245,7 @@ impl Pipelines {
         Self {
             color: color_pipelines,
             lines: lines_pipelines,
-            bitmap: EnumMap::from_array(bitmap_pipelines),
+            bitmap: bitmap_pipelines,
             bitmap_opaque,
             bitmap_opaque_dummy_stencil: bitmap_opaque_dummy_depth,
             gradients: gradient_pipeline,

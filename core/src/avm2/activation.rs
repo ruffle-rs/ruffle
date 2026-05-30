@@ -2073,10 +2073,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_add_i(&mut self) -> Result<(), Error<'gc>> {
-        let value2 = self.pop_stack().coerce_to_i32(self)?;
-        let value1 = self.pop_stack().coerce_to_i32(self)?;
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
 
-        self.push_stack(value1.wrapping_add(value2));
+        let sum_value = match (value1, value2) {
+            (Value::Integer(n1), Value::Integer(n2)) => n1.wrapping_add(n2),
+            (value1, value2) => {
+                let value1 = value1.coerce_to_i32(self)?;
+                let value2 = value2.coerce_to_i32(self)?;
+
+                value1.wrapping_add(value2)
+            }
+        };
+
+        self.push_stack(sum_value);
 
         Ok(())
     }
@@ -2288,10 +2298,20 @@ impl<'a, 'gc> Activation<'a, 'gc> {
     }
 
     fn op_subtract_i(&mut self) -> Result<(), Error<'gc>> {
-        let value2 = self.pop_stack().coerce_to_i32(self)?;
-        let value1 = self.pop_stack().coerce_to_i32(self)?;
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
 
-        self.push_stack(value1.wrapping_sub(value2));
+        let sum_value = match (value1, value2) {
+            (Value::Integer(n1), Value::Integer(n2)) => n1.wrapping_sub(n2),
+            (value1, value2) => {
+                let value1 = value1.coerce_to_i32(self)?;
+                let value2 = value2.coerce_to_i32(self)?;
+
+                value1.wrapping_sub(value2)
+            }
+        };
+
+        self.push_stack(sum_value);
 
         Ok(())
     }

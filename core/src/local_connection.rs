@@ -123,7 +123,7 @@ pub struct LocalConnections<'gc> {
 // TODO(moulins): use gc_arena::Static to avoid unsafe impl?
 unsafe impl<'gc> Collect<'gc> for LocalConnections<'gc> {
     fn trace<C: Trace<'gc>>(&self, cc: &mut C) {
-        for (_, v) in self.connections.iter() {
+        for v in self.connections.values() {
             cc.trace(v);
         }
         cc.trace(&self.messages);

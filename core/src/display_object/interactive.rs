@@ -13,6 +13,7 @@ use crate::display_object::edit_text::EditText;
 use crate::display_object::loader_display::LoaderDisplay;
 use crate::display_object::movie_clip::MovieClip;
 use crate::display_object::stage::Stage;
+use crate::display_object::text_line::TextLine;
 use crate::display_object::{
     BoundsMode, DisplayObject, DisplayObjectBase, TDisplayObject, TDisplayObjectContainer,
 };
@@ -138,6 +139,7 @@ impl<'gc> InteractiveObjectBase<'gc> {
         Avm2Button(Avm2Button<'gc>),
         MovieClip(MovieClip<'gc>),
         EditText(EditText<'gc>),
+        TextLine(TextLine<'gc>),
         LoaderDisplay(LoaderDisplay<'gc>),
     }
 )]

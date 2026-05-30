@@ -60,7 +60,7 @@ egui_extras = { version = "0.33.3", default-features = false, optional = true }
 png = { version = "0.18.1", optional = true }
 flv-rs = { path = "../flv" }
 async-channel = { workspace = true }
-jpegxr = { git = "https://github.com/ruffle-rs/jpegxr", rev = "5281b4ae42be742779269a9f1a986101f101f32f", optional = true }
+jpegxr = { workspace = true, optional = true }
 image = { workspace = true, features = ["tiff"] }
 enum-map = { workspace = true }
 ttf-parser = "0.25"
@@ -92,7 +92,7 @@ audio = ["dasp"]
 known_stubs = ["linkme", "serde"]
 default_compatibility_rules = []
 egui = ["dep:egui", "dep:egui_extras", "png"]
-jpegxr = ["dep:jpegxr", "lzma"]
+jpegxr = ["dep:jpegxr", "ruffle_render/jpegxr", "lzma"]
 default_font = []
 serde = ["serde/derive"]
 
