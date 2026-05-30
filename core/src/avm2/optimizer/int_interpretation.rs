@@ -209,6 +209,9 @@ fn run_single_analysis<'gc>(
                 IntOp::Equals
             }
             Op::GetLocal { index } => {
+                // Accessing the receiver and accessing an integer local are
+                // two completely different things, so handle them separately
+
                 if !sets_local_0 && index == 0 {
                     stack.push_object(ObjectType::Receiver);
 
@@ -235,7 +238,7 @@ fn run_single_analysis<'gc>(
                 }
             }
             Op::GetSlot { index } => {
-                let Some(object_type) = stack.pop_expecting_object() else {
+                let Some(object_type) = stack.pop_object() else {
                     // Getslot on a primitive is impossible thanks to the
                     // verifier
                     unreachable!()
@@ -290,17 +293,21 @@ fn run_single_analysis<'gc>(
                 IntOp::GreaterThan
             }
             Op::IfFalse { offset } => {
-                stack.pop();
-
-                if !stack.is_empty() {
+                if stack.len() != 1 {
                     // It's fairly rare for items to be on the stack during
                     // merging, and this allows us to avoid dealing with
                     // state merging or tracking to know the correct height of
                     // the stack at a certain point. However, this does mean
                     // all ternary expressions disable int interpreter
                     // promotion. TODO support this case
+
+                    // (note: this is a != 1 check rather than an is_empty
+                    // check, as the one value on the stack will be popped by
+                    // this op)
                     break;
                 }
+
+                stack.pop();
 
                 IntOp::IfFalseExternal {
                     offset: Cell::new(offset as u32),
@@ -311,12 +318,12 @@ fn run_single_analysis<'gc>(
                 }
             }
             Op::IfTrue { offset } => {
-                stack.pop();
-
-                if !stack.is_empty() {
+                if stack.len() != 1 {
                     // See comment on `Op::IfFalse`
                     break;
                 }
+
+                stack.pop();
 
                 IntOp::IfTrueExternal {
                     offset: Cell::new(offset as u32),
@@ -414,26 +421,27 @@ fn run_single_analysis<'gc>(
                     // we would have to implement proper state merging to
                     // determine that local #X was non-integral.
                     break;
-                }
-
-                if !stack.pop_expecting_int() {
+                } else if !stack.peek_expecting_int() {
                     // Can't store a non-integer into a local
                     break;
                 }
 
+                stack.pop();
+
                 IntOp::SetLocal { index }
             }
             Op::SetSlotNoCoerce { index } => {
-                if !stack.pop_expecting_int() {
+                if !stack.peek_expecting_int() {
                     // Can't store a non-integer into a slot
                     break;
-                }
-
-                if stack.pop_expecting_object().is_none() {
+                } else if stack.peek_expecting_object() {
                     // Getslot on a primitive is impossible thanks to the
                     // verifier
                     unreachable!();
                 }
+
+                stack.pop();
+                stack.pop();
 
                 // We just guaranteed that the stack has an integer on it and
                 // that the value was about to be stored without coercion
@@ -475,13 +483,12 @@ fn run_single_analysis<'gc>(
 
                     // See comment on `Op::SetLocal`
                     break;
-                }
-
-                if !stack.pop_expecting_int() {
+                } else if !stack.peek_expecting_int() {
                     // Can't store a non-integer into a local
                     break;
                 }
-                stack.push_int();
+
+                // No need to change the stack
 
                 IntOp::StoreLocal { index }
             }
@@ -624,15 +631,23 @@ impl Stack {
         self.0.push(ValueType::Object(object_type));
     }
 
+    pub fn peek(&mut self) -> ValueType {
+        *self.0.last().expect("Guaranteed by verifier previously")
+    }
+
     pub fn pop(&mut self) -> ValueType {
         self.0.pop().expect("Guaranteed by verifier previously")
     }
 
-    pub fn pop_expecting_int(&mut self) -> bool {
-        matches!(self.pop(), ValueType::Int)
+    pub fn peek_expecting_int(&mut self) -> bool {
+        matches!(self.peek(), ValueType::Int)
     }
 
-    pub fn pop_expecting_object(&mut self) -> Option<ObjectType> {
+    pub fn peek_expecting_object(&mut self) -> bool {
+        matches!(self.peek(), ValueType::Object(_))
+    }
+
+    pub fn pop_object(&mut self) -> Option<ObjectType> {
         match self.pop() {
             ValueType::Object(object_type) => Some(object_type),
             _ => None,
