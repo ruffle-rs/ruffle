@@ -1,0 +1,39 @@
+num_ticks = 80
+
+[player_options]
+with_renderer = { optional = false, quality = "low" }
+with_audio = true
+with_video = true
+
+[audio_assertions."sound.10"]
+frames = [10]
+min_max_amplitude = 0.2
+
+[audio_assertions."sound.20"]
+frames = [20]
+min_max_amplitude = 0.1
+
+[audio_assertions."sound.30"]
+frames = [30]
+min_max_amplitude = 0.1
+
+[audio_assertions."sound.40"]
+frames = [40]
+min_max_amplitude = 0.3
+
+[image_comparisons."output.2"]
+trigger = 2
+tolerance = 8
+max_outliers = 0
+
+[image_comparisons."output.78"]
+trigger = 78
+tolerance = 32
+max_outliers = 200
+
+[[compilers]]
+type = "Asc"
+target = "test.swf"
+class = "Test"
+scripts = ["Test.as"]
+swf_version = 9
