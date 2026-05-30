@@ -67,6 +67,7 @@ impl<'a> IntInterpreter<'a> {
                 IntOp::BitXor => self.op_bitxor(),
                 IntOp::DecLocal { index } => self.op_dec_local(*index),
                 IntOp::Dup => self.op_dup(),
+                IntOp::Equals => self.op_equals(),
                 IntOp::GetLocal { index } => self.op_get_local(*index),
                 IntOp::GreaterEquals => self.op_greater_equals(),
                 IntOp::GreaterThan => self.op_greater_than(),
@@ -164,6 +165,15 @@ impl<'a> IntInterpreter<'a> {
     fn op_dup(&mut self) {
         let value = self.peek_stack();
         self.push_stack(value);
+    }
+
+    fn op_equals(&mut self) {
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
+
+        let result = value1 == value2;
+
+        self.push_stack(result as i32);
     }
 
     fn op_get_local(&mut self, index: u32) {

@@ -146,6 +146,13 @@ fn run_single_analysis<'gc>(
 
                 IntOp::Dup
             }
+            Op::EqualsIntegral => {
+                stack.pop();
+                stack.pop();
+                stack.push_bool();
+
+                IntOp::Equals
+            }
             Op::GetLocal { index } => {
                 if !used_locals.get(index as usize) {
                     // Can't access a non-int

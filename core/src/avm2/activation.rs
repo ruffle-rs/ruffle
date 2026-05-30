@@ -784,6 +784,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::URShift => self.op_urshift(),
                 Op::StrictEquals => self.op_strict_equals(),
                 Op::Equals => self.op_equals(),
+                Op::EqualsIntegral => self.op_equals_integral(),
                 Op::GreaterEquals => self.op_greater_equals(),
                 Op::GreaterEqualsIntegral => self.op_greater_equals_integral(),
                 Op::GreaterThan => self.op_greater_than(),
@@ -2421,6 +2422,17 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value1 = self.pop_stack();
 
         let result = value1.abstract_eq(&value2, self)?;
+
+        self.push_stack(result);
+
+        Ok(())
+    }
+
+    fn op_equals_integral(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack().as_i32();
+        let value1 = self.pop_stack().as_i32();
+
+        let result = value1 == value2;
 
         self.push_stack(result);
 

@@ -131,6 +131,7 @@ pub enum Op<'gc> {
     },
     DxnsLate,
     Equals,
+    EqualsIntegral,
     EscXAttr,
     EscXElem,
     FindDef {
@@ -458,6 +459,7 @@ pub enum IntOp {
         index: u32,
     },
     Dup,
+    Equals,
     GetLocal {
         index: u32,
     },
