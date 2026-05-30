@@ -50,7 +50,7 @@ impl<'a> IntInterpreter<'a> {
     }
 
     #[inline(never)]
-    pub fn run(&mut self, opcodes: &[IntOp]) -> Result<(), DomainMemoryError> {
+    pub fn run(&mut self, opcodes: &[IntOp]) -> Result<usize, DomainMemoryError> {
         let mut ip = 0;
 
         loop {
@@ -77,13 +77,12 @@ impl<'a> IntInterpreter<'a> {
                 IntOp::StoreLocal { index } => self.op_store_local(*index),
                 IntOp::Subtract => self.op_subtract(),
 
-                IntOp::End => {
-                    break;
+                IntOp::ExternalJump { offset } => {
+                    // Jump back into the normal interpreter
+                    return Ok(offset.get() as usize);
                 }
             }
         }
-
-        Ok(())
     }
 
     fn op_add(&mut self) {

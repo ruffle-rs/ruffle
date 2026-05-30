@@ -442,12 +442,6 @@ pub struct IntInterpreterInfo {
     /// The stack height of the int interpreter after execution ends.
     pub final_stack_height: usize,
 
-    /// The offset in normal code that should be jumped to after execution ends.
-    ///
-    /// This has interior mutability so that we can rewrite the offset from the
-    /// optimizer when we need to.
-    pub exit_offset: Cell<usize>,
-
     /// The ops run by the int interpreter.
     pub ops: Vec<IntOp>,
 }
@@ -462,19 +456,35 @@ pub enum IntOp {
     BitNot,
     BitOr,
     BitXor,
-    DecLocal { index: u32 },
+    DecLocal {
+        index: u32,
+    },
     Dup,
-    End,
-    GetLocal { index: u32 },
-    IncLocal { index: u32 },
+    ExternalJump {
+        // NOTE: This has interior mutability so that we can rewrite the offset
+        // from the optimizer when we need to.
+        offset: Cell<u32>,
+    },
+    GetLocal {
+        index: u32,
+    },
+    IncLocal {
+        index: u32,
+    },
     Li32,
     Li8,
     Nop,
-    PushInt { value: i32 },
-    SetLocal { index: u32 },
+    PushInt {
+        value: i32,
+    },
+    SetLocal {
+        index: u32,
+    },
     Si32,
     Si8,
-    StoreLocal { index: u32 },
+    StoreLocal {
+        index: u32,
+    },
     Subtract,
 }
 

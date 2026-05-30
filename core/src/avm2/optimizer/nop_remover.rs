@@ -1,4 +1,4 @@
-use crate::avm2::op::Op;
+use crate::avm2::op::{IntOp, Op};
 use crate::avm2::verify::Exception;
 
 pub fn remove_nops<'gc>(code: &mut Vec<Op<'gc>>, exceptions: &mut [Exception<'gc>]) {
@@ -42,7 +42,14 @@ pub fn remove_nops<'gc>(code: &mut Vec<Op<'gc>>, exceptions: &mut [Exception<'gc
                 }
             }
             Op::RunIntInterpreter(info) => {
-                info.exit_offset.set(offset_vec[info.exit_offset.get()]);
+                for op in &info.ops {
+                    match op {
+                        IntOp::ExternalJump { offset } => {
+                            offset.set(offset_vec[offset.get() as usize] as u32);
+                        }
+                        _ => {}
+                    }
+                }
             }
             _ => {}
         }

@@ -70,8 +70,8 @@ pub fn run_analysis<'gc>(
             continue;
         }
 
-        if let Some(info) = run_single_analysis(ops, start_index, locals_state) {
-            covered_ranges.push(start_index..info.exit_offset.get());
+        if let Some((info, num_ops)) = run_single_analysis(ops, start_index, locals_state) {
+            covered_ranges.push(start_index..start_index + num_ops);
 
             let op = Op::RunIntInterpreter(Gc::new(activation.gc(), info));
             ops[start_index].set(op);
@@ -83,7 +83,7 @@ fn run_single_analysis<'gc>(
     ops: &[Cell<Op<'gc>>],
     start_index: usize,
     entry_locals_state: &SmallBitSet,
-) -> Option<IntInterpreterInfo> {
+) -> Option<(IntInterpreterInfo, usize)> {
     let mut output_vec = Vec::new();
 
     let mut current_locals_state = entry_locals_state.clone();
@@ -150,6 +150,9 @@ fn run_single_analysis<'gc>(
 
                 IntOp::IncLocal { index }
             }
+            Op::Jump { offset } => IntOp::ExternalJump {
+                offset: Cell::new(offset as u32),
+            },
             Op::Li8 => IntOp::Li8,
             Op::Li32 => IntOp::Li32,
             Op::Nop => IntOp::Nop,
@@ -195,7 +198,11 @@ fn run_single_analysis<'gc>(
 
     let num_ops = output_vec.len();
 
-    output_vec.push(IntOp::End);
+    // Once all ops are done executing, jump to the normal interpreter at the
+    // position where we should continue.
+    output_vec.push(IntOp::ExternalJump {
+        offset: Cell::new((start_index + num_ops) as u32),
+    });
 
     // Not enough ops for entering the int interpreter to be worth it
     if num_ops < MIN_INT_OPS_LENGTH {
@@ -206,9 +213,8 @@ fn run_single_analysis<'gc>(
         input_locals: entry_locals_state.clone(),
         output_locals: current_locals_state,
         final_stack_height: stack_height,
-        exit_offset: Cell::new(start_index + num_ops),
         ops: output_vec,
     };
 
-    Some(info)
+    Some((info, num_ops))
 }

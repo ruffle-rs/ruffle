@@ -842,9 +842,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                     // exception handler; we can simply throw it from here (as
                     // there are no exception handlers in this method that could
                     // handle the error).
-                    self.run_int_interpreter(info)?;
+                    let new_ip = self.run_int_interpreter(info)?;
 
-                    ip = info.exit_offset.get();
+                    ip = new_ip;
 
                     continue;
                 }
@@ -3110,7 +3110,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Err(Error::from_value(self, error_val))
     }
 
-    fn run_int_interpreter(&mut self, info: &IntInterpreterInfo) -> Result<(), Error<'gc>> {
+    fn run_int_interpreter(&mut self, info: &IntInterpreterInfo) -> Result<usize, Error<'gc>> {
         // Code run in the int interpreter does not have the ability to borrow
         // or swap out the domain memory, so borrow it here. This means that
         // domain memory ops run in the int interpreter can just access the
@@ -3139,11 +3139,14 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         // exception handlers to which that state is observable to (this method
         // will simply immediately return to its caller with the error).
         let result = interpreter.run(&info.ops);
-        if result.is_err() {
-            // The only exception that can happen from the int interpreter is
-            // an out-of-bounds domain memory read/write.
-            return Err(make_error_1506(self));
-        }
+        let new_ip = match result {
+            Ok(new_ip) => new_ip,
+            Err(_) => {
+                // The only exception that can happen from the int interpreter is
+                // an out-of-bounds domain memory read/write.
+                return Err(make_error_1506(self));
+            }
+        };
 
         // Synchronize all the int locals in the int interpreter to this
         // interpreter
@@ -3162,6 +3165,6 @@ impl<'a, 'gc> Activation<'a, 'gc> {
             self.push_stack(interpreter.frame_at(i as u32));
         }
 
-        Ok(())
+        Ok(new_ip)
     }
 }
