@@ -23,6 +23,7 @@ use crate::drawing::Drawing;
 use crate::string::{AvmString, WStr};
 use either::Either;
 use ruffle_render::shape_utils::{DrawCommand, FillRule, GradientType};
+use ruffle_render::triangles::Triangles;
 use std::f64::consts::FRAC_1_SQRT_2;
 use swf::{
     Color, FillStyle, Fixed8, Gradient, GradientInterpolation, GradientRecord, GradientSpread,
@@ -1105,110 +1106,89 @@ impl<T> AsChunksExact<T> for [T] {
     }
 }
 
-/// Parsed and validated triangle geometry for `Graphics.drawTriangles`.
+/// Parses raw `Graphics.drawTriangles` arguments into a validated
+/// [`TriangleData`].
 ///
-/// # Invariants
-///
-/// * `vertices`, `indices`, and `triangles` are non-empty.
-/// * Every value in `indices` is `< vertices.len()`. Flash stops at the first
-///   out-of-bounds index, so any trailing triples that would have been out of
-///   bounds are dropped at construction time.
-enum TriangleData {
-    /// Triangles described by shared `vertices` and triples of indices into
-    /// that array.
-    Indexed {
-        vertices: Box<[Point<Twips>]>,
-        indices: Box<[[u32; 3]]>,
-    },
-    /// Triangles described as independent vertex triples.
-    Sequential { triangles: Box<[[Point<Twips>; 3]]> },
-}
+/// Returns `Ok(None)` for inputs that produce no triangles (empty
+/// vertices, empty indices, or all indices out of bounds).
+fn parse_triangles<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    vertices: &Object<'gc>,
+    indices: Option<&Object<'gc>>,
+) -> Result<Option<Triangles>, Error<'gc>> {
+    let vertex_storage = vertices
+        .as_vector_storage()
+        .expect("vertices is not a Vector");
 
-impl TriangleData {
-    /// Parses raw `Graphics.drawTriangles` arguments into a validated
-    /// [`TriangleData`].
-    ///
-    /// Returns `Ok(None)` for inputs that produce no triangles (empty
-    /// vertices, empty indices, or all indices out of bounds).
-    fn new<'gc>(
-        activation: &mut Activation<'_, 'gc>,
-        vertices: &Object<'gc>,
-        indices: Option<&Object<'gc>>,
-    ) -> Result<Option<Self>, Error<'gc>> {
-        let vertex_storage = vertices
+    let vertex_pairs = vertex_storage
+        .storage()
+        .as_chunks_exact::<2>()
+        .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?;
+
+    if vertex_pairs.is_empty() {
+        return Ok(None);
+    }
+
+    if let Some(indices) = indices {
+        let indices_storage = indices
             .as_vector_storage()
-            .expect("vertices is not a Vector");
+            .expect("indices is not a Vector");
 
-        let vertex_pairs = vertex_storage
+        let index_triples = indices_storage
             .storage()
-            .as_chunks_exact::<2>()
+            .as_chunks_exact::<3>()
             .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?;
 
-        if vertex_pairs.is_empty() {
+        if index_triples.is_empty() {
             return Ok(None);
         }
 
-        if let Some(indices) = indices {
-            let indices_storage = indices
-                .as_vector_storage()
-                .expect("indices is not a Vector");
+        let vertices = vertex_pairs
+            .iter()
+            .map(|pair| make_point(pair))
+            .collect::<Box<_>>();
 
-            let index_triples = indices_storage
-                .storage()
-                .as_chunks_exact::<3>()
-                .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?;
+        let num_vertices = vertices.len();
 
-            if index_triples.is_empty() {
-                return Ok(None);
-            }
+        // `Vector.<int>` elements are always `Value::Integer`
+        let indices: Box<_> = index_triples
+            .iter()
+            .map(|[i0, i1, i2]| [i0.as_u32(), i1.as_u32(), i2.as_u32()])
+            // Flash stops at the first out-of-bounds index.
+            .take_while(|tri| tri.iter().all(|&i| (i as usize) < num_vertices))
+            .collect();
 
-            let vertices = vertex_pairs
-                .iter()
-                .map(|pair| make_point(pair))
-                .collect::<Box<_>>();
-
-            let num_vertices = vertices.len();
-
-            // `Vector.<int>` elements are always `Value::Integer`
-            let indices: Box<_> = index_triples
-                .iter()
-                .map(|[i0, i1, i2]| [i0.as_u32(), i1.as_u32(), i2.as_u32()])
-                // Flash stops at the first out-of-bounds index.
-                .take_while(|tri| tri.iter().all(|&i| (i as usize) < num_vertices))
-                .collect();
-
-            if indices.is_empty() {
-                return Ok(None);
-            }
-
-            Ok(Some(Self::Indexed { vertices, indices }))
-        } else {
-            let vertex_triples = vertex_pairs
-                .as_chunks_exact::<3>()
-                .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?;
-
-            let triangles = vertex_triples
-                .iter()
-                .map(|[p0, p1, p2]| [make_point(p0), make_point(p1), make_point(p2)])
-                .collect::<Box<_>>();
-
-            Ok(Some(Self::Sequential { triangles }))
+        if indices.is_empty() {
+            return Ok(None);
         }
+
+        Ok(Some(Triangles::Indexed { vertices, indices }))
+    } else {
+        let vertex_triples = vertex_pairs
+            .as_chunks_exact::<3>()
+            .ok_or_else(|| make_error_2004(activation, Error2004Type::ArgumentError))?;
+
+        let triangles = vertex_triples
+            .iter()
+            .map(|[p0, p1, p2]| [make_point(p0), make_point(p1), make_point(p2)])
+            .collect::<Box<_>>();
+
+        Ok(Some(Triangles::Sequential { triangles }))
     }
+}
 
-    fn iter_triangles(&self) -> impl Iterator<Item = [Point<Twips>; 3]> + '_ {
-        match self {
-            Self::Indexed { vertices, indices } => {
-                Either::Left(indices.iter().map(|&[i0, i1, i2]| {
-                    [
-                        vertices[i0 as usize],
-                        vertices[i1 as usize],
-                        vertices[i2 as usize],
-                    ]
-                }))
-            }
-            Self::Sequential { triangles } => Either::Right(triangles.iter().copied()),
+fn iter_triangles(triangles: &Triangles) -> impl Iterator<Item = [Point<Twips>; 3]> + '_ {
+    match triangles {
+        Triangles::Indexed { vertices, indices } => {
+            Either::Left(indices.iter().map(|&[i0, i1, i2]| {
+                [
+                    vertices[i0 as usize],
+                    vertices[i1 as usize],
+                    vertices[i2 as usize],
+                ]
+            }))
         }
+        Triangles::Sequential { triangles } => Either::Right(triangles.iter().copied()),
     }
 }
 
@@ -1267,11 +1247,11 @@ fn draw_triangles_internal<'gc>(
     _uvt_data: Option<&Object<'gc>>,
     culling: TriangleCulling,
 ) -> Result<(), Error<'gc>> {
-    let Some(data) = TriangleData::new(activation, vertices, indices)? else {
+    let Some(triangles) = parse_triangles(activation, vertices, indices)? else {
         return Ok(());
     };
 
-    for [a, b, c] in data.iter_triangles().filter(|&tri| !culling.cull(tri)) {
+    for [a, b, c] in iter_triangles(&triangles).filter(|&tri| !culling.cull(tri)) {
         drawing.draw_command(DrawCommand::MoveTo(a));
         drawing.draw_command(DrawCommand::LineTo(b));
         drawing.draw_command(DrawCommand::LineTo(c));
