@@ -505,6 +505,7 @@ pub enum IntOp {
     },
     LessEquals,
     LessThan,
+    Li16,
     Li32,
     Li8,
     LShift,
@@ -521,6 +522,7 @@ pub enum IntOp {
     SetLocal {
         index: u32,
     },
+    Si16,
     Si32,
     Si8,
     StoreLocal {

@@ -90,6 +90,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                 IntOp::IncLocal { index } => self.op_inc_local(*index),
                 IntOp::LessEquals => self.op_less_equals(),
                 IntOp::LessThan => self.op_less_than(),
+                IntOp::Li16 => self.op_li16()?,
                 IntOp::Li32 => self.op_li32()?,
                 IntOp::Li8 => self.op_li8()?,
                 IntOp::LShift => self.op_lshift(),
@@ -100,6 +101,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                 IntOp::PushObject { value } => self.op_push_int(*value as i32),
                 IntOp::RShift => self.op_rshift(),
                 IntOp::SetLocal { index } => self.op_set_local(*index),
+                IntOp::Si16 => self.op_si16()?,
                 IntOp::Si32 => self.op_si32()?,
                 IntOp::Si8 => self.op_si8()?,
                 IntOp::StoreLocal { index } => self.op_store_local(*index),
@@ -253,6 +255,22 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
         self.push_stack(result as i32);
     }
 
+    fn op_li16(&mut self) -> Result<(), DomainMemoryError> {
+        // See `Activation::op_li16` for an explanation
+        let address = self.pop_stack() as usize;
+
+        let dm = &self.domain_memory;
+
+        if address > dm.len() - 2 {
+            return Err(DomainMemoryError);
+        }
+
+        let val = dm.read_at(2, address).expect("Already checked");
+        self.push_stack(u16::from_le_bytes(val.try_into().unwrap()) as i32);
+
+        Ok(())
+    }
+
     fn op_li32(&mut self) -> Result<(), DomainMemoryError> {
         // See `Activation::op_li32` for an explanation
         let address = self.pop_stack() as usize;
@@ -321,6 +339,24 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
     fn op_set_local(&mut self, index: u32) {
         let value = self.pop_stack();
         self.set_frame_at(index, value);
+    }
+
+    fn op_si16(&mut self) -> Result<(), DomainMemoryError> {
+        // See `Activation::op_si16` for an explanation
+        let address = self.pop_stack() as usize;
+
+        let val = self.pop_stack() as i16;
+
+        let dm = &mut self.domain_memory;
+
+        if address > dm.len() - 2 {
+            return Err(DomainMemoryError);
+        }
+
+        dm.write_at_nongrowing(&val.to_le_bytes(), address)
+            .expect("Already checked");
+
+        Ok(())
     }
 
     fn op_si32(&mut self) -> Result<(), DomainMemoryError> {

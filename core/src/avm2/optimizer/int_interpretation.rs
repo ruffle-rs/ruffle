@@ -320,6 +320,12 @@ fn run_single_analysis<'gc>(
 
                 IntOp::Li8
             }
+            Op::Li16 => {
+                stack.pop();
+                stack.push_int();
+
+                IntOp::Li16
+            }
             Op::Li32 => {
                 stack.pop();
                 stack.push_int();
@@ -383,6 +389,12 @@ fn run_single_analysis<'gc>(
                 stack.pop();
 
                 IntOp::Si8
+            }
+            Op::Si16 => {
+                stack.pop();
+                stack.pop();
+
+                IntOp::Si16
             }
             Op::Si32 => {
                 stack.pop();
