@@ -2711,10 +2711,18 @@ impl<'gc> TDisplayObject<'gc> for EditText<'gc> {
             .get()
             .intersects(EditTextFlag::BORDER | EditTextFlag::HAS_BACKGROUND)
         {
-            let background_color = Some(self.0.background_color.get())
-                .filter(|_| self.0.flags.get().contains(EditTextFlag::HAS_BACKGROUND));
-            let border_color = Some(self.0.border_color.get())
-                .filter(|_| self.0.flags.get().contains(EditTextFlag::BORDER));
+            let background_color = self
+                .0
+                .flags
+                .get()
+                .contains(EditTextFlag::HAS_BACKGROUND)
+                .then_some(self.0.background_color.get());
+            let border_color = self
+                .0
+                .flags
+                .get()
+                .contains(EditTextFlag::BORDER)
+                .then_some(self.0.border_color.get());
 
             if self.is_device_font() {
                 self.draw_device_text_box(

@@ -208,11 +208,11 @@ fn char_patterns() {
 fn multi_char_patterns() {
     let bytes = bstr!(b"abcdabcd");
     let matches = &[(0, 1), (2, 3), (4, 5), (6, 7)];
-    test_pattern(bytes, &[b'a', b'c'][..], matches, None);
+    test_pattern(bytes, &b"ac"[..], matches, None);
     test_pattern(bytes, &['a' as u16, 'c' as u16][..], matches, None);
 
     let wide = wstr!('↓''a''b''↓''b''c');
-    test_pattern(wide, &[b'a', b'b'][..], &[(1, 2), (2, 3), (4, 5)], None);
+    test_pattern(wide, &b"ab"[..], &[(1, 2), (2, 3), (4, 5)], None);
     test_pattern(wide, &['↓' as u16, '−' as u16][..], &[(0, 1), (3, 4)], None);
 
     // Don't test `FnMut(u16) -> bool` because it isn't `Debug`
