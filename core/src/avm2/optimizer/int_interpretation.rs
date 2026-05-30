@@ -344,11 +344,15 @@ fn run_single_analysis<'gc>(
     let num_ops = output_vec.len();
 
     // Once all ops are done executing, jump to the normal interpreter at the
-    // position where we should continue.
-    output_vec.push(IntOp::JumpExternal {
-        offset: Cell::new((start_index + num_ops) as u32),
-        final_stack_height: stack.len() as u8,
-    });
+    // position where we should continue. Unless we got to the end of the
+    // method, in which case don't add this last op, as it'll confuse the nop
+    // remover.
+    if start_index + num_ops != ops.len() {
+        output_vec.push(IntOp::JumpExternal {
+            offset: Cell::new((start_index + num_ops) as u32),
+            final_stack_height: stack.len() as u8,
+        });
+    }
 
     // Not enough ops for entering the int interpreter to be worth it
     if num_ops < MIN_INT_OPS_LENGTH {
