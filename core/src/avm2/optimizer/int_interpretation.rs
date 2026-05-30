@@ -181,10 +181,13 @@ fn run_single_analysis<'gc>(
             Op::IfFalse { offset } => {
                 stack.pop();
 
-                if !stack.is_entirely_ints() {
-                    // It's fairly rare for booleans to be on the stack during
-                    // merging, and this allows us to avoid dealing with state
-                    // merging
+                if !stack.is_empty() {
+                    // It's fairly rare for items to be on the stack during
+                    // merging, and this allows us to avoid dealing with
+                    // state merging or tracking to know the correct height of
+                    // the stack at a certain point. However, this does mean
+                    // all ternary expressions disable int interpreter
+                    // promotion. TODO support this case
                     break;
                 }
 
@@ -199,7 +202,7 @@ fn run_single_analysis<'gc>(
             Op::IfTrue { offset } => {
                 stack.pop();
 
-                if !stack.is_entirely_ints() {
+                if !stack.is_empty() {
                     // See comment on `Op::IfFalse`
                     break;
                 }
@@ -212,7 +215,7 @@ fn run_single_analysis<'gc>(
                 }
             }
             Op::Jump { offset } => {
-                if !stack.is_entirely_ints() {
+                if !stack.is_empty() {
                     // See comment on `Op::IfFalse`
                     break;
                 }
@@ -412,7 +415,7 @@ fn run_single_analysis<'gc>(
 ///
 /// Currently the int interpreter supports dealing with integers and booleans.
 /// However, booleans are limited- they cannot be stored in locals, and they
-/// cannot exist on the stack when a jump/branch is made or when the code ends.
+/// cannot exist on the stack when the code ends.
 ///
 /// Note that when coercing booleans to integers, AVM2 coerces `false` to `0`,
 /// and `true` to `1`. This is advantageous to us because we represent those two
@@ -463,5 +466,9 @@ impl Stack {
 
     pub fn len(&self) -> usize {
         self.0.len()
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
     }
 }
