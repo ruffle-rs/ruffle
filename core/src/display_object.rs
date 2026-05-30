@@ -1295,9 +1295,14 @@ pub trait TDisplayObject<'gc>:
 
     /// The `SCALE_ROTATION_CACHED` flag should only be set in SWFv5+.
     /// So scaling/rotation values always have to get recalculated from the matrix in SWFv4.
+    /// SWF version 0 means non-SWF content (a loaded image); since loading images requires
+    /// `loadMovie` (SWFv5+) or `MovieClipLoader` (SWFv6+), this can't occur in a SWFv4 context.
+    /// Therefore, loaded images are supposed to work the way SWF >= 5 movies do in this regard,
+    /// but the SWF version of the MovieClips created for loaded images can't inherit their
+    /// version from the loading movie - they have to be reported as -1 to ActionScript.
     #[no_dynamic]
     fn set_scale_rotation_cached(self) {
-        if self.swf_version() >= 5 {
+        if self.swf_version() == 0 || self.swf_version() >= 5 {
             self.base().set_scale_rotation_cached(true);
         }
     }
