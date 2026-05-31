@@ -1278,6 +1278,10 @@ impl<'gc> MovieClip<'gc> {
         }
     }
 
+    pub fn clip_event_flags(self) -> ClipEventFlag {
+        self.0.clip_event_flags.get()
+    }
+
     /// Gets the clip events for this MovieClip.
     pub fn clip_actions(self) -> &'gc [ClipEventHandler] {
         match Gc::as_ref(self.0).clip_event_handlers.get() {
@@ -1289,16 +1293,16 @@ impl<'gc> MovieClip<'gc> {
     /// Sets the clip actions (a.k.a. clip events) for this MovieClip.
     /// Clip actions are created in the Flash IDE by using the `onEnterFrame`
     /// tag on a MovieClip instance.
-    pub fn init_clip_event_handlers(self, event_handlers: Box<[ClipEventHandler]>) {
+    pub fn init_clip_event_handlers(
+        self,
+        all_event_flags: ClipEventFlag,
+        event_handlers: Box<[ClipEventHandler]>,
+    ) {
         if self.0.clip_event_handlers.get().is_some() {
             panic!("Clip event handlers already initialized");
         }
 
-        let mut all_event_flags = ClipEventFlag::empty();
-        for handler in self.0.clip_event_handlers.get_or_init(|| event_handlers) {
-            all_event_flags |= handler.events;
-        }
-
+        self.0.clip_event_handlers.get_or_init(|| event_handlers);
         self.0.clip_event_flags.set(all_event_flags);
     }
 
@@ -1538,6 +1542,7 @@ impl<'gc> MovieClip<'gc> {
                     {
                         // Convert from `swf::ClipAction` to Ruffle's `ClipEventHandler`.
                         clip.init_clip_event_handlers(
+                            clip_actions.all_event_flags,
                             clip_actions
                                 .records
                                 .iter()

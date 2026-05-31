@@ -1008,7 +1008,8 @@ pub fn clone_sprite<'gc>(
     if let (Some(cloned_sprite), Some(sprite)) =
         (cloned_sprite.as_movie_clip(), sprite.as_movie_clip())
     {
-        cloned_sprite.init_clip_event_handlers(sprite.clip_actions().into());
+        cloned_sprite
+            .init_clip_event_handlers(sprite.clip_event_flags(), sprite.clip_actions().into());
 
         if let Some(drawing) = sprite.drawing().as_deref().cloned() {
             *cloned_sprite.drawing_mut() = drawing;
