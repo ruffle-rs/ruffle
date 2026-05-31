@@ -9,7 +9,7 @@ use crate::avm2::optimizer::utils::SmallBitSet;
 use enum_map::EnumMap;
 use gc_arena::Gc;
 use std::cell::Cell;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashSet};
 use std::ops::Range;
 
 /// The minimum number of consecutive ops that will be run in the integer
@@ -28,6 +28,7 @@ pub fn run_analysis<'gc>(
     activation: &mut Activation<'_, 'gc>,
     method: Method<'gc>,
     ops: &[Cell<Op<'gc>>],
+    jump_targets: &HashSet<usize>,
     empty_stack_positions: &BTreeMap<usize, SmallBitSet>,
     has_exceptions: bool,
 ) {
@@ -104,15 +105,21 @@ pub fn run_analysis<'gc>(
     // promotions within them. Because `empty_stack_positions` is a `BTreeMap`,
     // iterating over it will result in earlier positions (the ones that will
     // yield the largest promoted areas) being handled first.
-    let mut covered_ranges: Vec<Range<usize>> = Vec::new();
+    let mut already_covered_ranges: Vec<Range<usize>> = Vec::new();
 
     // Now we can actually run the analysis pass.
     for (start_index, locals_state) in empty_stack_positions {
         let start_index = *start_index;
 
-        if covered_ranges.iter().any(|r| r.contains(&start_index)) {
-            // See above comment
-            continue;
+        // If the start index is a jump target, do promotion anyway
+        if !jump_targets.contains(&start_index) {
+            if already_covered_ranges
+                .iter()
+                .any(|r| r.contains(&start_index))
+            {
+                // See above comment
+                continue;
+            }
         }
 
         let analysis_results = run_single_analysis(
@@ -124,7 +131,7 @@ pub fn run_analysis<'gc>(
         );
 
         if let Some((info, num_ops)) = analysis_results {
-            covered_ranges.push(start_index..start_index + num_ops);
+            already_covered_ranges.push(start_index..start_index + num_ops);
 
             let op = Op::RunIntInterpreter(Gc::new(activation.gc(), info));
             ops[start_index].set(op);

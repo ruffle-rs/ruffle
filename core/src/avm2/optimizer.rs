@@ -60,6 +60,7 @@ pub fn optimize<'gc>(
         activation,
         method,
         code_slice,
+        &jump_targets,
         &empty_stack_positions,
         !method_exceptions.is_empty(),
     );
