@@ -499,6 +499,26 @@ fn run_single_analysis<'gc>(
 
                 IntOp::Subtract
             }
+            Op::Swap => {
+                let first = stack.pop();
+                let second = stack.pop();
+                stack.push(first);
+                stack.push(second);
+
+                IntOp::Swap
+            }
+            Op::Sxi16 => {
+                stack.pop();
+                stack.push_int();
+
+                IntOp::Sxi16
+            }
+            Op::Sxi8 => {
+                stack.pop();
+                stack.push_int();
+
+                IntOp::Sxi8
+            }
             _ => {
                 break;
             }

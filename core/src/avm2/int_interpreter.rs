@@ -116,6 +116,9 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                 IntOp::Si8 => self.op_si8()?,
                 IntOp::StoreLocal { index } => self.op_store_local(*index),
                 IntOp::Subtract => self.op_subtract(),
+                IntOp::Swap => self.op_swap(),
+                IntOp::Sxi16 => self.op_sxi16(),
+                IntOp::Sxi8 => self.op_sxi8(),
 
                 IntOp::IfFalse { offset } => {
                     if self.pop_stack() == 0 {
@@ -425,5 +428,29 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
         let value2 = self.pop_stack();
         let value1 = self.pop_stack();
         self.push_stack(value1.wrapping_sub(value2));
+    }
+
+    fn op_swap(&mut self) {
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
+
+        self.push_stack(value2);
+        self.push_stack(value1);
+    }
+
+    fn op_sxi16(&mut self) {
+        let val = self.pop_stack();
+
+        let val = (val.wrapping_shl(15).wrapping_shr(15) & 0xFFFF) as i16 as i32;
+
+        self.push_stack(val);
+    }
+
+    fn op_sxi8(&mut self) {
+        let val = self.pop_stack();
+
+        let val = (val.wrapping_shl(23).wrapping_shr(23) & 0xFF) as i8 as i32;
+
+        self.push_stack(val);
     }
 }

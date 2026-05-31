@@ -532,6 +532,9 @@ pub enum IntOp {
         index: u32,
     },
     Subtract,
+    Swap,
+    Sxi16,
+    Sxi8,
 }
 
 const _: () = assert!(std::mem::size_of::<IntOp>() == 8);
