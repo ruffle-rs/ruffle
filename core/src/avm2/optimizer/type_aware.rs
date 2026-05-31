@@ -1093,8 +1093,13 @@ fn abstract_interpret_ops<'gc>(
                 stack.push_class(activation, types.number)?;
             }
             Op::Multiply => {
-                stack.pop(activation)?;
-                stack.pop(activation)?;
+                let value2 = stack.pop(activation)?;
+                let value1 = stack.pop(activation)?;
+
+                if value1.class == Some(types.int) && value2.class == Some(types.int) {
+                    optimize_op_to!(Op::MultiplyIntegral);
+                }
+
                 stack.push_class(activation, types.number)?;
             }
             Op::Divide => {
@@ -2214,11 +2219,14 @@ fn abstract_interpret_ops<'gc>(
             | Op::GreaterThanIntegral
             | Op::LessEqualsIntegral
             | Op::LessThanIntegral
+            | Op::MultiplyIntegral
+            | Op::MultiplyIntegralI
             | Op::PopJump { .. }
             | Op::RunIntInterpreter { .. }
             | Op::SetSlotCoerceI { .. }
             | Op::SetSlotNoCoerce { .. }
-            | Op::SubtractIntegral => unreachable!("Custom ops should not be encountered"),
+            | Op::SubtractIntegral
+            | Op::URShiftI => unreachable!("Custom ops should not be encountered"),
         }
     }
 

@@ -103,6 +103,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                 IntOp::Li32 => self.op_li32()?,
                 IntOp::Li8 => self.op_li8()?,
                 IntOp::LShift => self.op_lshift(),
+                IntOp::MultiplyNumbers => self.op_multiply_numbers(),
                 IntOp::Nop => {}
                 IntOp::Not => self.op_not(),
                 IntOp::Pop => self.op_pop(),
@@ -119,6 +120,7 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
                 IntOp::Swap => self.op_swap(),
                 IntOp::Sxi16 => self.op_sxi16(),
                 IntOp::Sxi8 => self.op_sxi8(),
+                IntOp::URShift => self.op_urshift(),
 
                 IntOp::IfFalse { offset } => {
                     if self.pop_stack() == 0 {
@@ -324,6 +326,19 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
         self.push_stack(value1 << (value2 & 0x1F));
     }
 
+    fn op_multiply_numbers(&mut self) {
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
+
+        let result = if let Some(result) = value1.checked_mul(value2) {
+            result
+        } else {
+            crate::ecma_conversions::f64_to_wrapping_i32(value1 as f64 * value2 as f64)
+        };
+
+        self.push_stack(result);
+    }
+
     fn op_not(&mut self) {
         let value = self.pop_stack();
 
@@ -452,5 +467,12 @@ impl<'a, 'gc> IntInterpreter<'a, 'gc> {
         let val = (val.wrapping_shl(23).wrapping_shr(23) & 0xFF) as i8 as i32;
 
         self.push_stack(val);
+    }
+
+    fn op_urshift(&mut self) {
+        let value2 = self.pop_stack() as u32;
+        let value1 = self.pop_stack() as u32;
+
+        self.push_stack((value1 >> (value2 & 0x1F)) as i32);
     }
 }

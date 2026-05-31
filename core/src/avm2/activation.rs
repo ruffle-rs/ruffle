@@ -774,7 +774,9 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::LShift => self.op_lshift(),
                 Op::Modulo => self.op_modulo(),
                 Op::Multiply => self.op_multiply(),
+                Op::MultiplyIntegral => self.op_multiply_integral(),
                 Op::MultiplyI => self.op_multiply_i(),
+                Op::MultiplyIntegralI => self.op_multiply_integral_i(),
                 Op::Negate => self.op_negate(),
                 Op::NegateI => self.op_negate_i(),
                 Op::RShift => self.op_rshift(),
@@ -783,6 +785,7 @@ impl<'a, 'gc> Activation<'a, 'gc> {
                 Op::SubtractI => self.op_subtract_i(),
                 Op::Swap => self.op_swap(),
                 Op::URShift => self.op_urshift(),
+                Op::URShiftI => self.op_urshift_i(),
                 Op::StrictEquals => self.op_strict_equals(),
                 Op::Equals => self.op_equals(),
                 Op::EqualsIntegral => self.op_equals_integral(),
@@ -2284,11 +2287,47 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         Ok(())
     }
 
+    fn op_multiply_integral(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
+
+        if let (Value::Integer(n1), Value::Integer(n2)) = (value1, value2)
+            && let Some(result) = n1.checked_mul(n2)
+        {
+            self.push_stack(result);
+            return Ok(());
+        }
+        let value2 = value2.as_f64();
+        let value1 = value1.as_f64();
+        self.push_stack(value1 * value2);
+
+        Ok(())
+    }
+
     fn op_multiply_i(&mut self) -> Result<(), Error<'gc>> {
         let value2 = self.pop_stack().coerce_to_i32(self)?;
         let value1 = self.pop_stack().coerce_to_i32(self)?;
 
         self.push_stack(value1.wrapping_mul(value2));
+
+        Ok(())
+    }
+
+    fn op_multiply_integral_i(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack();
+        let value1 = self.pop_stack();
+
+        if let (Value::Integer(n1), Value::Integer(n2)) = (value1, value2)
+            && let Some(result) = n1.checked_mul(n2)
+        {
+            self.push_stack(result);
+            return Ok(());
+        }
+        let value2 = value2.as_f64();
+        let value1 = value1.as_f64();
+        self.push_stack(crate::ecma_conversions::f64_to_wrapping_i32(
+            value1 * value2,
+        ));
 
         Ok(())
     }
@@ -2400,6 +2439,15 @@ impl<'a, 'gc> Activation<'a, 'gc> {
         let value1 = self.pop_stack().coerce_to_u32(self)?;
 
         self.push_stack(value1 >> (value2 & 0x1F));
+
+        Ok(())
+    }
+
+    fn op_urshift_i(&mut self) -> Result<(), Error<'gc>> {
+        let value2 = self.pop_stack().coerce_to_u32(self)?;
+        let value1 = self.pop_stack().coerce_to_u32(self)?;
+
+        self.push_stack((value1 >> (value2 & 0x1F)) as i32);
 
         Ok(())
     }

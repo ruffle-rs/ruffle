@@ -479,6 +479,18 @@ fn run_single_analysis<'gc>(
 
                 IntOp::LShift
             }
+            Op::MultiplyIntegralI => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
+                stack.pop();
+                stack.pop();
+                stack.push_int();
+
+                IntOp::MultiplyNumbers
+            }
             Op::Nop => IntOp::Nop,
             Op::Not => {
                 if !stack.expect(ValueType::Bool, 1) {
@@ -648,6 +660,18 @@ fn run_single_analysis<'gc>(
                 stack.push_int();
 
                 IntOp::Sxi8
+            }
+            Op::URShiftI => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
+                stack.pop();
+                stack.pop();
+                stack.push_int();
+
+                IntOp::URShift
             }
             _ => {
                 break;

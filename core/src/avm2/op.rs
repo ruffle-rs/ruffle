@@ -234,7 +234,15 @@ pub enum Op<'gc> {
     LShift,
     Modulo,
     Multiply,
+    MultiplyIntegral,
     MultiplyI,
+
+    // NOTE: This is different from `MultiplyI`: this op is equivalent to
+    // `MultiplyIntegral`+`CoerceI`, rather than just `MultiplyI`.
+    // The former, which is essentially a `f64` multiplication that then becomes
+    // `as i32`, is different from the latter, an `i32` multiplication.
+    MultiplyIntegralI,
+
     Negate,
     NegateI,
     NewActivation {
@@ -346,6 +354,7 @@ pub enum Op<'gc> {
     TypeOf,
     Timestamp,
     URShift,
+    URShiftI,
 }
 
 #[cfg(target_pointer_width = "64")]
@@ -509,6 +518,7 @@ pub enum IntOp {
     Li32,
     Li8,
     LShift,
+    MultiplyNumbers,
     Nop,
     Not,
     Pop,
@@ -535,6 +545,7 @@ pub enum IntOp {
     Swap,
     Sxi16,
     Sxi8,
+    URShift,
 }
 
 const _: () = assert!(std::mem::size_of::<IntOp>() == 8);
