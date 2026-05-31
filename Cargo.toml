@@ -153,6 +153,11 @@ panic = "unwind"
 [profile.release]
 panic = "abort"
 
+[profile.dist]
+inherits = "release"
+lto = true
+codegen-units = 1
+
 [profile.dev.package.h263-rs]
 opt-level = 3
 
