@@ -3,7 +3,8 @@ mod font_renderer;
 use super::JavascriptPlayer;
 use rfd::{AsyncFileDialog, FileHandle};
 use ruffle_core::backend::ui::{
-    DialogResultFuture, FileDialogResult, FileDialogSelection, FileFilter,
+    DialogResultFuture, FileDialogResult, FileDialogSelection, FileFilter, MultiDialogResultFuture,
+    MultiFileDialogResult,
 };
 use ruffle_core::backend::ui::{
     FontDefinition, FullscreenError, LanguageIdentifier, MouseCursor, US_ENGLISH, UiBackend,
@@ -50,6 +51,17 @@ impl WebFileSelection {
             contents: Vec::new(),
         }
     }
+}
+
+fn build_file_dialog(filters: &[FileFilter], is_mac: bool) -> AsyncFileDialog {
+    let mut dialog = AsyncFileDialog::new();
+
+    for filter in filters {
+        let extensions = filter.extensions_for_dialog(is_mac);
+        dialog = dialog.add_filter(&filter.description, &extensions);
+    }
+
+    dialog
 }
 
 fn get_extension_from_filename(filename: &str) -> Option<String> {
@@ -169,6 +181,34 @@ impl WebUiBackend {
 
     pub fn set_clipboard_content_buffer(&mut self, content: String) {
         self.clipboard_content = content;
+    }
+
+    fn check_dialog_open(&mut self) -> Option<()> {
+        if self.dialog_open {
+            return None;
+        }
+
+        self.dialog_open = true;
+
+        Some(())
+    }
+
+    fn show_open_dialog<F, O>(&mut self, filters: &[FileFilter], f: F) -> Option<O>
+    where
+        F: FnOnce(AsyncFileDialog) -> O,
+    {
+        self.check_dialog_open()?;
+
+        let is_mac = web_sys::window()
+            .expect("window()")
+            .navigator()
+            .platform()
+            .expect("navigator.platform")
+            .contains("Mac");
+
+        let dialog = build_file_dialog(filters, is_mac);
+
+        Some(f(dialog))
     }
 }
 
@@ -327,33 +367,33 @@ impl UiBackend for WebUiBackend {
     }
 
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture> {
-        // Prevent opening multiple dialogs at the same time
-        if self.dialog_open {
-            return None;
-        }
-        self.dialog_open = true;
-
-        // Create the dialog future
-        let is_mac = web_sys::window()
-            .expect("window()")
-            .navigator()
-            .platform()
-            .expect("navigator.platform")
-            .contains("Mac");
+        let result = self.show_open_dialog(&filters, |d| d.pick_file())?;
 
         Some(Box::pin(async move {
-            let mut dialog = AsyncFileDialog::new();
-
-            for filter in &filters {
-                let extensions = filter.extensions_for_dialog(is_mac);
-
-                dialog = dialog.add_filter(&filter.description, &extensions);
-            }
-
-            Ok(if let Some(handle) = dialog.pick_file().await {
+            Ok(if let Some(handle) = result.await {
                 FileDialogResult::Selection(Box::new(WebFileSelection::new_pick(handle).await))
             } else {
                 FileDialogResult::Canceled
+            })
+        }))
+    }
+
+    fn display_file_open_dialog_multiple(
+        &mut self,
+        filters: Vec<FileFilter>,
+    ) -> Option<MultiDialogResultFuture> {
+        let result = self.show_open_dialog(&filters, |d| d.pick_files())?;
+
+        Some(Box::pin(async move {
+            Ok(if let Some(handles) = result.await {
+                let selections = futures::future::join_all(handles.into_iter().map(|h| async {
+                    Box::new(WebFileSelection::new_pick(h).await) as Box<dyn FileDialogSelection>
+                }))
+                .await;
+
+                MultiFileDialogResult::Selection(selections)
+            } else {
+                MultiFileDialogResult::Canceled
             })
         }))
     }
@@ -367,11 +407,7 @@ impl UiBackend for WebUiBackend {
         file_name: String,
         _title: String,
     ) -> Option<DialogResultFuture> {
-        // Prevent opening multiple dialogs at the same time
-        if self.dialog_open {
-            return None;
-        }
-        self.dialog_open = true;
+        self.check_dialog_open()?;
 
         Some(Box::pin(async move {
             Ok(FileDialogResult::Selection(Box::new(
