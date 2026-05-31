@@ -1115,6 +1115,7 @@ fn parse_triangles<'gc>(
     activation: &mut Activation<'_, 'gc>,
     vertices: &Object<'gc>,
     indices: Option<&Object<'gc>>,
+    culling: TriangleCulling,
 ) -> Result<Option<Triangles>, Error<'gc>> {
     let vertex_storage = vertices
         .as_vector_storage()
@@ -1156,6 +1157,13 @@ fn parse_triangles<'gc>(
             .map(|[i0, i1, i2]| [i0.as_u32(), i1.as_u32(), i2.as_u32()])
             // Flash stops at the first out-of-bounds index.
             .take_while(|tri| tri.iter().all(|&i| (i as usize) < num_vertices))
+            .filter(|&[a, b, c]| {
+                !culling.cull([
+                    vertices[a as usize],
+                    vertices[b as usize],
+                    vertices[c as usize],
+                ])
+            })
             .collect();
 
         if indices.is_empty() {
@@ -1171,7 +1179,12 @@ fn parse_triangles<'gc>(
         let triangles = vertex_triples
             .iter()
             .map(|[p0, p1, p2]| [make_point(p0), make_point(p1), make_point(p2)])
+            .filter(|&tri| !culling.cull(tri))
             .collect::<Box<_>>();
+
+        if triangles.is_empty() {
+            return Ok(None);
+        }
 
         Ok(Some(Triangles::Sequential { triangles }))
     }
@@ -1247,11 +1260,11 @@ fn draw_triangles_internal<'gc>(
     _uvt_data: Option<&Object<'gc>>,
     culling: TriangleCulling,
 ) -> Result<(), Error<'gc>> {
-    let Some(triangles) = parse_triangles(activation, vertices, indices)? else {
+    let Some(triangles) = parse_triangles(activation, vertices, indices, culling)? else {
         return Ok(());
     };
 
-    for [a, b, c] in iter_triangles(&triangles).filter(|&tri| !culling.cull(tri)) {
+    for [a, b, c] in iter_triangles(&triangles) {
         drawing.draw_command(DrawCommand::MoveTo(a));
         drawing.draw_command(DrawCommand::LineTo(b));
         drawing.draw_command(DrawCommand::LineTo(c));
