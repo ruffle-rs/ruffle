@@ -12,7 +12,7 @@ use std::cell::RefMut;
 /// store. NOTE(uqers): Synchronizing a large number of locals/stack from the
 /// int interpreter to the normal interpreter can have high performance costs!
 /// Increasing this may result in worse overall performance in some SWFs.
-pub const MAX_INT_INTERPRETER_FRAME: usize = 20;
+pub const MAX_INT_INTERPRETER_FRAME: usize = 36;
 
 #[derive(Clone, Copy, Debug, Enum, FromPrimitive, PartialEq)]
 pub enum ObjectType {

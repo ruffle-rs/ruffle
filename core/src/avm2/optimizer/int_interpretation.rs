@@ -142,11 +142,12 @@ pub fn run_analysis<'gc>(
 fn run_single_analysis<'gc>(
     ops: &[Cell<Op<'gc>>],
     start_index: usize,
-    used_locals: SmallBitSet,
+    integral_locals: SmallBitSet,
     object_classes: &EnumMap<ObjectType, Option<Class<'gc>>>,
     sets_local_0: bool,
 ) -> Option<(IntInterpreterInfo, usize)> {
     let mut output_vec = Vec::new();
+    let mut used_locals = SmallBitSet::new(integral_locals.len());
 
     let mut stack = Stack::new();
 
@@ -219,10 +220,12 @@ fn run_single_analysis<'gc>(
                 IntOp::BitXor
             }
             Op::DecLocalI { index } => {
-                if !used_locals.get(index as usize) {
+                if !integral_locals.get(index as usize) {
                     // Can't access a non-int
                     break;
                 }
+
+                used_locals.set(index as usize);
 
                 IntOp::DecLocal { index }
             }
@@ -256,10 +259,12 @@ fn run_single_analysis<'gc>(
                         value: ObjectType::Receiver,
                     }
                 } else {
-                    if !used_locals.get(index as usize) {
+                    if !integral_locals.get(index as usize) {
                         // Can't access a non-int
                         break;
                     }
+
+                    used_locals.set(index as usize);
 
                     // Only integers can be stored in locals
                     stack.push_int();
@@ -403,10 +408,12 @@ fn run_single_analysis<'gc>(
                 }
             }
             Op::IncLocalI { index } => {
-                if !used_locals.get(index as usize) {
+                if !integral_locals.get(index as usize) {
                     // Can't access a non-int
                     break;
                 }
+
+                used_locals.set(index as usize);
 
                 IntOp::IncLocal { index }
             }
@@ -519,7 +526,7 @@ fn run_single_analysis<'gc>(
                     break;
                 }
 
-                if !used_locals.get(index as usize) {
+                if !integral_locals.get(index as usize) {
                     // Can't access a non-int
 
                     // i.e. we cannot set a non-int to an int, which would
@@ -531,6 +538,8 @@ fn run_single_analysis<'gc>(
                     // determine that local #X was non-integral.
                     break;
                 }
+
+                used_locals.set(index as usize);
 
                 stack.pop();
 
@@ -608,12 +617,14 @@ fn run_single_analysis<'gc>(
                     break;
                 }
 
-                if !used_locals.get(index as usize) {
+                if !integral_locals.get(index as usize) {
                     // Can't access a non-int
 
                     // See comment on `Op::SetLocal`
                     break;
                 }
+
+                used_locals.set(index as usize);
 
                 // No need to change the stack
 
