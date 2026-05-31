@@ -1539,6 +1539,7 @@ impl<'gc> MovieClip<'gc> {
                         // Convert from `swf::ClipAction` to Ruffle's `ClipEventHandler`.
                         clip.init_clip_event_handlers(
                             clip_actions
+                                .records
                                 .iter()
                                 .cloned()
                                 .map(|a| ClipEventHandler::from_action_and_movie(a, movie.clone()))

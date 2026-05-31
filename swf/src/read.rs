@@ -2057,14 +2057,17 @@ impl<'a> Reader<'a> {
         BlendMode::from_u8(self.read_u8()?).ok_or_else(|| Error::invalid_data("Invalid blend mode"))
     }
 
-    fn read_clip_actions(&mut self) -> Result<Vec<ClipAction<'a>>> {
+    fn read_clip_actions(&mut self) -> Result<ClipActions<'a>> {
         self.read_u16()?; // Must be 0
-        self.read_clip_event_flags(); // All event flags
-        let mut clip_actions = vec![];
+        let all_event_flags = self.read_clip_event_flags();
+        let mut records = vec![];
         while let Some(clip_action) = self.read_clip_action()? {
-            clip_actions.push(clip_action);
+            records.push(clip_action);
         }
-        Ok(clip_actions)
+        Ok(ClipActions {
+            all_event_flags,
+            records,
+        })
     }
 
     fn read_clip_action(&mut self) -> Result<Option<ClipAction<'a>>> {

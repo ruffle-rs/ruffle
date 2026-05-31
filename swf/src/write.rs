@@ -1910,16 +1910,10 @@ impl<W: Write> Writer<W> {
         }
     }
 
-    fn write_clip_actions(&mut self, clip_actions: &[ClipAction]) -> Result<()> {
+    fn write_clip_actions(&mut self, clip_actions: &ClipActions) -> Result<()> {
         self.write_u16(0)?; // Reserved
-        {
-            let mut all_events = ClipEventFlag::empty();
-            for action in clip_actions {
-                all_events |= action.events;
-            }
-            self.write_clip_event_flags(all_events)?;
-        }
-        for action in clip_actions {
+        self.write_clip_event_flags(clip_actions.all_event_flags)?;
+        for action in &clip_actions.records {
             self.write_clip_event_flags(action.events)?;
             let action_length =
                 action.action_data.len() as u32 + if action.key_code.is_some() { 1 } else { 0 };
