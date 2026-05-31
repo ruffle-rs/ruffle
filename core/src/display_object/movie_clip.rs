@@ -870,7 +870,7 @@ impl<'gc> MovieClip<'gc> {
     pub fn has_unload_handler(self) -> bool {
         self.clip_actions()
             .iter()
-            .any(|handler| handler.events.contains(ClipEventFlag::UNLOAD))
+            .any(|handler| handler.effective_events.contains(ClipEventFlag::UNLOAD))
     }
 
     pub fn avm2_constructor_failed(self) -> bool {
@@ -1547,7 +1547,13 @@ impl<'gc> MovieClip<'gc> {
                                 .records
                                 .iter()
                                 .cloned()
-                                .map(|a| ClipEventHandler::from_action_and_movie(a, movie.clone()))
+                                .map(|a| {
+                                    ClipEventHandler::new(
+                                        a,
+                                        movie.clone(),
+                                        clip_actions.all_event_flags,
+                                    )
+                                })
                                 .collect(),
                         );
                     }
@@ -2058,7 +2064,10 @@ impl<'gc> MovieClip<'gc> {
             let mut events = Vec::new();
 
             for event_handler in self.clip_actions().iter() {
-                if event_handler.events.contains(ClipEventFlag::INITIALIZE) {
+                if event_handler
+                    .effective_events
+                    .contains(ClipEventFlag::INITIALIZE)
+                {
                     context.action_queue.queue_action(
                         self.into(),
                         ActionType::Initialize {
@@ -2067,7 +2076,10 @@ impl<'gc> MovieClip<'gc> {
                         false,
                     );
                 }
-                if event_handler.events.contains(ClipEventFlag::CONSTRUCT) {
+                if event_handler
+                    .effective_events
+                    .contains(ClipEventFlag::CONSTRUCT)
+                {
                     events.push(event_handler.action_data.clone());
                 }
             }
@@ -2924,7 +2936,7 @@ impl<'gc> TInteractiveObject<'gc> for MovieClip<'gc> {
                 for event_handler in self
                     .clip_actions()
                     .iter()
-                    .filter(|handler| handler.events.contains(flag))
+                    .filter(|handler| handler.effective_events.contains(flag))
                 {
                     // KeyPress event must have matching key code.
                     if let ClipEvent::KeyPress { key_code } = event {
@@ -4982,7 +4994,7 @@ bitflags! {
 #[derive(Debug, Clone)]
 pub struct ClipEventHandler {
     /// The events that triggers this handler.
-    events: ClipEventFlag,
+    effective_events: ClipEventFlag,
 
     /// The key code used by the `onKeyPress` event.
     ///
@@ -4995,18 +5007,28 @@ pub struct ClipEventHandler {
 
 impl ClipEventHandler {
     /// Build an event handler from a SWF movie and a parsed ClipAction.
-    pub fn from_action_and_movie(other: swf::ClipAction<'_>, movie: Arc<SwfMovie>) -> Self {
-        let key_code = if other.events.contains(ClipEventFlag::KEY_PRESS) {
-            other
+    pub fn new(
+        swf_action: swf::ClipAction<'_>,
+        movie: Arc<SwfMovie>,
+        all_event_flags: ClipEventFlag,
+    ) -> Self {
+        let declared_events = swf_action.events;
+
+        // Flash Player ignores declared events if they are not present
+        // in allEventFlags.
+        let effective_events = declared_events.intersection(all_event_flags);
+
+        let key_code = if effective_events.contains(ClipEventFlag::KEY_PRESS) {
+            swf_action
                 .key_code
                 .and_then(ButtonKeyCode::from_u8)
                 .unwrap_or(ButtonKeyCode::Unknown)
         } else {
             ButtonKeyCode::Unknown
         };
-        let action_data = SwfSlice::from(movie).to_unbounded_subslice(other.action_data);
+        let action_data = SwfSlice::from(movie).to_unbounded_subslice(swf_action.action_data);
         Self {
-            events: other.events,
+            effective_events,
             key_code,
             action_data,
         }
