@@ -14,7 +14,7 @@ use std::cell::RefMut;
 /// Increasing this may result in worse overall performance in some SWFs.
 pub const MAX_INT_INTERPRETER_FRAME: usize = 20;
 
-#[derive(Clone, Copy, Debug, Enum, FromPrimitive)]
+#[derive(Clone, Copy, Debug, Enum, FromPrimitive, PartialEq)]
 pub enum ObjectType {
     TopOuterScope = 0,
     Receiver = 1,

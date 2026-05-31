@@ -153,6 +153,11 @@ fn run_single_analysis<'gc>(
 
         let translated_op = match op {
             Op::AddI => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
                 stack.push_int();
@@ -160,6 +165,11 @@ fn run_single_analysis<'gc>(
                 IntOp::Add
             }
             Op::BitAnd => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
                 stack.push_int();
@@ -167,12 +177,22 @@ fn run_single_analysis<'gc>(
                 IntOp::BitAnd
             }
             Op::BitNot => {
+                if !stack.expect(ValueType::Int, 1) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.push_int();
 
                 IntOp::BitNot
             }
             Op::BitOr => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
                 stack.push_int();
@@ -180,6 +200,11 @@ fn run_single_analysis<'gc>(
                 IntOp::BitOr
             }
             Op::BitXor => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
                 stack.push_int();
@@ -202,6 +227,11 @@ fn run_single_analysis<'gc>(
                 IntOp::Dup
             }
             Op::EqualsIntegral => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
                 stack.push_bool();
@@ -279,6 +309,11 @@ fn run_single_analysis<'gc>(
                 }
             }
             Op::GreaterEqualsIntegral => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
                 stack.push_bool();
@@ -286,6 +321,11 @@ fn run_single_analysis<'gc>(
                 IntOp::GreaterEquals
             }
             Op::GreaterThanIntegral => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
                 stack.push_bool();
@@ -293,6 +333,11 @@ fn run_single_analysis<'gc>(
                 IntOp::GreaterThan
             }
             Op::IfFalse { offset } => {
+                if !stack.expect(ValueType::Bool, 1) {
+                    // Can't do this operation on non-bools
+                    break;
+                }
+
                 if stack.len() != 1 {
                     // It's fairly rare for items to be on the stack during
                     // merging, and this allows us to avoid dealing with
@@ -318,6 +363,11 @@ fn run_single_analysis<'gc>(
                 }
             }
             Op::IfTrue { offset } => {
+                if !stack.expect(ValueType::Bool, 1) {
+                    // Can't do this operation on non-bools
+                    break;
+                }
+
                 if stack.len() != 1 {
                     // See comment on `Op::IfFalse`
                     break;
@@ -354,6 +404,11 @@ fn run_single_analysis<'gc>(
                 IntOp::IncLocal { index }
             }
             Op::LessEqualsIntegral => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
                 stack.push_bool();
@@ -361,6 +416,11 @@ fn run_single_analysis<'gc>(
                 IntOp::LessEquals
             }
             Op::LessThanIntegral => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
                 stack.push_bool();
@@ -368,24 +428,44 @@ fn run_single_analysis<'gc>(
                 IntOp::LessThan
             }
             Op::Li8 => {
+                if !stack.expect(ValueType::Int, 1) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.push_int();
 
                 IntOp::Li8
             }
             Op::Li16 => {
+                if !stack.expect(ValueType::Int, 1) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.push_int();
 
                 IntOp::Li16
             }
             Op::Li32 => {
+                if !stack.expect(ValueType::Int, 1) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.push_int();
 
                 IntOp::Li32
             }
             Op::LShift => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
                 stack.push_int();
@@ -394,6 +474,11 @@ fn run_single_analysis<'gc>(
             }
             Op::Nop => IntOp::Nop,
             Op::Not => {
+                if !stack.expect(ValueType::Bool, 1) {
+                    // Can't do this operation on non-bools
+                    break;
+                }
+
                 stack.pop();
                 stack.push_bool();
 
@@ -410,6 +495,11 @@ fn run_single_analysis<'gc>(
                 IntOp::PushInt { value }
             }
             Op::SetLocal { index } => {
+                if !stack.expect(ValueType::Int, 1) {
+                    // Can't store a non-integer into a local
+                    break;
+                }
+
                 if !used_locals.get(index as usize) {
                     // Can't access a non-int
 
@@ -421,9 +511,6 @@ fn run_single_analysis<'gc>(
                     // we would have to implement proper state merging to
                     // determine that local #X was non-integral.
                     break;
-                } else if !stack.peek_expecting_int() {
-                    // Can't store a non-integer into a local
-                    break;
                 }
 
                 stack.pop();
@@ -431,14 +518,13 @@ fn run_single_analysis<'gc>(
                 IntOp::SetLocal { index }
             }
             Op::SetSlotNoCoerce { index } => {
-                if !stack.peek_expecting_int() {
+                if !stack.expect(ValueType::Int, 1) {
                     // Can't store a non-integer into a slot
                     break;
-                } else if stack.peek_expecting_object() {
-                    // Getslot on a primitive is impossible thanks to the
-                    // verifier
-                    unreachable!();
                 }
+
+                // The verifier guarantees that the receiver value will be an
+                // object, as primitives have no slots
 
                 stack.pop();
                 stack.pop();
@@ -453,6 +539,11 @@ fn run_single_analysis<'gc>(
                 }
             }
             Op::RShift => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
                 stack.push_int();
@@ -460,31 +551,48 @@ fn run_single_analysis<'gc>(
                 IntOp::RShift
             }
             Op::Si8 => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
 
                 IntOp::Si8
             }
             Op::Si16 => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
 
                 IntOp::Si16
             }
             Op::Si32 => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
 
                 IntOp::Si32
             }
             Op::StoreLocal { index } => {
+                if !stack.expect(ValueType::Int, 1) {
+                    // Can't store a non-integer into a local
+                    break;
+                }
+
                 if !used_locals.get(index as usize) {
                     // Can't access a non-int
 
                     // See comment on `Op::SetLocal`
-                    break;
-                } else if !stack.peek_expecting_int() {
-                    // Can't store a non-integer into a local
                     break;
                 }
 
@@ -493,6 +601,11 @@ fn run_single_analysis<'gc>(
                 IntOp::StoreLocal { index }
             }
             Op::SubtractI => {
+                if !stack.expect(ValueType::Int, 2) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.pop();
                 stack.push_int();
@@ -508,12 +621,22 @@ fn run_single_analysis<'gc>(
                 IntOp::Swap
             }
             Op::Sxi16 => {
+                if !stack.expect(ValueType::Int, 1) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.push_int();
 
                 IntOp::Sxi16
             }
             Op::Sxi8 => {
+                if !stack.expect(ValueType::Int, 1) {
+                    // Can't do this operation on non-ints
+                    break;
+                }
+
                 stack.pop();
                 stack.push_int();
 
@@ -617,7 +740,7 @@ fn run_single_analysis<'gc>(
 /// need to ensure that e.g. `add_i` is always being passed two integers- even
 /// if it's being passed two booleans, it'll still return the correct result at
 /// runtime. The same applies to the rest of the integral ops.
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, PartialEq)]
 enum ValueType {
     Bool,
     Int,
@@ -633,6 +756,17 @@ struct Stack(Vec<ValueType>);
 impl Stack {
     pub fn new() -> Self {
         Stack(Vec::with_capacity(MAX_INT_INTERPRETER_FRAME - 1))
+    }
+
+    /// Expect the topmost `count` items of the stack to be of type `expected`.
+    pub fn expect(&mut self, expected: ValueType, count: usize) -> bool {
+        for item in self.0.iter().rev().take(count) {
+            if *item != expected {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     pub fn push(&mut self, value: ValueType) {
@@ -651,20 +785,8 @@ impl Stack {
         self.0.push(ValueType::Object(object_type));
     }
 
-    pub fn peek(&mut self) -> ValueType {
-        *self.0.last().expect("Guaranteed by verifier previously")
-    }
-
     pub fn pop(&mut self) -> ValueType {
         self.0.pop().expect("Guaranteed by verifier previously")
-    }
-
-    pub fn peek_expecting_int(&mut self) -> bool {
-        matches!(self.peek(), ValueType::Int)
-    }
-
-    pub fn peek_expecting_object(&mut self) -> bool {
-        matches!(self.peek(), ValueType::Object(_))
     }
 
     pub fn pop_object(&mut self) -> Option<ObjectType> {
