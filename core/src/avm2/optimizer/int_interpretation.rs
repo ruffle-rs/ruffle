@@ -18,7 +18,7 @@ use std::ops::Range;
 /// ops. On the other hand, if this number is too high, some sequences of ops
 /// that would benefit from being run in the integer interpreter may end up
 /// being considered too short to be run in it.
-const MIN_INT_OPS_LENGTH: usize = 30;
+const MIN_INT_OPS_LENGTH: usize = 50;
 
 /// The maximum number of ops in a method that can be considered for int
 /// interpreter analysis.
@@ -705,8 +705,65 @@ fn run_single_analysis<'gc>(
 
     let num_ops = output_vec.len();
 
+    let mut has_backwards_branch = false;
+
+    // Right now all the branches/jumps are external, i.e. they will exit the int
+    // interpreter into normal code. This is technically correct, but let's see
+    // which of the branches we can make internal branches (branches that
+    // remain in the int interpreter). We want to stay in the int interpreter
+    // as much as possible.
+    for (i, op) in output_vec.iter_mut().enumerate() {
+        match op {
+            IntOp::IfFalseExternal { offset, .. } => {
+                let offset = offset.get() as usize;
+                if (start_index..start_index + num_ops).contains(&offset) {
+                    let new_offset = offset - start_index;
+
+                    *op = IntOp::IfFalse {
+                        offset: new_offset as u32,
+                    };
+
+                    if new_offset < i {
+                        has_backwards_branch = true;
+                    }
+                }
+            }
+            IntOp::IfTrueExternal { offset, .. } => {
+                let offset = offset.get() as usize;
+                if (start_index..start_index + num_ops).contains(&offset) {
+                    let new_offset = offset - start_index;
+
+                    *op = IntOp::IfTrue {
+                        offset: new_offset as u32,
+                    };
+
+                    if new_offset < i {
+                        has_backwards_branch = true;
+                    }
+                }
+            }
+            IntOp::JumpExternal { offset, .. } => {
+                let offset = offset.get() as usize;
+                if (start_index..start_index + num_ops).contains(&offset) {
+                    let new_offset = offset - start_index;
+
+                    *op = IntOp::Jump {
+                        offset: new_offset as u32,
+                    };
+
+                    if new_offset < i {
+                        has_backwards_branch = true;
+                    }
+                }
+            }
+            _ => {}
+        }
+    }
+
     // Not enough ops for entering the int interpreter to be worth it
-    if num_ops < MIN_INT_OPS_LENGTH {
+    // (unless there's a backwards branch within the int interpreter; in that
+    // case it's likely that this is a hot loop)
+    if num_ops < MIN_INT_OPS_LENGTH && !has_backwards_branch {
         return None;
     }
 
@@ -725,41 +782,6 @@ fn run_single_analysis<'gc>(
             offset: Cell::new((start_index + num_ops) as u32),
             final_stack_height: stack.len() as u8,
         });
-    }
-
-    // Right now all the branches/jumps are external, i.e. they will exit the int
-    // interpreter into normal code. This is technically correct, but let's see
-    // which of the branches we can make internal branches (branches that
-    // remain in the int interpreter). We want to stay in the int interpreter
-    // as much as possible.
-    for op in &mut output_vec {
-        match op {
-            IntOp::IfFalseExternal { offset, .. } => {
-                let offset = offset.get() as usize;
-                if (start_index..start_index + num_ops).contains(&offset) {
-                    *op = IntOp::IfFalse {
-                        offset: (offset - start_index) as u32,
-                    };
-                }
-            }
-            IntOp::IfTrueExternal { offset, .. } => {
-                let offset = offset.get() as usize;
-                if (start_index..start_index + num_ops).contains(&offset) {
-                    *op = IntOp::IfTrue {
-                        offset: (offset - start_index) as u32,
-                    };
-                }
-            }
-            IntOp::JumpExternal { offset, .. } => {
-                let offset = offset.get() as usize;
-                if (start_index..start_index + num_ops).contains(&offset) {
-                    *op = IntOp::Jump {
-                        offset: (offset - start_index) as u32,
-                    };
-                }
-            }
-            _ => {}
-        }
     }
 
     let info = IntInterpreterInfo {
