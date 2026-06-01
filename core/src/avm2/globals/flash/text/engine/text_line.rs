@@ -130,9 +130,7 @@ pub fn get_atom_bidi_level<'gc>(
     this: Value<'gc>,
     args: &[Value<'gc>],
 ) -> Result<Value<'gc>, Error<'gc>> {
-    let Some(line) = text_line_layout(this) else {
-        return Ok(0.into());
-    };
+    let line = text_line_layout(this);
     let Some(atom) = atom_at(&line, args.get_i32(0)) else {
         return Ok(0.into());
     };
