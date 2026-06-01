@@ -1,0 +1,2 @@
+cargo run --package exporter -- -f 120 ../ruffle-rs.github.io/public/logo-anim.swf logoframes/
+ffmpeg -i %3d.png -i sounds/1_1.mp3 -vcodec libx264 -pix_fmt yuv420p -r 30 -acodec aac -movflags +faststart logo-anim.f4v
