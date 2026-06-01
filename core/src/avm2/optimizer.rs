@@ -37,7 +37,7 @@ pub fn optimize<'gc>(
 
     let mut empty_stack_positions = BTreeMap::new();
 
-    type_aware::type_aware_optimize(
+    let (op_index_to_block_index_table, abstract_states) = type_aware::type_aware_optimize(
         activation,
         method,
         code_slice,
@@ -61,6 +61,8 @@ pub fn optimize<'gc>(
         method,
         code_slice,
         &jump_targets,
+        &op_index_to_block_index_table,
+        &abstract_states,
         &empty_stack_positions,
         !method_exceptions.is_empty(),
     );

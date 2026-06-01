@@ -27,6 +27,10 @@ impl SmallBitSet {
         self.bits |= 1 << index;
     }
 
+    pub fn clear(&mut self) {
+        self.bits = 0;
+    }
+
     pub fn iter(&self) -> SmallBitSetIter {
         SmallBitSetIter {
             // Clone is free

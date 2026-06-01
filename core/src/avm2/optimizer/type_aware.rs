@@ -18,7 +18,7 @@ use std::cell::Cell;
 use std::collections::{BTreeMap, HashMap, HashSet};
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-enum ConstantValue {
+pub enum ConstantValue {
     True,
     False,
     Null,
@@ -34,7 +34,7 @@ impl ConstantValue {
 }
 
 #[derive(Clone, Copy, PartialEq)]
-struct OptValue<'gc> {
+pub struct OptValue<'gc> {
     // This corresponds to the compile-time assumptions about the type:
     // - primitive types can't be undefined or null,
     // - Object (and any other non-primitive type) is non-undefined, but can be null
@@ -290,7 +290,7 @@ impl std::fmt::Debug for OptValue<'_> {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct Locals<'gc>(Vec<OptValue<'gc>>);
+pub struct Locals<'gc>(Vec<OptValue<'gc>>);
 
 impl<'gc> Locals<'gc> {
     fn new(size: usize) -> Self {
@@ -305,17 +305,17 @@ impl<'gc> Locals<'gc> {
         self.0[index] = value;
     }
 
-    fn at(&self, index: usize) -> OptValue<'gc> {
+    pub fn at(&self, index: usize) -> OptValue<'gc> {
         self.0[index]
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.len()
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct Stack<'gc>(Vec<OptValue<'gc>>, usize);
+pub struct Stack<'gc>(Vec<OptValue<'gc>>, usize);
 
 impl<'gc> Stack<'gc> {
     fn new(max_height: usize) -> Self {
@@ -411,11 +411,11 @@ impl<'gc> Stack<'gc> {
         self.0[index] = value;
     }
 
-    fn at(&self, index: usize) -> OptValue<'gc> {
+    pub fn at(&self, index: usize) -> OptValue<'gc> {
         self.0[index]
     }
 
-    fn len(&self) -> usize {
+    pub fn len(&self) -> usize {
         self.0.len()
     }
 
@@ -425,7 +425,7 @@ impl<'gc> Stack<'gc> {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-struct ScopeStack<'gc>(Vec<(OptValue<'gc>, bool)>, usize);
+pub struct ScopeStack<'gc>(Vec<(OptValue<'gc>, bool)>, usize);
 
 impl<'gc> ScopeStack<'gc> {
     fn new(max_height: usize) -> Self {
@@ -492,10 +492,10 @@ impl<'gc> ScopeStack<'gc> {
 }
 
 #[derive(Clone, Debug)]
-struct AbstractState<'gc> {
-    locals: Locals<'gc>,
-    stack: Stack<'gc>,
-    scope_stack: ScopeStack<'gc>,
+pub struct AbstractState<'gc> {
+    pub locals: Locals<'gc>,
+    pub stack: Stack<'gc>,
+    pub scope_stack: ScopeStack<'gc>,
 }
 
 struct AbstractStateRef<'a, 'gc> {
@@ -611,7 +611,7 @@ pub fn type_aware_optimize<'gc>(
     resolved_parameters: &[ResolvedParamConfig<'gc>],
     jump_targets: &mut HashSet<usize>,
     mut empty_stack_positions: &mut BTreeMap<usize, SmallBitSet>,
-) -> Result<(), Error<'gc>> {
+) -> Result<(HashMap<usize, usize>, Vec<Option<AbstractState<'gc>>>), Error<'gc>> {
     let (block_list, op_index_to_block_index_table) = assemble_blocks(code_slice, jump_targets);
 
     let types = Types {
@@ -731,7 +731,7 @@ pub fn type_aware_optimize<'gc>(
     // as dead code elimination, more likely to happen.
     recalculate_jump_targets(code_slice, method_exceptions, jump_targets);
 
-    Ok(())
+    Ok((op_index_to_block_index_table, abstract_states))
 }
 
 fn process_jump<'gc>(

@@ -4,12 +4,13 @@ use crate::avm2::int_interpreter::{MAX_INT_INTERPRETER_FRAME, ObjectType};
 use crate::avm2::method::Method;
 use crate::avm2::object::TObject;
 use crate::avm2::op::{IntInterpreterInfo, IntOp, Op};
+use crate::avm2::optimizer::type_aware::AbstractState;
 use crate::avm2::optimizer::utils::SmallBitSet;
 
 use enum_map::EnumMap;
 use gc_arena::Gc;
 use std::cell::Cell;
-use std::collections::{BTreeMap, HashSet};
+use std::collections::{BTreeMap, HashMap, HashSet};
 use std::ops::Range;
 
 /// The minimum number of consecutive ops that will be run in the integer
@@ -29,6 +30,8 @@ pub fn run_analysis<'gc>(
     method: Method<'gc>,
     ops: &[Cell<Op<'gc>>],
     jump_targets: &HashSet<usize>,
+    op_index_to_block_index_table: &HashMap<usize, usize>,
+    abstract_states: &Vec<Option<AbstractState<'gc>>>,
     empty_stack_positions: &BTreeMap<usize, SmallBitSet>,
     has_exceptions: bool,
 ) {
@@ -126,6 +129,8 @@ pub fn run_analysis<'gc>(
             ops,
             start_index,
             *locals_state,
+            op_index_to_block_index_table,
+            abstract_states,
             &object_classes,
             sets_local_0,
         );
@@ -143,6 +148,8 @@ fn run_single_analysis<'gc>(
     ops: &[Cell<Op<'gc>>],
     start_index: usize,
     integral_locals: SmallBitSet,
+    op_index_to_block_index_table: &HashMap<usize, usize>,
+    abstract_states: &Vec<Option<AbstractState<'gc>>>,
     object_classes: &EnumMap<ObjectType, Option<Class<'gc>>>,
     sets_local_0: bool,
 ) -> Option<(IntInterpreterInfo, usize)> {
@@ -157,6 +164,37 @@ fn run_single_analysis<'gc>(
     // certain that these ops are only working on integers.
     let mut i = start_index;
     while i < ops.len() {
+        // If this op is the start of a block, it means that the previous op was
+        // a code terminator (i.e. jump). That means that we have no idea what
+        // the correct state should be. We can determine the correct state using
+        // information from the type-aware optimizer.
+        if let Some(block_index) = op_index_to_block_index_table.get(&i) {
+            let state = abstract_states[*block_index]
+                .as_ref()
+                .expect("Block entry states are all known");
+
+            let state_stack = &state.stack;
+
+            // The entry locals info is technically valid, so let's keep using it
+            // (checks on the code path ensure that no non-integral values are
+            // stored into the entry locals)
+
+            // However, we do need to update the stack's state
+            stack.clear();
+            for i in 0..state_stack.len() {
+                let item_class = state_stack.at(i).class;
+
+                if item_class.is_some_and(|c| c.is_builtin_int()) {
+                    stack.push(ValueType::Int);
+                } else if item_class.is_some_and(|c| c.is_builtin_boolean()) {
+                    stack.push(ValueType::Bool);
+                } else {
+                    stack.push(ValueType::Unknown);
+                }
+            }
+
+            // Now the locals and stack are correct again
+        }
         let op = ops[i].get();
 
         let translated_op = match op {
@@ -809,6 +847,7 @@ enum ValueType {
     Bool,
     Int,
     Object(ObjectType),
+    Unknown,
 }
 
 /// The stack of the abstract interpreter.
@@ -862,6 +901,10 @@ impl Stack {
 
     pub fn is_entirely_ints(&self) -> bool {
         self.0.iter().all(|v| matches!(v, ValueType::Int))
+    }
+
+    pub fn clear(&mut self) {
+        self.0.clear();
     }
 
     pub fn len(&self) -> usize {
