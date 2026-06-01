@@ -1,2 +1,4 @@
-textWidth follows glyph advance (these are still stubs): true
-textHeight is stable for same format (these are still stubs): true
+narrow.textWidth: 0
+text.textWidth: 0
+narrow.textHeight: 0
+text.textHeight: 0

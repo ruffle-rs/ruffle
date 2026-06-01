@@ -1,0 +1,13 @@
+line.textWidth: 114
+narrow.textWidth: 11
+wide.textWidth: 47
+line.textHeight: 55.8
+line.ascent: 45.25
+line.descent: 10.55
+small.textHeight: 27.85
+small.ascent: 22.6
+small.descent: 5.25
+max line width: 1000000
+narrowLine.rawTextLength: 4
+maxLine.rawTextLength: 13
+aboveMaxLine.rawTextLength: 13

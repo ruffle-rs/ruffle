@@ -3,6 +3,7 @@ use ruffle_macros::istr;
 use crate::avm2::activation::Activation;
 use crate::avm2::error::Error;
 use crate::avm2::globals::flash::display::display_object::initialize_for_allocator;
+use crate::avm2::globals::methods::flash_text_engine_content_element as element_methods;
 use crate::avm2::globals::slots::flash_text_engine_content_element as element_slots;
 use crate::avm2::globals::slots::flash_text_engine_element_format as format_slots;
 use crate::avm2::globals::slots::flash_text_engine_font_description as font_desc_slots;
@@ -11,11 +12,11 @@ use crate::avm2::globals::slots::flash_text_engine_text_line as line_slots;
 use crate::avm2::object::{Object, TObject};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::value::Value;
+use crate::avm2_stub_method;
 use crate::display_object::{EditText, TDisplayObject, TextLine, TextLineLayout};
 use crate::font::FontType;
 use crate::html::{FormatSpans, TextFormat, lower_from_text_spans};
-use crate::string::{AvmString, WStr, WString};
-use crate::{avm2_stub_method, context_stub};
+use crate::string::{WStr, WString};
 use swf::Twips;
 
 const TEXT_LINE_MAX_LINE_WIDTH: f64 = 1_000_000.0;
@@ -24,14 +25,6 @@ fn format_from_content<'gc>(
     activation: &mut Activation<'_, 'gc>,
     content: Object<'gc>,
 ) -> Result<TextFormat, Error<'gc>> {
-    {
-        let context = &mut activation.context;
-        context_stub!(
-            context,
-            "flash.text.engine.TextBlock.createTextLine TextFormat conversion"
-        );
-    }
-
     // Match the AS defaults from new ElementFormat() and new FontDescription().
     let mut format = TextFormat {
         font: Some(WString::from_utf8("_serif")),
@@ -79,9 +72,8 @@ pub fn create_text_line<'gc>(
         return Ok(Value::Null);
     }
 
-    let text_name = AvmString::new_utf8(activation.gc(), "text");
     let text = content
-        .get_public_property(text_name, activation)
+        .call_method(element_methods::GET_TEXT, &[], activation)
         .unwrap_or_else(|_| istr!("").into());
     let text = match text {
         Value::Null => return Ok(Value::Null),
@@ -110,9 +102,9 @@ pub fn create_text_line<'gc>(
         return Ok(Value::Null);
     }
 
-    let Some(content_obj) = content.as_object() else {
-        return Ok(Value::Null);
-    };
+    let content_obj = content
+        .as_object()
+        .expect("TextBlock content slot must be null or ContentElement");
     let spans = FormatSpans::from_text(
         WString::from(text.as_wstr()),
         format_from_content(activation, content_obj)?,
@@ -145,7 +137,7 @@ pub fn create_text_line<'gc>(
         .as_object();
     apply_format(activation, fallback, text.as_wstr(), element_format)?;
 
-    let text_line = TextLine::new(activation.context, movie, text_line_layout, Some(fallback));
+    let text_line = TextLine::new(activation.context, movie, text_line_layout, fallback);
     let class = activation.avm2().classes().textline;
     let instance = initialize_for_allocator(activation.context, text_line.into(), class);
 

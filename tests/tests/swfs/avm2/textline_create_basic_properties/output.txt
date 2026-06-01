@@ -1,0 +1,4 @@
+line.rawTextLength: 5
+line.textBlockBeginIndex: 0
+line.specifiedWidth: 321
+line.textBlock === block: true
