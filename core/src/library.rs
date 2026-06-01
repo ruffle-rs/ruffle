@@ -498,25 +498,32 @@ impl<'gc> Library<'gc> {
             return cache.clone();
         }
 
+        // Collect every font in the configured chain so a glyph miss on the
+        // first font falls through to the next. The chain is turned into a
+        // FontSet downstream where index 0 is the main font and the rest are
+        // fallbacks; previously this stopped after the first match, so the
+        // fallbacks were never reachable even when the caller configured a
+        // multi-font chain via `set_default_font(_, vec![a, b, ...])`.
         let mut result = vec![];
-        // First try to find any exactly matching fonts.
+        // First pass: prefer fonts that match the requested name exactly.
         for name in self.default_font_names.entry(name).or_default().clone() {
             let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
             if let Some(font) = self.get_or_load_exact_device_font(&query, ui, renderer, gc_context)
             {
                 result.push(font);
-                break; // TODO: Return multiple fonts when it's needed.
             }
         }
 
-        // Nothing found, try a compatible font.
-        if result.is_empty() {
-            for name in self.default_font_names.entry(name).or_default().clone() {
-                let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
-                if let Some(font) = self.device_fonts.find(&query) {
-                    result.push(font);
-                    break; // TODO: Return multiple fonts when it's needed.
-                }
+        // Second pass: for any names without an exact match, fall back to the
+        // closest available font under that name. Deduplicate against the
+        // exact-match pass by FontDescriptor so the same font isn't listed
+        // twice in the chain.
+        for name in self.default_font_names.entry(name).or_default().clone() {
+            let query = FontQuery::new(FontType::Device, name, is_bold, is_italic);
+            if let Some(font) = self.device_fonts.find(&query)
+                && !result.iter().any(|f| f.descriptor() == font.descriptor())
+            {
+                result.push(font);
             }
         }
 

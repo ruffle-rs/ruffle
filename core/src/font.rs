@@ -2,7 +2,7 @@ use crate::context::RenderContext;
 use crate::drawing::Drawing;
 use crate::html::TextSpan;
 use crate::prelude::*;
-use crate::string::WStr;
+use crate::string::{WStr, WString};
 use gc_arena::{Collect, Gc, Mutation};
 use ruffle_render::backend::null::NullBitmapSource;
 use ruffle_render::backend::{RenderBackend, ShapeHandle};
@@ -107,6 +107,97 @@ impl DefaultFont {
 
 fn round_to_pixel(t: Twips) -> Twips {
     Twips::from_pixels(t.to_pixels().round())
+}
+
+/// Mirror paired ASCII punctuation when it appears inside an RTL run.
+fn mirror_char(c: char) -> char {
+    match c {
+        '(' => ')',
+        ')' => '(',
+        '[' => ']',
+        ']' => '[',
+        '{' => '}',
+        '}' => '{',
+        '<' => '>',
+        '>' => '<',
+        _ => c,
+    }
+}
+
+/// Arabic base blocks — letters that need joining into Presentation Forms.
+fn is_arabic_base(c: u32) -> bool {
+    (0x0600..=0x06FF).contains(&c)
+        || (0x0750..=0x077F).contains(&c)
+        || (0x08A0..=0x08FF).contains(&c)
+}
+
+/// Arabic Presentation Forms-A and -B — text that is already shaped.
+fn is_arabic_presentation_form(c: u32) -> bool {
+    (0xFB50..=0xFDFF).contains(&c) || (0xFE70..=0xFEFF).contains(&c)
+}
+
+/// RTL scripts other than Arabic that need bidi reordering but no shaping.
+fn is_other_rtl(c: u32) -> bool {
+    (0x0590..=0x05FF).contains(&c)        // Hebrew
+        || (0x0700..=0x074F).contains(&c) // Syriac
+        || (0x0780..=0x07BF).contains(&c) // Thaana
+        || (0x07C0..=0x07FF).contains(&c) // N'Ko
+        || (0x0800..=0x083F).contains(&c) // Samaritan
+        || (0x0840..=0x085F).contains(&c) // Mandaic
+}
+
+/// Reshape Arabic to Presentation Forms and reorder RTL runs into visual
+/// order, so the cmap-only lookup in `evaluate` can resolve them. Returns
+/// `None` (fast path) if the text has no RTL codepoints, or if the font is
+/// embedded — embedded SWF fonts typically lack Presentation Forms.
+fn maybe_reshape_rtl(text: &WStr, font_type: FontType) -> Option<WString> {
+    if !font_type.is_device() {
+        return None;
+    }
+
+    let mut has_arabic_base = false;
+    let mut has_presentation_forms = false;
+    let mut has_other_rtl = false;
+    for u in text.iter() {
+        let c = u as u32;
+        if is_arabic_base(c) {
+            has_arabic_base = true;
+        } else if is_arabic_presentation_form(c) {
+            has_presentation_forms = true;
+        } else if is_other_rtl(c) {
+            has_other_rtl = true;
+        }
+    }
+    if !has_arabic_base && !has_presentation_forms && !has_other_rtl {
+        return None;
+    }
+
+    let logical: String = text.to_utf8_lossy().into_owned();
+    let shaped = if has_arabic_base {
+        arabic_reshaper::arabic_reshape(&logical)
+    } else {
+        logical
+    };
+
+    let bidi = unicode_bidi::BidiInfo::new(&shaped, None);
+    let visual = if !unicode_bidi::level::has_rtl(&bidi.levels) {
+        shaped
+    } else {
+        let mut out = String::with_capacity(shaped.len());
+        for para in &bidi.paragraphs {
+            let (levels, runs) = bidi.visual_runs(para, para.range.clone());
+            for run in runs {
+                if levels[run.start].is_rtl() {
+                    out.extend(shaped[run].chars().rev().map(mirror_char));
+                } else {
+                    out.push_str(&shaped[run]);
+                }
+            }
+        }
+        out
+    };
+
+    Some(WString::from_utf8(&visual))
 }
 
 /// Parameters necessary to evaluate a font.
@@ -877,6 +968,9 @@ pub trait FontLike<'gc> {
         glyph_func: &mut dyn FnMut(usize, &Transform, GlyphRef, Twips, Twips),
     ) {
         let baseline = self.metrics().ascent(params.height);
+
+        let shaped_text = maybe_reshape_rtl(text, self.font_type());
+        let text: &WStr = shaped_text.as_deref().unwrap_or(text);
 
         // TODO [KJ] I'm not sure whether we should iterate over characters here or over code units.
         //   I suspect Flash Player does not support full UTF-16 when displaying and laying out text.

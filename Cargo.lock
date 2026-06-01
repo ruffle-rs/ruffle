@@ -187,6 +187,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "arabic_reshaper"
+version = "0.4.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb963411bc62b3888e69ad0d821ac03a3176ec7d74c2096bb5555a4cc419545b"
+
+[[package]]
 name = "arboard"
 version = "3.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4602,6 +4608,7 @@ dependencies = [
 name = "ruffle_core"
 version = "0.2.0"
 dependencies = [
+ "arabic_reshaper",
  "async-channel",
  "bitflags 2.11.1",
  "bitstream-io 4.10.0",
@@ -4660,6 +4667,7 @@ dependencies = [
  "tracing",
  "tracy-client",
  "ttf-parser",
+ "unicode-bidi",
  "unicode-segmentation",
  "url",
  "wasm-bindgen-futures",

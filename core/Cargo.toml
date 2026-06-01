@@ -66,6 +66,8 @@ enum-map = { workspace = true }
 ttf-parser = "0.25"
 num-bigint = "0.4"
 unicode-segmentation = "1.13.2"
+unicode-bidi = "0.3.18"
+arabic_reshaper = "0.4.2"
 id3 = "1.16.4"
 either = "1.16.0"
 chardetng = "0.1.17"
