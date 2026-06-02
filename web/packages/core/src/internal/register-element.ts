@@ -50,7 +50,7 @@ export function lookupElement(elementName: string): Registration | null {
  *        0 if equal.
  * @returns The merged, sorted array.
  */
-function mergeSorted<T>(
+export function mergeSorted<T>(
     a: readonly T[],
     b: readonly T[],
     comparator: (x: T, y: T) => number,
