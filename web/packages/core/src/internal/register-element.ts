@@ -1,3 +1,5 @@
+import { polyfillDocumentEmbeds } from "./polyfill-document-embeds";
+
 /**
  * Number of times to try defining a custom element.
  */
@@ -86,6 +88,10 @@ export function registerElement(
                 continue;
             } else {
                 window.customElements.define(externalName, elementClass);
+
+                if (elementName === "ruffle-embed") {
+                    polyfillDocumentEmbeds(tries);
+                }
             }
 
             privateRegistry[elementName] = {
