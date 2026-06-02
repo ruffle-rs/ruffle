@@ -185,7 +185,19 @@ export function polyfillDocumentEmbeds(tries: number) {
                         if (!Number.isNaN(index) && index >= 0) {
                             return nodes()[index];
                         }
+
+                        // Let native properties ('length', 'item', etc.) pass through normally
+                        if (Reflect.has(target, prop)) {
+                            return Reflect.get(target, prop, receiver);
+                        }
+
+                        // Fallback to named item resolution for standard dot/bracket notation
+                        const element = target.namedItem(prop);
+                        if (element) {
+                            return element;
+                        }
                     }
+
                     return Reflect.get(target, prop, receiver);
                 },
                 has(target, prop) {
@@ -194,6 +206,12 @@ export function polyfillDocumentEmbeds(tries: number) {
                         if (!Number.isNaN(index) && index >= 0) {
                             return index < nodes().length;
                         }
+
+                        // Check if it's a native property or exists in the named list
+                        if (Reflect.has(target, prop)) {
+                            return true;
+                        }
+                        return target.namedItem(prop) !== null;
                     }
                     return Reflect.has(target, prop);
                 },
