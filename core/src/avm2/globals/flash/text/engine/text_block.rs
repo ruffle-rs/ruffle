@@ -268,9 +268,11 @@ pub fn create_text_line<'gc>(
         true,
         FontType::Device,
     );
-    let Some(mut html_line) = layout.lines().first().cloned() else {
-        return Ok(Value::Null);
-    };
+    let mut html_line = layout
+        .lines()
+        .first()
+        .cloned()
+        .expect("TextLine layout must contain a line for nonempty text");
     html_line.trim_edge_tracking(
         Twips::from_pixels(tracking_left),
         Twips::from_pixels(tracking_right),
@@ -468,9 +470,11 @@ pub fn recreate_text_line<'gc>(
         true,
         FontType::Device,
     );
-    let Some(mut html_line) = layout.lines().first().cloned() else {
-        return Ok(Value::Null);
-    };
+    let mut html_line = layout
+        .lines()
+        .first()
+        .cloned()
+        .expect("TextLine layout must contain a line for nonempty text");
     html_line.trim_edge_tracking(
         Twips::from_pixels(tracking_left),
         Twips::from_pixels(tracking_right),
