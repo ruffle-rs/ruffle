@@ -225,4 +225,52 @@ describe("Document embeds", () => {
             gamma: "emb4",
         });
     });
+
+    it("supports direct named access via proxy get", async () => {
+        const result = await browser.execute(() => {
+            // Explicitly declare the properties we intend to access to satisfy TS.
+            type EmbedPolyfillTest = HTMLCollectionOf<HTMLEmbedElement> & {
+                alpha?: Element;
+                beta?: Element;
+                delta?: Element;
+                emb3?: Element;
+                nope?: Element;
+            };
+            const embeds = document.embeds as unknown as EmbedPolyfillTest;
+
+            return {
+                alpha: embeds.alpha?.id,
+                beta: embeds["beta"]?.id,
+                delta: embeds.delta?.id,
+                emb3: embeds.emb3?.id,
+                missing: embeds.nope,
+            };
+        });
+
+        expect(result).to.deep.equal({
+            alpha: "emb1",
+            beta: "emb2",
+            delta: "basic_emb2",
+            emb3: "emb3",
+            missing: undefined,
+        });
+    });
+
+    it("supports the 'in' operator for named embeds", async () => {
+        const result = await browser.execute(() => {
+            return {
+                hasAlpha: "alpha" in document.embeds,
+                hasEmb3: "emb3" in document.embeds,
+                hasNope: "nope" in document.embeds,
+                hasLength: "length" in document.embeds,
+            };
+        });
+
+        expect(result).to.deep.equal({
+            hasAlpha: true,
+            hasEmb3: true,
+            hasNope: false,
+            hasLength: true,
+        });
+    });
 });
