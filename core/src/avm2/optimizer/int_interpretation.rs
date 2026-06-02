@@ -388,20 +388,6 @@ fn run_single_analysis<'gc>(
                     break;
                 }
 
-                if stack.len() != 1 {
-                    // It's fairly rare for items to be on the stack during
-                    // merging, and this allows us to avoid dealing with
-                    // state merging or tracking to know the correct height of
-                    // the stack at a certain point. However, this does mean
-                    // all ternary expressions disable int interpreter
-                    // promotion. TODO support this case
-
-                    // (note: this is a != 1 check rather than an is_empty
-                    // check, as the one value on the stack will be popped by
-                    // this op)
-                    break;
-                }
-
                 stack.pop();
 
                 IntOp::IfFalseExternal {
@@ -418,11 +404,6 @@ fn run_single_analysis<'gc>(
                     break;
                 }
 
-                if stack.len() != 1 {
-                    // See comment on `Op::IfFalse`
-                    break;
-                }
-
                 stack.pop();
 
                 IntOp::IfTrueExternal {
@@ -433,11 +414,6 @@ fn run_single_analysis<'gc>(
                 }
             }
             Op::Jump { offset } => {
-                if !stack.is_empty() {
-                    // See comment on `Op::IfFalse`
-                    break;
-                }
-
                 IntOp::JumpExternal {
                     offset: Cell::new(offset as u32),
 
@@ -909,9 +885,5 @@ impl Stack {
 
     pub fn len(&self) -> usize {
         self.0.len()
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.0.is_empty()
     }
 }
