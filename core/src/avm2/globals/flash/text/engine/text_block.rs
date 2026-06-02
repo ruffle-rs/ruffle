@@ -248,9 +248,9 @@ pub fn create_text_line<'gc>(
         return Ok(Value::Null);
     }
 
-    let content_obj = content
-        .as_object()
-        .expect("TextBlock content slot must be null or ContentElement");
+    let Value::Object(content_obj) = content else {
+        unreachable!("TextBlock content slot must be ContentElement");
+    };
     let (displayed_text, spans, tracking_left, tracking_right) =
         spans_from_content(activation, content_obj, next_line_start)?;
     let requested_width = if width >= TEXT_LINE_MAX_LINE_WIDTH {
@@ -439,9 +439,9 @@ pub fn recreate_text_line<'gc>(
         return Ok(text_line.into());
     }
 
-    let content_obj = content
-        .as_object()
-        .expect("TextBlock content slot must be null or ContentElement");
+    let Value::Object(content_obj) = content else {
+        unreachable!("TextBlock content slot must be ContentElement");
+    };
     let (displayed_text, spans, tracking_left, tracking_right) =
         spans_from_content(activation, content_obj, next_line_start)?;
     let raw_width = args.get_f64(2);
