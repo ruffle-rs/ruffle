@@ -34,14 +34,9 @@ fn format_from_content<'gc>(
     };
 
     if let Some(ef) = content.get_slot(element_slots::_ELEMENT_FORMAT).as_object() {
-        let color = ef
-            .get_slot(format_slots::_COLOR)
-            .coerce_to_u32(activation)?;
+        let color = ef.get_slot(format_slots::_COLOR).as_u32();
         format.color = Some(swf::Color::from_rgb(color & 0xff_ffff, 0xff));
-        format.size = Some(
-            ef.get_slot(format_slots::_FONT_SIZE)
-                .coerce_to_number(activation)?,
-        );
+        format.size = Some(ef.get_slot(format_slots::_FONT_SIZE).as_f64());
         if let Value::Object(fd) = ef.get_slot(format_slots::_FONT_DESCRIPTION) {
             format.font = Some(WString::from(
                 fd.get_slot(font_desc_slots::_FONT_NAME)
