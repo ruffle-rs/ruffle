@@ -1,5 +1,5 @@
 import { strict as assert } from "assert";
-import { mergeSorted } from "../src/internal/register-element";
+import { mergeSorted } from "../src/internal/polyfill-document-embeds";
 
 describe("mergeSorted", function () {
     const numComparator = function (x: number, y: number): number {
