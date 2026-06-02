@@ -97,9 +97,9 @@ pub fn create_text_line<'gc>(
         return Ok(Value::Null);
     }
 
-    let content_obj = content
-        .as_object()
-        .expect("TextBlock content slot must be null or ContentElement");
+    let Value::Object(content_obj) = content else {
+        unreachable!("TextBlock content slot must be ContentElement");
+    };
     let spans = FormatSpans::from_text(
         WString::from(text.as_wstr()),
         format_from_content(activation, content_obj)?,
