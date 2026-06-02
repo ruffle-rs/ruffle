@@ -273,4 +273,31 @@ describe("Document embeds", () => {
             hasLength: true,
         });
     });
+
+    it("prioritizes native 'length' property over an element named 'length'", async () => {
+        const result = await browser.execute(() => {
+            const e = document.createElement("embed");
+            e.id = "length_embed";
+            e.name = "length";
+            e.src = "about:blank";
+            document.body.appendChild(e);
+
+            const lengthValue = document.embeds["length"];
+            const typeofLength = typeof lengthValue;
+
+            const namedItemValue = document.embeds.namedItem("length")?.id;
+
+            return {
+                lengthValue,
+                typeofLength,
+                namedItemValue,
+            };
+        });
+
+        expect(result).to.deep.equal({
+            lengthValue: 6,
+            typeofLength: "number",
+            namedItemValue: "length_embed",
+        });
+    });
 });
