@@ -38,14 +38,9 @@ fn format_from_content<'gc>(
     let mut tracking_right = 0.0;
 
     if let Some(ef) = content.get_slot(element_slots::_ELEMENT_FORMAT).as_object() {
-        let color = ef
-            .get_slot(format_slots::_COLOR)
-            .coerce_to_u32(activation)?;
+        let color = ef.get_slot(format_slots::_COLOR).as_u32();
         format.color = Some(swf::Color::from_rgb(color & 0xff_ffff, 0xff));
-        format.size = Some(
-            ef.get_slot(format_slots::_FONT_SIZE)
-                .coerce_to_number(activation)?,
-        );
+        format.size = Some(ef.get_slot(format_slots::_FONT_SIZE).as_f64());
         tracking_left = ef
             .get_slot(format_slots::_TRACKING_LEFT)
             .coerce_to_number(activation)?;
