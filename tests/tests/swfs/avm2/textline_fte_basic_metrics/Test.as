@@ -25,19 +25,23 @@ public class Test extends Sprite {
         var aboveMaxLine:TextLine = new TextBlock(new TextElement(wrappedText, new ElementFormat(fd, 30)))
             .createTextLine(null, TextLine.MAX_LINE_WIDTH + 1);
 
-        trace("line.textWidth: " + rounded(line.textWidth));
-        trace("narrow.textWidth: " + rounded(narrow.textWidth));
-        trace("wide.textWidth: " + rounded(wide.textWidth));
-        trace("line.textHeight: " + rounded(line.textHeight));
-        trace("line.ascent: " + rounded(line.ascent));
-        trace("line.descent: " + rounded(line.descent));
-        trace("small.textHeight: " + rounded(small.textHeight));
-        trace("small.ascent: " + rounded(small.ascent));
-        trace("small.descent: " + rounded(small.descent));
         trace("max line width: " + TextLine.MAX_LINE_WIDTH);
-        trace("narrowLine.rawTextLength: " + narrowLine.rawTextLength);
-        trace("maxLine.rawTextLength: " + maxLine.rawTextLength);
-        trace("aboveMaxLine.rawTextLength: " + aboveMaxLine.rawTextLength);
+        traceLine("line", line);
+        traceLine("narrow", narrow);
+        traceLine("wide", wide);
+        traceLine("small", small);
+        traceLine("narrowLine", narrowLine);
+        traceLine("maxLine", maxLine);
+        traceLine("aboveMaxLine", aboveMaxLine);
+    }
+
+    private function traceLine(name:String, line:TextLine):void {
+        trace(name + ".width: " + rounded(line.width));
+        trace(name + ".textWidth: " + rounded(line.textWidth));
+        trace(name + ".textHeight: " + rounded(line.textHeight));
+        trace(name + ".ascent: " + rounded(line.ascent));
+        trace(name + ".descent: " + rounded(line.descent));
+        trace(name + ".rawTextLength: " + line.rawTextLength);
     }
 
     private function rounded(value:Number):Number {

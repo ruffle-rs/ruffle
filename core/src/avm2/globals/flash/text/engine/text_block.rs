@@ -119,9 +119,11 @@ pub fn create_text_line<'gc>(
         true,
         FontType::Device,
     );
-    let Some(html_line) = layout.lines().first().cloned() else {
-        return Ok(Value::Null);
-    };
+    let html_line = layout
+        .lines()
+        .first()
+        .cloned()
+        .expect("TextLine layout must contain a line for nonempty text");
     let text_line_layout = TextLineLayout::new(html_line, WString::from(text.as_wstr()));
     let raw_text_length = text_line_layout.raw_text_length();
 
