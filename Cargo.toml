@@ -62,7 +62,7 @@ anyhow = "1.0"
 gc-arena = { git = "https://github.com/kyren/gc-arena.git", rev = "75671ae03f53718357b741ed4027560f14e90836", features = ["enum-map", "hashbrown", "indexmap", "slotmap", "smallvec"] }
 slotmap = "1.1.1"
 async-channel = "2.5.0"
-bitflags = "2.11.1"
+bitflags = "2.12.1"
 bytemuck = "1.25.0"
 chrono = { version = "0.4.44", default-features = false }
 enum-map = "2.7.3"
