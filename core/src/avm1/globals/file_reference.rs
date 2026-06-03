@@ -5,7 +5,7 @@ use std::cell::{Cell, RefCell};
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::globals::as_broadcaster::BroadcasterFunctions;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{NativeObject, Object, Value};
 use crate::avm1_stub;
 use crate::backend::ui::{FileDialogSelection, FileFilter};
@@ -105,7 +105,7 @@ pub fn create_class<'gc>(
     broadcaster_fns: BroadcasterFunctions<'gc>,
     array_proto: Object<'gc>,
 ) -> SystemClass<'gc> {
-    let class = context.class(constructor, super_proto);
+    let class = context.class(constructor, super_proto, PropertyOrder::PrototypeLast);
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     broadcaster_fns.initialize(context.strings, class.proto, array_proto);
     context.define_properties_on(class.constr, OBJECT_DECLS(context));

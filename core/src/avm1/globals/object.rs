@@ -4,7 +4,7 @@ use crate::avm_warn;
 use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::property::Attribute;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::avm1_stub;
 use crate::display_object::TDisplayObject;
@@ -40,6 +40,7 @@ pub fn create_class<'gc>(context: &mut DeclContext<'_, 'gc>) -> SystemClass<'gc>
         table_constructor!(method),
         Some(function),
         context.object_proto,
+        PropertyOrder::PrototypeFirst,
     );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     context.define_properties_on(class.constr, OBJECT_DECLS(context));

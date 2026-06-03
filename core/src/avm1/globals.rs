@@ -548,17 +548,9 @@ pub fn create_globals<'gc>(
     Object<'gc>,
     as_broadcaster::BroadcasterFunctions<'gc>,
 ) {
-    let context = {
-        let object_proto = Object::new_without_proto(context.gc());
-        &mut DeclContext {
-            object_proto,
-            fn_proto: Object::new(context, Some(object_proto)),
-            strings: context,
-        }
-    };
+    let (ref mut context, object, function) =
+        DeclContext::new(context, object::create_class, function::create_class);
 
-    let object = object::create_class(context);
-    let function = function::create_class(context);
     let (broadcaster_fns, as_broadcaster) = as_broadcaster::create_class(context, object.proto);
 
     let flash = Object::new(context.strings, Some(object.proto));
