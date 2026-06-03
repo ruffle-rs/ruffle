@@ -1350,8 +1350,6 @@ pub fn make_error_2005<'gc>(
 }
 
 pub enum Error2006Type {
-    // Stage3D x/y setters (not yet implemented) can throw this error as an ArgumentError
-    #[expect(unused)]
     ArgumentError,
     RangeError,
 }
