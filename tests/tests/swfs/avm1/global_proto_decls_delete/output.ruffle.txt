@@ -20,9 +20,10 @@ Testing _global.MovieClipLoader
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.MovieClipLoader.prototype
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   getProgress, DONT_DELETE
   unloadClip, DONT_DELETE
   loadClip, DONT_DELETE
@@ -108,9 +109,10 @@ Testing _global.flash.net.FileReference
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.flash.net.FileReference.prototype
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.flash.net
   __proto__, DONT_DELETE
@@ -240,16 +242,11 @@ Testing _global.System.IME.JAPANESE_KATAKANA_FULL
 Testing _global.System.IME.JAPANESE_KATAKANA_HALF
 Testing _global.System.IME.KOREAN
 Testing _global.System.IME.UNKNOWN
-Testing _global.System.IME.broadcastMessage
-  prototype, DONT_DELETE
-  __proto__, DONT_DELETE
-Testing _global.System.IME.broadcastMessage.prototype
-  apply, DONT_DELETE
-  call, DONT_DELETE
+Testing _global.System.IME._listeners.length
+Testing _global.System.IME._listeners
+  length, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.System.IME.removeListener
-  apply, DONT_DELETE
-  call, DONT_DELETE
   prototype, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.System.IME.removeListener.prototype
@@ -265,9 +262,14 @@ Testing _global.System.IME.addListener.prototype
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.System.IME._listeners.length
-Testing _global.System.IME._listeners
-  length, DONT_DELETE
+Testing _global.System.IME.broadcastMessage
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.System.IME.broadcastMessage.prototype
+  apply, DONT_DELETE
+  call, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.System.IME
   onIMEComposition, DONT_DELETE
@@ -285,9 +287,10 @@ Testing _global.System.IME
   JAPANESE_KATAKANA_HALF, DONT_DELETE
   KOREAN, DONT_DELETE
   UNKNOWN, DONT_DELETE
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.System.security.PolicyFileResolver
   apply, DONT_DELETE
@@ -402,14 +405,9 @@ Testing _global.Stage.width
 Testing _global.Stage.height
 Testing _global.Stage.scaleMode
 Testing _global.Stage.align
-Testing _global.Stage.broadcastMessage
-  apply, DONT_DELETE
-  call, DONT_DELETE
-  prototype, DONT_DELETE
-  __proto__, DONT_DELETE
-Testing _global.Stage.broadcastMessage.prototype
-  apply, DONT_DELETE
-  call, DONT_DELETE
+Testing _global.Stage._listeners.length
+Testing _global.Stage._listeners
+  length, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Stage.removeListener
   apply, DONT_DELETE
@@ -429,14 +427,20 @@ Testing _global.Stage.addListener.prototype
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.Stage._listeners.length
-Testing _global.Stage._listeners
-  length, DONT_DELETE
+Testing _global.Stage.broadcastMessage
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Stage.broadcastMessage.prototype
+  apply, DONT_DELETE
+  call, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Stage
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.TextFormat
   apply, DONT_DELETE
@@ -504,14 +508,9 @@ Testing _global.Key.INSERT
 Testing _global.Key.DELETEKEY
 Testing _global.Key.BACKSPACE
 Testing _global.Key.CAPSLOCK
-Testing _global.Key.broadcastMessage
-  apply, DONT_DELETE
-  call, DONT_DELETE
-  prototype, DONT_DELETE
-  __proto__, DONT_DELETE
-Testing _global.Key.broadcastMessage.prototype
-  apply, DONT_DELETE
-  call, DONT_DELETE
+Testing _global.Key._listeners.length
+Testing _global.Key._listeners
+  length, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Key.removeListener
   apply, DONT_DELETE
@@ -531,9 +530,14 @@ Testing _global.Key.addListener.prototype
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.Key._listeners.length
-Testing _global.Key._listeners
-  length, DONT_DELETE
+Testing _global.Key.broadcastMessage
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Key.broadcastMessage.prototype
+  apply, DONT_DELETE
+  call, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Key
   isToggled, DONT_DELETE
@@ -559,9 +563,10 @@ Testing _global.Key
   DELETEKEY, DONT_DELETE
   BACKSPACE, DONT_DELETE
   CAPSLOCK, DONT_DELETE
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Mouse.hide
   apply, DONT_DELETE
@@ -571,14 +576,9 @@ Testing _global.Mouse.show
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.Mouse.broadcastMessage
-  apply, DONT_DELETE
-  call, DONT_DELETE
-  prototype, DONT_DELETE
-  __proto__, DONT_DELETE
-Testing _global.Mouse.broadcastMessage.prototype
-  apply, DONT_DELETE
-  call, DONT_DELETE
+Testing _global.Mouse._listeners.length
+Testing _global.Mouse._listeners
+  length, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Mouse.removeListener
   apply, DONT_DELETE
@@ -598,16 +598,22 @@ Testing _global.Mouse.addListener.prototype
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.Mouse._listeners.length
-Testing _global.Mouse._listeners
-  length, DONT_DELETE
+Testing _global.Mouse.broadcastMessage
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Mouse.broadcastMessage.prototype
+  apply, DONT_DELETE
+  call, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Mouse
   hide, DONT_DELETE
   show, DONT_DELETE
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Selection.setSelection
   apply, DONT_DELETE
@@ -633,14 +639,9 @@ Testing _global.Selection.getBeginIndex
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.Selection.broadcastMessage
-  apply, DONT_DELETE
-  call, DONT_DELETE
-  prototype, DONT_DELETE
-  __proto__, DONT_DELETE
-Testing _global.Selection.broadcastMessage.prototype
-  apply, DONT_DELETE
-  call, DONT_DELETE
+Testing _global.Selection._listeners.length
+Testing _global.Selection._listeners
+  length, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Selection.removeListener
   apply, DONT_DELETE
@@ -660,9 +661,14 @@ Testing _global.Selection.addListener.prototype
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
-Testing _global.Selection._listeners.length
-Testing _global.Selection._listeners
-  length, DONT_DELETE
+Testing _global.Selection.broadcastMessage
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.Selection.broadcastMessage.prototype
+  apply, DONT_DELETE
+  call, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.Selection
   setSelection, DONT_DELETE
@@ -671,9 +677,10 @@ Testing _global.Selection
   getCaretIndex, DONT_DELETE
   getEndIndex, DONT_DELETE
   getBeginIndex, DONT_DELETE
-  broadcastMessage, DONT_DELETE
+  _listeners, DONT_DELETE
   removeListener, DONT_DELETE
   addListener, DONT_DELETE
+  broadcastMessage, DONT_DELETE
   __proto__, DONT_DELETE
 Testing _global.LoadVars
   apply, DONT_DELETE

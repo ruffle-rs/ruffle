@@ -197,11 +197,9 @@ fn initialize_internal<'gc>(
 ) {
     broadcaster.define_value(
         context.gc(),
-        istr!(context, "_listeners"),
-        ArrayBuilder::new_with_proto(context, array_proto)
-            .with([])
-            .into(),
-        Attribute::DONT_ENUM,
+        istr!(context, "broadcastMessage"),
+        functions.broadcast_message.into(),
+        Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
     broadcaster.define_value(
         context.gc(),
@@ -217,8 +215,10 @@ fn initialize_internal<'gc>(
     );
     broadcaster.define_value(
         context.gc(),
-        istr!(context, "broadcastMessage"),
-        functions.broadcast_message.into(),
+        istr!(context, "_listeners"),
+        ArrayBuilder::new_with_proto(context, array_proto)
+            .with([])
+            .into(),
         Attribute::DONT_DELETE | Attribute::DONT_ENUM,
     );
 }

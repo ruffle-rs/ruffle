@@ -35,9 +35,9 @@ Testing __proto__()
 testing _global.MovieClipLoader(function)
 Trying to construct _global.MovieClipLoader
 Object was constructed
-Testing broadcastMessage()
 Testing removeListener()
 Testing addListener()
+Testing broadcastMessage()
 Testing getProgress()
 Testing unloadClip()
 Testing loadClip()
@@ -119,15 +119,8 @@ testing _global.System.IME.JAPANESE_KATAKANA_FULL(string)
 testing _global.System.IME.JAPANESE_KATAKANA_HALF(string)
 testing _global.System.IME.KOREAN(string)
 testing _global.System.IME.UNKNOWN(string)
-testing _global.System.IME.broadcastMessage(function)
-Trying to construct _global.System.IME.broadcastMessage
-Object was constructed
-Testing apply()
-Testing call()
-Testing constructor()
-Testing __constructor__()
-testing _global.System.IME.broadcastMessage.__constructor__(undefined)
-Testing __proto__()
+testing _global.System.IME._listeners(object)
+testing _global.System.IME._listeners.length(number)
 testing _global.System.IME.removeListener(function)
 Trying to construct _global.System.IME.removeListener
 Object was constructed
@@ -146,8 +139,15 @@ Testing constructor()
 Testing __constructor__()
 testing _global.System.IME.addListener.__constructor__(undefined)
 Testing __proto__()
-testing _global.System.IME._listeners(object)
-testing _global.System.IME._listeners.length(number)
+testing _global.System.IME.broadcastMessage(function)
+Trying to construct _global.System.IME.broadcastMessage
+Object was constructed
+Testing apply()
+Testing call()
+Testing constructor()
+Testing __constructor__()
+testing _global.System.IME.broadcastMessage.__constructor__(undefined)
+Testing __proto__()
 testing _global.System.security(object)
 testing _global.System.security.PolicyFileResolver(function)
 Trying to construct _global.System.security.PolicyFileResolver
@@ -284,15 +284,8 @@ testing _global.Stage.width(number)
 testing _global.Stage.height(number)
 testing _global.Stage.scaleMode(string)
 testing _global.Stage.align(string)
-testing _global.Stage.broadcastMessage(function)
-Trying to construct _global.Stage.broadcastMessage
-Object was constructed
-Testing apply()
-Testing call()
-Testing constructor()
-Testing __constructor__()
-testing _global.Stage.broadcastMessage.__constructor__(undefined)
-Testing __proto__()
+testing _global.Stage._listeners(object)
+testing _global.Stage._listeners.length(number)
 testing _global.Stage.removeListener(function)
 Trying to construct _global.Stage.removeListener
 Object was constructed
@@ -311,8 +304,15 @@ Testing constructor()
 Testing __constructor__()
 testing _global.Stage.addListener.__constructor__(undefined)
 Testing __proto__()
-testing _global.Stage._listeners(object)
-testing _global.Stage._listeners.length(number)
+testing _global.Stage.broadcastMessage(function)
+Trying to construct _global.Stage.broadcastMessage
+Object was constructed
+Testing apply()
+Testing call()
+Testing constructor()
+Testing __constructor__()
+testing _global.Stage.broadcastMessage.__constructor__(undefined)
+Testing __proto__()
 testing _global.TextFormat(function)
 Trying to construct _global.TextFormat
 Object was constructed
@@ -449,15 +449,8 @@ testing _global.Key.INSERT(number)
 testing _global.Key.DELETEKEY(number)
 testing _global.Key.BACKSPACE(number)
 testing _global.Key.CAPSLOCK(number)
-testing _global.Key.broadcastMessage(function)
-Trying to construct _global.Key.broadcastMessage
-Object was constructed
-Testing apply()
-Testing call()
-Testing constructor()
-Testing __constructor__()
-testing _global.Key.broadcastMessage.__constructor__(undefined)
-Testing __proto__()
+testing _global.Key._listeners(object)
+testing _global.Key._listeners.length(number)
 testing _global.Key.removeListener(function)
 Trying to construct _global.Key.removeListener
 Object was constructed
@@ -476,8 +469,15 @@ Testing constructor()
 Testing __constructor__()
 testing _global.Key.addListener.__constructor__(undefined)
 Testing __proto__()
-testing _global.Key._listeners(object)
-testing _global.Key._listeners.length(number)
+testing _global.Key.broadcastMessage(function)
+Trying to construct _global.Key.broadcastMessage
+Object was constructed
+Testing apply()
+Testing call()
+Testing constructor()
+Testing __constructor__()
+testing _global.Key.broadcastMessage.__constructor__(undefined)
+Testing __proto__()
 testing _global.Mouse(object)
 testing _global.Mouse.hide(function)
 Trying to construct _global.Mouse.hide
@@ -491,15 +491,8 @@ Object was constructed
 Testing constructor()
 Testing __constructor__()
 Testing __proto__()
-testing _global.Mouse.broadcastMessage(function)
-Trying to construct _global.Mouse.broadcastMessage
-Object was constructed
-Testing apply()
-Testing call()
-Testing constructor()
-Testing __constructor__()
-testing _global.Mouse.broadcastMessage.__constructor__(undefined)
-Testing __proto__()
+testing _global.Mouse._listeners(object)
+testing _global.Mouse._listeners.length(number)
 testing _global.Mouse.removeListener(function)
 Trying to construct _global.Mouse.removeListener
 Object was constructed
@@ -518,8 +511,15 @@ Testing constructor()
 Testing __constructor__()
 testing _global.Mouse.addListener.__constructor__(undefined)
 Testing __proto__()
-testing _global.Mouse._listeners(object)
-testing _global.Mouse._listeners.length(number)
+testing _global.Mouse.broadcastMessage(function)
+Trying to construct _global.Mouse.broadcastMessage
+Object was constructed
+Testing apply()
+Testing call()
+Testing constructor()
+Testing __constructor__()
+testing _global.Mouse.broadcastMessage.__constructor__(undefined)
+Testing __proto__()
 testing _global.Selection(object)
 testing _global.Selection.setSelection(function)
 Trying to construct _global.Selection.setSelection
@@ -557,15 +557,8 @@ Object was constructed
 Testing constructor()
 Testing __constructor__()
 Testing __proto__()
-testing _global.Selection.broadcastMessage(function)
-Trying to construct _global.Selection.broadcastMessage
-Object was constructed
-Testing apply()
-Testing call()
-Testing constructor()
-Testing __constructor__()
-testing _global.Selection.broadcastMessage.__constructor__(undefined)
-Testing __proto__()
+testing _global.Selection._listeners(object)
+testing _global.Selection._listeners.length(number)
 testing _global.Selection.removeListener(function)
 Trying to construct _global.Selection.removeListener
 Object was constructed
@@ -584,8 +577,15 @@ Testing constructor()
 Testing __constructor__()
 testing _global.Selection.addListener.__constructor__(undefined)
 Testing __proto__()
-testing _global.Selection._listeners(object)
-testing _global.Selection._listeners.length(number)
+testing _global.Selection.broadcastMessage(function)
+Trying to construct _global.Selection.broadcastMessage
+Object was constructed
+Testing apply()
+Testing call()
+Testing constructor()
+Testing __constructor__()
+testing _global.Selection.broadcastMessage.__constructor__(undefined)
+Testing __proto__()
 testing _global.LoadVars(function)
 Trying to construct _global.LoadVars
 Object was constructed
