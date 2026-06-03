@@ -1,0 +1,6 @@
+num_ticks = 1
+known_failure = true
+
+[fonts.libsans]
+family = "Liberation Sans"
+path = "LiberationSans-Regular.ttf"

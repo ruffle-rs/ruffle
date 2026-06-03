@@ -1,0 +1,26 @@
+empty.line is null: true
+empty.creation result: complete
+space.line is null: false
+space.creation result: success
+space.width: 0
+space.textWidth: 0
+space.textHeight: 20
+space.ascent: 15.2
+space.descent: 4.8
+space.rawTextLength: 1
+twoSpaces.line is null: false
+twoSpaces.creation result: success
+twoSpaces.width: 0
+twoSpaces.textWidth: 0
+twoSpaces.textHeight: 20
+twoSpaces.ascent: 15.2
+twoSpaces.descent: 4.8
+twoSpaces.rawTextLength: 2
+newline.line is null: false
+newline.creation result: success
+newline.width: 0
+newline.textWidth: 0
+newline.textHeight: 20
+newline.ascent: 15.2
+newline.descent: 4.8
+newline.rawTextLength: 1
