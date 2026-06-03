@@ -80,7 +80,7 @@ pub trait FileDialogSelection: Any {
     fn write_and_refresh(&mut self, data: &[u8]);
 }
 
-/// Result of a file dialog (open or save).
+/// Result of a single-file dialog (open or save).
 pub enum FileDialogResult {
     /// The user selected a file.
     Selection(Box<dyn FileDialogSelection>),
@@ -88,8 +88,19 @@ pub enum FileDialogResult {
     Canceled,
 }
 
-/// Future representing a file selection in process
+/// Result of a multi-file open dialog.
+pub enum MultiFileDialogResult {
+    /// The user selected one or more files.
+    Selection(Vec<Box<dyn FileDialogSelection>>),
+    /// The user canceled the dialog.
+    Canceled,
+}
+
+/// Future representing a single-file selection in process.
 pub type DialogResultFuture = OwnedFuture<FileDialogResult, DialogLoaderError>;
+
+/// Future representing a multi-file selection in process.
+pub type MultiDialogResultFuture = OwnedFuture<MultiFileDialogResult, DialogLoaderError>;
 
 pub trait UiBackend: Any {
     fn mouse_visible(&self) -> bool;
@@ -146,10 +157,20 @@ pub trait UiBackend: Any {
         register: &mut dyn FnMut(FontDefinition),
     ) -> Vec<FontQuery>;
 
-    /// Displays a file selection dialog, returning None if the dialog cannot be displayed
-    /// (e.g because it is already open)
+    /// Displays a single-file selection dialog, returning None if the dialog cannot be displayed
+    /// (e.g because it is already open).
     /// * `filters` represents a list of filters to the possible file types that can be selected
     fn display_file_open_dialog(&mut self, filters: Vec<FileFilter>) -> Option<DialogResultFuture>;
+
+    /// Displays a multi-file selection dialog, returning None if the dialog cannot be displayed
+    /// (e.g because it is already open).
+    /// * `filters` represents a list of filters to the possible file types that can be selected
+    fn display_file_open_dialog_multiple(
+        &mut self,
+        _filters: Vec<FileFilter>,
+    ) -> Option<MultiDialogResultFuture> {
+        None
+    }
 
     /// Display a dialog allowing a user to select a destination to save a file to
     ///
