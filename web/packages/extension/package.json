@@ -22,7 +22,7 @@
         "@types/common-tags": "^1.8.4",
         "@types/firefox-webext-browser": "^143.0.0",
         "@types/jsonwebtoken": "^9.0.10",
-        "archiver": "^7.0.1",
+        "archiver": "^8.0.0",
         "json5": "^2.2.3",
         "ts-loader": "^9.6.0",
         "typescript": "^5.9.3",
