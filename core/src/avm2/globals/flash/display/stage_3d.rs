@@ -1,3 +1,4 @@
+use crate::avm2::error::{Error2006Type, make_error_2006};
 use crate::avm2::parameters::ParametersExt;
 use crate::avm2::{Activation, Error, Value};
 use ruffle_render::backend::Context3DProfile;
@@ -103,5 +104,77 @@ pub fn set_visible<'gc>(
     if let Some(this) = this.as_stage_3d() {
         this.set_visible(args.get_bool(0));
     }
+    Ok(Value::Undefined)
+}
+
+pub fn get_x<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(this) = this.as_stage_3d() {
+        return Ok(this.x().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_x<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(this) = this.as_stage_3d() {
+        let x = args.get_f64(0);
+
+        // The docs say that anything less than -8191 will throw an error,
+        // but it actually starts at -8192 for some reason.
+        if x.is_nan() || x < -8192.0 || x > 8191.0 {
+            return Err(make_error_2006(activation, Error2006Type::ArgumentError));
+        }
+
+        this.set_x(x);
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn get_y<'gc>(
+    _activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    _args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(this) = this.as_stage_3d() {
+        return Ok(this.y().into());
+    }
+
+    Ok(Value::Undefined)
+}
+
+pub fn set_y<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    this: Value<'gc>,
+    args: &[Value<'gc>],
+) -> Result<Value<'gc>, Error<'gc>> {
+    let this = this.as_object().unwrap();
+
+    if let Some(this) = this.as_stage_3d() {
+        let y = args.get_f64(0);
+
+        // The docs say that anything less than -8191 will throw an error,
+        // but it actually starts at -8192 for some reason.
+        if y.is_nan() || y < -8192.0 || y > 8191.0 {
+            return Err(make_error_2006(activation, Error2006Type::ArgumentError));
+        }
+
+        this.set_y(y);
+    }
+
     Ok(Value::Undefined)
 }
