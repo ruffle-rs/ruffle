@@ -126,7 +126,7 @@ FAILED: !isNaN(Number.valueOf()) [./Number.as:323]
 PASSED: typeof(Number) == 'function' [./Number.as:326]
 PASSED: Number.hasOwnProperty('prototype') [./Number.as:327]
 PASSED: Number.hasOwnProperty('__proto__') [./Number.as:328]
-FAILED: Number.hasOwnProperty('constructor') [./Number.as:329]
+PASSED: Number.hasOwnProperty('constructor') [./Number.as:329]
 PASSED: typeof(Number.prototype) == 'object' [./Number.as:330]
 FAILED: expected: Object obtained:  [./Number.as:332]
 PASSED: Number.prototype == Function [./Number.as:333]
@@ -239,6 +239,6 @@ PASSED: a == 77 [./Number.as:670]
 PASSED: a == 77 [./Number.as:676]
 PASSED: isNaN(0/0) [./Number.as:678]
 PASSED: as == 'ff0000' [./Number.as:682]
-#passed: 227
-#failed: 11
+#passed: 228
+#failed: 10
 #total tests run: 238

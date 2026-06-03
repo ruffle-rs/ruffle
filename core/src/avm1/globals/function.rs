@@ -4,7 +4,7 @@ use crate::avm1::activation::Activation;
 use crate::avm1::error::Error;
 use crate::avm1::function::{ExecutionName, ExecutionReason};
 use crate::avm1::parameters::ParametersExt as _;
-use crate::avm1::property_decl::{DeclContext, StaticDeclarations, SystemClass};
+use crate::avm1::property_decl::{DeclContext, PropertyOrder, StaticDeclarations, SystemClass};
 use crate::avm1::{Object, Value};
 use crate::string::AvmString;
 
@@ -19,7 +19,12 @@ const PROTO_DECLS: StaticDeclarations = declare_static_properties! {
 /// not allocate an object to store either proto. Instead, they must be provided
 /// through the `DeclContext`.
 pub fn create_class<'gc>(context: &mut DeclContext<'_, 'gc>) -> SystemClass<'gc> {
-    let class = context.native_class_with_proto(constructor, Some(function), context.fn_proto);
+    let class = context.native_class_with_proto(
+        constructor,
+        Some(function),
+        context.fn_proto,
+        PropertyOrder::PrototypeFirst,
+    );
     context.define_properties_on(class.proto, PROTO_DECLS(context));
     class
 }
