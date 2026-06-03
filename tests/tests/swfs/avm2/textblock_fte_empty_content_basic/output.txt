@@ -1,0 +1,11 @@
+empty.line is null: true
+empty.creation result: complete
+space.line is null: false
+space.creation result: success
+space.rawTextLength: 1
+twoSpaces.line is null: false
+twoSpaces.creation result: success
+twoSpaces.rawTextLength: 2
+newline.line is null: false
+newline.creation result: success
+newline.rawTextLength: 1
