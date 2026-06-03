@@ -31,10 +31,10 @@ Testing _global.MovieClipLoader
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.MovieClipLoader.prototype
-  broadcastMessage, own, DONT_ENUM, type=[function]
+  _listeners, own, DONT_ENUM, type=[object]
   removeListener, own, DONT_ENUM, type=[function]
   addListener, own, DONT_ENUM, type=[function]
-  _listeners, own, DONT_ENUM, type=[object]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   getProgress, own, DONT_ENUM, type=[function]
   unloadClip, own, DONT_ENUM, type=[function]
   loadClip, own, DONT_ENUM, type=[function]
@@ -154,10 +154,10 @@ Testing _global.flash.net.FileReference
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.flash.net.FileReference.prototype
-  broadcastMessage, own, DONT_ENUM, type=[function]
+  _listeners, own, DONT_ENUM, type=[object]
   removeListener, own, DONT_ENUM, type=[function]
   addListener, own, DONT_ENUM, type=[function]
-  _listeners, own, DONT_ENUM, type=[object]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   cancel, own, DONT_ENUM, type=[function]
   download, own, DONT_ENUM, type=[function]
   upload, own, DONT_ENUM, type=[function]
@@ -504,10 +504,10 @@ Testing _global.System.IME
   JAPANESE_KATAKANA_HALF, own, DONT_ENUM, READ_ONLY, type=[string]
   KOREAN, own, DONT_ENUM, READ_ONLY, type=[string]
   UNKNOWN, own, DONT_ENUM, READ_ONLY, type=[string]
-  broadcastMessage, own, DONT_ENUM, type=[function]
+  _listeners, own, DONT_ENUM, type=[object]
   removeListener, own, DONT_ENUM, type=[function]
   addListener, own, DONT_ENUM, type=[function]
-  _listeners, own, DONT_ENUM, type=[object]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   __proto__, own, type=[object]
 Testing _global.System.IME.onIMEComposition
   __proto__, own, type=[object]
@@ -531,23 +531,16 @@ Testing _global.System.IME.JAPANESE_KATAKANA_FULL
 Testing _global.System.IME.JAPANESE_KATAKANA_HALF
 Testing _global.System.IME.KOREAN
 Testing _global.System.IME.UNKNOWN
-Testing _global.System.IME.broadcastMessage
-  prototype, own, DONT_ENUM, type=[object]
+Testing _global.System.IME._listeners
+  length, own, DONT_ENUM, type=[number]
   __proto__, own, type=[object]
-Testing _global.System.IME.broadcastMessage.prototype
-  apply, own, DONT_ENUM, type=[function]
-  call, own, DONT_ENUM, type=[function]
-  constructor, own, type=[function]
-  __proto__, own, type=[object]
+Testing _global.System.IME._listeners.length
 Testing _global.System.IME.removeListener
-  apply, type=[function]
-  call, type=[function]
-  constructor, type=[function]
   prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
 Testing _global.System.IME.removeListener.prototype
-  apply, own, type=[function]
-  call, own, type=[function]
+  apply, own, DONT_ENUM, type=[function]
+  call, own, DONT_ENUM, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
 Testing _global.System.IME.addListener
@@ -561,10 +554,17 @@ Testing _global.System.IME.addListener.prototype
   call, own, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
-Testing _global.System.IME._listeners
-  length, own, DONT_ENUM, type=[number]
+Testing _global.System.IME.broadcastMessage
+  apply, type=[function]
+  call, type=[function]
+  constructor, type=[function]
+  prototype, own, DONT_ENUM, type=[object]
   __proto__, own, type=[object]
-Testing _global.System.IME._listeners.length
+Testing _global.System.IME.broadcastMessage.prototype
+  apply, own, type=[function]
+  call, own, type=[function]
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.System.security
   PolicyFileResolver, own, type=[function]
   sandboxType, own, READ_ONLY, type=[string]
@@ -738,10 +738,10 @@ Testing _global.Stage
   height, own, READ_ONLY, type=[number]
   scaleMode, own, READ_ONLY, type=[string]
   align, own, READ_ONLY, type=[string]
-  broadcastMessage, own, DONT_ENUM, type=[function]
+  _listeners, own, DONT_ENUM, type=[object]
   removeListener, own, DONT_ENUM, type=[function]
   addListener, own, DONT_ENUM, type=[function]
-  _listeners, own, DONT_ENUM, type=[object]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   __proto__, own, type=[object]
 Testing _global.Stage.displayState
 Testing _global.Stage.showMenu
@@ -749,21 +749,14 @@ Testing _global.Stage.width
 Testing _global.Stage.height
 Testing _global.Stage.scaleMode
 Testing _global.Stage.align
-Testing _global.Stage.broadcastMessage
+Testing _global.Stage._listeners
+  length, own, DONT_ENUM, type=[number]
+  __proto__, own, type=[object]
+Testing _global.Stage._listeners.length
+Testing _global.Stage.removeListener
   apply, type=[function]
   call, type=[function]
   constructor, type=[function]
-  prototype, own, type=[object]
-  __proto__, own, type=[object]
-Testing _global.Stage.broadcastMessage.prototype
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
-  __proto__, own, type=[object]
-Testing _global.Stage.removeListener
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
   prototype, own, type=[object]
   __proto__, own, type=[object]
 Testing _global.Stage.removeListener.prototype
@@ -782,10 +775,17 @@ Testing _global.Stage.addListener.prototype
   call, own, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
-Testing _global.Stage._listeners
-  length, own, DONT_ENUM, type=[number]
+Testing _global.Stage.broadcastMessage
+  constructor, own, type=[function]
+  call, own, type=[function]
+  apply, own, type=[function]
+  prototype, own, type=[object]
   __proto__, own, type=[object]
-Testing _global.Stage._listeners.length
+Testing _global.Stage.broadcastMessage.prototype
+  apply, own, type=[function]
+  call, own, type=[function]
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.TextFormat
   apply, type=[function]
   call, type=[function]
@@ -909,10 +909,10 @@ Testing _global.Key
   DELETEKEY, own, DONT_ENUM, READ_ONLY, type=[number]
   BACKSPACE, own, DONT_ENUM, READ_ONLY, type=[number]
   CAPSLOCK, own, DONT_ENUM, READ_ONLY, type=[number]
-  broadcastMessage, own, DONT_ENUM, type=[function]
+  _listeners, own, DONT_ENUM, type=[object]
   removeListener, own, DONT_ENUM, type=[function]
   addListener, own, DONT_ENUM, type=[function]
-  _listeners, own, DONT_ENUM, type=[object]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   __proto__, own, type=[object]
 Testing _global.Key.isToggled
   apply, type=[function]
@@ -953,17 +953,10 @@ Testing _global.Key.INSERT
 Testing _global.Key.DELETEKEY
 Testing _global.Key.BACKSPACE
 Testing _global.Key.CAPSLOCK
-Testing _global.Key.broadcastMessage
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
-  prototype, own, type=[object]
+Testing _global.Key._listeners
+  length, own, DONT_ENUM, type=[number]
   __proto__, own, type=[object]
-Testing _global.Key.broadcastMessage.prototype
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
-  __proto__, own, type=[object]
+Testing _global.Key._listeners.length
 Testing _global.Key.removeListener
   constructor, own, type=[function]
   call, own, type=[function]
@@ -986,17 +979,24 @@ Testing _global.Key.addListener.prototype
   call, own, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
-Testing _global.Key._listeners
-  length, own, DONT_ENUM, type=[number]
+Testing _global.Key.broadcastMessage
+  constructor, own, type=[function]
+  call, own, type=[function]
+  apply, own, type=[function]
+  prototype, own, type=[object]
   __proto__, own, type=[object]
-Testing _global.Key._listeners.length
+Testing _global.Key.broadcastMessage.prototype
+  apply, own, type=[function]
+  call, own, type=[function]
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.Mouse
   hide, own, DONT_ENUM, READ_ONLY, type=[function]
   show, own, DONT_ENUM, READ_ONLY, type=[function]
-  broadcastMessage, own, DONT_ENUM, type=[function]
+  _listeners, own, DONT_ENUM, type=[object]
   removeListener, own, DONT_ENUM, type=[function]
   addListener, own, DONT_ENUM, type=[function]
-  _listeners, own, DONT_ENUM, type=[object]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   __proto__, own, type=[object]
 Testing _global.Mouse.hide
   apply, type=[function]
@@ -1008,17 +1008,10 @@ Testing _global.Mouse.show
   call, type=[function]
   constructor, type=[function]
   __proto__, own, type=[object]
-Testing _global.Mouse.broadcastMessage
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
-  prototype, own, type=[object]
+Testing _global.Mouse._listeners
+  length, own, DONT_ENUM, type=[number]
   __proto__, own, type=[object]
-Testing _global.Mouse.broadcastMessage.prototype
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
-  __proto__, own, type=[object]
+Testing _global.Mouse._listeners.length
 Testing _global.Mouse.removeListener
   constructor, own, type=[function]
   call, own, type=[function]
@@ -1041,10 +1034,17 @@ Testing _global.Mouse.addListener.prototype
   call, own, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
-Testing _global.Mouse._listeners
-  length, own, DONT_ENUM, type=[number]
+Testing _global.Mouse.broadcastMessage
+  constructor, own, type=[function]
+  call, own, type=[function]
+  apply, own, type=[function]
+  prototype, own, type=[object]
   __proto__, own, type=[object]
-Testing _global.Mouse._listeners.length
+Testing _global.Mouse.broadcastMessage.prototype
+  apply, own, type=[function]
+  call, own, type=[function]
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.Selection
   setSelection, own, DONT_ENUM, READ_ONLY, type=[function]
   setFocus, own, DONT_ENUM, READ_ONLY, type=[function]
@@ -1052,10 +1052,10 @@ Testing _global.Selection
   getCaretIndex, own, DONT_ENUM, READ_ONLY, type=[function]
   getEndIndex, own, DONT_ENUM, READ_ONLY, type=[function]
   getBeginIndex, own, DONT_ENUM, READ_ONLY, type=[function]
-  broadcastMessage, own, DONT_ENUM, type=[function]
+  _listeners, own, DONT_ENUM, type=[object]
   removeListener, own, DONT_ENUM, type=[function]
   addListener, own, DONT_ENUM, type=[function]
-  _listeners, own, DONT_ENUM, type=[object]
+  broadcastMessage, own, DONT_ENUM, type=[function]
   __proto__, own, type=[object]
 Testing _global.Selection.setSelection
   apply, type=[function]
@@ -1087,17 +1087,10 @@ Testing _global.Selection.getBeginIndex
   call, type=[function]
   constructor, type=[function]
   __proto__, own, type=[object]
-Testing _global.Selection.broadcastMessage
-  constructor, own, type=[function]
-  call, own, type=[function]
-  apply, own, type=[function]
-  prototype, own, type=[object]
+Testing _global.Selection._listeners
+  length, own, DONT_ENUM, type=[number]
   __proto__, own, type=[object]
-Testing _global.Selection.broadcastMessage.prototype
-  apply, own, type=[function]
-  call, own, type=[function]
-  constructor, own, type=[function]
-  __proto__, own, type=[object]
+Testing _global.Selection._listeners.length
 Testing _global.Selection.removeListener
   constructor, own, type=[function]
   call, own, type=[function]
@@ -1120,10 +1113,17 @@ Testing _global.Selection.addListener.prototype
   call, own, type=[function]
   constructor, own, type=[function]
   __proto__, own, type=[object]
-Testing _global.Selection._listeners
-  length, own, DONT_ENUM, type=[number]
+Testing _global.Selection.broadcastMessage
+  constructor, own, type=[function]
+  call, own, type=[function]
+  apply, own, type=[function]
+  prototype, own, type=[object]
   __proto__, own, type=[object]
-Testing _global.Selection._listeners.length
+Testing _global.Selection.broadcastMessage.prototype
+  apply, own, type=[function]
+  call, own, type=[function]
+  constructor, own, type=[function]
+  __proto__, own, type=[object]
 Testing _global.LoadVars
   apply, type=[function]
   call, type=[function]
