@@ -5,8 +5,8 @@ use swf::Twips;
 
 use crate::avm2::activation::Activation;
 use crate::avm2::error::{
-    make_error_2006, make_error_2024, make_error_2025, make_error_2150, make_error_2180,
-    make_error_3783,
+    Error2006Type, make_error_2006, make_error_2024, make_error_2025, make_error_2150,
+    make_error_2180, make_error_3783,
 };
 use crate::avm2::globals::slots::flash_geom_point as point_slots;
 use crate::avm2::object::{Object, TObject as _};
@@ -58,7 +58,7 @@ fn validate_add_operation<'gc>(
     }
 
     if proposed_index > ctr.num_children() {
-        return Err(make_error_2006(activation));
+        return Err(make_error_2006(activation, Error2006Type::RangeError));
     }
 
     Ok(())
@@ -126,7 +126,7 @@ pub fn get_child_at<'gc>(
         return if let Some(child) = dobj.child_by_index(index as usize) {
             Ok(child.object2_or_null())
         } else {
-            Err(make_error_2006(activation))
+            Err(make_error_2006(activation, Error2006Type::RangeError))
         };
     }
 
@@ -312,7 +312,7 @@ pub fn remove_child_at<'gc>(
         let target_child = args.get_i32(0);
 
         if target_child >= ctr.num_children() as i32 || target_child < 0 {
-            return Err(make_error_2006(activation));
+            return Err(make_error_2006(activation, Error2006Type::RangeError));
         }
 
         let child = ctr.child_by_index(target_child as usize).unwrap();
@@ -345,15 +345,15 @@ pub fn remove_children<'gc>(
         // https://github.com/ruffle-rs/ruffle/issues/11382
 
         if (from >= ctr.num_children() as i32 || from < 0) && to != i32::MAX {
-            return Err(make_error_2006(activation));
+            return Err(make_error_2006(activation, Error2006Type::RangeError));
         }
 
         if (to >= ctr.num_children() as i32 || to < 0) && to != i32::MAX {
-            return Err(make_error_2006(activation));
+            return Err(make_error_2006(activation, Error2006Type::RangeError));
         }
 
         if from > to {
-            return Err(make_error_2006(activation));
+            return Err(make_error_2006(activation, Error2006Type::RangeError));
         }
 
         ctr.remove_range(
@@ -408,11 +408,11 @@ pub fn swap_children_at<'gc>(
         let bounds = ctr.num_children();
 
         if index0 < 0 || index0 as usize >= bounds {
-            return Err(make_error_2006(activation));
+            return Err(make_error_2006(activation, Error2006Type::RangeError));
         }
 
         if index1 < 0 || index1 as usize >= bounds {
-            return Err(make_error_2006(activation));
+            return Err(make_error_2006(activation, Error2006Type::RangeError));
         }
 
         let child0 = ctr.child_by_index(index0 as usize).unwrap();

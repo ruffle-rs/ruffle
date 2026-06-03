@@ -1,5 +1,5 @@
 use crate::avm2::bytearray::{ByteArrayError, ByteArrayStorage};
-use crate::avm2::error::make_error_2006;
+use crate::avm2::error::{Error2006Type, make_error_2006};
 use crate::avm2::vector::VectorStorage;
 use crate::avm2::{Activation, Error, Value as Avm2Value};
 use crate::bitmap::bitmap_data::{
@@ -1654,7 +1654,7 @@ pub fn set_vector<'gc>(
     let width = (x_max - x_min) as usize;
     let height = (y_max - y_min) as usize;
     if vector.length() < width * height {
-        return Err(make_error_2006(activation));
+        return Err(make_error_2006(activation, Error2006Type::RangeError));
     }
 
     let region = PixelRegion::for_region(x_min, y_min, width as u32, height as u32);

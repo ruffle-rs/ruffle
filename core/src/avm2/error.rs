@@ -1322,14 +1322,24 @@ pub fn make_error_2005<'gc>(
     ))
 }
 
+pub enum Error2006Type {
+    // Stage3D x/y setters (not yet implemented) can throw this error as an ArgumentError
+    #[expect(unused)]
+    ArgumentError,
+    RangeError,
+}
+
 #[inline(never)]
 #[cold]
-pub fn make_error_2006<'gc>(activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
-    make_error!(range_error(
-        activation,
-        "Error #2006: The supplied index is out of bounds.",
-        2006,
-    ))
+pub fn make_error_2006<'gc>(
+    activation: &mut Activation<'_, 'gc>,
+    kind: Error2006Type,
+) -> Error<'gc> {
+    let message = "Error #2006: The supplied index is out of bounds.";
+    make_error!(match kind {
+        Error2006Type::ArgumentError => argument_error(activation, message, 2006),
+        Error2006Type::RangeError => range_error(activation, message, 2006),
+    })
 }
 
 #[inline(never)]

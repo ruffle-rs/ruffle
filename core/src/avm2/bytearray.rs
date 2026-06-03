@@ -1,6 +1,6 @@
 use crate::avm2::Activation;
 use crate::avm2::Error;
-use crate::avm2::error::{make_error_2006, make_error_2030};
+use crate::avm2::error::{Error2006Type, make_error_2006, make_error_2030};
 use crate::context::UpdateContext;
 use crate::string::{FromWStr, WStr};
 use flate2::Compression;
@@ -37,7 +37,9 @@ impl ByteArrayError {
     pub fn to_avm<'gc>(self, activation: &mut Activation<'_, 'gc>) -> Error<'gc> {
         match self {
             ByteArrayError::EndOfFile => make_error_2030(activation),
-            ByteArrayError::IndexOutOfBounds => make_error_2006(activation),
+            ByteArrayError::IndexOutOfBounds => {
+                make_error_2006(activation, Error2006Type::RangeError)
+            }
         }
     }
 }
