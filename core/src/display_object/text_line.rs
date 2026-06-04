@@ -108,6 +108,12 @@ impl<'gc> TextLineLayout<'gc> {
         {
             len += 1;
         }
+        if range.end > range.start
+            && self.text.get(range.end - 1) == Some(0x0d)
+            && self.text.get(range.end) == Some(0x0a)
+        {
+            len += 1;
+        }
         len
     }
 
@@ -200,8 +206,8 @@ fn typo_metrics(line: &LayoutLine<'_>, text: &WStr) -> (f32, f32) {
         if let Some((_, _, font_set, params, _)) = lbox.as_renderable_text(text) {
             if blank_line {
                 let height = params.height().to_pixels() as f32;
-                ascent = ascent.max(height * 0.76);
-                descent = descent.max(height * 0.24);
+                ascent = ascent.max(height * (389.0 / 512.0));
+                descent = descent.max(height * (123.0 / 512.0));
             } else {
                 let font = font_set.main_font();
                 ascent = ascent.max(font.typo_ascent(params.height()).to_pixels() as f32);

@@ -41,7 +41,7 @@ package flash.text.engine {
 
         public static const MAX_LINE_WIDTH:int = 1000000;
 
-        public var userData;
+        public var userData = null;
 
         public function get rawTextLength():int {
             return this._rawTextLength;
