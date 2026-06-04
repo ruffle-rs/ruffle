@@ -1060,6 +1060,13 @@ Object was constructed
 Testing constructor()
 Testing __constructor__()
 Testing __proto__()
+testing _global.AsSetupError(function)
+Trying to construct _global.AsSetupError
+Object was constructed
+Testing constructor()
+Testing __constructor__()
+testing _global.AsSetupError.__constructor__(undefined)
+Testing __proto__()
 testing _global.Error(function)
 Trying to construct _global.Error
 Object was constructed

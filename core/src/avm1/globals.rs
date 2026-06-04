@@ -17,6 +17,7 @@ use swf::TagCode;
 mod accessibility;
 pub(super) mod array;
 pub(crate) mod as_broadcaster;
+mod as_setup_error;
 mod asnative;
 mod automation_action_generator;
 mod automation_configuration;
@@ -639,6 +640,8 @@ pub fn create_globals<'gc>(
     let action_generator = automation_action_generator::create_class(context, object.proto);
     let automation_configuration = automation_configuration::create_class(context, object.proto);
 
+    let as_setup_error = as_setup_error::create_class(context, object.proto);
+
     // Top-level
     let globals = Object::new_without_proto(context.gc());
     let decls = declare_properties! {
@@ -664,7 +667,7 @@ pub fn create_globals<'gc>(
         "ContextMenuItem" => value(context_menu_item.constr; DONT_ENUM);
         "ContextMenu" => value(context_menu.constr; DONT_ENUM);
         "Error" => value(error.constr; DONT_ENUM);
-        // TODO: AsSetupError
+        "AsSetupError" => value(as_setup_error.constr; DONT_ENUM);
         // TODO: AssetCache
         // TODO: RemoteLSOUsage
 
