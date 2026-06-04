@@ -701,6 +701,12 @@ Testing _global.System.setClipboard
   __proto__, own, type=[object]
 Testing _global.System.useCodepage
 Testing _global.System.exactSettings
+Testing _global.SoundCodec
+  NELLYMOSER, own, type=[string]
+  SPEEX, own, type=[string]
+  __proto__, own, type=[object]
+Testing _global.SoundCodec.NELLYMOSER
+Testing _global.SoundCodec.SPEEX
 Testing _global.Accessibility
   updateProperties, own, READ_ONLY, type=[function]
   sendEvent, own, READ_ONLY, type=[function]

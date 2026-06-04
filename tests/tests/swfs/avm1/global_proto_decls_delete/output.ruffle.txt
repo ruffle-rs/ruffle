@@ -374,6 +374,10 @@ Testing _global.System.useCodepage
 Testing _global.System.exactSettings
 Testing _global.System
   __proto__, DONT_DELETE
+Testing _global.SoundCodec.NELLYMOSER
+Testing _global.SoundCodec.SPEEX
+Testing _global.SoundCodec
+  __proto__, DONT_DELETE
 Testing _global.Accessibility.updateProperties
   apply, DONT_DELETE
   call, DONT_DELETE
