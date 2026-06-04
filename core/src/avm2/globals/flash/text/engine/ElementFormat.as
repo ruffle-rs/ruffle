@@ -1,5 +1,7 @@
 package flash.text.engine {
+    import __ruffle__.stub_getter;
     import __ruffle__.stub_method;
+    import __ruffle__.stub_setter;
 
     import flash.geom.Rectangle;
 
@@ -23,6 +25,7 @@ package flash.text.engine {
         private var _kerning:String;
         private var _ligatureLevel:String;
         private var _locale:String;
+        private var _locked:Boolean = false;
         private var _textRotation:String;
         [Ruffle(NativeAccessible)]
         private var _trackingLeft:Number;
@@ -171,6 +174,16 @@ package flash.text.engine {
 
         public function set locale(value:String):void {
             this._locale = value;
+        }
+
+        public function get locked():Boolean {
+            stub_getter("flash.text.engine.ElementFormat", "locked");
+            return this._locked;
+        }
+
+        public function set locked(locked:Boolean):void {
+            stub_setter("flash.text.engine.ElementFormat", "locked");
+            this._locked = locked;
         }
 
         public function get textRotation():String {
