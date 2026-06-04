@@ -306,10 +306,10 @@ pub fn set_program_constants_from_matrix<'gc>(
             .as_vector_storage()
             .unwrap()
             .iter()
-            .map(|val| val.as_f64() as f32)
-            .collect::<Vec<f32>>();
+            .map(|val| (val.as_f64() as f32).to_le_bytes())
+            .collect::<Vec<[u8; 4]>>();
 
-        context.set_program_constants_from_matrix(program_type, first_register, matrix_raw_data);
+        context.set_program_constants(program_type, first_register, &matrix_raw_data);
     }
     Ok(Value::Undefined)
 }
@@ -348,11 +348,11 @@ pub fn set_program_constants_from_vector<'gc>(
 
         let raw_data = vector
             .iter()
-            .map(|val| val.as_f64() as f32)
+            .map(|val| (val.as_f64() as f32).to_le_bytes())
             .take(to_take)
-            .collect::<Vec<f32>>();
+            .collect::<Vec<[u8; 4]>>();
 
-        context.set_program_constants_from_matrix(program_type, first_register, raw_data);
+        context.set_program_constants(program_type, first_register, &raw_data);
     }
     Ok(Value::Undefined)
 }
@@ -382,25 +382,22 @@ pub fn set_program_constants_from_byte_array<'gc>(
         let num_registers =
             usize::try_from(num_registers).map_err(|_| make_error_3669(activation))?;
 
-        let required_bytes = num_registers * 16;
-        let data_len = data.len();
+        // Stage3D reads raw little-endian floats from the ByteArray regardless
+        // of its `endian` setting. See `stage3d_program_constants_bytearray_le`
+        // and `stage3d_program_constants_bytearray_be` for test coverage.
+        let bytes = data
+            .bytes()
+            .get(byte_offset..)
+            .ok_or_else(|| make_error_3669(activation))?;
 
-        if byte_offset >= data_len || data_len - byte_offset < required_bytes {
-            return Err(make_error_3669(activation));
-        }
+        let (chunks, _) = bytes.as_chunks::<4>();
 
         let num_floats = num_registers * 4;
-        let mut raw_data = Vec::with_capacity(num_floats);
+        let raw_data = chunks
+            .get(..num_floats)
+            .ok_or_else(|| make_error_3669(activation))?;
 
-        for i in 0..num_floats {
-            let float_offset = byte_offset + i * 4;
-            let value = data
-                .read_float_at(float_offset)
-                .expect("Already validated bounds");
-            raw_data.push(value);
-        }
-
-        context.set_program_constants_from_matrix(program_type, first_register, raw_data);
+        context.set_program_constants(program_type, first_register, raw_data);
     }
 
     Ok(Value::Undefined)

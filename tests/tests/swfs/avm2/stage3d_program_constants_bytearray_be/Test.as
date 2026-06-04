@@ -179,11 +179,16 @@ package
             stage.addEventListener( Event.ENTER_FRAME, render );
         }
 
-        // Helper function to write matrix raw data to ByteArray
+        // Helper function to write matrix raw data to ByteArray.
+        // Stage3D's setProgramConstantsFromByteArray reads raw little-endian floats
+        // regardless of ByteArray.endian, so we temporarily switch to LITTLE_ENDIAN
+        // for the writes to produce bytes the GPU will interpret correctly.
         private function matrixToByteArray(matrix:Matrix3D, ba:ByteArray, transpose:Boolean = false):void
         {
             ba.position = 0;
             var rawData:Vector.<Number> = matrix.rawData;
+            var savedEndian:String = ba.endian;
+            ba.endian = Endian.LITTLE_ENDIAN;
 
             if (transpose) {
                 // Write transposed: rows become columns
@@ -198,6 +203,8 @@ package
                     ba.writeFloat(rawData[i]);
                 }
             }
+
+            ba.endian = savedEndian;
         }
 
         private function render( event:Event ):void

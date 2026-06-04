@@ -573,10 +573,10 @@ pub enum Context3DCommand<'a> {
     SetShaders {
         module: Option<Rc<dyn ShaderModule>>,
     },
-    SetProgramConstantsFromVector {
+    SetProgramConstants {
         program_type: ProgramType,
         first_register: u32,
-        matrix_raw_data_column_major: Vec<f32>,
+        matrix_raw_data_column_major: &'a [[u8; 4]],
     },
     SetCulling {
         face: Context3DTriangleFace,
