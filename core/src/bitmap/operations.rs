@@ -1104,6 +1104,19 @@ pub fn copy_pixels_with_alpha_source<'gc>(
 
     let (src_min_x, src_min_y, src_width, src_height) = src_rect;
     let (dest_min_x, dest_min_y) = dest_point;
+
+    let mut dest_region = PixelRegion::encompassing_pixels_i32(
+        ((dest_min_x), (dest_min_y)),
+        ((dest_min_x + src_width), (dest_min_y + src_height)),
+    );
+    dest_region.clamp(target.width(), target.height());
+
+    if dest_region.width() == 0 || dest_region.height() == 0 {
+        // Either the destination rectangle was entirely out of bounds,
+        // or the source rectangle's width or height was zero.
+        return;
+    }
+
     let transparency = target.transparency();
     let source_transparency = source_bitmap.transparency();
     let alpha_transparency = alpha_bitmap.transparency();
@@ -1207,12 +1220,7 @@ pub fn copy_pixels_with_alpha_source<'gc>(
             write.set_pixel32_raw(dest_x as u32, dest_y as u32, dest_color);
         }
     }
-    let mut dirty_region = PixelRegion::encompassing_pixels_i32(
-        ((dest_min_x), (dest_min_y)),
-        ((dest_min_x + src_width), (dest_min_y + src_height)),
-    );
-    dirty_region.clamp(write.width(), write.height());
-    write.set_cpu_dirty(context.gc(), dirty_region);
+    write.set_cpu_dirty(context.gc(), dest_region);
 }
 
 pub fn apply_filter<'gc>(
