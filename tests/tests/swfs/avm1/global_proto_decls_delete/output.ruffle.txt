@@ -1055,6 +1055,13 @@ Testing _global.ASSetPropFlags
   apply, DONT_DELETE
   call, DONT_DELETE
   __proto__, DONT_DELETE
+Testing _global.AsSetupError
+  apply, DONT_DELETE
+  call, DONT_DELETE
+  prototype, DONT_DELETE
+  __proto__, DONT_DELETE
+Testing _global.AsSetupError.prototype
+  __proto__, DONT_DELETE
 Testing _global.Error
   apply, DONT_DELETE
   call, DONT_DELETE
