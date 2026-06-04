@@ -9,7 +9,7 @@ import flash.text.engine.TextLine;
 
 [SWF(width="200", height="100")]
 public class Test extends Sprite {
-    [Embed(source="LiberationSans-Regular.ttf", fontName="Liberation Sans", embedAsCFF="true", unicodeRange="U+000A,U+0020-U+007E")]
+    [Embed(source="LiberationSans-Regular.ttf", fontName="Liberation Sans", embedAsCFF="true", unicodeRange="U+000A,U+000D,U+0020-U+007E")]
     private var LiberationSans:Class;
 
     public function Test() {
@@ -22,6 +22,8 @@ public class Test extends Sprite {
         traceCase("space", " ", fmt);
         traceCase("twoSpaces", "  ", fmt);
         traceCase("newline", "\n", fmt);
+        traceCase("carriageReturn", "\r", fmt);
+        traceCase("crlf", "\r\n", fmt);
     }
 
     private function traceCase(name:String, text:String, fmt:ElementFormat):void {
@@ -31,17 +33,26 @@ public class Test extends Sprite {
         trace(name + ".line is null: " + (line === null));
         trace(name + ".creation result: " + block.textLineCreationResult);
         if (line !== null) {
-            trace(name + ".width: " + rounded(line.width));
-            trace(name + ".textWidth: " + rounded(line.textWidth));
-            trace(name + ".textHeight: " + rounded(line.textHeight));
-            trace(name + ".ascent: " + rounded(line.ascent));
-            trace(name + ".descent: " + rounded(line.descent));
+            trace(name + ".width: " + line.width);
+            trace(name + ".textWidth: " + line.textWidth);
+            trace(name + ".textHeight: " + line.textHeight);
+            trace(name + ".ascent: " + line.ascent);
+            trace(name + ".descent: " + line.descent);
+            trace(name + ".totalAscent: " + line.totalAscent);
+            trace(name + ".totalDescent: " + line.totalDescent);
+            trace(name + ".unjustifiedTextWidth: " + line.unjustifiedTextWidth);
             trace(name + ".rawTextLength: " + line.rawTextLength);
+            trace(name + ".textBlockBeginIndex: " + line.textBlockBeginIndex);
+            trace(name + ".specifiedWidth: " + line.specifiedWidth);
+            trace(name + ".textBlock matches: " + (line.textBlock === block));
+            trace(name + ".previousLine is null: " + (line.previousLine === null));
+            trace(name + ".nextLine is null: " + (line.nextLine === null));
+            trace(name + ".validity: " + line.validity);
+            trace(name + ".hasGraphicElement: " + line.hasGraphicElement);
+            trace(name + ".atomCount: " + line.atomCount);
+            trace(name + ".hasTabs: " + line.hasTabs);
+            trace(name + ".userData: " + line.userData);
         }
-    }
-
-    private function rounded(value:Number):Number {
-        return Math.round(value * 100) / 100;
     }
 }
 }
